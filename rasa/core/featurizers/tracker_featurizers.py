@@ -3,15 +3,15 @@ from pathlib import Path
 import jsonpickle
 import logging
 
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.shared.exceptions import RasaException
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union
+from typing import Tuple, List, Optional, Dict, Text, Union, Any
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -91,6 +91,43 @@ class TrackerFeaturizer:
             ]
         )
 
+    def _create_entity_tags(
+        self,
+        trackers_as_entities: List[List[Dict[Text, Any]]],
+        interpreter: NaturalLanguageInterpreter,
+    ) -> List[List[Dict[Text, List["Features"]]]]:
+        return [
+            [
+                self.state_featurizer.encode_entities(entity_data, interpreter)
+                for entity_data in trackers_entities
+            ]
+            for trackers_entities in trackers_as_entities
+        ]
+
+    @staticmethod
+    def _entity_data(event: UserUttered) -> Dict[Text, Any]:
+        if event.text:
+            return {TEXT: event.text, ENTITIES: event.entities}
+
+        # input is not textual, so add empty dict
+        return {}
+
+    def training_states_actions_and_entities(
+        self, trackers: List[DialogueStateTracker], domain: Domain
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, actions and entity data.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A tuple of list of states, list of actions and list of entity data.
+        """
+        raise NotImplementedError(
+            "Featurizer must have the capacity to encode trackers to feature vectors"
+        )
+
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]]]:
@@ -103,16 +140,23 @@ class TrackerFeaturizer:
         Returns:
             A tuple of list of states and list of actions.
         """
-        raise NotImplementedError(
-            "Featurizer must have the capacity to encode trackers to feature vectors"
-        )
+        (
+            trackers_as_states,
+            trackers_as_actions,
+            _,
+        ) = self.training_states_actions_and_entities(trackers, domain)
+        return trackers_as_states, trackers_as_actions
 
     def featurize_trackers(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
+    ) -> Tuple[
+        List[List[Dict[Text, List["Features"]]]],
+        np.ndarray,
+        List[List[Dict[Text, List["Features"]]]],
+    ]:
         """Featurize the training trackers.
 
         Args:
@@ -137,14 +181,17 @@ class TrackerFeaturizer:
 
         self.state_featurizer.prepare_from_domain(domain)
 
-        trackers_as_states, trackers_as_actions = self.training_states_and_actions(
-            trackers, domain
-        )
+        (
+            trackers_as_states,
+            trackers_as_actions,
+            trackers_as_entities,
+        ) = self.training_states_actions_and_entities(trackers, domain)
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
+        entity_tags = self._create_entity_tags(trackers_as_entities, interpreter)
 
-        return tracker_state_features, label_ids
+        return tracker_state_features, label_ids, entity_tags
 
     @staticmethod
     def _choose_last_user_input(
@@ -252,23 +299,22 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest dialogue with -1.
     """
 
-    def training_states_and_actions(
+    def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms list of trackers to lists of states and actions.
-
-        Training data is padded up to the length of the longest dialogue with -1.
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, actions and entity data.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
 
         Returns:
-            A tuple of list of states and list of actions.
+            A tuple of list of states, list of actions and list of entity data.
         """
 
         trackers_as_states = []
         trackers_as_actions = []
+        trackers_as_entities = []
 
         logger.debug(
             "Creating states and action examples from "
@@ -285,7 +331,12 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
             delete_first_state = False
             actions = []
+            entities = []
+            entity_data = {}
             for event in tracker.applied_events():
+                if isinstance(event, UserUttered):
+                    entity_data = self._entity_data(event)
+
                 if not isinstance(event, ActionExecuted):
                     continue
 
@@ -293,6 +344,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                     # only actions which can be
                     # predicted at a stories start
                     actions.append(event.action_name or event.action_text)
+                    entities.append(entity_data)
                 else:
                     # unpredictable actions can be
                     # only the first in the story
@@ -303,13 +355,17 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                         )
                     delete_first_state = True
 
+                # reset entity_data for the the next turn
+                entity_data = {}
+
             if delete_first_state:
                 states = states[1:]
 
             trackers_as_states.append(states[:-1])
             trackers_as_actions.append(actions)
+            trackers_as_entities.append(entities)
 
-        return trackers_as_states, trackers_as_actions
+        return trackers_as_states, trackers_as_actions, trackers_as_entities
 
     def prediction_states(
         self,
@@ -386,23 +442,22 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
-    def training_states_and_actions(
+    def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms list of trackers to lists of states and actions.
-
-        Training data is padded up to the length of the longest dialogue with -1.
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, actions and entity data.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
 
         Returns:
-            A tuple of list of states and list of actions.
+            A tuple of list of states, list of actions and list of entity data.
         """
 
         trackers_as_states = []
         trackers_as_actions = []
+        trackers_as_entities = []
 
         # from multiple states that create equal featurizations
         # we only need to keep one.
@@ -422,7 +477,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             states = self._create_states(tracker, domain)
 
             states_length_for_action = 0
+            entity_data = {}
             for event in tracker.applied_events():
+                if isinstance(event, UserUttered):
+                    entity_data = self._entity_data(event)
+
                 if not isinstance(event, ActionExecuted):
                     continue
 
@@ -448,15 +507,19 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         trackers_as_actions.append(
                             [event.action_name or event.action_text]
                         )
+                        trackers_as_entities.append([entity_data])
                 else:
                     trackers_as_states.append(sliced_states)
                     trackers_as_actions.append([event.action_name or event.action_text])
+                    trackers_as_entities.append([entity_data])
 
+                # reset entity_data for the the next turn
+                entity_data = {}
                 pbar.set_postfix({"# actions": "{:d}".format(len(trackers_as_actions))})
 
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
-        return trackers_as_states, trackers_as_actions
+        return trackers_as_states, trackers_as_actions, trackers_as_entities
 
     def prediction_states(
         self,

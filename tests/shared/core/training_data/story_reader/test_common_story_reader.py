@@ -109,7 +109,7 @@ async def test_generate_training_data_with_cycles(
         stories_file, default_domain, augmentation_factor=0
     )
 
-    training_data, label_ids = featurizer.featurize_trackers(
+    _, label_ids, _ = featurizer.featurize_trackers(
         training_trackers, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -226,7 +226,7 @@ async def test_load_multi_file_training_data(
         hashed.append(json.dumps(sts + acts, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
-    data, label_ids = featurizer.featurize_trackers(
+    data, label_ids, _ = featurizer.featurize_trackers(
         trackers, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -244,7 +244,7 @@ async def test_load_multi_file_training_data(
         hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
     hashed_mul = sorted(hashed_mul, reverse=True)
 
-    data_mul, label_ids_mul = featurizer_mul.featurize_trackers(
+    data_mul, label_ids_mul, _ = featurizer_mul.featurize_trackers(
         trackers_mul, default_domain, interpreter=RegexInterpreter()
     )
 
