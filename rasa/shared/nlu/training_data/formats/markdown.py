@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Text, Optional, Tuple, Dict, Union
 
 from rasa.shared.constants import LEGACY_DOCS_BASE_URL
+from rasa.shared.exceptions import MarkdownException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -163,7 +164,7 @@ class MarkdownReader(TrainingDataReader):
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in AVAILABLE_SECTIONS:
-            raise ValueError(
+            raise MarkdownException(
                 "Found markdown section '{}' which is not "
                 "in the allowed sections '{}'."
                 "".format(section, "', '".join(AVAILABLE_SECTIONS))

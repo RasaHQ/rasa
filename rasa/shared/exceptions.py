@@ -17,6 +17,10 @@ class InvalidParameterException(RasaException, ValueError):
     """Raised when an invalid parameter is used."""
 
 
+class MarkdownException(RasaException):
+    """Raised if there is an error reading Markdown."""
+
+
 class YamlException(RasaException):
     """Raised if there is an error reading yaml."""
 
