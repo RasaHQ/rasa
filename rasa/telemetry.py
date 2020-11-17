@@ -608,7 +608,12 @@ def initialize_error_reporting() -> None:
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
 
-    ignored_errors = [KeyboardInterrupt, RasaException, NotImplementedError]
+    ignored_errors = [
+        KeyboardInterrupt,
+        RasaException,
+        NotImplementedError,
+        CancelledError,
+    ]
 
     try:
         from pymongo.errors import PyMongoError
