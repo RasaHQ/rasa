@@ -92,6 +92,138 @@ def _form_activation_rule(
     )
 
 
+def test_potential_contradiction_resolved_by_conversation_start():
+    """
+    Two rules that contradict each other except that one of them applies only at conversation
+    start -> ensure that this isn't flagged as a contradiction.
+    """
+    utter_anti_greet_action = "utter_anti_greet"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+    """
+    )
+    policy = RulePolicy()
+    greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
+        "greet rule at conversation start",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+        ],
+    )
+    greet_rule_at_conversation_start.is_rule_tracker = True
+
+    anti_greet_rule = TrackerWithCachedStates.from_events(
+        "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+        ],
+    )
+    anti_greet_rule.is_rule_tracker = True
+
+    policy.train(
+        [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
+    )
+
+
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value():
+    """
+    Two rules that contradict each other except that one of them applies only at conversation
+    start -> ensure that this isn't flagged as a contradiction. Specifically, this checks that
+    the conversation-start-checking logic doesn't depend on:
+    1) initial rule tracker states being empty as these can be non-empty due to initial slot values
+    1.1) whether or not the initial slot value is made explicit in the initial state of the
+    conversation tracker
+    """
+    utter_anti_greet_action = "utter_anti_greet"
+    some_slot = "slot1"
+    some_slot_initial_value = "slot1value"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+slots:
+  {some_slot}:
+    type: text
+    initial_value: {some_slot_initial_value}
+    """
+    )
+    policy = RulePolicy()
+    greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
+        "greet rule at conversation start",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+        ],
+    )
+    greet_rule_at_conversation_start.is_rule_tracker = True
+
+    anti_greet_rule = TrackerWithCachedStates.from_events(
+        "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+        ],
+    )
+    anti_greet_rule.is_rule_tracker = True
+
+    policy.train(
+        [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
+    )
+
+    conversation_events = [
+        SlotSet(some_slot, some_slot_initial_value),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": GREET_INTENT_NAME}),
+    ]
+    action_probabilities_1 = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "test conversation", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(action_probabilities_1, domain, UTTER_GREET_ACTION)
+
+    conversation_events_with_initial_slot_explicit = [
+        SlotSet(some_slot, some_slot_initial_value),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": GREET_INTENT_NAME}),
+    ]
+    action_probabilities_2 = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "test conversation with initial slot value explicitly set",
+            evts=conversation_events_with_initial_slot_explicit,
+            slots=domain.slots,
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(action_probabilities_2, domain, UTTER_GREET_ACTION)
+
+
 def test_restrict_multiple_user_inputs_in_rules():
     domain = Domain.from_yaml(
         f"""
@@ -168,7 +300,10 @@ slots:
         policy.train([complete_rule, incomplete_rule], domain, RegexInterpreter())
     assert all(
         name in execinfo.value.message
-        for name in {some_action, incomplete_rule.sender_id,}
+        for name in {
+            some_action,
+            incomplete_rule.sender_id,
+        }
     )
 
     fixed_incomplete_rule = TrackerWithCachedStates.from_events(
@@ -283,7 +418,10 @@ forms:
         policy.train([complete_rule, incomplete_rule], domain, RegexInterpreter())
     assert all(
         name in execinfo.value.message
-        for name in {some_form, incomplete_rule.sender_id,}
+        for name in {
+            some_form,
+            incomplete_rule.sender_id,
+        }
     )
 
     fixed_incomplete_rule = TrackerWithCachedStates.from_events(
