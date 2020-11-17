@@ -1,8 +1,10 @@
+import functools
 import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
+from rasa.shared.core.slots import TextSlot, ListSlot
 from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
@@ -20,6 +22,7 @@ from rasa.shared.constants import (
     DOCS_URL_STORIES,
     TEST_STORIES_FILE_PREFIX,
     DOCS_URL_RULES,
+    DOCS_URL_SLOTS,
 )
 
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
@@ -52,6 +55,8 @@ KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
 CORE_SCHEMA_FILE = "utils/schemas/stories.yml"
+DEFAULT_VALUE_TEXT_SLOTS = "filled"
+DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
 
 class YAMLStoryReader(StoryReader):
@@ -458,7 +463,9 @@ class YAMLStoryReader(StoryReader):
                 for key, value in slot.items():
                     self._add_event(SlotSet.type_name, {key: value})
             elif isinstance(slot, str):
-                self._add_event(SlotSet.type_name, {slot: None})
+                self._add_event(
+                    SlotSet.type_name, {slot: self._slot_default_value(slot)}
+                )
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}':\n"
@@ -468,6 +475,29 @@ class YAMLStoryReader(StoryReader):
                     docs=self._get_docs_link(),
                 )
                 return
+
+    @functools.lru_cache()
+    def _slot_default_value(self, slot_name: Text) -> Any:
+        if not self.domain:
+            return None
+
+        slot_types_with_default_types = {
+            TextSlot: DEFAULT_VALUE_TEXT_SLOTS,
+            ListSlot: DEFAULT_VALUE_LIST_SLOTS,
+        }
+        slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
+
+        default_value = slot_types_with_default_types.get(type(slot))
+        if default_value is None and slot.has_features():
+            rasa.shared.utils.io.raise_warning(
+                f"Slot '{slot_name}' was referenced by its name only. As slot "
+                f"'{slot_name}' is of type '{slot.type_name}' you need to specify a "
+                f"value for it. Slot '{slot_name}' will be treated as if it's value "
+                f"is empty.",
+                docs=DOCS_URL_SLOTS,
+            )
+
+        return default_value
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
 
