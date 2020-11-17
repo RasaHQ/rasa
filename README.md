@@ -292,7 +292,7 @@ release, as well as:
 
 #### Release day! 🚀
 
-1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling 
+1. **At the start of the day, post a small message on slack announcing release day!**. Communicate you'll be handling 
 the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and 
 cause delays)
 2. **Go over the milestone and evaluate the status of any PR merging that's happening. Follow up with people on their 
