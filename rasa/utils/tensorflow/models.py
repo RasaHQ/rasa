@@ -519,7 +519,6 @@ class RasaModel(tf.keras.models.Model):
         data, shape) before, this method converts them into sparse tensors. Dense
         data is kept.
         """
-
         batch_data = defaultdict(lambda: defaultdict(list))
 
         idx = 0

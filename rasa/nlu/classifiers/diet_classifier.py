@@ -896,7 +896,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def process(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
         """Augment the message with intents and entities and return diagnostic data."""
-
         out = self._predict(message)
 
         if self.component_config[INTENT_CLASSIFICATION]:
@@ -917,7 +916,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Return the metadata necessary to load the model again.
         """
-
         if self.model is None:
             return {"file": None}
 

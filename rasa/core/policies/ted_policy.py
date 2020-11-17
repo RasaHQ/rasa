@@ -670,7 +670,6 @@ class TED(TransformerRasaModel):
         self, dialogue_in: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]:
         """Create dialogue level embedding and mask."""
-
         mask = self._compute_mask(sequence_lengths)
 
         dialogue_transformed, attention_weights = self._tf_layers[
@@ -700,7 +699,6 @@ class TED(TransformerRasaModel):
         Returns:
             A tensor combining  all features for `attribute`
         """
-
         if not tf_batch_data[attribute]:
             return None
 

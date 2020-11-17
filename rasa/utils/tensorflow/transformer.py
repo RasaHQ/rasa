@@ -606,7 +606,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
         Returns:
             Transformer encoder output with shape [batch_size, length, units]
         """
-
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, length, units)
         x *= tf.math.sqrt(tf.cast(self.units, tf.float32))

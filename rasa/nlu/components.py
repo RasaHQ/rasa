@@ -463,7 +463,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The list of required package names.
         """
-
         return []
 
     @classmethod
@@ -493,7 +492,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             the loaded component
         """
-
         if cached_component:
             return cached_component
 
@@ -514,7 +512,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The created component.
         """
-
         # Check language supporting
         language = config.language
         if not cls.can_handle_language(language):
@@ -539,7 +536,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The updated component configuration.
         """
-
         pass
 
     def train(
@@ -565,7 +561,6 @@ class Component(metaclass=ComponentMetaclass):
             config: The model configuration parameters.
 
         """
-
         pass
 
     def process(self, message: Message, **kwargs: Any) -> Dict[Text, Any]:
@@ -587,7 +582,6 @@ class Component(metaclass=ComponentMetaclass):
             A dictionary of diagnostic data such as attention weights, or None.
 
         """
-
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
@@ -600,7 +594,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             An optional dictionary with any information about the stored model.
         """
-
         pass
 
     @classmethod
@@ -621,7 +614,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             A unique caching key.
         """
-
         return None
 
     def __getstate__(self) -> Any:
