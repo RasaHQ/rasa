@@ -435,6 +435,21 @@ class PolicyPrediction:
         if not isinstance(other, PolicyPrediction):
             return False
 
+        # The `diagnostic_data` values can be numpy arrays, so we have to check
+        # these separately
+        for key, value in self.diagnostic_data.items():
+            if key not in other.diagnostic_data:
+                return False
+            if isinstance(value, np.ndarray) and not np.array_equal(
+                value, other.diagnostic_data[key]
+            ):
+                return False
+            elif (
+                not isinstance(value, np.ndarray)
+                and value != other.diagnostic_data[key]
+            ):
+                return False
+
         return (
             self.probabilities == other.probabilities
             and self.policy_name == other.policy_name
