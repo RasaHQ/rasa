@@ -608,6 +608,15 @@ def initialize_error_reporting() -> None:
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
 
+    ignored_errors = [KeyboardInterrupt, RasaException, NotImplementedError]
+
+    try:
+        from pymongo.errors import PyMongoError
+
+        ignored_errors.append(PyMongoError)
+    except ImportError:
+        pass
+
     # key for local testing can be found at
     # https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
     # for local testing, set the key using `RASA_EXCEPTION_WRITE_KEY=key rasa <command>`
@@ -631,7 +640,7 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
+        ignore_errors=ignored_errors,
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
