@@ -10,11 +10,16 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.core.domain import Domain
-from rasa.nlu.constants import ENTITY_ATTRIBUTE_TEXT
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_TEXT,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
+)
 from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
@@ -23,6 +28,11 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     EXTRACTOR,
     ENTITY_ATTRIBUTE_TYPE,
+    INTENT_RESPONSE_KEY,
+    INTENT_NAME_KEY,
+    RESPONSE,
+    RESPONSE_SELECTOR,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -352,6 +362,44 @@ def _clean_entity_results(
     return cleaned_entities
 
 
+def _get_full_retrieval_intent(parsed: Dict[Text, Any]) -> Text:
+    """Return full retrieval intent, if it's present, or normal intent otherwise.
+
+    Args:
+        parsed: Predicted parsed data.
+
+    Returns:
+        The extracted intent.
+    """
+    base_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY)
+    response_selector = parsed.get(RESPONSE_SELECTOR, {})
+
+    # return normal intent if it's not a retrieval intent
+    if base_intent not in response_selector.get(
+        RESPONSE_SELECTOR_RETRIEVAL_INTENTS, {}
+    ):
+        return base_intent
+
+    # extract full retrieval intent
+    # if the response selector parameter was not specified in config,
+    # the response selector contains a "default" key
+    if RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector:
+        full_retrieval_intent = (
+            response_selector.get(RESPONSE_SELECTOR_DEFAULT_INTENT, {})
+            .get(RESPONSE, {})
+            .get(INTENT_RESPONSE_KEY)
+        )
+        return full_retrieval_intent if full_retrieval_intent else base_intent
+
+    # if specified, the response selector contains the base intent as key
+    full_retrieval_intent = (
+        response_selector.get(base_intent, {})
+        .get(RESPONSE, {})
+        .get(INTENT_RESPONSE_KEY)
+    )
+    return full_retrieval_intent if full_retrieval_intent else base_intent
+
+
 def _collect_user_uttered_predictions(
     event: UserUttered,
     predicted: Dict[Text, Any],
@@ -360,11 +408,22 @@ def _collect_user_uttered_predictions(
 ) -> EvaluationStore:
     user_uttered_eval_store = EvaluationStore()
 
-    intent_gold = event.intent.get("name")
-    predicted_intent = predicted.get(INTENT, {}).get("name")
+    # intent from the test story, may either be base intent or full retrieval intent
+    base_intent = event.intent.get(INTENT_NAME_KEY)
+    full_retrieval_intent = event.intent.get(FULL_RETRIEVAL_INTENT_NAME_KEY)
+    intent_gold = full_retrieval_intent if full_retrieval_intent else base_intent
+
+    # predicted intent: note that this is only the base intent at this point
+    predicted_base_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
+
+    # if the test story only provides the base intent AND the prediction was correct,
+    # we are not interested in full retrieval intents and skip this section.
+    # In any other case we are interested in the full retrieval intent (e.g. for report)
+    if intent_gold != predicted_base_intent:
+        predicted_base_intent = _get_full_retrieval_intent(predicted)
 
     user_uttered_eval_store.add_to_store(
-        intent_predictions=[predicted_intent], intent_targets=[intent_gold]
+        intent_predictions=[predicted_base_intent], intent_targets=[intent_gold]
     )
 
     entity_gold = event.entities
@@ -553,7 +612,8 @@ async def _predict_tracker_actions(
             # Indirectly that means that the test story was in YAML format.
             if not event.text:
                 predicted = event.parse_data
-            # Indirectly that means that the test story was in Markdown format.
+            # Indirectly that means that the test story was either:
+            # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.
             else:
                 predicted = await processor.parse_message(UserMessage(event.text))
