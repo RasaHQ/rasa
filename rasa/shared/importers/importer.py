@@ -81,10 +81,17 @@ class TrainingDataImporter:
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
 
+        from datetime import datetime
+
+        print(f"{datetime.now()}: Reading config file.")
         config = rasa.shared.utils.io.read_config_file(config_path)
-        return TrainingDataImporter.load_from_dict(
+        print(f"{datetime.now()}: Done reading config file.")
+        print(f"{datetime.now()}: Creating training data importer.")
+        importer = TrainingDataImporter.load_from_dict(
             config, config_path, domain_path, training_data_paths, training_type
         )
+        print(f"{datetime.now()}: Done creating training data importer.")
+        return importer
 
     @staticmethod
     def load_core_importer_from_config(
@@ -443,6 +450,9 @@ class E2EImporter(TrainingDataImporter):
         return original.merge(e2e_domain)
 
     async def _get_domain_with_e2e_actions(self) -> Domain:
+        from datetime import datetime
+
+        print(f"{datetime.now()}: Loading e2e actions from story file.")
 
         stories = await self.get_stories()
 
@@ -458,7 +468,7 @@ class E2EImporter(TrainingDataImporter):
 
         additional_e2e_action_names = list(additional_e2e_action_names)
 
-        return Domain(
+        domain = Domain(
             [],
             [],
             [],
@@ -467,6 +477,8 @@ class E2EImporter(TrainingDataImporter):
             forms=[],
             action_texts=additional_e2e_action_names,
         )
+        print(f"{datetime.now()}: Done loading e2e actions from story file.")
+        return domain
 
     async def get_stories(
         self,

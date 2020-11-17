@@ -91,9 +91,7 @@ async def train_async(
     with ExitStack() as stack:
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
-        print("Loading domain and config file...")
         domain = await file_importer.get_domain()
-        print("Done.")
         print(h.heap())
 
         if domain.is_empty():

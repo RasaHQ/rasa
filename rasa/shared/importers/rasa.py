@@ -46,21 +46,31 @@ class RasaFileImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
 
-        print("Loading stories ...")
-        return await utils.story_graph_from_paths(
+        from datetime import datetime
+
+        print(f"{datetime.now()}: Loading stories.")
+        stories = await utils.story_graph_from_paths(
             self._story_files,
             await self.get_domain(),
             template_variables,
             use_e2e,
             exclusion_percentage,
         )
+        print(f"{datetime.now()}: Done loading stories.")
+        return stories
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        print("Loading NLU data ...")
-        return utils.training_data_from_paths(self._nlu_files, language)
+        from datetime import datetime
+
+        print(f"{datetime.now()}: Loading NLU data.")
+        data = utils.training_data_from_paths(self._nlu_files, language)
+        print(f"{datetime.now()}: Done loading NLU data.")
+        return data
 
     async def get_domain(self) -> Domain:
-        print("Loading domain ...")
+        from datetime import datetime
+
+        print(f"{datetime.now()}: Loading domain.")
         domain = Domain.empty()
 
         # If domain path is None, return an empty domain
@@ -75,4 +85,5 @@ class RasaFileImporter(TrainingDataImporter):
                 f"empty domain. Error: '{e}'"
             )
 
+        print(f"{datetime.now()}: Done loading domain.")
         return domain
