@@ -372,9 +372,10 @@ def _get_full_retrieval_intent(parsed: Dict[Text, Any]) -> Text:
         The extracted intent.
     """
     base_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY)
+    response_selector = parsed.get(RESPONSE_SELECTOR, {})
 
     # return normal intent if it's not a retrieval intent
-    if base_intent not in parsed.get(RESPONSE_SELECTOR, {}).get(
+    if base_intent not in response_selector.get(
         RESPONSE_SELECTOR_RETRIEVAL_INTENTS, {}
     ):
         return base_intent
@@ -382,10 +383,9 @@ def _get_full_retrieval_intent(parsed: Dict[Text, Any]) -> Text:
     # extract full retrieval intent
     # if the response selector parameter was not specified in config,
     # the response selector contains a "default" key
-    if RESPONSE_SELECTOR_DEFAULT_INTENT in parsed.get(RESPONSE_SELECTOR, {}):
+    if RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector:
         full_retrieval_intent = (
-            parsed.get(RESPONSE_SELECTOR, {})
-            .get(RESPONSE_SELECTOR_DEFAULT_INTENT, {})
+            response_selector.get(RESPONSE_SELECTOR_DEFAULT_INTENT, {})
             .get(RESPONSE, {})
             .get(INTENT_RESPONSE_KEY)
         )
@@ -393,8 +393,7 @@ def _get_full_retrieval_intent(parsed: Dict[Text, Any]) -> Text:
 
     # if specified, the response selector contains the base intent as key
     full_retrieval_intent = (
-        parsed.get(RESPONSE_SELECTOR, {})
-        .get(base_intent, {})
+        response_selector.get(base_intent, {})
         .get(RESPONSE, {})
         .get(INTENT_RESPONSE_KEY)
     )
@@ -415,16 +414,16 @@ def _collect_user_uttered_predictions(
     intent_gold = full_retrieval_intent if full_retrieval_intent else base_intent
 
     # predicted intent: note that this is only the base intent at this point
-    predicted_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
+    predicted_base_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
 
     # if the test story only provides the base intent AND the prediction was correct,
     # we are not interested in full retrieval intents and skip this section.
-    # in any other case we are interested in the full retrieval intent (e.g. for report)
-    if intent_gold != predicted_intent:
-        predicted_intent = _get_full_retrieval_intent(predicted)
+    # In any other case we are interested in the full retrieval intent (e.g. for report)
+    if intent_gold != predicted_base_intent:
+        predicted_base_intent = _get_full_retrieval_intent(predicted)
 
     user_uttered_eval_store.add_to_store(
-        intent_predictions=[predicted_intent], intent_targets=[intent_gold]
+        intent_predictions=[predicted_base_intent], intent_targets=[intent_gold]
     )
 
     entity_gold = event.entities

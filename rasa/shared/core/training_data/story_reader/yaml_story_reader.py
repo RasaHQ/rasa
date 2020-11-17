@@ -381,9 +381,12 @@ class YAMLStoryReader(StoryReader):
         base_intent, response_key = Message.separate_intent_response_key(user_intent)
         if response_key and not self.is_test_stories_file(self.source_name):
             rasa.shared.utils.io.raise_warning(
-                f"Issue found in '{self.source_name}':\n"
-                f"User intent '{user_intent}' is a retrieval intent. "
-                f"Stories shouldn't contain full retrieval intents.",
+                f"Issue found in '{self.source_name}' while parsing story "
+                f"{self._get_item_title()}:\n"
+                f"User intent '{user_intent}' is a full retrieval intent. "
+                f"Stories shouldn't contain full retrieval intents. "
+                f"Rasa Open Source will only use base intent '{base_intent}' "
+                f"for training.",
                 docs=self._get_docs_link(),
             )
 
