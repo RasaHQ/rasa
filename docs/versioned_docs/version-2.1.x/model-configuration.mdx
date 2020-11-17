@@ -1,0 +1,48 @@
+---
+id: model-configuration
+sidebar_label: Overview
+title: Model Configuration
+description: Learn about model configuration for Rasa Open Source.
+abstract: The configuration file defines the components and policies that your model will use to make predictions based on user input.
+---
+
+The language and pipeline keys specify the [components](./components.mdx) used by the  model to make NLU predictions.
+The policies key defines the [policies](./policies.mdx) used by the model to predict the next action.
+
+If you don't know which components or policies to choose, you can use the
+the [Suggested Config](./model-configuration.mdx#suggested-config) feature, which will recommend sensible defaults.
+
+## Suggested Config
+
+You can leave the pipeline and/or policies key out of your configuration file.
+When you run `rasa train`, the Suggested Config feature will select a default configuration
+for the missing key(s) to train the model.
+
+Make sure to specify the language key in your `config.yml` file with the
+2-letter ISO language code.
+
+Example `config.yml` file:
+
+```yaml-rasa (docs/sources/data/configs_for_docs/example_for_suggested_config.yml)
+```
+
+The selected configuration will also be written as comments into the `config.yml` file,
+so you can see which configuration was used. For the example above, the resulting file
+might look e.g. like this:
+
+```yaml-rasa (docs/sources/data/configs_for_docs/example_for_suggested_config_after_train.yml)
+```
+
+If you like, you can then un-comment the suggested configuration for one or both of the
+keys and make modifications. Note that this will disable automatic suggestions for this
+key when training again.
+As long as you leave the configuration commented out and don't specify any configuration
+for a key yourself, a default configuration will be suggested whenever you train a new
+model.
+
+:::note nlu- or dialogue- only models
+
+Only the default configuration for `pipeline` will be automatically selected
+if you run `rasa train nlu`, and only the default configuration for `policies`
+will be selected if you run `rasa train core`.
+:::

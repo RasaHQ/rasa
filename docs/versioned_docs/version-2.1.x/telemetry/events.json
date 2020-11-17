@@ -1,0 +1,407 @@
+{
+  "sections": [
+    "Model Training",
+    "Model Testing",
+    "Model Serving",
+    "Data Handling",
+    "Miscellaneous"
+  ],
+  "defaultSection": "Miscellaneous",
+  "events": {
+    "Training Started": {
+      "description": "A training of a Rasa machine learning model got started. The event provides information on aggregated training data statistics.",
+      "type": "object",
+      "section": "Model Training",
+      "properties": {
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Language model is trained with, e.g. 'en'."
+        },
+        "training_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Generated unique identifier for this training."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of model trained, either 'nlu', 'core' or 'rasa'."
+        },
+        "pipeline": {
+          "oneOf": [
+            {"type": "string"},
+            {"type": "array", "items": {"type": "object"}}
+          ],
+          "description": "List of the pipeline configurations used for training."
+        },
+        "policies": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "List of the policy configurations used for training."
+        },
+        "num_intent_examples": {
+          "type": "integer",
+          "description": "Number of NLU examples."
+        },
+        "num_entity_examples": {
+          "type": "integer",
+          "description": "Number of entity examples."
+        },
+        "num_actions": {
+          "type": "integer",
+          "description": "Number of actions defined in the domain."
+        },
+        "num_templates": {
+          "type": "integer",
+          "description": "Number of templates defined in the domain."
+        },
+        "num_slots": {
+          "type": "integer",
+          "description": "Number of slots defined in the domain."
+        },
+        "num_forms": {
+          "type": "integer",
+          "description": "Number of forms defined in the domain."
+        },
+        "num_intents": {
+          "type": "integer",
+          "description": "Number of intents defined in the domain."
+        },
+        "num_entities": {
+          "type": "integer",
+          "description": "Number of entities defined in the domain."
+        },
+        "num_story_steps": {
+          "type": "integer",
+          "description": "Number of story steps available."
+        },
+        "num_lookup_tables": {
+          "type": "integer",
+          "description": "Number of different lookup tables."
+        },
+        "num_synonyms": {
+          "type": "integer",
+          "description": "Total number of entity synonyms defined."
+        },
+        "num_regexes": {
+          "type": "integer",
+          "description": "Total number of regexes defined."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "training_id",
+        "type",
+        "pipeline",
+        "policies",
+        "num_intent_examples",
+        "num_entity_examples",
+        "num_actions",
+        "num_templates",
+        "num_slots",
+        "num_forms",
+        "num_intents",
+        "num_entities",
+        "num_story_steps",
+        "num_lookup_tables",
+        "num_synonyms",
+        "num_regexes"
+      ]
+    },
+    "Training Completed": {
+      "description": "The training of a Rasa machine learning model finished. The event provides information about the resulting model.",
+      "type": "object",
+      "section": "Model Training",
+      "properties": {
+        "training_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Generated unique identifier for this training. Can be used to join with 'Training Started'."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of model trained, either 'nlu', 'core' or 'rasa'."
+        },
+        "runtime": {
+          "type": "integer",
+          "description": "The time in seconds it took to train the model."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "training_id",
+        "type",
+        "runtime"
+      ]
+    },
+    "Telemetry Disabled": {
+      "description": "Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not sent, if the user never enabled telemetry reporting before deactivating it."
+    },
+    "Training Data Split": {
+      "description": "Triggered when training data gets split.",
+      "type": "object",
+      "section": "Data Handling",
+      "properties": {
+        "fraction": {
+          "type": "number",
+          "description": "Percentage of the data which goes into training data (the rest goes into the test set)."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of data, either 'nlu', 'core' or 'rasa'."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "fraction",
+        "type"
+      ]
+    },
+    "Training Data Validated": {
+      "description": "Triggered when training data gets validated.",
+      "type": "object",
+      "section": "Data Handling",
+      "properties": {
+        "validation_success": {
+          "type": "boolean",
+          "description": "whether the validation was successful"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "validation_success"
+      ]
+    },
+    "Training Data Converted": {
+      "description": "Triggered when training data gets converted.",
+      "type": "object",
+      "section": "Data Handling",
+      "properties": {
+        "output_format": {
+          "type": "string",
+          "description": "target format of the converter"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of data, either 'nlu', 'core', 'config' or 'nlg'."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "output_format",
+        "type"
+      ]
+    },
+    "Tracker Exported": {
+      "description": "Triggered when conversations get exported from a tracker store through an event broker.",
+      "type": "object",
+      "section": "Data Handling",
+      "properties": {
+        "event_broker": {
+          "type": "string",
+          "description": "Name of the used event broker"
+        },
+        "tracker_store": {
+          "type": "string",
+          "description": "Name of the used tracker store"
+        },
+        "number_of_exported_events": {
+          "type": "integer",
+          "description": "Number of events exported through the event broker"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event_broker",
+        "tracker_store",
+        "number_of_exported_events"
+      ]
+    },
+    "Interactive Learning Started": {
+      "description": "Triggered when an interactive learning session got started.",
+      "type": "object",
+      "section": "Model Serving",
+      "properties": {
+        "skip_visualization": {
+          "type": "boolean",
+          "description": "Whether the visualization of stories should be shown during the interactive learning session"
+        },
+        "save_in_e2e": {
+          "type": "boolean",
+          "description": "Whether the data should be stored in end-to-end format"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "skip_visualization",
+        "save_in_e2e"
+      ]
+    },
+    "Server Started": {
+      "description": "Triggered when a Rasa Open Source server gets started.",
+      "type": "object",
+      "section": "Model Serving",
+      "properties": {
+        "input_channels": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Names of the used input channels"
+        },
+        "api_enabled": {
+          "type": "boolean",
+          "description": "Indicator if the API is enabled or if only the input channel is running"
+        },
+        "number_of_workers": {
+          "type": "integer",
+          "description": "Amount of Sanic workers started as part of the server"
+        },
+        "endpoints_nlg": {
+          "type": ["string", "null"],
+          "description": "Type of the used NLG endpoint"
+        },
+        "endpoints_nlu": {
+          "type": ["string", "null"],
+          "description": "Type of the used NLU endpoint"
+        },
+        "endpoints_action_server": {
+          "type": ["string", "null"],
+          "description": "Type of the used action server"
+        },
+        "endpoints_model_server": {
+          "type": ["string", "null"],
+          "description": "Type of the used model server"
+        },
+        "endpoints_tracker_store": {
+          "type": ["string", "null"],
+          "description": "Type of the used tracker store"
+        },
+        "endpoints_lock_store": {
+          "type": ["string", "null"],
+          "description": "Type of the used lock store"
+        },
+        "endpoints_event_broker": {
+          "type": ["string", "null"],
+          "description": "Type of the used event broker"
+        },
+        "project": {
+          "type": ["string", "null"],
+          "description": "Hash of the deployed model the server is started with"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input_channels",
+        "api_enabled",
+        "number_of_workers",
+        "endpoints_nlg",
+        "endpoints_nlu",
+        "endpoints_action_server",
+        "endpoints_model_server",
+        "endpoints_tracker_store",
+        "endpoints_lock_store",
+        "endpoints_event_broker",
+        "project"
+      ]
+    },
+    "Project Created": {
+      "description": "Triggered when a project is created using rasa init.",
+      "type": "object",
+      "properties": {
+        "init_directory": {
+          "type": "string",
+          "description": "Hash of the directory path the project is created in"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "init_directory"
+      ]
+    },
+    "Shell Started": {
+      "description": "Triggered when a shell session is started to talk to a trained bot.",
+      "type": "object",
+      "section": "Model Serving",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of the model, either 'nlu', 'core' or 'rasa'."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ]
+    },
+    "Rasa X Local Started": {
+      "section": "Model Serving",
+      "description": "Triggered when a Rasa X is started in local mode."
+    },
+    "Story Visualization Started": {
+      "section": "Data Handling",
+      "description": "Triggered when stories are getting visualized."
+    },
+    "Model Core Tested": {
+      "description": "Triggered when a Core model is getting tested.",
+      "type": "object",
+      "section": "Model Testing",
+      "properties": {
+        "project": {
+          "type": ["string", "null"],
+          "description": "Fingerprint of the project the tested model got trained in."
+        },
+        "num_story_steps": {
+          "type": "integer",
+          "description": "Number of story steps used for testing"
+        },
+        "end_to_end": {
+          "type": "boolean",
+          "description": "Indicates if tests are running in end-to-end mode, testing message handling and dialogue handling at the same time"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "project",
+        "num_story_steps",
+        "end_to_end"
+      ]
+    },
+    "Model NLU Tested": {
+      "description": "Triggered when an NLU model is getting tested.",
+      "type": "object",
+      "section": "Model Testing",
+      "properties": {
+        "num_intent_examples": {
+          "type": "integer",
+          "description": "Number of NLU examples."
+        },
+        "num_entity_examples": {
+          "type": "integer",
+          "description": "Number of entity examples."
+        },
+        "num_lookup_tables": {
+          "type": "integer",
+          "description": "Number of different lookup tables."
+        },
+        "num_synonyms": {
+          "type": "integer",
+          "description": "Total number of entity synonyms defined."
+        },
+        "num_regexes": {
+          "type": "integer",
+          "description": "Total number of regexes defined."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "num_intent_examples",
+        "num_entity_examples",
+        "num_lookup_tables",
+        "num_synonyms",
+        "num_regexes"
+      ]
+    }
+  }
+}

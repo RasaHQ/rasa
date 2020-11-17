@@ -1,0 +1,362 @@
+---
+id: testing-your-assistant
+sidebar_label: Testing Your Assistant
+title: Testing Your Assistant
+abstract: Rasa Open Source lets you test dialogues end-to-end by running through
+  test stories. In addition, you can
+  also test the dialogue management and the message processing (NLU)
+  separately.
+---
+
+## Writing Test Stories
+
+To test your assistant completely, the best approach is to write test stories. Test stories are like
+the stories in your training data, but include the user message as well.
+
+Here are some examples:
+
+<Tabs values={[{"label": "Basics", "value": "basics"}, {"label": "Custom Actions", "value": "customactions"}, {"label": "Forms Happy Path", "value": "formshappypath"}, {"label": "Forms Unhappy Path", "value": "formsunhappypath"}]} defaultValue="basics">
+  <TabItem value="basics">
+
+  ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
+  stories:
+  - story: A basic end-to-end test
+    steps:
+    - user: |
+        hello
+      intent: greet
+    - action: utter_ask_howcanhelp
+    - user: |
+       show me [chinese]{"entity": "cuisine"} restaurants
+      intent: inform
+    - action: utter_ask_location
+    - user: |
+        in [Paris]{"entity": "location"}
+      intent: inform
+    - action: utter_ask_price
+  ```
+
+  </TabItem>
+  <TabItem value="customactions">
+
+  ```yaml-rasa title="tests/test_stories.yml" {5,12}
+  stories:
+  - story: A test where a custom action returns events
+    steps:
+    - user: |
+        hey
+      intent: greet
+    - action: my_custom_action
+    - slot_was_set:
+      - my_slot: "value added by custom action"
+    - action: utter_ask_age
+    - user: |
+        thanks
+      intent: thankyou
+    - action: utter_no_worries
+  ```
+
+
+  </TabItem>
+  <TabItem value="formshappypath">
+
+  ```yaml-rasa title="tests/test_stories.yml" {5,9,14,20}
+  stories:
+  - story: A test story with a form
+    steps:
+    - user: |
+        hi
+      intent: greet
+    - action: utter_greet
+    - user: |
+        im looking for a restaurant
+      intent: request_restaurant
+    - action: restaurant_form
+    - active_loop: restaurant_form
+    - user: |
+        [afghan](cuisine) food
+      intent: inform
+    - action: restaurant_form
+    - active_loop: null
+    - action: utter_slots_values
+    - user: |
+        thanks
+      intent: thankyou
+    - action: utter_no_worries
+  ```
+
+  </TabItem>
+  <TabItem value="formsunhappypath">
+
+  ```yaml-rasa title="tests/test_stories.yml" {5,9,14,21}
+  stories:
+  - story: A test story with unexpected input during a form
+    steps:
+    - user: |
+        hi
+      intent: greet
+    - action: utter_greet
+    - user: |
+        im looking for a restaurant
+      intent: request_restaurant
+    - action: restaurant_form
+    - active_loop: restaurant_form
+    - user: |
+        How's the weather?
+      intent: chitchat
+    - action: utter_chitchat
+    - action: restaurant_form
+    - active_loop: null
+    - action: utter_slots_values
+    - user: |
+        thanks
+      intent: thankyou
+    - action: utter_no_worries
+  ```
+
+  </TabItem>
+</Tabs>
+
+Rasa Open Source looks for test stories in all files with the prefix `test_`, e.g. `tests/test_stories.yml`.
+You can test your assistant against them by running:
+
+```bash
+rasa test
+```
+
+See the [CLI documentation on `rasa test`](./command-line-interface.mdx#rasa-test) for
+more configuration options.
+
+:::caution Testing Custom Actions
+[Custom Actions](./custom-actions.mdx) are not executed as part of test stories. If your custom
+actions append any events to the conversation, this has to be reflected in your test story
+(e.g. by adding `slot_was_set` events to your test story).
+
+To test the code of your custom actions, you should write unit tests
+for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx).
+
+:::
+
+## Evaluating an NLU Model
+
+In addition to end-to-end testing, you can also test the natural language understanding (NLU) model separately.
+Once your assistant is deployed in the real world, it will be processing messages that it hasn't seen
+in the training data. To simulate this, you should always set aside some part of your data for testing.
+You can [split your NLU data](./command-line-interface.mdx#rasa-data-split)
+into train and test sets using:
+
+```bash
+rasa data split nlu
+```
+
+Next, you can see how well your trained NLU model predicts the
+data from the test set you generated, using:
+
+```bash {2}
+rasa test nlu
+    --nlu train_test_split/test_data.yml
+```
+
+To test your model more extensively, use cross-validation, which automatically creates
+multiple train/test splits:
+
+```bash {3}
+rasa test nlu
+    --nlu data/nlu.yml
+    --cross-validation
+```
+
+You can find the full list of options in the
+[CLI documentation on `rasa test`](command-line-interface.mdx#rasa-test).
+
+:::tip hyperparameter tuning
+To further improve your model check out this
+[tutorial on hyperparameter tuning](https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/).
+:::
+
+
+### Comparing NLU Pipelines
+
+To get the most out of your training data, you should train and evaluate your model on different pipelines
+and different amounts of training data.
+
+To do so, pass multiple configuration files to the `rasa test` command:
+
+```bash {2}
+rasa test nlu --nlu data/nlu.yml
+   --config config_1.yml config_2.yml
+```
+
+This performs several steps:
+1. Create a global 80% train / 20% test split from `data/nlu.yml`.
+2. Exclude a certain percentage of data from the global train split.
+3. Train models for each configuration on remaining training data.
+4. Evaluate each model on the global test split.
+
+The above process is repeated with different percentages of training data in step 2
+to give you an idea of how each pipeline will behave if you increase the amount of training data.
+Since training is not completely deterministic, the whole process is repeated
+three times for each configuration specified.
+
+A graph with the mean and standard deviations of
+[f1-scores](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+across all runs is plotted.
+The f1-score graph, along with all train/test sets, the trained models, classification and error reports,
+will be saved into a folder called `nlu_comparison_results`.
+
+Inspecting the f1-score graph can help you understand if you have enough data for your NLU model.
+If the graph shows that f1-score is still improving when all of the training data is used,
+it may improve further with more data. But if f1-score has plateaued when all training data is used,
+adding more data may not help.
+
+If you want to change the number of runs or exclusion percentages, you can:
+
+```bash {3}
+rasa test nlu --nlu data/nlu.yml
+  --config config_1.yml config_2.yml
+  --runs 4 --percentages 0 25 50 70 90
+```
+
+### Interpreting the Output
+
+#### Intent Classifiers
+
+The `rasa test` script will produce a report (`intent_report.json`), confusion matrix (`intent_confusion_matrix.png`)
+and confidence histogram (`intent_histogram.png`) for your intent classification model.
+
+The report logs [precision](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html),
+[recall](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html) and
+[f1-score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html) for each intent,
+as well as providing an overall average. You can save these reports as JSON files using the `--report` argument.
+
+The confusion matrix shows which intents are mistaken for others.
+Any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
+
+The histogram allows you to visualize the confidence for all predictions,
+with the correct and incorrect predictions being displayed by blue and red bars respectively.
+Improving the quality of your training data will move the blue histogram bars to the right and the
+red histogram bars to the left of the plot. It should also help in reducing the number red histogram bars itself.
+
+#### Response Selectors
+
+`rasa test` evaluates response selectors in the same way that it evaluates intent classifiers, producing a
+report (`response_selection_report.json`), confusion matrix (`response_selection_confusion_matrix.png`),
+confidence histogram (`response_selection_histogram.png`) and errors (`response_selection_errors.json`).
+If your pipeline includes multiple response selectors, they are evaluated in a single report.
+
+The report logs precision, recall and f1 measure for
+each sub-intent of a [retrieval intent](./glossary.mdx#retrieval-intent) and provides an overall average.
+You can save these reports as JSON files using the `--report` argument.
+
+#### Entity Extraction
+
+`rasa test` reports recall, precision, and f1-score for each entity type that
+your trainable entity extractors are trained to recognize.
+
+Only trainable entity extractors, such as the `DIETClassifier` and `CRFEntityExtractor` are
+evaluated by `rasa test`. Pretrained extractors like the `DucklingHTTPExtractor` are not evaluated.
+
+:::caution incorrect entity annotations
+If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
+is that an entity cannot stop or start inside a token.
+For example, if you have an example for a `name` entity
+like `[Brian](name)'s house`, this is only valid if your tokenizer splits `Brian's` into
+multiple tokens.
+
+:::
+
+#### Entity Scoring
+
+To evaluate entity extraction we apply a simple tag-based approach. We don't consider
+[BILOU tags](nlu-training-data.mdx#bilou-entity-tagging) exactly, but only the
+entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
+expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
+
+Our approach is more lenient when it comes to evaluation, as it rewards
+partial extraction and does not penalize the splitting of entities.
+For example, given the aforementioned entity “near Alexanderplatz” and a system that extracts
+“Alexanderplatz”, our approach rewards the extraction of “Alexanderplatz” and penalizes the missed out word “near”.
+
+The BILOU-based approach, however, would label this as a complete failure since it expects Alexanderplatz
+to be labeled as a last token in an entity (`L-LOC`) instead of a single token entity (`U-LOC`). Note also that
+a split extraction of “near” and “Alexanderplatz” would get full scores on our approach and zero on the
+BILOU-based one.
+
+Here's a comparison between the two scoring mechanisms for the phrase “near Alexanderplatz tonight”:
+
+|                     extracted                      |Simple tags (score) |  BILOU tags (score)   |
+|----------------------------------------------------|--------------------|-----------------------|
+|`[near Alexanderplatz](loc) [tonight](time)`        |loc loc time (3)    |B-loc L-loc U-time (3) |
+|`[near](loc) [Alexanderplatz](loc) [tonight](time)` |loc loc time (3)    |U-loc U-loc U-time (1) |
+|`near [Alexanderplatz](loc) [tonight](time)`        |O   loc time (2)    |O     U-loc U-time (1) |
+|`[near](loc) Alexanderplatz [tonight](time)`        |loc O   time (2)    |U-loc O     U-time (1) |
+|`[near Alexanderplatz tonight](loc)`                |loc loc loc  (2)    |B-loc I-loc L-loc  (1) |
+
+
+## Evaluating a Dialogue Model
+
+You can evaluate your trained dialogue model on a set of test stories
+by using the test script:
+
+```bash
+rasa test core --stories test_stories.yml --out results
+```
+
+This will print any failed stories to `results/failed_test_stories.yml`.
+A story fails if at least one of the actions was predicted incorrectly.
+
+The test script will also save a confusion matrix to a file called
+`results/story_confmat.pdf`. For each action in your domain, the confusion
+matrix shows how often the action was correctly predicted and how often an
+incorrect action was predicted instead.
+
+### Comparing Policy Configurations
+
+To choose a configuration for your dialogue model, or to choose hyperparameters for a
+specific policy, you want to measure how well your dialogue model will generalize
+to conversations it hasn't seen before. Especially in the beginning
+of a project, when you don't have a lot of real conversations to train
+your bot on, you may not want to exclude some to use as a test set.
+
+Rasa Open Source has some scripts to help you choose and fine-tune your policy configuration.
+Once you are happy with it, you can then train your final configuration on your
+full data set.
+
+To do this, you first have to train models for your different
+configurations. Create two (or more) config files including the policies you want to
+compare, and then provide them to the train script to train your models:
+
+```bash
+rasa train core -c config_1.yml config_2.yml \
+  --out comparison_models --runs 3 --percentages 0 5 25 50 70 95
+```
+
+Similar to how the [NLU model was evaluated](./testing-your-assistant.mdx#comparing-nlu-pipelines), the above
+command trains the dialogue model on multiple configurations and different amounts of training data.
+For each config file provided, Rasa Open Source will train dialogue models
+with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
+data. This is repeated three times to ensure consistent results.
+
+Once this script has finished, you can pass multiple models to the test script
+to compare the models you just trained:
+
+```bash
+rasa test core -m comparison_models --stories stories_folder
+  --out comparison_results --evaluate-model-directory
+```
+
+This will evaluate each model on the stories in `stories_folder`
+(can be either training or test set) and plot some graphs
+to show you which policy performs best. Since the previous train command
+excluded some amount of training data to train each model,
+the above test command can measure how well your model predicts the held-out stories.
+To compare single policies, create config files containing only one policy each.
+
+:::note
+This training process can take a long time, so we'd suggest letting it run
+somewhere in the background where it can't be interrupted.
+
+:::
+
+If you have any questions or problems, please share them with us in the dedicated
+[testing section on our forum](https://forum.rasa.com/tags/testing)!

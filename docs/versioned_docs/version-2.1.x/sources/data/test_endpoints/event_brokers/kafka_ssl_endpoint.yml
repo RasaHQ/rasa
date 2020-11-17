@@ -1,0 +1,5 @@
+event_broker:
+  url: localhost
+  topic: topic
+  security_protocol: SSL
+  type: kafka
