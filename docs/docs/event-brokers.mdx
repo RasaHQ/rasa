@@ -55,13 +55,19 @@ Rasa will automatically start streaming events when you restart the Rasa server.
 Here is how you add it using Python code:
 
 ```python
+import asyncio
+
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.tracker_store import InMemoryTrackerStore
 
+event_loop = asyncio.get_event_loop()
 pika_broker = PikaEventBroker('localhost',
                               'username',
                               'password',
-                              queues=['rasa_events'])
+                              queues=['rasa_events'],
+                              event_loop=event_loop
+                              )
+event_loop.run_until_complete(pika_broker.connect())
 
 tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 ```
@@ -201,7 +207,7 @@ according to the security protocol being used. The following implementation show
 
 ```python
 from kafka import KafkaConsumer
-from json import loads
+import json
 
 consumer = KafkaConsumer('rasa_events',
                           bootstrap_servers=['localhost:29093'],
