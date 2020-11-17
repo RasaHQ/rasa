@@ -46,6 +46,11 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   a tuple of action probabilities and policy name, it is now returning a
   `PolicyPrediction` object. Support for the old `PolicyEnsemble` interface will be
   removed in Rasa Open Source 3.0.
+
+  :::caution
+  This change is model-breaking. Please retrain your models.
+
+  :::
 - [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](event-brokers.mdx#pika-event-broker) no longer supports
   the environment variables `RABBITMQ_SSL_CA_FILE` and `RABBITMQ_SSL_KEY_PASSWORD`.
   You can alternatively specify `RABBITMQ_SSL_CA_FILE` in the RabbitMQ connection URL as 
