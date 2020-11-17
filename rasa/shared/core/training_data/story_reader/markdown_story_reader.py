@@ -105,7 +105,7 @@ class MarkdownStoryReader(StoryReader):
                     )
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
-                logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
+                logger.error(msg, exc_info=1)
                 raise ValueError(msg) from e
         self._add_current_stories_to_result()
         return self.story_steps
@@ -250,12 +250,16 @@ class MarkdownStoryReader(StoryReader):
         if self.use_e2e:
             parsed = self.parse_e2e_message(message, self._is_used_for_training)
             text = parsed.get("text")
-            intent = {INTENT_NAME_KEY: parsed.get("intent")}
+            intent = {
+                INTENT_NAME_KEY: parsed.get(
+                    "intent_response_key", default=parsed.get("intent")
+                )
+            }
             entities = parsed.get("entities")
             parse_data = {
                 "text": text,
                 "intent": intent,
-                "intent_ranking": [{INTENT_NAME_KEY: parsed.get("intent")}],
+                "intent_ranking": [intent],
                 "entities": entities,
             }
         else:

@@ -20,7 +20,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, ENTITIES
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -372,13 +372,13 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
-        """Predict the next action the bot should take.
-        Return the list of probabilities for the next actions.
-        """
+    ) -> PolicyPrediction:
+        """Predicts the next action the bot should take.
 
+        See the docstring of the parent class `Policy` for more information.
+        """
         if self.model is None:
-            return self._default_predictions(domain)
+            return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker
         tracker_state_features = self.featurizer.create_state_features(
@@ -395,15 +395,13 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return confidence.tolist()
+        return self._prediction(confidence.tolist())
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
-
         if self.model is None:
             logger.debug(
-                "Method `persist(...)` was called "
-                "without a trained model present. "
+                "Method `persist(...)` was called without a trained model present. "
                 "Nothing to persist then!"
             )
             return
@@ -511,10 +509,6 @@ class TEDPolicy(Policy):
         )
 
 
-# accessing _tf_layers with any key results in key-error, disable it
-# pytype: disable=key-error
-
-
 class TED(TransformerRasaModel):
     def __init__(
         self,
@@ -541,7 +535,8 @@ class TED(TransformerRasaModel):
         self.action_acc = tf.keras.metrics.Mean(name="acc")
         self.metrics_to_log += ["loss", "acc"]
 
-        self.all_labels_embed = None  # needed for efficient prediction
+        # needed for efficient prediction
+        self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
 
@@ -841,6 +836,3 @@ class TED(TransformerRasaModel):
         )
 
         return {"action_scores": scores}
-
-
-# pytype: enable=key-error

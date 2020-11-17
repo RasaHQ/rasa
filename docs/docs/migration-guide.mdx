@@ -10,6 +10,34 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.0 to Rasa 2.1
+
+### Deprecations
+
+`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
+its behaviour. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: ConveRTFeaturizer
+      model_url: <Remote/Local path to model files>
+    ...
+```
+
+`HFTransformersNLP` and `LanguageModelTokenizer` components are now deprecated.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements their behaviour.
+To migrate, replace both the above components with any tokenizer and specify the model architecture and model weights
+as part of `LanguageModelFeaturizer`, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: LanguageModelFeaturizer
+      model_name: "bert"
+      model_weights: "rasa/LaBSE"
+    ...
+```
 
 ## Rasa 1.10 to Rasa 2.0
 
@@ -378,6 +406,23 @@ class RestaurantFormValidator(FormValidationAction):
             return {"cuisine": None}
 ```
 
+You can also migrate forms from Rasa SDK to Rasa Open Source 2 iteratively. You can for
+example migrate one form to the Rasa Open Source 2 implementation while continue using
+the deprecated Rasa SDK implementation for another form. To continue to use
+the deprecated Rasa SDK `FormAction`s, add a custom action with the name of your form to your domain. Note that you should complete the migration as soon as possible as the deprecated `FormAction`
+will be removed from the Rasa SDK in Rasa Open Source 3.
+
+```yaml-rasa title="domain.yml"
+actions:
+# Adding a custom action for a form will
+# instruct Rasa Open Source to use the
+# deprecated Rasa SDK implementation of forms.
+- my_form
+
+forms:
+ my_form:
+```
+
 See the [forms](./forms.mdx) documentation for more details.
 
 ### Response Selectors
@@ -386,8 +431,15 @@ Response Selectors are a stable feature as of version 2.0.
 
 The [conversion command](./migration-guide.mdx#training-data-files) will automatically
 convert your `responses.md` file, stories and nlu training data to the new yaml format.
+It will also take care of adding the `utter_` prefix to your responses.
 Additionally you will need to rename the `respond_` actions in your stories files to use the
-`utter_` prefix instead. For example:
+`utter_` prefix instead. Run the following command to apply these changes:
+
+```bash
+rasa data convert responses --data {SOURCE_DIR} --out={TARGET_DIR}
+```
+
+You can also apply these changes manually. For example:
 
 ```yaml-rasa
 stories:

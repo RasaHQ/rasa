@@ -12,6 +12,7 @@ on:
 
 env:
   GKE_ZONE: us-central1-a
+  GCLOUD_VERSION: "318.0.0"
 
 jobs:
   cleanup_runs:
@@ -21,9 +22,9 @@ jobs:
 
     steps:
       - name: Find and cancel old builds of this branch
-        uses: rokroskar/workflow-run-cleanup-action@v0.2.2
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: "${{ secrets.GITHUB_TOKEN }}"
 
   read_test_configuration:
     name: Reads tests configuration
@@ -153,8 +154,9 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.2
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME}}
 
@@ -215,8 +217,8 @@ jobs:
           test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
             && echo "::set-output name=is_config_exists::false" && exit 0)
 
-          echo "::set-env name=DATASET::${DATASET}"
-          echo "::set-env name=CONFIG::${CONFIG}"
+          echo "DATASET=${DATASET}" >> $GITHUB_ENV
+          echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
@@ -227,7 +229,7 @@ jobs:
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
       - name: Install poetry 🦄
@@ -360,8 +362,8 @@ jobs:
           test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
             && echo "::set-output name=is_config_exists::false" && exit 0)
 
-          echo "::set-env name=DATASET::${DATASET}"
-          echo "::set-env name=CONFIG::${CONFIG}"
+          echo "DATASET=${DATASET}" >> $GITHUB_ENV
+          echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
@@ -372,7 +374,7 @@ jobs:
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
       - name: Install poetry 🦄
@@ -612,8 +614,9 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.2
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 

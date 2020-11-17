@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text, List
+from typing import Text, List, Dict
 
 import pytest
 
@@ -13,6 +13,7 @@ from rasa.shared.core.training_data import loading
 from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
+    DEFAULT_VALUE_TEXT_SLOTS,
 )
 from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
@@ -36,6 +37,97 @@ async def test_can_read_test_story_with_slots(default_domain: Domain):
 
     assert trackers[0].events[-2] == SlotSet(key="name", value="peter")
     assert trackers[0].events[-1] == ActionExecuted("action_listen")
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "text"}}},
+        {"slots": {"my_slot": {"type": "list"}}},
+    ],
+)
+async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "categorical"}}},
+        {"slots": {"my_slot": {"type": "float"}}},
+    ],
+)
+async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
+    domain: Dict,
+):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    with pytest.warns(UserWarning):
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+
+
+async def test_default_slot_value_if_no_domain():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader()
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
+
+
+async def test_default_slot_value_if_unfeaturized_slot():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+    domain = Domain.from_dict(
+        {"intents": ["greet"], "slots": {"my_slot": {"type": "any"}}}
+    )
+    reader = YAMLStoryReader(domain)
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
 
 
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
@@ -140,7 +232,7 @@ async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
         remove_duplicates=False,
     )
 
-    assert tracker[0].events[-2] == SlotSet(key="name", value=None)
+    assert tracker[0].events[-2] == SlotSet(key="name", value=DEFAULT_VALUE_TEXT_SLOTS)
 
 
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
@@ -347,6 +439,29 @@ stories:
         plain_text,
         intent={"name": intent},
         entities=[{"entity": "name", "start": 6, "end": 22, "value": "test"}],
+    )
+
+
+def test_end_to_end_story_with_entities():
+    story = """
+stories:
+- story: my story
+  steps:
+  - intent: greet
+    entities:
+    - city: Berlin
+      role: from
+    """
+
+    story_as_yaml = rasa.shared.utils.io.read_yaml(story)
+
+    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
+    user_uttered = steps[0].events[0]
+
+    assert user_uttered == UserUttered(
+        None,
+        intent={"name": "greet"},
+        entities=[{"entity": "city", "value": "Berlin", "role": "from"}],
     )
 
 
