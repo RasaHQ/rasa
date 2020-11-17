@@ -399,7 +399,7 @@ class PolicyPrediction:
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
-        self.diagnostic_data = diagnostic_data
+        self.diagnostic_data = diagnostic_data or dict()
 
     @staticmethod
     def for_action_name(
@@ -442,7 +442,6 @@ class PolicyPrediction:
             and self.events == other.events
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
-            and self.diagnostic_data == other.diagnostic_data
         )
 
     @property
