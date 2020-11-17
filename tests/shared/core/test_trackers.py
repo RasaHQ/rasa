@@ -68,7 +68,10 @@ from tests.core.utilities import (
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
-from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    PREDICTED_CONFIDENCE_KEY,
+)
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -173,7 +176,11 @@ async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
     recovered = trackers[0]
     assert len(recovered.events) == 11
     assert recovered.events[4].type_name == "user"
-    assert recovered.events[4].intent == {"confidence": 1.0, "name": "mood_unhappy"}
+    assert recovered.events[4].intent == {
+        "confidence": 1.0,
+        "name": "mood_unhappy",
+        "full_retrieval_intent_name": None,
+    }
 
 
 async def test_tracker_state_regression_without_bot_utterance(default_agent: Agent):
@@ -293,7 +300,7 @@ def test_get_latest_entity_values(
     assert len(tracker.events) == 0
     assert list(tracker.get_latest_entity_values(entity_type)) == []
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(UserUttered("/greet", intent, entities))
 
     assert (
@@ -313,7 +320,7 @@ def test_tracker_update_slots_with_entity(default_domain: Domain):
     test_entity = default_domain.entities[0]
     expected_slot_value = "test user"
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(
         UserUttered(
             "/greet",
@@ -339,7 +346,7 @@ def test_restart_event(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
     tracker.update(ActionExecuted("my_action"))
@@ -388,7 +395,7 @@ def test_revert_action_event(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
     tracker.update(ActionExecuted("my_action"))
@@ -424,13 +431,13 @@ def test_revert_user_utterance_event(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent1 = {"name": "greet", "confidence": 1.0}
+    intent1 = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent1, []))
     tracker.update(ActionExecuted("my_action_1"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-    intent2 = {"name": "goodbye", "confidence": 1.0}
+    intent2 = {"name": "goodbye", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(UserUttered("/goodbye", intent2, []))
     tracker.update(ActionExecuted("my_action_2"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
@@ -466,7 +473,7 @@ def test_traveling_back_in_time(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
 
@@ -605,7 +612,7 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     tracker_json["events"].insert(
-        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME}
+        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME},
     )
     tracker_json["events"].insert(5, {"event": SessionStarted.type_name})
 
@@ -1146,8 +1153,8 @@ def test_reading_of_trackers_with_legacy_form_validation_events():
     tracker = DialogueStateTracker.from_dict(
         "sender",
         events_as_dict=[
-            {"event": LegacyFormValidation.type_name, "name": None, "validate": True},
-            {"event": LegacyFormValidation.type_name, "name": None, "validate": False},
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": True,},
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": False,},
         ],
     )
 
