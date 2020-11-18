@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import importlib
+import inspect
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
@@ -8,28 +9,36 @@ logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text] = None
+    module_path: Text, lookup_path: Optional[Text] = None, ensure_class: bool = False
 ) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects."""
     # load the module, will raise ImportError if module cannot be loaded
+    klass = None
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition(".")
         m = importlib.import_module(module_name)
         # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
+        klass = getattr(m, class_name)
     else:
-        module = globals().get(module_path, locals().get(module_path))
+        klass = globals().get(module_path, locals().get(module_path))
         if module is not None:
-            return module
+            klass = module
 
-        if lookup_path:
+        if klass is None and lookup_path:
             # last resort: try to import the class from the lookup path
             m = importlib.import_module(lookup_path)
-            return getattr(m, module_path)
-        else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.")
+            klass = getattr(m, module_path)
+
+    if klass is None:
+        raise ImportError(f"Cannot retrieve class from path {module_path}.")
+
+    if ensure_class and not inspect.isclass(klass):
+        # FIXME: surely another error more adapted
+        raise TypeError(f"Object at {module_path} is not a valid class.")
+
+    return klass
 
 
 def all_subclasses(cls: Any) -> List[Any]:

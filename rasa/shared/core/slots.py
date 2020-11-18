@@ -107,7 +107,9 @@ class Slot:
             if cls.type_name == type_name:
                 return cls
         try:
-            return rasa.shared.utils.common.class_from_module_path(type_name)
+            return rasa.shared.utils.common.class_from_module_path(
+                type_name, ensure_class=True
+            )
         except (ImportError, AttributeError):
             raise InvalidSlotTypeException(
                 f"Failed to find slot type, '{type_name}' is neither a known type nor "
