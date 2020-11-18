@@ -247,7 +247,9 @@ class Trainer:
         for i, component in enumerate(self.pipeline):
             if isinstance(component, Tokenizer):
                 component.train(training_data, self.config, **context)
-                metadata["pipeline"] = self._persist_component(component, dir_name, i)
+                metadata["pipeline"].append(
+                    self._persist_component(component, dir_name, i)
+                )
             else:
                 component.prepare_partial_training(training_data)
 
@@ -264,7 +266,9 @@ class Trainer:
         # persist featurizers
         for i, component in enumerate(self.pipeline):
             if isinstance(component, Featurizer):
-                metadata["pipeline"] = self._persist_component(component, dir_name, i)
+                metadata["pipeline"].append(
+                    self._persist_component(component, dir_name, i)
+                )
 
         # TODO training of classifiers probably needs to be adapted
         for i, component in enumerate(self.pipeline):
@@ -273,7 +277,9 @@ class Trainer:
                     file_path = os.path.join(data_chunk_dir, f"{j}_chunk.porto")
                     data_chunk = TrainingDataChunk.load_chunk(file_path)
                     component.train_chunk(data_chunk, self.config, **context)
-                metadata["pipeline"] = self._persist_component(component, dir_name, i)
+                metadata["pipeline"].append(
+                    self._persist_component(component, dir_name, i)
+                )
 
         Metadata(metadata, dir_name).persist(dir_name)
 
@@ -331,7 +337,7 @@ class Trainer:
             metadata.update(self.training_data.persist(dir_name))
 
         for i, component in enumerate(self.pipeline):
-            metadata["pipeline"] = self._persist_component(component, dir_name, i)
+            metadata["pipeline"].append(self._persist_component(component, dir_name, i))
 
         Metadata(metadata, dir_name).persist(dir_name)
 
