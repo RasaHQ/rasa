@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text, List, Dict
+from typing import Text, List, Dict, Optional
 
 import pytest
 
@@ -506,3 +506,24 @@ def test_or_statement_if_not_training_mode():
 
     assert or_statement[0].intent["name"] == "intent1"
     assert or_statement[1].intent["name"] == "intent2"
+
+
+@pytest.mark.parametrize(
+    "file,warning",
+    [
+        ("data/test_yaml_stories/test_base_retrieval_intent_story.yml", None),
+        (
+            "data/test_yaml_stories/non_test_full_retrieval_intent_story.yml",
+            UserWarning,
+        ),
+    ],
+)
+async def test_story_with_retrieval_intent_warns(
+    file: Text, warning: Optional["Warning"]
+):
+    reader = YAMLStoryReader(is_used_for_training=False)
+
+    with pytest.warns(warning) as record:
+        reader.read_from_file(file)
+
+    assert len(record) == (1 if warning else 0)
