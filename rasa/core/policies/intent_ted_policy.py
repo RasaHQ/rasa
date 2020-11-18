@@ -405,9 +405,9 @@ class IntentTEDPolicy(TEDPolicy):
             self.intent_thresholds = self.model.compute_thresholds(
                 model_train_data, train_label_ids, self.use_probability_thresholds
             )
-
-        for index in self.intent_thresholds:
-            print(self._all_labels[index], index, self.intent_thresholds[index])
+        #
+        # for index in self.intent_thresholds:
+        #     print(self._all_labels[index], index, self.intent_thresholds[index])
 
     def _featurize_for_model(
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
@@ -479,6 +479,11 @@ class IntentTEDPolicy(TEDPolicy):
                 [tracker], domain, interpreter, use_text_for_last_user_input=True
             )
 
+        tracker_as_states = self.featurizer.prediction_states([tracker], domain, False)
+        states = tracker_as_states[0]
+        current_states = self.format_tracker_states(states)
+        logger.debug(f"Current tracker state:{current_states}")
+
         model_data = self._create_model_data(tracker_state_features)
 
         output = self.model.predict(model_data)
@@ -510,12 +515,12 @@ class IntentTEDPolicy(TEDPolicy):
                         self.intent_thresholds[label_to_id_map[intent]],
                     )
                 )
-        confidences_to_print = reversed(
-            sorted(confidences_to_print, key=lambda x: x[2])
+        confidences_to_print = list(
+            reversed(sorted(confidences_to_print, key=lambda x: x[2]))
         )
-        for elem in confidences_to_print:
-            print(elem)
-        print("======================")
+        # for elem in confidences_to_print:
+        #     print(elem)
+        # print("======================")
 
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
@@ -532,7 +537,15 @@ class IntentTEDPolicy(TEDPolicy):
                     f"User intent {query_label} is probable with "
                     f"{query_label_prob}, while threshold is {self.intent_thresholds[query_label_id]}"
                 )
-                if query_label_prob < self.intent_thresholds[query_label_id]:
+                logger.debug(
+                    f"Top 5 intents that are likely here are: {confidences_to_print[:5]}"
+                )
+
+                # If prob is below threshold and the intent is not the most likely intent
+                if (
+                    query_label_prob < self.intent_thresholds[query_label_id]
+                    and query_label_id != confidences_to_print[1]
+                ):
 
                     # Mark the corresponding user turn as interesting
                     last_user_event.set_as_not_probable()
