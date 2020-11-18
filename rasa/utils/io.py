@@ -9,7 +9,7 @@ import zipfile
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
+from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING
 
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -130,7 +130,7 @@ def file_type_validator(
     valid_file_types: List[Text], error_message: Text
 ) -> Type["Validator"]:
     """Creates a `Validator` class which can be used with `questionary` to validate
-       file paths.
+    file paths.
     """
 
     def is_valid(path: Text) -> bool:

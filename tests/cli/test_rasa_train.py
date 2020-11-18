@@ -339,8 +339,8 @@ def test_train_help(run):
 def test_train_nlu_help(run: Callable[..., RunResult]):
     output = run("train", "nlu", "--help")
 
-    help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
-                      [-u NLU] [--num-threads NUM_THREADS]
+    help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [-d DOMAIN]
+                      [--out OUT] [-u NLU] [--num-threads NUM_THREADS]
                       [--fixed-model-name FIXED_MODEL_NAME]
                       [--persist-nlu-data]"""
 

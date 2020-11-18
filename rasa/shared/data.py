@@ -23,7 +23,7 @@ def yaml_file_extension() -> Text:
     return YAML_FILE_EXTENSIONS[0]
 
 
-def is_likely_yaml_file(file_path: Text) -> bool:
+def is_likely_yaml_file(file_path: Union[Text, Path]) -> bool:
     """Check if a file likely contains yaml.
 
     Arguments:
@@ -217,9 +217,9 @@ def is_story_file(file_path: Text) -> bool:
         MarkdownStoryReader,
     )
 
-    return YAMLStoryReader.is_yaml_story_file(
+    return YAMLStoryReader.is_stories_file(
         file_path
-    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
+    ) or MarkdownStoryReader.is_stories_file(file_path)
 
 
 def is_test_stories_file(file_path: Text) -> bool:
@@ -238,9 +238,9 @@ def is_test_stories_file(file_path: Text) -> bool:
         MarkdownStoryReader,
     )
 
-    return YAMLStoryReader.is_yaml_test_stories_file(
+    return YAMLStoryReader.is_test_stories_file(
         file_path
-    ) or MarkdownStoryReader.is_markdown_test_stories_file(file_path)
+    ) or MarkdownStoryReader.is_test_stories_file(file_path)
 
 
 def is_config_file(file_path: Text) -> bool:

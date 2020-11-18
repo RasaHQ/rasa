@@ -1,22 +1,23 @@
 module.exports = {
   default: [
     'introduction',
+    'playground',
     {
       type: 'category',
       label: 'Building Assistants',
-      collapsed: true,
+      collapsed: false,
       items: [
-        {
-          type: 'category',
-          label: 'Getting Started',
-          collapsed: true,
-          items: [
-            'prototype-an-assistant',
-            'installation',
-            // 'cheatsheet',
-            'migrate-from',
-          ],
-        },
+          'installation',
+          'command-line-interface',
+//        {
+//          type: 'category',
+//          label: 'Getting Started',
+//          collapsed: true,
+//          items: [
+//            'installation',
+//            'migrate-from',
+//          ],
+//        },
         {
           type: 'category',
           label: 'Best Practices',
@@ -54,7 +55,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Concepts',
-      collapsed: true,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -70,6 +71,7 @@ module.exports = {
             'components',
             'policies',
             'training-data-importers',
+            'language-support',
           ],
         },
         {
@@ -79,7 +81,6 @@ module.exports = {
             'actions',
             'responses',
             'custom-actions',
-            'retrieval-actions',
             'forms',
             'default-actions',
           ],
@@ -98,12 +99,21 @@ module.exports = {
             'connectors/cisco-webex-teams',
             'connectors/rocketchat',
             'connectors/mattermost',
+            'connectors/custom-connectors',
           ],
         },
         {
           type: 'category',
           label: 'Architecture', // name still confusing with architecture page elsewhere
-          items: ['tracker-stores', 'event-brokers', 'model-storage', 'lock-stores', 'nlg'],
+          items: [
+            'arch-overview',
+            'tracker-stores',
+            'event-brokers',
+            'model-storage',
+            'lock-stores',
+            'nlu-only',
+            'nlg',
+          ],
         },
       ],
     },
@@ -112,16 +122,8 @@ module.exports = {
       label: 'APIs',
       collapsed: true,
       items: [
-        'command-line-interface',
-        {
-          type: 'category',
-          label: 'HTTP API',
-          collapsed: true,
-          items: [
-            'http-api',
-          ],
-        },
-        'jupyter-notebooks',
+        'http-api',
+        // 'jupyter-notebooks',
       ],
     },
     {

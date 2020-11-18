@@ -4,5 +4,5 @@ pipeline:
 - name: "CountVectorsFeaturizer"
 - name: "DIETClassifier"
   epochs: 2
-- name: "DucklingHTTPExtractor"
+- name: "DucklingEntityExtractor"
   url: "http://duckling:8000"

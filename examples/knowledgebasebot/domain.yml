@@ -17,19 +17,26 @@ entities:
 
 slots:
   object_type:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   mention:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   attribute:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   hotel:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   restaurant:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   city:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   cuisine:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 
 actions:
 - action_query_knowledge_base

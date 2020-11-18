@@ -7,8 +7,6 @@ description: Use Docker Compose to deploy a Rasa Open Source assistant
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from '../variables.json';
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="deploying-rasa-in-docker-compose"></a>
-
 If you would like to deploy your assistant without Rasa X, you can do so by deploying it in Docker Compose.
 To deploy Rasa X and your assistant together, see the [Recommended Deployment Methods](../how-to-deploy.mdx#recommended-deployment-methods).
 
@@ -27,8 +25,6 @@ versions of Docker and Docker Compose. If the command doesn't work, you'll have 
 install Docker.
 See [Docker Installation](https://docs.docker.com/install/) for details.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="docker-compose-configuring-channels"></a>
-
 ## Configuring Channels
 
 To run your AI assistant in production, don't forget to configure your required
@@ -42,8 +38,6 @@ rest:
 ```
 
 The REST channel will open your bot up to incoming requests at the `/webhooks/rest/webhook` endpoint.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="running-multiple-services"></a>
 
 ## Using Docker Compose to Run Multiple Services
 
@@ -109,7 +103,7 @@ docker-compose up
 ```
 
 You should then be able to interact with your bot via requests to port 5005, on the webhook endpoint that
-corresponds to a [configured channel](./deploying-in-docker-compose.mdx#docker-compose-configuring-channels):
+corresponds to a [configured channel](#configuring-channels):
 
 ```bash
 curl -XPOST http://localhost:5005/webhooks/rest/webhook \
@@ -129,7 +123,7 @@ service to your `docker-compose.yml` and modify the `endpoints.yml` to add
 the new tracker store, pointing to your new service. More information about how
 to do so can be found in the tracker store documentation:
 
-* [SQLTrackerStore](../tracker-stores.mdx#sql-tracker-store)
+* [SQLTrackerStore](../tracker-stores.mdx#sqltrackerstore)
 
 * [RedisTrackerStore](../tracker-stores.mdx#redistrackerstore)
 

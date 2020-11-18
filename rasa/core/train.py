@@ -179,11 +179,3 @@ def do_interactive_learning(
         conversation_id=args.conversation_id,
         server_args=args.__dict__,
     )
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.train` directly is no longer supported. Please use "
-        "`rasa train` to train a combined Core and NLU model or `rasa train core` "
-        "to train a Core model."
-    )

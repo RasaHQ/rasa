@@ -54,7 +54,7 @@ def add_subparser(
 def interactive(args: argparse.Namespace) -> None:
     _set_not_required_args(args)
     file_importer = TrainingDataImporter.load_from_config(
-        args.config, args.domain, args.data
+        args.config, args.domain, args.data if not args.core_only else [args.stories]
     )
 
     if args.model is None:

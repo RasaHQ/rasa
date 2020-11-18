@@ -40,9 +40,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
-import rasa.cli.utils as rasa_cli_utils
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.utils import common as common_utils
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
 
@@ -60,6 +58,9 @@ logger = logging.getLogger(__name__)
 POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
 POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
+# default value for key prefix in RedisTrackerStore
+DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
+
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
@@ -68,7 +69,7 @@ class TrackerStore:
         self,
         domain: Optional[Domain],
         event_broker: Optional[EventBroker] = None,
-        retrieve_events_from_previous_conversation_sessions: bool = False,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         """Create a TrackerStore.
 
@@ -76,17 +77,31 @@ class TrackerStore:
             domain: The `Domain` to initialize the `DialogueStateTracker`.
             event_broker: An event broker to publish any new events to another
                 destination.
-            retrieve_events_from_previous_conversation_sessions: If `True`, `retrieve`
-                will return all events (even if they are from a previous conversation
-                session). This setting only applies to `TrackerStore`s which usually
-                would only return events for the latest session.
+            kwargs: Additional kwargs.
         """
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
-        self.load_events_from_previous_conversation_sessions = (
-            retrieve_events_from_previous_conversation_sessions
+
+        # TODO: Remove this in Rasa Open Source 3.0
+        self.retrieve_events_from_previous_conversation_sessions: Optional[bool] = None
+        self._set_deprecated_kwargs_and_emit_warning(kwargs)
+
+    def _set_deprecated_kwargs_and_emit_warning(self, kwargs: Dict[Text, Any]) -> None:
+        retrieve_events_from_previous_conversation_sessions = kwargs.get(
+            "retrieve_events_from_previous_conversation_sessions"
         )
+
+        if retrieve_events_from_previous_conversation_sessions is not None:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
+                f"kwarg for the `{self.__class__.__name__}` class is deprecated and "
+                f"will be removed in Rasa Open Source 3.0. "
+                f"Please use the `retrieve_full_tracker()` method instead."
+            )
+            self.retrieve_events_from_previous_conversation_sessions = (
+                retrieve_events_from_previous_conversation_sessions
+            )
 
     @staticmethod
     def create(
@@ -95,11 +110,10 @@ class TrackerStore:
         event_broker: Optional[EventBroker] = None,
     ) -> "TrackerStore":
         """Factory to create a tracker store."""
-
         if isinstance(obj, TrackerStore):
             return obj
-        else:
-            return _create_from_endpoint_config(obj, domain, event_broker)
+
+        return _create_from_endpoint_config(obj, domain, event_broker)
 
     def get_or_create_tracker(
         self,
@@ -114,12 +128,15 @@ class TrackerStore:
             max_event_history: Value to update the tracker store's max event history to.
             append_action_listen: Whether or not to append an initial `action_listen`.
         """
-        tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
+
+        tracker = self.retrieve(sender_id)
+
         if tracker is None:
             tracker = self.create_tracker(
                 sender_id, append_action_listen=append_action_listen
             )
+
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
@@ -143,16 +160,13 @@ class TrackerStore:
 
         Returns:
             The newly created tracker for `sender_id`.
-
         """
-
         tracker = self.init_tracker(sender_id)
 
-        if tracker:
-            if append_action_listen:
-                tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+        if append_action_listen:
+            tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-            self.save(tracker)
+        self.save(tracker)
 
         return tracker
 
@@ -161,8 +175,33 @@ class TrackerStore:
         raise NotImplementedError()
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieve method that will be overridden by specific tracker"""
+        """Retrieves tracker for the latest conversation session.
+
+        This method will be overridden by the specific tracker store.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+
+        Returns:
+            Tracker containing events from the latest conversation sessions.
+        """
         raise NotImplementedError()
+
+    def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Retrieve method for fetching all tracker events across conversation sessions
+        that may be overridden by specific tracker.
+
+        The default implementation uses `self.retrieve()`.
+
+        Args:
+            conversation_id: The conversation ID to retrieve the tracker for.
+
+        Returns:
+            The fetch tracker containing all events across session starts.
+        """
+        return self.retrieve(conversation_id)
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker"""
@@ -176,6 +215,7 @@ class TrackerStore:
     def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
         old_tracker = self.retrieve(sender_id)
+
         return len(old_tracker.events) if old_tracker else 0
 
     def keys(self) -> Iterable[Text]:
@@ -190,16 +230,18 @@ class TrackerStore:
         return json.dumps(dialogue.as_dict())
 
     @staticmethod
-    def _deserialise_dialogue_from_pickle(
+    def _deserialize_dialogue_from_pickle(
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
-
+        # TODO: Remove in Rasa Open Source 3.0
         rasa.shared.utils.io.raise_deprecation_warning(
             f"Found pickled tracker for "
-            f"conversation ID '{sender_id}'. Deserialisation of pickled "
-            f"trackers is deprecated. Rasa will perform any "
-            f"future save operations of this tracker using json serialisation."
+            f"conversation ID '{sender_id}'. Deserialization of pickled "
+            f"trackers is deprecated and will be removed in Rasa Open Source 3.0. Rasa "
+            f"will perform any future save operations of this tracker using json "
+            f"serialisation."
         )
+
         return pickle.loads(serialised_tracker)
 
     def deserialise_tracker(
@@ -208,13 +250,11 @@ class TrackerStore:
         """Deserializes the tracker and returns it."""
 
         tracker = self.init_tracker(sender_id)
-        if not tracker:
-            return None
 
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError:
-            dialogue = self._deserialise_dialogue_from_pickle(
+            dialogue = self._deserialize_dialogue_from_pickle(
                 sender_id, serialised_tracker
             )
 
@@ -227,10 +267,13 @@ class InMemoryTrackerStore(TrackerStore):
     """Stores conversation history in memory"""
 
     def __init__(
-        self, domain: Domain, event_broker: Optional[EventBroker] = None
+        self,
+        domain: Domain,
+        event_broker: Optional[EventBroker] = None,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         self.store = {}
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state"""
@@ -240,19 +283,13 @@ class InMemoryTrackerStore(TrackerStore):
         self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """
-        Args:
-            sender_id: the message owner ID
-
-        Returns:
-            DialogueStateTracker
-        """
         if sender_id in self.store:
             logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
-        else:
-            logger.debug(f"Creating a new tracker for id '{sender_id}'.")
-            return None
+
+        logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+
+        return None
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Tracker Store in memory"""
@@ -271,15 +308,34 @@ class RedisTrackerStore(TrackerStore):
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
+        key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
-    ):
+        **kwargs: Dict[Text, Any],
+    ) -> None:
         import redis
 
         self.red = redis.StrictRedis(
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
-        super().__init__(domain, event_broker)
+
+        self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        if key_prefix:
+            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            self._set_key_prefix(key_prefix)
+
+        super().__init__(domain, event_broker, **kwargs)
+
+    def _set_key_prefix(self, key_prefix: Text) -> None:
+        if isinstance(key_prefix, str) and key_prefix.isalnum():
+            self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        else:
+            logger.warning(
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+            )
+
+    def _get_key_prefix(self) -> Text:
+        return self.key_prefix
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
@@ -290,17 +346,10 @@ class RedisTrackerStore(TrackerStore):
             timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
+        self.red.set(self.prefix + tracker.sender_id, serialised_tracker, ex=timeout)
 
-    def retrieve(self, sender_id):
-        """
-        Args:
-            sender_id: the message owner ID
-
-        Returns:
-            DialogueStateTracker
-        """
-        stored = self.red.get(sender_id)
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        stored = self.red.get(self.prefix + sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
         else:
@@ -308,7 +357,7 @@ class RedisTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store"""
-        return self.red.keys()
+        return self.red.keys(self.prefix + "*")
 
 
 class DynamoTrackerStore(TrackerStore):
@@ -320,7 +369,8 @@ class DynamoTrackerStore(TrackerStore):
         table_name: Text = "states",
         region: Text = "us-east-1",
         event_broker: Optional[EndpointConfig] = None,
-    ):
+        **kwargs: Dict[Text, Any],
+    ) -> None:
         """Initialize `DynamoTrackerStore`.
 
         Args:
@@ -330,6 +380,7 @@ class DynamoTrackerStore(TrackerStore):
             region: The name of the region associated with the client.
                 A client is associated with a single region.
             event_broker: An event broker used to publish events.
+            kwargs: Additional kwargs.
         """
         import boto3
 
@@ -337,7 +388,7 @@ class DynamoTrackerStore(TrackerStore):
         self.region = region
         self.table_name = table_name
         self.db = self.get_or_create_table(table_name)
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
     def get_or_create_table(
         self, table_name: Text
@@ -385,7 +436,6 @@ class DynamoTrackerStore(TrackerStore):
         return core_utils.replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Create a tracker from all previously stored events."""
         # Retrieve dialogues for a sender_id in reverse-chronological order based on
         # the session_date sort key
         dialogues = self.db.query(
@@ -432,7 +482,8 @@ class MongoTrackerStore(TrackerStore):
         auth_source: Optional[Text] = "admin",
         collection: Optional[Text] = "conversations",
         event_broker: Optional[EventBroker] = None,
-    ):
+        **kwargs: Dict[Text, Any],
+    ) -> None:
         from pymongo.database import Database
         from pymongo import MongoClient
 
@@ -447,7 +498,7 @@ class MongoTrackerStore(TrackerStore):
 
         self.db = Database(self.client, db)
         self.collection = collection
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
         self._ensure_indices()
 
@@ -533,14 +584,9 @@ class MongoTrackerStore(TrackerStore):
 
         return list(reversed(events_after_session_start))
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """
-        Args:
-            sender_id: the message owner ID
-
-        Returns:
-            `DialogueStateTracker`
-        """
+    def _retrieve(
+        self, sender_id: Text, fetch_events_from_all_sessions: bool
+    ) -> Optional[List[Dict[Text, Any]]]:
         stored = self.conversations.find_one({"sender_id": sender_id})
 
         # look for conversations which have used an `int` sender_id in the past
@@ -555,13 +601,39 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if not stored:
-            return
+            return None
 
         events = self._events_from_serialized_tracker(stored)
-        if not self.load_events_from_previous_conversation_sessions:
+
+        if not fetch_events_from_all_sessions:
             events = self._events_since_last_session_start(events)
 
+        return events
+
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        # TODO: Remove this in Rasa Open Source 3.0 along with the
+        # deprecation warning in the constructor
+        if self.retrieve_events_from_previous_conversation_sessions:
+            return self.retrieve_full_tracker(sender_id)
+
+        events = self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+
+        if not events:
+            return None
+
         return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
+
+    def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        events = self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
+
+        if not events:
+            return None
+
+        return DialogueStateTracker.from_dict(
+            conversation_id, events, self.domain.slots
+        )
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store"""
@@ -695,6 +767,7 @@ class SQLTrackerStore(TrackerStore):
         event_broker: Optional[EventBroker] = None,
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         import sqlalchemy.exc
 
@@ -739,7 +812,7 @@ class SQLTrackerStore(TrackerStore):
 
         logger.debug(f"Connection to SQL database '{db}' successful.")
 
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
     @staticmethod
     def get_db_url(
@@ -849,11 +922,28 @@ class SQLTrackerStore(TrackerStore):
             return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Create a tracker from all previously stored events."""
+        # TODO: Remove this in Rasa Open Source 3.0 along with the
+        # deprecation warning in the constructor
+        if self.retrieve_events_from_previous_conversation_sessions:
+            return self.retrieve_full_tracker(sender_id)
 
+        return self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+
+    def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        return self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
+
+    def _retrieve(
+        self, sender_id: Text, fetch_events_from_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
         with self.session_scope() as session:
 
-            serialised_events = self._event_query(session, sender_id).all()
+            serialised_events = self._event_query(
+                session,
+                sender_id,
+                fetch_events_from_all_sessions=fetch_events_from_all_sessions,
+            ).all()
 
             events = [json.loads(event.data) for event in serialised_events]
 
@@ -870,12 +960,17 @@ class SQLTrackerStore(TrackerStore):
                 )
                 return None
 
-    def _event_query(self, session: "Session", sender_id: Text) -> "Query":
+    def _event_query(
+        self, session: "Session", sender_id: Text, fetch_events_from_all_sessions: bool
+    ) -> "Query":
         """Provide the query to retrieve the conversation events for a specific sender.
 
         Args:
             session: Current database session.
             sender_id: Sender id whose conversation events should be retrieved.
+            fetch_events_from_all_sessions: Whether to fetch events from all
+                conversation sessions. If `False`, only fetch events from the
+                latest conversation session.
 
         Returns:
             Query to get the conversation events.
@@ -893,7 +988,7 @@ class SQLTrackerStore(TrackerStore):
         event_query = session.query(self.SQLEvent).filter(
             self.SQLEvent.sender_id == sender_id
         )
-        if not self.load_events_from_previous_conversation_sessions:
+        if not fetch_events_from_all_sessions:
             event_query = event_query.filter(
                 # Find events after the latest `SessionStarted` event or return all
                 # events
@@ -944,7 +1039,7 @@ class SQLTrackerStore(TrackerStore):
         """Return events from the tracker which aren't currently stored."""
 
         number_of_events_since_last_session = self._event_query(
-            session, tracker.sender_id
+            session, tracker.sender_id, fetch_events_from_all_sessions=False
         ).count()
         return itertools.islice(
             tracker.events, number_of_events_since_last_session, len(tracker.events)
@@ -1095,19 +1190,9 @@ def _load_from_module_name_in_endpoint_config(
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type
         )
-        init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
-        if "url" in init_args and "host" not in init_args:
-            # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
-                "The `url` initialization argument for custom tracker stores has "
-                "been removed. Your custom tracker store should take a `host` "
-                "argument in its `__init__()` instead."
-            )
-        else:
-            store.kwargs["host"] = store.url
 
         return tracker_store_class(
-            domain=domain, event_broker=event_broker, **store.kwargs
+            host=store.url, domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
         rasa.shared.utils.io.raise_warning(

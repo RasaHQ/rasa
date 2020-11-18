@@ -1,0 +1,45 @@
+stories:
+- story: simple_story_without_checkpoint
+  steps:
+  - intent: simple
+  - action: utter_default
+  - action: utter_greet
+- story: simple_story_with_only_start
+  steps:
+  - checkpoint: check_greet
+  - intent: simple
+  - action: utter_default
+- story: simple_story_with_only_end
+  steps:
+  - intent: hello
+  - action: utter_greet
+  - slot_was_set:
+    - name: peter
+  - checkpoint: check_greet
+rules:
+- rule: Rule with condition
+  condition:
+  - active_loop: loop_q_form
+  - slot_was_set:
+    - requested_slot: some_slot
+  steps:
+  - intent: inform
+    entities:
+    - some_slot: bla
+  - action: loop_q_form
+- rule: Rule without condition
+  steps:
+  - intent: explain
+  - action: utter_explain_some_slot
+  - action: loop_q_form
+  - active_loop: loop_q_form
+- rule: Rule after which another action should be predicted
+  steps:
+  - intent: explain
+  - action: utter_explain_some_slot
+  wait_for_user_input: false
+- rule: Rule which only applies to conversation start
+  conversation_start: true
+  steps:
+  - intent: explain
+  - action: utter_explain_some_slot

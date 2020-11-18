@@ -3,27 +3,23 @@ id: model-configuration
 sidebar_label: Overview
 title: Model Configuration
 description: Learn about model configuration for Rasa Open Source.
+abstract: The configuration file defines the components and policies that your model will use to make predictions based on user input.
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
 
-The configuration file defines the NLU and Core components that your model will use. The
-`language` and `pipeline` keys specify how the NLU model should be built. You can
-learn about choosing components for your NLU pipeline [here](./tuning-your-model.mdx). The
-`policies` key defines the [policies](./policies.mdx) that the Core model will
-use.
+The language and pipeline keys specify the [components](./components.mdx) used by the  model to make NLU predictions.
+The policies key defines the [policies](./policies.mdx) used by the model to predict the next action.
+
+If you don't know which components or policies to choose, you can use the
+the [Suggested Config](./model-configuration.mdx#suggested-config) feature, which will recommend sensible defaults.
 
 ## Suggested Config
 
-You always need to specify the `language` key in your `config.yml` file with the
+You can leave the pipeline and/or policies key out of your configuration file.
+When you run `rasa train`, the Suggested Config feature will select a default configuration
+for the missing key(s) to train the model.
+
+Make sure to specify the language key in your `config.yml` file with the
 2-letter ISO language code.
-
-The two other keys (`pipeline` and `policies`) can be left out or left empty. When
-running `rasa train`, the Suggested Config feature will select a default configuration
-for the missing key(s) which will then be used to train the model.
-
-Please note, that only the default configuration for `pipeline` will be automatically selected
-if you run `rasa train nlu`, and only the default configuration for `policies`
-will be selected if you run `rasa train core`.
 
 Example `config.yml` file:
 
@@ -43,3 +39,10 @@ key when training again.
 As long as you leave the configuration commented out and don't specify any configuration
 for a key yourself, a default configuration will be suggested whenever you train a new
 model.
+
+:::note nlu- or dialogue- only models
+
+Only the default configuration for `pipeline` will be automatically selected
+if you run `rasa train nlu`, and only the default configuration for `policies`
+will be selected if you run `rasa train core`.
+:::

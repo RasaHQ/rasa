@@ -1,0 +1,6 @@
+language: en
+pipeline:
+   - name: WhitespaceTokenizer
+   - name: CountVectorsFeaturizer
+   - name: ResponseSelector
+     epochs: 1

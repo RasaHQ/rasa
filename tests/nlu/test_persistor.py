@@ -128,16 +128,21 @@ def test_list_models_method_in_Azure_persistor():
         self._model_dir_and_model_from_filename = lambda x: {
             "blob_name": ("project", "model_name")
         }[x]
-        self.blob_client = Object()
+        self.blob_service = Object()
         self.container_name = "test"
 
         # noinspection PyUnusedLocal
-        def mocked_list_blobs(container_name, prefix=None):
-            filter_result = Object()
-            filter_result.name = "blob_name"
-            return (filter_result,)
+        def mocked_container_client():
+            def list_blobs():
+                filter_result = Object()
+                filter_result.name = "blob_name"
+                return (filter_result,)
 
-        self.blob_client.list_blobs = mocked_list_blobs
+            container_client = Object()
+            container_client.list_blobs = list_blobs
+            return container_client
+
+        self._container_client = mocked_container_client
 
     with patch.object(persistor.AzurePersistor, "__init__", mocked_init):
         result = persistor.AzurePersistor("", "", "").list_models()

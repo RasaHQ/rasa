@@ -8,10 +8,7 @@ from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar
 
 import rasa.core.utils
 import rasa.utils.io
-from rasa.constants import (
-    DEFAULT_LOG_LEVEL_LIBRARIES,
-    ENV_LOG_LEVEL_LIBRARIES,
-)
+from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
 
@@ -68,6 +65,7 @@ def set_log_level(log_level: Optional[int] = None):
 
     update_tensorflow_log_level()
     update_asyncio_log_level()
+    update_matplotlib_log_level()
     update_apscheduler_log_level()
     update_socketio_log_level()
 
@@ -156,6 +154,16 @@ def update_asyncio_log_level() -> None:
     logging.getLogger("asyncio").setLevel(log_level)
 
 
+def update_matplotlib_log_level() -> None:
+    """Set the log level of matplotlib to the log level specified in the environment
+    variable 'LOG_LEVEL_LIBRARIES'."""
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+    logging.getLogger("matplotlib.backends.backend_pdf").setLevel(log_level)
+    logging.getLogger("matplotlib.colorbar").setLevel(log_level)
+    logging.getLogger("matplotlib.font_manager").setLevel(log_level)
+    logging.getLogger("matplotlib.ticker").setLevel(log_level)
+
+
 def set_log_and_warnings_filters() -> None:
     """
     Set log filters on the root logger, and duplicate filters for warnings.
@@ -186,9 +194,16 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     return sorted(dicts, key=lambda d: list(d.keys())[0])
 
 
-def write_global_config_value(name: Text, value: Any) -> None:
-    """Read global Rasa configuration."""
+def write_global_config_value(name: Text, value: Any) -> bool:
+    """Read global Rasa configuration.
 
+    Args:
+        name: Name of the configuration key
+        value: Value the configuration key should be set to
+
+    Returns:
+        `True` if the operation was successful.
+    """
     # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
     # in tests
     config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
@@ -197,11 +212,11 @@ def write_global_config_value(name: Text, value: Any) -> None:
 
         c = read_global_config(config_path)
         c[name] = value
-        rasa.core.utils.dump_obj_as_yaml_to_file(
-            rasa.constants.GLOBAL_USER_CONFIG_PATH, c
-        )
+        rasa.shared.utils.io.write_yaml(c, rasa.constants.GLOBAL_USER_CONFIG_PATH)
+        return True
     except Exception as e:
         logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
+        return False
 
 
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:

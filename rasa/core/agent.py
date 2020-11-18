@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 import uuid
 
@@ -21,12 +22,13 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
+from rasa.shared.exceptions import InvalidParameterException, RasaException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
     FailSafeTrackerStore,
@@ -127,21 +129,14 @@ def _load_and_set_updated_model(
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    try:
-        interpreter = _load_interpreter(agent, nlu_path)
-        domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+    interpreter = _load_interpreter(agent, nlu_path)
+    domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
 
-        agent.update_model(
-            domain, policy_ensemble, fingerprint, interpreter, model_directory
-        )
+    agent.update_model(
+        domain, policy_ensemble, fingerprint, interpreter, model_directory
+    )
 
-        logger.debug("Finished updating agent to new model.")
-    except Exception as e:  # skipcq: PYL-W0703
-        # TODO: this exception shouldn't be that broad, we need to be more specific
-        logger.exception(
-            f"Failed to update model. The previous model will stay loaded instead. "
-            f"Error: {e}"
-        )
+    logger.debug("Finished updating agent to new model.")
 
 
 async def _update_model_from_server(
@@ -152,25 +147,44 @@ async def _update_model_from_server(
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    model_directory_and_fingerprint = await _pull_model_and_fingerprint(
-        model_server, agent.fingerprint
-    )
-    if model_directory_and_fingerprint:
-        model_directory, new_model_fingerprint = model_directory_and_fingerprint
-        _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
-    else:
-        logger.debug(f"No new model found at URL {model_server.url}")
+    model_directory = tempfile.mkdtemp()
+    remove_dir = True
+
+    try:
+        new_fingerprint = await _pull_model_and_fingerprint(
+            model_server, agent.fingerprint, model_directory
+        )
+
+        if new_fingerprint:
+            _load_and_set_updated_model(agent, model_directory, new_fingerprint)
+            remove_dir = False
+        else:
+            logger.debug(f"No new model found at URL {model_server.url}")
+    except Exception:  # skipcq: PYL-W0703
+        # TODO: Make this exception more specific, possibly print different log
+        # for each one.
+        logger.exception(
+            "Failed to update model. The previous model will stay loaded instead."
+        )
+    finally:
+        if remove_dir:
+            shutil.rmtree(model_directory)
 
 
 async def _pull_model_and_fingerprint(
-    model_server: EndpointConfig, fingerprint: Optional[Text]
-) -> Optional[Tuple[Text, Text]]:
+    model_server: EndpointConfig, fingerprint: Optional[Text], model_directory: Text
+) -> Optional[Text]:
     """Queries the model server.
 
-    Returns the temporary model directory and value of the response's <ETag> header
-    which contains the model hash. Returns `None` if no new model is found.
-    """
+    Args:
+        model_server: Model server endpoint information.
+        fingerprint: Current model fingerprint.
+        model_directory: Directory where to download model to.
 
+    Returns:
+        Value of the response's <ETag> header which contains the model
+        hash. Returns `None` if no new model is found.
+    """
     headers = {"If-None-Match": fingerprint}
 
     logger.debug(f"Requesting model from server {model_server.url}...")
@@ -210,16 +224,13 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                model_directory = tempfile.mkdtemp()
                 rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )
 
-                # get the new fingerprint
-                new_fingerprint = resp.headers.get("ETag")
-                # return new tmp model directory and new fingerprint
-                return model_directory, new_fingerprint
+                # return the new fingerprint
+                return resp.headers.get("ETag")
 
         except aiohttp.ClientError as e:
             logger.debug(
@@ -319,10 +330,10 @@ async def load_agent(
 
 class Agent:
     """The Agent class provides a convenient interface for the most important
-     Rasa functionality.
+    Rasa functionality.
 
-     This includes training, handling messages, loading a dialogue model,
-     getting the next action, and handling a channel."""
+    This includes training, handling messages, loading a dialogue model,
+    getting the next action, and handling a channel."""
 
     def __init__(
         self,
@@ -391,7 +402,7 @@ class Agent:
     @classmethod
     def load(
         cls,
-        model_path: Text,
+        model_path: Union[Text, Path],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
@@ -408,14 +419,16 @@ class Agent:
             if not os.path.exists(model_path):
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
             if os.path.isfile(model_path):
-                model_path = get_model(model_path)
-        except ModelNotFound:
-            raise ValueError(
-                "You are trying to load a MODEL from '{}', which is not possible. \n"
-                "The model path should be a 'tar.gz' file or a directory "
-                "containing the various model files in the sub-directories 'core' "
-                "and 'nlu'. \n\nIf you want to load training data instead of "
-                "a model, use `agent.load_data(...)` instead.".format(model_path)
+                model_path = get_model(str(model_path))
+        except ModelNotFound as e:
+            raise ModelNotFound(
+                f"You are trying to load a model from '{model_path}', "
+                f"which is not possible. \n"
+                f"The model path should be a 'tar.gz' file or a directory "
+                f"containing the various model files in the sub-directories "
+                f"'core' and 'nlu'. \n\n"
+                f"If you want to load training data instead of a model, use "
+                f"`agent.load_data(...)` instead. {e}"
             )
 
         core_model, nlu_model = get_model_subdirectories(model_path)
@@ -448,8 +461,7 @@ class Agent:
         )
 
     def is_core_ready(self) -> bool:
-        """Check if all necessary components and policies are ready to use the agent.
-        """
+        """Check if all necessary components and policies are ready to use the agent."""
         return self.is_ready() and self.policy_ensemble is not None
 
     def is_ready(self) -> bool:
@@ -499,13 +511,6 @@ class Agent:
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
 
-        if not isinstance(message, UserMessage):
-            # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
-                "Passing a text to `agent.handle_message(...)` is "
-                "not supported anymore. Rather use `agent.handle_text(...)`."
-            )
-
         def noop(_: Any) -> None:
             logger.info("Ignoring message as there is no agent to handle it.")
 
@@ -532,10 +537,10 @@ class Agent:
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs: Any,
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
-
         processor = self.create_processor(message_preprocessor)
+
         return await processor.log_message(message)
 
     async def execute_action(
@@ -543,14 +548,16 @@ class Agent:
         sender_id: Text,
         action: Text,
         output_channel: OutputChannel,
-        policy: Text,
-        confidence: float,
+        policy: Optional[Text],
+        confidence: Optional[float],
     ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
-
         processor = self.create_processor()
+        prediction = PolicyPrediction.for_action_name(
+            self.domain, action, policy, confidence or 0.0
+        )
         return await processor.execute_action(
-            sender_id, action, output_channel, self.nlg, policy, confidence
+            sender_id, action, output_channel, self.nlg, prediction
         )
 
     async def trigger_intent(
@@ -708,16 +715,6 @@ class Agent:
         if not self.is_core_ready():
             raise AgentNotReady("Can't train without a policy ensemble.")
 
-        if isinstance(training_trackers, str):
-            # the user most likely passed in a file name to load training
-            # data from
-            raise Exception(
-                "Passing a file name to `agent.train(...)` is "
-                "not supported anymore. Rather load the data with "
-                "`data = agent.load_data(file_name)` and pass it "
-                "to `agent.train(data)`."
-            )
-
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train(
@@ -785,10 +782,9 @@ class Agent:
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
+        """Visualize the loaded training data from the resource."""
         from rasa.shared.core.training_data.visualization import visualize_stories
         from rasa.shared.core.training_data import loading
-
-        """Visualize the loaded training data from the resource."""
 
         # if the user doesn't provide a max history, we will use the
         # largest value from any policy
@@ -840,10 +836,10 @@ class Agent:
         elif domain is None:
             return Domain.empty()
         else:
-            raise ValueError(
-                "Invalid param `domain`. Expected a path to a domain "
-                "specification or a domain instance. But got "
-                "type '{}' with value '{}'".format(type(domain), domain)
+            raise InvalidParameterException(
+                f"Invalid param `domain`. Expected a path to a domain "
+                f"specification or a domain instance. But got "
+                f"type '{type(domain)}' with value '{domain}'."
             )
 
     @staticmethod
@@ -877,10 +873,10 @@ class Agent:
             return policies
         else:
             passed_type = type(policies).__name__
-            raise ValueError(
-                "Invalid param `policies`. Passed object is "
-                "of type '{}', but should be policy, an array of "
-                "policies, or a policy ensemble.".format(passed_type)
+            raise InvalidParameterException(
+                f"Invalid param `policies`. Passed object is "
+                f"of type '{passed_type}', but should be policy, an array of "
+                f"policies, or a policy ensemble."
             )
 
     @staticmethod

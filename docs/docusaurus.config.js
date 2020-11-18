@@ -16,27 +16,26 @@ const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
 let existingVersions = [];
 try { existingVersions = require('./versions.json'); } catch (e) { console.info('no versions.json file found') }
-const currentVersionPath = isDev || isPreview ? '/' : `${existingVersions[0]}/`;
 
 const routeBasePath = '/';
-const existingVersionRE = new RegExp(
-  `${routeBasePath}/(${existingVersions.reduce((s, v, i) => `${s}${i > 0 ? '|' : ''}${v}`, '')}).?`,
-);
-const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
 const versionLabels = {
   current: 'Master/Unreleased'
 };
 
 module.exports = {
-  onBrokenLinks: 'warn',
   customFields: {
+    // FIXME: this is a simplistic solution to https://github.com/RasaHQ/rasa/issues/7011
+    // either (A): create a more sophisticated solution to link the precise branch and doc to be edited, according to branch settings
+    // or (B): create a README document (or a section in the main README) which explains how to contribute docs fixes, and link all edit links to this
+    rootEditUrl: 'https://github.com/rasahq/rasa/',
     productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
     legacyVersions: [{
       label: 'Legacy 1.x',
       href: 'https://legacy-docs-v1.rasa.com',
-      target: '_self',
+      target: '_blank',
+      rel: 'nofollow noopener noreferrer',
     }],
     redocPages: [
       {
@@ -61,17 +60,20 @@ module.exports = {
   themeConfig: {
     announcementBar: {
       id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for v2.0.0-rc1 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the stable 1.x series can be found here.</a>',
+      content: 'These docs are for version 2.0 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the 1.x series can be found here.</a>',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      disabled: !isDev, // FIXME: remove this when our index is good
-      apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
-      indexName: 'docsearch', // FIXME: replace with values from our own index
+      // this is configured via DocSearch here:
+      // https://github.com/algolia/docsearch-configs/blob/master/configs/rasa.json
+      apiKey: '1f9e0efb89e98543f6613a60f847b176',
+      indexName: 'rasa',
       inputSelector: '.search-bar',
-      // searchParameters: {}, // Optional (if provided by Algolia)
+      searchParameters: {
+        'facetFilters': ["tags:rasa"]
+      }
     },
     navbar: {
       hideOnScroll: false,
@@ -83,12 +85,13 @@ module.exports = {
           position: 'left',
         },
         {
+          target: '_self',
           label: 'Rasa X',
           position: 'left',
           href: `${SWAP_URL}/docs/rasa-x/`,
-          target: '_self',
         },
         {
+          target: '_self',
           label: 'Rasa Action Server',
           position: 'left',
           href: 'https://rasa.com/docs/action-server',
@@ -159,16 +162,22 @@ module.exports = {
         ...themeRemarkPlugins,
         remarkProgramOutput,
       ],
-      lastVersion: isDev || isPreview || existingVersions.length < 1 ? 'current' : undefined, // aligns / to last versioned folder in production
-      // includeCurrentVersion: true, // default is true
+      lastVersion: existingVersions[0] || 'current', // aligns / to last versioned folder in production
       versions: {
         current: {
           label: versionLabels['current'],
-          path: isDev || isPreview || existingVersions.length < 1 ? '' : 'next',
+          path: existingVersions.length < 1 ? '' : 'next',
         },
       },
     }],
     ['@docusaurus/plugin-content-pages', {}],
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        sizes: [160, 226, 320, 452, 640, 906, 1280, 1810, 2560],
+        quality: 70,
+      },
+    ],
     ['@docusaurus/plugin-sitemap',
       {
         cacheTime: 600 * 1000, // 600 sec - cache purge period

@@ -22,3 +22,16 @@
   position: relative;
   padding: 1rem;
 }
+
+.playgroundEditor {
+  flex: 1;
+  overflow-y: scroll;
+}
+
+.playgroundEditorAssistantBuilder {
+  border-radius: 0 0 8px 0;
+}
+
+.playgroundEditorAssistantBuilder pre, .playgroundEditorAssistantBuilder textarea {
+  padding: 28px 24px !important;
+}

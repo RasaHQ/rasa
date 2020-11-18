@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -15,7 +16,13 @@ from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.lock import TicketLock
-from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisLockStore
+from rasa.core.lock_store import (
+    InMemoryLockStore,
+    LockError,
+    LockStore,
+    RedisLockStore,
+    DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+)
 
 
 class FakeRedisLockStore(RedisLockStore):
@@ -30,6 +37,8 @@ class FakeRedisLockStore(RedisLockStore):
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
+
+        self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
 
 
 def test_issue_ticket():
@@ -150,10 +159,14 @@ async def test_multiple_conversation_ids(default_agent: Agent):
     assert processed_ids == conversation_ids
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="This test sometimes fails on Windows. We want to investigate it further",
+)
 async def test_message_order(tmp_path: Path, default_agent: Agent):
     start_time = time.time()
     n_messages = 10
-    lock_wait = 0.1
+    lock_wait = 0.5
 
     # let's write the incoming order of messages and the order of results to temp files
     results_file = tmp_path / "results_file"
@@ -220,10 +233,14 @@ async def test_message_order(tmp_path: Path, default_agent: Agent):
         assert time.time() - start_time < time_limit
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="This test sometimes fails on Windows. We want to investigate it further",
+)
 async def test_lock_error(default_agent: Agent):
     lock_lifetime = 0.01
     wait_time_in_seconds = 0.01
-    holdup = 0.1
+    holdup = 0.5
 
     # Mock message handler again to add a wait time holding up the lock
     # after it's been acquired
@@ -269,6 +286,49 @@ async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
     import redis.exceptions
 
     lock_store = FakeRedisLockStore()
+    monkeypatch.setattr(
+        lock_store,
+        lock_store.get_or_create_lock.__name__,
+        Mock(side_effect=redis.exceptions.TimeoutError),
+    )
+
+    with pytest.raises(LockError):
+        async with lock_store.lock("some sender"):
+            pass
+
+
+async def test_redis_lock_store_with_invalid_prefix(monkeypatch: MonkeyPatch):
+    import redis.exceptions
+
+    lock_store = FakeRedisLockStore()
+
+    prefix = "!asdf234 34#"
+    lock_store._set_key_prefix(prefix)
+    assert lock_store._get_key_prefix() == DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+
+    monkeypatch.setattr(
+        lock_store,
+        lock_store.get_or_create_lock.__name__,
+        Mock(side_effect=redis.exceptions.TimeoutError),
+    )
+
+    with pytest.raises(LockError):
+        async with lock_store.lock("some sender"):
+            pass
+
+
+async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
+    import redis.exceptions
+
+    lock_store = FakeRedisLockStore()
+
+    prefix = "chatbot42"
+    lock_store._set_key_prefix(prefix)
+    assert (
+        lock_store._get_key_prefix()
+        == prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+    )
+
     monkeypatch.setattr(
         lock_store,
         lock_store.get_or_create_lock.__name__,

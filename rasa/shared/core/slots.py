@@ -3,10 +3,16 @@ import logging
 from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.shared.core.constants
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_SLOTS
 
 logger = logging.getLogger(__name__)
+
+
+class InvalidSlotTypeException(RasaException):
+    """Raised if a slot type is invalid."""
 
 
 class Slot:
@@ -18,25 +24,42 @@ class Slot:
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
+        influence_conversation: bool = True,
     ) -> None:
+        """Create a Slot.
+
+        Args:
+            name: The name of the slot.
+            initial_value: The initial value of the slot.
+            value_reset_delay: After how many turns the slot should be reset to the
+                initial_value. This is behavior is currently not implemented.
+            auto_fill: `True` if the slot should be filled automatically by entities
+                with the same name.
+            influence_conversation: If `True` the slot will be featurized and hence
+                influence the predictions of the dialogue polices.
+        """
         self.name = name
         self.value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
         self.auto_fill = auto_fill
+        self.influence_conversation = influence_conversation
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
 
-        The dimensionality of the array returned by `as_feature` needs
-        to correspond to this value."""
-        return 1
+        Returns:
+            The number of features. `0` if the slot is unfeaturized. The dimensionality
+            of the array returned by `as_feature` needs to correspond to this value.
+        """
+        if not self.influence_conversation:
+            return 0
 
-    def add_default_value(self) -> None:
-        """Add a default value to a slots user-defined values"""
-        raise NotImplementedError(
-            "Each slot type needs to specify its own" "default value to add, if any"
-        )
+        return self._feature_dimensionality()
+
+    def _feature_dimensionality(self) -> int:
+        """See the docstring for `feature_dimensionality`."""
+        return 1
 
     def has_features(self) -> bool:
         """Indicate if the slot creates any features."""
@@ -50,6 +73,12 @@ class Slot:
         return self._value_reset_delay
 
     def as_feature(self) -> List[float]:
+        if not self.influence_conversation:
+            return []
+
+        return self._as_feature()
+
+    def _as_feature(self) -> List[float]:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
             "value can be converted to a feature. Slot "
@@ -80,10 +109,11 @@ class Slot:
         try:
             return rasa.shared.utils.common.class_from_module_path(type_name)
         except (ImportError, AttributeError):
-            raise ValueError(
-                "Failed to find slot type, '{}' is neither a known type nor "
-                "user-defined. If you are creating your own slot type, make "
-                "sure its module path is correct.".format(type_name)
+            raise InvalidSlotTypeException(
+                f"Failed to find slot type, '{type_name}' is neither a known type nor "
+                f"user-defined. If you are creating your own slot type, make "
+                f"sure its module path is correct. "
+                f"You can find all build in types at {DOCS_URL_SLOTS}"
             )
 
     def persistence_info(self) -> Dict[str, Any]:
@@ -91,6 +121,7 @@ class Slot:
             "type": rasa.shared.utils.common.module_path_from_instance(self),
             "initial_value": self.initial_value,
             "auto_fill": self.auto_fill,
+            "influence_conversation": self.influence_conversation,
         }
 
 
@@ -105,8 +136,11 @@ class FloatSlot(Slot):
         auto_fill: bool = True,
         max_value: float = 1.0,
         min_value: float = 0.0,
+        influence_conversation: bool = True,
     ) -> None:
-        super().__init__(name, initial_value, value_reset_delay, auto_fill)
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+        )
         self.max_value = max_value
         self.min_value = min_value
 
@@ -125,7 +159,7 @@ class FloatSlot(Slot):
                 f"({self.min_value}) and max ({self.max_value}) values."
             )
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         try:
             capped_value = max(self.min_value, min(self.max_value, float(self.value)))
             if abs(self.max_value - self.min_value) > 0:
@@ -146,7 +180,7 @@ class FloatSlot(Slot):
 class BooleanSlot(Slot):
     type_name = "bool"
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         try:
             if self.value is not None:
                 return [1.0, float(bool_from_any(self.value))]
@@ -156,7 +190,7 @@ class BooleanSlot(Slot):
             # we couldn't convert the value to float - using default value
             return [0.0, 0.0]
 
-    def feature_dimensionality(self) -> int:
+    def _feature_dimensionality(self) -> int:
         return len(self.as_feature())
 
 
@@ -183,14 +217,14 @@ def bool_from_any(x: Any) -> bool:
 class TextSlot(Slot):
     type_name = "text"
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         return [1.0 if self.value is not None else 0.0]
 
 
 class ListSlot(Slot):
     type_name = "list"
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         try:
             if self.value is not None and len(self.value) > 0:
                 return [1.0]
@@ -204,10 +238,38 @@ class ListSlot(Slot):
 class UnfeaturizedSlot(Slot):
     type_name = "unfeaturized"
 
-    def as_feature(self) -> List[float]:
+    def __init__(
+        self,
+        name: Text,
+        initial_value: Any = None,
+        value_reset_delay: Optional[int] = None,
+        auto_fill: bool = True,
+        influence_conversation: bool = False,
+    ) -> None:
+        if influence_conversation:
+            raise ValueError(
+                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
+                f"Please use a different slot type for slot '{name}' instead. See the "
+                f"documentation for more information: {DOCS_URL_SLOTS}"
+            )
+
+        rasa.shared.utils.io.raise_warning(
+            f"{UnfeaturizedSlot.__name__} is deprecated "
+            f"and will be removed in Rasa Open Source "
+            f"3.0. Please change the type and configure the 'influence_conversation' "
+            f"flag for slot '{name}' instead.",
+            docs=DOCS_URL_SLOTS,
+            category=FutureWarning,
+        )
+
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+        )
+
+    def _as_feature(self) -> List[float]:
         return []
 
-    def feature_dimensionality(self) -> int:
+    def _feature_dimensionality(self) -> int:
         return 0
 
 
@@ -221,8 +283,11 @@ class CategoricalSlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
+        influence_conversation: bool = True,
     ) -> None:
-        super().__init__(name, initial_value, value_reset_delay, auto_fill)
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+        )
         self.values = [str(v).lower() for v in values] if values else []
 
     def add_default_value(self) -> None:
@@ -237,7 +302,7 @@ class CategoricalSlot(Slot):
         d["values"] = self.values
         return d
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
 
         try:
@@ -270,22 +335,33 @@ class CategoricalSlot(Slot):
             return r
         return r
 
-    def feature_dimensionality(self) -> int:
+    def _feature_dimensionality(self) -> int:
         return len(self.values)
 
 
-class DataSlot(Slot):
+class AnySlot(Slot):
+    """Slot which can be used to store any value. Users need to create a subclass of
+    `Slot` in case the information is supposed to get featurized."""
+
+    type_name = "any"
+
     def __init__(
         self,
         name: Text,
         initial_value: Any = None,
-        value_reset_delay: Optional[int] = 1,
+        value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
-    ):
-        super().__init__(name, initial_value, value_reset_delay, auto_fill)
+        influence_conversation: bool = False,
+    ) -> None:
+        if influence_conversation:
+            raise ValueError(
+                f"An {AnySlot.__name__} cannot be featurized. "
+                f"Please use a different slot type for slot '{name}' instead. If you "
+                f"need to featurize a data type which is not supported out of the box, "
+                f"implement a custom slot type by subclassing '{Slot.__name__}'. "
+                f"See the documentation for more information: {DOCS_URL_SLOTS}"
+            )
 
-    def as_feature(self) -> List[float]:
-        raise NotImplementedError(
-            "Each slot type needs to specify how its "
-            "value can be converted to a feature."
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )

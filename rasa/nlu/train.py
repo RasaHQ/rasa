@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 class TrainingException(Exception):
     """Exception wrapping lower level exceptions that may happen while training
 
-      Attributes:
-          failed_target_project -- name of the failed project
-          message -- explanation of why the request is invalid
-      """
+    Attributes:
+        failed_target_project -- name of the failed project
+        message -- explanation of why the request is invalid
+    """
 
     def __init__(
         self,
@@ -121,11 +121,3 @@ async def train(
         persisted_path = None
 
     return trainer, interpreter, persisted_path
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.nlu.train` directly is no longer supported. Please use "
-        "`rasa train` to train a combined Core and NLU model or `rasa train nlu` "
-        "to train an NLU model."
-    )

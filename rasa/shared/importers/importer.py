@@ -13,7 +13,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import INTENT_NAME, TEXT
+from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
@@ -250,12 +250,14 @@ class CombinedDataImporter(TrainingDataImporter):
     def __init__(self, importers: List[TrainingDataImporter]):
         self._importers = importers
 
+    @rasa.shared.utils.common.cached_method
     async def get_config(self) -> Dict:
         configs = [importer.get_config() for importer in self._importers]
         configs = await asyncio.gather(*configs)
 
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
+    @rasa.shared.utils.common.cached_method
     async def get_domain(self) -> Domain:
         domains = [importer.get_domain() for importer in self._importers]
         domains = await asyncio.gather(*domains)
@@ -264,6 +266,7 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
+    @rasa.shared.utils.common.cached_method
     async def get_stories(
         self,
         template_variables: Optional[Dict] = None,
@@ -280,6 +283,7 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
+    @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
         nlu_data = await asyncio.gather(*nlu_data)
@@ -303,6 +307,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
     async def get_config(self) -> Dict:
         return await self._importer.get_config()
 
+    @rasa.shared.utils.common.cached_method
     async def get_domain(self) -> Domain:
         """Merge existing domain with properties of retrieval intents in NLU data."""
 
@@ -377,7 +382,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             RetrievalModelsDataImporter._construct_retrieval_action_names(
                 retrieval_intents
             ),
-            [],
+            {},
         )
 
     async def get_stories(
@@ -391,14 +396,17 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             template_variables, use_e2e, exclusion_percentage
         )
 
+    @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Update NLU data with response templates defined in the domain"""
+        """Update NLU data with response templates for retrieval intents defined in the domain"""
 
         existing_nlu_data = await self._importer.get_nlu_data(language)
         existing_domain = await self._importer.get_domain()
 
         return existing_nlu_data.merge(
-            self._get_nlu_data_with_responses(existing_domain.templates)
+            self._get_nlu_data_with_responses(
+                existing_domain.retrieval_intent_templates
+            )
         )
 
     @staticmethod
@@ -425,10 +433,9 @@ class E2EImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter) -> None:
-
         self.importer = importer
-        self._cached_stories: Optional[StoryGraph] = None
 
+    @rasa.shared.utils.common.cached_method
     async def get_domain(self) -> Domain:
         original, e2e_domain = await asyncio.gather(
             self.importer.get_domain(), self._get_domain_with_e2e_actions()
@@ -436,7 +443,6 @@ class E2EImporter(TrainingDataImporter):
         return original.merge(e2e_domain)
 
     async def _get_domain_with_e2e_actions(self) -> Domain:
-        from rasa.shared.core.events import ActionExecuted
 
         stories = await self.get_stories()
 
@@ -453,7 +459,7 @@ class E2EImporter(TrainingDataImporter):
         additional_e2e_action_names = list(additional_e2e_action_names)
 
         return Domain(
-            [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
+            [], [], [], {}, action_names=additional_e2e_action_names, forms={}
         )
 
     async def get_stories(
@@ -463,16 +469,14 @@ class E2EImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        if not self._cached_stories:
-            # Simple cache to avoid loading all of this multiple times
-            self._cached_stories = await self.importer.get_stories(
-                template_variables, use_e2e, exclusion_percentage
-            )
-        return self._cached_stories
+        return await self.importer.get_stories(
+            template_variables, use_e2e, exclusion_percentage
+        )
 
     async def get_config(self) -> Dict:
         return await self.importer.get_config()
 
+    @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         training_datasets = [_additional_training_data_from_default_actions()]
 
@@ -528,18 +532,23 @@ def _unique_events_from_stories(
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
-    return Message(data={TEXT: event.text, INTENT_NAME: event.intent_name})
+    # sub state correctly encodes intent vs text
+    data = event.as_sub_state()
+    # sub state stores entities differently
+    if data.get(ENTITIES) and event.entities:
+        data[ENTITIES] = event.entities
+
+    return Message(data=data)
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message.build_from_action(
-        action_name=event.action_name, action_text=event.action_text or ""
-    )
+    # sub state correctly encodes action_name vs action_text
+    return Message(data=event.as_sub_state())
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:
     additional_messages_from_default_actions = [
-        Message.build_from_action(action_name=action_name)
+        Message(data={ACTION_NAME: action_name})
         for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     ]
 

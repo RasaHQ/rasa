@@ -6,9 +6,12 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, NamedTuple, Union
 
 import rasa.core
+import rasa.core.training.training
+from rasa.core.constants import FALLBACK_POLICY_PRIORITY
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -27,22 +30,17 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.shared.core.events import (
-    SlotSet,
-    ActionExecuted,
-    ActionExecutionRejected,
-    Event,
-)
+from rasa.shared.core.events import ActionExecutionRejected, ActionExecuted
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.policies.policy import Policy, SupportedData
+from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
-from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -51,15 +49,14 @@ class PolicyEnsemble:
     versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
     def __init__(
-        self, policies: List[Policy], action_fingerprints: Optional[Dict] = None
+        self,
+        policies: List[Policy],
+        action_fingerprints: Optional[Dict[Any, Dict[Text, List]]] = None,
     ) -> None:
         self.policies = policies
         self.date_trained = None
 
-        if action_fingerprints:
-            self.action_fingerprints = action_fingerprints
-        else:
-            self.action_fingerprints = {}
+        self.action_fingerprints = action_fingerprints or []
 
         self._check_priorities()
         self._check_for_important_policies()
@@ -75,22 +72,6 @@ class PolicyEnsemble:
                 f"'{USER_INTENT_RESTART} and {USER_INTENT_BACK} will not trigger "
                 f"actions '{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'."
             )
-
-    @staticmethod
-    def _training_events_from_trackers(
-        training_trackers: List[DialogueStateTracker],
-    ) -> Dict[Text, Set[Event]]:
-        events_metadata = defaultdict(set)
-
-        for t in training_trackers:
-            tracker = t.init_copy()
-            for event in t.events:
-                tracker.update(event)
-                if not isinstance(event, ActionExecuted):
-                    action_name = tracker.latest_action_name
-                    events_metadata[action_name].add(event)
-
-        return events_metadata
 
     @staticmethod
     def check_domain_ensemble_compatibility(
@@ -193,7 +174,7 @@ class PolicyEnsemble:
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -209,8 +190,9 @@ class PolicyEnsemble:
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
-            training_events = self._training_events_from_trackers(training_trackers)
-            self.action_fingerprints = self._create_action_fingerprints(training_events)
+            self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
+                training_trackers, domain
+            )
         else:
             logger.info("Skipped training, because there are no training samples.")
 
@@ -222,7 +204,7 @@ class PolicyEnsemble:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> PolicyPrediction:
         raise NotImplementedError
 
     def _max_histories(self) -> List[Optional[int]]:
@@ -236,30 +218,13 @@ class PolicyEnsemble:
                 max_histories.append(None)
         return max_histories
 
-    @staticmethod
-    def _create_action_fingerprints(
-        training_events: Dict[Text, Set[Event]]
-    ) -> Optional[Dict[Any, Dict[Text, List]]]:
-        """Fingerprint each action using the events it created during train.
-
-        This allows us to emit warnings when the model is used
-        if an action does things it hasn't done during training."""
-        if not training_events:
-            return None
-
-        action_fingerprints = {}
-        for k, vs in training_events.items():
-            slots = list({v.key for v in vs if isinstance(v, SlotSet)})
-            action_fingerprints[k] = {"slots": slots}
-        return action_fingerprints
-
     def _add_package_version_info(self, metadata: Dict[Text, Any]) -> None:
         """Adds version info for self.versioned_packages to metadata."""
 
         for package_name in self.versioned_packages:
             try:
                 p = importlib.import_module(package_name)
-                v = p.__version__  # pytype: disable=attribute-error
+                v = p.__version__
                 metadata[package_name] = v
             except ImportError:
                 pass
@@ -380,7 +345,6 @@ class PolicyEnsemble:
         parsed_policies = []
 
         for policy in policies:
-            policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
                     policy
@@ -401,6 +365,7 @@ class PolicyEnsemble:
                 # override policy's featurizer with real featurizer class
                 policy["featurizer"] = featurizer_func(**featurizer_config)
 
+            policy_name = policy.pop("name")
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
                 try:
@@ -410,13 +375,12 @@ class PolicyEnsemble:
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
-                    "Module for policy '{}' could not "
-                    "be loaded. Please make sure the "
-                    "name is a valid policy."
-                    "".format(policy_name)
+                    f"Module for policy '{policy_name}' could not "
+                    f"be loaded. Please make sure the "
+                    f"name is a valid policy."
                 )
 
-        cls._assert_rule_policy_not_used_with_other_rule_like_policy(parsed_policies)
+        cls._check_if_rule_policy_used_with_rule_like_policies(parsed_policies)
 
         return parsed_policies
 
@@ -424,7 +388,11 @@ class PolicyEnsemble:
     def get_featurizer_from_dict(cls, policy) -> Tuple[Any, Any]:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
-            raise InvalidPolicyConfig("policy can have only 1 featurizer")
+            raise InvalidPolicyConfig(
+                f"Every policy can only have 1 featurizer "
+                f"but '{policy.get('name')}' "
+                f"uses {len(policy['featurizer'])} featurizers."
+            )
         featurizer_config = policy["featurizer"][0]
         featurizer_name = featurizer_config.pop("name")
         featurizer_func = registry.featurizer_from_module_path(featurizer_name)
@@ -435,7 +403,11 @@ class PolicyEnsemble:
     def get_state_featurizer_from_dict(cls, featurizer_config) -> Tuple[Any, Any]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
-            raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
+            raise InvalidPolicyConfig(
+                f"Every featurizer can only have 1 state "
+                f"featurizer but one of the featurizers uses "
+                f"{len(featurizer_config['state_featurizer'])}."
+            )
         state_featurizer_config = featurizer_config["state_featurizer"][0]
         state_featurizer_name = state_featurizer_config.pop("name")
         state_featurizer_func = registry.state_featurizer_from_module_path(
@@ -445,7 +417,7 @@ class PolicyEnsemble:
         return state_featurizer_func, state_featurizer_config
 
     @staticmethod
-    def _assert_rule_policy_not_used_with_other_rule_like_policy(
+    def _check_if_rule_policy_used_with_rule_like_policies(
         policies: List[Policy],
     ) -> None:
         if not any(isinstance(policy, RulePolicy) for policy in policies):
@@ -466,32 +438,48 @@ class PolicyEnsemble:
             isinstance(policy, policies_not_be_used_with_rule_policy)
             for policy in policies
         ):
-            raise InvalidPolicyConfig(
-                f"It is not possible to use the RulePolicy with "
+            rasa.shared.utils.io.raise_warning(
+                f"It is not recommended to use the '{RulePolicy.__name__}' with "
                 f"other policies which implement rule-like "
-                f"behavior. Either re-implement the desired "
-                f"behavior as rules or remove the RulePolicy from"
-                f"your policy configuration. Please see the Rasa Open Source 2.0 "
-                f"migration guide ({DOCS_URL_MIGRATION_GUIDE}) for more information."
+                f"behavior. It is highly recommended to migrate all deprecated "
+                f"policies to use the '{RulePolicy.__name__}'. Note that the "
+                f"'{RulePolicy.__name__}' will supersede the predictions of the "
+                f"deprecated policies if the confidence levels of the predictions are "
+                f"equal.",
+                docs=DOCS_URL_MIGRATION_GUIDE,
             )
 
 
-class Prediction(NamedTuple):
-    """Stores the probabilities and the priority of the prediction."""
-
-    probabilities: List[float]
-    priority: int
-
-
 class SimplePolicyEnsemble(PolicyEnsemble):
+    """Default implementation of a `Policy` ensemble."""
+
     @staticmethod
-    def is_not_memo_policy(
-        policy_name: Text, max_confidence: Optional[float] = None
+    def is_not_in_training_data(
+        policy_name: Optional[Text], max_confidence: Optional[float] = None
     ) -> bool:
-        is_memo = policy_name.endswith("_" + MemoizationPolicy.__name__)
-        is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
+        """Checks if the prediction is by a policy which memoized the training data.
+
+        Args:
+            policy_name: The name of the policy.
+            max_confidence: The max confidence of the policy's prediction.
+
+        Returns: `True` if it's a `MemoizationPolicy`, `False` otherwise.
+        """
+        if not policy_name:
+            return True
+
+        memorizing_policies = [
+            RulePolicy.__name__,
+            MemoizationPolicy.__name__,
+            AugmentedMemoizationPolicy.__name__,
+        ]
+        is_memorized = any(
+            policy_name.endswith(f"_{memoizing_policy}")
+            for memoizing_policy in memorizing_policies
+        )
+
         # also check if confidence is 0, than it cannot be count as prediction
-        return not (is_memo or is_augmented) or max_confidence == 0.0
+        return not is_memorized or max_confidence == 0.0
 
     @staticmethod
     def _is_not_mapping_policy(
@@ -510,8 +498,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return policy_name.endswith("_" + FormPolicy.__name__)
 
     def _pick_best_policy(
-        self, predictions: Dict[Text, Prediction]
-    ) -> Tuple[List[float], Optional[Text]]:
+        self, predictions: Dict[Text, PolicyPrediction]
+    ) -> PolicyPrediction:
         """Picks the best policy prediction based on probabilities and policy priority.
 
         Args:
@@ -519,13 +507,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                          and predictions as values
 
         Returns:
-            best_probabilities: the list of probabilities for the next actions
-            best_policy_name: the name of the picked policy
+            The best prediction.
         """
-
         best_confidence = (-1, -1)
         best_policy_name = None
-
         # form and mapping policies are special:
         # form should be above fallback
         # mapping should be below fallback
@@ -534,9 +519,19 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         form_confidence = None
         form_policy_name = None
+        # End-to-end predictions overrule all other predictions.
+        use_only_end_to_end = any(
+            prediction.is_end_to_end_prediction for prediction in predictions.values()
+        )
+        policy_events = []
 
         for policy_name, prediction in predictions.items():
-            confidence = (max(prediction.probabilities), prediction.priority)
+            policy_events += prediction.events
+
+            if prediction.is_end_to_end_prediction != use_only_end_to_end:
+                continue
+
+            confidence = (prediction.max_confidence, prediction.policy_priority)
             if self._is_form_policy(policy_name):
                 # store form prediction separately
                 form_confidence = confidence
@@ -553,14 +548,24 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
 
-        return predictions[best_policy_name].probabilities, best_policy_name
+        best_prediction = predictions[best_policy_name]
+
+        policy_events += best_prediction.optional_events
+
+        return PolicyPrediction(
+            best_prediction.probabilities,
+            best_policy_name,
+            best_prediction.policy_priority,
+            policy_events,
+            is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
+        )
 
     def _best_policy_prediction(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> PolicyPrediction:
         """Finds the best policy prediction.
 
         Args:
@@ -570,17 +575,24 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 additional features.
 
         Returns:
-            probabilities: the list of probabilities for the next actions
-            policy_name: the name of the picked policy
+            The winning policy prediction.
         """
-
         # find rejected action before running the policies
         # because some of them might add events
         rejected_action_name = None
+        last_action_event = next(
+            (
+                event
+                for event in reversed(tracker.events)
+                if isinstance(event, (ActionExecutionRejected, ActionExecuted))
+            ),
+            None,
+        )
+
         if len(tracker.events) > 0 and isinstance(
-            tracker.events[-1], ActionExecutionRejected
+            last_action_event, ActionExecutionRejected
         ):
-            rejected_action_name = tracker.events[-1].action_name
+            rejected_action_name = last_action_event.action_name
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": self._get_prediction(
@@ -607,16 +619,17 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Prediction:
+    ) -> PolicyPrediction:
         number_of_arguments_in_rasa_1_0 = 2
         arguments = rasa.shared.utils.common.arguments_of(
             policy.predict_action_probabilities
         )
+
         if (
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments
         ):
-            probabilities = policy.predict_action_probabilities(
+            prediction = policy.predict_action_probabilities(
                 tracker, domain, interpreter
             )
         else:
@@ -627,50 +640,61 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "adapt your custom `Policy` implementation.",
                 category=DeprecationWarning,
             )
-            probabilities = policy.predict_action_probabilities(
+            prediction = policy.predict_action_probabilities(
                 tracker, domain, RegexInterpreter()
             )
 
-        return Prediction(probabilities, policy.priority)
+        if isinstance(prediction, list):
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The function `predict_action_probabilities` of "
+                f"the `{Policy.__name__}` interface was changed to return "
+                f"a `{PolicyPrediction.__name__}` object. Please make sure to "
+                f"adapt your custom `{Policy.__name__}` implementation. Support for "
+                f"returning a list of floats will be removed in Rasa Open Source 3.0.0"
+            )
+            prediction = PolicyPrediction(
+                prediction, policy.__class__.__name__, policy_priority=policy.priority
+            )
+
+        return prediction
 
     def _fallback_after_listen(
-        self, domain: Domain, probabilities: List[float], policy_name: Text
-    ) -> Tuple[List[float], Text]:
+        self, domain: Domain, prediction: PolicyPrediction
+    ) -> PolicyPrediction:
         """Triggers fallback if `action_listen` is predicted after a user utterance.
 
         This is done on the condition that:
         - a fallback policy is present,
-        - there was just a user message and the predicted
-          action is action_listen by a policy
-          other than the MemoizationPolicy
+        - we received a user message and the predicted action is `action_listen`
+          by a policy other than the `MemoizationPolicy` or one of its subclasses.
 
         Args:
             domain: the :class:`rasa.shared.core.domain.Domain`
-            probabilities: the list of probabilities for the next actions
-            policy_name: the name of the picked policy
+            prediction: The winning prediction.
 
         Returns:
-            probabilities: the list of probabilities for the next actions
-            policy_name: the name of the picked policy
+            The prediction for the next action.
         """
-
         fallback_idx_policy = [
             (i, p) for i, p in enumerate(self.policies) if isinstance(p, FallbackPolicy)
         ]
 
-        if fallback_idx_policy:
-            fallback_idx, fallback_policy = fallback_idx_policy[0]
+        if not fallback_idx_policy:
+            return prediction
 
-            logger.debug(
-                f"Action 'action_listen' was predicted after "
-                f"a user message using {policy_name}. Predicting "
-                f"fallback action: {fallback_policy.fallback_action_name}"
-            )
+        fallback_idx, fallback_policy = fallback_idx_policy[0]
 
-            probabilities = fallback_policy.fallback_scores(domain)
-            policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
+        logger.debug(
+            f"Action '{ACTION_LISTEN_NAME}' was predicted after "
+            f"a user message using {prediction.policy_name}. Predicting "
+            f"fallback action: {fallback_policy.fallback_action_name}"
+        )
 
-        return probabilities, policy_name
+        return PolicyPrediction(
+            fallback_policy.fallback_scores(domain),
+            f"policy_{fallback_idx}_{type(fallback_policy).__name__}",
+            FALLBACK_POLICY_PRIORITY,
+        )
 
     def probabilities_using_best_policy(
         self,
@@ -678,7 +702,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Picks the best policy prediction based on probabilities and policy priority.
@@ -694,24 +718,21 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_probabilities: the list of probabilities for the next actions
             best_policy_name: the name of the picked policy
         """
-
-        probabilities, policy_name = self._best_policy_prediction(
-            tracker, domain, interpreter
-        )
+        winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and probabilities is not None
-            and probabilities.index(max(probabilities))
+            and winning_prediction.probabilities is not None
+            and winning_prediction.max_confidence_index
             == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_memo_policy(policy_name, max(probabilities))
-        ):
-            probabilities, policy_name = self._fallback_after_listen(
-                domain, probabilities, policy_name
+            and self.is_not_in_training_data(
+                winning_prediction.policy_name, winning_prediction.max_confidence
             )
+        ):
+            winning_prediction = self._fallback_after_listen(domain, winning_prediction)
 
-        logger.debug(f"Predicted next action using {policy_name}")
-        return probabilities, policy_name
+        logger.debug(f"Predicted next action using {winning_prediction.policy_name}.")
+        return winning_prediction
 
 
 def _check_policy_for_forms_available(
@@ -737,7 +758,7 @@ def _check_policy_for_forms_available(
         )
 
 
-class InvalidPolicyConfig(Exception):
+class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
 
     pass

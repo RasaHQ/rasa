@@ -27,7 +27,7 @@ ACTION_REVERT_FALLBACK_EVENTS_NAME = "action_revert_fallback_events"
 ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
 ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 ACTION_BACK_NAME = "action_back"
-ACTION_TWO_STAGE_FALLBACK_NAME = "two_stage_fallback"
+ACTION_TWO_STAGE_FALLBACK_NAME = "action_two_stage_fallback"
 RULE_SNIPPET_ACTION_NAME = "..."
 
 DEFAULT_ACTION_NAMES = [
@@ -51,9 +51,10 @@ SHOULD_NOT_BE_SET = "should_not_be_set"
 
 PREVIOUS_ACTION = "prev_action"
 ACTIVE_LOOP = "active_loop"
-LOOP_VALIDATE = "validate"
+LOOP_INTERRUPTED = "is_interrupted"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
+FOLLOWUP_ACTION = "followup_action"
 
 # start of special user message section
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
@@ -75,3 +76,5 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 # represent the origin of a `SubState`
 USER = "user"
 SLOTS = "slots"
+
+ENTITY_LABEL_SEPARATOR = "#"

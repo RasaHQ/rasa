@@ -10,7 +10,7 @@ from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
@@ -19,6 +19,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Restarted,
     Event,
+    ActionExecutionRejected,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -150,7 +151,8 @@ async def test_set_slot_and_deactivate():
         - type: from_text
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: text
+        influence_conversation: false
     """
     domain = Domain.from_yaml(domain)
 
@@ -262,6 +264,44 @@ async def test_action_rejection():
                 SlotSet("num_people", "hi"),
             ],
         ),
+        # Validate function decides that no more slots should be requested
+        (
+            [
+                {"event": "slot", "name": "num_people", "value": None},
+                {"event": "slot", "name": REQUESTED_SLOT, "value": None},
+            ],
+            [
+                SlotSet("num_people", None),
+                SlotSet(REQUESTED_SLOT, None),
+                SlotSet("num_tables", 5),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
+        # Validate function deactivates loop
+        (
+            [
+                {"event": "slot", "name": "num_people", "value": None},
+                {"event": "active_loop", "name": None},
+            ],
+            [
+                SlotSet("num_people", None),
+                ActiveLoop(None),
+                SlotSet("num_tables", 5),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
+        # User rejected manually
+        (
+            [{"event": "action_execution_rejected", "name": "my form"}],
+            [
+                ActionExecutionRejected("my form"),
+                SlotSet("num_tables", 5),
+                SlotSet("num_people", "hi"),
+                SlotSet(REQUESTED_SLOT, None),
+            ],
+        ),
     ],
 )
 async def test_validate_slots(
@@ -281,9 +321,9 @@ async def test_validate_slots(
     domain = f"""
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
       num_tables:
-        type: unfeaturized
+        type: any
     forms:
       {form_name}:
         {slot_name}:
@@ -310,6 +350,46 @@ async def test_validate_slots(
             domain,
         )
         assert events == expected_events
+
+
+async def test_no_slots_extracted_with_custom_slot_mappings():
+    form_name = "my form"
+    events = [
+        ActiveLoop(form_name),
+        SlotSet(REQUESTED_SLOT, "num_tables"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("off topic"),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
+
+    domain = f"""
+    slots:
+      num_tables:
+        type: any
+    forms:
+      {form_name}:
+        num_tables:
+        - type: from_entity
+          entity: num_tables
+    actions:
+    - validate_{form_name}
+    """
+    domain = Domain.from_yaml(domain)
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(action_server_url, payload={"events": []})
+
+        action_server = EndpointConfig(action_server_url)
+        action = FormAction(form_name, action_server)
+
+        with pytest.raises(ActionExecutionRejection):
+            await action.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.templates),
+                tracker,
+                domain,
+            )
 
 
 async def test_validate_slots_on_activation_with_other_action_after_user_utterance():
@@ -726,7 +806,9 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
                 }
             ],
             "some_intent",
-            {"some_slot": "some_value"},
+            # nothing should be extracted, because entity contain role and group
+            # but mapping expects them to be None
+            {},
         ),
     ],
 )
@@ -765,22 +847,6 @@ def test_extract_requested_slot_from_entity(
 
     slot_values = form.extract_requested_slot(tracker, domain)
     assert slot_values == expected_slot_values
-
-
-def test_invalid_slot_mapping():
-    form_name = "my_form"
-    form = FormAction(form_name, None)
-    slot_name = "test"
-    tracker = DialogueStateTracker.from_events(
-        "sender", [SlotSet(REQUESTED_SLOT, slot_name)]
-    )
-
-    domain = Domain.from_dict(
-        {"forms": {form_name: {slot_name: [{"type": "invalid"}]}}}
-    )
-
-    with pytest.raises(ValueError):
-        form.extract_requested_slot(tracker, domain)
 
 
 @pytest.mark.parametrize(
@@ -887,7 +953,8 @@ def test_invalid_slot_mapping():
             ],
             [{"entity": "some_entity", "value": "some_value"}],
             "some_intent",
-            {},
+            # other slot should be extracted because slot mapping is unique
+            {"some_other_slot": "some_value"},
         ),
         (
             [
@@ -907,6 +974,30 @@ def test_invalid_slot_mapping():
             ],
             [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
             "some_intent",
+            # other slot should be extracted because slot mapping is unique
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_other_entity",
+                }
+            ],
+            [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
+            "some_intent",
+            # other slot should not be extracted
+            # because even though slot mapping is unique it doesn't contain the role
+            {},
+        ),
+        (
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [{"entity": "some_entity", "value": "some_value"}],
+            "some_intent",
+            # other slot should not be extracted because slot mapping is not unique
             {},
         ),
     ],
@@ -994,12 +1085,9 @@ async def test_ask_for_slot(
     monkeypatch.setattr(action, action.action_from_name.__name__, action_from_name)
 
     form = FormAction("my_form", endpoint_config)
+    domain = Domain.from_dict(domain)
     await form._ask_for_slot(
-        Domain.from_dict(domain),
-        None,
-        None,
-        slot_name,
-        DialogueStateTracker.from_events("dasd", []),
+        domain, None, None, slot_name, DialogueStateTracker.from_events("dasd", [])
     )
 
-    action_from_name.assert_called_once_with(expected_action, endpoint_config, ANY)
+    action_from_name.assert_called_once_with(expected_action, domain, endpoint_config)

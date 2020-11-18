@@ -14,9 +14,11 @@ slots:
   vegetarian:
     type: bool
   requested_slot:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   search_results:
-    type: unfeaturized
+    type: any
+    influence_conversation: false
 
 responses:
   utter_ask_people:

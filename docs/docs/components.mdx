@@ -56,7 +56,7 @@ word vectors in your pipeline.
   ```
 
   For more information where to get that file from, head over to
-  [installing MITIE](./installation.mdx#install-mitie).
+  [installing MITIE](./installation.mdx#dependencies-for-mitie).
 
 
   You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
@@ -67,12 +67,12 @@ word vectors in your pipeline.
      This can take several hours/days depending on your dataset and your workstation.
      You'll need something like 128GB of RAM for wordrep to run – yes, that's a lot: try to extend your swap.
 
-  3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter in your
-     [configuration](./tuning-your-model.mdx#section-mitie-pipeline).
+  3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter to the `MitieNLP` component in your
+     [configuration](./model-configuration.mdx) file.
 
   For a full example of how to train MITIE word vectors, check out
-  [this blogpost](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html)
-  of creating a MITIE model from a Chinese Wikipedia dump.
+  [用Rasa NLU构建自己的中文NLU系统](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html),
+  a blogpost that goes through creating a MITIE model from a Chinese Wikipedia dump.
 
 
 
@@ -127,7 +127,7 @@ word vectors in your pipeline.
   ```
 
   For more information on how to download the spaCy models, head over to
-  [installing SpaCy](./installation.mdx#install-spacy).
+  [installing SpaCy](./installation.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
   load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
@@ -139,6 +139,10 @@ word vectors in your pipeline.
 
 ### HFTransformersNLP
 
+:::caution Deprecated
+The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+now implements its behavior.
+:::
 
 * **Short**
 
@@ -166,7 +170,7 @@ word vectors in your pipeline.
   component for downstream NLU models.
 
   :::note
-  To use `HFTransformersNLP` component, install Rasa Open Source with `pip install rasa[transformers]`.
+  To use `HFTransformersNLP` component, install Rasa Open Source with `pip3 install rasa[transformers]`.
 
   :::
 
@@ -178,8 +182,8 @@ word vectors in your pipeline.
   available language models.
   Additionally, you can also specify the architecture variation of the chosen language model by specifying the
   parameter `model_weights`.
-  The full list of supported architectures can be found
-  [here](https://huggingface.co/transformers/pretrained_models.html).
+  The full list of supported architectures can be found in the
+  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
   If left empty, it uses the default model architecture that original Transformers library loads (see table below).
 
   ```
@@ -187,7 +191,7 @@ word vectors in your pipeline.
   | Language Model | Parameter    | Default value for       |
   |                | "model_name" | "model_weights"         |
   +----------------+--------------+-------------------------+
-  | BERT           | bert         | bert-base-uncased       |
+  | BERT           | bert         | rasa/LaBSE              |
   +----------------+--------------+-------------------------+
   | GPT            | gpt          | openai-gpt              |
   +----------------+--------------+-------------------------+
@@ -209,7 +213,7 @@ word vectors in your pipeline.
       # Name of the language model to use
       model_name: "bert"
       # Pre-Trained weights to be loaded
-      model_weights: "bert-base-uncased"
+      model_weights: "rasa/LaBSE"
 
       # An optional path to a specific directory to download and cache the pre-trained model weights.
       # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
@@ -298,7 +302,7 @@ word vectors in your pipeline.
     language. It will only work for the Chinese language.
 
     :::note
-    To use `JiebaTokenizer` you need to install Jieba with `pip install jieba`.
+    To use `JiebaTokenizer` you need to install Jieba with `pip3 install jieba`.
 
     :::
 
@@ -406,6 +410,10 @@ word vectors in your pipeline.
 
   ### ConveRTTokenizer
 
+:::caution Deprecated
+The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
+now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
+:::
 
   * **Short**
 
@@ -436,7 +444,7 @@ word vectors in your pipeline.
     :::
 
     :::note
-    To use `ConveRTTokenizer`, install Rasa Open Source with `pip install rasa[convert]`.
+    To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
 
     :::
 
@@ -453,47 +461,59 @@ word vectors in your pipeline.
       "intent_split_symbol": "_"
       # Regular expression to detect tokens
       "token_pattern": None
+      # Remote URL/Local directory of model files(Required)
+      "model_url": None
     ```
+
+  :::note
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 
   ### LanguageModelTokenizer
 
+:::caution Deprecated
+The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
+:::
 
-  * **Short**
+* **Short**
 
-    Tokenizer from pre-trained language models
-
-
-
-  * **Outputs**
-
-    `tokens` for user messages, responses (if present), and intents (if specified)
+Tokenizer from pre-trained language models
 
 
 
-  * **Requires**
+* **Outputs**
 
-    [HFTransformersNLP](./components.mdx#hftransformersnlp)
-
-
-
-  * **Description**
-
-    Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
-    Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
+`tokens` for user messages, responses (if present), and intents (if specified)
 
 
 
-  * **Configuration**
+* **Requires**
 
-    ```yaml-rasa
-    pipeline:
-    - name: "LanguageModelTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-    ```
+[HFTransformersNLP](./components.mdx#hftransformersnlp)
+
+
+
+* **Description**
+
+Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
+Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
+
+
+
+* **Configuration**
+
+```yaml-rasa
+pipeline:
+- name: "LanguageModelTokenizer"
+  # Flag to check whether to split intents
+  "intent_tokenization_flag": False
+  # Symbol on which intent should be split
+  "intent_split_symbol": "_"
+```
 
 
 ## Featurizers
@@ -636,7 +656,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [ConveRTTokenizer](./components.mdx#converttokenizer)
+  `tokens`
 
 
 
@@ -659,7 +679,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   :::
 
   :::note
-  To use `ConveRTTokenizer`, install Rasa Open Source with `pip install rasa[convert]`.
+  To use `ConveRTFeaturizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
 
   :::
 
@@ -690,7 +710,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
+  `tokens`.
 
 
 
@@ -703,8 +723,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#lhftransformersnlp) component to compute vector
-  representations of input text.
+  Uses a pre-trained language model to compute vector representations of input text.
 
   :::note
   Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
@@ -716,14 +735,49 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
-  [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+  Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
+
+  You should specify what language model to load via the parameter `model_name`. See the below table for the
+  available language models.
+  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
+  parameter `model_weights`.
+  The full list of supported architectures can be found in the
+  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
+  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+
+  ```
+  +----------------+--------------+-------------------------+
+  | Language Model | Parameter    | Default value for       |
+  |                | "model_name" | "model_weights"         |
+  +----------------+--------------+-------------------------+
+  | BERT           | bert         | rasa/LaBSE              |
+  +----------------+--------------+-------------------------+
+  | GPT            | gpt          | openai-gpt              |
+  +----------------+--------------+-------------------------+
+  | GPT-2          | gpt2         | gpt2                    |
+  +----------------+--------------+-------------------------+
+  | XLNet          | xlnet        | xlnet-base-cased        |
+  +----------------+--------------+-------------------------+
+  | DistilBERT     | distilbert   | distilbert-base-uncased |
+  +----------------+--------------+-------------------------+
+  | RoBERTa        | roberta      | roberta-base            |
+  +----------------+--------------+-------------------------+
+  ```
+
+  The following configuration loads the language model BERT:
 
   ```yaml-rasa
   pipeline:
-  - name: "LanguageModelFeaturizer"
-  ```
+    - name: LanguageModelFeaturizer
+      # Name of the language model to use
+      model_name: "bert"
+      # Pre-Trained weights to be loaded
+      model_weights: "rasa/LaBSE"
 
+      # An optional path to a specific directory to download and cache the pre-trained model weights.
+      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      cache_dir: null
+  ```
 
 ### RegexFeaturizer
 
@@ -1083,8 +1137,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 * **Description**
 
   This classifier uses MITIE to perform intent classification. The underlying classifier
-  is using a multi-class linear SVM with a sparse linear kernel (see
-  [MITIE trainer code](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222)).
+  is using a multi-class linear SVM with a sparse linear kernel (see `train_text_categorizer_classifier` function at the
+  [MITIE trainer code](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp)).
 
   :::note
   This classifier does not rely on any featurizer as it extracts features on its own.
@@ -1295,9 +1349,9 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
   minimize similarities with negative samples.
 
-  If you want to learn more about the model, please take a look at our
-  [videos](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) where we explain the model
-  architecture in detail.
+  If you want to learn more about the model, check out the
+  [Algorithm Whiteboard](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) series on YouTube,
+  where we explain the model architecture in detail.
 
   :::note
   If during prediction time a message contains **only** words unseen during training
@@ -1391,6 +1445,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
 |                                 |                  | Batch size will be linearly increased for each epoch.        |
+|                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
 |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
@@ -1488,6 +1543,18 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
 |                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+------------------+--------------------------------------------------------------+
+| split_entities_by_comma         | True             | Splits a list of extracted entities by comma to treat each   |
+|                                 |                  | one of them as a single entity. Can either be `True`/`False` |
+|                                 |                  | globally, or set per entity type, such as:                   |
+|                                 |                  | ```                                                          |
+|                                 |                  | ...                                                          |
+|                                 |                  | - name: DIETClassifier                                       |
+|                                 |                  |   split_entities_by_comma:                                   |
+|                                 |                  |     address: True                                            |
+|                                 |                  |     ...                                                      |
+|                                 |                  | ...                                                          |
+|                                 |                  | ```                                                          |
++---------------------------------+------------------+--------------------------------------------------------------+
 ```
 
 :::note
@@ -1505,7 +1572,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 * **Short**
 
   Classifies a message with the intent `nlu_fallback` if the NLU intent classification
-  scores are ambiguous.
+  scores are ambiguous. The confidence is set to `1 - top intent confidence`.
 
 * **Outputs**
 
@@ -1520,10 +1587,10 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
     ```json
 
         {
-            "intent": {"name": "nlu_fallback", "confidence": 1.0},
+            "intent": {"name": "nlu_fallback", "confidence": 0.7183846840434321},
             "intent_ranking": [
                 {
-                    "confidence": 1.0,
+                    "confidence": 0.7183846840434321,
                     "name": "nlu_fallback"
                 },
                 {
@@ -1552,7 +1619,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
     `ambiguity_threshold`.
 
     You can use the `FallbackClassifier` to implement a
-    [Fallback Action](./fallback-handoff.mdx#fallbackactions) which handles message with uncertain
+    [Fallback Action](./fallback-handoff.mdx#fallbacks) which handles message with uncertain
     NLU predictions.
 
     ```yaml-rasa
@@ -1839,6 +1906,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     # Name of dense featurizers to use.
     # If list is empty all available dense features are used.
     "featurizers": []
+    # Indicated whether a list of extracted entities should be split into individual entities for a given entity type
+    "split_entities_by_comma":
+        address: False
+        email: True
   ```
 
   :::note
@@ -1851,8 +1922,6 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   :::
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="ducklinghttpextractor"></a>
 
 ### DucklingHTTPExtractor
 
@@ -1912,7 +1981,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   The extractor will always return 1.0 as a confidence, as it is a rule
   based system.
 
-  The list of supported languages can be found [here](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
+  The list of supported languages can be found in the
+  [Duckling GitHub repository](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
 
 
 
@@ -1956,6 +2026,49 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   You can find the detailed description of the [DIETClassifier](./components.mdx#dietclassifier) under the section
   Intent Classifiers.
 
+
+### RegexEntityExtractor
+
+* **Short**
+
+  Extracts entities using the lookup tables and/or regexes defined in the training data
+
+
+* **Outputs**
+
+  `entities`
+
+
+* **Requires**
+
+  Nothing
+
+
+* **Description**
+
+  This component extract entities using the [lookup tables](nlu-training-data.mdx#lookup-tables) and [regexes](nlu-training-data.mdx#regular-expressions-for-entity-extraction) defined in the training data.
+  The component checks if the user message contains an entry of one of the lookup tables or matches one of the
+  regexes. If a match is found, the value is extracted as entity.
+
+  This component only uses those regex features that have a name equal to one of the entities defined in the
+  training data. Make sure to annotate at least one example per entity.
+
+
+* **Configuration**
+
+  Make the entity extractor case sensitive by adding the `case_sensitive: True` option, the default being
+  `case_sensitive: False`.
+
+  ```yaml-rasa
+      pipeline:
+      - name: RegexEntityExtractor
+        # text will be processed with case insensitive as default
+        case_sensitive: False
+        # use lookup tables to extract entities
+        use_lookup_tables: True
+        # use regexes to extract entities
+        use_regexes: True
+  ```
 
 
 ### EntitySynonymMapper
@@ -2090,9 +2203,9 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
     minimize similarities with negative samples.
 
-    If you want to learn more about the model, please take a look at our
-    [videos](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) where we explain the model
-    architecture in detail.
+    If you want to learn more about the model, check out the
+    [Algorithm Whiteboard](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) series on YouTube,
+    where we explain the model architecture in detail.
 
     :::note
     If during prediction time a message contains **only** words unseen during training
@@ -2188,6 +2301,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   +---------------------------------+------------------+--------------------------------------------------------------+
   | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
   |                                 |                  | Batch size will be linearly increased for each epoch.        |
+  |                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
   |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
@@ -2422,6 +2536,10 @@ Selectors predict a bot response from a set of candidate responses.
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](./components.mdx#dietclassifier).
 
+  To use this component, your training data should contain [retrieval intents](./glossary.mdx#retrieval-intent). To define these,
+  checkout [documentation on NLU training examples](./training-data-format.mdx#training-examples) and
+  [documentation on defining response utterances for retrieval intents](./responses.mdx#defining-responses).
+
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty response `None` is predicted with confidence
@@ -2489,9 +2607,11 @@ Selectors predict a bot response from a set of candidate responses.
   template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.
 
-  See this [example assistant](https://github.com/RasaHQ/rasa/tree/master/examples/responseselectorbot) to understand
+  :::note examples and tutorials
+  Check out the [responseselectorbot](https://github.com/RasaHQ/rasa/tree/master/examples/responseselectorbot) for an example of
   how you can use the `ResponseSelector` component in your assistant. Additionally, you will find this tutorial on
-  [handling FAQs](./chitchat-faqs.mdx#handling-faqs-using-a-response-selector) using a `ResponseSelector` useful as well.
+  [handling FAQs](./chitchat-faqs.mdx) using a `ResponseSelector` useful as well.
+  :::
 
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
@@ -2524,7 +2644,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | unidirectional_encoder          | False             | Use a unidirectional or bidirectional encoder.               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| batch_size                      | [8, 32]           | Initial and final value for batch sizes.                     |
+| batch_size                      | [64, 256]         | Initial and final value for batch sizes.                     |
 |                                 |                   | Batch size will be linearly increased for each epoch.        |
 |                                 |                   | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -2639,11 +2759,6 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
 Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
-
-:::tip follow the tutorial
-There is a detailed tutorial on building custom components [here](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
-
-:::
 
 You can add a custom component to your pipeline by adding the module path.
 So if you have a module called `sentiment`

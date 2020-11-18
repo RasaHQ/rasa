@@ -1,23 +1,13 @@
 ---
 id: messaging-and-voice-channels
 sidebar_label: Connecting to a Channel
-title: Connecting to a Channel
+title: Connecting to Messaging and Voice Channels
 description: Check out how to make your Rasa assistant available on platforms like Facebook Messenger, Slack, Telegram or even your very own website.
+abstract: Rasa Open Source provides many built-in connectors to connect to common messaging and voice channels.
+  You can also connect to your website or app with pre-configured REST channels or build your own custom connector.
 ---
 
-<!-- TODO: needs full general information about setting them up, what url to hit it at, etc. -->
-
-To make your assistant available on a messaging platform you need to provide credentials
-in a `credentials.yml` file.
-An example file is created when you run `rasa init`, so it's easiest to edit that file
-and add your credentials there. Here is an example with Facebook credentials:
-
-```yaml-rasa title="credentials.yml"
-facebook:
-  verify: "rasa-bot"
-  secret: "3e34709d01ea89032asdebfe5a74518"
-  page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
-```
+## Connecting to A Channel
 
 Learn how to make your assistant available on:
 
@@ -44,14 +34,13 @@ Learn how to make your assistant available on:
 * [Custom Connectors](./connectors/custom-connectors.mdx)
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="using-ngrok"></a>
+## Testing Channels on Your Local Machine
 
-## Testing Channels on Your Local Machine with Ngrok
+If you're running Rasa X Local mode or a Rasa Open Source server on `localhost`, 
+most external channels won't be able to find your server URL, since `localhost` is not open to the internet. 
 
-You can use [ngrok](https://ngrok.com/) to create a connection to your local
-computer that is publicly available on the internet.
-You don't need this when running Rasa on a server because, you can set up a domain
-name to point to that server's IP address, or use the IP address itself.
+To make a port on your local machine publicly available on the internet, 
+you can use [ngrok](https://ngrok.com/).
 
 After installing ngrok, run:
 
@@ -59,11 +48,11 @@ After installing ngrok, run:
 ngrok http 5005; rasa run
 ```
 
-Your webhook address will look like the following:
-
-* `https://yyyyyy.ngrok.io/webhooks/<CHANNEL>/webhook`, e.g.
-
-* `https://yyyyyy.ngrok.io/webhooks/facebook/webhook`
+When you follow the instructions to make your assistant available on a channel, use the ngrok URL.
+Specifically, wherever the instructions say to use `https://<host>:<port>/webhooks/<CHANNEL>/webhook`,
+use `<ngrok_url>/<CHANNEL>/webhook`, replacing `<ngrok_url>` with the randomly generated
+URL displayed in your ngrok terminal window. For example, if connecting your bot to Slack, 
+your URL should resemble `https://26e7e7744191.ngrok.io/webhooks/slack/webhook`.
 
 :::caution
 With the free-tier of ngrok, you can run into limits on how many connections you can make per minute.

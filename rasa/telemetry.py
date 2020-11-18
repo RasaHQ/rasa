@@ -28,6 +28,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.shared.constants import DOCS_URL_TELEMETRY
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
@@ -118,13 +119,19 @@ def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Any]:
 
 def _write_default_telemetry_configuration(
     is_enabled: bool = TELEMETRY_ENABLED_BY_DEFAULT,
-) -> None:
-    if is_enabled:
-        print_telemetry_reporting_info()
-
+) -> bool:
     new_config = _default_telemetry_configuration(is_enabled)
 
-    rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, new_config)
+    success = rasa_utils.write_global_config_value(
+        CONFIG_FILE_TELEMETRY_KEY, new_config
+    )
+
+    # Do not show info if user has enabled/disabled telemetry via env var
+    telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
+    if is_enabled and success and telemetry_environ is None:
+        print_telemetry_reporting_info()
+
+    return success
 
 
 def _is_telemetry_enabled_in_configuration() -> bool:
@@ -144,9 +151,10 @@ def _is_telemetry_enabled_in_configuration() -> bool:
     except ValueError as e:
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
-        # seems like there is no config, we'll create on and enable telemetry
-        _write_default_telemetry_configuration()
-        return TELEMETRY_ENABLED_BY_DEFAULT
+        # seems like there is no config, we'll create one and enable telemetry
+        success = _write_default_telemetry_configuration()
+        # if writing the configuration failed, telemetry will be disabled
+        return TELEMETRY_ENABLED_BY_DEFAULT and success
 
 
 def is_telemetry_enabled() -> bool:
@@ -157,15 +165,15 @@ def is_telemetry_enabled() -> bool:
     """
     telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
 
-    if telemetry_environ is None:
-        try:
-            return rasa_utils.read_global_config_value(
-                CONFIG_FILE_TELEMETRY_KEY, unavailable_ok=False
-            )[CONFIG_TELEMETRY_ENABLED]
-        except ValueError:
-            return False
-    else:
+    if telemetry_environ is not None:
         return telemetry_environ.lower() == "true"
+
+    try:
+        return rasa_utils.read_global_config_value(
+            CONFIG_FILE_TELEMETRY_KEY, unavailable_ok=False
+        )[CONFIG_TELEMETRY_ENABLED]
+    except ValueError:
+        return False
 
 
 def initialize_telemetry() -> bool:
@@ -185,8 +193,8 @@ def initialize_telemetry() -> bool:
 
         if telemetry_environ is None:
             return is_enabled_in_configuration
-        else:
-            return telemetry_environ.lower() == "true"
+
+        return telemetry_environ.lower() == "true"
     except Exception as e:  # skipcq:PYL-W0703
         logger.exception(
             f"Failed to initialize telemetry reporting: {e}."
@@ -205,10 +213,6 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     Returns:
         Return wrapped function
     """
-    # checks if telemetry is enabled and creates a default config if this is the first
-    # call to it
-    initialize_telemetry()
-
     # allows us to use the decorator for async and non async functions
     if asyncio.iscoroutinefunction(f):
 
@@ -219,15 +223,14 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
             return None
 
         return decorated
-    else:
 
-        @wraps(f)
-        def decorated(*args, **kwargs):
-            if is_telemetry_enabled():
-                return f(*args, **kwargs)
-            return None
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if is_telemetry_enabled():
+            return f(*args, **kwargs)
+        return None
 
-        return decorated
+    return decorated
 
 
 def _fetch_write_key(tool: Text, environment_variable: Text) -> Optional[Text]:
@@ -554,7 +557,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
-) -> Dict[Text, Any]:
+) -> Optional[Dict[Text, Any]]:
     """Remove any sensitive data from the event (e.g. path names).
 
     Args:
@@ -562,13 +565,32 @@ def strip_sensitive_data_from_sentry_event(
         _unused_hint: some hinting information sent alongside of the event
 
     Returns:
-        the event without any sensitive / PII data.
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
     """
     # removes any paths from stack traces (avoids e.g. sending
     # a users home directory name if package is installed there)
     for value in event.get("exception", {}).get("values", []):
         for frame in value.get("stacktrace", {}).get("frames", []):
             frame["abs_path"] = ""
+
+            if f"rasa_sdk{os.path.sep}executor.py" in frame["filename"]:
+                # this looks a lot like an exception in the SDK and hence custom code
+                # no need for us to deal with that
+                return None
+            elif "site-packages" in frame["filename"]:
+                # drop site-packages and following slash / backslash
+                relative_name = frame["filename"].split("site-packages")[-1][1:]
+                frame["filename"] = os.path.join("site-packages", relative_name)
+            elif "dist-packages" in frame["filename"]:
+                # drop dist-packages and following slash / backslash
+                relative_name = frame["filename"].split("dist-packages")[-1][1:]
+                frame["filename"] = os.path.join("dist-packages", relative_name)
+            elif os.path.isabs(frame["filename"]):
+                # if the file path is absolute, we'll drop the whole event as this is
+                # very likely custom code. needs to happen after cleaning as
+                # site-packages / dist-packages paths are also absolute, but fine.
+                return None
     return event
 
 
@@ -579,8 +601,9 @@ def initialize_error_reporting() -> None:
     Exceptions are reported to sentry. We avoid sending any metadata (local
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
-    from the `rasa` package. """
+    from the `rasa` package."""
     import sentry_sdk
+    from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
@@ -592,6 +615,8 @@ def initialize_error_reporting() -> None:
 
     if not key:
         return
+
+    telemetry_id = get_telemetry_id()
 
     # this is a very defensive configuration, avoiding as many integrations as
     # possible. it also submits very little data (exception with error message
@@ -605,14 +630,30 @@ def initialize_error_reporting() -> None:
             AtexitIntegration(lambda _, __: None),
         ],
         send_default_pii=False,  # activate PII filter
-        server_name=get_telemetry_id() or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt],
+        server_name=telemetry_id or "UNKNOWN",
+        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
         default_integrations=False,
         environment="development" if in_continuous_integration() else "production",
     )
+
+    if not telemetry_id:
+        return
+
+    with configure_scope() as scope:
+        # sentry added these more recently, just a protection in a case where a
+        # user has installed an older version of sentry
+        if hasattr(scope, "set_user"):
+            scope.set_user({"id": telemetry_id})
+
+        default_context = _default_context_fields()
+        if hasattr(scope, "set_context"):
+            if "os" in default_context:
+                # os is a nested dict, hence we report it separately
+                scope.set_context("Operating System", default_context.pop("os"))
+            scope.set_context("Environment", default_context)
 
 
 @async_generator.asynccontextmanager

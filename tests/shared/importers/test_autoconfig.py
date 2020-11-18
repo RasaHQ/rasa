@@ -1,6 +1,5 @@
 import shutil
 from pathlib import Path
-import sys
 from typing import Text, Set
 from unittest.mock import Mock
 
@@ -9,17 +8,13 @@ from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.shared.constants import CONFIG_AUTOCONFIGURABLE_KEYS
-from rasa.utils import io as io_utils
 import rasa.shared.utils.io
 from rasa.shared.importers import autoconfig
 
 CONFIG_FOLDER = Path("data/test_config")
 
 SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
-DEFAULT_CONFIG_EN = Path("rasa/shared/importers/default_config_en.yml")
-DEFAULT_CONFIG_OTHER_LANGUAGE = Path(
-    "rasa/shared/importers/default_config_other_language.yml"
-)
+DEFAULT_CONFIG = Path("rasa/shared/importers/default_config.yml")
 
 
 @pytest.mark.parametrize(
@@ -72,17 +67,12 @@ def test_get_configuration_missing_file(tmp_path: Path, config_file: Text):
     ],
 )
 def test_auto_configure(language: Text, keys_to_configure: Set[Text]):
-    if sys.platform == "win32" or not language == "en":
-        default_config = rasa.shared.utils.io.read_config_file(
-            DEFAULT_CONFIG_OTHER_LANGUAGE
-        )
-    else:
-        default_config = rasa.shared.utils.io.read_config_file(DEFAULT_CONFIG_EN)
+    expected_config = rasa.shared.utils.io.read_config_file(DEFAULT_CONFIG)
 
     config = autoconfig._auto_configure({"language": language}, keys_to_configure)
 
     for k in keys_to_configure:
-        assert config[k] == default_config[k]  # given keys are configured correctly
+        assert config[k] == expected_config[k]  # given keys are configured correctly
 
     assert config.get("language") == language
     config.pop("language")
@@ -127,28 +117,24 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
 # Test a few cases that are known to be potentially tricky (have failed in the past)
 @pytest.mark.parametrize(
-    "input_file, expected_file, expected_file_windows, autoconfig_keys",
+    "input_file, expected_file, autoconfig_keys",
     [
         (
             "config_with_comments.yml",
-            "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
             {"policies"},
         ),  # comments in various positions
         (
             "config_empty_en.yml",
             "config_empty_en_after_dumping.yml",
-            "config_empty_en_after_dumping_windows.yml",
             {"policies", "pipeline"},
         ),  # no empty lines
         (
             "config_empty_fr.yml",
             "config_empty_fr_after_dumping.yml",
-            "config_empty_fr_after_dumping.yml",
             {"policies", "pipeline"},
         ),  # no empty lines, with different language
         (
-            "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
             {"policies"},
@@ -159,7 +145,6 @@ def test_dump_config(
     tmp_path: Path,
     input_file: Text,
     expected_file: Text,
-    expected_file_windows: Text,
     capsys: CaptureFixture,
     autoconfig_keys: Set[Text],
 ):
@@ -170,12 +155,7 @@ def test_dump_config(
 
     actual = rasa.shared.utils.io.read_file(config_file)
 
-    if sys.platform == "win32":
-        expected = rasa.shared.utils.io.read_file(
-            str(CONFIG_FOLDER / expected_file_windows)
-        )
-    else:
-        expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
+    expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
 
     assert actual == expected
 
@@ -190,24 +170,21 @@ def test_dump_config(
 
 
 @pytest.mark.parametrize(
-    "input_file, expected_file, expected_file_windows, training_type",
+    "input_file, expected_file, training_type",
     [
         (
             "config_empty_en.yml",
             "config_empty_en_after_dumping.yml",
-            "config_empty_en_after_dumping_windows.yml",
             autoconfig.TrainingType.BOTH,
         ),
         (
             "config_empty_en.yml",
             "config_empty_en_after_dumping_core.yml",
-            "config_empty_en_after_dumping_windows_core.yml",
             autoconfig.TrainingType.CORE,
         ),
         (
             "config_empty_en.yml",
             "config_empty_en_after_dumping_nlu.yml",
-            "config_empty_en_after_dumping_windows_nlu.yml",
             autoconfig.TrainingType.NLU,
         ),
     ],
@@ -216,7 +193,6 @@ def test_get_configuration_for_different_training_types(
     tmp_path: Path,
     input_file: Text,
     expected_file: Text,
-    expected_file_windows: Text,
     training_type: autoconfig.TrainingType,
 ):
     config_file = str(tmp_path / "config.yml")
@@ -226,11 +202,22 @@ def test_get_configuration_for_different_training_types(
 
     actual = rasa.shared.utils.io.read_file(config_file)
 
-    if sys.platform == "win32":
-        expected = rasa.shared.utils.io.read_file(
-            str(CONFIG_FOLDER / expected_file_windows)
-        )
-    else:
-        expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
+    expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
 
     assert actual == expected
+
+
+def test_comment_causing_invalid_autoconfig(tmp_path: Path):
+    """Regression test for https://github.com/RasaHQ/rasa/issues/6948."""
+
+    config_file = tmp_path / "config.yml"
+    shutil.copyfile(
+        str(CONFIG_FOLDER / "config_with_comment_between_suggestions.yml"), config_file
+    )
+
+    _ = autoconfig.get_configuration(str(config_file))
+
+    # This should not throw
+    dumped = rasa.shared.utils.io.read_yaml_file(config_file)
+
+    assert dumped
