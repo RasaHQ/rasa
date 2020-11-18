@@ -378,7 +378,6 @@ class ResponseSelector(DIETClassifier):
 
     def process(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
-
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
