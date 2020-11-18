@@ -623,6 +623,13 @@ def initialize_error_reporting() -> None:
     except ImportError:
         pass
 
+    try:
+        from psycopg2 import OperationalError
+
+        ignored_errors.append(OperationalError)
+    except ImportError:
+        pass
+
     # key for local testing can be found at
     # https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
     # for local testing, set the key using `RASA_EXCEPTION_WRITE_KEY=key rasa <command>`
