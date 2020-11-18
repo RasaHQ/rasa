@@ -357,19 +357,16 @@ class DynamoTrackerStore(TrackerStore):
         if self.table_name not in self.client.list_tables()["TableNames"]:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[
-                    {"AttributeName": "sender_id", "KeyType": "HASH"},
-                    {"AttributeName": "session_date", "KeyType": "RANGE"},
-                ],
+                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
                 AttributeDefinitions=[
                     {"AttributeName": "sender_id", "AttributeType": "S"},
-                    {"AttributeName": "session_date", "AttributeType": "N"},
                 ],
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             )
 
             # Wait until the table exists.
             table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
+            table.meta
         return dynamo.Table(table_name)
 
     def save(self, tracker):
@@ -382,10 +379,7 @@ class DynamoTrackerStore(TrackerStore):
         """Serializes the tracker, returns object with decimal types"""
         d = tracker.as_dialogue().as_dict()
         d.update(
-            {
-                "sender_id": tracker.sender_id,
-                "session_date": int(datetime.now(tz=timezone.utc).timestamp()),
-            }
+            {"sender_id": tracker.sender_id,}
         )
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
         return core_utils.replace_floats_with_decimals(d)
