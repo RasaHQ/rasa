@@ -24,8 +24,8 @@ from rasa.shared.nlu.constants import (
 
 
 class SemanticMapFeaturizer(SparseFeaturizer):
-    """Creates a sequence of sparse matrices based on a semantic map embedding.
-    """
+    """Creates a sequence of sparse matrices based on a semantic map embedding."""
+
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
@@ -40,7 +40,7 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         # whether to convert all characters to lowercase
         "lowercase": True,
         # how to combine sequence features to a sentence feature
-        "pooling": "semantic_merge"
+        "pooling": "semantic_merge",
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None,) -> None:
@@ -62,29 +62,18 @@ class SemanticMapFeaturizer(SparseFeaturizer):
 
         self._attributes = DENSE_FEATURIZABLE_ATTRIBUTES
 
-    def train(
-        self,
-        training_data: TrainingData,
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        """Converts tokens to features for training
-        """
+    def train(self, training_data: TrainingData, *args: Any, **kwargs: Any,) -> None:
+        """Converts tokens to features for training."""
         for example in training_data.training_examples:
             for attribute in self._attributes:
                 self._set_semantic_map_features(example, attribute)
-        
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        """Processes incoming message and compute and set features"""
+    def process(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
+        """Processes incoming message and compute and set features."""
         for attribute in self._attributes:
             self._set_semantic_map_features(message, attribute)
 
-    def _set_semantic_map_features(
-        self,
-        message: Message,
-        attribute: Text
-    ):
+    def _set_semantic_map_features(self, message: Message, attribute: Text):
         sequence_features, sentence_features = self._featurize_tokens(
             message.get(TOKENS_NAMES[attribute], [])
         )
@@ -108,34 +97,43 @@ class SemanticMapFeaturizer(SparseFeaturizer):
             message.add_features(final_sentence_features)
 
     def _featurize_tokens(
-        self, 
-        tokens: List[Token]
-    ) -> Tuple[
-        Optional[np.ndarray], Optional[np.ndarray]
-    ]:
-        """Returns features of a list of tokens"""
+        self, tokens: List[Token]
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+        """Returns features of a list of tokens."""
         if not tokens:
             return None, None
 
         if self.lowercase:
-            fingerprints = [self.semantic_map.get_term_fingerprint(token.text.lower()) for token in tokens]
+            fingerprints = [
+                self.semantic_map.get_term_fingerprint(token.text.lower())
+                for token in tokens
+            ]
         else:
-            fingerprints = [self.semantic_map.get_term_fingerprint(token.text) for token in tokens]
+            fingerprints = [
+                self.semantic_map.get_term_fingerprint(token.text) for token in tokens
+            ]
 
         sequence_features = np.squeeze(
             np.asarray([fp.as_dense_vector() for fp in fingerprints], dtype=np.float),
-            axis=1
+            axis=1,
         )
         if self.pooling == "semantic_merge":
-            sentence_features = self.semantic_map.semantic_merge(*fingerprints).as_dense_vector()
+            sentence_features = self.semantic_map.semantic_merge(
+                *fingerprints
+            ).as_dense_vector()
         elif self.pooling == "mean":
             sentence_features = np.mean(sequence_features, axis=0, keepdims=True)
         elif self.pooling == "sum":
             sentence_features = np.sum(sequence_features, axis=0, keepdims=True)
         else:
-            raise ValueError(f"Pooling operation '{self.pooling}' must be one of 'semantic_merge', 'mean', or 'sum")
+            raise ValueError(
+                f"Pooling operation '{self.pooling}' must be one of 'semantic_merge', 'mean', or 'sum"
+            )
 
-        assert sequence_features.shape == (len(fingerprints), self.semantic_map.num_cells)
+        assert sequence_features.shape == (
+            len(fingerprints),
+            self.semantic_map.num_cells,
+        )
         assert sentence_features.shape == (1, self.semantic_map.num_cells)
 
         return sequence_features, sentence_features
