@@ -19,8 +19,9 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from boto.dynamodb2.exceptions import ValidationException
 from boto3.dynamodb.conditions import Key
+from botocore.exceptions import ClientError
+
 import rasa.core.utils as core_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
@@ -376,8 +377,8 @@ class DynamoTrackerStore(TrackerStore):
         serialized = self.serialise_tracker(tracker)
         try:
             self.db.put_item(Item=serialized)
-        except ValidationException as e:
-            if "Missing the key session_date" in e.message:
+        except ClientError as e:
+            if "Missing the key session_date" in str(e):
                 legacy_date = self._retrieve_latest_session_date(tracker.sender_id)
                 if not legacy_date:
                     raise
