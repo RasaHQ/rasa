@@ -687,7 +687,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         ]
 
         # new_label_ids = label_ids
-        print(label_ids)
         multiple_labels_count = [len(a) for a in label_ids]
         max_labels_count = max(multiple_labels_count)
         paddings_needed = [max_labels_count - len(a) for a in label_ids]
@@ -700,8 +699,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             new_label_ids.append(ids)
         #
         new_label_ids = np.array(new_label_ids)
-
-        print("label ids constructed", new_label_ids)
         return new_label_ids
 
     def prediction_states(
