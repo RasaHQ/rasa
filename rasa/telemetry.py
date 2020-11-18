@@ -613,6 +613,7 @@ def initialize_error_reporting() -> None:
         RasaException,
         NotImplementedError,
         asyncio.CancelledError,
+        MemoryError,
     ]
 
     try:
