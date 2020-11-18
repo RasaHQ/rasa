@@ -73,7 +73,7 @@ class RasaChatInput(RestInput):
 
     def _decode_jwt(self, bearer_token: Text) -> Dict:
         if self.jwt_key is None:
-            raise TypeError("JWT public key is `None`.")
+            raise TypeError("JWT public key is `None`. This is likely caused by an error when retrieving the public key from Rasa X.")
 
         authorization_header_value = bearer_token.replace(
             constants.BEARER_TOKEN_PREFIX, ""
