@@ -19,6 +19,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from boto.dynamodb2.exceptions import ValidationException
 from boto3.dynamodb.conditions import Key
 import rasa.core.utils as core_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -366,14 +367,37 @@ class DynamoTrackerStore(TrackerStore):
 
             # Wait until the table exists.
             table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
-            table.meta
         return dynamo.Table(table_name)
 
     def save(self, tracker):
         """Saves the current conversation state"""
         if self.event_broker:
             self.stream_events(tracker)
-        self.db.put_item(Item=self.serialise_tracker(tracker))
+        serialized = self.serialise_tracker(tracker)
+        try:
+            self.db.put_item(Item=serialized)
+        except ValidationException as e:
+            if "Missing the key session_date" in e.message:
+                legacy_date = self._retrieve_latest_session_date(tracker.sender_id)
+                if not legacy_date:
+                    raise
+
+                serialized["session_date"] = legacy_date
+                self.db.put_item(Item=self.serialise_tracker(tracker))
+            else:
+                raise
+
+    def _retrieve_latest_session_date(self, sender_id: Text) -> Optional[int]:
+        dialogues = self.db.query(
+            KeyConditionExpression=Key("sender_id").eq(sender_id),
+            Limit=1,
+            ScanIndexForward=False,
+        )["Items"]
+
+        if not dialogues:
+            return None
+
+        return dialogues[0].get("session_date")
 
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types"""
