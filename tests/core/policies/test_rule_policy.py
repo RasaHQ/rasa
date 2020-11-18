@@ -305,10 +305,7 @@ slots:
         policy.train([complete_rule, incomplete_rule], domain, RegexInterpreter())
     assert all(
         name in execinfo.value.message
-        for name in {
-            some_action,
-            incomplete_rule.sender_id,
-        }
+        for name in {some_action, incomplete_rule.sender_id,}
     )
 
     fixed_incomplete_rule = TrackerWithCachedStates.from_events(
@@ -423,10 +420,7 @@ forms:
         policy.train([complete_rule, incomplete_rule], domain, RegexInterpreter())
     assert all(
         name in execinfo.value.message
-        for name in {
-            some_form,
-            incomplete_rule.sender_id,
-        }
+        for name in {some_form, incomplete_rule.sender_id,}
     )
 
     fixed_incomplete_rule = TrackerWithCachedStates.from_events(

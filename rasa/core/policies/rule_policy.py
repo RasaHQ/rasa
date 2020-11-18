@@ -286,11 +286,11 @@ class RulePolicy(MemoizationPolicy):
     ) -> Set[Text]:
         expected_slots = set(fingerprint.get(SLOTS, {}))
         current_slots = set(state.get(SLOTS, {}).keys())
-        if expected_slots == current_slots:
-            # all expected slots are satisfied
+        if expected_slots.issubset(current_slots):
+            # all expected slots are found in the currently set slots
             return set()
 
-        return expected_slots
+        return expected_slots.difference(current_slots)
 
     @staticmethod
     def _check_active_loops_fingerprint(
@@ -309,16 +309,16 @@ class RulePolicy(MemoizationPolicy):
     @staticmethod
     def _error_messages_from_fingerprints(
         action_name: Text,
-        fingerprint_slots: Set[Text],
+        missing_fingerprint_slots: Set[Text],
         fingerprint_active_loops: Set[Text],
         rule_name: Text,
     ) -> List[Text]:
         error_messages = []
-        if action_name and fingerprint_slots:
+        if action_name and missing_fingerprint_slots:
             error_messages.append(
-                f"- the action '{action_name}' in rule '{rule_name}' does not set all "
-                f"the slots, that it sets in other rules: "
-                f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
+                f"- the action '{action_name}' in rule '{rule_name}' does not set some "
+                f"of the slots that it sets in other rules. Slots not set in rule '{rule_name}': "
+                f"'{', '.join(missing_fingerprint_slots)}'. Please update the rule with "
                 f"an appropriate slot or if it is the last action "
                 f"add 'wait_for_user_input: false' after this action."
             )
@@ -375,14 +375,16 @@ class RulePolicy(MemoizationPolicy):
                     # for a previous action if current action is rule snippet action
                     continue
 
-                expected_slots = self._check_slots_fingerprint(fingerprint, state)
+                missing_expected_slots = self._check_slots_fingerprint(
+                    fingerprint, state
+                )
                 expected_active_loops = self._check_active_loops_fingerprint(
                     fingerprint, state
                 )
                 error_messages.extend(
                     self._error_messages_from_fingerprints(
                         previous_action_name,
-                        expected_slots,
+                        missing_expected_slots,
                         expected_active_loops,
                         tracker.sender_id,
                     )
