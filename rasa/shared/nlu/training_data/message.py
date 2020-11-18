@@ -30,7 +30,7 @@ class Message:
         self,
         data: Optional[Dict[Text, Any]] = None,
         output_properties: Optional[Set] = None,
-        time: Optional[Text] = None,
+        time: Optional[int] = None,
         features: Optional[List["Features"]] = None,
         **kwargs: Any,
     ) -> None:

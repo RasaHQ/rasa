@@ -387,7 +387,7 @@ class Interpreter:
             output["text"] = ""
             return output
 
-        timestamp = str(int(time.timestamp())) if time else None
+        timestamp = int(time.timestamp()) if time else None
         data = self.default_output_attributes()
         data[TEXT] = text
 
