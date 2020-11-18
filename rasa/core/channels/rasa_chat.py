@@ -73,7 +73,10 @@ class RasaChatInput(RestInput):
 
     def _decode_jwt(self, bearer_token: Text) -> Dict:
         if self.jwt_key is None:
-            raise TypeError("JWT public key is `None`. This is likely caused by an error when retrieving the public key from Rasa X.")
+            raise TypeError(
+                "JWT public key is `None`. This is likely caused "
+                "by an error when retrieving the public key from Rasa X."
+            )
 
         authorization_header_value = bearer_token.replace(
             constants.BEARER_TOKEN_PREFIX, ""
@@ -86,16 +89,12 @@ class RasaChatInput(RestInput):
         if self.jwt_key is None:
             await self._fetch_public_key()
 
-        # noinspection PyBroadException
         try:
             return self._decode_jwt(bearer_token)
         except jwt.InvalidSignatureError:
             logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
             return self._decode_jwt(bearer_token)
-        except Exception:
-            logger.exception("Failed to decode bearer token.")
-            return None
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API."""
