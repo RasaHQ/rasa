@@ -121,9 +121,9 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                 *fingerprints
             ).as_coo_row_vector()
         elif self.pooling == "mean":
-            sentence_features = np.mean(sequence_features, axis=0, keepdims=True)
+            sentence_features = np.mean(sequence_features, axis=0)
         elif self.pooling == "sum":
-            sentence_features = np.sum(sequence_features, axis=0, keepdims=True)
+            sentence_features = np.sum(sequence_features, axis=0)
         else:
             raise ValueError(
                 f"Pooling operation '{self.pooling}' must be one of 'semantic_merge', 'mean', or 'sum"
