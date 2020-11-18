@@ -617,9 +617,9 @@ def initialize_error_reporting() -> None:
     ]
 
     try:
-        from pymongo.errors import PyMongoError
+        from pymongo.errors import ConnectionFailure
 
-        ignored_errors.append(PyMongoError)
+        ignored_errors.append(ConnectionFailure)
     except ImportError:
         pass
 
