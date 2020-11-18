@@ -286,10 +286,7 @@ class RulePolicy(MemoizationPolicy):
     ) -> Set[Text]:
         expected_slots = set(fingerprint.get(SLOTS, {}))
         current_slots = set(state.get(SLOTS, {}).keys())
-        if expected_slots.issubset(current_slots):
-            # all expected slots are found in the currently set slots
-            return set()
-
+        # report all slots that are expected but aren't set in current slots
         return expected_slots.difference(current_slots)
 
     @staticmethod
