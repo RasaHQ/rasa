@@ -68,14 +68,10 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from ssl import SSLContext
-    from typing_extensions import Protocol
     from rasa.core.processor import MessageProcessor
+    from mypy_extensions import VarArg, KwArg
 
-    class SanicView(Protocol):
-        def __call__(
-            self, request: Request, *args: Any, **kwargs: Any
-        ) -> response.BaseHTTPResponse:
-            ...
+    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
 
 
 logger = logging.getLogger(__name__)
@@ -147,7 +143,9 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
     return decorator
 
 
-def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
+def requires_auth(
+    app: Sanic, token: Optional[Text] = None
+) -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler with token authentication."""
 
     def decorator(f: "SanicView") -> "SanicView":
