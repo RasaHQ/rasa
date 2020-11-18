@@ -602,33 +602,14 @@ def initialize_error_reporting() -> None:
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
     from the `rasa` package."""
+    import botocore.exceptions
     import sentry_sdk
+    import psycopg2
+    import pymongo.errors
     from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
-
-    ignored_errors = [
-        KeyboardInterrupt,
-        RasaException,
-        NotImplementedError,
-        asyncio.CancelledError,
-        MemoryError,
-    ]
-
-    try:
-        from pymongo.errors import ConnectionFailure
-
-        ignored_errors.append(ConnectionFailure)
-    except ImportError:
-        pass
-
-    try:
-        from psycopg2 import OperationalError
-
-        ignored_errors.append(OperationalError)
-    except ImportError:
-        pass
 
     # key for local testing can be found at
     # https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
@@ -653,7 +634,19 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=ignored_errors,
+        ignore_errors=[
+            # std lib errors
+            KeyboardInterrupt,
+            MemoryError,
+            NotImplementedError,
+            asyncio.CancelledError,
+            # rasa errors
+            RasaException,
+            # 3rd party errors
+            botocore.exceptions.NoCredentialsError,
+            psycopg2.OperationalError,
+            pymongo.errors.ConnectionFailure,
+        ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
