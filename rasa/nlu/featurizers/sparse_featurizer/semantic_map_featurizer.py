@@ -113,14 +113,13 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                 self.semantic_map.get_term_fingerprint(token.text) for token in tokens
             ]
 
-        sequence_features = np.squeeze(
-            np.asarray([fp.as_dense_vector() for fp in fingerprints], dtype=np.float),
-            axis=1,
+        sequence_features = scipy.sparse.vstack(
+            [fp.as_coo_row_vector() for fp in fingerprints], "coo"
         )
         if self.pooling == "semantic_merge":
             sentence_features = self.semantic_map.semantic_merge(
                 *fingerprints
-            ).as_dense_vector()
+            ).as_coo_row_vector()
         elif self.pooling == "mean":
             sentence_features = np.mean(sequence_features, axis=0, keepdims=True)
         elif self.pooling == "sum":
