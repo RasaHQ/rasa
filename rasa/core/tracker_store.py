@@ -359,7 +359,7 @@ class DynamoTrackerStore(TrackerStore):
         if self.table_name not in self.client.list_tables()["TableNames"]:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
+                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"}],
                 AttributeDefinitions=[
                     {"AttributeName": "sender_id", "AttributeType": "S"},
                 ],
@@ -368,6 +368,9 @@ class DynamoTrackerStore(TrackerStore):
 
             # Wait until the table exists.
             table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
+        else:
+            # raise deprecation warning if table contains a session_date attribute
+            pass
         return dynamo.Table(table_name)
 
     def save(self, tracker):
@@ -378,13 +381,15 @@ class DynamoTrackerStore(TrackerStore):
         try:
             self.db.put_item(Item=serialized)
         except ClientError as e:
-            if "Missing the key session_date" in str(e):
+            if "Missing the key session_date" in repr(e):
+                # the session_date attribute got removed as it was useless
+                # old databases will still contain an attribute for it though
+                # which we need to set (otherwise we are getting the error we
+                # just ran into) this section should be removed in 3.0
                 legacy_date = self._retrieve_latest_session_date(tracker.sender_id)
-                if not legacy_date:
-                    raise
 
                 serialized["session_date"] = legacy_date
-                self.db.put_item(Item=self.serialise_tracker(tracker))
+                self.db.put_item(Item=serialized)
             else:
                 raise
 
@@ -396,7 +401,7 @@ class DynamoTrackerStore(TrackerStore):
         )["Items"]
 
         if not dialogues:
-            return None
+            return int(datetime.now(tz=timezone.utc).timestamp())
 
         return dialogues[0].get("session_date")
 
