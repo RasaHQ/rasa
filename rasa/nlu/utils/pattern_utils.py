@@ -1,25 +1,25 @@
 import re
-from typing import Dict, List, Text, Union
+from typing import Dict, List, Text, Union, Optional
 
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(
-    training_data: TrainingData, use_only_entities: bool = False
+    training_data: TrainingData, pattern_names: Optional[List[Text]] = None
 ) -> List[Dict[Text, Text]]:
     """Convert the lookup tables from the training data to regex patterns.
     Args:
         training_data: The training data.
-        use_only_entities: If True only regex features with a name equal to a entity
-          are considered.
+        pattern_names: List of pattern names to use. If list is empty or None all
+          patterns will be used.
 
     Returns:
         A list of regex patterns.
     """
     patterns = []
     for table in training_data.lookup_tables:
-        if use_only_entities and table["name"] not in training_data.entities:
+        if pattern_names and table["name"] not in pattern_names:
             continue
         regex_pattern = _generate_lookup_regex(table)
         lookup_regex = {"name": table["name"], "pattern": regex_pattern}
@@ -81,25 +81,25 @@ def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
 
 
 def _collect_regex_features(
-    training_data: TrainingData, use_only_entities: bool = False
+    training_data: TrainingData, pattern_names: Optional[List[Text]] = None
 ) -> List[Dict[Text, Text]]:
     """Get regex features from training data.
 
     Args:
         training_data: The training data
-        use_only_entities: If True only regex features with a name equal to a entity
-          are considered.
+        pattern_names: List of pattern names to use. If list is empty or None all
+          patterns will be used.
 
     Returns:
         Regex features.
     """
-    if not use_only_entities:
+    if not pattern_names:
         return training_data.regex_features
 
     return [
         regex
         for regex in training_data.regex_features
-        if regex["name"] in training_data.entities
+        if regex["name"] in pattern_names
     ]
 
 
@@ -107,7 +107,7 @@ def extract_patterns(
     training_data: TrainingData,
     use_lookup_tables: bool = True,
     use_regexes: bool = True,
-    use_only_entities: bool = False,
+    patter_names: Optional[List[Text]] = None,
 ) -> List[Dict[Text, Text]]:
     """Extract a list of patterns from the training data.
 
@@ -116,8 +116,8 @@ def extract_patterns(
 
     Args:
         training_data: The training data.
-        use_only_entities: If True only lookup tables and regex features with a name
-          equal to a entity are considered.
+        patter_names: List of pattern names to use. If list is empty or None all
+          patterns will be used.
         use_regexes: Boolean indicating whether to use regex features or not.
         use_lookup_tables: Boolean indicating whether to use lookup tables or not.
 
@@ -130,10 +130,8 @@ def extract_patterns(
     patterns = []
 
     if use_regexes:
-        patterns.extend(_collect_regex_features(training_data, use_only_entities))
+        patterns.extend(_collect_regex_features(training_data, patter_names))
     if use_lookup_tables:
-        patterns.extend(
-            _convert_lookup_tables_to_regex(training_data, use_only_entities)
-        )
+        patterns.extend(_convert_lookup_tables_to_regex(training_data, patter_names))
 
     return patterns

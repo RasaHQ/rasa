@@ -18,6 +18,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,10 @@ class RegexEntityExtractor(EntityExtractor):
 
         self.case_sensitive = self.component_config["case_sensitive"]
         self.patterns = patterns or []
+        self.entity_names = None
+
+    def extract_data_from_domain(self, domain: Domain) -> None:
+        self.entity_names = domain.entities
 
     def train(
         self,
@@ -51,11 +56,14 @@ class RegexEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        if self.entity_names is None:
+            self.entity_names = training_data.entities
+
         self.patterns = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
-            use_only_entities=True,
+            patter_names=self.entity_names,
         )
 
         if not self.patterns:
