@@ -1,22 +1,23 @@
 import logging
 from typing import Any, Dict, List, Text, Tuple, Optional
 
-from rasa.core.utils import get_dict_hash
+import rasa.core.utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+import rasa.shared.utils.io
 from rasa.nlu.tokenizers.tokenizer import Token
+import rasa.shared.utils.io
 import rasa.utils.train_utils as train_utils
 import numpy as np
 
 from rasa.nlu.constants import (
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    TOKEN_IDS,
-    TOKENS,
     SENTENCE_FEATURES,
     SEQUENCE_FEATURES,
     NUMBER_OF_SUB_TOKENS,
@@ -37,12 +38,9 @@ logger = logging.getLogger(__name__)
 
 
 class HFTransformersNLP(Component):
-    """Utility Component for interfacing between Transformers library and Rasa OS.
+    """This component is deprecated and will be removed in the future.
 
-    The transformers(https://github.com/huggingface/transformers) library
-    is used to load pre-trained language models like BERT, GPT-2, etc.
-    The component also tokenizes and featurizes dense featurizable attributes of each
-    message.
+    Use the LanguageModelFeaturizer instead.
     """
 
     defaults = {
@@ -60,11 +58,19 @@ class HFTransformersNLP(Component):
         component_config: Optional[Dict[Text, Any]] = None,
         skip_model_load: bool = False,
     ) -> None:
+        """Initializes HFTransformsNLP with the models specified."""
         super(HFTransformersNLP, self).__init__(component_config)
 
         self._load_model_metadata()
         self._load_model_instance(skip_model_load)
         self.whitespace_tokenizer = WhitespaceTokenizer()
+        rasa.shared.utils.io.raise_warning(
+            f"'{self.__class__.__name__}' is deprecated and "
+            f"will be removed in the future. "
+            f"It is recommended to use the '{LanguageModelFeaturizer.__name__}' "
+            f"instead.",
+            category=DeprecationWarning,
+        )
 
     def _load_model_metadata(self) -> None:
 
@@ -78,7 +84,7 @@ class HFTransformersNLP(Component):
         if self.model_name not in model_class_dict:
             raise KeyError(
                 f"'{self.model_name}' not a valid model name. Choose from "
-                f"{str(list(model_class_dict.keys()))} or create"
+                f"{str(list(model_class_dict.keys()))} or create "
                 f"a new class inheriting from this class to support your model."
             )
 
@@ -95,12 +101,12 @@ class HFTransformersNLP(Component):
         self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
     def _load_model_instance(self, skip_model_load: bool) -> None:
-        """Try loading the model instance
+        """Try loading the model instance.
 
         Args:
-            skip_model_load: Skip loading the model instances to save time. This should be True only for pytests
+            skip_model_load: Skip loading the model instances to save time.
+            This should be True only for pytests
         """
-
         if skip_model_load:
             # This should be True only during pytests
             return
@@ -131,10 +137,20 @@ class HFTransformersNLP(Component):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
+        """Cache the component for future use.
 
+        Args:
+            component_meta: configuration for the component.
+            model_metadata: configuration for the whole pipeline.
+
+        Returns: key of the cache for future retrievals.
+        """
         weights = component_meta.get("model_weights") or {}
 
-        return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
+        return (
+            f"{cls.name}-{component_meta.get('model_name')}-"
+            f"{rasa.shared.utils.io.deep_container_fingerprint(weights)}"
+        )
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -212,7 +228,6 @@ class HFTransformersNLP(Component):
         Returns:
             Sentence and sequence level representations.
         """
-
         from rasa.nlu.utils.hugging_face.registry import (
             model_embeddings_post_processors,
         )
@@ -254,7 +269,6 @@ class HFTransformersNLP(Component):
             List of token strings and token ids for the corresponding attribute of the
             message.
         """
-
         tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
 
         tokens_out = []
@@ -292,7 +306,6 @@ class HFTransformersNLP(Component):
         Returns:
             List of token strings and token ids for each example in the batch.
         """
-
         batch_token_ids = []
         batch_tokens = []
         for example in batch_examples:
@@ -323,7 +336,6 @@ class HFTransformersNLP(Component):
         Returns:
             Computed attention mask, 0 for padding and 1 for non-padding tokens.
         """
-
         attention_mask = []
 
         for actual_sequence_length in actual_sequence_lengths:
@@ -343,7 +355,16 @@ class HFTransformersNLP(Component):
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
     ) -> Tuple[List[int], int]:
+        """Extracts the sequence length for each example and maximum sequence length.
 
+        Args:
+            batch_token_ids: List of token ids for each example in the batch.
+
+        Returns:
+            Tuple consisting of: the actual sequence lengths for each example,
+            and the maximum input sequence length (taking into account the
+            maximum sequence length that the model can handle.
+        """
         # Compute max length across examples
         max_input_sequence_length = 0
         actual_sequence_lengths = []
@@ -498,7 +519,6 @@ class HFTransformersNLP(Component):
         Returns:
             Modified sequence embeddings with padding if necessary
         """
-
         if self.max_model_sequence_length == NO_LENGTH_RESTRICTION:
             # No extra padding needed because there wouldn't have been any truncation in the first place
             return sequence_embeddings
@@ -640,7 +660,6 @@ class HFTransformersNLP(Component):
         Returns:
             List of language model docs for each message in batch.
         """
-
         batch_tokens, batch_token_ids = self._get_token_ids_for_batch(
             batch_examples, attribute
         )
@@ -658,8 +677,6 @@ class HFTransformersNLP(Component):
         batch_docs = []
         for index in range(len(batch_examples)):
             doc = {
-                TOKEN_IDS: batch_token_ids[index],
-                TOKENS: batch_tokens[index],
                 SEQUENCE_FEATURES: batch_sequence_features[index],
                 SENTENCE_FEATURES: np.reshape(batch_sentence_features[index], (1, -1)),
             }
@@ -680,7 +697,6 @@ class HFTransformersNLP(Component):
             config: NLU pipeline config consisting of all components.
 
         """
-
         batch_size = 64
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
@@ -715,7 +731,6 @@ class HFTransformersNLP(Component):
         Args:
             message: Incoming message object
         """
-
         # process of all featurizers operates only on TEXT and ACTION_TEXT attributes,
         # because all other attributes are labels which are featurized during training
         # and their features are stored by the model itself.

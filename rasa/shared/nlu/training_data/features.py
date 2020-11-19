@@ -16,20 +16,10 @@ class Features:
         attribute: Text,
         origin: Union[Text, List[Text]],
     ) -> None:
-        self._validate_feature_type(feature_type)
-
         self.features = features
         self.type = feature_type
         self.origin = origin
         self.attribute = attribute
-
-    @staticmethod
-    def _validate_feature_type(feature_type: Text) -> None:
-        if feature_type not in VALID_FEATURE_TYPES:
-            raise ValueError(
-                f"Invalid feature type '{feature_type}' used. Valid feature types are: "
-                f"{VALID_FEATURE_TYPES}."
-            )
 
     def is_sparse(self) -> bool:
         """Checks if features are sparse or not.

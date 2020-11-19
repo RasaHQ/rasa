@@ -54,6 +54,7 @@ ACTIVE_LOOP = "active_loop"
 LOOP_INTERRUPTED = "is_interrupted"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
+FOLLOWUP_ACTION = "followup_action"
 
 # start of special user message section
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "

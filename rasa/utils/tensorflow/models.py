@@ -54,6 +54,7 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
+    SCALE_LOSS,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -743,14 +744,16 @@ class TransformerRasaModel(RasaModel):
     def _prepare_transformer_layer(
         self,
         name: Text,
+        num_layers: int,
+        units: int,
         drop_rate: float,
         drop_rate_attention: float,
         prefix: Text = "transformer",
     ):
         if self.config[NUM_TRANSFORMER_LAYERS] > 0:
             self._tf_layers[f"{prefix}.{name}"] = TransformerEncoder(
-                self.config[NUM_TRANSFORMER_LAYERS],
-                self.config[TRANSFORMER_SIZE],
+                num_layers,
+                units,
                 self.config[NUM_HEADS],
                 self.config[TRANSFORMER_SIZE] * 4,
                 self.config[REGULARIZATION_CONSTANT],
@@ -827,7 +830,10 @@ class TransformerRasaModel(RasaModel):
             if not dense:
                 # create dense labels for the input to use in negative sampling
                 self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
-                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                    units=2,
+                    use_bias=False,
+                    trainable=False,
+                    name=f"sparse_to_dense_ids.{name}",
                 )
 
     def _prepare_input_layers(self, name: Text) -> None:
@@ -860,8 +866,28 @@ class TransformerRasaModel(RasaModel):
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
         self._prepare_transformer_layer(
-            name, self.config[DROP_RATE], self.config[DROP_RATE_ATTENTION]
+            name,
+            self.config[NUM_TRANSFORMER_LAYERS],
+            self.config[TRANSFORMER_SIZE],
+            self.config[DROP_RATE],
+            self.config[DROP_RATE_ATTENTION],
         )
+
+    def _prepare_entity_recognition_layers(self) -> None:
+        for tag_spec in self._entity_tag_specs:
+            name = tag_spec.tag_name
+            num_tags = tag_spec.num_tags
+            self._tf_layers[f"embed.{name}.logits"] = layers.Embed(
+                num_tags, self.config[REGULARIZATION_CONSTANT], f"logits.{name}"
+            )
+            self._tf_layers[f"crf.{name}"] = layers.CRF(
+                num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
+            )
+            self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                self.config[EMBEDDING_DIMENSION],
+                self.config[REGULARIZATION_CONSTANT],
+                f"tags.{name}",
+            )
 
     def _combine_sparse_dense_features(
         self,
@@ -975,6 +1001,7 @@ class TransformerRasaModel(RasaModel):
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
     ) -> Optional[tf.Tensor]:
         """Creates dense labels for negative sampling."""
+
         # if there are dense features - we can use them
         for f in features:
             if not isinstance(f, tf.SparseTensor):
@@ -1090,6 +1117,33 @@ class TransformerRasaModel(RasaModel):
             return tf.shape(attribute_data[SEQUENCE][0])[0]
 
         return tf.shape(attribute_data[SENTENCE][0])[0]
+
+    def _calculate_entity_loss(
+        self,
+        inputs: tf.Tensor,
+        tag_ids: tf.Tensor,
+        mask: tf.Tensor,
+        sequence_lengths: tf.Tensor,
+        tag_name: Text,
+        entity_tags: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+
+        tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
+
+        if entity_tags is not None:
+            _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
+            inputs = tf.concat([inputs, _tags], axis=-1)
+
+        logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
+
+        # should call first to build weights
+        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
+        loss = self._tf_layers[f"crf.{tag_name}"].loss(
+            logits, tag_ids, sequence_lengths
+        )
+        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
+
+        return loss, f1, logits
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]

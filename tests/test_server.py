@@ -861,7 +861,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "event": "action",
             "name": "action_session_start",
             "policy": None,
-            "confidence": None,
+            "confidence": 1,
             "timestamp": 1514764800,
             "action_text": None,
         },

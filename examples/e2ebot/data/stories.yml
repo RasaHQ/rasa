@@ -10,7 +10,7 @@ stories:
 
 - story: sad path (text to text)
   steps:
-  - user: "Hello"
+  - user: "[Hello](bla)"
   - bot: "Welcome to moodbot. How are you feeling today?"
   - user: "Horrible"
   - bot: "Oh no! Here is a kitten photo. Did it help?"

@@ -30,7 +30,7 @@ from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 shape = 100
 
 
-def test_create_zero_features():
+def test_create_fake_features():
     # DENSE FEATURES
     dense_feature_sentence_features = Features(
         features=np.random.rand(shape),
@@ -40,10 +40,10 @@ def test_create_zero_features():
     )
     features = [[None, None, [dense_feature_sentence_features]]]
 
-    zero_features = model_data_utils._create_zero_features(features)
-    assert len(zero_features) == 1
-    assert zero_features[0].is_dense()
-    assert zero_features[0].features.shape == (0, shape)
+    fake_features = model_data_utils._create_fake_features(features)
+    assert len(fake_features) == 1
+    assert fake_features[0].is_dense()
+    assert fake_features[0].features.shape == (0, shape)
 
     # SPARSE FEATURES
     sparse_feature_sentence_features = Features(
@@ -53,11 +53,11 @@ def test_create_zero_features():
         origin=[],
     )
     features = [[None, None, [sparse_feature_sentence_features]]]
-    zero_features = model_data_utils._create_zero_features(features)
-    assert len(zero_features) == 1
-    assert zero_features[0].is_sparse()
-    assert zero_features[0].features.shape == (0, shape)
-    assert zero_features[0].features.nnz == 0
+    fake_features = model_data_utils._create_fake_features(features)
+    assert len(fake_features) == 1
+    assert fake_features[0].is_sparse()
+    assert fake_features[0].features.shape == (0, shape)
+    assert fake_features[0].features.nnz == 0
 
 
 def test_surface_attributes():
@@ -142,18 +142,18 @@ def test_surface_attributes():
 
 
 def test_extract_features():
-    zero_features = np.zeros(shape)
-    zero_features_as_features = Features(
-        features=zero_features, attribute=INTENT, feature_type=SENTENCE, origin=[]
+    fake_features = np.zeros(shape)
+    fake_features_as_features = Features(
+        features=fake_features, attribute=INTENT, feature_type=SENTENCE, origin=[]
     )
     # create zero features
-    zero_features_list = [zero_features_as_features]
+    fake_features_list = [fake_features_as_features]
 
     # create tracker state features by setting a random index in the array to 1
     random_inds = np.random.randint(shape, size=6)
     list_of_features = []
     for idx in random_inds:
-        current_features = copy.deepcopy(zero_features_as_features)
+        current_features = copy.deepcopy(fake_features_as_features)
         current_features.features[idx] = 1
         list_of_features.append([current_features])
 
@@ -168,11 +168,11 @@ def test_extract_features():
         attribute_masks,
         dense_features,
         sparse_features,
-    ) = model_data_utils._extract_features(tracker_features, zero_features_list, INTENT)
+    ) = model_data_utils._extract_features(tracker_features, fake_features_list, INTENT)
     expected_mask = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
 
     assert np.all(np.squeeze(np.array(attribute_masks), 2) == expected_mask)
-    assert np.array(dense_features[SENTENCE]).shape[-1] == zero_features.shape[-1]
+    assert np.array(dense_features[SENTENCE]).shape[-1] == fake_features.shape[-1]
     assert sparse_features == {}
 
 
