@@ -45,13 +45,13 @@ class EntitySynonymMapper(EntityExtractor):
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
+        """Process an incoming message."""
         updated_entities = message.get(ENTITIES, [])[:]
-        self.replace_synonyms(updated_entities)
+        self._replace_synonyms(updated_entities)
         message.set(ENTITIES, updated_entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-
+        """Persist this component to disk for future loading."""
         if self.synonyms:
             file_name = file_name + ".json"
             entity_synonyms_file = os.path.join(model_dir, file_name)
@@ -86,9 +86,9 @@ class EntitySynonymMapper(EntityExtractor):
                 f"Failed to load synonyms file from '{entity_synonyms_file}'.",
                 docs=DOCS_URL_TRAINING_DATA + "#synonyms",
             )
-        return cls(meta, synonyms)
+        return cls(meta, synonyms=synonyms)
 
-    def replace_synonyms(self, entities) -> None:
+    def _replace_synonyms(self, entities) -> None:
         for entity in entities:
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
