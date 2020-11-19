@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.model import Metadata
+from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -33,8 +34,12 @@ class MitieNLP(Component):
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], model_config: RasaNLUModelConfig
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> "MitieNLP":
+        """Creates this component (e.g. before a training is started)."""
         import mitie
 
         component_config = override_defaults(cls.defaults, component_config)
@@ -52,13 +57,18 @@ class MitieNLP(Component):
         extractor = mitie.total_word_feature_extractor(model_file)
         cls.ensure_proper_language_model(extractor)
 
-        return cls(component_config, extractor)
+        component = cls(component_config, extractor)
+
+        if domain:
+            component.extract_data_from_domain(domain)
+
+        return component
 
     @classmethod
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
-
+        """This key is used to cache components."""
         mitie_file = component_meta.get("model", None)
         if mitie_file is not None:
             return cls.name + "-" + str(os.path.abspath(mitie_file))

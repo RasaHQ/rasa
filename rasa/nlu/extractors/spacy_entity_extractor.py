@@ -24,6 +24,7 @@ class SpacyEntityExtractor(EntityExtractor):
     }
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Process an incoming message."""
         # can't use the existing doc here (spacy_doc on the message)
         # because tokens are lower cased which is bad for NER
         spacy_nlp = kwargs.get("spacy_nlp", None)

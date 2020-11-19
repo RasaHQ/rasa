@@ -446,7 +446,6 @@ class Component(metaclass=ComponentMetaclass):
             self.defaults, component_config
         )
 
-        self.domain = None
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
@@ -494,7 +493,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             the loaded component
         """
-
         if cached_component:
             return cached_component
 
@@ -519,7 +517,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The created component.
         """
-
         # Check language supporting
         language = model_config.language
         if not cls.can_handle_language(language):
@@ -549,7 +546,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The updated component configuration.
         """
-
         pass
 
     def train(
@@ -575,7 +571,6 @@ class Component(metaclass=ComponentMetaclass):
             config: The model configuration parameters.
 
         """
-
         pass
 
     def train_chunk(
@@ -620,7 +615,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             An optional dictionary with any information about the stored model.
         """
-
         pass
 
     @classmethod
@@ -641,10 +635,14 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             A unique caching key.
         """
-
         return None
 
     def __getstate__(self) -> Any:
+        """Gets the current state of the component.
+
+        Returns:
+            The state information.
+        """
         d = self.__dict__.copy()
         # these properties should not be pickled
         if "partial_processing_context" in d:
@@ -671,7 +669,6 @@ class Component(metaclass=ComponentMetaclass):
             context: The context of processing.
 
         """
-
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
 
@@ -721,7 +718,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             `True` if component can handle specific language, `False` otherwise.
         """
-
         # If both `supported_language_list` and `not_supported_language_list`
         # are set to `None`,
         # it means: support all languages
@@ -770,7 +766,10 @@ class Component(metaclass=ComponentMetaclass):
             return language not in not_supported_language_list
 
     def extract_data_from_domain(self, domain: Domain) -> None:
-        """This method allows the component to extract any information from the domain.
+        """Extracts any information from the given domain.
+
+        For example, in case the component needs to know all intents or entities,
+        it can extract this kind of information directly from the domain.
 
         Args:
             domain: The domain.
@@ -888,7 +887,6 @@ class ComponentBuilder:
         Returns:
             The created component.
         """
-
         from rasa.nlu import registry
         from rasa.nlu.model import Metadata
 
@@ -908,11 +906,18 @@ class ComponentBuilder:
                 f"Error: {e}"
             )
 
-    def create_component_from_class(self, component_class: Type[C], **cfg: Any) -> C:
+    def create_component_from_class(self, component_class: Type[C], **config: Any) -> C:
         """Create a component based on a class and a configuration.
 
-        Mainly used to make use of caching when instantiating component classes."""
+        Mainly used to make use of caching when instantiating component classes.
 
+        Args:
+            component_class: the component class
+            **config: the configuration
+
+        Returns:
+            The component instance.
+        """
         component_config = {"name": component_class.name}
 
-        return self.create_component(component_config, RasaNLUModelConfig(cfg))
+        return self.create_component(component_config, RasaNLUModelConfig(config))

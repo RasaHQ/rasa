@@ -336,10 +336,7 @@ class CRFEntityExtractor(EntityExtractor):
         return cls(meta, entity_taggers=entity_taggers)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this model into the passed directory.
-
-        Returns the metadata necessary to load the model again."""
-
+        """Persist this model into the passed directory."""
         import joblib
 
         file_names = {}

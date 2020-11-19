@@ -88,7 +88,7 @@ class DucklingEntityExtractor(EntityExtractor):
         model_config: RasaNLUModelConfig,
         domain: Optional[Domain] = None,
     ) -> "DucklingEntityExtractor":
-
+        """Creates this component (e.g. before a training is started)."""
         return cls(component_config, model_config.language)
 
     def _locale(self) -> Optional[Text]:

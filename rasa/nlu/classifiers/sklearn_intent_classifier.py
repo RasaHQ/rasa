@@ -67,20 +67,29 @@ class SklearnIntentClassifier(IntentClassifier):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specifies which python packages need to be installed."""
         return ["sklearn"]
 
     def transform_labels_str2num(self, labels: List[Text]) -> np.ndarray:
         """Transforms a list of strings into numeric label representation.
 
-        :param labels: List of labels to convert to numeric representation"""
+        Args:
+            labels: List of labels to convert to numeric representation
 
+        Returns:
+            The numeric label representation.
+        """
         return self.label_encoder.fit_transform(labels)
 
     def transform_labels_num2str(self, y: np.ndarray) -> np.ndarray:
         """Transforms a list of strings into numeric label representation.
 
-        :param y: List of labels to convert to numeric representation"""
+        Args:
+            y: List of labels to convert to numeric representation.
 
+        Returns:
+            The numeric label representation.
+        """
         return self.label_encoder.inverse_transform(y)
 
     def train(
@@ -90,7 +99,6 @@ class SklearnIntentClassifier(IntentClassifier):
         **kwargs: Any,
     ) -> None:
         """Train the intent classifier on a data set."""
-
         num_threads = kwargs.get("num_threads", 1)
 
         labels = [e.get("intent") for e in training_data.intent_examples]
@@ -204,11 +212,12 @@ class SklearnIntentClassifier(IntentClassifier):
     def predict_prob(self, X: np.ndarray) -> np.ndarray:
         """Given a bow vector of an input text, predict the intent label.
 
-        Return probabilities for all labels.
+        Args:
+            X: bow of input text
 
-        :param X: bow of input text
-        :return: vector of probabilities containing one entry for each label"""
-
+        Returns:
+            Vector of probabilities containing one entry for each label
+        """
         return self.classifier.predict_proba(X)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -228,7 +237,6 @@ class SklearnIntentClassifier(IntentClassifier):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
-
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
         if self.classifier and self.label_encoder:

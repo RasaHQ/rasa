@@ -141,7 +141,7 @@ class Trainer:
         skip_validation: bool = False,
         domain: Optional[Domain] = None,
     ):
-
+        """Intializes the trainer for loading data and training components."""
         self.config = config
         self.skip_validation = skip_validation
         self.training_data = None  # type: Optional[TrainingData]

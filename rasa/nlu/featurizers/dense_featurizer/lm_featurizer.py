@@ -95,6 +95,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         model_config: RasaNLUModelConfig,
         domain: Optional[Domain] = None,
     ) -> "DenseFeaturizer":
+        """Creates this component (e.g. before a training is started)."""
         language = model_config.language
         if not cls.can_handle_language(language):
             # check failed

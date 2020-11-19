@@ -27,8 +27,12 @@ class MitieIntentClassifier(IntentClassifier):
         component_config: Optional[Dict[Text, Any]] = None,
         classifier: Optional[Any] = None,
     ) -> None:
-        """Construct a new intent classifier using the MITIE framework."""
+        """Construct a new intent classifier using the MITIE framework.
 
+        Args:
+            component_config: the component configuration
+            classifier: the MITIE classifier
+        """
         super().__init__(component_config)
 
         self.classifier = classifier
@@ -113,7 +117,15 @@ class MitieIntentClassifier(IntentClassifier):
             return cls(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        """Persist this component to disk for future loading.
 
+        Args:
+            file_name: The file name of the model.
+            model_dir: The directory to store the model to.
+
+        Returns:
+            An optional dictionary with any information about the stored model.
+        """
         if self.classifier:
             file_name = file_name + ".dat"
             classifier_file = os.path.join(model_dir, file_name)
