@@ -35,6 +35,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
+from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -370,6 +371,14 @@ class UserUttered(Event):
         if parse_data:
             self.parse_data.update(**parse_data)
 
+    def clean_intent(self):
+        if self.intent:
+            intent, response_key = Message.separate_intent_response_key(
+                self.intent.get(INTENT_NAME_KEY)
+            )
+            self.intent[INTENT_NAME_KEY] = intent
+            self.parse_data["intent"] = self.intent
+
     @staticmethod
     def _from_parse_data(
         text: Text,
@@ -503,6 +512,14 @@ class UserUttered(Event):
                 ensure_ascii=False,
             )
         return ""
+
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
+
+        message = " "
+        if not self.is_probable:
+            message = f"||| {self.intent_name} is improbable according to ITED"
+        return message
 
     def as_story_string(self, e2e: bool = False) -> Text:
         text_with_entities = md_format_message(

@@ -236,6 +236,7 @@ class IntentTEDPolicy(TEDPolicy):
         "ignore_retrieval_intents": True,
         # Other intents to ignore
         "ignore_intents": [],
+        "distribution_folder": "./",
     }
 
     def __init__(
@@ -262,6 +263,7 @@ class IntentTEDPolicy(TEDPolicy):
         self.use_probability_thresholds = self.config["use_probability_thresholds"]
         self.ignore_intent_list = self.config["ignore_intents"]
         self.ignore_retrieval_intents = self.config["ignore_retrieval_intents"]
+        self.distribution_folder = self.config["distribution_folder"]
 
     @staticmethod
     def supported_data() -> SupportedData:
@@ -355,11 +357,17 @@ class IntentTEDPolicy(TEDPolicy):
             domain, interpreter
         )
 
+        label_to_id_map = self._get_label_key_to_ids_map(self._all_labels)
+
         # print("Label data signature", self._label_data.get_signature())
 
         model_train_data, train_label_ids = self._featurize_for_model(
             domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         )
+
+        # model_train_data, train_label_ids = self._featurize_for_model(
+        #     domain, encoded_all_labels, interpreter, all_trackers, **kwargs
+        # )
 
         if model_train_data.is_empty():
             logger.error(
@@ -396,18 +404,118 @@ class IntentTEDPolicy(TEDPolicy):
             )
 
             # print("Computing thresholds")
-            self.intent_thresholds = self.model.compute_thresholds(
-                model_augmented_data,
+            scores, sims = self.model.compute_scores(
+                model_augmented_data, augmented_label_ids
+            )
+
+            self.intent_thresholds = self.extract_thresholds_from_positive_labels(
+                augmented_label_ids, scores, sims, self.use_probability_thresholds
+            )
+            pos_values, neg_values = self.extract_distributions(
                 augmented_label_ids,
+                scores,
+                sims,
                 self.use_probability_thresholds,
+                label_to_id_map,
             )
+
         else:
-            self.intent_thresholds = self.model.compute_thresholds(
-                model_train_data, train_label_ids, self.use_probability_thresholds
+
+            # print("Computing thresholds")
+            scores, sims = self.model.compute_scores(model_train_data, train_label_ids)
+            self.intent_thresholds = self.extract_thresholds_from_positive_labels(
+                train_label_ids, scores, sims, self.use_probability_thresholds
             )
+            pos_values, neg_values = self.extract_distributions(
+                train_label_ids,
+                scores,
+                sims,
+                self.use_probability_thresholds,
+                label_to_id_map,
+            )
+
+        for index in self.intent_thresholds:
+            print(self._all_labels[index], index, self.intent_thresholds[index])
+
+        self._dump_distributions(
+            pos_values, neg_values, label_to_id_map, self.intent_thresholds
+        )
         #
-        # for index in self.intent_thresholds:
-        #     print(self._all_labels[index], index, self.intent_thresholds[index])
+
+    # TODO: This is just a helper function, should be removed in the end.
+    def _dump_distributions(
+        self, pos_values, neg_values, label_to_id_map, intent_thresholds
+    ):
+
+        io_utils.create_path(os.path.join(self.distribution_folder, "neg_values.pkl"))
+        io_utils.json_pickle(f"{self.distribution_folder}/neg_values.pkl", neg_values)
+        io_utils.json_pickle(f"{self.distribution_folder}/pos_values.pkl", pos_values)
+        io_utils.json_pickle(
+            f"{self.distribution_folder}/label_to_id.pkl", label_to_id_map
+        )
+        io_utils.json_pickle(
+            f"{self.distribution_folder}/thresholds.pkl", intent_thresholds
+        )
+
+    @staticmethod
+    def extract_thresholds_from_positive_labels(
+        label_ids, scores, sims, use_probability_thresholds
+    ):
+        thresholds = {}
+        # Collect all the probabilities for each label id
+        for index, all_pos_labels in enumerate(label_ids):
+            first_pos_label_id = all_pos_labels[0]
+
+            if first_pos_label_id not in thresholds:
+                thresholds[first_pos_label_id] = []
+
+            thresholds[first_pos_label_id].append(
+                scores[index, 0, first_pos_label_id]
+                if use_probability_thresholds
+                else sims[index, 0, first_pos_label_id]
+            )
+        for label_id in thresholds:
+            thresholds[label_id] = (
+                min(0.5, min(thresholds[label_id]))
+                if use_probability_thresholds
+                else min(thresholds[label_id])
+            )
+        return thresholds
+
+    def extract_distributions(
+        self, label_ids, scores, sims, use_probability_thresholds, label_to_id_map
+    ):
+
+        user_labels = set(self._all_labels) - set(
+            rasa.shared.core.constants.DEFAULT_INTENTS
+        )
+
+        pos_values = {}
+        neg_values = {}
+
+        for intent in user_labels:
+            intent_id = label_to_id_map[intent]
+            if intent_id not in pos_values or intent_id not in neg_values:
+                pos_values[intent_id] = []
+                neg_values[intent_id] = []
+
+            for index, all_pos_labels in enumerate(label_ids):
+                intent_value = (
+                    scores[index, 0, intent_id]
+                    if use_probability_thresholds
+                    else sims[index, 0, intent_id]
+                )
+                if intent_id in all_pos_labels.tolist():
+                    pos_values[intent_id].append(intent_value)
+                else:
+                    neg_values[intent_id].append(intent_value)
+
+            if not pos_values[intent_id]:
+                del pos_values[intent_id]
+            if not neg_values[intent_id]:
+                del neg_values[intent_id]
+
+        return pos_values, neg_values
 
     def _featurize_for_model(
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
@@ -832,9 +940,7 @@ class IntentTED(TED):
 
         return {"intent_scores": scores, "sim_all": sim_all}
 
-    def compute_thresholds(
-        self, model_data: RasaModelData, label_ids, use_probability_thresholds: bool
-    ):
+    def compute_scores(self, model_data: RasaModelData, label_ids):
         self._training = False
 
         scores = None
@@ -858,26 +964,4 @@ class IntentTED(TED):
                 sims = np.vstack([sims, batch_output["sim_all"].numpy()])
             # print(index)
 
-        thresholds = {}
-
-        # Collect all the probabilities for each label id
-        for index, all_pos_labels in enumerate(label_ids):
-            first_pos_label_id = all_pos_labels[0]
-
-            if first_pos_label_id not in thresholds:
-                thresholds[first_pos_label_id] = []
-
-            thresholds[first_pos_label_id].append(
-                scores[index, 0, first_pos_label_id]
-                if use_probability_thresholds
-                else sims[index, 0, first_pos_label_id]
-            )
-
-        for label_id in thresholds:
-            thresholds[label_id] = (
-                min(0.5, min(thresholds[label_id]))
-                if use_probability_thresholds
-                else min(thresholds[label_id])
-            )
-
-        return thresholds
+        return scores, sims

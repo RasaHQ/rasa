@@ -39,6 +39,7 @@ CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
 FAILED_STORIES_FILE = "failed_test_stories.yml"
 SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
+FAILED_ITED_FILE = "failed_test_stories_ited.yml"
 
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ StoryEvaluation = namedtuple(
         "successful_stories",
         "action_list",
         "in_training_data_fraction",
+        "ited_failed_stories",
     ],
 )
 
@@ -298,6 +300,8 @@ class WronglyClassifiedUserUtterance(UserUttered):
         predicted_message = md_format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
+        if not self.is_probable:
+            predicted_message = f"{predicted_message} ||| {self.intent_name} is improbable according to ITED"
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
@@ -558,6 +562,7 @@ async def _predict_tracker_actions(
             num_predicted_actions += 1
 
         elif use_e2e and isinstance(event, UserUttered):
+            event.clean_intent()
             # This means that user utterance didn't have a user message, only intent,
             # so we can skip the NLU part and take the parse data directly.
             # Indirectly that means that the test story was in YAML format.
@@ -595,6 +600,39 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     return len(in_training_data) / len(action_list) if action_list else 0
 
 
+def _get_intersecting_stories(
+    stories_1: List[DialogueStateTracker], stories_2: List[DialogueStateTracker]
+):
+    story_set_1 = set([t.sender_id for t in stories_1])
+    story_set_2 = set([t.sender_id for t in stories_2])
+    story_ids = story_set_2.intersection(story_set_1)
+
+    return [story for story in stories_1 if story.sender_id in story_ids]
+
+
+def _collect_wrong_action_stories(failed_stories: List[DialogueStateTracker]):
+
+    stories = []
+    for t in failed_stories:
+        for event in t.events:
+            if isinstance(event, WronglyPredictedAction):
+                stories.append(t)
+                break
+    return stories
+
+
+def _collect_only_wrong_intent_stories(failed_stories: List[DialogueStateTracker]):
+    stories = []
+    for t in failed_stories:
+        wrong_action_found = False
+        for event in t.events:
+            if isinstance(event, WronglyPredictedAction):
+                wrong_action_found = True
+        if not wrong_action_found:
+            stories.append(t)
+    return stories
+
+
 async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
@@ -609,6 +647,7 @@ async def _collect_story_predictions(
     failed = []
     success = []
     correct_dialogues = []
+    ited_flagged = []
     number_of_stories = len(completed_trackers)
 
     logger.info(f"Evaluating {number_of_stories} stories\nProgress:")
@@ -623,6 +662,9 @@ async def _collect_story_predictions(
         ) = await _predict_tracker_actions(
             tracker, agent, fail_on_prediction_errors, use_e2e
         )
+
+        if _contains_improbable_user_events(predicted_tracker):
+            ited_flagged.append(predicted_tracker)
 
         story_eval_store.merge_store(tracker_results)
 
@@ -665,9 +707,18 @@ async def _collect_story_predictions(
             successful_stories=success,
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
+            ited_failed_stories=ited_flagged,
         ),
         number_of_stories,
     )
+
+
+def _contains_improbable_user_events(tracker: DialogueStateTracker) -> bool:
+    for event in tracker.events:
+        if isinstance(event, UserUttered):
+            if not event.is_probable:
+                return True
+    return False
 
 
 def _log_stories(trackers: List[DialogueStateTracker], file_path: Text) -> None:
@@ -742,6 +793,37 @@ async def test(
                 targets, predictions, output_dict=True
             )
 
+    wrong_action_stories = _collect_wrong_action_stories(
+        story_evaluation.failed_stories
+    )
+    # only_intent_flagged_stories = _collect_only_wrong_intent_stories(ited_flagged)
+
+    wrong_action_ited_stories = _get_intersecting_stories(
+        wrong_action_stories, story_evaluation.ited_failed_stories
+    )
+    correct_action_ited_stories = [
+        story
+        for story in story_evaluation.ited_failed_stories
+        if story not in wrong_action_ited_stories
+    ]
+    # wrong_intent_ited = _get_intersecting_stories(wrong_action_stories, ited_flagged)
+
+    logger.info(
+        f"Total number of stories flagged by ITED - {len(story_evaluation.ited_failed_stories)}"
+    )
+    logger.info(
+        f"Fraction of failed stories where action was wrongly predicted and intent TED also "
+        f"flagged - {len(wrong_action_ited_stories)}/{len(wrong_action_stories)}"
+    )
+    logger.info(
+        f"Fraction of ITED flagged stories where action was correctly predicted but ITED still flagged it - "
+        f"{len(correct_action_ited_stories)}/{len(story_evaluation.ited_failed_stories)}"
+    )
+
+    # logger.info(
+    #     f"Stories where action was wrongly predicted and intent TED also "
+    #     f"flagged - {len(wrong_action_ited)}/{len(wrong_action_stories)}")
+
     telemetry.track_core_model_test(len(generator.story_graph.story_steps), e2e, agent)
 
     _log_evaluation_table(
@@ -766,6 +848,18 @@ async def test(
         _log_stories(
             story_evaluation.failed_stories,
             os.path.join(out_directory, FAILED_STORIES_FILE),
+        )
+        _log_stories(
+            story_evaluation.ited_failed_stories,
+            os.path.join(out_directory, FAILED_ITED_FILE),
+        )
+        _log_stories(
+            wrong_action_ited_stories,
+            os.path.join(out_directory, "wrong_action_ited_flagged.yml"),
+        )
+        _log_stories(
+            correct_action_ited_stories,
+            os.path.join(out_directory, "correct_action_ited_flagged.yml"),
         )
     if successes and out_directory:
         _log_stories(
