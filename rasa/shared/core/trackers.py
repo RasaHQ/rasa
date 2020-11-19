@@ -18,7 +18,6 @@ from typing import (
     Union,
     FrozenSet,
     Tuple,
-    TypedDict,
     TYPE_CHECKING,
 )
 
