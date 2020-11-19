@@ -92,6 +92,7 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
 )
 
+
 logger = logging.getLogger(__name__)
 
 

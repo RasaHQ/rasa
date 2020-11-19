@@ -1,4 +1,4 @@
-from typing import Dict, Text, Any, Optional
+from typing import Dict, Text, Any
 
 import rasa.shared.utils.io
 from rasa.nlu.tokenizers.tokenizer import Tokenizer

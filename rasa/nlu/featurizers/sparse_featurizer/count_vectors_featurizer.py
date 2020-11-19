@@ -693,7 +693,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 meta, vocabulary=vocabulary
             )
 
-        ftr = cls(meta, vectorizers=vectorizers)
+        ftr = cls(meta, vectorizers)
 
         # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:

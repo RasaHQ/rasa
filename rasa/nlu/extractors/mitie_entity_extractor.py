@@ -161,7 +161,7 @@ class MitieEntityExtractor(EntityExtractor):
         classifier_file = os.path.join(model_dir, file_name)
         if os.path.exists(classifier_file):
             extractor = mitie.named_entity_extractor(classifier_file)
-            return cls(meta, ner=extractor)
+            return cls(meta, extractor)
         else:
             return cls(meta)
 

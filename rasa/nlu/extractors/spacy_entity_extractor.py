@@ -1,5 +1,5 @@
 import typing
-from typing import Any, Dict, List, Text, Type
+from typing import Any, Dict, List, Text, Optional, Type
 
 from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.utils.spacy_utils import SpacyNLP
@@ -23,8 +23,10 @@ class SpacyEntityExtractor(EntityExtractor):
         "dimensions": None
     }
 
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        super().__init__(component_config)
+
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Process an incoming message."""
         # can't use the existing doc here (spacy_doc on the message)
         # because tokens are lower cased which is bad for NER
         spacy_nlp = kwargs.get("spacy_nlp", None)

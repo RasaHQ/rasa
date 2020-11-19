@@ -1,9 +1,8 @@
-from typing import Dict, Text, Any, Optional
+from typing import Dict, Text, Any
 
 import rasa.shared.utils.io
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.core.domain import Domain
 
 
 class ConveRTTokenizer(WhitespaceTokenizer):
