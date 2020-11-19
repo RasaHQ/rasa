@@ -4,7 +4,19 @@ from collections import deque, defaultdict
 
 import uuid
 import typing
-from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Union
+from typing import (
+    List,
+    Text,
+    Dict,
+    Optional,
+    Tuple,
+    Any,
+    Set,
+    ValuesView,
+    Union,
+    Sequence,
+    cast,
+)
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
@@ -141,20 +153,18 @@ class StoryStep:
         return f"    - {story_step_element.as_story_string()}\n"
 
     @staticmethod
-    def _or_string(story_step_element: List[Event], e2e: bool) -> Text:
+    def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Text:
         for event in story_step_element:
             if not isinstance(event, UserUttered):
                 raise EventTypeError(
                     "OR statement events must be of type `UserUttered`."
                 )
 
+        # FIXME: https://github.com/python/mypy/issues/7853
+        story_step_element = cast(Sequence[UserUttered], story_step_element)
+
         result = " OR ".join(
-            # FIXME: this breaks below because not
-            # all `as_story_string()` take a `e2e` argument.
-            [
-                element.as_story_string(e2e)  # type: ignore[call-arg]
-                for element in story_step_element
-            ]
+            [element.as_story_string(e2e) for element in story_step_element]
         )
         return f"* {result}\n"
 
@@ -165,35 +175,35 @@ class StoryStep:
             result = ""
         else:
             result = f"\n## {self.block_name}\n"
-            for s in self.start_checkpoints:
-                if s.name != STORY_START:
-                    result += self._checkpoint_string(s)
+            for checkpoint in self.start_checkpoints:
+                if checkpoint.name != STORY_START:
+                    result += self._checkpoint_string(checkpoint)
 
-        for s in self.events:
+        for event in self.events:
             if (
-                self.is_action_listen(s)
-                or self.is_action_session_start(s)
-                or isinstance(s, SessionStarted)
+                self.is_action_listen(event)
+                or self.is_action_session_start(event)
+                or isinstance(event, SessionStarted)
             ):
                 continue
 
-            if isinstance(s, UserUttered):
-                result += self._user_string(s, e2e)
-            elif isinstance(s, Event):
-                converted = s.as_story_string()
+            if isinstance(event, UserUttered):
+                result += self._user_string(event, e2e)
+            elif isinstance(event, Event):
+                converted = event.as_story_string()
                 if converted:
-                    result += self._bot_string(s)
-            elif isinstance(s, list):
+                    result += self._bot_string(event)
+            elif isinstance(event, list):
                 # The story reader classes support reading stories in
                 # conversion mode.  When this mode is enabled, OR statements
                 # are represented as lists of events.
-                result += self._or_string(s, e2e)
+                result += self._or_string(event, e2e)
             else:
-                raise Exception(f"Unexpected element in story step: {s}")
+                raise Exception(f"Unexpected element in story step: {event}")
 
         if not flat:
-            for s in self.end_checkpoints:
-                result += self._checkpoint_string(s)
+            for checkpoint in self.end_checkpoints:
+                result += self._checkpoint_string(checkpoint)
         return result
 
     @staticmethod
