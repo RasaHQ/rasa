@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +31,12 @@ class JiebaTokenizer(Tokenizer):
         "token_pattern": None,
     }  # default don't load custom dictionary
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+    def __init__(
+        self, component_config: Dict[Text, Any] = None, domain: Optional[Domain] = None
+    ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
 
         # path to dictionary file or None
         self.dictionary_path = self.component_config.get("dictionary_path")

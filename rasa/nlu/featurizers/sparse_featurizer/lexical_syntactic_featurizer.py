@@ -20,6 +20,7 @@ from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
 
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def __init__(
         self,
         component_config: Dict[Text, Any],
+        domain: Optional[Domain] = None,
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
     ):
         super().__init__(component_config)

@@ -26,6 +26,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -135,12 +136,13 @@ class Trainer:
 
     def __init__(
         self,
-        cfg: RasaNLUModelConfig,
+        config: RasaNLUModelConfig,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        domain: Optional[Domain] = None,
     ):
 
-        self.config = cfg
+        self.config = config
         self.skip_validation = skip_validation
         self.training_data = None  # type: Optional[TrainingData]
 
@@ -152,21 +154,26 @@ class Trainer:
         # Before instantiating the component classes, lets check if all
         # required packages are available
         if not self.skip_validation:
-            components.validate_requirements(cfg.component_names)
+            components.validate_requirements(config.component_names)
 
         # build pipeline
-        self.pipeline = self._build_pipeline(cfg, component_builder)
+        self.pipeline = self._build_pipeline(config, component_builder, domain)
 
     def _build_pipeline(
-        self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
+        self,
+        model_config: RasaNLUModelConfig,
+        component_builder: ComponentBuilder,
+        domain: Optional[Domain] = None,
     ) -> List[Component]:
         """Transform the passed names of the pipeline components into classes."""
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
-        for index, pipeline_component in enumerate(cfg.pipeline):
-            component_cfg = cfg.for_component(index)
-            component = component_builder.create_component(component_cfg, cfg)
+        for index, pipeline_component in enumerate(model_config.pipeline):
+            component_config = model_config.for_component(index)
+            component = component_builder.create_component(
+                component_config, model_config, domain
+            )
             components.validate_component_keys(component, pipeline_component)
             pipeline.append(component)
 

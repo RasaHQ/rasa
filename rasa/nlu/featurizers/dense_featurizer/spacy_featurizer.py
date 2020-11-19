@@ -18,6 +18,7 @@ from rasa.nlu.constants import (
 )
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
+from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
@@ -37,8 +38,12 @@ class SpacyFeaturizer(DenseFeaturizer):
         POOLING: MEAN_POOLING
     }
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
-        super().__init__(component_config)
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
+    ):
+        super().__init__(component_config, domain)
 
         self.pooling_operation = self.component_config[POOLING]
 

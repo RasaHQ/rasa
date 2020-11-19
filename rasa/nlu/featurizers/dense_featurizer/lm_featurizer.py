@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
 )
 from rasa.utils import train_utils
+from rasa.shared.core.domain import Domain
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -70,6 +71,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
         skip_model_load: bool = False,
         hf_transformers_loaded: bool = False,
     ) -> None:
@@ -81,7 +83,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             hf_transformers_loaded: Skip loading of model and metadata, use
             HFTransformers output instead.
         """
-        super(LanguageModelFeaturizer, self).__init__(component_config)
+        super(LanguageModelFeaturizer, self).__init__(component_config, domain)
         if hf_transformers_loaded:
             return
         self._load_model_metadata()
@@ -89,20 +91,25 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> "DenseFeaturizer":
-        language = config.language
+        language = model_config.language
         if not cls.can_handle_language(language):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
         # TODO: remove this when HFTransformersNLP is removed for good
-        if isinstance(config, Metadata):
+        if isinstance(model_config, Metadata):
             hf_transformers_loaded = "HFTransformersNLP" in [
-                c["name"] for c in config.metadata["pipeline"]
+                c["name"] for c in model_config.metadata["pipeline"]
             ]
         else:
-            hf_transformers_loaded = "HFTransformersNLP" in config.component_names
-        return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
+            hf_transformers_loaded = "HFTransformersNLP" in model_config.component_names
+        return cls(
+            component_config, domain, hf_transformers_loaded=hf_transformers_loaded
+        )
 
     @classmethod
     def load(

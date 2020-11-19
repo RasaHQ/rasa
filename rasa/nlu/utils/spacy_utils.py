@@ -61,7 +61,7 @@ class SpacyNLP(Component):
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+        cls, component_config: Dict[Text, Any], model_config: RasaNLUModelConfig
     ) -> "SpacyNLP":
 
         component_config = override_defaults(cls.defaults, component_config)
@@ -70,8 +70,8 @@ class SpacyNLP(Component):
 
         # if no model is specified, we fall back to the language string
         if not spacy_model_name:
-            spacy_model_name = config.language
-            component_config["model"] = config.language
+            spacy_model_name = model_config.language
+            component_config["model"] = model_config.language
 
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
 

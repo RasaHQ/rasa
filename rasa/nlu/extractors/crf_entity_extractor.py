@@ -29,6 +29,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -127,10 +128,11 @@ class CRFEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
         entity_taggers: Optional[Dict[Text, "CRF"]] = None,
     ) -> None:
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
 
         self.entity_taggers = entity_taggers
 
@@ -333,7 +335,7 @@ class CRFEntityExtractor(EntityExtractor):
                     f"exist?"
                 )
 
-        return cls(meta, entity_taggers)
+        return cls(meta, entity_taggers=entity_taggers)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.

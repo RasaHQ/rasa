@@ -13,6 +13,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -74,18 +75,22 @@ class DucklingEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
         language: Optional[Text] = None,
     ) -> None:
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
         self.language = language
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> "DucklingEntityExtractor":
 
-        return cls(component_config, config.language)
+        return cls(component_config, domain, model_config.language)
 
     def _locale(self) -> Optional[Text]:
         if not self.component_config.get("locale"):
@@ -207,4 +212,4 @@ class DucklingEntityExtractor(EntityExtractor):
     ) -> "DucklingEntityExtractor":
 
         language = model_metadata.get("language") if model_metadata else None
-        return cls(meta, language)
+        return cls(meta, language=language)

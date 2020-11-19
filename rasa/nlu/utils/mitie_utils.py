@@ -33,7 +33,7 @@ class MitieNLP(Component):
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+        cls, component_config: Dict[Text, Any], model_config: RasaNLUModelConfig
     ) -> "MitieNLP":
         import mitie
 

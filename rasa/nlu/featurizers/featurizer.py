@@ -4,17 +4,22 @@ from typing import Text, Optional, Dict, Any
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
+from rasa.shared.core.domain import Domain
 
 
 class Featurizer(Component):
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
+    ) -> None:
         if not component_config:
             component_config = {}
 
         # makes sure the alias name is set
         component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.name)
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
 
 
 class DenseFeaturizer(Featurizer):

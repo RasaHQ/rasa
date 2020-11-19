@@ -91,7 +91,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
     DENSE_DIMENSION,
 )
-
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -305,6 +305,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
@@ -317,7 +318,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
 
         self._check_config_parameters()
 

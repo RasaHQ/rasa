@@ -26,6 +26,7 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +48,11 @@ class RegexFeaturizer(SparseFeaturizer):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
     ) -> None:
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
 
         self.known_patterns = known_patterns if known_patterns else []
         self.case_sensitive = self.component_config["case_sensitive"]

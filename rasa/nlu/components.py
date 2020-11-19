@@ -11,6 +11,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDa
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
+from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -432,7 +433,11 @@ class Component(metaclass=ComponentMetaclass):
     # This is an important feature for backwards compatibility of components.
     not_supported_language_list = None
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        domain: Optional[Domain] = None,
+    ) -> None:
 
         if not component_config:
             component_config = {}
@@ -445,6 +450,7 @@ class Component(metaclass=ComponentMetaclass):
             self.defaults, component_config
         )
 
+        self.domain = domain
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
@@ -500,7 +506,10 @@ class Component(metaclass=ComponentMetaclass):
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> "Component":
         """Creates this component (e.g. before a training is started).
 
@@ -508,19 +517,20 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             component_config: The components configuration parameters.
-            config: The model configuration parameters.
+            model_config: The model configuration parameters.
+            domain: The domain the model uses.
 
         Returns:
             The created component.
         """
 
         # Check language supporting
-        language = config.language
+        language = model_config.language
         if not cls.can_handle_language(language):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
 
-        return cls(component_config)
+        return cls(component_config, domain)
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
         """Initialize this component for a new pipeline.
@@ -847,7 +857,10 @@ class ComponentBuilder:
             )
 
     def create_component(
-        self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
+        self,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> Component:
         """Creates a component.
 
@@ -856,7 +869,8 @@ class ComponentBuilder:
 
         Args:
             component_config: The component configuration.
-            cfg: The model configuration.
+            model_config: The model configuration.
+            domain: The domain.
 
         Returns:
             The created component.
@@ -867,10 +881,12 @@ class ComponentBuilder:
 
         try:
             component, cache_key = self.__get_cached_component(
-                component_config, Metadata(cfg.as_dict(), None)
+                component_config, Metadata(model_config.as_dict(), None)
             )
             if component is None:
-                component = registry.create_component_by_config(component_config, cfg)
+                component = registry.create_component_by_config(
+                    component_config, model_config, domain
+                )
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover

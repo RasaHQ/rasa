@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Optional
 
 import regex
 import re
@@ -7,6 +7,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.core.domain import Domain
 
 
 class WhitespaceTokenizer(Tokenizer):
@@ -23,10 +24,12 @@ class WhitespaceTokenizer(Tokenizer):
     # the following language should not be tokenized using the WhitespaceTokenizer
     not_supported_language_list = ["zh", "ja", "th"]
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+    def __init__(
+        self, component_config: Dict[Text, Any] = None, domain: Optional[Domain] = None
+    ) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
 
         self.emoji_pattern = self.get_emoji_regex()
 

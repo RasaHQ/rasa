@@ -18,6 +18,7 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -51,19 +52,20 @@ class SklearnIntentClassifier(IntentClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        clf: "sklearn.model_selection.GridSearchCV" = None,
-        le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
+        domain: Optional[Domain] = Any,
+        classifier: Optional["sklearn.model_selection.GridSearchCV"] = None,
+        label_encoder: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
-        super().__init__(component_config)
+        super().__init__(component_config, domain)
 
-        if le is not None:
-            self.le = le
+        if label_encoder is not None:
+            self.label_encoder = label_encoder
         else:
-            self.le = LabelEncoder()
-        self.clf = clf
+            self.label_encoder = LabelEncoder()
+        self.classifier = classifier
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -74,14 +76,14 @@ class SklearnIntentClassifier(IntentClassifier):
 
         :param labels: List of labels to convert to numeric representation"""
 
-        return self.le.fit_transform(labels)
+        return self.label_encoder.fit_transform(labels)
 
     def transform_labels_num2str(self, y: np.ndarray) -> np.ndarray:
         """Transforms a list of strings into numeric label representation.
 
         :param y: List of labels to convert to numeric representation"""
 
-        return self.le.inverse_transform(y)
+        return self.label_encoder.inverse_transform(y)
 
     def train(
         self,
@@ -114,14 +116,14 @@ class SklearnIntentClassifier(IntentClassifier):
         # reduce dimensionality
         X = np.reshape(X, (len(X), -1))
 
-        self.clf = self._create_classifier(num_threads, y)
+        self.classifier = self._create_classifier(num_threads, y)
 
         with warnings.catch_warnings():
             # sklearn raises lots of
             # "UndefinedMetricWarning: F - score is ill - defined"
             # if there are few intent examples, this is needed to prevent it
             warnings.simplefilter("ignore")
-            self.clf.fit(X, y)
+            self.classifier.fit(X, y)
 
     @staticmethod
     def _get_sentence_features(message: Message) -> np.ndarray:
@@ -169,7 +171,7 @@ class SklearnIntentClassifier(IntentClassifier):
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely intent and its probability for a message."""
 
-        if not self.clf:
+        if not self.classifier:
             # component is either not trained or didn't
             # receive enough training data
             intent = None
@@ -209,7 +211,7 @@ class SklearnIntentClassifier(IntentClassifier):
         :param X: bow of input text
         :return: vector of probabilities containing one entry for each label"""
 
-        return self.clf.predict_proba(X)
+        return self.classifier.predict_proba(X)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Given a bow vector of an input text, predict most probable label.
@@ -231,12 +233,13 @@ class SklearnIntentClassifier(IntentClassifier):
 
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
-        if self.clf and self.le:
+        if self.classifier and self.label_encoder:
             io_utils.json_pickle(
-                os.path.join(model_dir, encoder_file_name), self.le.classes_
+                os.path.join(model_dir, encoder_file_name), self.label_encoder.classes_
             )
             io_utils.json_pickle(
-                os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
+                os.path.join(model_dir, classifier_file_name),
+                self.classifier.best_estimator_,
             )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
 
@@ -259,6 +262,6 @@ class SklearnIntentClassifier(IntentClassifier):
             classes = io_utils.json_unpickle(encoder_file)
             encoder = LabelEncoder()
             encoder.classes_ = classes
-            return cls(meta, classifier, encoder)
+            return cls(meta, classifier=classifier, label_encoder=encoder)
         else:
             return cls(meta)
