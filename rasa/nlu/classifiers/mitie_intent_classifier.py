@@ -12,7 +12,6 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -26,12 +25,11 @@ class MitieIntentClassifier(IntentClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         classifier: Optional[Any] = None,
     ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
 
         self.classifier = classifier
 

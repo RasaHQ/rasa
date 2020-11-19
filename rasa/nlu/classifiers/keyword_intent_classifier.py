@@ -12,7 +12,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,6 @@ class KeywordIntentClassifier(IntentClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         intent_keyword_map: Optional[Dict] = None,
     ) -> None:
 

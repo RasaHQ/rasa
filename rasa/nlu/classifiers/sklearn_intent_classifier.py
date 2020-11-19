@@ -18,7 +18,6 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +51,13 @@ class SklearnIntentClassifier(IntentClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = Any,
         classifier: Optional["sklearn.model_selection.GridSearchCV"] = None,
         label_encoder: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
 
         if label_encoder is not None:
             self.label_encoder = label_encoder

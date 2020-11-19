@@ -14,7 +14,6 @@ from rasa.shared.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
     ACTION_NAME,
 )
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +62,10 @@ class Token:
 
 
 class Tokenizer(Component):
-    def __init__(
-        self, component_config: Dict[Text, Any] = None, domain: Optional[Domain] = None
-    ) -> None:
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
 
         # flag to check whether to split intents
         self.intent_tokenization_flag = self.component_config.get(

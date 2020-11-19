@@ -30,7 +30,6 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
 )
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -200,12 +199,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()

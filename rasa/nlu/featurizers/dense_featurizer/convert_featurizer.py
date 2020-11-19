@@ -34,7 +34,6 @@ import numpy as np
 import tensorflow as tf
 
 import rasa.utils.train_utils as train_utils
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -72,18 +71,14 @@ class ConveRTFeaturizer(DenseFeaturizer):
         """Packages needed to be installed."""
         return ["tensorflow_text", "tensorflow_hub"]
 
-    def __init__(
-        self,
-        component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
-    ) -> None:
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         """Initializes ConveRTFeaturizer with the model and different
         encoding signatures.
 
         Args:
             component_config: Configuration for the component.
         """
-        super(ConveRTFeaturizer, self).__init__(component_config, domain)
+        super(ConveRTFeaturizer, self).__init__(component_config)
         self.model_url = self._get_validated_model_url()
 
         self.module = train_utils.load_tf_hub_model(self.model_url)

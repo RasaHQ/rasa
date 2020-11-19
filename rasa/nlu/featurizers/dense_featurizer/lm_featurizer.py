@@ -71,7 +71,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         skip_model_load: bool = False,
         hf_transformers_loaded: bool = False,
     ) -> None:
@@ -83,7 +82,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             hf_transformers_loaded: Skip loading of model and metadata, use
             HFTransformers output instead.
         """
-        super(LanguageModelFeaturizer, self).__init__(component_config, domain)
+        super(LanguageModelFeaturizer, self).__init__(component_config)
         if hf_transformers_loaded:
             return
         self._load_model_metadata()
@@ -107,9 +106,13 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             ]
         else:
             hf_transformers_loaded = "HFTransformersNLP" in model_config.component_names
-        return cls(
-            component_config, domain, hf_transformers_loaded=hf_transformers_loaded
-        )
+
+        component = cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
+
+        if domain:
+            component.extract_data_from_domain(domain)
+
+        return domain
 
     @classmethod
     def load(

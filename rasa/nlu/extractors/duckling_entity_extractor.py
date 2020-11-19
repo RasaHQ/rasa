@@ -75,11 +75,10 @@ class DucklingEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         language: Optional[Text] = None,
     ) -> None:
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
         self.language = language
 
     @classmethod
@@ -90,7 +89,7 @@ class DucklingEntityExtractor(EntityExtractor):
         domain: Optional[Domain] = None,
     ) -> "DucklingEntityExtractor":
 
-        return cls(component_config, domain, model_config.language)
+        return cls(component_config, model_config.language)
 
     def _locale(self) -> Optional[Text]:
         if not self.component_config.get("locale"):

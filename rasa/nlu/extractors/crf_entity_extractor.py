@@ -29,7 +29,6 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +127,10 @@ class CRFEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         entity_taggers: Optional[Dict[Text, "CRF"]] = None,
     ) -> None:
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
 
         self.entity_taggers = entity_taggers
 

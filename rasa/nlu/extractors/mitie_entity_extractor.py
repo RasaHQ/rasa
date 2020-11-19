@@ -14,7 +14,6 @@ from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +26,10 @@ class MitieEntityExtractor(EntityExtractor):
     def required_components(cls) -> List[Type[Component]]:
         return [MitieNLP, Tokenizer]
 
-    def __init__(
-        self,
-        component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
-        ner=None,
-    ):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
         self.ner = ner
 
     @classmethod

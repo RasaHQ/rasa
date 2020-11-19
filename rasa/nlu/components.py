@@ -433,11 +433,7 @@ class Component(metaclass=ComponentMetaclass):
     # This is an important feature for backwards compatibility of components.
     not_supported_language_list = None
 
-    def __init__(
-        self,
-        component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
-    ) -> None:
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         if not component_config:
             component_config = {}
@@ -450,7 +446,7 @@ class Component(metaclass=ComponentMetaclass):
             self.defaults, component_config
         )
 
-        self.domain = domain
+        self.domain = None
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
@@ -530,7 +526,12 @@ class Component(metaclass=ComponentMetaclass):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
 
-        return cls(component_config, domain)
+        component = cls(component_config)
+
+        if domain:
+            component.extract_data_from_domain(domain)
+
+        return component
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
         """Initialize this component for a new pipeline.
@@ -721,7 +722,8 @@ class Component(metaclass=ComponentMetaclass):
             `True` if component can handle specific language, `False` otherwise.
         """
 
-        # If both `supported_language_list` and `not_supported_language_list` are set to `None`,
+        # If both `supported_language_list` and `not_supported_language_list`
+        # are set to `None`,
         # it means: support all languages
         if language is None or (
             cls.supported_language_list is None
@@ -731,9 +733,11 @@ class Component(metaclass=ComponentMetaclass):
 
         # check language supporting settings
         if cls.supported_language_list and cls.not_supported_language_list:
-            # When user set both language supporting settings to not None, it will lead to ambiguity.
+            # When user set both language supporting settings to not None, it will
+            # lead to ambiguity.
             raise RasaException(
-                "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
+                "Only one of `supported_language_list` and "
+                "`not_supported_language_list` can be set to not None"
             )
 
         # convert to `list` for membership test
@@ -751,7 +755,8 @@ class Component(metaclass=ComponentMetaclass):
         # check if user provided a valid setting
         if not supported_language_list and not not_supported_language_list:
             # One of language settings must be valid (not None and not a empty list),
-            # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
+            # There are three combinations of settings are not valid:
+            # (None, []), ([], None) and ([], [])
             raise RasaException(
                 "Empty lists for both "
                 "`supported_language_list` and `not_supported language_list` "
@@ -763,6 +768,14 @@ class Component(metaclass=ComponentMetaclass):
             return language in supported_language_list
         else:
             return language not in not_supported_language_list
+
+    def extract_data_from_domain(self, domain: Domain) -> None:
+        """This method allows the component to extract any information from the domain.
+
+        Args:
+            domain: The domain.
+        """
+        pass
 
 
 C = typing.TypeVar("C", bound=Component)

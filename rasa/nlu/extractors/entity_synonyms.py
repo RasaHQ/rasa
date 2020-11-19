@@ -12,7 +12,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
 
 
 class EntitySynonymMapper(EntityExtractor):
@@ -23,11 +22,10 @@ class EntitySynonymMapper(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
-        super().__init__(component_config, domain)
+        super().__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 

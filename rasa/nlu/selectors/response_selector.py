@@ -94,7 +94,6 @@ from rasa.shared.nlu.constants import (
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
-from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +235,6 @@ class ResponseSelector(DIETClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        domain: Optional[Domain] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
