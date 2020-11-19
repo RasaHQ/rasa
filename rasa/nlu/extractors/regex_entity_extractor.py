@@ -48,6 +48,11 @@ class RegexEntityExtractor(EntityExtractor):
         self.entity_names = None
 
     def extract_data_from_domain(self, domain: Domain) -> None:
+        """Extract the names of all entities from the given domain.
+
+        Args:
+            domain: The domain.
+        """
         self.entity_names = domain.entities
 
     def train(
@@ -56,6 +61,7 @@ class RegexEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component."""
         if self.entity_names is None:
             self.entity_names = training_data.entities
 

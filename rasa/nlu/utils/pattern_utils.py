@@ -9,6 +9,7 @@ def _convert_lookup_tables_to_regex(
     training_data: TrainingData, pattern_names: Optional[List[Text]] = None
 ) -> List[Dict[Text, Text]]:
     """Convert the lookup tables from the training data to regex patterns.
+
     Args:
         training_data: The training data.
         pattern_names: List of pattern names to use. If list is empty or None all
