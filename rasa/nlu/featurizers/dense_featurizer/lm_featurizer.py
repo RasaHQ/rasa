@@ -113,7 +113,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         if domain:
             component.extract_data_from_domain(domain)
 
-        return domain
+        return component
 
     @classmethod
     def load(

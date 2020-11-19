@@ -71,7 +71,7 @@ class MitieIntentClassifier(IntentClassifier):
             self.classifier = trainer.train()
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
+        """Process an incoming message."""
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
             raise Exception(
