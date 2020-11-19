@@ -176,11 +176,10 @@ class SingleStateFeaturizer:
         # separately, therefore substitute interpreter based on some trained
         # nlu model with default RegexInterpreter to make sure
         # that prediction and train time features are the same
-        # if (
-        #     self._use_regex_interpreter
-        #     and not isinstance(interpreter, RegexInterpreter)
-        # ):
-        #     interpreter = RegexInterpreter()
+        if self._use_regex_interpreter and not isinstance(
+            interpreter, RegexInterpreter
+        ):
+            interpreter = RegexInterpreter()
 
         message = Message(data=sub_state)
         # remove entities from possible attributes
@@ -190,9 +189,7 @@ class SingleStateFeaturizer:
 
         parsed_message = interpreter.featurize_message(message)
         output = self._get_features_from_parsed_message(parsed_message, attributes)
-        print(sub_state)
-        print(interpreter)
-        print(output)
+
         # check that name attributes have features
         name_attribute = self._get_name_attribute(attributes)
         if name_attribute and name_attribute not in output:

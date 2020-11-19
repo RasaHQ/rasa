@@ -257,16 +257,13 @@ def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
     ).nnz == 0
 
 
-def test_single_state_featurizer_uses_regex_interpreter(unpacked_trained_moodbot_path: Text):
+def test_single_state_featurizer_uses_regex_interpreter(
+    unpacked_trained_moodbot_path: Text,
+):
     from rasa.core.agent import Agent
 
     domain = Domain(
-        intents=[],
-        entities=[],
-        slots=[],
-        templates={},
-        forms=[],
-        action_names=["a", "b", "c", "d"],
+        intents=[], entities=[], slots=[], templates={}, forms=[], action_names=[],
     )
     f = SingleStateFeaturizer()
     # simulate that core was trained separately by passing
@@ -275,4 +272,7 @@ def test_single_state_featurizer_uses_regex_interpreter(unpacked_trained_moodbot
     # simulate that nlu and core models were manually combined for prediction
     # by passing trained interpreter to encode_all_actions
     interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
-    encoded_actions = f.encode_all_actions(domain, interpreter)
+    features = f._extract_state_features({TEXT: "some text"}, interpreter)
+    # RegexInterpreter cannot create features for text, therefore since featurizer
+    # was trained without nlu, features for text should be empty
+    assert not features
