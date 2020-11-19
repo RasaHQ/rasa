@@ -39,6 +39,7 @@ class MitieIntentClassifier(IntentClassifier):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specifies which python packages need to be installed."""
         return ["mitie"]
 
     def train(
@@ -47,6 +48,7 @@ class MitieIntentClassifier(IntentClassifier):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train the intent classifier on a data set."""
         import mitie
 
         model_file = kwargs.get("mitie_file")

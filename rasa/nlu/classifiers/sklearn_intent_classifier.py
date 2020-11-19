@@ -176,7 +176,6 @@ class SklearnIntentClassifier(IntentClassifier):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely intent and its probability for a message."""
-
         if not self.classifier:
             # component is either not trained or didn't
             # receive enough training data
@@ -223,12 +222,12 @@ class SklearnIntentClassifier(IntentClassifier):
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Given a bow vector of an input text, predict most probable label.
 
-        Return only the most likely label.
+        Args:
+            X: bow vector of input text
 
-        :param X: bow of input text
-        :return: tuple of first, the most probable label and second,
-                 its probability."""
-
+        Returns:
+            Tuple of the most probable label and its probability.
+        """
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of
         # the elements in sorted order

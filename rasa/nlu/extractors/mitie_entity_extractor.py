@@ -34,6 +34,7 @@ class MitieEntityExtractor(EntityExtractor):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specifies which python packages need to be installed."""
         return ["mitie"]
 
     def _extract_entities(
