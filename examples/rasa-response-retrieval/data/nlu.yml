@@ -1,7 +1,7 @@
 version: "2.0"
 
 nlu:
-- intent: greet
+- intent: greet/en
   examples: |
     - hey
     - hello
@@ -17,7 +17,18 @@ nlu:
     - goodevening
     - good afternoon
 
-- intent: goodbye
+- intent: greet/fr
+  examples: |
+    - salut
+    - moin
+    - héy
+    - Allons-y
+    - salut mec
+    - Bonjour
+    - Bonsoir
+    - bonne après-midi
+
+- intent: goodbye/en
   examples: |
     - good afternoon
     - cu
@@ -30,6 +41,33 @@ nlu:
     - see you around
     - bye bye
     - see you later
+
+- intent: goodbye/fr
+  examples: |
+    - bonne après-midi
+    - cu
+    - bon par
+    - cee vous plus tard
+    - bonne nuit
+    - au revoir
+    - Au revoir
+    - bonne journée
+    - À un de ces quatre
+    - à plus tard
+
+- intent: chitchat/en
+  examples: |
+    - What is your name?
+    - May I know your name?
+    - What do people call you?
+    - Do you have a name for yourself?
+
+- intent: chitchat/fr
+  examples: |
+    - Quel est votre nom?
+    - Puis-je connaître ton nom?
+    - Comment les gens t'appellent?
+    - Avez-vous un nom pour vous-même?
 
 - intent: affirm
   examples: |
@@ -90,17 +128,3 @@ nlu:
     - are you a human?
     - am I talking to a bot?
     - am I talking to a human?
-
-- intent: chitchat/en
-  examples: |
-    - What is your name?
-    - May I know your name?
-    - What do people call you?
-    - Do you have a name for yourself?
-
-- intent: chitchat/fr
-  examples: |
-    - Quel est votre nom?
-    - Puis-je connaître ton nom?
-    - Comment les gens t'appellent?
-    - Avez-vous un nom pour vous-même?
