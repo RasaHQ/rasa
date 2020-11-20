@@ -44,7 +44,6 @@ nlu:
 
 - intent: goodbye/fr
   examples: |
-    - bonne après-midi
     - cu
     - bon par
     - cee vous plus tard
