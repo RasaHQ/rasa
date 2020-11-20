@@ -71,20 +71,6 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-3.7
-
-    - name: Install Dependencies 📦
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install-full
-
     - name: Run Bandit 🔪
       if: needs.changes.outputs.backend == 'true'
       run: make lint-security

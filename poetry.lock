@@ -235,21 +235,6 @@ msrest = ">=0.6.10"
 
 [[package]]
 category = "dev"
-description = "Security oriented static analyser for python code."
-name = "bandit"
-optional = false
-python-versions = "*"
-version = "1.6.2"
-
-[package.dependencies]
-GitPython = ">=1.0.1"
-PyYAML = ">=3.13"
-colorama = ">=0.3.9"
-six = ">=1.10.0"
-stevedore = ">=1.20.0"
-
-[[package]]
-category = "dev"
 description = "The uncompromising code formatter."
 name = "black"
 optional = false
@@ -413,7 +398,7 @@ version = "1.4.1"
 [[package]]
 category = "main"
 description = "Cross-platform colored terminal text."
-marker = "sys_platform == \"win32\" or platform_system == \"Windows\""
+marker = "sys_platform == \"win32\""
 name = "colorama"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
@@ -734,17 +719,6 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "0.3.3"
 
 [[package]]
-category = "dev"
-description = "Git Object Database"
-name = "gitdb"
-optional = false
-python-versions = ">=3.4"
-version = "4.0.5"
-
-[package.dependencies]
-smmap = ">=3.0.1,<4"
-
-[[package]]
 category = "main"
 description = "Python wrapper for the GitHub API(http://developer.github.com/v3)"
 name = "github3.py"
@@ -761,17 +735,6 @@ uritemplate = ">=3.0.0"
 [package.extras]
 sni = ["pyopenssl", "ndg-httpsclient", "pyasn1"]
 test = ["betamax (>=0.8.0)", "pytest (>2.3.5)", "betamax-matchers (>=0.1.0)", "unittest2 (0.5.1)", "mock"]
-
-[[package]]
-category = "dev"
-description = "Python Git Library"
-name = "gitpython"
-optional = false
-python-versions = ">=3.4"
-version = "3.1.11"
-
-[package.dependencies]
-gitdb = ">=4.0.1,<5"
 
 [[package]]
 category = "dev"
@@ -1754,14 +1717,6 @@ version = "0.1.2"
 
 [[package]]
 category = "dev"
-description = "Python Build Reasonableness"
-name = "pbr"
-optional = false
-python-versions = ">=2.6"
-version = "5.5.1"
-
-[[package]]
-category = "dev"
 description = "Utilities to deal with pep440 versioning"
 name = "pep440-version-utils"
 optional = false
@@ -2619,14 +2574,6 @@ aiohttp = ">3.5.2,<4.0.0"
 optional = ["aiodns (>1.0)"]
 
 [[package]]
-category = "dev"
-description = "A pure Python implementation of a sliding window memory map manager"
-name = "smmap"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "3.0.4"
-
-[[package]]
 category = "main"
 description = "Sniff out which async library your code is running under"
 name = "sniffio"
@@ -2717,21 +2664,6 @@ name = "srsly"
 optional = true
 python-versions = "*"
 version = "1.0.4"
-
-[[package]]
-category = "dev"
-description = "Manage dynamic plugins for Python applications"
-name = "stevedore"
-optional = false
-python-versions = ">=3.6"
-version = "3.2.2"
-
-[package.dependencies]
-pbr = ">=2.0.0,<2.1.0 || >2.1.0"
-
-[package.dependencies.importlib-metadata]
-python = "<3.8"
-version = ">=1.7.0"
 
 [[package]]
 category = "main"
@@ -3249,7 +3181,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "03e386760bda0d4fc415247c548bb943b1f0e96b5d5ce24bdb2afdcc9726e0d7"
+content-hash = "a7c27eba8c958984f7f9d75aca08ad41b40e221b265a003b1f7049148ed14295"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -3336,10 +3268,6 @@ azure-core = [
 azure-storage-blob = [
     {file = "azure-storage-blob-12.5.0.zip", hash = "sha256:1469a5a0410296fb5ff96c326618d939c9cb0c0ea45eb931c89c98fa742d8daa"},
     {file = "azure_storage_blob-12.5.0-py2.py3-none-any.whl", hash = "sha256:6f2de5b60f16141731b7561c218a8455053bcdb9b3775a0e5364fb2b041bcf1e"},
-]
-bandit = [
-    {file = "bandit-1.6.2-py2.py3-none-any.whl", hash = "sha256:336620e220cf2d3115877685e264477ff9d9abaeb0afe3dc7264f55fa17a3952"},
-    {file = "bandit-1.6.2.tar.gz", hash = "sha256:41e75315853507aa145d62a78a2a6c5e3240fe14ee7c601459d0df9418196065"},
 ]
 black = [
     {file = "black-19.10b0-py36-none-any.whl", hash = "sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b"},
@@ -3627,17 +3555,9 @@ gast = [
     {file = "gast-0.3.3-py2.py3-none-any.whl", hash = "sha256:8f46f5be57ae6889a4e16e2ca113b1703ef17f2b0abceb83793eaba9e1351a45"},
     {file = "gast-0.3.3.tar.gz", hash = "sha256:b881ef288a49aa81440d2c5eb8aeefd4c2bb8993d5f50edae7413a85bfdb3b57"},
 ]
-gitdb = [
-    {file = "gitdb-4.0.5-py3-none-any.whl", hash = "sha256:91f36bfb1ab7949b3b40e23736db18231bf7593edada2ba5c3a174a7b23657ac"},
-    {file = "gitdb-4.0.5.tar.gz", hash = "sha256:c9e1f2d0db7ddb9a704c2a0217be31214e91a4fe1dea1efad19ae42ba0c285c9"},
-]
 "github3.py" = [
     {file = "github3.py-1.3.0-py2.py3-none-any.whl", hash = "sha256:50833b5da35546b8cced0e8d7ff4c50a9afc2c8e46cc4d07dc4b66d26467c708"},
     {file = "github3.py-1.3.0.tar.gz", hash = "sha256:15a115c18f7bfcf934dfef7ab103844eb9f620c586bad65967708926da47cbda"},
-]
-gitpython = [
-    {file = "GitPython-3.1.11-py3-none-any.whl", hash = "sha256:6eea89b655917b500437e9668e4a12eabdcf00229a0df1762aabd692ef9b746b"},
-    {file = "GitPython-3.1.11.tar.gz", hash = "sha256:befa4d101f91bad1b632df4308ec64555db684c360bd7d2130b4807d49ce86b8"},
 ]
 google-api-core = [
     {file = "google-api-core-1.23.0.tar.gz", hash = "sha256:1bb3c485c38eacded8d685b1759968f6cf47dd9432922d34edb90359eaa391e2"},
@@ -4185,10 +4105,6 @@ pathspec = [
 ]
 pathtools = [
     {file = "pathtools-0.1.2.tar.gz", hash = "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"},
-]
-pbr = [
-    {file = "pbr-5.5.1-py2.py3-none-any.whl", hash = "sha256:b236cde0ac9a6aedd5e3c34517b423cd4fd97ef723849da6b0d2231142d89c00"},
-    {file = "pbr-5.5.1.tar.gz", hash = "sha256:5fad80b613c402d5b7df7bd84812548b2a61e9977387a80a5fc5c396492b13c9"},
 ]
 pep440-version-utils = [
     {file = "pep440-version-utils-0.3.0.tar.gz", hash = "sha256:ceb8c8da63b54cc555946d91829f72fe323f8d635b22fa54ef0a9800c37f50df"},
@@ -4788,10 +4704,6 @@ slackclient = [
     {file = "slackclient-2.9.3-py2.py3-none-any.whl", hash = "sha256:2d68d668c02f4038299897e5c4723ab85dd40a3548354924b24f333a435856f8"},
     {file = "slackclient-2.9.3.tar.gz", hash = "sha256:07ec8fa76f6aa64852210ae235ff9e637ba78124e06c0b07a7eeea4abb955965"},
 ]
-smmap = [
-    {file = "smmap-3.0.4-py2.py3-none-any.whl", hash = "sha256:54c44c197c819d5ef1991799a7e30b662d1e520f2ac75c9efbeb54a742214cf4"},
-    {file = "smmap-3.0.4.tar.gz", hash = "sha256:9c98bbd1f9786d22f14b3d4126894d56befb835ec90cef151af566c7e19b5d24"},
-]
 sniffio = [
     {file = "sniffio-1.2.0-py3-none-any.whl", hash = "sha256:471b71698eac1c2112a40ce2752bb2f4a4814c22a54a3eed3676bc0f5ca9f663"},
     {file = "sniffio-1.2.0.tar.gz", hash = "sha256:c4666eecec1d3f50960c6bdf61ab7bc350648da6c126e3cf6898d8cd4ddcd3de"},
@@ -4870,10 +4782,6 @@ srsly = [
     {file = "srsly-1.0.4-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:713766bf4289ebe6f21d1e5203b6b75f71fd4512e877dbe5a3f660b4a51d77ac"},
     {file = "srsly-1.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:2ae6327e013934126f2b7082ce36284785eed951635ac99c73e39de75ecd1345"},
     {file = "srsly-1.0.4.tar.gz", hash = "sha256:9ca5633a5303ce0d0b84d1bdb6d029f665ba2b7d320f5482525b125ddfb8a390"},
-]
-stevedore = [
-    {file = "stevedore-3.2.2-py3-none-any.whl", hash = "sha256:5e1ab03eaae06ef6ce23859402de785f08d97780ed774948ef16c4652c41bc62"},
-    {file = "stevedore-3.2.2.tar.gz", hash = "sha256:f845868b3a3a77a2489d226568abe7328b5c2d4f6a011cc759dfa99144a521f0"},
 ]
 tabulate = [
     {file = "tabulate-0.8.7-py3-none-any.whl", hash = "sha256:ac64cb76d53b1231d364babcd72abbb16855adac7de6665122f97b593f1eb2ba"},

@@ -153,7 +153,6 @@ pep440-version-utils = "^0.3.0"
 pydoc-markdown = "^3.5.0"
 pytest-timeout = "^1.4.2"
 mypy = "^0.790"
-bandit = "^1.6.2"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
