@@ -1,7 +1,7 @@
 import copy
 import json
 from pathlib import Path
-from typing import Dict, List, Text, Any, Union, Set
+from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
 
@@ -29,6 +29,7 @@ from rasa.shared.core.domain import (
     State,
     Domain,
     KEY_FORMS,
+    KEY_E2E_ACTIONS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -249,7 +250,7 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 
 
 def test_domain_to_dict():
-    test_yaml = """
+    test_yaml = f"""
     actions:
     - action_save_world
     config:
@@ -263,8 +264,10 @@ def test_domain_to_dict():
     session_config:
       carry_over_slots_to_new_session: true
       session_expiration_time: 60
-    slots: {}"""
-
+    {KEY_E2E_ACTIONS}:
+    - Hello, dear user
+    - what's up
+    slots: {{}}"""
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
     assert domain_as_dict == {
@@ -280,6 +283,7 @@ def test_domain_to_dict():
             "session_expiration_time": 60,
         },
         "slots": {},
+        KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
     }
 
 
@@ -315,16 +319,18 @@ slots: {{}}
 
 
 def test_merge_yaml_domains():
-    test_yaml_1 = """config:
+    test_yaml_1 = f"""config:
   store_entities_as_slots: true
 entities: []
 intents: []
-slots: {}
+slots: {{}}
 responses:
   utter_greet:
-  - text: hey there!"""
+  - text: hey there!
+{KEY_E2E_ACTIONS}:
+- Hi"""
 
-    test_yaml_2 = """config:
+    test_yaml_2 = f"""config:
   store_entities_as_slots: false
 session_config:
     session_expiration_time: 20
@@ -336,6 +342,8 @@ intents:
 slots:
   cuisine:
     type: text
+{KEY_E2E_ACTIONS}:
+- Bye
 responses:
   utter_goodbye:
   - text: bye!
@@ -351,6 +359,8 @@ responses:
     assert domain.templates == {
         "utter_greet": [{"text": "hey there!"}],
         "utter_goodbye": [{"text": "bye!"}],
+        "Bye": [{"text": "Bye"}],
+        "Hi": [{"text": "Hi"}],
     }
     # lists should be deduplicated and merged
     assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
@@ -367,8 +377,11 @@ responses:
     assert domain.templates == {
         "utter_greet": [{"text": "hey you!"}],
         "utter_goodbye": [{"text": "bye!"}],
+        "Bye": [{"text": "Bye"}],
+        "Hi": [{"text": "Hi"}],
     }
     assert domain.session_config == SessionConfig(20, True)
+    assert domain.action_texts == ["Bye", "Hi"]
 
 
 @pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
@@ -440,7 +453,8 @@ responses:
     assert merged.as_dict() == domain.as_dict()
 
 
-def test_merge_with_empty_other_domain():
+@pytest.mark.parametrize("other", [Domain.empty(), None])
+def test_merge_with_empty_other_domain(other: Optional[Domain]):
     domain = Domain.from_yaml(
         """config:
   store_entities_as_slots: false
@@ -461,7 +475,7 @@ responses:
   - text: hey you!"""
     )
 
-    merged = domain.merge(Domain.empty(), override=True)
+    merged = domain.merge(other, override=True)
 
     assert merged.as_dict() == domain.as_dict()
 

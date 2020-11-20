@@ -521,12 +521,15 @@ class Domain:
         action_names += overridden_form_actions
 
         self.slots = slots
-        self.templates = templates
-        self.action_texts = action_texts or []
         self.session_config = session_config
 
         self._custom_actions = action_names
 
+        self.action_texts = action_texts or []
+        self._responses_from_domain = templates
+        self.templates = self._combine_domain_responses_with_end_to_end_responses(
+            templates, self.action_texts
+        )
         # only includes custom actions and utterance actions
         self.user_actions = self._combine_with_templates(action_names, templates)
 
@@ -624,6 +627,18 @@ class Domain:
         )
 
         return [], {}, []
+
+    @classmethod
+    def _combine_domain_responses_with_end_to_end_responses(
+        cls,
+        user_responses: Dict[Text, List[Dict[Text, Any]]],
+        end_to_end_responses: List[Text],
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
+        end_to_end_responses = {
+            end_to_end_response: [{"text": end_to_end_response}]
+            for end_to_end_response in end_to_end_responses
+        }
+        return {**user_responses, **end_to_end_responses}
 
     def __hash__(self) -> int:
         """Returns a unique hash for the domain."""
@@ -1045,8 +1060,8 @@ class Domain:
             KEY_INTENTS: self._transform_intents_for_file(),
             KEY_ENTITIES: self._transform_entities_for_file(),
             KEY_SLOTS: self._slot_definitions(),
-            KEY_RESPONSES: self.templates,
-            KEY_ACTIONS: self._custom_actions,  # class names of the actions
+            KEY_RESPONSES: self._responses_from_domain,
+            KEY_ACTIONS: self._custom_actions,
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.action_texts,
         }

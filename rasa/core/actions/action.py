@@ -170,7 +170,7 @@ def action_from_name(
     ):
         return ActionRetrieveResponse(name)
 
-    if name.startswith(UTTER_PREFIX):
+    if name.startswith(UTTER_PREFIX) or name in domain.action_texts:
         return ActionUtterTemplate(name)
 
     is_form = name in domain.form_names
