@@ -794,6 +794,10 @@ class Domain:
         """
         import numpy as np
 
+        rasa.shared.utils.io.raise_warning(
+            "This method is deprecated and will be removed version 3.0.0.",
+            category=DeprecationWarning,
+        )
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
         else:
