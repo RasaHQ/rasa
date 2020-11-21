@@ -346,10 +346,12 @@ class RedisTrackerStore(TrackerStore):
             timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(self.prefix + tracker.sender_id, serialised_tracker, ex=timeout)
+        self.red.set(
+            self.key_prefix + tracker.sender_id, serialised_tracker, ex=timeout
+        )
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        stored = self.red.get(self.prefix + sender_id)
+        stored = self.red.get(self.key_prefix + sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
         else:
@@ -357,7 +359,7 @@ class RedisTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store"""
-        return self.red.keys(self.prefix + "*")
+        return self.red.keys(self.key_prefix + "*")
 
 
 class DynamoTrackerStore(TrackerStore):
