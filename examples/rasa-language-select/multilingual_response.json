@@ -1,0 +1,15 @@
+{
+  "greet":
+  {
+    "en":  ["Hey! How are you?"],
+    "fr":  ["Hey! Comment ça va?"]
+  },
+  "goodbye": {
+    "en": ["Bye"],
+    "fr": ["Au revoir"]
+  },
+  "chitchat": {
+    "en": ["Hello, my name is Multilingual Bot.", "I am called Multilingual Bot!"],
+    "fr": ["Bonjour, je m'appelle Bot multilingue.", "Je m'appelle Bot multilingue!"]
+  }
+}

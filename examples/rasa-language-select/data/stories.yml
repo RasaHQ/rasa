@@ -5,24 +5,29 @@ stories:
 - story: Greet
   steps:
   - intent: greet
-  - action: utter_greet
+  - action: action_utter_language_select
 
 - story: Bye
   steps:
   - intent: goodbye
-  - action: utter_goodbye
+  - action: action_utter_language_select
+
+- story: respond to chitchat
+  steps:
+  - intent: chitchat
+  - action: action_utter_language_select
 
 - story: happy path
   steps:
   - intent: greet
-  - action: utter_greet
+  - action: action_utter_language_select
   - intent: mood_great
   - action: utter_happy
 
 - story: sad path 1
   steps:
   - intent: greet
-  - action: utter_greet
+  - action: action_utter_language_select
   - intent: mood_unhappy
   - action: utter_cheer_up
   - action: utter_did_that_help
@@ -32,14 +37,9 @@ stories:
 - story: sad path 2
   steps:
   - intent: greet
-  - action: utter_greet
+  - action: action_utter_language_select
   - intent: mood_unhappy
   - action: utter_cheer_up
   - action: utter_did_that_help
   - intent: deny
-  - action: utter_goodbye
-
-- story: respond to chitchat
-  steps:
-  - intent: chitchat
-  - action: utter_chitchat
+  - action: action_utter_language_select
