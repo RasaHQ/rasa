@@ -5,7 +5,7 @@ stories:
 - story: Greet
   steps:
   - intent: greet
-  - action: utter_greet
+  - action: action_utter_language_select
 
 - story: Bye
   steps:
