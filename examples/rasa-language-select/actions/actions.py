@@ -7,6 +7,7 @@
 
 # This is a simple example for a custom action which utters "Hello World!"
 import json
+import random
 from typing import Any, Text, Dict, List
 
 from rasa_sdk import Action, Tracker
@@ -30,9 +31,15 @@ class MultilingualResponse:
         with open("multilingual_response.json") as fp:
             self.multilingual_response = json.load(fp)
 
+    @staticmethod
+    def random_response(responses):
+        num_response = len(responses) - 1
+        print(num_response)
+        return responses[random.randint(0, num_response)]
+
     def predict_response(self, intent, lang):
-        response = self.multilingual_response[intent][lang]  # returns top 2 matching languages
-        return response[0]
+        responses = self.multilingual_response[intent][lang]  # returns top 2 matching languages
+        return self.random_response(responses)
 
 
 multilingual_response = MultilingualResponse()
