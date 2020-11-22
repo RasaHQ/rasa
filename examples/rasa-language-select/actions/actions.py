@@ -16,7 +16,7 @@ from rasa_sdk.executor import CollectingDispatcher
 import fasttext
 
 
-class LanguageIdentification:
+class LanguageIdentification(object):
     def __init__(self):
         pretrained_lang_model = "lid.176.ftz"
         self.model = fasttext.load_model(pretrained_lang_model)
@@ -26,7 +26,7 @@ class LanguageIdentification:
         return predictions[0][0].split('__')[-1]
 
 
-class MultilingualResponse:
+class MultilingualResponse(object):
     def __init__(self):
         with open("multilingual_response.json") as fp:
             self.multilingual_response = json.load(fp)
@@ -38,7 +38,14 @@ class MultilingualResponse:
         return responses[random.randint(0, num_response)]
 
     def predict_response(self, intent, lang):
-        responses = self.multilingual_response[intent][lang]  # returns top 2 matching languages
+        default_lang = 'en'
+        try:
+            responses = self.multilingual_response[intent][lang]
+        except:
+            # if language detection fails (ie detects other than languages listed in the response)
+            # fallback to English
+            responses = self.multilingual_response[intent][default_lang]
+
         return self.random_response(responses)
 
 
@@ -46,7 +53,7 @@ multilingual_response = MultilingualResponse()
 language_detection = LanguageIdentification()
 
 
-class ActionHelloWorld(Action):
+class ActionLanguageSelect(Action):
 
     def name(self) -> Text:
         return "action_utter_language_select"
