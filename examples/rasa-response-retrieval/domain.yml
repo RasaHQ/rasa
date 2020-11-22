@@ -16,15 +16,22 @@ actions:
 responses:
   utter_greet/en:
   - text: "Hey! How are you?"
+  - text: "Hey!"
+  - text: "Hello, How may I help today?"
 
   utter_greet/fr:
     - text: "Hey! Comment ça va?"
+    - text: "Bonjour, comment puis-je aider aujourd'hui?"
 
   utter_goodbye/en:
     - text: "Bye"
+    - text: "Have a nice day!"
+    - text: "See you around."
 
   utter_goodbye/fr:
     - text: "Au revoir"
+    - text: "Bonne journée"
+    - text: "À un de ces quatre."
 
   utter_chitchat/en:
     - image: "https://i.imgur.com/zTvA58i.jpeg"
