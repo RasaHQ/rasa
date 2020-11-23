@@ -54,10 +54,10 @@ def is_url(resource_name: Text) -> bool:
     Returns:
         `True` if valid, otherwise `False`.
     """
-    from urllib.parse import urlparse
+    from urllib import parse
 
     try:
-        result = urlparse(resource_name)
+        result = parse.urlparse(resource_name)
     except Exception:
         return False
 
