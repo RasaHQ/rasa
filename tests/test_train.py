@@ -224,19 +224,24 @@ def test_trained_interpreter_passed_to_core_training(
     monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
 ):
     # Skip actual NLU training and return trained interpreter path from fixture
-    _train_nlu_with_validated_data = Mock(return_value=unpacked_trained_moodbot_path)
-
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
+    async def mocked_nlu_training(*_: Any, **__: Any) -> Text:
+        return unpacked_trained_moodbot_path
+
     monkeypatch.setattr(
         sys.modules["rasa.train"],
         "_train_nlu_with_validated_data",
-        asyncio.coroutine(_train_nlu_with_validated_data),
+        mocked_nlu_training,
     )
 
     # Mock the actual Core training
     _train_core = Mock()
-    monkeypatch.setattr(rasa.core, "train", asyncio.coroutine(_train_core))
+
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        _train_core(*args, **kwargs)
+
+    monkeypatch.setattr(rasa.core, "train", mocked_train_core)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -268,7 +273,11 @@ def test_interpreter_of_old_model_passed_to_core_training(
 
     # Mock the actual Core training
     _train_core = Mock()
-    monkeypatch.setattr(rasa.core, "train", asyncio.coroutine(_train_core))
+
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> None:
+        _train_core(*args, **kwargs)
+
+    monkeypatch.setattr(rasa.core, "train", mocked_train_core)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -309,10 +318,12 @@ def test_train_core_autoconfig(
 
     # skip actual core training
     _train_core_with_validated_data = Mock()
+
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> None:
+        _train_core_with_validated_data(*args, **kwargs)
+
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        asyncio.coroutine(_train_core_with_validated_data),
+        sys.modules["rasa.train"], "_train_core_with_validated_data", mocked_train_core,
     )
 
     # do training
@@ -341,11 +352,11 @@ def test_train_nlu_autoconfig(
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     # skip actual NLU training
-    _train_nlu_with_validated_data = Mock()
+    async def mocked_train_nlu(*_: Any, **__: Any) -> None:
+        pass
+
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        asyncio.coroutine(_train_nlu_with_validated_data),
+        sys.modules["rasa.train"], "_train_nlu_with_validated_data", mocked_train_nlu,
     )
 
     # do training
