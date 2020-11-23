@@ -125,7 +125,6 @@ class RulePolicy(MemoizationPolicy):
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
         """
-
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
@@ -194,7 +193,6 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             modified states
         """
-
         # leave only last 2 dialogue turns to
         # - capture previous meaningful action before action_listen
         # - ignore previous intent
@@ -226,7 +224,6 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             lookup dictionary
         """
-
         lookup = {}
         for states, actions in zip(trackers_as_states, trackers_as_actions):
             action = actions[0]
@@ -665,7 +662,6 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             a boolean that says whether the rule is applicable to current state
         """
-
         # turn_index goes back in time
         reversed_rule_states = list(reversed(self._rule_key_to_state(rule_key)))
 
