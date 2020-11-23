@@ -281,7 +281,7 @@ class RulePolicy(MemoizationPolicy):
             )
 
     @staticmethod
-    def _check_slots_fingerprint(
+    def _expected_but_missing_slots(
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
         expected_slots = set(fingerprint.get(SLOTS, {}))
@@ -314,9 +314,9 @@ class RulePolicy(MemoizationPolicy):
         if action_name and missing_fingerprint_slots:
             error_messages.append(
                 f"- the action '{action_name}' in rule '{rule_name}' does not set some "
-                f"of the slots that it sets in other rules. Slots not set in rule '{rule_name}': "
-                f"'{', '.join(missing_fingerprint_slots)}'. Please update the rule with "
-                f"an appropriate slot or if it is the last action "
+                f"of the slots that it sets in other rules. Slots not set in rule "
+                f"'{rule_name}': '{', '.join(missing_fingerprint_slots)}'. Please "
+                f"update the rule with an appropriate slot or if it is the last action "
                 f"add 'wait_for_user_input: false' after this action."
             )
         if action_name and fingerprint_active_loops:
@@ -372,7 +372,7 @@ class RulePolicy(MemoizationPolicy):
                     # for a previous action if current action is rule snippet action
                     continue
 
-                missing_expected_slots = self._check_slots_fingerprint(
+                missing_expected_slots = self._expected_but_missing_slots(
                     fingerprint, state
                 )
                 expected_active_loops = self._check_active_loops_fingerprint(
@@ -660,22 +660,34 @@ class RulePolicy(MemoizationPolicy):
         # turn_index goes back in time
         reversed_rule_states = list(reversed(self._rule_key_to_state(rule_key)))
 
-        return bool(
-            # rule is shorter than current turn index
-            turn_index >= len(reversed_rule_states)
-            # current rule and state turns are conversation starters
-            or (
-                not reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
-                and not conversation_state.get(PREVIOUS_ACTION)
-            )
-            # check that current rule turn features are present in current state turn
-            or (
-                reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
-                and conversation_state.get(PREVIOUS_ACTION)
-                and self._does_rule_match_state(
-                    reversed_rule_states[turn_index], conversation_state
-                )
-            )
+        # the rule must be applicable because we got (without any applicability issues)
+        # further in the conversation history than the rule's length
+        if turn_index >= len(reversed_rule_states):
+            return True
+
+        # a state has previous action if and only if it is not a conversation start
+        # state
+        current_previous_action = conversation_state.get(PREVIOUS_ACTION)
+        rule_previous_action = reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
+
+        # current rule state is a conversation starter (due to conversation_start: true)
+        # but current conversation state is not.
+        # or
+        # current conversation state is a starter (due to initial_value set for a slot)
+        # but current rule state is not a starter
+        if current_previous_action and not rule_previous_action:
+            return False
+
+        # current conversation state and rule state are conversation starters.
+        # any slots with initial_value set will necessarily be in both states and don't
+        # need to be checked.
+        if not current_previous_action:
+            # Ignore other states for conversation starts
+            return True
+
+        # check: current rule state features are present in current conversation state
+        return self._does_rule_match_state(
+            reversed_rule_states[turn_index], conversation_state
         )
 
     def _get_possible_keys(
@@ -744,6 +756,8 @@ class RulePolicy(MemoizationPolicy):
     ) -> Tuple[Optional[Text], Optional[Text]]:
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
+        for s in states:
+            print(f":::::{s}")
 
         logger.debug(f"Current tracker state: {states}")
 

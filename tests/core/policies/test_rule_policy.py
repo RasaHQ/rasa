@@ -93,58 +93,9 @@ def _form_activation_rule(
 
 
 def test_potential_contradiction_resolved_by_conversation_start():
-    """
-    Two rules that contradict each other except that one of them applies only at conversation
-    start -> ensure that this isn't flagged as a contradiction.
-    """
-    utter_anti_greet_action = "utter_anti_greet"
-    domain = Domain.from_yaml(
-        f"""
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-- {utter_anti_greet_action}
-    """
-    )
-    policy = RulePolicy()
-    greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
-        "greet rule at conversation start",
-        domain=domain,
-        slots=domain.slots,
-        evts=[
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": GREET_INTENT_NAME}),
-            ActionExecuted(UTTER_GREET_ACTION),
-        ],
-        is_rule_tracker=True,
-    )
+    # Two rules that contradict each other except that one of them applies only at
+    # conversation start -> ensure that this isn't flagged as a contradiction.
 
-    anti_greet_rule = TrackerWithCachedStates.from_events(
-        "anti greet rule",
-        domain=domain,
-        slots=domain.slots,
-        evts=[
-            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": GREET_INTENT_NAME}),
-            ActionExecuted(utter_anti_greet_action),
-        ],
-        is_rule_tracker=True,
-    )
-
-    # Contradicting rules abort training, hence policy training here needs to succeed
-    # since there aren't contradicting rules in this case.
-    policy.train(
-        [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
-    )
-
-
-def test_potential_contradiction_resolved_by_conversation_start():
-    """
-    Two rules that contradict each other except that one of them applies only at conversation
-    start -> ensure that this isn't flagged as a contradiction.
-    """
     utter_anti_greet_action = "utter_anti_greet"
     domain = Domain.from_yaml(
         f"""
@@ -189,14 +140,12 @@ actions:
 
 
 def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value():
-    """
-    Two rules that contradict each other except that one of them applies only at conversation
-    start -> ensure that this isn't flagged as a contradiction. Specifically, this checks that
-    the conversation-start-checking logic doesn't depend on:
-    1) initial rule tracker states being empty as these can be non-empty due to initial slot values
-    1.1) whether or not the initial slot value is made explicit in the initial state of the
-    conversation tracker
-    """
+    # Two rules that contradict each other except that one of them applies only at
+    # conversation start -> ensure that this isn't flagged as a contradiction.
+    # Specifically, this checks that the conversation-start-checking logic doesn't
+    # depend on initial rule tracker states being empty as these can be non-empty due to
+    # initial slot values
+
     utter_anti_greet_action = "utter_anti_greet"
     some_slot = "slot1"
     some_slot_initial_value = "slot1value"
@@ -239,7 +188,8 @@ slots:
         is_rule_tracker=True,
     )
 
-    # Policy training needs to succeed to confirm that no contradictions have been detected
+    # Policy training needs to succeed to confirm that no contradictions have been
+    # detected
     policy.train(
         [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
     )
@@ -258,8 +208,62 @@ slots:
     )
     assert_predicted_action(action_probabilities_1, domain, UTTER_GREET_ACTION)
 
-    # A similar check, but this time the first state of the tracker will have the
-    # slot (which has an initial value set in the domain) explicitly set.
+
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit():
+    # Two rules that contradict each other except that one of them applies only at
+    # conversation start -> ensure that this isn't flagged as a contradiction.
+    # Specifically, this checks that the conversation-start-checking logic doesn't
+    # depend on whether or not the initial slot value is made explicit in the initial
+    # state of the conversation tracker
+
+    utter_anti_greet_action = "utter_anti_greet"
+    some_slot = "slot1"
+    some_slot_initial_value = "slot1value"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+slots:
+  {some_slot}:
+    type: text
+    initial_value: {some_slot_initial_value}
+    """
+    )
+    policy = RulePolicy()
+    greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
+        "greet rule at conversation start",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+        ],
+        is_rule_tracker=True,
+    )
+
+    anti_greet_rule = TrackerWithCachedStates.from_events(
+        "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+        ],
+        is_rule_tracker=True,
+    )
+
+    # Policy training needs to succeed to confirm that no contradictions have been
+    # detected
+    policy.train(
+        [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
+    )
+
     conversation_events_with_initial_slot_explicit = [
         SlotSet(some_slot, some_slot_initial_value),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -426,13 +430,12 @@ slots:
 
 
 def test_no_incomplete_rules_due_to_additional_slots_set():
-    """
-    Check that rules aren't automatically flagged as incomplete just because an action
-    doesn't set all the slots that are set in the same context in a different rule.
-    There may be slots that were set by other preceding actions (or by using initial_value
-    for a slot), and a rule shouldn't be marked as incomplete if some of those other slots
-    aren't set by the action in the rule.
-    """
+    # Check that rules aren't automatically flagged as incomplete just because an action
+    # doesn't set all the slots that are set in the same context in a different rule.
+    # There may be slots that were set by other preceding actions (or by using
+    # initial_value for a slot), and a rule shouldn't be marked as incomplete if some of
+    # those other slots aren't set by the action in the rule.
+
     some_action = "some_action"
     some_slot = "some_slot"
     some_slot_value = "value1"
