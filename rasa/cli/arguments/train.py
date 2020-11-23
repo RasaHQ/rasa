@@ -10,6 +10,8 @@ from rasa.cli.arguments.default_arguments import (
 )
 from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
+USE_LATEST_MODEL_FOR_FINE_TUNING = "use latest model for finetuning"
+
 
 def set_train_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
@@ -25,6 +27,7 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
     add_force_param(parser)
+    add_finetune_params(parser)
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
@@ -42,6 +45,7 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
 
     compare_arguments = parser.add_argument_group("Comparison Arguments")
     add_compare_params(compare_arguments)
+    add_finetune_params(parser)
 
 
 def set_train_nlu_arguments(parser: argparse.ArgumentParser):
@@ -55,6 +59,7 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser):
 
     add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
+    add_finetune_params(parser)
 
 
 def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
@@ -151,5 +156,29 @@ def add_persist_nlu_data_param(
     parser.add_argument(
         "--persist-nlu-data",
         action="store_true",
-        help="Persist the nlu training data in the saved model.",
+        help="Persist the NLU training data in the saved model.",
+    )
+
+
+def add_finetune_params(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
+    parser.add_argument(
+        "--finetune",
+        nargs="?",
+        # If the user doesn't specify `--finetune` at all
+        default=None,
+        # If the user user only specifies `--finetune` without an additional path
+        const=USE_LATEST_MODEL_FOR_FINE_TUNING,
+        help="Fine-tune a previously trained model. If no model path is provided, Rasa "
+        "Open Source will try to fine-tune the latest trained model from the "
+        "default model directory.",
+    )
+
+    parser.add_argument(
+        "--epoch-fraction",
+        type=float,
+        default=1.0,
+        help="Fraction of epochs which are currently specified in the model "
+        "configuration which should be used when finetuning a model.",
     )
