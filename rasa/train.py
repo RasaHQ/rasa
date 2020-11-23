@@ -171,24 +171,24 @@ async def _train_async_internal(
         )
         return
 
-    if stories.is_empty():
-        print_warning("No stories present. Just a Rasa NLU model will be trained.")
-        return await _train_nlu_with_validated_data(
-            file_importer,
-            output=output_path,
-            fixed_model_name=fixed_model_name,
-            persist_nlu_training_data=persist_nlu_training_data,
-            additional_arguments=nlu_additional_arguments,
-        )
-
-    if nlu_data.can_train_nlu_model():
-        print_warning("No NLU data present. Just a Rasa Core model will be trained.")
-        return await _train_core_with_validated_data(
-            file_importer,
-            output=output_path,
-            fixed_model_name=fixed_model_name,
-            additional_arguments=core_additional_arguments,
-        )
+    # if stories.is_empty():
+    #     print_warning("No stories present. Just a Rasa NLU model will be trained.")
+    #     return await _train_nlu_with_validated_data(
+    #         file_importer,
+    #         output=output_path,
+    #         fixed_model_name=fixed_model_name,
+    #         persist_nlu_training_data=persist_nlu_training_data,
+    #         additional_arguments=nlu_additional_arguments,
+    #     )
+    #
+    # if nlu_data.can_train_nlu_model():
+    #     print_warning("No NLU data present. Just a Rasa Core model will be trained.")
+    #     return await _train_core_with_validated_data(
+    #         file_importer,
+    #         output=output_path,
+    #         fixed_model_name=fixed_model_name,
+    #         additional_arguments=core_additional_arguments,
+    #     )
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
