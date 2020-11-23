@@ -55,7 +55,8 @@ def test_spacy_pos_tags(text, expected_pos_tags, spacy_nlp):
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
-    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)]),
+     ("Forecast for launch", ["Forecast", "for", "launch"], [(0, 8), (9, 12), (13, 19)])],
 )
 def test_train_tokenizer(text, expected_tokens, expected_indices, spacy_nlp):
     tk = SpacyTokenizer()
