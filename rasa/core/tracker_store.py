@@ -359,7 +359,9 @@ class DynamoTrackerStore(TrackerStore):
         if self.table_name not in self.client.list_tables()["TableNames"]:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"}],
+                KeySchema=[
+                    {"AttributeName": "sender_id", "KeyType": "HASH"},
+                ],
                 AttributeDefinitions=[
                     {"AttributeName": "sender_id", "AttributeType": "S"},
                 ],
@@ -369,15 +371,25 @@ class DynamoTrackerStore(TrackerStore):
             # Wait until the table exists.
             table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
         else:
-            # raise deprecation warning if table contains a session_date attribute
-            pass
-        return dynamo.Table(table_name)
+            table = dynamo.Table(table_name)
+
+            column_names = [
+                attribute["AttributeName"] for attribute in table.attribute_definitions
+            ]
+            if "session_date" in column_names:
+                raise_warning(
+                    "Attribute 'session_date' is no longer required when using a DynamoDB TrackerStore. Please remove this attribute from any existing tables.",
+                    FutureWarning,
+                )
+
+        return table
 
     def save(self, tracker):
         """Saves the current conversation state"""
         if self.event_broker:
             self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
+
         try:
             self.db.put_item(Item=serialized)
         except ClientError as e:
@@ -409,7 +421,9 @@ class DynamoTrackerStore(TrackerStore):
         """Serializes the tracker, returns object with decimal types"""
         d = tracker.as_dialogue().as_dict()
         d.update(
-            {"sender_id": tracker.sender_id,}
+            {
+                "sender_id": tracker.sender_id,
+            }
         )
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
         return core_utils.replace_floats_with_decimals(d)
