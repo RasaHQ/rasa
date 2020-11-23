@@ -88,6 +88,8 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
+        model_to_finetune=args.finetune,
+        finetuning_epoch_fraction=args.epoch_fraction,
     )
 
 
@@ -122,6 +124,8 @@ def train_core(
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
             additional_arguments=additional_arguments,
+            model_to_finetune=args.finetune,
+            finetuning_epoch_fraction=args.epoch_fraction,
         )
     else:
         from rasa.core.train import do_compare_training
@@ -157,6 +161,8 @@ def train_nlu(
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),
         domain=args.domain,
+        model_to_finetune=args.finetune,
+        finetuning_epoch_fraction=args.epoch_fraction,
     )
 
 

@@ -12,6 +12,7 @@ from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
 import rasa.shared.utils.io
 import rasa.utils.io
+from rasa.cli.arguments.train import USE_LATEST_MODEL_FOR_FINE_TUNING
 from rasa.cli.utils import create_output_path
 from rasa.shared.utils.cli import print_success
 from rasa.shared.constants import (
@@ -49,6 +50,8 @@ FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
 FINGERPRINT_PROJECT = "project"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
+
+SUBDIRECTORY_MODEL_TO_FINE_TUNE = "model_for_finetuning"
 
 
 class Section(NamedTuple):
@@ -515,3 +518,22 @@ async def update_model_with_new_domain(
     domain = await importer.get_domain()
 
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
+
+
+def get_previous_model(
+    previous_model_file: Optional[Text],
+    trained_models_directory: Text,
+    working_directory: Text,
+) -> Optional[Path]:
+    if previous_model_file == USE_LATEST_MODEL_FOR_FINE_TUNING:
+        previous_model_file = get_latest_model(trained_models_directory)
+
+    if previous_model_file is None or not Path(previous_model_file).is_file():
+        return None
+
+    subdirectory_for_temporary_model = (
+        Path(working_directory) / SUBDIRECTORY_MODEL_TO_FINE_TUNE
+    )
+    subdirectory_for_temporary_model.mkdir(exist_ok=True)
+    # Check all sorts of things
+    return Path(unpack_model(previous_model_file, subdirectory_for_temporary_model))
