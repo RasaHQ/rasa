@@ -655,7 +655,16 @@ class RulePolicy(MemoizationPolicy):
     def _is_rule_applicable(
         self, rule_key: Text, turn_index: int, conversation_state: State
     ) -> bool:
-        """Check if rule is satisfied with current state at turn."""
+        """Check if rule is satisfied with current state at turn.
+
+        Args:
+            rule_key: the textual representation of learned rule
+            turn_index: index of a current dialogue turn
+            conversation_state: the state that corresponds to turn_index
+
+        Returns:
+            a boolean that says whether the rule is applicable to current state
+        """
 
         # turn_index goes back in time
         reversed_rule_states = list(reversed(self._rule_key_to_state(rule_key)))
@@ -755,8 +764,6 @@ class RulePolicy(MemoizationPolicy):
     ) -> Tuple[Optional[Text], Optional[Text]]:
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
-        for s in states:
-            print(f":::::{s}")
 
         logger.debug(f"Current tracker state: {states}")
 
