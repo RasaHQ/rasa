@@ -24,6 +24,17 @@ There are many CI/CD tools out there, such as [GitHub Actions](https://github.co
 [CircleCI](https://circleci.com/docs/2.0/). We recommend choosing a tool that integrates with
 whatever Git repository you use.
 
+## Example CI/CD Pipelines
+
+As examples, see the CI/CD pipelines for
+[Sara](https://github.com/RasaHQ/rasa-demo/blob/master/.github/workflows/build_and_deploy.yml),
+the Rasa assistant that you can talk to in the Rasa Docs, and
+[Carbon Bot](https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml).
+Both use [Github Actions](https://github.com/features/actions) as a CI/CD tool.
+
+These examples are just two of many possibilities. If you have a CI/CD setup you like, please
+share it with the Rasa community on the [forum](https://forum.rasa.com).
+
 ## Continuous Integration (CI)
 
 The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-x/user-guide/fix-problems).
@@ -38,14 +49,14 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### Validating Data and Stories
 
-Data validation verifies that no mistakes or major inconsistencies appear in your domain, NLU 
+Data validation verifies that no mistakes or major inconsistencies appear in your domain, NLU
 data, or story data. To validate your data, have your CI run this command:
 
 ```bash
 rasa data validate
 ```
 
-If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the 
+If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the
 smallest of those values as
 
 ```bash
@@ -57,11 +68,23 @@ always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
 
 :::note
-Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
+Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories.
 However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 :::
 
-To read more about the validator and all of the available options, see [the documentation for 
+You can add data validation as a step in a Github Actions CI pipeline as:
+
+```yaml
+job:
+  data-validation:
+  	- ...
+    - name: Rasa Data Validation
+      working-directory: ${{ github.workspace }}
+      run: |
+        rasa data validate --debug
+```
+
+To read more about the validator and all of the available options, see [the documentation for
 `rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
 
 ### Training a Model
@@ -77,6 +100,41 @@ valid and trainable, and provides a model to use for testing your assistant.
 If the model passes the CI tests, then you can also [upload the trained model](./setting-up-ci-cd.mdx#deploying-your-rasa-model)
 to your server as part of the continuous deployment process.
 
+You can add model training as a step in a Github Actions CI pipeline as:
+
+```yaml
+job:
+  training-testing:
+    name: Testing Stories
+    runs-on: ubuntu-latest
+    needs: [data-validation]
+    steps:
+    - uses: actions/checkout@v1
+    - id: files
+      uses: jitterbit/get-changed-files@v1
+    - name: set_training
+      if: |
+          contains(  steps.files.outputs.all, 'data/' )
+          || contains(  steps.files.outputs.all, 'config.yml' )
+          || contains(  steps.files.outputs.all, 'domain.yml' )
+      run: echo "RUN_TRAINING=true"  >> $GITHUB_ENV
+ 	- name: Train Model
+      if: env.RUN_TRAINING == 'true'
+      working-directory: ${{ github.workspace }}
+      run: |
+        rasa train
+    - name: Upload model
+      if: |
+          github.ref == 'refs/heads/master'
+          && env.RUN_TRAINING == 'true'
+      uses: actions/upload-artifact@master
+      with:
+        name: model
+        path: models
+```
+
+Here, the environment variable `RUN_TRAINING` is set to `True` depending on whether the training data
+has been changed and the generated model file is uploaded as an artifact for reference in subsequent steps.
 
 ### Testing Your Assistant
 
@@ -109,6 +167,27 @@ Running test stories does **not** execute your action code. You will need to
 [test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a separate step.
 :::
 
+You can add testing as a step in a Github Actions CI pipeline as:
+
+```yaml
+job:
+  training-testing:
+    name: Testing Stories
+    runs-on: ubuntu-latest
+    needs: [data-validation]
+    steps:
+    - ...
+    - name: Test Training Stories
+      if: |
+          contains(  steps.files.outputs.all, 'data/core/' )
+          || contains(  steps.files.outputs.all, 'config.yml' )
+          || contains(  steps.files.outputs.all, 'domain.yml' )
+      working-directory: ${{ github.workspace }}
+      run: |
+        rasa test core --stories test/test_stories.md --fail-on-prediction-errors
+```
+
+
 ### Comparing NLU Performance
 
 If you've made significant changes to your NLU training data (e.g.
@@ -135,6 +214,32 @@ includes commenting on a PR with a results table that shows which intents are co
 Since NLU comparison can be a fairly resource intensive test, you may choose to run this test
 only when certain conditions are met. Conditions might include the presence of a manual label (e.g. “NLU
 testing required”), changes to NLU data, or changes to the NLU pipeline.
+
+You can add NLU cross-validation as a step in a Github Actions CI pipeline as:
+
+```yaml
+job:
+  training-testing:
+    name: Testing Stories
+    runs-on: ubuntu-latest
+    needs: [data-validation]
+    steps:
+    - ...
+    - name: Cross-validate NLU model
+      id: cvnlu
+      if: |
+          (
+            (
+              contains( github.event.pull_request.labels.*.name, 'nlu_testing_required' )
+              && contains(  steps.files.outputs.all, 'data/nlu/' )
+            )
+            || contains(  steps.files.outputs.all, 'config.yml' )
+          )
+      run: |
+          rasa test nlu -f 3 --cross-validation
+          python .github/workflows/format_results.py
+```
+
 
 ### Testing Action Code
 
@@ -185,13 +290,3 @@ update to your action code. As noted above, be careful with
 automatically deploying a new image tag to production if the action server
 would be incompatible with the current production model.
 
-## Example CI/CD pipelines
-
-As examples, see the CI/CD pipelines for
-[Sara](https://github.com/RasaHQ/rasa-demo/blob/master/.github/workflows/build_and_deploy.yml),
-the Rasa assistant that you can talk to in the Rasa Docs, and
-[Carbon Bot](https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml).
-Both use [Github Actions](https://github.com/features/actions) as a CI/CD tool.
-
-These examples are just two of many possibilities. If you have a CI/CD setup you like, please
-share it with the Rasa community on the [forum](https://forum.rasa.com).
