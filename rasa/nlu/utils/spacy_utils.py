@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import InvalidModelError
 from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
@@ -111,8 +111,7 @@ class SpacyNLP(Component):
         else:
             return text.lower()
 
-    def get_text(self, example: Dict[Text, Any], attribute: Text) -> Text:
-
+    def get_text(self, example: Message, attribute: Text) -> Text:
         return self.preprocess_text(example.get(attribute))
 
     @staticmethod
@@ -180,15 +179,12 @@ class SpacyNLP(Component):
         ]
         return n_docs
 
-    def docs_for_training_data(
-        self, training_data: TrainingData
+    def docs_for_training_examples(
+        self, training_examples: List[Message]
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
-            texts = [
-                self.get_text(e, attribute) for e in training_data.training_examples
-            ]
+            texts = [self.get_text(e, attribute) for e in training_examples]
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
             indexed_training_samples = [(idx, text) for idx, text in enumerate(texts)]
@@ -213,18 +209,19 @@ class SpacyNLP(Component):
             attribute_docs[attribute] = [doc for _, doc in attribute_document_list]
         return attribute_docs
 
-    def train(
+    def train_chunk(
         self,
-        training_data: TrainingData,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-
-        attribute_docs = self.docs_for_training_data(training_data)
+        attribute_docs = self.docs_for_training_examples(
+            training_data_chunk.training_examples
+        )
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
-            for idx, example in enumerate(training_data.training_examples):
+            for idx, example in enumerate(training_data_chunk.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
                 if len(example_attribute_doc):
                     # If length is 0, that means the initial text feature

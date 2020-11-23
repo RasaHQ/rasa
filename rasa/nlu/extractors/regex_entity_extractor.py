@@ -45,7 +45,7 @@ class RegexEntityExtractor(EntityExtractor):
         self.case_sensitive = self.component_config["case_sensitive"]
         self.patterns = patterns or []
 
-    def train(
+    def prepare_partial_training(
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,

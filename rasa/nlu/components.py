@@ -564,8 +564,11 @@ class Component(metaclass=ComponentMetaclass):
             config: The model configuration parameters.
 
         """
-
-        pass
+        self.prepare_partial_training(training_data, config)
+        training_data_chunk = TrainingDataChunk(
+            training_data.training_examples, training_data.responses
+        )
+        self.train_chunk(training_data_chunk, config)
 
     def train_chunk(
         self,
@@ -664,7 +667,12 @@ class Component(metaclass=ComponentMetaclass):
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
 
-    def prepare_partial_training(self, training_data: TrainingData) -> None:
+    def prepare_partial_training(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
         """Prepare the component for training on just a part of the data.
 
         The complete training data can be used to extract some information
@@ -673,6 +681,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             training_data: The complete training data.
+            config: The model configuration parameters.
         """
         pass
 

@@ -712,6 +712,14 @@ class TrainingDataChunk:
         self.training_examples = training_examples
         self.responses = responses
 
+    @lazy_property
+    def nlu_examples(self) -> List[Message]:
+        return [ex for ex in self.training_examples if not ex.is_core_message()]
+
+    @lazy_property
+    def entity_examples(self) -> List[Message]:
+        return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
+
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
         """Stores the chunk as TFRecord file to disk.
 
