@@ -89,9 +89,7 @@ async def train_async(
     file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
-    with ExitStack() as stack:
-        train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
-
+    with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
         domain = await file_importer.get_domain()
 
         if domain.is_empty():
