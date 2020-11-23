@@ -670,20 +670,19 @@ class RulePolicy(MemoizationPolicy):
         current_previous_action = conversation_state.get(PREVIOUS_ACTION)
         rule_previous_action = reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
 
-        # current rule state is a conversation starter (due to conversation_start: true)
-        # but current conversation state is not.
-        # or
-        # current conversation state is a starter (due to initial_value set for a slot)
-        # but current rule state is not a starter
-        if current_previous_action and not rule_previous_action:
-            return False
-
         # current conversation state and rule state are conversation starters.
         # any slots with initial_value set will necessarily be in both states and don't
         # need to be checked.
-        if not current_previous_action:
-            # Ignore other states for conversation starts
+        if not rule_previous_action and not current_previous_action:
             return True
+
+        # current rule state is a conversation starter (due to conversation_start: true)
+        # but current conversation state is not.
+        # or
+        # current conversation state is a starter
+        # but current rule state is not.
+        if not rule_previous_action or not current_previous_action:
+            return False
 
         # check: current rule state features are present in current conversation state
         return self._does_rule_match_state(
