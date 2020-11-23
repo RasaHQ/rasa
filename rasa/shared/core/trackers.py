@@ -385,7 +385,6 @@ class DialogueStateTracker:
 
     def init_copy(self) -> "DialogueStateTracker":
         """Creates a new state tracker with the same initial values."""
-
         return DialogueStateTracker(
             self.sender_id or DEFAULT_SENDER_ID,
             self.slots.values(),
