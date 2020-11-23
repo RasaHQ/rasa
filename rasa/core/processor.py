@@ -826,13 +826,9 @@ class MessageProcessor:
         )
         if action_name is not None and not action_was_rejected_manually:
             logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
-            tracker.update_with_events(prediction.events, self.domain)
 
-            # log the action and its produced events
-            tracker.update(
-                ActionExecuted(
-                    action_name, prediction.policy_name, prediction.max_confidence
-                )
+            tracker.update_with_events(
+                prediction.events_for_prediction(action_name), self.domain
             )
 
         logger.debug(f"Action '{action_name}' ended with events '{events}'.")

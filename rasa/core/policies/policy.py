@@ -16,7 +16,7 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import Event, ActionExecuted
 
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -459,6 +459,30 @@ class PolicyPrediction:
             The highest predicted probability.
         """
         return max(self.probabilities, default=0.0)
+
+    def events_for_prediction(self, action_name: Text) -> List[Event]:
+        """Returns events which should be logged on the tracker for this prediction.
+
+        Args:
+            action_name: The name of the predicted action. If it was an end-to-end
+                prediction the `action_name` is actually the predicted text.
+
+        Returns:
+            The events which should be logged.
+        """
+        action_text = None
+        if self.is_end_to_end_prediction:
+            action_text = action_name
+            action_name = None
+
+        return self.events + [
+            ActionExecuted(
+                action_name,
+                action_text=action_text,
+                policy=self.policy_name,
+                confidence=self.max_confidence,
+            )
+        ]
 
 
 def confidence_scores_for(
