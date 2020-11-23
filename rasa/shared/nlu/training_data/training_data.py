@@ -1,5 +1,6 @@
 import logging
 import os
+import numpy as np
 from pathlib import Path
 import random
 from collections import Counter, OrderedDict
@@ -7,6 +8,7 @@ import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 import operator
+import tensorflow as tf
 
 import rasa.shared.data
 from rasa.shared.utils.common import lazy_property
@@ -21,12 +23,10 @@ from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
     TEXT,
-    ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
-
+from rasa.shared.nlu.training_data.features import Features
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -712,6 +712,31 @@ class TrainingDataChunk:
         self.training_examples = training_examples
         self.responses = responses
 
+    def _bytes_feature(self, value: tf.Tensor) -> tf.train.Feature:
+        """Returns a bytes_list from a string / byte."""
+        if isinstance(value, type(tf.constant(0))):  # if value ist tensor
+            value = value.numpy()  # get value of tensor
+        return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+    def _serialize_array(self, array: np.ndarray) -> tf.Tensor:
+        return tf.io.serialize_tensor(array)
+
+    def _to_tf_features(self, features: List[Features]) -> Dict[Text, tf.train.Feature]:
+        tf_features = {}
+
+        for feature in features:
+            key = f"{feature.attribute}#{feature.type}#{feature.origin}"
+
+            if feature.is_dense():
+                _serialized_features = self._serialize_array(feature.features)
+                tf_features[key] = self._bytes_feature(_serialized_features)
+            else:
+                tf_features[key] = tf.train.Feature(
+                    float_list=tf.train.FloatList(value=[feature.features])
+                )
+
+        return tf_features
+
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
         """Stores the chunk as TFRecord file to disk.
 
@@ -722,7 +747,20 @@ class TrainingDataChunk:
         Returns:
             The absolute file path the chunk is stored to.
         """
-        pass
+        file_path = os.path.join(dir_path, filename)
+
+        # Write to TFRecord
+        with tf.io.TFRecordWriter(file_path) as tfwriter:
+            for message in self.training_examples:
+                example = tf.train.Example(
+                    features=tf.train.Features(
+                        feature=self._to_tf_features(message.features)
+                    )
+                )
+                # Append each example into tfrecord
+                tfwriter.write(example.SerializeToString())
+
+        return file_path
 
     @classmethod
     def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":

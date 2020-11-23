@@ -12,11 +12,12 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITIES,
+    FEATURE_TYPE_SEQUENCE,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
@@ -633,3 +634,27 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+def test_persist_training_data_chunk(tmp_path):
+    import numpy as np
+    import scipy.sparse
+    from shared.nlu.training_data.message import Message
+    from shared.nlu.training_data.features import Features
+
+    messages = [
+        Message(
+            features=[
+                Features(np.random.random([4, 3]), FEATURE_TYPE_SEQUENCE, TEXT, "cvf"),
+                Features(
+                    scipy.sparse.coo_matrix(np.random.random([4, 3])),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "regex",
+                ),
+            ]
+        )
+    ]
+
+    training_data_chunk = TrainingDataChunk(messages)
+    training_data_chunk.persist_chunk(str(tmp_path), "test.porto")
