@@ -3,6 +3,7 @@ from typing import Any, Optional, Tuple, Text, Dict, Set, List
 
 import typing
 import copy
+import sys
 
 import rasa.shared.utils.io
 from rasa.shared.exceptions import RasaException
@@ -50,6 +51,22 @@ class Message:
     def add_features(self, features: Optional["Features"]) -> None:
         if features is not None:
             self.features.append(features)
+
+    def __sizeof__(self) -> int:
+        """Determine size of the object by going over instance attributes"""
+
+        total_size = 0
+        if self.time:
+            total_size += sys.getsizeof(self.time)
+        print(total_size)
+        if self.data:
+            total_size += sys.getsizeof(self.data)
+        print(total_size)
+        if self.features:
+            total_size += sys.getsizeof(self.features)
+        print(total_size)
+
+        return total_size
 
     def set(self, prop, info, add_to_output=False) -> None:
         self.data[prop] = info

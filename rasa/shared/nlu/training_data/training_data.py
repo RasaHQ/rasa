@@ -26,7 +26,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
-
+import sys
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -60,6 +60,13 @@ class TrainingData:
         self.responses = responses or {}
 
         self._fill_response_phrases()
+
+    def __sizeof__(self) -> int:
+        total_size = 0
+        if self.training_examples:
+            for message in self.training_examples:
+                total_size += sys.getsizeof(message)
+        return total_size
 
     def fingerprint(self) -> Text:
         """Fingerprint the training data.
@@ -679,7 +686,9 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def divide_into_chunks(self, max_size: int = 2) -> List["TrainingDataChunk"]:
+    # def _sizeof__(self):
+
+    def divide_into_chunks(self, num_chunks: int = 2) -> List["TrainingDataChunk"]:
         """Divides the training data into smaller chunks.
 
         Each chunk should be a good representation of the complete dataset. E.g. it
@@ -692,6 +701,7 @@ class TrainingData:
         Returns:
             A list of all training data chunks.
         """
+
         pass
 
 
