@@ -6,6 +6,7 @@ from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
 import aiohttp
 
 import rasa.core
+from rasa.core.policies.policy import PolicyPrediction
 
 from rasa.shared.core import events
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -78,14 +79,15 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     ]
 
 
-def action_for_index(
-    index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
+def action_for_prediction(
+    prediction: PolicyPrediction,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
 ) -> "Action":
-    """Get an action based on its index in the list of available actions.
+    """Gets an instantiated `Action` based on the winning policy's prediction.
 
     Args:
-        index: The index of the action. This is usually used by `Policy`s as they
-            predict the action index instead of the name.
+        prediction: The prediction for the next action.
         domain: The `Domain` of the current model. The domain contains the actions
             provided by the user + the default actions.
         action_endpoint: Can be used to run `custom_actions`
@@ -95,17 +97,26 @@ def action_for_index(
         The instantiated `Action` or `None` if no `Action` was found for the given
         index.
     """
+    index = prediction.max_confidence_index
     if domain.num_actions <= index or index < 0:
         raise IndexError(
             f"Cannot access action at index {index}. "
             f"Domain has {domain.num_actions} actions."
         )
 
-    return action_for_name(domain.action_names[index], domain, action_endpoint)
+    return action_for_name(
+        domain.action_names[index],
+        domain,
+        action_endpoint,
+        prediction.is_end_to_end_prediction,
+    )
 
 
 def action_for_name(
-    action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    action_name: Text,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
+    is_end_to_end_prediction: bool = False,
 ) -> "Action":
     """Create an `Action` object based on the name of the `Action`.
 
@@ -115,6 +126,7 @@ def action_for_name(
             provided by the user + the default actions.
         action_endpoint: Can be used to run `custom_actions`
             (e.g. using the `rasa-sdk`).
+        is_end_to_end_prediction: `True` if it is an end-to-end prediction.
 
     Returns:
         The instantiated `Action` or `None` if no `Action` was found for the given
@@ -124,7 +136,9 @@ def action_for_name(
     if action_name not in domain.action_names:
         domain.raise_action_not_found_exception(action_name)
 
-    return action_from_name(action_name, domain, action_endpoint)
+    return action_from_name(
+        action_name, domain, action_endpoint, is_end_to_end_prediction
+    )
 
 
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
@@ -148,7 +162,10 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
 
 def action_from_name(
-    name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    name: Text,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
+    is_end_to_end_prediction: bool = False,
 ) -> "Action":
     """Retrieves an action by its name.
 
@@ -156,6 +173,7 @@ def action_from_name(
         name: The name of the action.
         domain: The current model domain.
         action_endpoint: The endpoint to execute custom actions.
+        is_end_to_end_prediction: `True` if it is an end-to-end prediction.
 
     Returns:
         The instantiated action.
@@ -170,7 +188,7 @@ def action_from_name(
     ):
         return ActionRetrieveResponse(name)
 
-    if name.startswith(UTTER_PREFIX) or name in domain.action_texts:
+    if name.startswith(UTTER_PREFIX) or is_end_to_end_prediction:
         return ActionUtterTemplate(name)
 
     is_form = name in domain.form_names

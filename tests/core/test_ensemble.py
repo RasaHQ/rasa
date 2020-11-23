@@ -177,8 +177,8 @@ def test_fallback_mapping_restart():
         tracker, domain, RegexInterpreter()
     )
     index_of_mapping_policy = 1
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
+    next_action = rasa.core.actions.action.action_for_prediction(
+        prediction, domain, None
     )
 
     assert (
@@ -222,8 +222,8 @@ def test_mapping_wins_over_form(events: List[Event]):
         tracker, domain, RegexInterpreter()
     )
 
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
+    next_action = rasa.core.actions.action.action_for_prediction(
+        prediction, domain, None
     )
 
     index_of_mapping_policy = 0
@@ -265,8 +265,8 @@ def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
         tracker, domain, RegexInterpreter()
     )
 
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
+    next_action = rasa.core.actions.action.action_for_prediction(
+        prediction, domain, None
     )
 
     index_of_form_policy = 0
@@ -291,8 +291,8 @@ def test_fallback_wins_over_mapping():
         tracker, domain, RegexInterpreter()
     )
     index_of_fallback_policy = 0
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
+    next_action = rasa.core.actions.action.action_for_prediction(
+        prediction, domain, None
     )
 
     assert (
