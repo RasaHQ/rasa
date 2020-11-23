@@ -2605,10 +2605,10 @@ version = "2.3.0"
 [[package]]
 category = "main"
 description = "Industrial-strength Natural Language Processing (NLP) in Python"
-name = "spacy"
+name = "spacy-nightly"
 optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
-version = "2.2.4"
+version = "3.0.0rc2"
 
 [package.dependencies]
 blis = ">=0.4.0,<0.5.0"
