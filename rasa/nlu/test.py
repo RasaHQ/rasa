@@ -24,6 +24,7 @@ import rasa.utils.io as io_utils
 import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
+import rasa.nlu.classifiers.fallback_classifier
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -1270,7 +1271,7 @@ def get_eval_data(
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
     List[EntityEvaluationResult],
-]:  # pragma: no cover
+]:
     """Runs the model for the test set and extracts targets and predictions.
 
     Returns intent results (intent targets and predictions, the original
@@ -1306,11 +1307,20 @@ def get_eval_data(
 
     should_eval_entities = is_entity_extractor_present(interpreter)
 
-    for example in tqdm(test_data.training_examples):
+    for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
+            if rasa.nlu.classifiers.fallback_classifier.is_fallback_classifier_prediction(
+                result
+            ):
+                # Revert fallback prediction to not shadow the wrongly predicted intent
+                # during the test phase.
+                result = rasa.nlu.classifiers.fallback_classifier.undo_fallback_prediction(
+                    result
+                )
             intent_prediction = result.get(INTENT, {}) or {}
+
             intent_results.append(
                 IntentEvaluationResult(
                     example.get(INTENT, ""),
@@ -1485,7 +1495,7 @@ def run_evaluation(
     if output_directory:
         rasa.shared.utils.io.create_directory(output_directory)
 
-    intent_results, response_selection_results, entity_results, = get_eval_data(
+    (intent_results, response_selection_results, entity_results) = get_eval_data(
         interpreter, test_data
     )
 
@@ -1669,7 +1679,7 @@ def cross_validate(
 
     intent_test_results: List[IntentEvaluationResult] = []
     entity_test_results: List[EntityEvaluationResult] = []
-    response_selection_test_results: List[ResponseSelectionEvaluationResult] = ([])
+    response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
     intent_classifier_present = False
     response_selector_present = False
     entity_evaluation_possible = False
@@ -1861,7 +1871,7 @@ def compare_nlu(
             _, train_included = train.train_test_split(percentage / 100)
             # only count for the first run and ignore the others
             if run == 0:
-                training_examples_per_run.append(len(train_included.training_examples))
+                training_examples_per_run.append(len(train_included.nlu_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")

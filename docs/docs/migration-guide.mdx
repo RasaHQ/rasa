@@ -10,43 +10,52 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.0 to Rasa 2.1
+
+### Deprecations
+
+`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
+its behaviour. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: ConveRTFeaturizer
+      model_url: <Remote/Local path to model files>
+    ...
+```
+
+`HFTransformersNLP` and `LanguageModelTokenizer` components are now deprecated.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements their behaviour.
+To migrate, replace both the above components with any tokenizer and specify the model architecture and model weights
+as part of `LanguageModelFeaturizer`, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: LanguageModelFeaturizer
+      model_name: "bert"
+      model_weights: "rasa/LaBSE"
+    ...
+```
 
 ## Rasa 1.10 to Rasa 2.0
 
 ### General
 
-* The deprecated brokers `FileProducer`, `KafkaProducer`, `PikaProducer`
-  and the `SQLProducer` have been removed. If you used these brokers in your
-  `endpoints.yml` make sure to use the renamed variants instead:
-  - `FileProducer` became `FileEventBroker`
-  - `KafkaProducer` became `KafkaEventBroker`
-  - `PikaProducer` became `PikaEventBroker`
-  - `SQLProducer` became  `SQLEventBroker`
-
-* The deprecated `EmbeddingIntentClassifier` has been removed. If you used this
-  component in your `pipeline` configuration (`config.yml`) you can replace it
-  with `DIETClassifier`. It accepts the same configuration parameters.
-
-* The deprecated `KerasPolicy` has been removed. If you used this
-  component in your `policies` configuration (`config.yml`) you can replace it
-  with `TEDPolicy`. It accepts the same configuration parameters.
-
-* [Conversation sessions](domain.mdx#session-configuration) are now enabled by default
-  if your [Domain](domain.mdx) does not contain a session configuration. Previously a
-  missing session configuration was treated as if conversation sessions were disabled.
-  You can explicitly disable conversation sessions using the following snippet:
-
-  ```yaml-rasa title="domain.yml"
-  session_config:
-    # A session expiration time of `0`
-    # disables conversation sessions
-    session_expiration_time: 0
-  ```
+A lot has changed in version 2.0. Make sure you read
+through this guide thoroughly, to make sure all parts of your bot are updated.
+A lot of updates can be done automatically with inbuilt commands, others will need
+some manual conversion. If you have any feedback about these updates or the migration process, please post it
+in the [forum](https://forum.rasa.com/t/rasa-open-source-2-0-is-out-now-internal-draft/35577).
 
 ### Training data files
 
+As of version 2.0, the new default training data format is yaml. Markdown is still supported,
+but this will be deprecated in a future release.
+
 You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
-files in the `Markdown` format to the new `YAML` format using following commands:
+files in the Markdown format to the new YAML format using following commands:
 
 ```bash
 rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
@@ -57,35 +66,35 @@ rasa data convert core -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 Converted files will have the same names as the original ones but with a
 `_converted.yml` suffix.
 
-Please note, that it's not currently possible to convert stories that contain forms
-automatically, these stories will be skipped and should be converted manually, see
-`Rule Policy` below.
+If you are using [forms](./migration-guide.mdx#forms) or [response selectors](./migration-guide.mdx#response-selectors),
+some additional changes will need to be made as described in their respective sections.
 
 ### Policies
 
-With the introduction of [Rules](./rules.mdx), the following policies are
-deprecated:
+With the introduction of [rules](./rules.mdx) and the [RulePolicy](./policies.mdx#rule-policy),
+the following policies are deprecated:
 
 - [Mapping Policy](./policies.mdx#mapping-policy)
 - [Fallback Policy](./policies.mdx#fallback-policy)
 - [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy)
 - [Form Policy](./policies.mdx#form-policy)
 
-:::tip Automatic migration
-Rasa Open Source can take care of automatically migrating the Mapping Policy,
-the Fallback Policy and the Two-Stage-Fallback Policy for you. To do so, run the
-following command:
+
+To migrate the policies automatically, you can run the following command:
 
 ```bash
 rasa data convert config
 ```
 
-This command will take care of updating your `config.yml`, `domain.yml` and `rules.yml`, while
-making backups of your pre-existing files using the `.bak` suffix.
+This command will take care of updating your `config.yml` and `domain.yml`, while
+making backups of your existing files using the `.bak` suffix. It will also add a
+`rules.yml` if necessary.
 
-You can follow the steps below if you wish to do this migration manually.
-Please note that you would still need to [migrate the Form Policy](#migrating-from-the-form-policy) manually.
-:::
+Your forms will still function as normal in the old format after this update, but this command
+does not convert them into the new format automatically. This should be done manually, as
+described in the section on [forms](./migration-guide.mdx#forms).
+
+You can also migrate the individual policies manually, if you don't want to use the automatic conversion command.
 
 #### Manually migrating from the Mapping Policy
 
@@ -155,7 +164,7 @@ pipeline:
     ambiguity_threshold: 0.1
 ```
 
-In addition, you need to add a [Rule](./rules.mdx) to specify which action to run
+In addition, you need to add a [rule](./rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
 ```yaml-rasa title="rules.yml"
@@ -166,14 +175,14 @@ rules:
     - action: utter_please_rephrase
 ```
 
-Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
+See the documentation on [fallback](./fallback-handoff.mdx#fallbacks) for more
 information.
 
 #### Manually migrating from the Two-Stage-Fallback Policy
 
 If you previously used the
-[Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), the following model
-configuration would translate as follows given a previous configuration like this:
+[Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), with a configuration
+like this for example:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -186,7 +195,7 @@ policies:
     deny_suggestion_intent_name: "out_of_scope"
 ```
 
-The new configuration would then look like:
+The new configuration would look like this:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -202,7 +211,7 @@ pipeline:
     ambiguity_threshold: 0.1
 ```
 
-In addition you need to add a [Rule](./rules.mdx) to activate the Two-Stage Fallback for
+In addition you need to add a [rule](./rules.mdx) to activate the Two-Stage Fallback for
 messages with low NLU confidence.
 
 ```yaml-rasa title="rules.yml"
@@ -221,19 +230,20 @@ Note that the previous parameters `fallback_nlu_action_name` and
 `deny_suggestion_intent_name` are no longer configurable and have the fixed values
 `action_default_fallback` and `out_of_scope`.
 
-Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
+See the [fallback](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
-#### Migrating from the Form Policy
+### Forms
 
-As of Rasa Open Source 2.0 the logic for [Forms](./forms.mdx) has been moved from the
-Rasa SDK to Rasa Open Source to simplify implementations of custom action libraries.
-This means that you no longer need to use the `FormAction` when implementing custom
-actions with the Python SDK. Instead you can `FormValidationAction` to validate and
-request slots.
+As of version 2.0 the logic for [forms](./forms.mdx) has been moved from the
+Rasa SDK to Rasa Open Source to simplify implementation and make it easier to write
+action servers in other languages.
 
-It is now recommended to move the slot mappings from your custom action to the
-[Domain](./domain.mdx) of your bot. Consider a custom form action like this:
+This means that forms are no longer implemented using a `FormAction`, but instead
+defined in the domain. Any customizations around requesting slots or
+[slot validation](./forms.mdx#validating-form-input) can be handled with a `FormValidationAction`.
+
+Consider a custom form action from 1.x like this:
 
 ```python
 from typing import Text, List, Any, Dict, Union
@@ -292,8 +302,8 @@ class RestaurantForm(FormAction):
         return []
 ```
 
-Start the migration by adding the [RulePolicy](./policies.mdx#rule-policy) to your
-model configuration:
+Start the migration by removing the FormPolicy and adding the [RulePolicy](./policies.mdx#rule-policy)
+(if not there already) to your model configuration:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -302,8 +312,8 @@ policies:
   - name: RulePolicy
 ```
 
-Then you need to define the form and the required slots in the domain as described in
-[Forms](./forms.mdx#defining-a-form):
+Then you need to define the form, required slots and their slot mappings
+in the domain as described in the documentation on [forms](./forms.mdx#defining-a-form):
 
 ```yaml-rasa title="domain.yml"
 forms:
@@ -313,13 +323,31 @@ forms:
       entity: cuisine
       not_intent: chitchat
 ```
+If you ran the command to [convert your stories](./migration-guide.mdx#training-data-Files),
+you will have a story that handles form activation and deactivation like this:
 
-You don't have to add a rule for activating the form as this is already covered by your
-existing stories. However, you have to add a story for handle the submission of the
-form.
+```yaml-rasa title="stories.yml"
+stories:
+  - story: cuisine form
+    steps:
+    - intent: request_restaurant
+    - action: restaurant_form
+    - active_loop: restaurant_form
+    - active_loop: null
+    - action: utter_submit
+```
+
+This will work fine, but the best way to handle form behavior is to remove this story and instead
+define two separate rules for form activation and submission:
 
 ```yaml-rasa title="rules.yml"
 rules:
+  - rule: Activate form
+    steps:
+    - intent: request_restaurant
+    - action: restaurant_form
+    - active_loop: restaurant_form
+
   - rule: Submit form
     condition:
     # Condition that form is active.
@@ -327,8 +355,6 @@ rules:
     steps:
     - action: restaurant_form
     - active_loop: null
-    - slot_was_set:
-      - requested_slot: null
     # The action we want to run when the form is submitted.
     - action: utter_submit
 ```
@@ -380,58 +406,104 @@ class RestaurantFormValidator(FormValidationAction):
             return {"cuisine": None}
 ```
 
-Please see [Forms](./forms.mdx) if you have further customizations in your
-``FormAction``.
+You can also migrate forms from Rasa SDK to Rasa Open Source 2 iteratively. You can for
+example migrate one form to the Rasa Open Source 2 implementation while continue using
+the deprecated Rasa SDK implementation for another form. To continue to use
+the deprecated Rasa SDK `FormAction`s, add a custom action with the name of your form to your domain. Note that you should complete the migration as soon as possible as the deprecated `FormAction`
+will be removed from the Rasa SDK in Rasa Open Source 3.
+
+```yaml-rasa title="domain.yml"
+actions:
+# Adding a custom action for a form will
+# instruct Rasa Open Source to use the
+# deprecated Rasa SDK implementation of forms.
+- my_form
+
+forms:
+ my_form:
+```
+
+See the [forms](./forms.mdx) documentation for more details.
 
 ### Response Selectors
 
-* Response Selectors are now trained on retrieval intent labels by default instead
+Response Selectors are a stable feature as of version 2.0.
+
+The [conversion command](./migration-guide.mdx#training-data-files) will automatically
+convert your `responses.md` file, stories and nlu training data to the new yaml format.
+It will also take care of adding the `utter_` prefix to your responses.
+Additionally you will need to rename the `respond_` actions in your stories files to use the
+`utter_` prefix instead. Run the following command to apply these changes:
+
+```bash
+rasa data convert responses --data {SOURCE_DIR} --out={TARGET_DIR}
+```
+
+You can also apply these changes manually. For example:
+
+```yaml-rasa
+stories:
+  - story: chitchat
+    steps:
+    - intent: chitchat
+    - action: respond_chitchat
+```
+becomes
+
+```yaml-rasa
+stories:
+  - story: chitchat
+    steps:
+    - intent: chitchat
+    - action: utter_chitchat
+```
+
+and you will need to add the `utter_` prefix to the response names in your `responses.md`
+as well. For example:
+
+```yaml-rasa
+responses:
+  chitchat/ask_name:
+    - text: Oh yeah, I am called the retrieval bot.
+
+  chitchat/ask_weather:
+    - text: Oh, it does look sunny right now in Berlin.
+```
+
+becomes
+
+```yaml-rasa
+responses:
+  utter_chitchat/ask_name:
+    - text: Oh yeah, I am called the retrieval bot.
+
+  utter_chitchat/ask_weather:
+    - text: Oh, it does look sunny right now in Berlin.
+```
+
+Finally, you should remove any actions with the `respond_` prefix from the actions
+list in your domain.
+
+This behavior will work fine when defined as a story, but even better when defined
+as a rule. You should consider transferring your retrieval stories to rules. More information
+on what that looks like in the [chitchat and FAQs documentation](./chitchat-faqs.mdx).
+
+
+Response Selectors are now trained on retrieval intent labels by default instead
 of the actual response text. For most models, this should improve training time
 and accuracy of the `ResponseSelector`.
 
-* If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label=true`
- parameter to your `ResponseSelector` component.
+If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label: true`
+parameter to your `ResponseSelector` component:
 
-* All response selector related evaluation artifacts - `report.json, successes.json,
-errors.json, confusion_matrix.png` now use the sub-intent of the retrieval intent as
- the target and predicted labels instead of the actual response text.
-This means that the output in these files should look like -
-
-```json title="response_selection_successes.json"
-{
-      "text": "Is this really legit?",
-      "intent_response_key_target": "faq/is_legit",
-      "intent_response_key_prediction": {
-              "name": "faq/is_legit",
-              "confidence": 0.88
-      }
-}
+```yaml-rasa
+pipeline:
+  # other components
+  - name: ResponseSelector
+    use_text_as_label: true
 ```
 
-```json title="response_selection_errors.json"
-{
-      "text": "Is this really legit?",
-      "intent_response_key_target": "faq/is_legit",
-      "intent_response_key_prediction": {
-              "name": "faq/ask_cost",
-              "confidence": 0.6
-      }
-}
-```
-
-* Retrieval actions with `respond_` prefix are now replaced with usual utterance actions with `utter_` prefix.
-If you were using retrieval actions before, rename all of them to start with `utter_` prefix. For example,
-`respond_chitchat` becomes `utter_chitchat`. Also, in order to keep the response templates more consistent,
-you should now add the `utter_` prefix to all response templates defined for retrieval intents. For example,
-a response template `chitchat/ask_name` becomes `utter_chitchat/ask_name`. Note that the NLU examples for this
-will still be under `chitchat/ask_name` intent. The example `responseselectorbot` should help clarify these changes further.
-
-* The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name`
-have been deprecated in favour of `intent_response_key` and `response_templates` respectively.
-Additionally, two keys are added to the output -
-1. `all_retrieval_intents` - Holds a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
-2. `template_name` - Holds the name of the response template which is predicted by the response selector(`utter_faq/is_legit`)
-An example output looks like this -
+The output schema of `ResponseSelector` has changed. An example output looks like this:
 
 ```json {3-4,10,11,20}
 {
@@ -478,48 +550,14 @@ response_selector_output.get("default")
                         .get("intent_response_key")
 ```
 
-### Core Featurization
-
-* `LabelTokenizerSingleStateFeaturizer` is deprecated and will be removed in the future.
-  Please use `SingleStateFeaturizer` with appropriate NLU pipeline.
-  To replicate `LabelTokenizerSingleStateFeaturizer` functionality,
-  add a `Tokenizer` with the option `intent_tokenization_flag: True` and `CountVectorsFeaturizer`
-  to the NLU pipeline. Please update your configuration file.
-
-  For example:
-  ```yaml-rasa {3-5}
-  language: en
-  pipeline:
-    - name: WhitespaceTokenizer
-      intent_tokenization_flag: True
-    - name: CountVectorsFeaturizer
-  ```
-
-  Please train both NLU and Core (using `rasa train`) to use a trained tokenizer and
-  featurizer for Core featurization.
-
-* `BinarySingleStateFeaturizer` is deprecated and will be removed in the future.
-  If you train both NLU and Core (using `rasa train`),
-  use `SingleStateFeaturizer` with NLU pipeline
-  where `intent_tokenization_flag` of a Tokenizer is set to `False`.
-
-  For example:
-  ```yaml-rasa {4}
-  language: en
-  pipeline:
-    - name: WhitespaceTokenizer
-      intent_tokenization_flag: False
-  ```
-
-  Alternatively, you can train a Core model without NLU using `rasa train core`.
 
 ### Unfeaturized Slots
 
-[Slots](domain.mdx#slots) of type [`unfeaturized`](domain.mdx#unfeaturized-slot) are
-deprecated and will be removed in Rasa Open Source 3.0. To ignore slot values during
+[Slots](domain.mdx#slots) of type [unfeaturized](domain.mdx#unfeaturized-slot) are
+deprecated and will be removed in version 3.0. To ignore slot values during
 a conversation, set the `influence_conversation` property of the slot to `false`.
 
-The following snippet is an example of a deprecated `unfeaturized` slot usage:
+The following snippet is an example of the deprecated unfeaturized slot usage:
 
 ```yaml-rasa
 slots:
@@ -527,7 +565,7 @@ slots:
     type: unfeaturized
 ```
 
-With Rasa Open Source 2.0 you can now specify the expected data type `text` and
+To update this to the new format, you can specify the expected data type `text` and
 define that the slot should be ignored during the conversation.
 
 ```yaml-rasa
@@ -540,7 +578,7 @@ slots:
 ```
 
 If you don't require the slot to have a specific data type, you can use the new slot
-type [`any`](domain.mdx#any-slot). This slot type is always ignored during a conversation
+type [any](domain.mdx#any-slot). This slot type is always ignored during a conversation
 and does not make any assumptions regarding the data type of the slot value.
 
 ```yaml-rasa
@@ -550,6 +588,85 @@ slots:
 ```
 
 Please see the updated [slots documentation](domain.mdx#slots) for more information.
+
+### Conversation sessions
+
+[Conversation sessions](domain.mdx#session-configuration) are now enabled by default
+if your [Domain](domain.mdx) does not contain a session configuration. Previously a
+missing session configuration was treated as if conversation sessions were disabled.
+You can explicitly disable conversation sessions using the following snippet:
+
+```yaml-rasa title="domain.yml"
+session_config:
+  # A session expiration time of `0`
+  # disables conversation sessions
+  session_expiration_time: 0
+```
+
+
+### Dialogue Featurization
+
+This section is only relevant if you explicitly defined [featurizers](./policies.mdx#featurizers)
+in your policy configuration.
+
+LabelTokenizerSingleStateFeaturizer is deprecated and will be removed in the future.
+It should be replaced with SingleStateFeaturizer and some changes should be made to the NLU pipeline.
+Add a `Tokenizer` with the option `intent_tokenization_flag: True` and `CountVectorsFeaturizer`
+to the NLU pipeline.
+
+For example:
+```yaml-rasa {3-5}
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+    intent_tokenization_flag: True
+  - name: CountVectorsFeaturizer
+  # other components
+policies:
+  # other policies
+  - name: TEDPolicy
+    featurizer:
+    - name: SingleStateFeaturizer
+
+```
+
+BinarySingleStateFeaturizer is deprecated and will be removed in the future.
+You should replace it with `SingleStateFeaturizer` and a NLU pipeline
+where `intent_tokenization_flag` of a Tokenizer is set to `False`.
+
+For example:
+```yaml-rasa {4}
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+    intent_tokenization_flag: False
+  # other components
+policies:
+  # other policies
+  - name: TEDPolicy
+    featurizer:
+    - name: SingleStateFeaturizer
+
+```
+
+### Deprecations
+
+The deprecated [event brokers](./event-brokers.mdx) FileProducer, KafkaProducer, PikaProducer
+and SQLProducer have been removed. If you used these brokers in your
+`endpoints.yml` make sure to use the renamed variants instead:
+  - FileProducer became FileEventBroker
+  - KafkaProducer became KafkaEventBroker
+  - PikaProducer became PikaEventBroker
+  - SQLProducer became  SQLEventBroker
+
+The deprecated EmbeddingIntentClassifier has been removed. If you used this
+component in your pipeline configuration (`config.yml`) you can replace it
+with [DIETClassifier](./components.mdx#dietclassifier).
+It accepts the same configuration parameters.
+
+The deprecated KerasPolicy has been removed. If you used this
+component in your policies configuration (`config.yml`) you can replace it
+with [TEDPolicy](./policies.mdx#ted-policy). It accepts the same configuration parameters.
 
 ## Rasa 1.7 to Rasa 1.8
 
@@ -792,7 +909,7 @@ model before trying to use it with this improved version.
 * If you were previously importing the `Button` or `Element` classes from
   `rasa_core.dispatcher`, these are now to be imported from `rasa_sdk.utils`.
 
-* Rasa NLU and Core previously used [separate configuration files](https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1).
+* Rasa NLU and Core previously used <a href="https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1" target="_blank" rel="nofollow noopener noreferrer">separate configuration files</a>.
   These two files should be merged into a single file either named `config.yml`, or passed via the `--config` parameter.
 
 ### Script parameters

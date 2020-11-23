@@ -4,11 +4,10 @@ import re
 
 import jsonpickle
 import time
-import typing
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional
+from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterable
 
 import rasa.shared.utils.common
 from typing import Union
@@ -19,6 +18,8 @@ from rasa.shared.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
     LOOP_INTERRUPTED,
+    ENTITY_LABEL_SEPARATOR,
+    ACTION_SESSION_START_NAME,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -29,9 +30,11 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
 )
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
@@ -101,6 +104,88 @@ def first_key(d: Dict[Text, Any], default_key: Any) -> Any:
         return list(d.keys())[0]
     else:
         return None
+
+
+def split_events(
+    events: Iterable["Event"],
+    event_type_to_split_on: Type["Event"],
+    additional_splitting_conditions: Optional[Dict[Text, Any]] = None,
+    include_splitting_event: bool = True,
+) -> List[List["Event"]]:
+    """Splits events according to an event type and condition.
+
+    Examples:
+        Splitting events according to the event type `ActionExecuted` and the
+        `action_name` 'action_session_start' would look as follows:
+
+        >> _events = split_events(
+                        events,
+                        ActionExecuted,
+                        {"action_name": "action_session_start"},
+                        True
+                     )
+
+    Args:
+        events: Events to split.
+        event_type_to_split_on: The event type to split on.
+        additional_splitting_conditions: Additional event attributes to split on.
+        include_splitting_event: Whether the events of the type on which the split
+            is based should be included in the returned events.
+
+    Returns:
+        The split events.
+    """
+    sub_events = []
+    current = []
+
+    def event_fulfills_splitting_condition(evt: "Event") -> bool:
+        # event does not have the correct type
+        if not isinstance(evt, event_type_to_split_on):
+            return False
+
+        # the type is correct and there are no further conditions
+        if not additional_splitting_conditions:
+            return True
+
+        # there are further conditions - check those
+        return all(
+            getattr(evt, k, None) == v
+            for k, v in additional_splitting_conditions.items()
+        )
+
+    for event in events:
+        if event_fulfills_splitting_condition(event):
+            if current:
+                sub_events.append(current)
+
+            current = []
+            if include_splitting_event:
+                current.append(event)
+        else:
+            current.append(event)
+
+    if current:
+        sub_events.append(current)
+
+    return sub_events
+
+
+def do_events_begin_with_session_start(events: List["Event"]) -> bool:
+    """Determines whether `events` begins with a session start sequence.
+
+    A session start sequence is a sequence of two events: an executed
+    `action_session_start` as well as a logged `session_started`.
+
+    Args:
+        events: The events to inspect.
+
+    Returns:
+        Whether or not `events` begins with a session start sequence.
+    """
+    return len(events) > 1 and events[:2] == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+    ]
 
 
 # noinspection PyProtectedMember
@@ -331,6 +416,23 @@ class UserUttered(Event):
             a dictionary with intent name, text and entities
         """
         entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
+        entities.extend(
+            (
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+                f"{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
+            )
+            for entity in self.entities
+            if ENTITY_ATTRIBUTE_ROLE in entity
+        )
+        entities.extend(
+            (
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+                f"{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+            )
+            for entity in self.entities
+            if ENTITY_ATTRIBUTE_GROUP in entity
+        )
+
         out = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
@@ -374,18 +476,17 @@ class UserUttered(Event):
             else:
                 ent_string = ""
 
-            parse_string = "{intent}{entities}".format(
-                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
-            )
+            parse_string = f"{self.intent.get(INTENT_NAME_KEY, '')}{ent_string}"
+
             if e2e:
                 message = md_format_message(
                     self.text, self.intent.get(INTENT_NAME_KEY), self.entities
                 )
-                return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
-            else:
-                return parse_string
-        else:
-            return self.text
+                return f"{self.intent.get(INTENT_NAME_KEY)}: {message}"
+
+            return parse_string
+
+        return self.text
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.latest_message = self
@@ -590,10 +691,9 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        from rasa.shared.core.constants import ACTION_LISTEN_NAME
-
+        """Resets the tracker and triggers a followup `ActionSessionStart`."""
         tracker._reset()
-        tracker.trigger_followup_action(ACTION_LISTEN_NAME)
+        tracker.trigger_followup_action(ACTION_SESSION_START_NAME)
 
 
 # noinspection PyProtectedMember
@@ -982,7 +1082,7 @@ class ConversationPaused(Event):
     """Ignore messages from the user to let a human take over.
 
     As a side effect the ``Tracker``'s ``paused`` attribute will
-    be set to ``True``. """
+    be set to ``True``."""
 
     type_name = "pause"
 
@@ -1039,7 +1139,7 @@ class ActionExecuted(Event):
 
     def __init__(
         self,
-        action_name: Text,
+        action_name: Optional[Text] = None,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
@@ -1183,8 +1283,7 @@ class AgentUttered(Event):
 
 
 class ActiveLoop(Event):
-    """If `name` is not None: activates a loop with `name` else deactivates active loop.
-    """
+    """If `name` is not None: activates a loop with `name` else deactivates active loop."""
 
     type_name = "active_loop"
 
@@ -1252,7 +1351,7 @@ class LegacyForm(ActiveLoop):
 
 class LoopInterrupted(Event):
     """Event added by FormPolicy and RulePolicy to notify form action
-       whether or not to validate the user input."""
+    whether or not to validate the user input."""
 
     type_name = "loop_interrupted"
 

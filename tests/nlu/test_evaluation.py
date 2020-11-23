@@ -1,23 +1,28 @@
-from pathlib import Path
-
-from sanic.request import Request
-from typing import Text, Iterator, List, Dict, Any
-
 import asyncio
+import datetime
+import json
+import os
+from pathlib import Path
+from typing import Text, Iterator, List, Dict, Any, Set, Optional
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
+from sanic.request import Request
 
+import rasa.nlu.test
+import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.shared.nlu.constants import NO_ENTITY_TAG
+from rasa.nlu import train
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
+from rasa.nlu.components import ComponentBuilder, Component
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.test import compare_nlu_models
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
@@ -41,22 +46,28 @@ from rasa.nlu.test import (
     collect_incorrect_entity_predictions,
     merge_confidences,
     _get_entity_confidences,
+    is_response_selector_present,
+    get_eval_data,
+    does_token_cross_borders,
+    align_entity_predictions,
+    determine_intersection,
+    determine_token_labels,
 )
-from rasa.nlu.test import does_token_cross_borders
-from rasa.nlu.test import align_entity_predictions
-from rasa.nlu.test import determine_intersection
-from rasa.nlu.test import determine_token_labels
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token
-import json
-import os
-import rasa.shared.nlu.training_data.loading
-from tests.nlu.conftest import DEFAULT_DATA_PATH
-from rasa.nlu.selectors.response_selector import ResponseSelector
-from rasa.nlu.test import is_response_selector_present, get_eval_data
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
-from rasa.nlu import train
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import (
+    NO_ENTITY_TAG,
+    INTENT,
+    INTENT_RANKING_KEY,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+)
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.test import compare_nlu_models
+from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -346,7 +357,7 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-def test_run_evaluation(unpacked_trained_moodbot_path):
+def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     result = run_evaluation(
         DEFAULT_DATA_PATH,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
@@ -358,7 +369,9 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     assert result.get("intent_evaluation")
 
 
-async def test_eval_data(component_builder, tmpdir, project):
+async def test_eval_data(
+    component_builder: ComponentBuilder, tmp_path: Path, project: Text
+):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -382,7 +395,7 @@ async def test_eval_data(component_builder, tmpdir, project):
 
     (_, _, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data=data_importer,
         component_builder=component_builder,
         persist_nlu_training_data=True,
@@ -391,7 +404,7 @@ async def test_eval_data(component_builder, tmpdir, project):
     interpreter = Interpreter.load(persisted_path, component_builder)
 
     data = await data_importer.get_nlu_data()
-    intent_results, response_selection_results, entity_results, = get_eval_data(
+    (intent_results, response_selection_results, entity_results) = get_eval_data(
         interpreter, data
     )
 
@@ -401,7 +414,7 @@ async def test_eval_data(component_builder, tmpdir, project):
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
+def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
     )
@@ -673,14 +686,16 @@ def test_response_evaluation_report(tmp_path: Path):
         ([ResponseSelector()], set()),
     ],
 )
-def test_get_entity_extractors(components, expected_extractors):
+def test_get_entity_extractors(
+    components: List[Component], expected_extractors: Set[Text]
+):
     mock_interpreter = Interpreter(components, None)
     extractors = get_entity_extractors(mock_interpreter)
 
     assert extractors == expected_extractors
 
 
-def test_entity_evaluation_report(tmp_path):
+def test_entity_evaluation_report(tmp_path: Path):
     class EntityExtractorA(EntityExtractor):
 
         provides = ["entities"]
@@ -866,7 +881,7 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_remove_pretrained_extractors(component_builder):
+def test_remove_pretrained_extractors(component_builder: ComponentBuilder):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -1073,7 +1088,11 @@ def test_nlu_comparison(tmp_path: Path):
     ],
 )
 def test_collect_entity_predictions(
-    entity_results, targets, predictions, successes, errors
+    entity_results: List[EntityEvaluationResult],
+    targets: List[Text],
+    predictions: List[Text],
+    successes: List[Dict[Text, Any]],
+    errors: List[Dict[Text, Any]],
 ):
     actual = collect_successful_entity_predictions(entity_results, targets, predictions)
 
@@ -1084,3 +1103,53 @@ def test_collect_entity_predictions(
 
     assert len(errors) == len(actual)
     assert errors == actual
+
+
+class ConstantInterpreter(Interpreter):
+    def __init__(self, prediction_to_return: Dict[Text, Any]) -> None:
+        # add intent classifier to make sure intents are evaluated
+        super().__init__([FallbackClassifier()], None)
+        self.prediction = prediction_to_return
+
+    def parse(
+        self,
+        text: Text,
+        time: Optional[datetime.datetime] = None,
+        only_output_properties: bool = True,
+    ) -> Dict[Text, Any]:
+        return self.prediction
+
+
+def test_replacing_fallback_intent():
+    expected_intent = "greet"
+    expected_confidence = 0.345
+    fallback_prediction = {
+        INTENT: {
+            INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
+            PREDICTED_CONFIDENCE_KEY: 1,
+        },
+        INTENT_RANKING_KEY: [
+            {
+                INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
+                PREDICTED_CONFIDENCE_KEY: 1,
+            },
+            {
+                INTENT_NAME_KEY: expected_intent,
+                PREDICTED_CONFIDENCE_KEY: expected_confidence,
+            },
+            {INTENT_NAME_KEY: "some", PREDICTED_CONFIDENCE_KEY: 0.1},
+        ],
+    }
+
+    interpreter = ConstantInterpreter(fallback_prediction)
+    training_data = TrainingData(
+        [Message.build("hi", "greet"), Message.build("bye", "bye")]
+    )
+
+    intent_evaluations, _, _ = get_eval_data(interpreter, training_data)
+
+    assert all(
+        prediction.intent_prediction == expected_intent
+        and prediction.confidence == expected_confidence
+        for prediction in intent_evaluations
+    )

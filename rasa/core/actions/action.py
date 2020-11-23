@@ -124,17 +124,7 @@ def action_for_name(
     if action_name not in domain.action_names:
         domain.raise_action_not_found_exception(action_name)
 
-    should_use_form_action = (
-        action_name in domain.form_names and domain.slot_mapping_for_form(action_name)
-    )
-
-    return action_from_name(
-        action_name,
-        action_endpoint,
-        domain.user_actions_and_forms,
-        should_use_form_action,
-        domain.retrieval_intents,
-    )
+    return action_from_name(action_name, domain, action_endpoint)
 
 
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
@@ -158,30 +148,40 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
 
 def action_from_name(
-    name: Text,
-    action_endpoint: Optional[EndpointConfig],
-    user_actions: List[Text],
-    should_use_form_action: bool = False,
-    retrieval_intents: Optional[List[Text]] = None,
+    name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> "Action":
-    """Return an action instance for the name."""
+    """Retrieves an action by its name.
 
+    Args:
+        name: The name of the action.
+        domain: The current model domain.
+        action_endpoint: The endpoint to execute custom actions.
+
+    Returns:
+        The instantiated action.
+    """
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
-    if name in defaults and name not in user_actions:
+    if name in defaults and name not in domain.user_actions_and_forms:
         return defaults[name]
-    elif name.startswith(UTTER_PREFIX) and is_retrieval_action(
-        name, retrieval_intents or []
+
+    if name.startswith(UTTER_PREFIX) and is_retrieval_action(
+        name, domain.retrieval_intents
     ):
         return ActionRetrieveResponse(name)
-    elif name.startswith(UTTER_PREFIX):
+
+    if name.startswith(UTTER_PREFIX):
         return ActionUtterTemplate(name)
-    elif should_use_form_action:
+
+    is_form = name in domain.form_names
+    # Users can override the form by defining an action with the same name as the form
+    user_overrode_form_action = is_form and name in domain.user_actions
+    if is_form and not user_overrode_form_action:
         from rasa.core.actions.forms import FormAction
 
         return FormAction(name, action_endpoint)
-    else:
-        return RemoteAction(name, action_endpoint)
+
+    return RemoteAction(name, action_endpoint)
 
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
@@ -595,15 +595,14 @@ class RemoteAction(Action):
     ) -> List[Event]:
         json_body = self._action_call_format(tracker, domain)
         if not self.action_endpoint:
-            logger.error(
-                f"The model predicted the custom action '{self.name()}', "
-                f"but you didn't configure an endpoint to "
-                f"run this custom action. Please take a look at "
+            raise RasaException(
+                f"Failed to execute custom action '{self.name()}' "
+                f"because no endpoint is configured to run this "
+                f"custom action. Please take a look at "
                 f"the docs and set an endpoint configuration via the "
                 f"--endpoints flag. "
                 f"{DOCS_BASE_URL}/custom-actions"
             )
-            raise Exception("Failed to execute custom action.")
 
         try:
             logger.debug(
@@ -633,7 +632,7 @@ class RemoteAction(Action):
                 logger.error(exception.message)
                 raise exception
             else:
-                raise Exception("Failed to execute custom action.") from e
+                raise RasaException("Failed to execute custom action.") from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
@@ -641,7 +640,7 @@ class RemoteAction(Action):
                 "to the server at '{}'. Is the server running? "
                 "Error: {}".format(self.name(), self.action_endpoint.url, e)
             )
-            raise Exception("Failed to execute custom action.")
+            raise RasaException("Failed to execute custom action.")
 
         except aiohttp.ClientError as e:
             # not all errors have a status attribute, but
@@ -649,14 +648,13 @@ class RemoteAction(Action):
 
             # noinspection PyUnresolvedReferences
             status = getattr(e, "status", None)
-            logger.error(
+            raise RasaException(
                 "Failed to run custom action '{}'. Action server "
                 "responded with a non 200 status code of {}. "
                 "Make sure your action server properly runs actions "
                 "and returns a 200 once the action is executed. "
                 "Error: {}".format(self.name(), status, e)
             )
-            raise Exception("Failed to execute custom action.")
 
     def name(self) -> Text:
         return self._name

@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.components import Component
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
@@ -84,7 +84,7 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = None
             rasa.shared.utils.io.raise_warning(
                 f"Failed to load synonyms file from '{entity_synonyms_file}'.",
-                docs=DOCS_URL_TRAINING_DATA_NLU + "#entity-synonyms",
+                docs=DOCS_URL_TRAINING_DATA + "#synonyms",
             )
         return cls(meta, synonyms)
 
@@ -112,7 +112,7 @@ class EntitySynonymMapper(EntityExtractor):
                         f"Check your training data and remove "
                         f"conflicting synonym definitions to "
                         f"prevent this from happening.",
-                        docs=DOCS_URL_TRAINING_DATA_NLU + "#entity-synonyms",
+                        docs=DOCS_URL_TRAINING_DATA + "#synonyms",
                     )
 
                 self.synonyms[original] = replacement

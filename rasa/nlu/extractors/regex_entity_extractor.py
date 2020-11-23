@@ -4,7 +4,6 @@ import re
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig

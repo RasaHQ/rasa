@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 class TrainingException(Exception):
     """Exception wrapping lower level exceptions that may happen while training
 
-      Attributes:
-          failed_target_project -- name of the failed project
-          message -- explanation of why the request is invalid
-      """
+    Attributes:
+        failed_target_project -- name of the failed project
+        message -- explanation of why the request is invalid
+    """
 
     def __init__(
         self,

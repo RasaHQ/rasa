@@ -12,13 +12,18 @@ import warnings
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
+from ruamel.yaml.constructor import DuplicateKeyError
 
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
-from rasa.shared.exceptions import YamlSyntaxException
+from rasa.shared.exceptions import (
+    FileIOException,
+    FileNotFoundException,
+    YamlSyntaxException,
+)
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -116,7 +121,16 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
         with open(filename, encoding=encoding) as f:
             return f.read()
     except FileNotFoundError:
-        raise ValueError(f"File '{filename}' does not exist.")
+        raise FileNotFoundException(
+            f"Failed to read file, " f"'{os.path.abspath(filename)}' does not exist."
+        )
+    except UnicodeDecodeError:
+        raise FileIOException(
+            f"Failed to read file '{os.path.abspath(filename)}', "
+            f"could not read the file using {encoding} to decode "
+            f"it. Please make sure the file is stored with this "
+            f"encoding."
+        )
 
 
 def read_json_file(filename: Union[Text, Path]) -> Any:
@@ -125,9 +139,8 @@ def read_json_file(filename: Union[Text, Path]) -> Any:
     try:
         return json.loads(content)
     except ValueError as e:
-        raise ValueError(
-            "Failed to read json from '{}'. Error: "
-            "{}".format(os.path.abspath(filename), e)
+        raise FileIOException(
+            f"Failed to read json from '{os.path.abspath(filename)}'. Error: {e}"
         )
 
 
@@ -139,8 +152,7 @@ def list_directory(path: Text) -> List[Text]:
 
     if not isinstance(path, str):
         raise ValueError(
-            "`resource_name` must be a string type. "
-            "Got `{}` instead".format(type(path))
+            f"`resource_name` must be a string type. " f"Got `{type(path)}` instead"
         )
 
     if os.path.isfile(path):
@@ -158,9 +170,7 @@ def list_directory(path: Text) -> List[Text]:
             results.extend(os.path.join(base, f) for f in good_directories)
         return results
     else:
-        raise ValueError(
-            "Could not locate the resource '{}'.".format(os.path.abspath(path))
-        )
+        raise ValueError(f"Could not locate the resource '{os.path.abspath(path)}'.")
 
 
 def list_files(path: Text) -> List[Text]:
@@ -182,6 +192,75 @@ def list_subdirectories(path: Text) -> List[Text]:
     If the path points to a file, returns an empty list."""
 
     return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
+
+
+def deep_container_fingerprint(
+    obj: Union[List[Any], Dict[Any, Any]], encoding: Text = DEFAULT_ENCODING
+) -> Text:
+    """Calculate a hash which is stable, independent of a containers key order.
+
+    Works for lists and dictionaries. For keys and values, we recursively call
+    `hash(...)` on them. Keep in mind that a list with keys in a different order
+    will create the same hash!
+
+    Args:
+        obj: dictionary or list to be hashed.
+        encoding: encoding used for dumping objects as strings
+
+    Returns:
+        hash of the container.
+    """
+    if isinstance(obj, dict):
+        return get_dictionary_fingerprint(obj, encoding)
+    if isinstance(obj, list):
+        return get_list_fingerprint(obj, encoding)
+    else:
+        return get_text_hash(str(obj), encoding)
+
+
+def get_dictionary_fingerprint(
+    dictionary: Dict[Any, Any], encoding: Text = DEFAULT_ENCODING
+) -> Text:
+    """Calculate the fingerprint for a dictionary.
+
+    The dictionary can contain any keys and values which are either a dict,
+    a list or a elements which can be dumped as a string.
+
+    Args:
+        dictionary: dictionary to be hashed
+        encoding: encoding used for dumping objects as strings
+
+    Returns:
+        The hash of the dictionary
+    """
+    stringified = json.dumps(
+        {
+            deep_container_fingerprint(k, encoding): deep_container_fingerprint(
+                v, encoding
+            )
+            for k, v in dictionary.items()
+        },
+        sort_keys=True,
+    )
+    return get_text_hash(stringified, encoding)
+
+
+def get_list_fingerprint(
+    elements: List[Any], encoding: Text = DEFAULT_ENCODING
+) -> Text:
+    """Calculate a fingerprint for an unordered list.
+
+    Args:
+        elements: unordered list
+        encoding: encoding used for dumping objects as strings
+
+    Returns:
+        the fingerprint of the list
+    """
+    stringified = json.dumps(
+        [deep_container_fingerprint(element, encoding) for element in elements]
+    )
+    return get_text_hash(stringified, encoding)
 
 
 def get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text:
@@ -246,6 +325,7 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
     yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
+    yaml.allow_duplicate_keys = False
 
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
@@ -266,10 +346,18 @@ def _is_ascii(text: Text) -> bool:
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
+    Raises an exception if the content of the file can not be parsed as YAML.
+
     Args:
         filename: The path to the file which should be read.
+
+    Returns:
+        Parsed content of the file.
     """
-    return read_yaml(read_file(filename, DEFAULT_ENCODING))
+    try:
+        return read_yaml(read_file(filename, DEFAULT_ENCODING))
+    except (YAMLError, DuplicateKeyError) as e:
+        raise YamlSyntaxException(filename, e)
 
 
 def write_yaml(
@@ -426,10 +514,7 @@ def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     Args:
         filename: The path to the file which should be read.
     """
-    try:
-        content = read_yaml(read_file(filename))
-    except YAMLError as e:
-        raise YamlSyntaxException(filename, e)
+    content = read_yaml_file(filename)
 
     if content is None:
         return {}

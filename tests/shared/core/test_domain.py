@@ -5,29 +5,33 @@ from typing import Dict, List, Text, Any, Union, Set
 
 import pytest
 
+from rasa.shared.exceptions import YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.slots import TextSlot
+from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
 from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
+    ENTITY_LABEL_SEPARATOR,
 )
 from rasa.shared.core.domain import (
     InvalidDomain,
     SessionConfig,
+    ENTITY_ROLES_KEY,
     USED_ENTITIES_KEY,
     USE_ENTITIES_KEY,
     IGNORE_ENTITIES_KEY,
     State,
     Domain,
+    KEY_FORMS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.events import ActionExecuted, SlotSet
+from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
@@ -35,7 +39,7 @@ from tests.core.conftest import (
 )
 
 
-def test_slots_states_before_user_utterance(default_domain):
+def test_slots_states_before_user_utterance(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer()
     tracker = DialogueStateTracker.from_events(
         "bla",
@@ -52,7 +56,7 @@ def test_slots_states_before_user_utterance(default_domain):
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(default_domain):
+async def test_create_train_data_no_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
@@ -84,7 +88,7 @@ async def test_create_train_data_no_history(default_domain):
     ]
 
 
-async def test_create_train_data_with_history(default_domain):
+async def test_create_train_data_with_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
@@ -129,8 +133,6 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
 
 
 async def test_create_train_data_unfeaturized_entities():
-    import copy
-
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
@@ -242,7 +244,7 @@ def test_custom_slot_type(tmpdir: Path):
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
     domain_path = str(tmpdir / "domain.yml")
     rasa.shared.utils.io.write_text_file(domain_unkown_slot_type, domain_path)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidSlotTypeException):
         Domain.load(domain_path)
 
 
@@ -283,6 +285,7 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
+version: '2.0'
 actions:
 - action_save_world
 config:
@@ -298,7 +301,6 @@ session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
 slots: {{}}
-version: '2.0'
 """
 
     with pytest.warns(None) as record:
@@ -476,7 +478,7 @@ def test_merge_domain_with_forms():
     forms:
       my_form3:
         slot1:
-          type: from_text
+        - type: from_text
     """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
@@ -489,22 +491,50 @@ def test_merge_domain_with_forms():
 
 
 @pytest.mark.parametrize(
-    "intents, entities, intent_properties",
+    "intents, entities, roles, groups, intent_properties",
     [
         (
             ["greet", "goodbye"],
             ["entity", "other", "third"],
+            {"entity": ["role-1", "role-2"]},
+            {},
             {
-                "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
-                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "greet": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-1",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-2",
+                        "other",
+                        "third",
+                    ]
+                },
+                "goodbye": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-1",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-2",
+                        "other",
+                        "third",
+                    ]
+                },
             },
         ),
         (
             [{"greet": {USE_ENTITIES_KEY: []}}, "goodbye"],
             ["entity", "other", "third"],
+            {},
+            {"other": ["1", "2"]},
             {
                 "greet": {USED_ENTITIES_KEY: []},
-                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "goodbye": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        "other",
+                        f"other{ENTITY_LABEL_SEPARATOR}1",
+                        f"other{ENTITY_LABEL_SEPARATOR}2",
+                        "third",
+                    ]
+                },
             },
         ),
         (
@@ -519,9 +549,25 @@ def test_merge_domain_with_forms():
                 "goodbye",
             ],
             ["entity", "other", "third"],
+            {"entity": ["role"], "other": ["role"]},
+            {},
             {
-                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"]},
-                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "greet": {
+                    "triggers": "utter_goodbye",
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role",
+                    ],
+                },
+                "goodbye": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role",
+                        "other",
+                        f"other{ENTITY_LABEL_SEPARATOR}role",
+                        "third",
+                    ]
+                },
             },
         ),
         (
@@ -530,6 +576,8 @@ def test_merge_domain_with_forms():
                 {"goodbye": {USE_ENTITIES_KEY: [], IGNORE_ENTITIES_KEY: []}},
             ],
             ["entity", "other", "third"],
+            {},
+            {},
             {
                 "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye"},
                 "goodbye": {USED_ENTITIES_KEY: []},
@@ -542,6 +590,8 @@ def test_merge_domain_with_forms():
                 {"chitchat": {"is_retrieval_intent": True, "use_entities": None}},
             ],
             ["entity", "other", "third"],
+            {},
+            {},
             {
                 "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
                 "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
@@ -553,11 +603,16 @@ def test_merge_domain_with_forms():
 def test_collect_intent_properties(
     intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
     entities: List[Text],
+    roles: Dict[Text, List[Text]],
+    groups: Dict[Text, List[Text]],
     intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
 ):
-    Domain._add_default_intents(intent_properties, entities)
+    Domain._add_default_intents(intent_properties, entities, roles, groups)
 
-    assert Domain.collect_intent_properties(intents, entities) == intent_properties
+    assert (
+        Domain.collect_intent_properties(intents, entities, roles, groups)
+        == intent_properties
+    )
 
 
 def test_load_domain_from_directory_tree(tmp_path: Path):
@@ -662,7 +717,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=["random_name", "random_name"],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -672,7 +727,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -682,7 +737,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -696,22 +751,36 @@ def test_check_domain_sanity_on_invalid_domain():
         )
 
 
-def test_load_on_invalid_domain():
+def test_load_on_invalid_domain_duplicate_intents():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_intents.yml")
 
+
+def test_load_on_invalid_domain_duplicate_actions():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_actions.yml")
 
-    with pytest.raises(InvalidDomain):
+
+def test_load_on_invalid_domain_duplicate_templates():
+    with pytest.raises(YamlSyntaxException):
         Domain.load("data/test_domains/duplicate_templates.yml")
 
+
+def test_load_on_invalid_domain_duplicate_entities():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_entities.yml")
 
-    # Currently just deprecated
-    # with pytest.raises(InvalidDomain):
-    #     Domain.load("data/test_domains/missing_text_for_templates.yml")
+
+def test_load_domain_with_entity_roles_groups():
+    domain = Domain.load("data/test_domains/travel_form.yml")
+
+    assert domain.entities is not None
+    assert "GPE" in domain.entities
+    assert "name" in domain.entities
+    assert "name" not in domain.roles
+    assert "GPE" in domain.roles
+    assert "origin" in domain.roles["GPE"]
+    assert "destination" in domain.roles["GPE"]
 
 
 def test_is_empty():
@@ -750,6 +819,29 @@ def test_transform_intents_for_file_with_mapping():
     assert transformed == expected
 
 
+def test_transform_intents_for_file_with_entity_roles_groups():
+    domain_path = "data/test_domains/travel_form.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"inform": {USE_ENTITIES_KEY: ["GPE"]}},
+        {"greet": {USE_ENTITIES_KEY: ["name"]}},
+    ]
+
+    assert transformed == expected
+
+
+def test_transform_entities_for_file_default():
+    domain_path = "data/test_domains/travel_form.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_entities_for_file()
+
+    expected = [{"GPE": {ENTITY_ROLES_KEY: ["destination", "origin"]}}, "name"]
+
+    assert transformed == expected
+
+
 def test_clean_domain_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     cleaned = Domain.load(domain_path).cleaned_domain()
@@ -779,7 +871,7 @@ def test_clean_domain_for_file():
     assert cleaned == expected
 
 
-def test_add_knowledge_base_slots(default_domain):
+def test_add_knowledge_base_slots(default_domain: Domain):
     # don't modify default domain as it is used in other tests
     test_domain = copy.deepcopy(default_domain)
 
@@ -906,7 +998,7 @@ def test_domain_deepcopy():
 
     # equalities
     assert new_domain.intent_properties == domain.intent_properties
-    assert new_domain.overriden_default_intents == domain.overriden_default_intents
+    assert new_domain.overridden_default_intents == domain.overridden_default_intents
     assert new_domain.entities == domain.entities
     assert new_domain.forms == domain.forms
     assert new_domain.form_names == domain.form_names
@@ -921,7 +1013,9 @@ def test_domain_deepcopy():
     # not the same objects
     assert new_domain is not domain
     assert new_domain.intent_properties is not domain.intent_properties
-    assert new_domain.overriden_default_intents is not domain.overriden_default_intents
+    assert (
+        new_domain.overridden_default_intents is not domain.overridden_default_intents
+    )
     assert new_domain.entities is not domain.entities
     assert new_domain.forms is not domain.forms
     assert new_domain.form_names is not domain.form_names
@@ -932,3 +1026,119 @@ def test_domain_deepcopy():
     assert new_domain._custom_actions is not domain._custom_actions
     assert new_domain.user_actions is not domain.user_actions
     assert new_domain.action_names is not domain.action_names
+
+
+@pytest.mark.parametrize(
+    "template_key, validation",
+    [("utter_chitchat/faq", True), ("utter_chitchat", False)],
+)
+def test_is_retrieval_intent_template(template_key, validation):
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    assert domain.is_retrieval_intent_template((template_key, [{}])) == validation
+
+
+def test_retrieval_intent_template_seggregation():
+    domain = Domain.load("data/test_domains/mixed_retrieval_intents.yml")
+    assert domain.templates != domain.retrieval_intent_templates
+    assert domain.templates and domain.retrieval_intent_templates
+    assert list(domain.retrieval_intent_templates.keys()) == [
+        "utter_chitchat/ask_weather",
+        "utter_chitchat/ask_name",
+    ]
+
+
+def test_get_featurized_entities():
+    domain = Domain.load("data/test_domains/travel_form.yml")
+
+    user_uttered = UserUttered(
+        text="Hello, I am going to London",
+        intent={"name": "greet", "confidence": 1.0},
+        entities=[{"entity": "GPE", "value": "London", "role": "destination"}],
+    )
+
+    featurized_entities = domain._get_featurized_entities(user_uttered)
+
+    assert featurized_entities == set()
+
+    user_uttered = UserUttered(
+        text="I am going to London",
+        intent={"inform": "greet", "confidence": 1.0},
+        entities=[{"entity": "GPE", "value": "London", "role": "destination"}],
+    )
+
+    featurized_entities = domain._get_featurized_entities(user_uttered)
+
+    assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # No forms
+        {KEY_FORMS: {}},
+        # Deprecated but still support form syntax
+        {KEY_FORMS: ["my form", "other form"]},
+        # No slot mappings
+        {KEY_FORMS: {"my_form": None}},
+        {KEY_FORMS: {"my_form": {}}},
+        # Valid slot mappings
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_entity", "entity": "name"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": 5}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_intent", "value": "some value"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": False}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_trigger_intent", "value": 5}]}
+            }
+        },
+        {
+            KEY_FORMS: {
+                "my_form": {
+                    "slot_x": [{"type": "from_trigger_intent", "value": "some value"}]
+                }
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_text"}]}}},
+    ],
+)
+def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
+    Domain.from_dict(domain_as_dict)
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # Wrong type for slot names
+        {KEY_FORMS: {"my_form": []}},
+        {KEY_FORMS: {"my_form": 5}},
+        # Slot mappings not defined as list
+        {KEY_FORMS: {"my_form": {"slot1": {}}}},
+        # Unknown mapping
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "my slot mapping"}]}}},
+        # Mappings with missing keys
+        {
+            KEY_FORMS: {
+                "my_form": {"slot1": [{"type": "from_entity", "intent": "greet"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent"}]}}},
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent", "value": None}]}}},
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_trigger_intent"}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot1": [{"type": "from_trigger_intent", "value": None}]}
+            }
+        },
+    ],
+)
+def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)

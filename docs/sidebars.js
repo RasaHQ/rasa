@@ -1,21 +1,15 @@
 module.exports = {
   default: [
     'introduction',
-    'prototype-an-assistant',
+    'playground',
     {
       type: 'category',
       label: 'Building Assistants',
-      collapsed: true,
+      collapsed: false,
       items: [
-        {
-          type: 'category',
-          label: 'Getting Started',
-          collapsed: true,
-          items: [
-            'installation',
-            'migrate-from',
-          ],
-        },
+          'installation',
+          'migrate-from',
+          'command-line-interface',
         {
           type: 'category',
           label: 'Best Practices',
@@ -53,7 +47,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Concepts',
-      collapsed: true,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -69,6 +63,7 @@ module.exports = {
             'components',
             'policies',
             'training-data-importers',
+            'language-support',
           ],
         },
         {
@@ -119,16 +114,8 @@ module.exports = {
       label: 'APIs',
       collapsed: true,
       items: [
-        'command-line-interface',
-        {
-          type: 'category',
-          label: 'HTTP API',
-          collapsed: true,
-          items: [
-            'http-api',
-          ],
-        },
-        'jupyter-notebooks',
+        'http-api',
+        // 'jupyter-notebooks',
       ],
     },
     {

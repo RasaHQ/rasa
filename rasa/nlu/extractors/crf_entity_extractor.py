@@ -25,6 +25,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    SPLIT_ENTITIES_BY_COMMA,
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
@@ -65,6 +66,9 @@ class CRFEntityExtractor(EntityExtractor):
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
         BILOU_FLAG: True,
+        # Split entities by comma, this makes sense e.g. for a list of ingredients
+        # in a recipie, but it doesn't make sense for the parts of an address
+        SPLIT_ENTITIES_BY_COMMA: True,
         # crf_features is [before, token, after] array with before, token,
         # after holding keys about which features to use for each token,
         # for example, 'title' in array before will have the feature
@@ -138,6 +142,8 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._validate_configuration()
 
+        self.split_entities_config = self.init_split_entities()
+
     def _validate_configuration(self) -> None:
         if len(self.component_config.get("features", [])) % 2 != 1:
             raise ValueError(
@@ -172,9 +178,7 @@ class CRFEntityExtractor(EntityExtractor):
         self._update_crf_order(training_data)
 
         # filter out pre-trained entity examples
-        entity_examples = self.filter_trainable_entities(
-            training_data.training_examples
-        )
+        entity_examples = self.filter_trainable_entities(training_data.nlu_examples)
 
         dataset = [self._convert_to_crf_tokens(example) for example in entity_examples]
 
@@ -222,7 +226,7 @@ class CRFEntityExtractor(EntityExtractor):
         tags, confidences = self._tag_confidences(tokens, predictions)
 
         return self.convert_predictions_into_entities(
-            message.get(TEXT), tokens, tags, confidences
+            message.get(TEXT), tokens, tags, self.split_entities_config, confidences
         )
 
     def _add_tag_to_crf_token(

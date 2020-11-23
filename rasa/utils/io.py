@@ -130,7 +130,7 @@ def file_type_validator(
     valid_file_types: List[Text], error_message: Text
 ) -> Type["Validator"]:
     """Creates a `Validator` class which can be used with `questionary` to validate
-       file paths.
+    file paths.
     """
 
     def is_valid(path: Text) -> bool:

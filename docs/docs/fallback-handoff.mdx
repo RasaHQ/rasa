@@ -94,7 +94,7 @@ To use the FallbackClassifier, add it to your NLU pipeline:
 pipeline:
 # other components
 - name: FallbackClassifier
-  confidence_threshold: 0.7
+  threshold: 0.7
 ```
 
 #### 2. Defining the response message
@@ -245,7 +245,7 @@ to your policy configuration:
 pipeline:
 # other components
 - name: FallbackClassifier
-  confidence_threshold: 0.7
+  threshold: 0.7
 
 policies:
 # other policies
@@ -280,7 +280,7 @@ rules:
   steps:
   - intent: nlu_fallback
   - action: action_two_stage_fallback
-  - active_loop: two_stage_fallback
+  - active_loop: action_two_stage_fallback
 ```
 
 

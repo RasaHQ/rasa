@@ -94,8 +94,8 @@ def test_data_split_help(run: Callable[..., RunResult]):
 def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
-    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] -f {json,md,yaml}
-                             --data DATA --out OUT [-l LANGUAGE]"""
+    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,md,yaml}]
+                             --data DATA [--out OUT] [-l LANGUAGE]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -130,7 +130,17 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
     subparsers = parser.add_subparsers(help="Rasa commands")
     data.add_subparser(subparsers, parents=[])
 
-    args = parser.parse_args(["data", "validate", "stories", "--max-history", 0])
+    args = parser.parse_args(
+        [
+            "data",
+            "validate",
+            "stories",
+            "--data",
+            "examples/moodbot/data",
+            "--max-history",
+            0,
+        ]
+    )
 
     async def mock_from_importer(importer: TrainingDataImporter) -> Validator:
         return Mock()
@@ -327,6 +337,96 @@ def test_rasa_data_convert_nlg_to_yaml(
     assert filecmp.cmp(
         Path(converted_data_folder) / "responses_converted.yml",
         Path(converted_single_file_folder) / "responses_converted.yml",
+    )
+
+
+def test_rasa_data_convert_responses(
+    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+):
+    converted_data_folder = "converted_data"
+    os.mkdir(converted_data_folder)
+    expected_data_folder = "expected_data"
+    os.mkdir(expected_data_folder)
+
+    domain = (
+        "version: '2.0'\n"
+        "session_config:\n"
+        "  session_expiration_time: 60\n"
+        "  carry_over_slots_to_new_session: true\n"
+        "actions:\n"
+        "- respond_chitchat\n"
+        "- utter_greet\n"
+        "- utter_cheer_up"
+    )
+
+    expected_domain = (
+        "version: '2.0'\n"
+        "session_config:\n"
+        "  session_expiration_time: 60\n"
+        "  carry_over_slots_to_new_session: true\n"
+        "actions:\n"
+        "- utter_chitchat\n"
+        "- utter_greet\n"
+        "- utter_cheer_up\n"
+    )
+
+    with open(f"{expected_data_folder}/domain.yml", "w") as f:
+        f.write(expected_domain)
+
+    with open("domain.yml", "w") as f:
+        f.write(domain)
+
+    stories = (
+        "stories:\n"
+        "- story: sad path\n"
+        "  steps:\n"
+        "  - intent: greet\n"
+        "  - action: utter_greet\n"
+        "  - intent: mood_unhappy\n"
+        "- story: chitchat\n"
+        "  steps:\n"
+        "  - intent: chitchat\n"
+        "  - action: respond_chitchat\n"
+    )
+
+    expected_stories = (
+        'version: "2.0"\n'
+        "stories:\n"
+        "- story: sad path\n"
+        "  steps:\n"
+        "  - intent: greet\n"
+        "  - action: utter_greet\n"
+        "  - intent: mood_unhappy\n"
+        "- story: chitchat\n"
+        "  steps:\n"
+        "  - intent: chitchat\n"
+        "  - action: utter_chitchat\n"
+    )
+
+    with open(f"{expected_data_folder}/stories.yml", "w") as f:
+        f.write(expected_stories)
+
+    with open("data/stories.yml", "w") as f:
+        f.write(stories)
+
+    run_in_simple_project(
+        "data",
+        "convert",
+        "responses",
+        "--data",
+        "data",
+        "--out",
+        converted_data_folder,
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "domain_converted.yml",
+        Path(expected_data_folder) / "domain.yml",
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "stories_converted.yml",
+        Path(expected_data_folder) / "stories.yml",
     )
 
 

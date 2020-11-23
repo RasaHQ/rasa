@@ -1,26 +1,35 @@
+import functools
 import logging
 from pathlib import Path
-from typing import Dict, Text, List, Any, Optional, Union
+from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
+from rasa.shared.core.slots import TextSlot, ListSlot
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
-from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
+)
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
-from ruamel.yaml.parser import ParserError
 
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DOCS_URL_STORIES,
     TEST_STORIES_FILE_PREFIX,
     DOCS_URL_RULES,
+    DOCS_URL_SLOTS,
 )
 
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +55,8 @@ KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
 CORE_SCHEMA_FILE = "utils/schemas/stories.yml"
+DEFAULT_VALUE_TEXT_SLOTS = "filled"
+DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
 
 class YAMLStoryReader(StoryReader):
@@ -66,7 +77,7 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
-            reader.is_used_for_conversion,
+            reader._is_used_for_training,
         )
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
@@ -79,12 +90,15 @@ class YAMLStoryReader(StoryReader):
             `StoryStep`s read from `filename`.
         """
         self.source_name = filename
-
-        return self.read_from_string(
-            rasa.shared.utils.io.read_file(
-                filename, rasa.shared.utils.io.DEFAULT_ENCODING
+        try:
+            return self.read_from_string(
+                rasa.shared.utils.io.read_file(
+                    filename, rasa.shared.utils.io.DEFAULT_ENCODING
+                )
             )
-        )
+        except YamlException as e:
+            e.filename = filename
+            raise e
 
     def read_from_string(self, string: Text) -> List[StoryStep]:
         """Read stories or rules from a string.
@@ -95,15 +109,8 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `StoryStep`s read from `string`.
         """
-        try:
-            rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
-            yaml_content = rasa.shared.utils.io.read_yaml(string)
-        except (ValueError, ParserError) as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Failed to read YAML from '{self.source_name}', "
-                f"it will be skipped. Error: {e}"
-            )
-            return []
+        rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+        yaml_content = rasa.shared.utils.io.read_yaml(string)
 
         return self.read_from_parsed_yaml(yaml_content)
 
@@ -136,7 +143,7 @@ class YAMLStoryReader(StoryReader):
         return self.story_steps
 
     @classmethod
-    def is_stories_file(cls, file_path: Text) -> bool:
+    def is_stories_file(cls, file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in YAML format.
 
         Args:
@@ -145,31 +152,32 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `True` in case the file is a Core YAML training data or rule data file,
             `False` otherwise.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
             file_path, KEY_STORIES, KEY_RULES
         )
 
     @classmethod
-    def is_key_in_yaml(cls, file_path: Text, *keys: Text) -> bool:
+    def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
         """Check if all keys are contained in the parsed dictionary from a yaml file.
 
         Arguments:
             file_path: path to the yaml file
             keys: keys to look for
+
         Returns:
               `True` if all the keys are contained in the file, `False` otherwise.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(file_path)
-            return any(key in content for key in keys)
-        except Exception as e:
-            # Using broad `Exception` because yaml library is not exposing all Errors
-            rasa.shared.utils.io.raise_warning(
-                f"Tried to open '{file_path}' and load its data, but failed "
-                f"to read it. There seems to be an error with the yaml syntax: {e}"
-            )
-            return False
+        content = rasa.shared.utils.io.read_yaml_file(file_path)
+        return any(key in content for key in keys)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:
@@ -305,7 +313,12 @@ class YAMLStoryReader(StoryReader):
             self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
+
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
+
+        # check if this is a retrieval intent
+        # in this case check only for the base intent in domain
+        intent_name = Message.separate_intent_response_key(intent_name)[0]
 
         if not self.domain:
             logger.debug(
@@ -339,9 +352,13 @@ class YAMLStoryReader(StoryReader):
                 )
                 return
 
-        self.current_step_builder.add_user_messages(utterances)
+        self.current_step_builder.add_user_messages(
+            utterances, self._is_used_for_training
+        )
 
-    def _user_intent_from_step(self, step: Dict[Text, Any]) -> Text:
+    def _user_intent_from_step(
+        self, step: Dict[Text, Any]
+    ) -> Tuple[Text, Optional[Text]]:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
         if not user_intent:
@@ -362,13 +379,33 @@ class YAMLStoryReader(StoryReader):
             )
             # Remove leading slash
             user_intent = user_intent[1:]
-        return user_intent
+
+        # StoryStep should never contain a full retrieval intent, only the base intent.
+        # However, users can specify full retrieval intents in their test stories file
+        # for the NLU testing purposes.
+        base_intent, response_key = Message.separate_intent_response_key(user_intent)
+        if response_key and not self.is_test_stories_file(self.source_name):
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}' while parsing story "
+                f"{self._get_item_title()}:\n"
+                f"User intent '{user_intent}' is a full retrieval intent. "
+                f"Stories shouldn't contain full retrieval intents. "
+                f"Rasa Open Source will only use base intent '{base_intent}' "
+                f"for training.",
+                docs=self._get_docs_link(),
+            )
+
+        return (base_intent, user_intent) if response_key else (base_intent, None)
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
         from rasa.shared.nlu.interpreter import RegexInterpreter
 
-        intent_name = self._user_intent_from_step(step)
-        intent = {"name": intent_name, "confidence": 1.0}
+        intent_name, full_retrieval_intent = self._user_intent_from_step(step)
+        intent = {
+            INTENT_NAME_KEY: intent_name,
+            FULL_RETRIEVAL_INTENT_NAME_KEY: full_retrieval_intent,
+            PREDICTED_CONFIDENCE_KEY: 1.0,
+        }
 
         if KEY_USER_MESSAGE in step:
             user_message = step[KEY_USER_MESSAGE].strip()
@@ -393,8 +430,27 @@ class YAMLStoryReader(StoryReader):
         final_entities = []
         for entity in raw_entities:
             if isinstance(entity, dict):
+                _entity_type = None
+                _entity_value = None
+                _entity_role = None
+                _entity_group = None
                 for key, value in entity.items():
-                    final_entities.append({"entity": key, "value": value})
+                    if key == "role":
+                        _entity_role = value
+                    elif key == "group":
+                        _entity_group = value
+                    else:
+                        _entity_type = key
+                        _entity_value = value
+
+                _entity_dict = {
+                    "entity": _entity_type,
+                    "value": _entity_value,
+                    "role": _entity_role,
+                    "group": _entity_group,
+                }
+                _entity_dict = {k: v for k, v in _entity_dict.items() if v is not None}
+                final_entities.append(_entity_dict)
             else:
                 final_entities.append({"entity": entity, "value": ""})
 
@@ -407,7 +463,9 @@ class YAMLStoryReader(StoryReader):
                 for key, value in slot.items():
                     self._add_event(SlotSet.type_name, {key: value})
             elif isinstance(slot, str):
-                self._add_event(SlotSet.type_name, {slot: None})
+                self._add_event(
+                    SlotSet.type_name, {slot: self._slot_default_value(slot)}
+                )
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}':\n"
@@ -417,6 +475,29 @@ class YAMLStoryReader(StoryReader):
                     docs=self._get_docs_link(),
                 )
                 return
+
+    @functools.lru_cache()
+    def _slot_default_value(self, slot_name: Text) -> Any:
+        if not self.domain:
+            return None
+
+        slot_types_with_default_types = {
+            TextSlot: DEFAULT_VALUE_TEXT_SLOTS,
+            ListSlot: DEFAULT_VALUE_LIST_SLOTS,
+        }
+        slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
+
+        default_value = slot_types_with_default_types.get(type(slot))
+        if default_value is None and slot.has_features():
+            rasa.shared.utils.io.raise_warning(
+                f"Slot '{slot_name}' was referenced by its name only. As slot "
+                f"'{slot_name}' is of type '{slot.type_name}' you need to specify a "
+                f"value for it. Slot '{slot_name}' will be treated as if it's value "
+                f"is empty.",
+                docs=DOCS_URL_SLOTS,
+            )
+
+        return default_value
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
 
