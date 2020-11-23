@@ -155,7 +155,7 @@ pytest-timeout = "^1.4.2"
 mypy = "^0.790"
 
 [tool.poetry.extras]
-spacy = [ "spacy",]
+spacy = [ "spacy-nightly",]
 jieba = [ "jieba",]
 transformers = [ "transformers",]
 full = [ "spacy", "transformers", "jieba",]
