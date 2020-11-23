@@ -8,6 +8,10 @@ from typing import Text
 
 from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.training_data.message
+from rasa.nlu.tokenizers.convert_tokenizer import (
+    ORIGINAL_TF_HUB_MODULE_URL,
+    RESTRICTED_ACCESS_URL,
+)
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.nlu import utils
@@ -115,7 +119,17 @@ def test_remove_model_invalid(empty_model_dir):
         ("https://www.google.com", True),
         ("http://google.com", True),
         ("http://www.google.com", True),
-        ("http://a/b/c", False),
+        ("http://www.google.com?foo=bar", True),
+        ("http://a/b/c", True),
+        ("http://localhost:5002/api/projects/default/models/tags/production", True),
+        ("http://rasa-x:5002/api/projects/default/models/tags/production", True),
+        (
+            "http://rasa-x:5002/api/projects/default/models/tags/production?foo=bar",
+            True,
+        ),
+        (ORIGINAL_TF_HUB_MODULE_URL, True),
+        (RESTRICTED_ACCESS_URL, True),
+        ("file:///some/path/file", True),
     ],
 )
 def test_is_url(url: Text, result: bool):
