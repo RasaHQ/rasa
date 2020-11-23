@@ -1,6 +1,7 @@
 import contextlib
 import json
 import logging
+from asyncio import AbstractEventLoop
 from typing import Any, Dict, Optional, Text
 
 from rasa.core.brokers.broker import EventBroker
@@ -51,7 +52,12 @@ class SQLEventBroker(EventBroker):
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "SQLEventBroker":
+    async def from_endpoint_config(
+        cls,
+        broker_config: EndpointConfig,
+        event_loop: Optional[AbstractEventLoop] = None,
+    ) -> "SQLEventBroker":
+        """Creates broker. See the parent class for more information."""
         return cls(host=broker_config.url, **broker_config.kwargs)
 
     @contextlib.contextmanager

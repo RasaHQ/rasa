@@ -1,12 +1,19 @@
+import functools
 import logging
 from pathlib import Path
-from typing import Dict, Text, List, Any, Optional, Union
+from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
+from rasa.shared.core.slots import TextSlot, ListSlot
 from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
-from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
+)
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
 
@@ -15,12 +22,14 @@ from rasa.shared.constants import (
     DOCS_URL_STORIES,
     TEST_STORIES_FILE_PREFIX,
     DOCS_URL_RULES,
+    DOCS_URL_SLOTS,
 )
 
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +55,8 @@ KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
 CORE_SCHEMA_FILE = "utils/schemas/stories.yml"
+DEFAULT_VALUE_TEXT_SLOTS = "filled"
+DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
 
 class YAMLStoryReader(StoryReader):
@@ -302,7 +313,12 @@ class YAMLStoryReader(StoryReader):
             self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
+
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
+
+        # check if this is a retrieval intent
+        # in this case check only for the base intent in domain
+        intent_name = Message.separate_intent_response_key(intent_name)[0]
 
         if not self.domain:
             logger.debug(
@@ -340,7 +356,9 @@ class YAMLStoryReader(StoryReader):
             utterances, self._is_used_for_training
         )
 
-    def _user_intent_from_step(self, step: Dict[Text, Any]) -> Text:
+    def _user_intent_from_step(
+        self, step: Dict[Text, Any]
+    ) -> Tuple[Text, Optional[Text]]:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
         if not user_intent:
@@ -361,13 +379,33 @@ class YAMLStoryReader(StoryReader):
             )
             # Remove leading slash
             user_intent = user_intent[1:]
-        return user_intent
+
+        # StoryStep should never contain a full retrieval intent, only the base intent.
+        # However, users can specify full retrieval intents in their test stories file
+        # for the NLU testing purposes.
+        base_intent, response_key = Message.separate_intent_response_key(user_intent)
+        if response_key and not self.is_test_stories_file(self.source_name):
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}' while parsing story "
+                f"{self._get_item_title()}:\n"
+                f"User intent '{user_intent}' is a full retrieval intent. "
+                f"Stories shouldn't contain full retrieval intents. "
+                f"Rasa Open Source will only use base intent '{base_intent}' "
+                f"for training.",
+                docs=self._get_docs_link(),
+            )
+
+        return (base_intent, user_intent) if response_key else (base_intent, None)
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
         from rasa.shared.nlu.interpreter import RegexInterpreter
 
-        intent_name = self._user_intent_from_step(step)
-        intent = {"name": intent_name, "confidence": 1.0}
+        intent_name, full_retrieval_intent = self._user_intent_from_step(step)
+        intent = {
+            INTENT_NAME_KEY: intent_name,
+            FULL_RETRIEVAL_INTENT_NAME_KEY: full_retrieval_intent,
+            PREDICTED_CONFIDENCE_KEY: 1.0,
+        }
 
         if KEY_USER_MESSAGE in step:
             user_message = step[KEY_USER_MESSAGE].strip()
@@ -425,7 +463,9 @@ class YAMLStoryReader(StoryReader):
                 for key, value in slot.items():
                     self._add_event(SlotSet.type_name, {key: value})
             elif isinstance(slot, str):
-                self._add_event(SlotSet.type_name, {slot: None})
+                self._add_event(
+                    SlotSet.type_name, {slot: self._slot_default_value(slot)}
+                )
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}':\n"
@@ -435,6 +475,29 @@ class YAMLStoryReader(StoryReader):
                     docs=self._get_docs_link(),
                 )
                 return
+
+    @functools.lru_cache()
+    def _slot_default_value(self, slot_name: Text) -> Any:
+        if not self.domain:
+            return None
+
+        slot_types_with_default_types = {
+            TextSlot: DEFAULT_VALUE_TEXT_SLOTS,
+            ListSlot: DEFAULT_VALUE_LIST_SLOTS,
+        }
+        slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
+
+        default_value = slot_types_with_default_types.get(type(slot))
+        if default_value is None and slot.has_features():
+            rasa.shared.utils.io.raise_warning(
+                f"Slot '{slot_name}' was referenced by its name only. As slot "
+                f"'{slot_name}' is of type '{slot.type_name}' you need to specify a "
+                f"value for it. Slot '{slot_name}' will be treated as if it's value "
+                f"is empty.",
+                docs=DOCS_URL_SLOTS,
+            )
+
+        return default_value
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
 
