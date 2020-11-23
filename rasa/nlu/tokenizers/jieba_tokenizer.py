@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
 class JiebaTokenizer(Tokenizer):
     """This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba).
     """
+
     supported_language_list = ["zh"]
 
     defaults = {
