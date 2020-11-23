@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
-from rasa.nlu.config import InvalidConfigError
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
@@ -540,14 +540,16 @@ class DIET2BOW(DIET):
 
 
 class DIET2DIET(DIET):
+    """Diet 2 Diet transformer implementation."""
+
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if LABEL not in self.data_signature:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )

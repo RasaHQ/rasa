@@ -60,9 +60,11 @@ class FallbackClassifier(IntentClassifier):
         if not self._should_fallback(message):
             return
 
-        message.data[INTENT] = _fallback_intent()
+        # we assume that the confidence of fallback is 1 - confidence of top intent
+        confidence = 1 - message.data[INTENT][PREDICTED_CONFIDENCE_KEY]
+        message.data[INTENT] = _fallback_intent(confidence)
         message.data.setdefault(INTENT_RANKING_KEY, [])
-        message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent())
+        message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent(confidence))
 
     def _should_fallback(self, message: Message) -> bool:
         """Check if the fallback intent should be predicted.
@@ -116,11 +118,10 @@ class FallbackClassifier(IntentClassifier):
         return False, None
 
 
-def _fallback_intent() -> Dict[Text, Union[Text, float]]:
+def _fallback_intent(confidence: float) -> Dict[Text, Union[Text, float]]:
     return {
         INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
-        # TODO: Re-consider how we represent the confidence here
-        PREDICTED_CONFIDENCE_KEY: 1.0,
+        PREDICTED_CONFIDENCE_KEY: confidence,
     }
 
 

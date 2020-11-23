@@ -10,6 +10,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -142,7 +143,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
-            credentials.get("slack_signing_secret", None),
+            credentials.get("slack_signing_secret", ""),
         )
 
     def __init__(
@@ -154,7 +155,7 @@ class SlackInput(InputChannel):
         slack_retry_number_header: Optional[Text] = None,
         errors_ignore_retry: Optional[List[Text]] = None,
         use_threads: Optional[bool] = False,
-        slack_signing_secret: Optional[Text] = None,
+        slack_signing_secret: Text = "",
     ) -> None:
         """Create a Slack input channel.
 
@@ -197,18 +198,17 @@ class SlackInput(InputChannel):
         self.use_threads = use_threads
         self.slack_signing_secret = slack_signing_secret
 
-        self._raise_deprecation_warnings()
+        self._validate_credentials()
 
-    def _raise_deprecation_warnings(self) -> None:
-        """Raises any deprecation warning regarding configuration parameters."""
-        if self.slack_signing_secret is None:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "Your slack bot is missing a configured signing secret. Running a "
-                "bot without a signing secret is deprecated and will be removed in "
-                "the next release (2.2.0). You should add a `slack_signing_secret` "
-                "parameter to your channel configuration.",
-                warn_until_version="2.2.0",
-                docs=DOCS_URL_CONNECTORS_SLACK,
+    def _validate_credentials(self) -> None:
+        """Raises exceptions if the connector is not properly configured."""
+        if not self.slack_signing_secret:
+            raise InvalidConfigException(
+                f"Your slack bot is missing a configured signing secret. Running a "
+                f"bot without a signing secret is insecure and was removed. "
+                f"You need to add a `slack_signing_secret` parameter to your channel "
+                f"configuration. "
+                f"More info at {DOCS_URL_CONNECTORS_SLACK} ."
             )
 
     @staticmethod
@@ -447,10 +447,6 @@ class SlackInput(InputChannel):
         Returns:
             `True` if the request came from Slack.
         """
-        if self.slack_signing_secret is None:
-            # this is done for backwards compatibility, but will be removed in
-            # the next release
-            return True
 
         try:
             slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
