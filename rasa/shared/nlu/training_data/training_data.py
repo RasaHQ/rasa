@@ -712,14 +712,18 @@ class TrainingDataChunk:
         self.training_examples = training_examples
         self.responses = responses
 
-    def _bytes_feature(self, value: tf.Tensor) -> tf.train.Feature:
+    @staticmethod
+    def _bytes_feature(array: np.ndarray) -> tf.train.Feature:
         """Returns a bytes_list from a string / byte."""
-        if isinstance(value, type(tf.constant(0))):  # if value ist tensor
+        value = tf.io.serialize_tensor(array)
+        if isinstance(value, type(tf.constant(0))):  # if value is tensor
             value = value.numpy()  # get value of tensor
         return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-    def _serialize_array(self, array: np.ndarray) -> tf.Tensor:
-        return tf.io.serialize_tensor(array)
+    @staticmethod
+    def _int_feature(array: Tuple[int]) -> tf.train.Feature:
+        """Returns an int64_list from a bool / enum / int / uint."""
+        return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
 
     def _to_tf_features(self, features: List[Features]) -> Dict[Text, tf.train.Feature]:
         tf_features = {}
@@ -728,12 +732,15 @@ class TrainingDataChunk:
             key = f"{feature.attribute}#{feature.type}#{feature.origin}"
 
             if feature.is_dense():
-                _serialized_features = self._serialize_array(feature.features)
-                tf_features[key] = self._bytes_feature(_serialized_features)
+                tf_features[f"{key}#dense"] = self._bytes_feature(feature.features)
             else:
-                tf_features[key] = tf.train.Feature(
-                    float_list=tf.train.FloatList(value=[feature.features])
-                )
+                data = feature.features.data
+                shape = feature.features.shape
+                indices = np.vstack([feature.features.row, feature.features.col])
+
+                tf_features[f"{key}#sparse#data"] = self._bytes_feature(data)
+                tf_features[f"{key}#sparse#shape"] = self._int_feature(shape)
+                tf_features[f"{key}#sparse#indices"] = self._bytes_feature(indices)
 
         return tf_features
 
@@ -772,7 +779,11 @@ class TrainingDataChunk:
         Returns:
             The loaded training data chunk.
         """
-        pass
+        raw_dataset = tf.data.TFRecordDataset([file_path])
+        for raw_record in raw_dataset:
+            example = tf.train.Example()
+            example.ParseFromString(raw_record.numpy())
+            print(example)
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

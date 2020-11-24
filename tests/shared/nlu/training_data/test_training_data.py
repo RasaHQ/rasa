@@ -657,4 +657,6 @@ def test_persist_training_data_chunk(tmp_path):
     ]
 
     training_data_chunk = TrainingDataChunk(messages)
-    training_data_chunk.persist_chunk(str(tmp_path), "test.porto")
+    file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.porto")
+
+    TrainingDataChunk.load_chunk(file_path)
