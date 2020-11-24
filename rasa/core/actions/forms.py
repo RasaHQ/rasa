@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Text, List, Optional, Union, Any, Dict, Tuple, Set
 import logging
 import json
@@ -6,7 +5,7 @@ import json
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.domain import Domain, InvalidDomain, SlotMapping
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -29,20 +28,18 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-class SlotMapping(Enum):
-    FROM_ENTITY = 0
-    FROM_INTENT = 1
-    FROM_TRIGGER_INTENT = 2
-    FROM_TEXT = 3
-
-    def __str__(self) -> Text:
-        return self.name.lower()
-
-
 class FormAction(LoopAction):
+    """Action which implements and executes the form logic."""
+
     def __init__(
         self, form_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> None:
+        """Creates a `FormAction`.
+
+        Args:
+            form_name: Name of the form.
+            action_endpoint: Endpoint to execute custom actions.
+        """
         self._form_name = form_name
         self.action_endpoint = action_endpoint
         # creating it requires domain, which we don't have in init
@@ -554,9 +551,7 @@ class FormAction(LoopAction):
         logger.debug(f"Request next slot '{slot_name}'")
 
         action_to_ask_for_next_slot = action.action_from_name(
-            self._name_of_utterance(domain, slot_name),
-            self.action_endpoint,
-            domain.user_actions,
+            self._name_of_utterance(domain, slot_name), domain, self.action_endpoint
         )
         events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain

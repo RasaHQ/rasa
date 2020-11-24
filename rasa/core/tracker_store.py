@@ -58,6 +58,9 @@ logger = logging.getLogger(__name__)
 POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
 POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
+# default value for key prefix in RedisTrackerStore
+DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
+
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
@@ -94,7 +97,7 @@ class TrackerStore:
                 f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
                 f"kwarg for the `{self.__class__.__name__}` class is deprecated and "
                 f"will be removed in Rasa Open Source 3.0. "
-                f"Please use the `retrieve_full_tracker()` method instead.",
+                f"Please use the `retrieve_full_tracker()` method instead."
             )
             self.retrieve_events_from_previous_conversation_sessions = (
                 retrieve_events_from_previous_conversation_sessions
@@ -305,6 +308,7 @@ class RedisTrackerStore(TrackerStore):
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
+        key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
         **kwargs: Dict[Text, Any],
     ) -> None:
@@ -314,7 +318,24 @@ class RedisTrackerStore(TrackerStore):
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
+
+        self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        if key_prefix:
+            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            self._set_key_prefix(key_prefix)
+
         super().__init__(domain, event_broker, **kwargs)
+
+    def _set_key_prefix(self, key_prefix: Text) -> None:
+        if isinstance(key_prefix, str) and key_prefix.isalnum():
+            self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        else:
+            logger.warning(
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+            )
+
+    def _get_key_prefix(self) -> Text:
+        return self.key_prefix
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
@@ -325,10 +346,10 @@ class RedisTrackerStore(TrackerStore):
             timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
+        self.red.set(self.prefix + tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        stored = self.red.get(sender_id)
+        stored = self.red.get(self.prefix + sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
         else:
@@ -336,7 +357,7 @@ class RedisTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store"""
-        return self.red.keys()
+        return self.red.keys(self.prefix + "*")
 
 
 class DynamoTrackerStore(TrackerStore):
@@ -1169,19 +1190,9 @@ def _load_from_module_name_in_endpoint_config(
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type
         )
-        init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
-        if "url" in init_args and "host" not in init_args:
-            # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
-                "The `url` initialization argument for custom tracker stores has "
-                "been removed. Your custom tracker store should take a `host` "
-                "argument in its `__init__()` instead."
-            )
-        else:
-            store.kwargs["host"] = store.url
 
         return tracker_store_class(
-            domain=domain, event_broker=event_broker, **store.kwargs
+            host=store.url, domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
         rasa.shared.utils.io.raise_warning(

@@ -5,7 +5,7 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Generator
+from typing import Text, Generator, Callable
 
 import pytest
 
@@ -215,6 +215,21 @@ async def form_bot_agent(trained_async) -> Agent:
         training_files=[
             "examples/formbot/data/rules.yml",
             "examples/formbot/data/stories.yml",
+        ],
+    )
+
+    return Agent.load_local_model(zipped_model)
+
+
+@pytest.fixture(scope="session")
+async def response_selector_agent(trained_async: Callable) -> Agent:
+    zipped_model = await trained_async(
+        domain="examples/responseselectorbot/domain.yml",
+        config="examples/responseselectorbot/config.yml",
+        training_files=[
+            "examples/responseselectorbot/data/rules.yml",
+            "examples/responseselectorbot/data/stories.yml",
+            "examples/responseselectorbot/data/nlu.yml",
         ],
     )
 
