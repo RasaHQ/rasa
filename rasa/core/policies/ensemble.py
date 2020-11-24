@@ -315,7 +315,8 @@ class PolicyEnsemble:
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
-            if policy is not None: policies.append(policy)
+            if policy is not None:
+                policies.append(policy)
         ensemble_cls = rasa.shared.utils.common.class_from_module_path(
             metadata["ensemble_name"]
         )
