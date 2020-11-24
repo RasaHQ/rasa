@@ -1,0 +1,62 @@
+intents:
+ - what_to_do_if_the_phone_does_not_show_"no_response"_when_i_touch_the_register_button_for_huawei_id_registration
+ - i_forgot_my_huawei_id
+ - emergency_contact_faq
+ - i_can't_receive_the_verification_code_due_to_my_phone_number_or_email_change？
+ - why_do_i_need_to_set_a_security_phone_number_or_email_address_?
+ - why_do_i_need_to_verify_email_address_when_i_log_in_huawei_id_?
+ - what_can_account_protection_do?
+ - why_do_i_need_to_associate_my_huawei_id_with_an_email_address_or_a_phone_number_for_registration?
+ - why_the_service_in_the_terms_is_provided_by_a_company_named_after_aspiegel_rather_than_huawei_technologies_co._ltd_?
+ - why_do_i_need_to_verify_the_identity?
+ - the_current_huawei_id_is_not_mine_and_i_can't_log_out_or_log_in
+ - why_can't_i_register_a_huawei_id_using_my_phone_number_?
+ - why_is_it_necessary_to_verify_my_identity_when_i_change_the_security_phone_number_or_email_address_?
+ - why_i'm_no_longer_logged_in_after_a_system_update?
+ - what_is_huawei_id_used_for?
+ - how_to_change_huawei_id_when_my_mobile_phone_number_or_email_address_is_no_longer_in_use
+ - why_can't_i_delete_my_huawei_id_?
+ - how_to_delete_my_huawei_id
+ - why_do_i_need_to_change_the_password_?
+ - why_must_i_update_the_system?
+ - why_can't_i_receive_the_verification_code_?
+ - how_can_i_register_a_huawei_id_?
+ - why_i_can't_find_my_security_measure_:verified_phone_number_]_in_account_center
+ - can't_select_the_correct_country_code_when_registering_a_huawei_id_overseas?
+ - when_i_try_to_log_in_or_reset_my_password_,_it_always_failed_with_pop-ups_like_"invalid_account"_or_"wrong_account_password"
+ - when_i_registered_huawei_id_it_said_“the_account_is_already_exist”_which_i_never_register_one
+ - why_a_note_of_huawei_id_appears_and_i_can_only_enter_account_page_by_accepting_the_terms_after_re-logging_in?
+ - how_can_i_verify_the_identity?
+ - failed_to_log_in_with_a_huawei_id
+ - i_failed_to_register_a_huawei_id_using_a_phone_number_or_an_email_address
+ - i_can't_receive_the_verification_email
+ - why_i'm_no_longer_logged_in_all_of_a_sudden?
+ - in_which_ways_can_i_log_in_to_my_huawei_id_?
+ - my_phone_number_,_email_address_,_or_third-party_account_is_indicated_to_have_been_associated_with_a_huawei_id_,_what_should_i_do?
+ - how_can_i_prevent_someone_from_resetting_the_password_using_my_phone_number_if_my_phone_is_lost?
+ - can_a_huawei_id_be_disassociated_from_a_phone_number_or_an_email_address_?
+ - can_a_huawei_id_be_associated_with_both_a_phone_number_and_an_email_address_?
+ - what_can_device_management_do?
+ - how_to_obtain_my_personal_data
+ - i_forgot_my_huawei_id_password_,_what_should_i_do?
+ - how_to_check_my_change_account_request_number_and_progress_and_how_long_does_it_take_to_receive_a_response?
+
+entities:
+ - docs
+ - msg
+ - request
+ - security_measure
+ - feature
+ - user_info
+ - code
+ - hms_service
+ - org
+ - time
+ - UX
+
+actions:
+- action_utter_language_select
+
+session_config:
+ session_expiration_time: 60  # value in minutes
+ carry_over_slots_to_new_session: true
