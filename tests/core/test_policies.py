@@ -286,7 +286,9 @@ class TestSklearnPolicy(PolicyTestCollection):
             new_tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
-                    new_action = default_domain.action_names[np.random.choice(classes)]
+                    new_action = rasa.core.actions.action.action_for_index(
+                        np.random.choice(classes), default_domain, action_endpoint=None
+                    ).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
                     new_tracker.update(e)

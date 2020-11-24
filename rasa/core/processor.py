@@ -354,8 +354,8 @@ class MessageProcessor:
         """
         prediction = self._get_next_action_probabilities(tracker)
 
-        action = rasa.core.actions.action.action_for_prediction(
-            prediction, self.domain, self.action_endpoint
+        action = rasa.core.actions.action.action_for_index(
+            prediction.max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
