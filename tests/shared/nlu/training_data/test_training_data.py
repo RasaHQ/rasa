@@ -23,6 +23,7 @@ from rasa.shared.nlu.training_data.util import (
     template_key_to_intent_response_key,
     intent_response_key_to_template_key,
 )
+from rasa.shared.nlu.training_data.message import Message
 
 import rasa.shared.data
 
@@ -633,3 +634,50 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "intent_frequencies, num_chunks", [([100, 82, 63, 43], 8), ([15, 12, 10, 7], 4)]
+)
+def test_divide_training_data_chunks(intent_frequencies, num_chunks):
+
+    # Create the initial training data
+    all_messages = []
+    for index, intent_count in enumerate(intent_frequencies):
+        all_messages.extend(
+            [
+                Message(
+                    text=f"intent_{index * intent_count + ex_index}", intent=f"{index}"
+                )
+                for ex_index in range(intent_count)
+            ]
+        )
+    training_data = TrainingData(all_messages)
+    original_fingerprint = training_data.fingerprint()
+    chunks = training_data.divide_into_chunks(num_chunks=num_chunks)
+    new_fingerprint = training_data.fingerprint()
+
+    # Original training data shouldn't be modified
+    assert original_fingerprint == new_fingerprint
+
+    # First check that no example is lost
+    chunk_sizes = [len(td.training_examples) for td in chunks]
+    assert sum(chunk_sizes) == sum(intent_frequencies)
+
+    # Check the equal distribution of examples across chunks
+    for index, intent_count in enumerate(intent_frequencies):
+        intent_label = f"{index}"
+        ideal_size = intent_count // num_chunks
+        num_examples_across_chunks = []
+        for chunk in chunks:
+            filtered_examples = chunk.filter_training_examples(
+                lambda x: x.get("intent") == intent_label
+            )
+            num_examples = len(filtered_examples.training_examples)
+            num_examples_across_chunks.append(num_examples)
+            assert (
+                num_examples == ideal_size
+                or num_examples == ideal_size + 1
+                or num_examples == ideal_size - 1
+            )
+        assert sum(num_examples_across_chunks) == intent_count

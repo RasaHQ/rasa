@@ -61,13 +61,6 @@ class TrainingData:
 
         self._fill_response_phrases()
 
-    def __sizeof__(self) -> int:
-        total_size = 0
-        if self.training_examples:
-            for message in self.training_examples:
-                total_size += sys.getsizeof(message)
-        return total_size
-
     def fingerprint(self) -> Text:
         """Fingerprint the training data.
 
@@ -688,7 +681,7 @@ class TrainingData:
 
     # def _sizeof__(self):
 
-    def divide_into_chunks(self, num_chunks: int = 2) -> List["TrainingDataChunk"]:
+    def divide_into_chunks(self, num_chunks: int) -> List["TrainingDataChunk"]:
         """Divides the training data into smaller chunks.
 
         Each chunk should be a good representation of the complete dataset. E.g. it
@@ -696,31 +689,46 @@ class TrainingData:
         distribution of the complete dataset.
 
         Args:
-            max_size: The maximum size (in MB) of one chunk.
+            num_chunks: The total number of chunks into which the training data should be broken.
 
         Returns:
             A list of all training data chunks.
         """
+        all_chunks = []
+        data_to_chunk = copy.deepcopy(self)
 
-        pass
+        for chunk_index in range(num_chunks):
+
+            chunk_size_fraction = 1 / (num_chunks - chunk_index)
+            current_chunk, leftover_examples = data_to_chunk.split_nlu_examples(
+                1 - chunk_size_fraction
+            )
+
+            if chunk_index == num_chunks - 1:
+                # There can be a small number of leftover examples
+                # during the last bit of chunking because of rounding errors.
+                current_chunk.extend(leftover_examples)
+
+            # update the data to chunk in next iteration
+            data_to_chunk = TrainingData(
+                leftover_examples,
+                responses=data_to_chunk._needed_responses_for_examples(
+                    leftover_examples
+                ),
+            )
+            all_chunks.append(
+                TrainingDataChunk(
+                    current_chunk,
+                    responses=data_to_chunk._needed_responses_for_examples(
+                        current_chunk
+                    ),
+                )
+            )
+        return all_chunks
 
 
-class TrainingDataChunk:
+class TrainingDataChunk(TrainingData):
     """Holds a portion of the complete TrainingData."""
-
-    def __init__(
-        self,
-        training_examples: List[Message],
-        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
-    ) -> None:
-        """Initialize a training data chunk.
-
-        Args:
-            training_examples: List of messages representing the training data.
-            responses: List of responses.
-        """
-        self.training_examples = training_examples
-        self.responses = responses
 
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
         """Stores the chunk as TFRecord file to disk.
