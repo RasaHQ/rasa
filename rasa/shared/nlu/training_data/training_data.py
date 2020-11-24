@@ -714,10 +714,12 @@ class TrainingDataChunk:
 
     @lazy_property
     def nlu_examples(self) -> List[Message]:
+        """Filter training examples that didn't come from nlu data."""
         return [ex for ex in self.training_examples if not ex.is_core_message()]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
+        """Filter nlu examples that don't contain entities."""
         return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
