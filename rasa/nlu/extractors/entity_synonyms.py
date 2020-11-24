@@ -48,6 +48,10 @@ class EntitySynonymMapper(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         for example in training_data_chunk.entity_examples:
             for entity in example.get(ENTITIES, []):
                 entity_val = example.get(TEXT)[entity["start"] : entity["end"]]

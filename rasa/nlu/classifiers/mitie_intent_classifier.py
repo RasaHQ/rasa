@@ -33,6 +33,10 @@ class MitieIntentClassifier(IntentClassifier):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specify which python packages need to be installed.
+
+        See parent class for more information.
+        """
         return ["mitie"]
 
     def train_chunk(
@@ -55,6 +59,7 @@ class MitieIntentClassifier(IntentClassifier):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component. See parent class for more information."""
         import mitie
 
         model_file = kwargs.get("mitie_file")

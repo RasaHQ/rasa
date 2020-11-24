@@ -54,7 +54,7 @@ def test_spacy_training_sample_alignment(spacy_nlp_component):
     m3 = Message.build(text="I am the last message", intent="feeling")
     td = TrainingData(training_examples=[m1, m2, m3])
 
-    attribute_docs = spacy_nlp_component.docs_for_training_examples(
+    attribute_docs = spacy_nlp_component._docs_for_training_examples(
         td.training_examples
     )
 

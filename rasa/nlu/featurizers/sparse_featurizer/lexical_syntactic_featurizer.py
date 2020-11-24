@@ -115,6 +115,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             self._create_sparse_features(example)
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Process an incoming message. See parent class for more information."""
         self._create_sparse_features(message)
 
     def _create_feature_to_idx_dict(

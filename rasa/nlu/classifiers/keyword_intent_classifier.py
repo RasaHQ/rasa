@@ -58,7 +58,7 @@ class KeywordIntentClassifier(IntentClassifier):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-
+        """Train this component. See parent class for more information."""
         duplicate_examples = set()
         for ex in training_data.intent_examples:
             if (

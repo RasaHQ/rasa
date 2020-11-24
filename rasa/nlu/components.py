@@ -592,8 +592,8 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            training_data:
-                The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+            training_data: The
+                :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
 
         """

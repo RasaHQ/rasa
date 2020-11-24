@@ -80,6 +80,7 @@ class MitieEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component. See parent class for more information."""
         import mitie
 
         model_file = kwargs.get("mitie_file")

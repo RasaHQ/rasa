@@ -152,6 +152,10 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specify which python packages need to be installed.
+
+        See parent class for more information.
+        """
         return ["sklearn_crfsuite", "sklearn"]
 
     def train_chunk(
@@ -174,6 +178,7 @@ class CRFEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component. See parent class for more information."""
         # checks whether there is at least one
         # example with an entity annotation
         if not training_data.entity_examples:

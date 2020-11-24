@@ -40,10 +40,11 @@ class MitieFeaturizer(DenseFeaturizer):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        return ["mitie", "numpy"]
+        """Specify which python packages need to be installed.
 
-    def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
-        return feature_extractor.num_dimensions
+        See parent class for more information.
+        """
+        return ["mitie", "numpy"]
 
     def train_chunk(
         self,
@@ -51,7 +52,10 @@ class MitieFeaturizer(DenseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
 
+        See parent class for more information.
+        """
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data_chunk.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
