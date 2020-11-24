@@ -612,7 +612,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             last_user_event: Optional[UserUttered] = tracker.get_last_event_for(
                 UserUttered
             )
-            if last_user_event and not tracker.active_loop_name:
+            if last_user_event:
                 # If this is not the first intent
                 # and also no active loop present
                 if not last_user_event.is_probable:

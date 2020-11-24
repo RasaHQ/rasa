@@ -367,12 +367,12 @@ class IntentTEDPolicy(TEDPolicy):
 
         # print("Label data signature", self._label_data.get_signature())
 
-        # model_train_data, train_label_ids = self._featurize_for_model(
-        #     domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
-        # )
         model_train_data, train_label_ids = self._featurize_for_model(
-            domain, encoded_all_labels, interpreter, all_trackers, **kwargs
+            domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         )
+        # model_train_data, train_label_ids = self._featurize_for_model(
+        #     domain, encoded_all_labels, interpreter, all_trackers, **kwargs
+        # )
 
         if model_train_data.is_empty():
             logger.error(
@@ -538,7 +538,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
-        if last_user_event:
+        if last_user_event and not tracker.active_loop_name:
             # If this is not the first intent
             query_label = last_user_event.intent_name
             query_label_id = label_to_id_map[query_label]
