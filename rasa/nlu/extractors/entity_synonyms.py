@@ -35,6 +35,10 @@ class EntitySynonymMapper(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
         for key, value in list(training_data.entity_synonyms.items()):
             self.add_entities_if_synonyms(key, value)
 

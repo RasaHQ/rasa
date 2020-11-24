@@ -215,12 +215,14 @@ class SpacyNLP(Component):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         attribute_docs = self.docs_for_training_examples(
             training_data_chunk.training_examples
         )
-
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
             for idx, example in enumerate(training_data_chunk.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
                 if len(example_attribute_doc):

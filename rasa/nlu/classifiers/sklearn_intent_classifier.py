@@ -89,6 +89,10 @@ class SklearnIntentClassifier(IntentClassifier):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )

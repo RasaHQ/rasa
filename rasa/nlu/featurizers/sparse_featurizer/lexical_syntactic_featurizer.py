@@ -94,6 +94,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self.number_of_features = self._calculate_number_of_features()
 
@@ -103,6 +107,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         for example in training_data_chunk.training_examples:
             self._create_sparse_features(example)
 

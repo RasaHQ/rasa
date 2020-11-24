@@ -53,6 +53,10 @@ class SpacyFeaturizer(DenseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         for example in training_data_chunk.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)

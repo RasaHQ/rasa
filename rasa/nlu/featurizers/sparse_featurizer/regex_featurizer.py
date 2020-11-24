@@ -61,6 +61,10 @@ class RegexFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
         self.known_patterns = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
@@ -73,6 +77,10 @@ class RegexFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         for example in training_data_chunk.training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
                 self._text_features_with_regex(example, attribute)

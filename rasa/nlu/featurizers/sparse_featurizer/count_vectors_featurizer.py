@@ -498,6 +498,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
         spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
             # create spacy lemma_ for OOV_words
@@ -527,6 +531,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         # transform for all attributes
         for attribute in self._attributes:
             all_tokens = [
