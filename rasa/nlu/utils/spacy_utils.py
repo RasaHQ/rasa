@@ -68,7 +68,7 @@ class SpacyNLP(Component):
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "SpacyNLP":
         """Creates this component (e.g. before a training is started).
-        
+
         See parent class for more information.
         """
         component_config = override_defaults(cls.defaults, component_config)
