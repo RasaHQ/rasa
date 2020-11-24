@@ -42,19 +42,18 @@ class MultilingualResponse(object):
 
     def predict_response(self, intent, lang):
         default_lang = 'en'
-        final_response = None
         try:
-            intent_name = self.multilingual_response[intent]
+            mling_response = self.multilingual_response[intent]
             try:
-                responses = self.multilingual_response[intent_name][lang]
+                responses = mling_response[lang]
                 final_response = self.random_response(responses)
             except:
                 # if language detection fails (ie detects other than languages listed in the response)
                 # fallback to English
-                responses = self.multilingual_response[intent_name][default_lang]
+                responses = mling_response[default_lang]
                 final_response = self.random_response(responses)
         except:
-            pass
+            final_response = None
         return final_response
 
 
@@ -78,4 +77,7 @@ class ActionLanguageSelect(Action):
         if response:
             logger.info('Multilingual Response:{0}'.format(response))
             dispatcher.utter_message(text=response)
+        else:
+            logger.info('There is no multilingual response for intent:{0}, '
+                        'in language:{1}'.format(intent, lang))
         return []
