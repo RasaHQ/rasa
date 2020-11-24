@@ -131,7 +131,7 @@ class TrackerFeaturizer:
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_from_domain(domain)
+        self.state_featurizer.prepare_for_training(domain, interpreter)
 
         trackers_as_states, trackers_as_actions = self.training_states_and_actions(
             trackers, domain
