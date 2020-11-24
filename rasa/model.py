@@ -30,7 +30,8 @@ from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
-
+    from rasa.core.agent import Agent
+    from rasa.nlu.model import Interpreter
 
 logger = logging.getLogger(__name__)
 
@@ -520,20 +521,29 @@ async def update_model_with_new_domain(
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
 
 
-def get_previous_model(
-    previous_model_file: Optional[Text],
-    trained_models_directory: Text,
-    working_directory: Text,
-) -> Optional[Path]:
+def get_models_for_finetuning(
+    previous_model_file: Optional[Text], trained_models_directory: Text,
+) -> Tuple[Optional["Agent"], Optional["Interpreter"]]:
+    from rasa.core.agent import Agent
+    from rasa.nlu.model import Interpreter
+
     if previous_model_file == USE_LATEST_MODEL_FOR_FINE_TUNING:
         previous_model_file = get_latest_model(trained_models_directory)
 
     if previous_model_file is None or not Path(previous_model_file).is_file():
-        return None
+        return None, None
 
-    subdirectory_for_temporary_model = (
-        Path(working_directory) / SUBDIRECTORY_MODEL_TO_FINE_TUNE
-    )
-    subdirectory_for_temporary_model.mkdir(exist_ok=True)
-    # Check all sorts of things
-    return Path(unpack_model(previous_model_file, subdirectory_for_temporary_model))
+    with unpack_model(previous_model_file) as unpacked:
+        core, nlu = None, None
+        try:
+            core = Agent.load(unpacked)
+        except ModelNotFound:
+            pass
+
+        try:
+            _, nlu_directory = get_model_subdirectories(unpacked)
+            nlu = Interpreter.load(nlu_directory)
+        except Exception:
+            pass
+
+    return core, nlu

@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 from contextlib import ExitStack
-from typing import Text, Optional, List, Union, Dict
+from typing import Text, Optional, List, Union, Dict, TYPE_CHECKING
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -26,6 +26,10 @@ from rasa.shared.constants import (
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
+
+
+if TYPE_CHECKING:
+    from rasa.core.agent import Agent
 
 
 def train(
@@ -173,14 +177,13 @@ async def _train_async_internal(
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
-
+    old_core_model, old_nlu_model = None, None
     if model_to_finetune:
-        # TODO: Clean output path!
-        model_to_finetune = model.get_previous_model(
-            model_to_finetune, output_path, train_path
+        old_core_model, old_nlu_model = model.get_models_for_finetuning(
+            model_to_finetune, output_path
         )
 
-        if model_to_finetune is None:
+        if old_core_model is None and old_nlu_model is None:
             print_warning(
                 f"No model for finetuning found. Please make sure to either specify a "
                 f"path to a previous model or to have a finetunable model within the "
@@ -201,7 +204,7 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
-            model_to_finetune=model_to_finetune,
+            nlu_model_to_finetune=old_nlu_model,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
 
@@ -212,6 +215,8 @@ async def _train_async_internal(
             output=output_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
+            core_model_to_finetune=old_core_model,
+            finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
 
     new_fingerprint = await model.model_fingerprint(file_importer)
@@ -236,7 +241,8 @@ async def _train_async_internal(
                 core_additional_arguments=core_additional_arguments,
                 nlu_additional_arguments=nlu_additional_arguments,
                 old_model_zip_path=old_model,
-                model_to_finetune=model_to_finetune,
+                core_model_to_finetune=old_core_model,
+                nlu_model_to_finetune=old_nlu_model,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
 
@@ -264,7 +270,8 @@ async def _do_training(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     old_model_zip_path: Optional[Text] = None,
-    model_to_finetune: Optional[Text] = None,
+    core_model_to_finetune: Optional["Agent"] = None,
+    nlu_model_to_finetune: Optional[Interpreter] = None,
     finetuning_epoch_fraction: float = 1.0,
 ):
     if not fingerprint_comparison_result:
@@ -279,7 +286,7 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
-            model_to_finetune=model_to_finetune,
+            nlu_model_to_finetune=nlu_model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
         interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
@@ -298,7 +305,7 @@ async def _do_training(
             additional_arguments=core_additional_arguments,
             interpreter=_load_interpreter(interpreter_path)
             or _interpreter_from_previous_model(old_model_zip_path),
-            model_to_finetune=model_to_finetune,
+            core_model_to_finetune=core_model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
@@ -414,28 +421,25 @@ async def train_core_async(
         )
         return
 
-    with TempDirectoryPath(tempfile.mkdtemp()) as working_directory_for_finetuning:
-        if model_to_finetune:
-            # TODO: Clean output path!
-            model_to_finetune = model.get_previous_model(
-                model_to_finetune, output, working_directory_for_finetuning
-            )
-
-            if model_to_finetune is None:
-                print_warning(
-                    f"No model for finetuning found. Please make sure to either specify a "
-                    f"path to a previous model or to have a finetunable model within the "
-                    f"directory '{output}'."
-                )
-        return await _train_core_with_validated_data(
-            file_importer,
-            output=output,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            additional_arguments=additional_arguments,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
+    if model_to_finetune:
+        model_to_finetune, _ = model.get_models_for_finetuning(
+            model_to_finetune, output
         )
+        if model_to_finetune is None:
+            print_warning(
+                f"No model for finetuning found. Please make sure to either specify a "
+                f"path to a previous model or to have a finetunable model within the "
+                f"directory '{output}'."
+            )
+    return await _train_core_with_validated_data(
+        file_importer,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        additional_arguments=additional_arguments,
+        core_model_to_finetune=model_to_finetune,
+        finetuning_epoch_fraction=finetuning_epoch_fraction,
+    )
 
 
 async def _train_core_with_validated_data(
@@ -445,7 +449,7 @@ async def _train_core_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
     interpreter: Optional[Interpreter] = None,
-    model_to_finetune: Optional[Text] = None,
+    core_model_to_finetune: Optional["Agent"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
@@ -473,6 +477,8 @@ async def _train_core_with_validated_data(
                 policy_config=config,
                 additional_arguments=additional_arguments,
                 interpreter=interpreter,
+                model_to_finetune=core_model_to_finetune,
+                finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
         print_color(
             "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
@@ -579,29 +585,27 @@ async def _train_nlu_async(
         )
         return
 
-    with TempDirectoryPath(tempfile.mkdtemp()) as working_directory_for_finetuning:
-        if model_to_finetune:
-            # TODO: Clean output path!
-            model_to_finetune = model.get_previous_model(
-                model_to_finetune, output, working_directory_for_finetuning
-            )
-
-            if model_to_finetune is None:
-                print_warning(
-                    f"No model for finetuning found. Please make sure to either specify a "
-                    f"path to a previous model or to have a finetunable model within the "
-                    f"directory '{output}'."
-                )
-        return await _train_nlu_with_validated_data(
-            file_importer,
-            output=output,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            persist_nlu_training_data=persist_nlu_training_data,
-            additional_arguments=additional_arguments,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
+    if model_to_finetune:
+        _, model_to_finetune = model.get_models_for_finetuning(
+            model_to_finetune, output
         )
+
+        if model_to_finetune is None:
+            print_warning(
+                f"No model for finetuning found. Please make sure to either specify a "
+                f"path to a previous model or to have a finetunable model within the "
+                f"directory '{output}'."
+            )
+    return await _train_nlu_with_validated_data(
+        file_importer,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        persist_nlu_training_data=persist_nlu_training_data,
+        additional_arguments=additional_arguments,
+        nlu_model_to_finetune=model_to_finetune,
+        finetuning_epoch_fraction=finetuning_epoch_fraction,
+    )
 
 
 async def _train_nlu_with_validated_data(
@@ -611,7 +615,7 @@ async def _train_nlu_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
-    model_to_finetune: Optional[Text] = None,
+    nlu_model_to_finetune: Optional["Interpreter"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
@@ -637,6 +641,8 @@ async def _train_nlu_with_validated_data(
                 _train_path,
                 fixed_model_name="nlu",
                 persist_nlu_training_data=persist_nlu_training_data,
+                model_to_finetune=nlu_model_to_finetune,
+                finetuning_epoch_fraction=finetuning_epoch_fraction,
                 **additional_arguments,
             )
         print_color(

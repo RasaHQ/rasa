@@ -1,4 +1,3 @@
-import asyncio
 import sys
 import tempfile
 import os
@@ -12,18 +11,14 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 import rasa.core
+import rasa.nlu
 import rasa.shared.importers.autoconfig as autoconfig
 from rasa.cli.arguments.train import USE_LATEST_MODEL_FOR_FINE_TUNING
+from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
-from rasa.shared.constants import (
-    DEFAULT_CORE_SUBDIRECTORY_NAME,
-    DEFAULT_NLU_SUBDIRECTORY_NAME,
-)
-from rasa.shared.core.domain import Domain
-from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train
-from rasa.utils.common import TempDirectoryPath
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.core.test_model import _fingerprint
@@ -384,38 +379,29 @@ def test_model_finetuning(
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
-    # trained_moodbot_path: Text,
+    trained_moodbot_path: Text,
 ):
-    trained_moodbot_path = (
-        "/Users/tobias/Workspace/stack/examples/moodbot/models/20201124-135755.tar.gz"
-    )
+    mocked_nlu_training = Mock()
 
-    _train_nlu_with_validated_data = Mock()
-
-    async def mocked_train_nlu_with_validated_data(*args: Any, **kwargs: Any) -> Text:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_nlu_with_validated_data(*args, **kwargs)
+    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        assert isinstance(kwargs["model_to_finetune"], Interpreter)
+        mocked_nlu_training(*args, **kwargs)
         return ""
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        mocked_train_nlu_with_validated_data,
+        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
     )
 
-    _train_core_with_validated_data = Mock()
+    mocked_core_training = Mock()
 
-    async def mocked_train_core_with_validated_data(*args: Any, **kwargs: Any) -> Any:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_core_with_validated_data(*args, **kwargs)
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        assert isinstance(kwargs["model_to_finetune"], Agent)
+        mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        mocked_train_core_with_validated_data,
+        rasa.core, rasa.core.train.__name__, mocked_train_core,
     )
 
-    (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -429,8 +415,8 @@ def test_model_finetuning(
         finetuning_epoch_fraction=1,
     )
 
-    _train_core_with_validated_data.assert_called_once()
-    _train_nlu_with_validated_data.assert_called_once()
+    mocked_core_training.assert_called_once()
+    mocked_nlu_training.assert_called_once()
 
 
 def test_model_finetuning_core(
@@ -439,27 +425,18 @@ def test_model_finetuning_core(
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
-    # trained_moodbot_path: Text,
+    trained_moodbot_path: Text,
 ):
-    trained_moodbot_path = (
-        "/Users/tobias/Workspace/stack/examples/moodbot/models/20201124-135755.tar.gz"
-    )
+    mocked_core_training = Mock()
 
-    _train_nlu_with_validated_data = Mock()
-
-    _train_core_with_validated_data = Mock()
-
-    async def mocked_train_core_with_validated_data(*args: Any, **kwargs: Any) -> Any:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_core_with_validated_data(*args, **kwargs)
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        assert isinstance(kwargs["model_to_finetune"], Agent)
+        mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        mocked_train_core_with_validated_data,
+        rasa.core, rasa.core.train.__name__, mocked_train_core,
     )
 
-    (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -472,7 +449,7 @@ def test_model_finetuning_core(
         finetuning_epoch_fraction=1,
     )
 
-    _train_core_with_validated_data.assert_called_once()
+    mocked_core_training.assert_called_once()
 
 
 def test_model_finetuning_nlu(
@@ -481,26 +458,18 @@ def test_model_finetuning_nlu(
     default_domain_path: Text,
     default_nlu_data: Text,
     default_stack_config: Text,
-    # trained_moodbot_path: Text,
+    trained_moodbot_path: Text,
 ):
-    trained_moodbot_path = (
-        "/Users/tobias/Workspace/stack/examples/moodbot/models/20201124-135755.tar.gz"
-    )
+    mocked_nlu_training = Mock()
 
-    _train_nlu_with_validated_data = Mock()
-
-    async def mocked_train_nlu_with_validated_data(*args: Any, **kwargs: Any) -> Text:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_nlu_with_validated_data(*args, **kwargs)
+    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        assert isinstance(kwargs["model_to_finetune"], Interpreter)
+        mocked_nlu_training(*args, **kwargs)
         return ""
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        mocked_train_nlu_with_validated_data,
+        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
     )
-
-    (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -512,48 +481,37 @@ def test_model_finetuning_nlu(
         finetuning_epoch_fraction=1,
     )
 
-    _train_nlu_with_validated_data.assert_called_once()
+    mocked_nlu_training.assert_called_once()
 
 
 def test_model_finetuning_with_latest_model(
-    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
-    # trained_moodbot_path: Text,
+    trained_moodbot_path: Text,
 ):
-    trained_moodbot_path = (
-        "/Users/tobias/Workspace/stack/examples/moodbot/models/20201124-135755.tar.gz"
-    )
-    _train_nlu_with_validated_data = Mock()
+    mocked_nlu_training = Mock()
 
-    async def mocked_train_nlu_with_validated_data(*args: Any, **kwargs: Any) -> Text:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_nlu_with_validated_data(*args, **kwargs)
+    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        assert isinstance(kwargs["model_to_finetune"], Interpreter)
+        mocked_nlu_training(*args, **kwargs)
         return ""
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        mocked_train_nlu_with_validated_data,
+        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
     )
 
-    _train_core_with_validated_data = Mock()
+    mocked_core_training = Mock()
 
-    async def mocked_train_core_with_validated_data(*args: Any, **kwargs: Any) -> Any:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_core_with_validated_data(*args, **kwargs)
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        assert isinstance(kwargs["model_to_finetune"], Agent)
+        mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        mocked_train_core_with_validated_data,
+        rasa.core, rasa.core.train.__name__, mocked_train_core,
     )
-
-    (tmp_path / "training").mkdir()
-    (tmp_path / "models").mkdir()
 
     train(
         default_domain_path,
@@ -565,36 +523,27 @@ def test_model_finetuning_with_latest_model(
         finetuning_epoch_fraction=1,
     )
 
-    _train_core_with_validated_data.assert_called_once()
-    _train_nlu_with_validated_data.assert_called_once()
+    mocked_core_training.assert_called_once()
+    mocked_nlu_training.assert_called_once()
 
 
 def test_model_finetuning_with_latest_model_nlu(
-    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
-    # trained_moodbot_path: Text,
+    trained_moodbot_path: Text,
 ):
-    trained_moodbot_path = (
-        "/Users/tobias/Workspace/stack/examples/moodbot/models/20201124-135755.tar.gz"
-    )
-    _train_nlu_with_validated_data = Mock()
+    mocked_nlu_training = Mock()
 
-    async def mocked_train_nlu_with_validated_data(*args: Any, **kwargs: Any) -> Text:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_nlu_with_validated_data(*args, **kwargs)
+    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        assert isinstance(kwargs["model_to_finetune"], Interpreter)
+        mocked_nlu_training(*args, **kwargs)
         return ""
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        mocked_train_nlu_with_validated_data,
+        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
     )
-
-    (tmp_path / "training").mkdir()
-    (tmp_path / "models").mkdir()
 
     train_nlu(
         default_stack_config,
@@ -605,35 +554,25 @@ def test_model_finetuning_with_latest_model_nlu(
         finetuning_epoch_fraction=1,
     )
 
-    _train_nlu_with_validated_data.assert_called_once()
+    mocked_nlu_training.assert_called_once()
 
 
 def test_model_finetuning_with_latest_model_core(
-    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
-    # trained_moodbot_path: Text,
+    trained_moodbot_path: Text,
 ):
-    trained_moodbot_path = (
-        "/Users/tobias/Workspace/stack/examples/moodbot/models/20201124-135755.tar.gz"
-    )
+    mocked_core_training = Mock()
 
-    _train_core_with_validated_data = Mock()
-
-    async def mocked_train_core_with_validated_data(*args: Any, **kwargs: Any) -> Any:
-        assert Path(kwargs["model_to_finetune"]).is_dir()
-        _train_core_with_validated_data(*args, **kwargs)
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        assert isinstance(kwargs["model_to_finetune"], Agent)
+        mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        mocked_train_core_with_validated_data,
+        rasa.core, rasa.core.train.__name__, mocked_train_core,
     )
-
-    (tmp_path / "training").mkdir()
-    (tmp_path / "models").mkdir()
 
     train_core(
         default_domain_path,
@@ -644,7 +583,7 @@ def test_model_finetuning_with_latest_model_core(
         finetuning_epoch_fraction=1,
     )
 
-    _train_core_with_validated_data.assert_called_once()
+    mocked_core_training.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -660,30 +599,25 @@ def test_model_finetuning_with_invalid_model(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    _train_nlu_with_validated_data = Mock()
+    mocked_nlu_training = Mock()
 
-    async def mocked_train_nlu_with_validated_data(*args: Any, **kwargs: Any) -> Text:
-        _train_nlu_with_validated_data(*args, **kwargs)
+    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        mocked_nlu_training(*args, **kwargs)
         return ""
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        mocked_train_nlu_with_validated_data,
+        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
     )
 
-    _train_core_with_validated_data = Mock()
+    mocked_core_training = Mock()
 
-    async def mocked_train_core_with_validated_data(*args: Any, **kwargs: Any) -> Any:
-        _train_core_with_validated_data(*args, **kwargs)
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        mocked_train_core_with_validated_data,
+        rasa.core, rasa.core.train.__name__, mocked_train_core,
     )
 
-    (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -697,8 +631,8 @@ def test_model_finetuning_with_invalid_model(
         finetuning_epoch_fraction=1,
     )
 
-    assert _train_core_with_validated_data.call_args.kwargs["model_to_finetune"] is None
-    assert _train_nlu_with_validated_data.call_args.kwargs["model_to_finetune"] is None
+    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
+    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
 
     assert "No model for finetuning found" in capsys.readouterr().out
 
@@ -715,18 +649,15 @@ def test_model_finetuning_with_invalid_model_core(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    _train_core_with_validated_data = Mock()
+    mocked_core_training = Mock()
 
-    async def mocked_train_core_with_validated_data(*args: Any, **kwargs: Any) -> Any:
-        _train_core_with_validated_data(*args, **kwargs)
+    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        mocked_train_core_with_validated_data,
+        rasa.core, rasa.core.train.__name__, mocked_train_core,
     )
 
-    (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -739,7 +670,7 @@ def test_model_finetuning_with_invalid_model_core(
         finetuning_epoch_fraction=1,
     )
 
-    assert _train_core_with_validated_data.call_args.kwargs["model_to_finetune"] is None
+    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
 
     assert "No model for finetuning found" in capsys.readouterr().out
 
@@ -756,19 +687,16 @@ def test_model_finetuning_with_invalid_model_nlu(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    _train_nlu_with_validated_data = Mock()
+    mocked_nlu_training = Mock()
 
-    async def mocked_train_nlu_with_validated_data(*args: Any, **kwargs: Any) -> Text:
-        _train_nlu_with_validated_data(*args, **kwargs)
+    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        mocked_nlu_training(*args, **kwargs)
         return ""
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        mocked_train_nlu_with_validated_data,
+        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
     )
 
-    (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -781,6 +709,6 @@ def test_model_finetuning_with_invalid_model_nlu(
         finetuning_epoch_fraction=1,
     )
 
-    assert _train_nlu_with_validated_data.call_args.kwargs["model_to_finetune"] is None
+    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
 
     assert "No model for finetuning found" in capsys.readouterr().out

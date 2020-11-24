@@ -1,6 +1,8 @@
 import asyncio
 import os
 import random
+import shutil
+
 import pytest
 import sys
 import uuid
@@ -90,7 +92,7 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(trained_async) -> Text:
+async def _trained_moodbot_path(trained_async) -> Text:
     return await trained_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",
@@ -98,11 +100,18 @@ async def trained_moodbot_path(trained_async) -> Text:
     )
 
 
+@pytest.fixture()
+async def trained_moodbot_path(_trained_moodbot_path: Text, tmp_path: Path) -> Text:
+    model_file = tmp_path / "model.tar.gz"
+    shutil.copy(_trained_moodbot_path, model_file)
+    return str(model_file)
+
+
 @pytest.fixture(scope="session")
 async def unpacked_trained_moodbot_path(
-    trained_moodbot_path: Text,
+    _trained_moodbot_path: Text,
 ) -> TempDirectoryPath:
-    return get_model(trained_moodbot_path)
+    return get_model(_trained_moodbot_path)
 
 
 @pytest.fixture(scope="session")
