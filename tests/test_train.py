@@ -156,7 +156,7 @@ def test_train_nlu_temp_files(
 
 def test_train_nlu_wrong_format_error_message(
     capsys: CaptureFixture,
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
     incorrect_nlu_data: Text,
@@ -210,7 +210,7 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
 
 def test_train_nlu_no_nlu_file_error_message(
     capsys: CaptureFixture,
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
 ):
@@ -310,7 +310,7 @@ def test_interpreter_from_previous_model_returns_none_for_none():
 
 
 def test_train_core_autoconfig(
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stories_file: Text,
@@ -346,7 +346,7 @@ def test_train_core_autoconfig(
 
 
 def test_train_nlu_autoconfig(
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
     default_nlu_data: Text,
