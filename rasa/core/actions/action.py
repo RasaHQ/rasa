@@ -610,7 +610,8 @@ class RemoteAction(Action):
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
             with rasa.otel.start_span("action_endpoint.request", attributes={"action": json_body["next_action"]}) as span:
-                headers = rasa.otel.inject(self.action_endpoint.url)
+                headers = rasa.otel.inject()
+                #headers = rasa.otel.inject(self.action_endpoint.url)
                 response = await self.action_endpoint.request(
                     json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT, headers=headers
                 )

@@ -38,12 +38,14 @@ def init_tracer_endpoint(telemetry):
         try:
             for t in trace_exporters:
                 if t == 'console':
+                    logger.debug(f"Starting Console Exporter")
                     trace.get_tracer_provider().add_span_processor(
                         SimpleExportSpanProcessor(ConsoleSpanExporter())
                     )
                 if t == 'otlphttp':
                     if trace_exporters["otlphttp"]["endpoint"]:
                         #otlp_exporter = OTLPSpanExporter(endpoint="localhost:55680", insecure=True)
+                        logger.debug(f"Starting OTLP Exporter: {trace_exporters['otlphttp']['endpoint']}")
                         insecure = trace_exporters["otlphttp"]["insecure"] if trace_exporters["otlphttp"]["insecure"] else "True"
                         otlp_exporter = OTLPSpanExporter(endpoint=trace_exporters["otlphttp"]["endpoint"], insecure=insecure)
                         trace.get_tracer_provider().add_span_processor(
@@ -52,11 +54,15 @@ def init_tracer_endpoint(telemetry):
                 if t == 'jaeger':
                     if trace_exporters["jaeger"]["agent_hosthame"]:
                         agent_port = trace_exporters["jaeger"]["agent_port"] if trace_exporters["jaeger"]["agent_port"] else 6831
+                        agent_host_name = trace_exporters["jaeger"]["agent_hosthame"]
+                        logger.debug(f"Starting Jaeger Exporter: {agent_host_name}:{agent_port}, service: {service_name}")
+                        logger.debug(f"type(agent_port): {type(agent_port)}")
                         jaeger_exporter = jaeger.JaegerSpanExporter(
                             service_name=service_name,
-                            agent_host_name=trace_exporters["jaeger"]["agent_hosthame"],
+                            agent_host_name=agent_host_name,
                             agent_port=agent_port,
                         )
+
                         trace.get_tracer_provider().add_span_processor(
                             BatchExportSpanProcessor(jaeger_exporter)
                         )
@@ -105,22 +111,14 @@ def start_span_test(name, attributes=None):
                     logger.debug(f"set attribute {k} = {v}")
         return current_span
 
-def inject(url):
+def inject():
     # https://github.com/yurishkuro/opentracing-tutorial/blob/7ae271badb867635f6697d9dbe5510c798883ff8/python/lesson03/solution/hello.py#L26
     global tracer
     if tracer:
-        #span = tracer.get_current_span()
-        #span = tracer.active_span
-        #logger.debug(f"otel injecting headers, span: {span}")
-        #span.set_tag(tags.HTTP_METHOD, 'POST')
-        #span.set_tag(tags.HTTP_URL, url)
-        #span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
-        #headers = {}
-        headers = dict()
-        propagators.inject(type(headers).__setitem__, headers)
-        #tracer.inject(span, Format.HTTP_HEADERS, headers)
-        #span_header = self.tracer.inject(span, Format.HTTP_HEADERS, headers)
-        # tracer.inject(child_span.context, 'zipkin-span-format', text_carrier)
+        #headers = dict()
+        #propagators.inject(type(headers).__setitem__, headers)
+        headers = {}
+        propagators.inject(dict.__setitem__, headers)
         return headers
 
 def extract_start_span(tracer, headers, name, attributes=None):
