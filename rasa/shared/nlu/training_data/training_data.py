@@ -678,8 +678,6 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    # def _sizeof__(self):
-
     def divide_into_chunks(self, num_chunks: int) -> List["TrainingDataChunk"]:
         """Divides the training data into smaller chunks.
 
