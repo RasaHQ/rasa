@@ -1,3 +1,17 @@
+## Hello
+* greet
+  - utter_greet
+## Bye
+* goodbye
+  - utter_goodbye
+## Chitchat
+* chitchat
+  - utter_chitchat
+
+## NLU Fallback
+* nlu_fallback
+  - utter_please_rephrase
+
 ## What to do if the phone does not show "no response" when I touch the Register button for HUAWEI ID registration (0)
 * what_to_do_if_the_phone_does_not_show_"no_response"_when_i_touch_the_register_button_for_huawei_id_registration
   - action_utter_language_select

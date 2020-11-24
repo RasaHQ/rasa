@@ -1,4 +1,7 @@
 intents:
+ - greet
+ - goodbye
+ - chitchat
  - what_to_do_if_the_phone_does_not_show_"no_response"_when_i_touch_the_register_button_for_huawei_id_registration
  - i_forgot_my_huawei_id
  - emergency_contact_faq
@@ -56,6 +59,25 @@ entities:
 
 actions:
 - action_utter_language_select
+
+responses:
+ utter_greet:
+   - text: "Hey! How are you?"
+   - text: "Hey!"
+   - text: "Hello, How may I help today?"
+
+ utter_goodbye:
+   - text: "Bye"
+   - text: "Have a nice day!"
+   - text: "See you around."
+
+ utter_chitchat:
+   - image: "https://i.imgur.com/zTvA58i.jpeg"
+     text: Hello, my name is Retrieval Bot.
+   - text: I am called Retrieval Bot!
+
+ utter_please_rephrase:
+  - text: I'm sorry, I didn't quite understand that. Could you rephrase?
 
 session_config:
  session_expiration_time: 60  # value in minutes

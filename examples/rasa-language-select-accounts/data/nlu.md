@@ -1,3 +1,46 @@
+## intent:greet
+- hey
+- hello
+- hi
+- hello there
+- good morning
+- moin
+- Allons-y
+- salut mec
+- Bonjour
+- Bonsoir
+- bonne après-midi
+
+## intent:goodbye
+- Bye
+- bye
+- good bye
+- good afternoon
+- good by
+- cee you later
+- good night
+- goodbye
+- have a nice day
+- see you around
+- bye bye
+- see you later
+- bon par
+- cee vous plus tard
+- bonne nuit
+- au revoir
+- bonne journée
+- À un de ces quatre
+- à plus tard
+
+## intent:chitchat
+- Chaichat
+- What is your name?
+- May I know your name?
+- Do you have a name for yourself?
+- Quel est votre nom?
+- Puis-je connaître ton nom?
+- Avez-vous un nom pour vous-même?
+
 ## intent:what_to_do_if_the_phone_does_not_show_"no_response"_when_i_touch_the_register_button_for_huawei_id_registration
 - What to do if the phone does not show ["no response"](msg) when I touch the [Register button](UX) for [HUAWEI ID](hms_service) registration
 

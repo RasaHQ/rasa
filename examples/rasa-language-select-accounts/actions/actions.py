@@ -7,6 +7,7 @@
 
 # This is a simple example for a custom action which utters "Hello World!"
 import json
+import logging
 import random
 from typing import Any, Text, Dict, List
 
@@ -14,6 +15,8 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 
 import fasttext
+
+logger = logging.getLogger(__name__)
 
 
 class LanguageIdentification(object):
@@ -35,19 +38,24 @@ class MultilingualResponse(object):
     @staticmethod
     def random_response(responses):
         num_response = len(responses) - 1
-        print(num_response)
         return responses[random.randint(0, num_response)]
 
     def predict_response(self, intent, lang):
         default_lang = 'en'
+        final_response = None
         try:
-            responses = self.multilingual_response[intent][lang]
+            intent_name = self.multilingual_response[intent]
+            try:
+                responses = self.multilingual_response[intent_name][lang]
+                final_response = self.random_response(responses)
+            except:
+                # if language detection fails (ie detects other than languages listed in the response)
+                # fallback to English
+                responses = self.multilingual_response[intent_name][default_lang]
+                final_response = self.random_response(responses)
         except:
-            # if language detection fails (ie detects other than languages listed in the response)
-            # fallback to English
-            responses = self.multilingual_response[intent][default_lang]
-
-        return self.random_response(responses)
+            pass
+        return final_response
 
 
 multilingual_response = MultilingualResponse()
@@ -62,11 +70,12 @@ class ActionLanguageSelect(Action):
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        print(tracker.latest_message)
+        # print(tracker.latest_message)
         intent = tracker.latest_message['intent'].get('name')
         input_text = tracker.latest_message['text']
         lang = language_detection.predict_lang(input_text)
         response = multilingual_response.predict_response(intent=intent, lang=lang)
-        print(lang, intent, response)
-        dispatcher.utter_message(text=response)
+        if response:
+            logger.info('Multilingual Response:{0}'.format(response))
+            dispatcher.utter_message(text=response)
         return []
