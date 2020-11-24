@@ -34,10 +34,11 @@ class SingleStateFeaturizer:
     """
 
     def __init__(self) -> None:
+        """Initialize the single state featurizer."""
         # rasa core can be trained separately, therefore interpreter during training
         # will be `RegexInterpreter`. If the model is combined with a rasa nlu model
-        # during prediction the interpreter might be different. If that is the case, we need
-        # to make sure to "reset" the interpreter.
+        # during prediction the interpreter might be different.
+        # If that is the case, we need to make sure to "reset" the interpreter.
         self._use_regex_interpreter = False
         self._default_feature_states = {}
         self.action_texts = []
