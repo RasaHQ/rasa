@@ -294,7 +294,7 @@ class PolicyEnsemble:
     @classmethod
     def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
         if policy is None:
-            raise Exception(f"Failed to load policy {policy_name}: load returned None")
+            logger.warning(f"Failed to load policy {policy_name}: load returned None")
         elif not isinstance(policy, policy_cls):
             raise Exception(
                 "Failed to load policy {}: "
@@ -314,9 +314,8 @@ class PolicyEnsemble:
             dir_name = f"policy_{i}_{policy_cls.__name__}"
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
-            if policy is not None:
-                cls._ensure_loaded_policy(policy, policy_cls, policy_name)
-                policies.append(policy)
+            cls._ensure_loaded_policy(policy, policy_cls, policy_name)
+            if policy is not None: policies.append(policy)
         ensemble_cls = rasa.shared.utils.common.class_from_module_path(
             metadata["ensemble_name"]
         )

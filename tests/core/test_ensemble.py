@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import List, Any, Text, Optional
 
 import pytest
+from _pytest.logging import LogCaptureFixture
+import logging
 import copy
 
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
@@ -329,13 +331,17 @@ class LoadReturnsNonePolicy(Policy):
         pass
 
 
-def test_policy_loading_load_returns_none(tmp_path: Path):
+def test_policy_loading_load_returns_none(tmp_path: Path, caplog: LogCaptureFixture):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsNonePolicy()])
     original_policy_ensemble.train([], None, RegexInterpreter())
     original_policy_ensemble.persist(str(tmp_path))
 
-    with pytest.raises(Exception):
+    with caplog.at_level(logging.WARNING):
         PolicyEnsemble.load(str(tmp_path))
+        assert (
+            caplog.records.pop().msg
+            == "Failed to load policy tests.core.test_ensemble.LoadReturnsNonePolicy: load returned None"
+        )
 
 
 class LoadReturnsWrongTypePolicy(Policy):
