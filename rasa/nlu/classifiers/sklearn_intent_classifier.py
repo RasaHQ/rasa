@@ -16,7 +16,7 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -82,6 +82,16 @@ class SklearnIntentClassifier(IntentClassifier):
         :param y: List of labels to convert to numeric representation"""
 
         return self.le.inverse_transform(y)
+
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def train(
         self,

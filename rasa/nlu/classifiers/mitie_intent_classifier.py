@@ -10,7 +10,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
@@ -34,6 +34,16 @@ class MitieIntentClassifier(IntentClassifier):
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
+
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def train(
         self,
