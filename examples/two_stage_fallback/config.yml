@@ -1,0 +1,37 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: en
+
+pipeline:
+- name: SpacyNLP
+  model: "en_core_web_md"
+- name: SpacyTokenizer
+- name: SpacyFeaturizer
+  pooling: mean
+- name: CountVectorsFeaturizer
+  analyzer: char_wb
+  min_ngram: 1
+  max_ngram: 4
+- name: DIETClassifier
+  epochs: 20
+#- name: STSFallbackTrainer
+#  host: "127.0.0.1"
+#  port: "9502"
+#  dropout: 0.1
+#  accumulate_gradient: 1
+#  patience: 100
+#  max_epochs: 200
+#  max_steps: 500
+#  eval_frequency: 200
+
+
+policies:
+   - name: TEDPolicy
+     max_history: 5
+     epochs: 100
+   - name: TwoStageFallbackPolicy
+     nlu_threshold: 0.3
+     core_threshold: 0.3
+     fallback_nlu_action_name: "custom_fallback_action"
+     fallback_core_action_name: "custom_fallback_action"
+     deny_suggestion_intent_name: "out_of_scope"
