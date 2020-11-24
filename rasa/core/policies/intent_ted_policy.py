@@ -367,8 +367,11 @@ class IntentTEDPolicy(TEDPolicy):
 
         # print("Label data signature", self._label_data.get_signature())
 
+        # model_train_data, train_label_ids = self._featurize_for_model(
+        #     domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
+        # )
         model_train_data, train_label_ids = self._featurize_for_model(
-            domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
+            domain, encoded_all_labels, interpreter, all_trackers, **kwargs
         )
 
         if model_train_data.is_empty():
