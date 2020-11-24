@@ -337,11 +337,12 @@ def test_policy_loading_load_returns_none(tmp_path: Path, caplog: LogCaptureFixt
     original_policy_ensemble.persist(str(tmp_path))
 
     with caplog.at_level(logging.WARNING):
-        PolicyEnsemble.load(str(tmp_path))
+        ensemble = PolicyEnsemble.load(str(tmp_path))
         assert (
             caplog.records.pop().msg
             == "Failed to load policy tests.core.test_ensemble.LoadReturnsNonePolicy: load returned None"
         )
+        assert len(ensemble.policies) == 0
 
 
 class LoadReturnsWrongTypePolicy(Policy):
