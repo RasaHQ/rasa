@@ -3,7 +3,6 @@ from typing import Any, Optional, Tuple, Text, Dict, Set, List
 
 import typing
 import copy
-import sys
 
 import rasa.shared.utils.io
 from rasa.shared.exceptions import RasaException

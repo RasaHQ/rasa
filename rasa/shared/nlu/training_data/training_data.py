@@ -26,7 +26,6 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
-import sys
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
