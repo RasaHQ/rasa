@@ -56,8 +56,7 @@ SUBDIRECTORY_MODEL_TO_FINE_TUNE = "model_for_finetuning"
 
 
 class Section(NamedTuple):
-    """Defines relevant fingerprint sections which are used to decide whether a model
-    should be retrained."""
+    """Specifies which fingerprint keys decide whether this sub-model is retrained."""
 
     name: Text
     relevant_keys: List[Text]
@@ -524,6 +523,19 @@ async def update_model_with_new_domain(
 def get_models_for_finetuning(
     previous_model_file: Optional[Text], trained_models_directory: Text,
 ) -> Tuple[Optional["Agent"], Optional["Interpreter"]]:
+    """Retrieves loaded models which can be used for finetuning.
+
+    Args:
+        previous_model_file: Path to model which should be used for finetuning or
+            `USE_LATEST_MODEL_FOR_FINE_TUNING` in case the latest trained model should
+            be used.
+        trained_models_directory: Directory which contains trained models. Rasa Open
+            Source will try to retrieve the latest trained model from here in case
+            `previous_model_file` has the value of `USE_LATEST_MODEL_FOR_FINE_TUNING`.
+
+    Returns:
+        Loaded Core model and NLU model.
+    """
     from rasa.core.agent import Agent
     from rasa.nlu.model import Interpreter
 

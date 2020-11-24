@@ -13,7 +13,8 @@ from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 USE_LATEST_MODEL_FOR_FINE_TUNING = "use latest model for finetuning"
 
 
-def set_train_arguments(parser: argparse.ArgumentParser):
+def set_train_arguments(parser: argparse.ArgumentParser) -> None:
+    """Specifies CLI arguments for `rasa train`."""
     add_data_param(parser)
     add_config_param(parser)
     add_domain_param(parser)
@@ -22,18 +23,19 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
 
-    add_num_threads_param(parser)
+    _add_num_threads_param(parser)
 
-    add_model_name_param(parser)
+    _add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
     add_force_param(parser)
     add_finetune_params(parser)
 
 
-def set_train_core_arguments(parser: argparse.ArgumentParser):
+def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:
+    """Specifies CLI arguments for `rasa train core`."""
     add_stories_param(parser)
     add_domain_param(parser)
-    add_core_config_param(parser)
+    _add_core_config_param(parser)
     add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_augmentation_param(parser)
@@ -41,28 +43,32 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
 
     add_force_param(parser)
 
-    add_model_name_param(parser)
+    _add_model_name_param(parser)
 
     compare_arguments = parser.add_argument_group("Comparison Arguments")
-    add_compare_params(compare_arguments)
+    _add_compare_params(compare_arguments)
     add_finetune_params(parser)
 
 
-def set_train_nlu_arguments(parser: argparse.ArgumentParser):
+def set_train_nlu_arguments(parser: argparse.ArgumentParser) -> None:
+    """Specifies CLI arguments for `rasa train nlu`."""
     add_config_param(parser)
     add_domain_param(parser, default=None)
     add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
-    add_num_threads_param(parser)
+    _add_num_threads_param(parser)
 
-    add_model_name_param(parser)
+    _add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
     add_finetune_params(parser)
 
 
-def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
+def add_force_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+) -> None:
+    """Specifies if the model should be trained from scratch."""
     parser.add_argument(
         "--force",
         action="store_true",
@@ -70,7 +76,10 @@ def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsCont
     )
 
 
-def add_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
+def add_data_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+) -> None:
+    """Specifies path to training data."""
     parser.add_argument(
         "--data",
         default=[DEFAULT_DATA_PATH],
@@ -79,7 +88,7 @@ def add_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsConta
     )
 
 
-def add_core_config_param(parser: argparse.ArgumentParser):
+def _add_core_config_param(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-c",
         "--config",
@@ -91,9 +100,9 @@ def add_core_config_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_compare_params(
+def _add_compare_params(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
     parser.add_argument(
         "--percentages",
         nargs="*",
@@ -108,7 +117,8 @@ def add_compare_params(
 
 def add_augmentation_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
+    """Sets the augmentation factor for the Core training."""
     parser.add_argument(
         "--augmentation",
         type=int,
@@ -119,7 +129,8 @@ def add_augmentation_param(
 
 def add_debug_plots_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
+    """Specifies if conversation flow should be visualized."""
     parser.add_argument(
         "--debug-plots",
         default=False,
@@ -130,9 +141,9 @@ def add_debug_plots_param(
     )
 
 
-def add_num_threads_param(
+def _add_num_threads_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
     parser.add_argument(
         "--num-threads",
         type=int,
@@ -141,7 +152,7 @@ def add_num_threads_param(
     )
 
 
-def add_model_name_param(parser: argparse.ArgumentParser):
+def _add_model_name_param(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--fixed-model-name",
         type=str,
@@ -152,7 +163,8 @@ def add_model_name_param(parser: argparse.ArgumentParser):
 
 def add_persist_nlu_data_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
+    """Adds parameters for persisting the NLU training data with the model."""
     parser.add_argument(
         "--persist-nlu-data",
         action="store_true",
@@ -162,7 +174,8 @@ def add_persist_nlu_data_param(
 
 def add_finetune_params(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
+    """Adds parameters for model finetuning."""
     parser.add_argument(
         "--finetune",
         nargs="?",

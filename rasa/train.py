@@ -46,6 +46,30 @@ def train(
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
+    """Trains a Rasa model (Core and NLU).
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config for Core and NLU.
+        training_files: Paths to the training data for Core and NLU.
+        output: Output path.
+        force_training: If `True` retrain model even if data has not changed.
+        fixed_model_name: Name of model to be stored.
+        persist_nlu_training_data: `True` if the NLU training data should be persisted
+                                   with the model.
+        core_additional_arguments: Additional training parameters for core training.
+        nlu_additional_arguments: Additional training parameters forwarded to training
+                                  method of each NLU component.
+        loop: Optional EventLoop for running coroutines.
+        model_to_finetune: Optional path to a model which should be finetuned. If this
+            equals `USE_LATEST_MODEL_FOR_FINE_TUNING` the latest model is used for
+            finetuning.
+        finetuning_epoch_fraction: The fraction currently specified training epochs
+            in the model configuration which should be used for finetuning.
+
+    Returns:
+        Path of the trained model archive.
+    """
     return rasa.utils.common.run_in_loop(
         train_async(
             domain=domain,
@@ -77,30 +101,7 @@ async def train_async(
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
-    """Trains a Rasa model (Core and NLU).
-
-    Args:
-        domain: Path to the domain file.
-        config: Path to the config for Core and NLU.
-        training_files: Paths to the training data for Core and NLU.
-        output_path: Output path.
-        force_training: If `True` retrain model even if data has not changed.
-        fixed_model_name: Name of model to be stored.
-        persist_nlu_training_data: `True` if the NLU training data should be persisted
-                                   with the model.
-        core_additional_arguments: Additional training parameters for core training.
-        nlu_additional_arguments: Additional training parameters forwarded to training
-                                  method of each NLU component.
-        model_to_finetune: Optional path to a model which should be finetuned. If this
-            equals `USE_LATEST_MODEL_FOR_FINE_TUNING` the latest model is used for
-            finetuning.
-        finetuning_epoch_fraction: The fraction currently specified training epochs
-            in the model configuration which should be used for finetuning.
-
-    Returns:
-        Path of the trained model archive.
-    """
-
+    """Trains Core and NLU model. See the docstring of `train` for more details."""
     file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
@@ -170,10 +171,10 @@ async def _train_async_internal(
             finetuning.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
+
     Returns:
         Path of the trained model archive.
     """
-
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
@@ -396,12 +397,12 @@ async def train_core_async(
             finetuning.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
+
     Returns:
         If `train_path` is given it returns the path to the model archive,
         otherwise the path to the directory with the trained model files.
 
     """
-
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
@@ -453,7 +454,6 @@ async def _train_core_with_validated_data(
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
-
     import rasa.core.train
 
     with ExitStack() as stack:
@@ -535,7 +535,6 @@ def train_nlu(
         otherwise the path to the directory with the trained model files.
 
     """
-
     return rasa.utils.common.run_in_loop(
         _train_nlu_async(
             config,
@@ -619,7 +618,6 @@ async def _train_nlu_with_validated_data(
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
-
     import rasa.nlu.train
 
     if additional_arguments is None:
