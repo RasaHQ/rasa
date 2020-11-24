@@ -1086,7 +1086,7 @@ async def test_logging_of_end_to_end_action():
     await processor.handle_message(UserMessage(user_message, sender_id=conversation_id))
 
     tracker = tracker_store.retrieve(conversation_id)
-    assert list(tracker.events) == [
+    expected_events = [
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -1095,3 +1095,5 @@ async def test_logging_of_end_to_end_action():
         BotUttered("hi, how are you?", {}, {"template_name": end_to_end_action}, 123),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+    for event, expected in zip(tracker.events, expected_events):
+        assert event == expected
