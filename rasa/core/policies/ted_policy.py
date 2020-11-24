@@ -31,7 +31,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_TAGS,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -297,6 +297,9 @@ class TEDPolicy(Policy):
         self._entity_tag_specs = entity_tag_specs
 
         self.fake_features = fake_features or defaultdict(list)
+        # TED is only e2e if only text is present in fake features, which represent
+        # all possible input features for current version of this trained ted
+        self.only_e2e = TEXT in self.fake_features and INTENT not in self.fake_features
 
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
@@ -382,12 +385,7 @@ class TEDPolicy(Policy):
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
-        if (
-            label_ids is not None
-            and entity_tags is not None
-            and encoded_all_labels is not None
-        ):
-
+        if label_ids is not None and encoded_all_labels is not None:
             label_ids = np.array(
                 [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
             )
@@ -400,7 +398,7 @@ class TEDPolicy(Policy):
             attribute_data, self.fake_features = convert_to_data_format(
                 tracker_state_features, featurizers=self.config[FEATURIZERS]
             )
-            if self.config[ENTITY_RECOGNITION]:
+            if self.config[ENTITY_RECOGNITION] and entity_tags is not None:
                 # check that there are real entity tags
                 if any([any(turn_tags) for turn_tags in entity_tags]):
                     entity_tags_data, _ = convert_to_data_format(entity_tags)
@@ -501,87 +499,95 @@ class TEDPolicy(Policy):
             batch_strategy=self.config[BATCH_STRATEGY],
         )
 
+    def _featurize_tracker_for_e2e(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> List[List[Dict[Text, List["Features"]]]]:
+        # the first example in a batch either does not contain user input
+        # or uses intent or text if e2e only
+        tracker_state_features = self.featurizer.create_state_features(
+            [tracker], domain, interpreter, use_text_for_last_user_input=self.only_e2e
+        )
+        # the second - text, but only after user utterance and if not only e2e
+        if (
+            tracker.latest_action_name == ACTION_LISTEN_NAME
+            and TEXT in self.fake_features
+            and not self.only_e2e
+        ):
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=True
+            )
+        return tracker_state_features
+
+    def _pick_confidence(
+        self, confidences: np.ndarray, similarities: np.ndarray
+    ) -> Tuple[np.ndarray, bool]:
+        # the confidences and similarities have shape (batch-size x number of actions)
+        # batch-size can only be 1 or 2;
+        # in the case batch-size==2, the first example contain user intent as features,
+        # the second - user text as features
+        if confidences.shape[0] > 2:
+            raise ValueError(
+                "We cannot pick prediction from batches of size more than 2."
+            )
+        # we use heuristic to pick correct prediction
+        if confidences.shape[0] == 2:
+            # we use similarities to pick appropriate input,
+            # since it seems to be more accurate measure,
+            # policy is trained to maximize the similarity not the confidence
+            if (
+                np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
+                # TODO maybe compare confidences is better
+                and np.max(similarities[1]) > np.max(similarities[0])
+            ):
+                return confidences[1], True
+
+            return confidences[0], False
+
+        # by default the first example in a batch is the one to use for prediction
+        return confidences[0], self.only_e2e
+
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], Optional[bool]]:
-        """Predict the next action the bot should take.
-        Return the list of probabilities for the next actions.
-        """
+    ) -> PolicyPrediction:
+        """Predicts the next action the bot should take.
 
+        See the docstring of the parent class `Policy` for more information.
+        """
         if self.model is None:
-            return self._default_predictions(domain), False
+            return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker
-        tracker_state_features = []
-        if (
-            INTENT in self.fake_features
-            or not tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # the first example in a batch uses intent
-            # or current prediction is not after user utterance
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=False
-            )
-        if (
-            TEXT in self.fake_features
-            and tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # the second - text, but only after user utterance
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=True
-            )
-
+        tracker_state_features = self._featurize_tracker_for_e2e(
+            tracker, domain, interpreter
+        )
         model_data = self._create_model_data(tracker_state_features)
 
         output = self.model.predict(model_data)
-
         # take the last prediction in the sequence
         similarities = output["similarities"].numpy()[:, -1, :]
         confidences = output["action_scores"].numpy()[:, -1, :]
-
-        # we using similarities to pick appropriate input,
-        # since it seems to be more accurate measure,
-        # policy is trained to maximize the similarity not the confidence
-        if (
-            len(tracker_state_features) == 2
-            and np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
-            # TODO maybe compare confidences is better
-            and np.max(similarities[1]) > np.max(similarities[0])
-        ):
-            batch_index = 1
-            is_e2e_prediction = True
-        elif len(tracker_state_features) == 2:
-            batch_index = 0
-            is_e2e_prediction = False
-        else:  # only one tracker present
-            batch_index = 0
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                if TEXT in self.fake_features:
-                    is_e2e_prediction = True
-                else:
-                    is_e2e_prediction = False
-            else:
-                is_e2e_prediction = None
-
-        # take correct batch dimension
-        confidence = confidences[batch_index, :]
+        # take correct prediction from batch
+        confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return confidence.tolist(), is_e2e_prediction  # pytype: disable=bad-return-type
+        return self._prediction(
+            confidence.tolist(), is_end_to_end_prediction=is_e2e_prediction
+        )
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
-
         if self.model is None:
             logger.debug(
-                "Method `persist(...)` was called "
-                "without a trained model present. "
+                "Method `persist(...)` was called without a trained model present. "
                 "Nothing to persist then!"
             )
             return

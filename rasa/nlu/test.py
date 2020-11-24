@@ -24,6 +24,7 @@ import rasa.utils.io as io_utils
 import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
+import rasa.nlu.classifiers.fallback_classifier
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -1270,7 +1271,7 @@ def get_eval_data(
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
     List[EntityEvaluationResult],
-]:  # pragma: no cover
+]:
     """Runs the model for the test set and extracts targets and predictions.
 
     Returns intent results (intent targets and predictions, the original
@@ -1310,7 +1311,16 @@ def get_eval_data(
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
+            if rasa.nlu.classifiers.fallback_classifier.is_fallback_classifier_prediction(
+                result
+            ):
+                # Revert fallback prediction to not shadow the wrongly predicted intent
+                # during the test phase.
+                result = rasa.nlu.classifiers.fallback_classifier.undo_fallback_prediction(
+                    result
+                )
             intent_prediction = result.get(INTENT, {}) or {}
+
             intent_results.append(
                 IntentEvaluationResult(
                     example.get(INTENT, ""),
@@ -1485,7 +1495,7 @@ def run_evaluation(
     if output_directory:
         rasa.shared.utils.io.create_directory(output_directory)
 
-    (intent_results, response_selection_results, entity_results,) = get_eval_data(
+    (intent_results, response_selection_results, entity_results) = get_eval_data(
         interpreter, test_data
     )
 

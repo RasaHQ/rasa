@@ -1,8 +1,9 @@
 import copy
-from typing import Dict
+from typing import Dict, Text, Any
 
 import pytest
 
+from rasa.nlu.classifiers import fallback_classifier
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.fallback_classifier import (
@@ -152,3 +153,70 @@ def test_defaults():
 
     assert classifier.component_config[THRESHOLD_KEY] == DEFAULT_NLU_FALLBACK_THRESHOLD
     assert classifier.component_config[AMBIGUITY_THRESHOLD_KEY] == 0.1
+
+
+@pytest.mark.parametrize(
+    "prediction, expected",
+    [
+        ({INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME}}, True),
+        ({INTENT: {INTENT_NAME_KEY: "some other intent"}}, False),
+    ],
+)
+def test_is_fallback_classifier_prediction(prediction: Dict[Text, Any], expected: bool):
+    assert fallback_classifier.is_fallback_classifier_prediction(prediction) == expected
+
+
+@pytest.mark.parametrize(
+    "prediction, expected",
+    [
+        (
+            {INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME}},
+            {INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME}},
+        ),
+        (
+            {
+                INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME},
+                INTENT_RANKING_KEY: [],
+            },
+            {
+                INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME},
+                INTENT_RANKING_KEY: [],
+            },
+        ),
+        (
+            {
+                INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME},
+                INTENT_RANKING_KEY: [
+                    {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME}
+                ],
+            },
+            {
+                INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME},
+                INTENT_RANKING_KEY: [
+                    {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME}
+                ],
+            },
+        ),
+        (
+            {
+                INTENT: {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME},
+                INTENT_RANKING_KEY: [
+                    {INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME},
+                    {INTENT_NAME_KEY: "other", PREDICTED_CONFIDENCE_KEY: 123},
+                    {INTENT_NAME_KEY: "other2", PREDICTED_CONFIDENCE_KEY: 12},
+                ],
+            },
+            {
+                INTENT: {INTENT_NAME_KEY: "other", PREDICTED_CONFIDENCE_KEY: 123},
+                INTENT_RANKING_KEY: [
+                    {INTENT_NAME_KEY: "other", PREDICTED_CONFIDENCE_KEY: 123},
+                    {INTENT_NAME_KEY: "other2", PREDICTED_CONFIDENCE_KEY: 12},
+                ],
+            },
+        ),
+    ],
+)
+def test_undo_fallback_prediction(
+    prediction: Dict[Text, Any], expected: Dict[Text, Any]
+):
+    assert fallback_classifier.undo_fallback_prediction(prediction) == expected

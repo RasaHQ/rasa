@@ -251,15 +251,6 @@ def test_features_present(
     assert actual == expected
 
 
-def test_ordered():
-    target = {"a": [1, 3, 2], "c": "a", "b": 1}
-    assert rasa.shared.nlu.training_data.message.ordered(target) == [
-        ("a", [1, 2, 3]),
-        ("b", 1),
-        ("c", "a"),
-    ]
-
-
 @pytest.mark.parametrize(
     "message, core_message",
     [

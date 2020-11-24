@@ -7,12 +7,16 @@ from rasa.nlu.model import Interpreter, Trainer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
-from typing import Any, Dict, List, Tuple, Text, Union, Optional
+from typing import Any, Dict, List, Tuple, Text, Union
 
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1},
     "ResponseSelector": {EPOCHS: 1},
     "HFTransformersNLP": {"model_name": "bert", "model_weights": "bert-base-uncased"},
+    "LanguageModelFeaturizer": {
+        "model_name": "bert",
+        "model_weights": "bert-base-uncased",
+    },
 }
 
 
@@ -112,8 +116,8 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
 def test_all_components_are_in_at_least_one_test_pipeline():
     """There is a template that includes all components to
     test the train-persist-load-use cycle. Ensures that
-    really all components are in there."""
-
+    really all components are in there.
+    """
     all_pipelines = pipelines_for_tests() + pipelines_for_non_windows_tests()
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 
