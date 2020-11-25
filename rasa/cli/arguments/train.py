@@ -57,6 +57,15 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_persist_nlu_data_param(parser)
 
 
+def set_train_fingerprint_arguments(parser: argparse.ArgumentParser):
+    add_stories_param(parser)
+    add_domain_param(parser)
+    add_fingerprint_config_param(parser)
+    add_out_param(
+        parser, help_text="Directory where your fingerprint should be stored."
+    )
+
+
 def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
     parser.add_argument(
         "--force",
@@ -83,6 +92,18 @@ def add_core_config_param(parser: argparse.ArgumentParser):
         help="The policy and NLU pipeline configuration of your bot. "
         "If multiple configuration files are provided, multiple Rasa Core "
         "models are trained to compare policies.",
+    )
+
+
+def add_fingerprint_config_param(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "-c",
+        "--config",
+        nargs="+",
+        default=[DEFAULT_CONFIG_PATH],
+        help="The policy and NLU pipeline configuration of your bot. "
+        "If multiple configuration files are provided, multiple fingerprints "
+        "will be generated.",
     )
 
 

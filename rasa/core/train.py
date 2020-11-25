@@ -71,12 +71,9 @@ async def train(
 
 
 async def save_fingerprint(
-    story_file: Text,
-    domain: Text,
-    output_path: Text = "",
-    policy_configs: Optional[List] = None,
+    story_file: Text, domain: Text, output_path: Text = "", policy_configs: List = None,
 ):
-    """Save the fingerprint."""
+    """Create a model fingerprint and save it to the file."""
     from rasa import model
 
     policy_configs = policy_configs or []
@@ -86,7 +83,18 @@ async def save_fingerprint(
         )
 
         new_fingerprint = await model.model_fingerprint(file_importer)
-        model.persist_fingerprint(output_path, new_fingerprint)
+
+        config_name = os.path.splitext(os.path.basename(policy_config))[0]
+        filename = (
+            f"{config_name}_{model.FINGERPRINT_FILE_PATH}"
+            if len(policy_configs) > 1
+            else model.FINGERPRINT_FILE_PATH
+        )
+        model.persist_fingerprint(output_path, new_fingerprint, filename)
+
+        logging.info(
+            f"The fingerprint for {policy_config} has been saved to {os.path.join(output_path, filename)}"
+        )
 
 
 async def train_comparison_models(

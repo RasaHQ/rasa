@@ -372,16 +372,19 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
         return {}
 
 
-def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
+def persist_fingerprint(
+    output_path: Text, fingerprint: Fingerprint, filename: Text = FINGERPRINT_FILE_PATH
+):
     """Persist a model fingerprint.
 
     Args:
         output_path: Directory in which the fingerprint should be saved.
         fingerprint: The fingerprint to be persisted.
+        filename: The name of the fingerprint file.
 
     """
 
-    path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
+    path = os.path.join(output_path, filename)
     rasa.shared.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 

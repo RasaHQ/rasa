@@ -123,7 +123,8 @@ def _fingerprint(
     }
 
 
-def test_persist_and_load_fingerprint():
+@pytest.mark.parametrize("filename", [None, "test.json"])
+def test_persist_and_load_fingerprint(filename):
     from rasa.model import persist_fingerprint, fingerprint_from_path
 
     fingerprint = _fingerprint()
