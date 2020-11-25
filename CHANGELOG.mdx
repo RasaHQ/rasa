@@ -16,6 +16,13 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.1.1] - 2020-11-23
+                       
+
+### Bugfixes
+- [#7338](https://github.com/rasahq/rasa/issues/7338): Sender ID is correctly set when copying the tracker and sending it to the action server (instead of sending the `default` value). This fixes a problem where the action server would only retrieve trackers with a `sender_id` `default`.
+
+
 ## [2.1.0] - 2020-11-17
                        
 
