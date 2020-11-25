@@ -745,7 +745,6 @@ class TrainingDataChunk(TrainingData):
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
         """Initialize a training data chunk."""
-
         if entity_synonyms or regex_features or lookup_tables:
             raise RasaException(
                 f"{self.__class__} cannot have entity synonyms, "
