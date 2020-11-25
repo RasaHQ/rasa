@@ -133,14 +133,14 @@ async def train_in_chunks(
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model in chunks.
 
-     Args:
-         model_config: The model configuration.
-         training_data_importer: The training data importer.
-         train_path: The training path.
-         fixed_model_name: The fixed model name.
-         number_of_chunks: The number of chunks to use.
+    Args:
+        model_config: The model configuration.
+        training_data_importer: The training data importer.
+        train_path: The training path.
+        fixed_model_name: The fixed model name.
+        number_of_chunks: The number of chunks to use.
 
-     Returns:
+    Returns:
         The trainer, the trained interpreter, and the path to the persisted model.
     """
     from rasa.shared.importers.importer import TrainingDataImporter
