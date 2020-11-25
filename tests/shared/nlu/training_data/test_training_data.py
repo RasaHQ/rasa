@@ -16,13 +16,15 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
     template_key_to_intent_response_key,
     intent_response_key_to_template_key,
 )
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaException
 
 import rasa.shared.data
 
@@ -633,3 +635,75 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "intent_frequencies, num_chunks", [([100, 82, 63, 43], 8), ([15, 12, 10, 7], 4)]
+)
+def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: int):
+
+    # Create the initial training data
+    all_messages = []
+    for index, intent_count in enumerate(intent_frequencies):
+        all_messages.extend(
+            [
+                Message(
+                    text=f"intent_{index * intent_count + ex_index}", intent=f"{index}"
+                )
+                for ex_index in range(intent_count)
+            ]
+        )
+    training_data = TrainingData(all_messages)
+    original_fingerprint = training_data.fingerprint()
+    chunks = training_data.divide_into_chunks(num_chunks=num_chunks)
+    new_fingerprint = training_data.fingerprint()
+
+    # Original training data shouldn't be modified
+    assert original_fingerprint == new_fingerprint
+
+    # First check that no example is lost
+    chunk_sizes = [len(td.training_examples) for td in chunks]
+    assert sum(chunk_sizes) == sum(intent_frequencies)
+
+    # Check the equal distribution of examples across chunks
+    for index, intent_count in enumerate(intent_frequencies):
+        intent_label = f"{index}"
+        ideal_size = intent_count // num_chunks
+        num_examples_across_chunks = []
+        for chunk in chunks:
+            filtered_examples = chunk.filter_training_examples(
+                lambda x: x.get("intent") == intent_label
+            )
+            num_examples = len(filtered_examples.training_examples)
+            num_examples_across_chunks.append(num_examples)
+            assert (
+                num_examples == ideal_size
+                or num_examples == ideal_size + 1
+                or num_examples == ideal_size - 1
+            )
+        assert sum(num_examples_across_chunks) == intent_count
+
+
+def test_training_data_chunk_exception():
+
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(lookup_tables=[{"test_key": "test_val"}])
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(entity_synonyms={"test_key": "test_val"})
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(regex_features=[{"test_key": "test_val"}])
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
