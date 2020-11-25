@@ -53,6 +53,8 @@ install-mitie:
 
 install-full: install install-mitie
 	poetry install -E full
+	pip uninstall spacy
+	pip install spacy-nightly
 
 install-docs:
 	cd docs/ && yarn install
