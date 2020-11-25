@@ -563,8 +563,8 @@ class Component(metaclass=ComponentMetaclass):
         """
         pass
 
-    def process(self, message: Message, **kwargs: Any) -> Dict[Text, Any]:
-        """Process an incoming message and return diagnostic data.
+    def process(self, message: Message, **kwargs: Any) -> None:
+        """Process an incoming message.
 
         This is the components chance to process an incoming
         message. The component can rely on
@@ -577,10 +577,6 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
-
-        Returns:
-            A dictionary of diagnostic data such as attention weights, or None.
-
         """
         pass
 
