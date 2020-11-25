@@ -70,6 +70,25 @@ async def train(
     return agent
 
 
+async def save_fingerprint(
+    story_file: Text,
+    domain: Text,
+    output_path: Text = "",
+    policy_configs: Optional[List] = None,
+):
+    """Save the fingerprint."""
+    from rasa import model
+
+    policy_configs = policy_configs or []
+    for policy_config in policy_configs:
+        file_importer = TrainingDataImporter.load_core_importer_from_config(
+            policy_config, domain, [story_file]
+        )
+
+        new_fingerprint = await model.model_fingerprint(file_importer)
+        model.persist_fingerprint(output_path, new_fingerprint)
+
+
 async def train_comparison_models(
     story_file: Text,
     domain: Text,
@@ -79,7 +98,7 @@ async def train_comparison_models(
     runs: int = 1,
     additional_arguments: Optional[Dict] = None,
 ):
-    """Train multiple models for comparison of policies"""
+    """Train multiple models for comparison of policies."""
     from rasa import model
 
     exclusion_percentages = exclusion_percentages or []

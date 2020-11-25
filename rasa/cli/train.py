@@ -56,10 +56,19 @@ def add_subparser(
     )
     train_nlu_parser.set_defaults(func=train_nlu)
 
+    train_fingerprint_parser = train_subparsers.add_parser(
+        "fingerprint",
+        parents=parents,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help="Creates a training fingerprint.",
+    )
+    train_fingerprint_parser.set_defaults(func=fingerprint)
+
     train_parser.set_defaults(func=train)
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
+    train_arguments.set_train_arguments(train_fingerprint_parser) # TODO(alwx):
 
 
 def train(args: argparse.Namespace) -> Optional[Text]:
@@ -157,6 +166,23 @@ def train_nlu(
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),
         domain=args.domain,
+    )
+
+
+def fingerprint(args: argparse.Namespace):
+    from rasa.core.train import save_fingerprint
+
+    story_file = rasa.cli.utils.get_validated_path(
+        args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
+    )
+
+    rasa.utils.common.run_in_loop(
+        save_fingerprint(
+            story_file=story_file,
+            domain=args.domain,
+            output_path=args.out,
+            policy_configs=args.config
+        )
     )
 
 
