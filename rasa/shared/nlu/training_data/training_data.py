@@ -34,6 +34,8 @@ DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
 
+TFRECORD_KEY_SEPARATOR = "#"
+
 
 class TrainingData:
     """Holds loaded intent and entity training data."""
@@ -770,24 +772,51 @@ class TrainingDataChunk(TrainingData):
         """Returns an int64_list from a bool / enum / int / uint."""
         return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
 
+    @staticmethod
+    def _construct_key(
+        attribute: Text, feature_type: Text, origin: Text, is_dense: bool
+    ) -> Text:
+        prefix = (
+            f"{attribute}{TFRECORD_KEY_SEPARATOR}{feature_type}"
+            f"{TFRECORD_KEY_SEPARATOR}{origin}{TFRECORD_KEY_SEPARATOR}"
+        )
+
+        if is_dense:
+            return f"{prefix}dense"
+        return f"{prefix}sparse"
+
+    @staticmethod
+    def _deconstruct_key(key: Text) -> Tuple[Text, Text, Text, bool, Text]:
+        parts = key.split(TFRECORD_KEY_SEPARATOR)
+
+        attribute = parts[0]
+        feature_type = parts[1]
+        origin = parts[2]
+        dense = parts[3] == "dense"
+        extra_info = parts[4] if not dense else ""
+
+        return attribute, feature_type, origin, dense, extra_info
+
     def _to_tf_features(self, features: List[Features]) -> Dict[Text, tf.train.Feature]:
         tf_features = {}
 
         for feature in features:
-            key = f"{feature.attribute}#{feature.type}#{feature.origin}"
+            key = self._construct_key(
+                feature.attribute, feature.type, feature.origin, feature.is_dense()
+            )
 
             if feature.is_dense():
-                tf_features[f"{key}#dense"] = self._bytes_feature(feature.features)
+                tf_features[key] = self._bytes_feature(feature.features)
             else:
                 data = feature.features.data
                 shape = feature.features.shape
                 row = feature.features.row
                 column = feature.features.col
 
-                tf_features[f"{key}#sparse#data"] = self._bytes_feature(data)
-                tf_features[f"{key}#sparse#shape"] = self._int_feature(shape)
-                tf_features[f"{key}#sparse#row"] = self._int_feature(row)
-                tf_features[f"{key}#sparse#column"] = self._int_feature(column)
+                tf_features[f"{key}#data"] = self._bytes_feature(data)
+                tf_features[f"{key}#shape"] = self._int_feature(shape)
+                tf_features[f"{key}#row"] = self._int_feature(row)
+                tf_features[f"{key}#column"] = self._int_feature(column)
 
         return tf_features
 
@@ -835,45 +864,65 @@ class TrainingDataChunk(TrainingData):
 
             features = []
             for key in example.features.feature.keys():
-                parts = key.split("#")
+                (
+                    attribute,
+                    feature_type,
+                    origin,
+                    is_dense,
+                    extra_info,
+                ) = TrainingDataChunk._deconstruct_key(key)
 
-                attribute = parts[0]
-                feature_type = parts[1]
-                origin = parts[2]
+                if is_dense:
+                    cls._convert_to_numpy(example, attribute, feature_type, origin)
 
-                if parts[3] == "dense":
-                    value = example.features.feature[key].bytes_list.value[0]
-                    tensor = tf.io.parse_tensor(value, out_type=tf.float64)
-                    features.append(
-                        Features(tensor.numpy(), feature_type, attribute, origin)
-                    )
-
-                elif parts[3] == "sparse" and parts[4] == "data":
-                    prefix = f"{attribute}#{feature_type}#{origin}#sparse#"
-
-                    shape = example.features.feature[f"{prefix}shape"].int64_list.value
-                    data = example.features.feature[f"{prefix}data"].bytes_list.value[0]
-                    row = example.features.feature[f"{prefix}row"].int64_list.value
-                    column = example.features.feature[
-                        f"{prefix}column"
-                    ].int64_list.value
-
-                    data_tensor = tf.io.parse_tensor(data, out_type=tf.float64)
-
-                    features.append(
-                        Features(
-                            scipy.sparse.coo_matrix(
-                                (data_tensor.numpy(), (row, column)), shape
-                            ),
-                            feature_type,
-                            attribute,
-                            origin,
-                        )
+                elif not is_dense and extra_info == "data":
+                    cls._convert_to_sparse_matrix(
+                        example, attribute, feature_type, origin
                     )
 
             training_examples.append(Message(features=features))
 
         return TrainingDataChunk(training_examples)
+
+    @classmethod
+    def _convert_to_numpy(
+        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
+    ) -> Features:
+        key = TrainingDataChunk._construct_key(attribute, feature_type, origin, True)
+
+        bytes_list = example.features.feature[key].bytes_list.value[0]
+        data = tf.io.parse_tensor(bytes_list, out_type=tf.float64).numpy()
+
+        return Features(data, feature_type, attribute, origin)
+
+    @classmethod
+    def _convert_to_sparse_matrix(
+        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
+    ) -> Features:
+        prefix = TrainingDataChunk._construct_key(
+            attribute, feature_type, origin, False
+        )
+
+        shape = example.features.feature[
+            f"{prefix}{TFRECORD_KEY_SEPARATOR}shape"
+        ].int64_list.value
+        data = example.features.feature[
+            f"{prefix}{TFRECORD_KEY_SEPARATOR}data"
+        ].bytes_list.value[0]
+        row = example.features.feature[
+            f"{prefix}{TFRECORD_KEY_SEPARATOR}row"
+        ].int64_list.value
+        column = example.features.feature[
+            f"{prefix}{TFRECORD_KEY_SEPARATOR}column"
+        ].int64_list.value
+        data = tf.io.parse_tensor(data, out_type=tf.float64).numpy()
+
+        return Features(
+            scipy.sparse.coo_matrix((data, (row, column)), shape),
+            feature_type,
+            attribute,
+            origin,
+        )
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
