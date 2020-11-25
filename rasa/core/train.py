@@ -93,7 +93,7 @@ async def train_in_chunks(
         endpoints: the available endpoints
         policy_config: the config to use
         additional_arguments: any additional arguments
-        number_of_chunks: Number of chunks to use
+        number_of_chunks: number of chunks to use
 
     Returns:
         The trained agent.

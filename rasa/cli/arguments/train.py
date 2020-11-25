@@ -6,7 +6,7 @@ from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 
 def set_train_arguments(parser: argparse.ArgumentParser):
-    """Set the command line arguments for the command 'rasa train'.
+    """Sets the command line arguments for the command 'rasa train'.
 
     Args:
         parser: the parser to add the arguments to
@@ -31,7 +31,7 @@ def set_train_arguments(parser: argparse.ArgumentParser):
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:
-    """Set the command line arguments for the command 'rasa train core'.
+    """Sets the command line arguments for the command 'rasa train core'.
 
     Args:
         parser: the parser to add the arguments to
@@ -57,7 +57,7 @@ def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def set_train_nlu_arguments(parser: argparse.ArgumentParser) -> None:
-    """Set the command line arguments for the command 'rasa train nlu'.
+    """Sets the command line arguments for the command 'rasa train nlu'.
 
     Args:
         parser: the parser to add the arguments to

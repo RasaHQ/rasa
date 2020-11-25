@@ -220,7 +220,7 @@ class Trainer:
         fixed_model_name: Optional[Text] = None,
         number_of_chunks: int = 5,
     ) -> Tuple["Interpreter", Text]:
-        """Trains the underlying pipeline using the provided training data.
+        """Trains the underlying pipeline in chunks using the provided training data.
 
         Args:
             training_data: The training data.
