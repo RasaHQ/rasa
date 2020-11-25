@@ -22,7 +22,6 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.constants import TEXT, INTENT
 
 
-@pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
     "model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
     [
@@ -31,12 +30,12 @@ from rasa.shared.nlu.constants import TEXT, INTENT
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
-                [0.5727445, -0.16078179],
-                [-0.5485125, 0.09632876, -0.4278888, 0.11438395, 0.18316492],
+                [0.6569931, 0.77279466],
+                [0.21718428, 0.34955627, 0.59124136, 0.6869872, 0.16993292],
             ],
             [
-                [0.068804, 0.32802248, -0.11250398, -0.11338018, -0.37116352],
-                [0.05909364, 0.06433402, 0.08569086, -0.16530034, -0.11396906],
+                [0.29528213, 0.5543281, -0.4091331, 0.65817744, 0.81740487],
+                [-0.17215663, 0.26811457, -0.1922609, -0.63926417, -1.626383],
             ],
         ),
         (
@@ -189,6 +188,7 @@ def test_lm_featurizer_shape_values(
 ):
     config = {"model_name": model_name}
 
+    whitespace_tokenizer = WhitespaceTokenizer()
     lm_featurizer = LanguageModelFeaturizer(config)
 
     messages = []
@@ -196,6 +196,7 @@ def test_lm_featurizer_shape_values(
         messages.append(Message.build(text=text))
     td = TrainingData(messages)
 
+    whitespace_tokenizer.train(td)
     lm_featurizer.train(td)
 
     for index in range(len(texts)):
@@ -366,342 +367,29 @@ def test_attention_mask(
     assert np.all(mask_zeros == 0)
 
 
-# TODO: need to fix this failing test
-@pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
-    "model_name, model_weights, texts, expected_tokens, expected_indices",
+    "model_name, text, expected_number_of_sub_tokens",
     [
-        (
-            "bert",
-            None,
-            [
-                "Good evening.",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [
-                ["good", "evening"],
-                ["you", "re"],
-                ["r", "n", "b"],
-                ["rock", "&", "roll"],
-                [
-                    "here",
-                    "is",
-                    "the",
-                    "sentence",
-                    "i",
-                    "want",
-                    "em",
-                    "bed",
-                    "ding",
-                    "s",
-                    "for",
-                ],
-            ],
-            [
-                [(0, 4), (5, 12)],
-                [(0, 3), (4, 6)],
-                [(0, 1), (3, 4), (6, 7)],
-                [(0, 4), (5, 6), (7, 11)],
-                [
-                    (0, 4),
-                    (5, 7),
-                    (8, 11),
-                    (12, 20),
-                    (21, 22),
-                    (23, 27),
-                    (28, 30),
-                    (30, 33),
-                    (33, 37),
-                    (37, 38),
-                    (39, 42),
-                ],
-            ],
-        ),
-        (
-            "bert",
-            "bert-base-chinese",
-            [
-                "晚上好",  # normal & easy case
-                "没问题！",  # `！` is a Chinese punctuation
-                "去东畈村",  # `畈` is a OOV token for bert-base-chinese
-                "好的😃",  # include a emoji which is common in Chinese text-based chat
-            ],
-            [
-                ["晚", "上", "好"],
-                ["没", "问", "题", "！"],
-                ["去", "东", "畈", "村"],
-                ["好", "的", "😃"],
-            ],
-            [
-                [(0, 1), (1, 2), (2, 3)],
-                [(0, 1), (1, 2), (2, 3), (3, 4)],
-                [(0, 1), (1, 2), (2, 3), (3, 4)],
-                [(0, 1), (1, 2), (2, 3)],
-            ],
-        ),
-        (
-            "gpt",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [
-                ["good", "evening"],
-                ["hello"],
-                ["you", "re"],
-                ["r", "n", "b"],
-                ["rock", "&", "roll"],
-                ["here", "is", "the", "sentence", "i", "want", "embe", "ddings", "for"],
-            ],
-            [
-                [(0, 4), (5, 12)],
-                [(0, 5)],
-                [(0, 3), (4, 6)],
-                [(0, 1), (3, 4), (6, 7)],
-                [(0, 4), (5, 6), (7, 11)],
-                [
-                    (0, 4),
-                    (5, 7),
-                    (8, 11),
-                    (12, 20),
-                    (21, 22),
-                    (23, 27),
-                    (28, 32),
-                    (32, 38),
-                    (39, 42),
-                ],
-            ],
-        ),
-        (
-            "gpt2",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [
-                ["Good", "even", "ing"],
-                ["hello"],
-                ["you", "re"],
-                ["r", "n", "b"],
-                ["rock", "&", "roll"],
-                [
-                    "here",
-                    "is",
-                    "the",
-                    "sent",
-                    "ence",
-                    "I",
-                    "want",
-                    "embed",
-                    "d",
-                    "ings",
-                    "for",
-                ],
-            ],
-            [
-                [(0, 4), (5, 9), (9, 12)],
-                [(0, 5)],
-                [(0, 3), (4, 6)],
-                [(0, 1), (3, 4), (6, 7)],
-                [(0, 4), (5, 6), (7, 11)],
-                [
-                    (0, 4),
-                    (5, 7),
-                    (8, 11),
-                    (12, 16),
-                    (16, 20),
-                    (21, 22),
-                    (23, 27),
-                    (28, 33),
-                    (33, 34),
-                    (34, 38),
-                    (39, 42),
-                ],
-            ],
-        ),
-        (
-            "xlnet",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [
-                ["Good", "evening"],
-                ["hello"],
-                ["you", "re"],
-                ["r", "n", "b"],
-                ["rock", "&", "roll"],
-                [
-                    "here",
-                    "is",
-                    "the",
-                    "sentence",
-                    "I",
-                    "want",
-                    "embed",
-                    "ding",
-                    "s",
-                    "for",
-                ],
-            ],
-            [4, 3, 4, 5, 5, 12],
-        ),
-        (
-            "distilbert",
-            None,
-            [
-                "Good evening.",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [
-                ["good", "evening"],
-                ["you", "re"],
-                ["r", "n", "b"],
-                ["rock", "&", "roll"],
-                [
-                    "here",
-                    "is",
-                    "the",
-                    "sentence",
-                    "i",
-                    "want",
-                    "em",
-                    "bed",
-                    "ding",
-                    "s",
-                    "for",
-                ],
-            ],
-            [
-                [(0, 4), (5, 12)],
-                [(0, 3), (4, 6)],
-                [(0, 1), (3, 4), (6, 7)],
-                [(0, 4), (5, 6), (7, 11)],
-                [
-                    (0, 4),
-                    (5, 7),
-                    (8, 11),
-                    (12, 20),
-                    (21, 22),
-                    (23, 27),
-                    (28, 30),
-                    (30, 33),
-                    (33, 37),
-                    (37, 38),
-                    (39, 42),
-                ],
-            ],
-        ),
-        (
-            "roberta",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [
-                ["Good", "even", "ing"],
-                ["hello"],
-                ["you", "re"],
-                ["r", "n", "b"],
-                ["rock", "&", "roll"],
-                [
-                    "here",
-                    "is",
-                    "the",
-                    "sent",
-                    "ence",
-                    "I",
-                    "want",
-                    "embed",
-                    "d",
-                    "ings",
-                    "for",
-                ],
-            ],
-            [
-                [(0, 4), (5, 9), (9, 12)],
-                [(0, 5)],
-                [(0, 3), (4, 6)],
-                [(0, 1), (3, 4), (6, 7)],
-                [(0, 4), (5, 6), (7, 11)],
-                [
-                    (0, 4),
-                    (5, 7),
-                    (8, 11),
-                    (12, 16),
-                    (16, 20),
-                    (21, 22),
-                    (23, 27),
-                    (28, 33),
-                    (33, 34),
-                    (34, 38),
-                    (39, 42),
-                ],
-            ],
-        ),
+        ("bert", "sentence embeddings", [1, 2]),
+        ("bert", "this is a test", [1, 1, 1, 1]),
+        ("gpt", "sentence embeddings", [1, 2]),
+        ("gpt", "this is a test", [1, 1, 1, 1]),
+        ("gpt2", "sentence embeddings", [2, 3]),
+        ("gpt2", "this is a test", [1, 1, 1, 1]),
+        ("xlnet", "sentence embeddings", [1, 3]),
+        ("xlnet", "this is a test", [1, 1, 1, 1]),
+        ("distilbert", "sentence embeddings", [1, 4]),
+        ("distilbert", "this is a test", [1, 1, 1, 1]),
+        ("roberta", "sentence embeddings", [2, 3]),
+        ("roberta", "this is a test", [1, 1, 1, 1]),
     ],
 )
-@pytest.mark.skip_on_windows
-def test_lm_featurizer_edge_cases(
-    model_name, model_weights, texts, expected_tokens, expected_indices
+def test_lm_featurizer_number_of_sub_tokens(
+    model_name, text, expected_number_of_sub_tokens
 ):
-
-    if model_weights is None:
-        model_weights_config = {}
-    else:
-        model_weights_config = {"model_weights": model_weights}
-    transformers_config = {**{"model_name": model_name}, **model_weights_config}
-
-    lm_featurizer = LanguageModelFeaturizer(transformers_config)
-    whitespace_tokenizer = WhitespaceTokenizer()
-
-    for text, gt_tokens, gt_indices in zip(texts, expected_tokens, expected_indices):
-
-        message = Message.build(text=text)
-        tokens = whitespace_tokenizer.tokenize(message, TEXT)
-        message.set(TOKENS_NAMES[TEXT], tokens)
-        lm_featurizer.process(message)
-
-        assert [t.text for t in tokens] == gt_tokens
-        assert [t.start for t in tokens] == [i[0] for i in gt_indices]
-        assert [t.end for t in tokens] == [i[1] for i in gt_indices]
-
-
-@pytest.mark.parametrize(
-    "text, expected_number_of_sub_tokens",
-    [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
-)
-def test_lm_featurizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
     config = {
-        "model_name": "bert",
-        "model_weights": "bert-base-uncased",
-    }  # Test for one should be enough
+        "model_name": model_name,
+    }
 
     lm_featurizer = LanguageModelFeaturizer(config)
     whitespace_tokenizer = WhitespaceTokenizer()
@@ -715,6 +403,9 @@ def test_lm_featurizer_number_of_sub_tokens(text, expected_number_of_sub_tokens)
     assert [
         t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
     ] == expected_number_of_sub_tokens
+    assert len(message.get(TOKENS_NAMES[TEXT])) == len(
+        whitespace_tokenizer.tokenize(Message.build(text=text), TEXT)
+    )
 
 
 @pytest.mark.parametrize("text", [("hi there")])
@@ -737,7 +428,6 @@ def test_log_deprecation_warning_with_old_config(text: str, caplog: LogCaptureFi
     assert "deprecated component HFTransformersNLP" in caplog.text
 
 
-@pytest.mark.skip(reason="Results in random crashing of github action workers")
 def test_preserve_sentence_and_sequence_features_old_config():
     attribute = "text"
     message = Message.build("hi there")
