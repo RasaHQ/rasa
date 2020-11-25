@@ -12,7 +12,6 @@ from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.cli.arguments.train import USE_LATEST_MODEL_FOR_FINE_TUNING
 from rasa.cli.utils import create_output_path
 from rasa.shared.utils.cli import print_success
 from rasa.shared.constants import (
@@ -51,8 +50,6 @@ FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
 FINGERPRINT_PROJECT = "project"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
-
-SUBDIRECTORY_MODEL_TO_FINE_TUNE = "model_for_finetuning"
 
 
 class Section(NamedTuple):
@@ -521,48 +518,94 @@ async def update_model_with_new_domain(
 
 
 def get_models_for_finetuning(
-    previous_model_file: Optional[Text], trained_models_directory: Text,
+    previous_model_file: Optional[Union[Path, Text]]
 ) -> Tuple[Optional["Agent"], Optional["Interpreter"]]:
     """Retrieves loaded models which can be used for finetuning.
 
     Args:
-        previous_model_file: Path to model which should be used for finetuning or
-            `USE_LATEST_MODEL_FOR_FINE_TUNING` in case the latest trained model should
-            be used.
-        trained_models_directory: Directory which contains trained models. Rasa Open
-            Source will try to retrieve the latest trained model from here in case
-            `previous_model_file` has the value of `USE_LATEST_MODEL_FOR_FINE_TUNING`.
+        previous_model_file: Path to model file which should be used for finetuning or
+            a directory in case the latest trained model should be used.
 
     Returns:
         Loaded Core model and NLU model.
     """
-    from rasa.core.agent import Agent
     from rasa.core.interpreter import RasaNLUInterpreter
-    from rasa.nlu.model import Interpreter
 
-    if previous_model_file == USE_LATEST_MODEL_FOR_FINE_TUNING:
-        previous_model_file = get_latest_model(trained_models_directory)
+    if Path(previous_model_file).is_dir():
+        logger.debug(
+            f"Trying to load latest model from '{previous_model_file}' for "
+            f"finetuning."
+        )
+        previous_model_file = get_latest_model(previous_model_file)
 
     if previous_model_file is None or not Path(previous_model_file).is_file():
+        logger.debug(
+            "No valid model for finetuning found as directory either "
+            "contains no model or model file cannot be found."
+        )
         return None, None
 
     with unpack_model(previous_model_file) as unpacked:
-        core, nlu = None, None
-        try:
-            core = Agent.load(unpacked)
-        except ModelNotFound:
-            # Something went wrong when loading Core model. Apparently it's not there.
-            pass
+        core = _load_core_model(unpacked)
 
         # Try using loaded `interpreter` from `Agent` to avoid loading it twice.
-        if isinstance(core.interpreter, RasaNLUInterpreter):
-            return core, core.interpreter.interpreter
-
-        try:
-            _, nlu_directory = get_model_subdirectories(unpacked)
-            nlu = Interpreter.load(nlu_directory)
-        except Exception:
-            # Anything might go wrong. In that case we skip model finetuning.
-            pass
+        if core and isinstance(core.interpreter, RasaNLUInterpreter):
+            nlu = core.interpreter.interpreter
+        else:
+            nlu = _load_nlu_model(unpacked)
 
     return core, nlu
+
+
+def _load_core_model(unpacked_model: Text) -> Optional["Agent"]:
+    from rasa.core.agent import Agent
+
+    try:
+        return Agent.load(unpacked_model)
+    except ModelNotFound:
+        # Something went wrong when loading Core model. Apparently it's not there.
+        return None
+
+
+def _load_nlu_model(unpacked_model: Text) -> Optional["Interpreter"]:
+    from rasa.nlu.model import Interpreter
+
+    try:
+        _, nlu_directory = get_model_subdirectories(unpacked_model)
+        return Interpreter.load(nlu_directory)
+    except Exception:
+        # Anything might go wrong. In that case we skip model finetuning.
+        return None
+
+
+def get_core_model_for_finetuning(
+    previous_model_file: Optional[Union[Path, Text]]
+) -> Optional["Agent"]:
+    """Retrieves Core model for finetuning.
+
+    Args:
+        previous_model_file: Path to model file which should be used for finetuning or
+            a directory in case the latest trained model should be used.
+
+
+    Returns:
+        Loaded Core model.
+    """
+    core, _ = get_models_for_finetuning(previous_model_file)
+    return core
+
+
+def get_nlu_model_for_finetuning(
+    previous_model_file: Optional[Union[Path, Text]]
+) -> Optional["Interpreter"]:
+    """Retrieves NLU model for finetuning.
+
+    Args:
+        previous_model_file: Path to model file which should be used for finetuning or
+            a directory in case the latest trained model should be used.
+
+    Returns:
+        Loaded NLU model.
+    """
+    _, nlu = get_models_for_finetuning(previous_model_file)
+    return nlu

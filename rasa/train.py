@@ -181,7 +181,7 @@ async def _train_async_internal(
     old_core_model, old_nlu_model = None, None
     if model_to_finetune:
         old_core_model, old_nlu_model = model.get_models_for_finetuning(
-            model_to_finetune, output_path
+            model_to_finetune
         )
 
         if old_core_model is None and old_nlu_model is None:
@@ -423,9 +423,7 @@ async def train_core_async(
         return
 
     if model_to_finetune:
-        model_to_finetune, _ = model.get_models_for_finetuning(
-            model_to_finetune, output
-        )
+        model_to_finetune = model.get_core_model_for_finetuning(model_to_finetune)
         if model_to_finetune is None:
             print_warning(
                 f"No model for finetuning found. Please make sure to either specify a "
@@ -585,9 +583,7 @@ async def _train_nlu_async(
         return
 
     if model_to_finetune:
-        _, model_to_finetune = model.get_models_for_finetuning(
-            model_to_finetune, output
-        )
+        model_to_finetune = model.get_nlu_model_for_finetuning(model_to_finetune)
 
         if model_to_finetune is None:
             print_warning(

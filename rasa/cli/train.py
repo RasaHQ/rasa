@@ -88,9 +88,19 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
-        model_to_finetune=args.finetune,
+        model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
     )
+
+
+def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
+    if args.finetune == train_arguments.USE_LATEST_MODEL_FOR_FINE_TUNING:
+        # We use this constant to signal that the user specified `--finetune` but
+        # didn't provide a path to a model. In this case we try to load the latest
+        # model from the output directory (that's usually models/).
+        return args.out
+
+    return args.finetune
 
 
 def train_core(
@@ -124,7 +134,7 @@ def train_core(
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
             additional_arguments=additional_arguments,
-            model_to_finetune=args.finetune,
+            model_to_finetune=_model_for_finetuning(args),
             finetuning_epoch_fraction=args.epoch_fraction,
         )
     else:
@@ -161,7 +171,7 @@ def train_nlu(
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),
         domain=args.domain,
-        model_to_finetune=args.finetune,
+        model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
     )
 

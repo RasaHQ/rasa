@@ -13,7 +13,6 @@ import rasa.model
 import rasa.core
 import rasa.nlu
 import rasa.shared.importers.autoconfig as autoconfig
-from rasa.cli.arguments.train import USE_LATEST_MODEL_FOR_FINE_TUNING
 from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
@@ -489,6 +488,7 @@ def test_model_finetuning_with_latest_model(
     default_stack_config: Text,
     default_nlu_data: Text,
     trained_rasa_model: Text,
+    tmp_path: Path,
 ):
     mocked_nlu_training = Mock()
 
@@ -516,9 +516,9 @@ def test_model_finetuning_with_latest_model(
         default_domain_path,
         default_stack_config,
         [default_stories_file, default_nlu_data],
-        output=str(Path(trained_rasa_model).parent),
+        output=str(tmp_path),
         force_training=True,
-        model_to_finetune=USE_LATEST_MODEL_FOR_FINE_TUNING,
+        model_to_finetune=str(Path(trained_rasa_model).parent),
         finetuning_epoch_fraction=1,
     )
 
@@ -532,6 +532,7 @@ def test_model_finetuning_with_latest_model_nlu(
     default_stack_config: Text,
     default_nlu_data: Text,
     trained_rasa_model: Text,
+    tmp_path: Path,
 ):
     mocked_nlu_training = Mock()
 
@@ -548,8 +549,8 @@ def test_model_finetuning_with_latest_model_nlu(
         default_stack_config,
         default_nlu_data,
         domain=default_domain_path,
-        output=str(Path(trained_rasa_model).parent),
-        model_to_finetune=USE_LATEST_MODEL_FOR_FINE_TUNING,
+        output=str(tmp_path),
+        model_to_finetune=str(Path(trained_rasa_model).parent),
         finetuning_epoch_fraction=1,
     )
 
@@ -562,6 +563,7 @@ def test_model_finetuning_with_latest_model_core(
     default_stories_file: Text,
     default_stack_config: Text,
     trained_rasa_model: Text,
+    tmp_path: Path,
 ):
     mocked_core_training = Mock()
 
@@ -577,17 +579,15 @@ def test_model_finetuning_with_latest_model_core(
         default_domain_path,
         default_stack_config,
         default_stories_file,
-        output=str(Path(trained_rasa_model).parent),
-        model_to_finetune=USE_LATEST_MODEL_FOR_FINE_TUNING,
+        output=str(tmp_path),
+        model_to_finetune=str(Path(trained_rasa_model).parent),
         finetuning_epoch_fraction=1,
     )
 
     mocked_core_training.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "model_to_fine_tune", ["invalid-path-to-model", USE_LATEST_MODEL_FOR_FINE_TUNING]
-)
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
 def test_model_finetuning_with_invalid_model(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -638,9 +638,7 @@ def test_model_finetuning_with_invalid_model(
     assert "No model for finetuning found" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize(
-    "model_to_fine_tune", ["invalid-path-to-model", USE_LATEST_MODEL_FOR_FINE_TUNING]
-)
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
 def test_model_finetuning_with_invalid_model_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -677,9 +675,7 @@ def test_model_finetuning_with_invalid_model_core(
     assert "No model for finetuning found" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize(
-    "model_to_fine_tune", ["invalid-path-to-model", USE_LATEST_MODEL_FOR_FINE_TUNING]
-)
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
 def test_model_finetuning_with_invalid_model_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
