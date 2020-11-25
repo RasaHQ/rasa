@@ -67,3 +67,25 @@ def set_validator_arguments(parser: argparse.ArgumentParser):
     )
     add_domain_param(parser)
     add_data_param(parser)
+
+
+def set_suggest_arguments(parser: argparse.ArgumentParser):
+    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
+
+    parser.add_argument(
+        "--nlu-classification-report",
+        type=str,
+        help="File containing your NLU classification report."
+    )
+
+    parser.add_argument(
+        "--paraphrases",
+        type=str,
+        help="File or folder containing your paraphrases."
+    )
+
+    add_out_param(
+        parser,
+        default="nlu_suggest",
+        help_text="Directory where the training data with the suggestions should be stored."
+    )

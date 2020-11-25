@@ -77,6 +77,7 @@ def add_subparser(
     _add_data_convert_parsers(data_subparsers, parents)
     _add_data_split_parsers(data_subparsers, parents)
     _add_data_validate_parsers(data_subparsers, parents)
+    _add_data_suggest_parsers(data_subparsers, parents)
 
 
 def _add_data_convert_parsers(
@@ -205,6 +206,30 @@ def _add_data_validate_parsers(
     arguments.set_validator_arguments(story_structure_parser)
 
 
+def _add_data_suggest_parsers(
+        data_subparsers, parents: List[argparse.ArgumentParser]
+) -> None:
+    suggest_parser = data_subparsers.add_parser(
+        "suggest",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Suggests data to be added to the training data."
+    )
+    #suggest_parser.set_defaults(func=???)
+    arguments.set_suggest_arguments(suggest_parser)
+
+    suggest_subparsers = suggest_parser.add_subparsers()
+    nlu_suggest_parser = suggest_subparsers.add_parser(
+        "nlu",
+        parents=parents,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help="Suggests data to be added to your NLU training data.",
+    )
+    nlu_suggest_parser.set_defaults(func=suggest_nlu_data)
+
+    arguments.set_suggest_arguments(nlu_suggest_parser)
+
+
 def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--max-history",
@@ -232,6 +257,35 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     test.persist(args.out, filename=f"test_data{extension}")
 
     telemetry.track_data_split(args.training_fraction, "nlu")
+
+
+def suggest_nlu_data(args: argparse.Namespace) -> None:
+    """Load NLU data, paraphrases and classification report and suggest additional training examples.
+
+    Args:
+        args: Commandline arguments
+    """
+    data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    data_path = rasa.shared.data.get_nlu_directory(data_path)
+
+    nlu_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
+
+    paraphrases = rasa.shared.nlu.training_data.loading.load_data(args.paraphrases)
+    classification_report = rasa.shared.utils.io.read_json_file(args.nlu_classification_report)
+
+    avg = sum(nlu_data.number_of_examples_per_intent.values()) / len(nlu_data.number_of_examples_per_intent)
+    low_data_intents = filter(lambda kv: True if kv[1] < avg else False, nlu_data.number_of_examples_per_intent.items())
+
+    print('AVERAGE', avg)
+    print('INTENTS:', list(low_data_intents))
+    print(classification_report)
+    # TODO: The rest of the thing
+    # Intents ranked by size
+    # filtered by fewer than average/median
+    # How to determine frequently confused intents?
+    # Sample from paraphrases by maximising diversity (edit distance vs. vocab expansion)
+
+    telemetry.track_data_suggest()
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:

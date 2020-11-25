@@ -81,6 +81,7 @@ TRAINING_STARTED_EVENT = "Training Started"
 TRAINING_COMPLETED_EVENT = "Training Completed"
 TELEMETRY_DISABLED_EVENT = "Telemetry Disabled"
 TELEMETRY_DATA_SPLIT_EVENT = "Training Data Split"
+TELEMETRY_DATA_SUGGEST_EVENT = "Training Data Suggest"
 TELEMETRY_DATA_VALIDATED_EVENT = "Training Data Validated"
 TELEMETRY_DATA_CONVERTED_EVENT = "Training Data Converted"
 TELEMETRY_TRACKER_EXPORTED_EVENT = "Tracker Exported"
@@ -736,6 +737,12 @@ def track_data_split(fraction: float, data_type: Text) -> None:
         data_type: Is this core, nlu or nlg data
     """
     _track(TELEMETRY_DATA_SPLIT_EVENT, {"fraction": fraction, "type": data_type})
+
+
+@ensure_telemetry_enabled
+def track_data_suggest() -> None:
+    """Track when the training data suggestions are used."""
+    _track(TELEMETRY_DATA_SUGGEST_EVENT)
 
 
 @ensure_telemetry_enabled
