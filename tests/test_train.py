@@ -220,15 +220,14 @@ def test_train_nlu_no_nlu_file_error_message(
     assert "No NLU data given" in captured.out
 
 
-@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_trained_interpreter_passed_to_core_training(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
+    monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_rasa_model: Text
 ):
     # Skip actual NLU training and return trained interpreter path from fixture
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     async def mocked_nlu_training(*_: Any, **__: Any) -> Text:
-        return unpacked_trained_moodbot_path
+        return unpacked_trained_rasa_model
 
     monkeypatch.setattr(
         sys.modules["rasa.train"],
@@ -256,9 +255,8 @@ def test_trained_interpreter_passed_to_core_training(
     assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
 
 
-@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_interpreter_of_old_model_passed_to_core_training(
-    monkeypatch: MonkeyPatch, tmp_path: Path, trained_moodbot_path: Text
+    monkeypatch: MonkeyPatch, tmp_path: Path, trained_rasa_model: Text
 ):
     # NLU isn't retrained
     monkeypatch.setattr(
@@ -269,7 +267,7 @@ def test_interpreter_of_old_model_passed_to_core_training(
 
     # An old model with an interpreter exists
     monkeypatch.setattr(
-        rasa.model, rasa.model.get_latest_model.__name__, lambda _: trained_moodbot_path
+        rasa.model, rasa.model.get_latest_model.__name__, lambda _: trained_rasa_model
     )
 
     # Mock the actual Core training
@@ -379,7 +377,7 @@ def test_model_finetuning(
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
-    trained_moodbot_path: Text,
+    trained_rasa_model: Text,
 ):
     mocked_nlu_training = Mock()
 
@@ -411,7 +409,7 @@ def test_model_finetuning(
         [default_stories_file, default_nlu_data],
         output=output,
         force_training=True,
-        model_to_finetune=trained_moodbot_path,
+        model_to_finetune=trained_rasa_model,
         finetuning_epoch_fraction=1,
     )
 
@@ -425,7 +423,7 @@ def test_model_finetuning_core(
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
-    trained_moodbot_path: Text,
+    trained_rasa_model: Text,
 ):
     mocked_core_training = Mock()
 

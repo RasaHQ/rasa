@@ -9,7 +9,7 @@ import uuid
 
 from sanic.request import Request
 
-from typing import Iterator, Callable
+from typing import Iterator, Callable, Generator
 
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
@@ -183,7 +183,7 @@ def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
 
 
 @pytest.fixture(scope="session")
-async def trained_rasa_model(
+async def _trained_rasa_model(
     trained_async: Callable,
     default_domain_path: Text,
     default_nlu_data: Text,
@@ -196,6 +196,21 @@ async def trained_rasa_model(
     )
 
     return trained_stack_model_path
+
+
+@pytest.fixture()
+async def trained_rasa_model(_trained_rasa_model: Text, tmp_path: Path) -> Text:
+    model_file = tmp_path / "model.tar.gz"
+    shutil.copy(_trained_rasa_model, model_file)
+    return str(model_file)
+
+
+@pytest.fixture(scope="session")
+async def unpacked_trained_rasa_model(
+    _trained_rasa_model: Text,
+) -> Generator[Text, None, None]:
+    with get_model(_trained_rasa_model) as path:
+        yield path
 
 
 @pytest.fixture(scope="session")
