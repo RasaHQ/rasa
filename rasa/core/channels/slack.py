@@ -232,11 +232,17 @@ class SlackInput(InputChannel):
             and (
                 slack_event.get("event", {}).get("type") == "message"
                 or slack_event.get("event", {}).get("type") == "app_mention"
+                or SlackInput._is_init_message(slack_event)
             )
             and slack_event.get("event", {}).get("text")
             and not slack_event.get("event", {}).get("bot_id")
         )
-
+    @staticmethod
+    def _is_init_message(slack_event: Dict[Text, Any]) -> bool:
+        return (
+            slack_event.get("event") is not None
+            and slack_event.get("event", {}).get("type") == "app_home_opened"
+        )
     @staticmethod
     def _sanitize_user_message(
         text: Text, uids_to_remove: Optional[List[Text]]
@@ -516,7 +522,11 @@ class SlackInput(InputChannel):
                         "a user message. Skipping message."
                     )
                     return response.text("Bot message delivered.")
-
+                if self._is_init_message(output):
+                    logger.debug(
+                        "Init message recieved - sending to /init intent"
+                    )
+                    user_message = "/init"
                 if not self._is_supported_channel(output, metadata):
                     logger.warning(
                         f"Received message on unsupported channel: {metadata['out_channel']}"
