@@ -913,7 +913,7 @@ class ComponentBuilder:
 
         Args:
             component_class: The component class.
-            **config: the configuration
+            **config: The model configuration.
 
         Returns:
             The component instance.

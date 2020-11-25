@@ -126,7 +126,7 @@ class MitieIntentClassifier(IntentClassifier):
             model_dir: The directory to store the model to.
 
         Returns:
-            An optional dictionary with any information about the stored model.
+            A dictionary with any information about the stored model.
         """
         if self.classifier:
             file_name = file_name + ".dat"
