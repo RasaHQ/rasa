@@ -122,6 +122,14 @@ Instead of deleting all events, this event can be used to reset the
 trackers state (e.g. ignoring any past user messages &amp; resetting all
 the slots).
 
+#### apply\_to
+
+```python
+ | apply_to(tracker: "DialogueStateTracker") -> None
+```
+
+Resets the tracker and triggers a followup `ActionSessionStart`.
+
 ## UserUtteranceReverted Objects
 
 ```python
