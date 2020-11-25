@@ -184,8 +184,8 @@ def add_finetune_params(
         # If the user user only specifies `--finetune` without an additional path
         const=USE_LATEST_MODEL_FOR_FINE_TUNING,
         help="Fine-tune a previously trained model. If no model path is provided, Rasa "
-        "Open Source will try to fine-tune the latest trained model from the "
-        "default model directory.",
+        "Open Source will try to finetune the latest trained model from the "
+        "model directory specified via '--out'.",
     )
 
     parser.add_argument(
