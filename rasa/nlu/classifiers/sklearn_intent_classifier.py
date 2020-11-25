@@ -223,7 +223,7 @@ class SklearnIntentClassifier(IntentClassifier):
         """Given a bow vector of an input text, predict most probable label.
 
         Args:
-            X: bow vector of input text
+            X: Bow vector of input text.
 
         Returns:
             Tuple of the most probable label and its probability.
