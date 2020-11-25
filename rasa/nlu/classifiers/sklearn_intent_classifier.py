@@ -226,7 +226,7 @@ class SklearnIntentClassifier(IntentClassifier):
             X: Bow vector of input text.
 
         Returns:
-            Tuple of the most probable label and its probability.
+            The most probable label and its probability.
         """
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of
