@@ -72,6 +72,11 @@ def add_subparser(
 
 
 def train(args: argparse.Namespace) -> Optional[Text]:
+    """Run training with the specified `args`.
+
+    Args:
+        args: An object with arguments that will be used for training.
+    """
     import rasa
 
     domain = rasa.cli.utils.get_validated_path(
@@ -169,7 +174,12 @@ def train_nlu(
     )
 
 
-def train_fingerprint(args: argparse.Namespace):
+def train_fingerprint(args: argparse.Namespace) -> None:
+    """Save the fingerprint with the specified `args`.
+
+    Args:
+        args: An object with arguments that will be used when saving the fingerprint.
+    """
     from rasa.core.train import save_fingerprint
 
     args.domain = rasa.cli.utils.get_validated_path(
@@ -181,10 +191,10 @@ def train_fingerprint(args: argparse.Namespace):
 
     rasa.utils.common.run_in_loop(
         save_fingerprint(
-            story_file=story_file,
-            domain=args.domain,
+            story_file_path=story_file,
+            domain_file_path=args.domain,
             output_path=args.out,
-            policy_configs=args.config,
+            policy_config_paths=args.config,
         )
     )
 

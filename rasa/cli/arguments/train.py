@@ -57,7 +57,12 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_persist_nlu_data_param(parser)
 
 
-def set_train_fingerprint_arguments(parser: argparse.ArgumentParser):
+def set_train_fingerprint_arguments(parser: argparse.ArgumentParser) -> None:
+    """Set arguments for `rasa train fingerprint` command.
+
+    Args:
+        parser: An instance of `ArgumentParser`.
+    """
     add_stories_param(parser)
     add_domain_param(parser)
     add_fingerprint_config_param(parser)
@@ -66,7 +71,12 @@ def set_train_fingerprint_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
+def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]) -> None:
+    """Add `--force` argument to a specified `parser`.
+
+    Args:
+        parser: An instance of `ArgumentParser` or `_ActionsContainer`.
+    """
     parser.add_argument(
         "--force",
         action="store_true",
@@ -83,7 +93,14 @@ def add_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsConta
     )
 
 
-def add_core_config_param(parser: argparse.ArgumentParser):
+def add_core_config_param(parser: argparse.ArgumentParser) -> None:
+    """Add `--config` argument to a specified `parser`.
+
+    This command should be used with a parser for `rasa train core`.
+
+    Args:
+        parser: An instance of `ArgumentParser`.
+    """
     parser.add_argument(
         "-c",
         "--config",
@@ -95,7 +112,14 @@ def add_core_config_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_fingerprint_config_param(parser: argparse.ArgumentParser):
+def add_fingerprint_config_param(parser: argparse.ArgumentParser) -> None:
+    """Add `--config` argument to a specified `parser`.
+
+    This command should be used with a parser for `rasa train fingerprint`.
+
+    Args:
+        parser: An instance of `ArgumentParser`.
+    """
     parser.add_argument(
         "-c",
         "--config",
