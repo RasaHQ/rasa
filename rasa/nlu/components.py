@@ -912,7 +912,7 @@ class ComponentBuilder:
         Mainly used to make use of caching when instantiating component classes.
 
         Args:
-            component_class: the component class
+            component_class: The component class.
             **config: the configuration
 
         Returns:
