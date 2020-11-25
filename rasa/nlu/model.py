@@ -214,8 +214,8 @@ class Trainer:
         self,
         data: TrainingData,
         path: Text,
-        persistor: Optional[Persistor] = None,
         fixed_model_name: Text = None,
+        number_of_chunks: int = 5,
         **kwargs: Any,
     ) -> Tuple["Interpreter", Text]:
         """Trains the underlying pipeline using the provided training data."""
@@ -283,8 +283,6 @@ class Trainer:
 
         Metadata(metadata, dir_name).persist(dir_name)
 
-        if persistor is not None:
-            persistor.persist(dir_name, model_name)
         logger.info(
             "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
         )

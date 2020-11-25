@@ -73,7 +73,7 @@ async def train(
 
 async def train_in_chunks(
     domain_file: Union[Domain, Text],
-    training_resource: Union[Text, "TrainingDataImporter"],
+    training_resource: "TrainingDataImporter",
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
@@ -92,6 +92,7 @@ async def train_in_chunks(
         endpoints: the available endpoints
         policy_config: the config to use
         additional_arguments: any additional arguments
+        number_of_chunks: Number of chunks to use
 
     Returns:
         The trained agent.
