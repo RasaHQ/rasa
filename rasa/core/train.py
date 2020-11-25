@@ -72,8 +72,15 @@ async def train(
 
 async def save_fingerprint(
     story_file: Text, domain: Text, output_path: Text = "", policy_configs: List = None,
-):
-    """Create a model fingerprint and save it to the file."""
+) -> None:
+    """Create a model fingerprint and save it to the file.
+
+    Args:
+        story_file:
+        domain:
+        output_path:
+        policy_configs:
+    """
     from rasa import model
 
     policy_configs = policy_configs or []

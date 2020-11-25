@@ -385,6 +385,7 @@ def persist_fingerprint(
     """
 
     path = os.path.join(output_path, filename)
+    rasa.shared.utils.io.create_directory_for_file(path)
     rasa.shared.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 

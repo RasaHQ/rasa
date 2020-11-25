@@ -123,12 +123,18 @@ def _fingerprint(
     }
 
 
-@pytest.mark.parametrize("filename", [None, "test.json"])
-def test_persist_and_load_fingerprint(filename):
+@pytest.mark.parametrize(
+    "output_directory, filename",
+    [
+        (tempfile.mkdtemp(), None),
+        (tempfile.mkdtemp(), "test.json"),
+        (os.path.join(tempfile.mkdtemp(), "test", "models"), "test.json")
+    ]
+)
+def test_persist_and_load_fingerprint(output_directory, filename):
     from rasa.model import persist_fingerprint, fingerprint_from_path
 
     fingerprint = _fingerprint()
-    output_directory = tempfile.mkdtemp()
 
     persist_fingerprint(output_directory, fingerprint)
     actual = fingerprint_from_path(output_directory)
