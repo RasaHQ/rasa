@@ -74,7 +74,7 @@ class SklearnIntentClassifier(IntentClassifier):
         """Transforms a list of strings into numeric label representation.
 
         Args:
-            labels: List of labels to convert to numeric representation
+            labels: List of labels to convert to numeric representation.
 
         Returns:
             The numeric label representation.
