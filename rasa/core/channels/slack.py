@@ -228,14 +228,14 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_user_message(slack_event: Dict[Text, Any]) -> bool:
         return (
-            slack_event.get("event") is not None
+            (slack_event.get("event") is not None
             and (
                 slack_event.get("event", {}).get("type") == "message"
                 or slack_event.get("event", {}).get("type") == "app_mention"
-                or SlackInput._is_init_message(slack_event)
             )
             and slack_event.get("event", {}).get("text")
-            and not slack_event.get("event", {}).get("bot_id")
+            and not slack_event.get("event", {}).get("bot_id"))
+            or SlackInput._is_init_message(slack_event)
         )
     @staticmethod
     def _is_init_message(slack_event: Dict[Text, Any]) -> bool:
@@ -570,6 +570,7 @@ class SlackInput(InputChannel):
             self._is_direct_message(slack_event)
             or self._is_app_mention(slack_event)
             or metadata["out_channel"] == self.slack_channel
+            or self._is_init_message(slack_event)
         )
 
     def get_output_channel(
