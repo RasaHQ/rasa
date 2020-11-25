@@ -12,7 +12,7 @@ def _convert_lookup_tables_to_regex(
 
     Args:
         training_data: The training data.
-        pattern_names: List of pattern names to use. If list is empty or None all
+        pattern_names: List of pattern names to use. If list is empty or `None` all
           patterns will be used.
 
     Returns:
