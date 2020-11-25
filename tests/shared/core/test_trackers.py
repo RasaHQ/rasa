@@ -68,10 +68,7 @@ from tests.core.utilities import (
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
-from rasa.shared.nlu.constants import (
-    ACTION_NAME,
-    PREDICTED_CONFIDENCE_KEY,
-)
+from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -501,6 +498,13 @@ def test_traveling_back_in_time(default_domain: Domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
+def test_tracker_init_copy(default_domain: Domain):
+    sender_id = "some-id"
+    tracker = DialogueStateTracker(sender_id, default_domain.slots)
+    tracker_copy = tracker.init_copy()
+    assert tracker.sender_id == tracker_copy.sender_id
+
+
 async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
     trackers = await default_agent.load_data(DEFAULT_STORIES_FILE)
 
@@ -612,7 +616,7 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     tracker_json["events"].insert(
-        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME},
+        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME}
     )
     tracker_json["events"].insert(5, {"event": SessionStarted.type_name})
 
@@ -1153,8 +1157,8 @@ def test_reading_of_trackers_with_legacy_form_validation_events():
     tracker = DialogueStateTracker.from_dict(
         "sender",
         events_as_dict=[
-            {"event": LegacyFormValidation.type_name, "name": None, "validate": True,},
-            {"event": LegacyFormValidation.type_name, "name": None, "validate": False,},
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": True},
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": False},
         ],
     )
 
