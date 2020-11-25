@@ -14,19 +14,13 @@ from rasa.nlu.model import Interpreter
 import rasa.utils.common
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.shared.utils.cli import (
-    print_success,
-    print_warning,
-    print_error,
-    print_color,
-)
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
-
 
 if TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -61,9 +55,8 @@ def train(
         nlu_additional_arguments: Additional training parameters forwarded to training
                                   method of each NLU component.
         loop: Optional EventLoop for running coroutines.
-        model_to_finetune: Optional path to a model which should be finetuned. If this
-            equals `USE_LATEST_MODEL_FOR_FINE_TUNING` the latest model is used for
-            finetuning.
+        model_to_finetune: Optional path to a model which should be finetuned or
+            a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
 
@@ -133,7 +126,7 @@ async def handle_domain_if_not_exists(
     nlu_model_only = await _train_nlu_with_validated_data(
         file_importer, output=output_path, fixed_model_name=fixed_model_name
     )
-    print_warning(
+    rasa.shared.utils.cli.print_warning(
         "Core training was skipped because no valid domain file was found. "
         "Only an NLU-model was created. Please specify a valid domain using "
         "the '--domain' argument or check if the provided domain file exists."
@@ -166,9 +159,8 @@ async def _train_async_internal(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
                                   method of each NLU component.
-        model_to_finetune: Optional path to a model which should be finetuned. If this
-            equals `USE_LATEST_MODEL_FOR_FINE_TUNING` the latest model is used for
-            finetuning.
+        model_to_finetune: Optional path to a model which should be finetuned or
+            a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
 
@@ -185,20 +177,22 @@ async def _train_async_internal(
         )
 
         if old_core_model is None and old_nlu_model is None:
-            print_warning(
+            rasa.shared.utils.cli.print_warning(
                 f"No model for finetuning found. Please make sure to either specify a "
                 f"path to a previous model or to have a finetunable model within the "
                 f"directory '{output_path}'."
             )
     if stories.is_empty() and nlu_data.can_train_nlu_model():
-        print_error(
+        rasa.shared.utils.cli.print_error(
             "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
         return
 
     if stories.is_empty():
-        print_warning("No stories present. Just a Rasa NLU model will be trained.")
+        rasa.shared.utils.cli.print_warning(
+            "No stories present. Just a Rasa NLU model will be trained."
+        )
         return await _train_nlu_with_validated_data(
             file_importer,
             output=output_path,
@@ -210,7 +204,9 @@ async def _train_async_internal(
         )
 
     if nlu_data.can_train_nlu_model():
-        print_warning("No NLU data present. Just a Rasa Core model will be trained.")
+        rasa.shared.utils.cli.print_warning(
+            "No NLU data present. Just a Rasa Core model will be trained."
+        )
         return await _train_core_with_validated_data(
             file_importer,
             output=output_path,
@@ -254,7 +250,7 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
         )
 
-    print_success(
+    rasa.shared.utils.cli.print_success(
         "Nothing changed. You can use the old model stored at '{}'."
         "".format(os.path.abspath(old_model))
     )
@@ -292,7 +288,7 @@ async def _do_training(
         )
         interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
     else:
-        print_color(
+        rasa.shared.utils.cli.print_color(
             "NLU data/configuration did not change. No need to retrain NLU model.",
             color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
@@ -310,7 +306,7 @@ async def _do_training(
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
-        print_color(
+        rasa.shared.utils.cli.print_color(
             "Core stories/configuration did not change. "
             "Only the templates section has been changed. A new model with "
             "the updated templates will be created.",
@@ -318,7 +314,7 @@ async def _do_training(
         )
         await model.update_model_with_new_domain(file_importer, train_path)
     else:
-        print_color(
+        rasa.shared.utils.cli.print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",
             color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
@@ -392,9 +388,8 @@ async def train_core_async(
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
         additional_arguments: Additional training parameters.
-        model_to_finetune: Optional path to a model which should be finetuned. If this
-            equals `USE_LATEST_MODEL_FOR_FINE_TUNING` the latest model is used for
-            finetuning.
+        model_to_finetune: Optional path to a model which should be finetuned or
+            a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
 
@@ -408,7 +403,7 @@ async def train_core_async(
     )
     domain = await file_importer.get_domain()
     if domain.is_empty():
-        print_error(
+        rasa.shared.utils.cli.print_error(
             "Core training was skipped because no valid domain file was found. "
             "Please specify a valid domain using '--domain' argument or check "
             "if the provided domain file exists."
@@ -416,7 +411,7 @@ async def train_core_async(
         return None
 
     if not await file_importer.get_stories():
-        print_error(
+        rasa.shared.utils.cli.print_error(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."
         )
@@ -425,7 +420,7 @@ async def train_core_async(
     if model_to_finetune:
         model_to_finetune = model.get_core_model_for_finetuning(model_to_finetune)
         if model_to_finetune is None:
-            print_warning(
+            rasa.shared.utils.cli.print_warning(
                 f"No model for finetuning found. Please make sure to either specify a "
                 f"path to a previous model or to have a finetunable model within the "
                 f"directory '{output}'."
@@ -463,7 +458,9 @@ async def _train_core_with_validated_data(
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
         # normal (not compare) training
-        print_color("Training Core model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
+        rasa.shared.utils.cli.print_color(
+            "Training Core model...", color=rasa.shared.utils.io.bcolors.OKBLUE
+        )
         domain, config = await asyncio.gather(
             file_importer.get_domain(), file_importer.get_config()
         )
@@ -478,7 +475,7 @@ async def _train_core_with_validated_data(
                 model_to_finetune=core_model_to_finetune,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
-        print_color(
+        rasa.shared.utils.cli.print_color(
             "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
 
@@ -522,9 +519,8 @@ def train_nlu(
         additional_arguments: Additional training parameters which will be passed to
                               the `train` method of each component.
         domain: Path to the optional domain file/Domain object.
-        model_to_finetune: Optional path to a model which should be finetuned. If this
-            equals `USE_LATEST_MODEL_FOR_FINE_TUNING` the latest model is used for
-            finetuning.
+        model_to_finetune: Optional path to a model which should be finetuned or
+            a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
 
@@ -562,7 +558,7 @@ async def _train_nlu_async(
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
     if not nlu_data:
-        print_error(
+        rasa.shared.utils.cli.print_error(
             "No NLU data given. Please provide NLU data in order to train "
             "a Rasa NLU model using the '--nlu' argument."
         )
@@ -575,7 +571,7 @@ async def _train_nlu_async(
 
     training_data = await file_importer.get_nlu_data()
     if training_data.can_train_nlu_model():
-        print_error(
+        rasa.shared.utils.cli.print_error(
             f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
             f"Please verify the data format. "
             f"The NLU model training will be skipped now."
@@ -586,7 +582,7 @@ async def _train_nlu_async(
         model_to_finetune = model.get_nlu_model_for_finetuning(model_to_finetune)
 
         if model_to_finetune is None:
-            print_warning(
+            rasa.shared.utils.cli.print_warning(
                 f"No model for finetuning found. Please make sure to either specify a "
                 f"path to a previous model or to have a finetunable model within the "
                 f"directory '{output}'."
@@ -627,7 +623,9 @@ async def _train_nlu_with_validated_data(
             # Otherwise, create a temp train path and clean it up on exit.
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
         config = await file_importer.get_config()
-        print_color("Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
+        rasa.shared.utils.cli.print_color(
+            "Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE
+        )
         async with telemetry.track_model_training(file_importer, model_type="nlu"):
             await rasa.nlu.train(
                 config,
@@ -639,7 +637,7 @@ async def _train_nlu_with_validated_data(
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
                 **additional_arguments,
             )
-        print_color(
+        rasa.shared.utils.cli.print_color(
             "NLU model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
 
