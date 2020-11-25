@@ -30,7 +30,11 @@ DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
 
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
-DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
+DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
+
+DEFAULT_E2E_STORIES_FILE = "data/test_yaml_stories/stories_e2e.yml"
+
+SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 

@@ -416,7 +416,10 @@ def move_model(source: Text, target: Text) -> bool:
 
 
 def should_retrain(
-    new_fingerprint: Fingerprint, old_model: Text, train_path: Text
+    new_fingerprint: Fingerprint,
+    old_model: Text,
+    train_path: Text,
+    has_e2e_examples: bool,
 ) -> FingerprintComparisonResult:
     """Check which components of a model should be retrained.
 
@@ -450,6 +453,9 @@ def should_retrain(
                 last_fingerprint, new_fingerprint, SECTION_NLG
             ),
         )
+
+        if has_e2e_examples and fingerprint_comparison.should_retrain_nlu():
+            fingerprint_comparison.core = True
 
         core_merge_failed = False
         if not fingerprint_comparison.should_retrain_core():

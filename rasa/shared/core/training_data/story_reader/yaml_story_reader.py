@@ -266,7 +266,7 @@ class YAMLStoryReader(StoryReader):
             )
         elif KEY_USER_MESSAGE in step.keys():
             self._parse_user_message(step)
-        elif KEY_USER_INTENT in step.keys() or KEY_USER_MESSAGE in step.keys():
+        elif KEY_USER_INTENT in step.keys():
             self._parse_labeled_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
@@ -317,9 +317,16 @@ class YAMLStoryReader(StoryReader):
         return UserUttered(None, intent, entities)
 
     def _parse_user_message(self, step: Dict[Text, Any]) -> None:
-        is_end_to_end_utterance = KEY_USER_INTENT not in step
+        has_user_text_and_intent = KEY_USER_INTENT in step
 
-        if is_end_to_end_utterance:
+        if has_user_text_and_intent and not self.use_e2e:
+            rasa.shared.utils.io.raise_warning(
+                f'Story step contains both "{KEY_USER_MESSAGE}" and "{KEY_USER_INTENT}"'
+                f" keys. This can only be used in test stories, not training."
+            )
+            return
+
+        if not has_user_text_and_intent:
             intent = {"name": None}
         else:
             intent_name = self._user_intent_from_step(step)
