@@ -2,6 +2,8 @@ import copy
 import datetime
 import logging
 import os
+from contextlib import ExitStack
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.nlu
@@ -28,6 +30,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
+from utils.common import TempDirectoryPath
 
 logger = logging.getLogger(__name__)
 
@@ -212,21 +215,29 @@ class Trainer:
 
     def train_in_chunks(
         self,
-        data: TrainingData,
-        path: Text,
+        training_data: TrainingData,
+        train_path: Path,
         fixed_model_name: Text = None,
         number_of_chunks: int = 5,
-        **kwargs: Any,
     ) -> Tuple["Interpreter", Text]:
-        """Trains the underlying pipeline using the provided training data."""
+        """Trains the underlying pipeline using the provided training data.
+
+        Args:
+            training_data: The training data.
+            train_path: The training path to use.
+            fixed_model_name: The model name to use.
+            number_of_chunks: The number of chunks to use.
+
+        Returns:
+            The trained interpreter and the path to the persisted model.
+        """
         import tempfile
 
         # TODO do we really need this copy? can we avoid it somehow?
-        training_data = copy.deepcopy(data)
-        training_data.validate()
+        working_training_data = copy.deepcopy(training_data)
+        working_training_data.validate()
 
-        context = kwargs
-
+        context = {}
         for component in self.pipeline:
             updates = component.provide_context()
             if updates:
@@ -235,61 +246,67 @@ class Trainer:
         # Before the training starts: check that all arguments are provided
         if not self.skip_validation:
             components.validate_required_components_from_data(
-                self.pipeline, training_data
+                self.pipeline, working_training_data
             )
 
         metadata = {"language": self.config["language"], "pipeline": []}
 
-        data_chunk_dir = tempfile.mkdtemp()
-        dir_name, model_name = self._create_model_dir(path, fixed_model_name)
+        with ExitStack() as stack:
+            data_chunk_dir = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
-        # perform tokenization & prepare other components for training in chunks
-        for i, component in enumerate(self.pipeline):
-            if isinstance(component, Tokenizer):
-                component.train(training_data, self.config, **context)
-                metadata["pipeline"].append(
-                    self._persist_component(component, dir_name, i)
-                )
-            else:
-                component.prepare_partial_training(training_data)
+            dir_name, model_name = self._create_model_dir(train_path, fixed_model_name)
 
-        training_data_chunks = training_data.divide_into_chunks()
-        number_of_chunks = len(training_data_chunks)
+            # perform tokenization & prepare other components for training in chunks
+            for i, component in enumerate(self.pipeline):
+                if isinstance(component, Tokenizer):
+                    component.train(working_training_data, self.config, **context)
+                    metadata["pipeline"].append(
+                        self._persist_component(component, dir_name, i)
+                    )
+                else:
+                    component.prepare_partial_training(working_training_data)
 
-        # perform featurization
-        for i, data_chunk in enumerate(training_data_chunks):
-            for component in self.pipeline:
+            training_data_chunks = working_training_data.divide_into_chunks(
+                number_of_chunks
+            )
+
+            # perform featurization
+            for i, data_chunk in enumerate(training_data_chunks):
+                for component in self.pipeline:
+                    if isinstance(component, Featurizer):
+                        component.train_chunk(data_chunk, self.config, **context)
+                data_chunk.persist_chunk(data_chunk_dir, f"{i}_chunk.tfrecord")
+
+            # persist featurizers
+            for i, component in enumerate(self.pipeline):
                 if isinstance(component, Featurizer):
-                    component.train_chunk(data_chunk, self.config, **context)
-            data_chunk.persist_chunk(data_chunk_dir, f"{i}_chunk.porto")
+                    metadata["pipeline"].append(
+                        self._persist_component(component, dir_name, i)
+                    )
 
-        # persist featurizers
-        for i, component in enumerate(self.pipeline):
-            if isinstance(component, Featurizer):
-                metadata["pipeline"].append(
-                    self._persist_component(component, dir_name, i)
-                )
+            # TODO training of classifiers probably needs to be adapted
+            for i, component in enumerate(self.pipeline):
+                if isinstance(component, (IntentClassifier, EntityExtractor)):
+                    for j in range(number_of_chunks):
+                        file_path = os.path.join(data_chunk_dir, f"{j}_chunk.tfrecord")
+                        data_chunk = TrainingDataChunk.load_chunk(file_path)
+                        component.train_chunk(data_chunk, self.config, **context)
+                    metadata["pipeline"].append(
+                        self._persist_component(component, dir_name, i)
+                    )
 
-        # TODO training of classifiers probably needs to be adapted
-        for i, component in enumerate(self.pipeline):
-            if isinstance(component, (IntentClassifier, EntityExtractor)):
-                for j in range(number_of_chunks):
-                    file_path = os.path.join(data_chunk_dir, f"{j}_chunk.porto")
-                    data_chunk = TrainingDataChunk.load_chunk(file_path)
-                    component.train_chunk(data_chunk, self.config, **context)
-                metadata["pipeline"].append(
-                    self._persist_component(component, dir_name, i)
-                )
+            Metadata(metadata, dir_name).persist(dir_name)
 
-        Metadata(metadata, dir_name).persist(dir_name)
-
-        logger.info(
-            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
-        )
+            logger.info(
+                "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
+            )
 
         return Interpreter(self.pipeline, context), dir_name
 
-    def _create_model_dir(self, path: Text, fixed_model_name: Text = None):
+    @staticmethod
+    def _create_model_dir(
+        path: Path, fixed_model_name: Text = None
+    ) -> Tuple[Text, Text]:
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
         if fixed_model_name:
@@ -309,7 +326,7 @@ class Trainer:
 
     def persist(
         self,
-        path: Text,
+        path: Path,
         persistor: Optional[Persistor] = None,
         fixed_model_name: Text = None,
         persist_nlu_training_data: bool = False,

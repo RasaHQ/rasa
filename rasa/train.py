@@ -647,10 +647,9 @@ async def _train_nlu_with_validated_data(
                 await rasa.nlu.train_in_chunks(
                     config,
                     file_importer,
-                    _train_path,
+                    train_path=_train_path,
                     fixed_model_name="nlu",
                     number_of_chunks=number_of_chunks,
-                    **additional_arguments,
                 )
             else:
                 await rasa.nlu.train(

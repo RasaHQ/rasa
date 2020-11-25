@@ -1,5 +1,6 @@
 import logging
 import typing
+from pathlib import Path
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
 import rasa.shared.utils.common
@@ -124,29 +125,32 @@ async def train(
 
 
 async def train_in_chunks(
-    nlu_config: Union[Text, Dict, RasaNLUModelConfig],
-    data: "TrainingDataImporter",
-    path: Optional[Text] = None,
+    model_config: Union[Text, Dict, RasaNLUModelConfig],
+    training_data_importer: "TrainingDataImporter",
+    train_path: Optional[Path] = None,
     fixed_model_name: Optional[Text] = None,
-    component_builder: Optional[ComponentBuilder] = None,
-    training_data_endpoint: Optional[EndpointConfig] = None,
     number_of_chunks: int = 5,
-    **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
-    """Loads the trainer and the data and runs the training of the model in chunks."""
+    """Loads the trainer and the data and runs the training of the model in chunks.
+
+     Args:
+         model_config: The model configuration.
+         training_data_importer: The training data importer.
+         train_path: The training path.
+         fixed_model_name: The fixed model name.
+         number_of_chunks: The number of chunks to use.
+
+     Returns:
+        The trainer, the trained interpreter, and the path to the persisted model.
+    """
     from rasa.shared.importers.importer import TrainingDataImporter
 
-    if not isinstance(nlu_config, RasaNLUModelConfig):
-        nlu_config = config.load(nlu_config)
+    if not isinstance(model_config, RasaNLUModelConfig):
+        model_config = config.load(model_config)
 
-    trainer = Trainer(nlu_config, component_builder)
-    if training_data_endpoint is not None:
-        training_data = await load_data_from_endpoint(
-            training_data_endpoint, nlu_config.language
-        )
-    else:
-        training_data = await data.get_nlu_data(nlu_config.language)
+    trainer = Trainer(model_config)
 
+    training_data = await training_data_importer.get_nlu_data(model_config.language)
     training_data.print_stats()
     if training_data.entity_roles_groups_used():
         rasa.shared.utils.common.mark_as_experimental_feature(
@@ -154,7 +158,7 @@ async def train_in_chunks(
         )
 
     interpreter, persisted_path = trainer.train_in_chunks(
-        training_data, path, persistor, fixed_model_name, **kwargs
+        training_data, train_path, fixed_model_name, number_of_chunks
     )
 
     return trainer, interpreter, persisted_path
