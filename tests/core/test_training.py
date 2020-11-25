@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List, Text
 from unittest.mock import Mock
 
+import asyncio
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -9,7 +10,7 @@ from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HI
 from rasa.shared.core.domain import Domain
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.core.train import train
+from rasa.core.train import train, save_fingerprint
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
 
@@ -202,3 +203,34 @@ async def test_trained_interpreter_passed_to_policies(
     assert policy_train.call_count == 1
     _, _, kwargs = policy_train.mock_calls[0]
     assert kwargs["interpreter"] == interpreter
+
+
+@pytest.mark.parametrize("config_file_names, fingerprint_file_names", [
+    (["config.yml"], ["fingerprint.json"]),
+    (["config.yml", "config2.yml"], ["config_fingerprint.json", "config2_fingerprint.json"]),
+    ([], [])
+])
+async def test_save_fingerprint(
+    tmp_path: Path, monkeypatch: MonkeyPatch, config_file_names: List[Text], fingerprint_file_names: List[Text],
+):
+    import rasa.model
+    from rasa.shared.importers.importer import TrainingDataImporter
+
+    monkeypatch.setattr(TrainingDataImporter, "load_core_importer_from_config", asyncio.coroutine(Mock()))
+    monkeypatch.setattr(rasa.model, "model_fingerprint", asyncio.coroutine(Mock()))
+
+    persist_fingerprint = Mock()
+    monkeypatch.setattr(rasa.model, "persist_fingerprint", persist_fingerprint)
+
+    await save_fingerprint(
+        DEFAULT_STORIES_FILE,
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        str(tmp_path),
+        config_file_names
+    )
+
+    assert persist_fingerprint.call_count == len(config_file_names)
+    for i in range(len(config_file_names)):
+        _, args, kwargs = persist_fingerprint.mock_calls[i]
+        assert args[2] == fingerprint_file_names[i]
+
