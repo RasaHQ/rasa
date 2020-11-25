@@ -237,7 +237,7 @@ We host the site on netlify. On master branch builds (see `.github/workflows/doc
 the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 ## Releases
-### Release Timeline for minor releases
+### Release Timeline for Minor Releases
 **For Rasa Open Source, we usually commit to time-based releases, specifically on a monthly basis.** 
 This means that we commit beforehand to releasing a specific version of Rasa Open Source on a specific day, 
 and we cannot be 100% sure what will go in a release, because certain features may not be ready. 
