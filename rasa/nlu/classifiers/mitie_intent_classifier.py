@@ -12,6 +12,7 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaTrainChunkException
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -49,7 +50,7 @@ class MitieIntentClassifier(IntentClassifier):
 
         See parent class for more information.
         """
-        raise Exception(
+        raise RasaTrainChunkException(
             "This method should neither be called nor implemented in our code."
         )
 

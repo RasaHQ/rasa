@@ -29,6 +29,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
+from rasa.shared.exceptions import RasaTrainChunkException
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         See parent class for more information.
         """
-        raise Exception(
+        raise RasaTrainChunkException(
             "This method should neither be called nor implemented in our code."
         )
 

@@ -13,6 +13,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaTrainChunkException
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         See parent class for more information.
         """
-        raise Exception(
+        raise RasaTrainChunkException(
             "This method should neither be called nor implemented in our code."
         )
 

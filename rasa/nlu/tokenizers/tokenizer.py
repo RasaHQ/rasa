@@ -14,6 +14,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
     ACTION_NAME,
 )
+from rasa.shared.exceptions import RasaTrainChunkException
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class Tokenizer(Component):
 
         See parent class for more information.
         """
-        raise Exception(
+        raise RasaTrainChunkException(
             "This method should neither be called nor implemented in our code."
         )
 

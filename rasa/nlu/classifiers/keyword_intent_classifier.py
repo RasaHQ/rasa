@@ -11,6 +11,7 @@ import rasa.shared.utils.io
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaTrainChunkException
 from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ class KeywordIntentClassifier(IntentClassifier):
 
         See parent class for more information.
         """
-        raise Exception(
+        raise RasaTrainChunkException(
             "This method should neither be called nor implemented in our code."
         )
 
