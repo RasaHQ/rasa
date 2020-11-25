@@ -317,6 +317,39 @@ def test_train_nlu_persist_nlu_data(
     )
 
 
+def test_train_in_chunks(run_in_simple_project: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    run_in_simple_project(
+        "train",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--data",
+        "data",
+        "--out",
+        "train_models",
+        "--fixed-model-name",
+        "test-model",
+        "--in-chunks",
+        "--number-of-chunks",
+        "2",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is None
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
+
 def test_train_help(run):
     output = run("train", "--help")
 
