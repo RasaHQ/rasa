@@ -561,9 +561,12 @@ def _load_core_model(unpacked_model: Text) -> Optional["Agent"]:
     from rasa.core.agent import Agent
 
     try:
-        return Agent.load(unpacked_model)
-    except ModelNotFound:
-        # Something went wrong when loading Core model. Apparently it's not there.
+        agent = Agent.load(unpacked_model)
+        # Agent might be empty if no underlying Core model was found.
+        if agent.domain is None or agent.policy_ensemble is None:
+            return None
+    except Exception:
+        # Anything might go wrong. In that case we skip model finetuning.
         return None
 
 

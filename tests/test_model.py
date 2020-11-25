@@ -8,7 +8,9 @@ from typing import Text, Optional, Any
 from unittest.mock import Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.agent import Agent
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.constants import (
@@ -418,3 +420,44 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
 
     assert actual.is_empty()
+
+
+async def test_get_models_for_finetuning_if_old_only_contains_nlu(
+    trained_nlu_model: Text,
+):
+    core, nlu = model.get_models_for_finetuning(trained_nlu_model)
+
+    assert core is None
+    assert nlu
+
+
+async def test_get_models_for_finetuning_if_agent_raises(
+    trained_rasa_model: Text, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setattr(Agent, Agent.load.__name__, Mock(side_effect=Exception()))
+    core, nlu = model.get_models_for_finetuning(trained_rasa_model)
+
+    assert core is None
+    assert nlu
+
+
+async def test_get_models_for_finetuning_if_old_only_contains_core(
+    trained_core_model: Text,
+):
+    core, nlu = model.get_models_for_finetuning(trained_core_model)
+
+    assert core
+    assert nlu is None
+
+
+async def test_get_models_for_finetuning_with_empty_model_file(tmp_path: Path):
+    training_dir = tmp_path / "training"
+    training_dir.mkdir()
+
+    model_file = tmp_path / "model.tar.gz"
+
+    model.create_package_rasa(str(training_dir), str(model_file))
+    core, nlu = model.get_models_for_finetuning(model_file)
+
+    assert core is None
+    assert nlu is None
