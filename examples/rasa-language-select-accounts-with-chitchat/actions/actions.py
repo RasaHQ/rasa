@@ -78,8 +78,7 @@ class ActionLanguageSelect(Action):
         lang = language_detection.predict_lang(input_text)
         response = multilingual_response.predict_response(intent=intent, lang=lang)
         if response:
-            logger.info('Multilingual Response for the intent {1}, '
-                        'in language {2}: {0}'.format(response, intent, lang))
+            logger.info('Multilingual Response:{0}'.format(response))
             dispatcher.utter_message(text=response)
         else:
             logger.info('There is no multilingual response for intent:{0}, '

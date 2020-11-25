@@ -31,8 +31,8 @@ class LanguageIdentification(object):
 
 class MultilingualResponse(object):
     def __init__(self):
-        # with open("multilingual_response.json") as fp:
-        with open("account_mling.json") as fp:
+        # with open("account_mling.json") as fp:
+        with open("multilingual_response.json") as fp:
             self.multilingual_response = json.load(fp)
 
     @staticmethod

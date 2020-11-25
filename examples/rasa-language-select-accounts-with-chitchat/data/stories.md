@@ -1,3 +1,13 @@
+## Hello
+* greet
+  - utter_greet
+## Bye
+* goodbye
+  - utter_goodbye
+## Chitchat
+* chitchat
+  - utter_chitchat
+
 ## NLU Fallback
 * nlu_fallback
   - utter_please_rephrase
