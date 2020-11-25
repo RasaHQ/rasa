@@ -71,7 +71,9 @@ def set_train_fingerprint_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]) -> None:
+def add_force_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+) -> None:
     """Add `--force` argument to a specified `parser`.
 
     Args:
