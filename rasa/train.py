@@ -227,7 +227,11 @@ async def _train_async_internal(
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if fingerprint_comparison.is_training_required():
-        async with telemetry.track_model_training(file_importer, model_type="rasa"):
+        async with telemetry.track_model_training(
+            file_importer,
+            model_type="rasa",
+            is_finetuning=bool(old_core_model or old_nlu_model),
+        ):
             await _do_training(
                 file_importer,
                 output_path=output_path,
@@ -464,7 +468,11 @@ async def _train_core_with_validated_data(
         domain, config = await asyncio.gather(
             file_importer.get_domain(), file_importer.get_config()
         )
-        async with telemetry.track_model_training(file_importer, model_type="core"):
+        async with telemetry.track_model_training(
+            file_importer,
+            model_type="core",
+            is_finetuning=core_model_to_finetune is not None,
+        ):
             await rasa.core.train(
                 domain_file=domain,
                 training_resource=file_importer,
@@ -626,7 +634,11 @@ async def _train_nlu_with_validated_data(
         rasa.shared.utils.cli.print_color(
             "Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
-        async with telemetry.track_model_training(file_importer, model_type="nlu"):
+        async with telemetry.track_model_training(
+            file_importer,
+            model_type="nlu",
+            is_finetuning=nlu_model_to_finetune is not None,
+        ):
             await rasa.nlu.train(
                 config,
                 file_importer,
