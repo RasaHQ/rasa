@@ -13,6 +13,7 @@ from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 import rasa.utils.common
+import rasa.shared.utils.io
 from rasa.utils.common import TempDirectoryPath
 
 from rasa.shared.utils.cli import (
@@ -489,16 +490,23 @@ async def _train_core_with_validated_data(
                     number_of_chunks=number_of_chunks,
                 )
             else:
-                await rasa.core.train(
-                    domain_file=domain,
-                    training_resource=file_importer,
-                    output_path=os.path.join(
-                        _train_path, DEFAULT_CORE_SUBDIRECTORY_NAME
-                    ),
-                    policy_config=config,
-                    additional_arguments=additional_arguments,
-                    interpreter=interpreter,
-                )
+                try:
+                    await rasa.core.train(
+                        domain_file=domain,
+                        training_resource=file_importer,
+                        output_path=os.path.join(
+                            _train_path, DEFAULT_CORE_SUBDIRECTORY_NAME
+                        ),
+                        policy_config=config,
+                        additional_arguments=additional_arguments,
+                        interpreter=interpreter,
+                    )
+                except MemoryError:
+                    rasa.shared.utils.io.raise_warning(
+                        "Training failed due to an out of memory error. Consider "
+                        "using the flag '--in-chunks' for training.",
+                        category=UserWarning,
+                    )
         print_color(
             "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
@@ -649,14 +657,21 @@ async def _train_nlu_with_validated_data(
                     number_of_chunks=number_of_chunks,
                 )
             else:
-                await rasa.nlu.train(
-                    config,
-                    file_importer,
-                    _train_path,
-                    fixed_model_name="nlu",
-                    persist_nlu_training_data=persist_nlu_training_data,
-                    **additional_arguments,
-                )
+                try:
+                    await rasa.nlu.train(
+                        config,
+                        file_importer,
+                        _train_path,
+                        fixed_model_name="nlu",
+                        persist_nlu_training_data=persist_nlu_training_data,
+                        **additional_arguments,
+                    )
+                except MemoryError:
+                    rasa.shared.utils.io.raise_warning(
+                        "Training failed due to an out of memory error. Consider "
+                        "using the flag '--in-chunks' for training.",
+                        category=UserWarning,
+                    )
 
         print_color(
             "NLU model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
