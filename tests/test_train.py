@@ -443,7 +443,7 @@ def test_model_finetuning_core(
         default_stack_config,
         default_stories_file,
         output=output,
-        model_to_finetune=trained_moodbot_path,
+        model_to_finetune=trained_rasa_model,
         finetuning_epoch_fraction=1,
     )
 
@@ -456,7 +456,7 @@ def test_model_finetuning_nlu(
     default_domain_path: Text,
     default_nlu_data: Text,
     default_stack_config: Text,
-    trained_moodbot_path: Text,
+    trained_rasa_model: Text,
 ):
     mocked_nlu_training = Mock()
 
@@ -475,7 +475,7 @@ def test_model_finetuning_nlu(
         default_stack_config,
         default_nlu_data,
         output=output,
-        model_to_finetune=trained_moodbot_path,
+        model_to_finetune=trained_rasa_model,
         finetuning_epoch_fraction=1,
     )
 
@@ -488,7 +488,7 @@ def test_model_finetuning_with_latest_model(
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
-    trained_moodbot_path: Text,
+    trained_rasa_model: Text,
 ):
     mocked_nlu_training = Mock()
 
@@ -505,6 +505,7 @@ def test_model_finetuning_with_latest_model(
 
     async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
         assert isinstance(kwargs["model_to_finetune"], Agent)
+
         mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
@@ -515,7 +516,7 @@ def test_model_finetuning_with_latest_model(
         default_domain_path,
         default_stack_config,
         [default_stories_file, default_nlu_data],
-        output=str(Path(trained_moodbot_path).parent),
+        output=str(Path(trained_rasa_model).parent),
         force_training=True,
         model_to_finetune=USE_LATEST_MODEL_FOR_FINE_TUNING,
         finetuning_epoch_fraction=1,
@@ -530,7 +531,7 @@ def test_model_finetuning_with_latest_model_nlu(
     default_domain_path: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
-    trained_moodbot_path: Text,
+    trained_rasa_model: Text,
 ):
     mocked_nlu_training = Mock()
 
@@ -547,7 +548,7 @@ def test_model_finetuning_with_latest_model_nlu(
         default_stack_config,
         default_nlu_data,
         domain=default_domain_path,
-        output=str(Path(trained_moodbot_path).parent),
+        output=str(Path(trained_rasa_model).parent),
         model_to_finetune=USE_LATEST_MODEL_FOR_FINE_TUNING,
         finetuning_epoch_fraction=1,
     )
@@ -560,7 +561,7 @@ def test_model_finetuning_with_latest_model_core(
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
-    trained_moodbot_path: Text,
+    trained_rasa_model: Text,
 ):
     mocked_core_training = Mock()
 
@@ -576,7 +577,7 @@ def test_model_finetuning_with_latest_model_core(
         default_domain_path,
         default_stack_config,
         default_stories_file,
-        output=str(Path(trained_moodbot_path).parent),
+        output=str(Path(trained_rasa_model).parent),
         model_to_finetune=USE_LATEST_MODEL_FOR_FINE_TUNING,
         finetuning_epoch_fraction=1,
     )
@@ -600,6 +601,7 @@ def test_model_finetuning_with_invalid_model(
     mocked_nlu_training = Mock()
 
     async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        assert kwargs["model_to_finetune"] is None
         mocked_nlu_training(*args, **kwargs)
         return ""
 
@@ -610,6 +612,7 @@ def test_model_finetuning_with_invalid_model(
     mocked_core_training = Mock()
 
     async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        assert kwargs["model_to_finetune"] is None
         mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
@@ -629,8 +632,8 @@ def test_model_finetuning_with_invalid_model(
         finetuning_epoch_fraction=1,
     )
 
-    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
-    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
+    mocked_core_training.assert_called_once()
+    mocked_nlu_training.assert_called_once()
 
     assert "No model for finetuning found" in capsys.readouterr().out
 
@@ -650,6 +653,7 @@ def test_model_finetuning_with_invalid_model_core(
     mocked_core_training = Mock()
 
     async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
+        assert kwargs["model_to_finetune"] is None
         mocked_core_training(*args, **kwargs)
 
     monkeypatch.setattr(
@@ -668,7 +672,7 @@ def test_model_finetuning_with_invalid_model_core(
         finetuning_epoch_fraction=1,
     )
 
-    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
+    mocked_core_training.assert_called_once()
 
     assert "No model for finetuning found" in capsys.readouterr().out
 
@@ -688,6 +692,7 @@ def test_model_finetuning_with_invalid_model_nlu(
     mocked_nlu_training = Mock()
 
     async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
+        assert kwargs["model_to_finetune"] is None
         mocked_nlu_training(*args, **kwargs)
         return ""
 
@@ -707,6 +712,6 @@ def test_model_finetuning_with_invalid_model_nlu(
         finetuning_epoch_fraction=1,
     )
 
-    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
+    mocked_nlu_training.assert_called_once()
 
     assert "No model for finetuning found" in capsys.readouterr().out

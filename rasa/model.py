@@ -537,6 +537,7 @@ def get_models_for_finetuning(
         Loaded Core model and NLU model.
     """
     from rasa.core.agent import Agent
+    from rasa.core.interpreter import RasaNLUInterpreter
     from rasa.nlu.model import Interpreter
 
     if previous_model_file == USE_LATEST_MODEL_FOR_FINE_TUNING:
@@ -550,12 +551,18 @@ def get_models_for_finetuning(
         try:
             core = Agent.load(unpacked)
         except ModelNotFound:
+            # Something went wrong when loading Core model. Apparently it's not there.
             pass
+
+        # Try using loaded `interpreter` from `Agent` to avoid loading it twice.
+        if isinstance(core.interpreter, RasaNLUInterpreter):
+            return core, core.interpreter.interpreter
 
         try:
             _, nlu_directory = get_model_subdirectories(unpacked)
             nlu = Interpreter.load(nlu_directory)
         except Exception:
+            # Anything might go wrong. In that case we skip model finetuning.
             pass
 
     return core, nlu
