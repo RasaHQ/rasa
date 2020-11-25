@@ -325,7 +325,8 @@ def test_train_help(run):
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
-                  [--force]
+                  [--force] [--in-chunks]
+                  [--number-of-chunks NUMBER_OF_CHUNKS]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -341,7 +342,8 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [-d DOMAIN]
                       [--out OUT] [-u NLU] [--num-threads NUM_THREADS]
                       [--fixed-model-name FIXED_MODEL_NAME]
-                      [--persist-nlu-data]"""
+                      [--persist-nlu-data] [--in-chunks]
+                      [--number-of-chunks NUMBER_OF_CHUNKS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -358,7 +360,8 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
-                       [--runs RUNS]"""
+                       [--runs RUNS] [--in-chunks]
+                       [--number-of-chunks NUMBER_OF_CHUNKS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

@@ -126,7 +126,6 @@ async def train_async(
         if domain.is_empty():
             return await _handle_domain_if_not_exists(
                 file_importer,
-                train_path=train_path,
                 output_path=output_path,
                 fixed_model_name=fixed_model_name,
                 persist_nlu_training_data=persist_nlu_training_data,
@@ -152,7 +151,6 @@ async def train_async(
 async def _handle_domain_if_not_exists(
     file_importer: TrainingDataImporter,
     output_path: Text,
-    train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
@@ -163,13 +161,13 @@ async def _handle_domain_if_not_exists(
     nlu_model_only = await _train_nlu_with_validated_data(
         file_importer,
         output=output_path,
-        train_path=train_path,
         fixed_model_name=fixed_model_name,
         persist_nlu_training_data=persist_nlu_training_data,
         additional_arguments=additional_arguments,
         training_in_chunks=training_in_chunks,
         number_of_chunks=number_of_chunks,
     )
+
     print_warning(
         "Core training was skipped because no valid domain file was found. "
         "Only an NLU-model was created. Please specify a valid domain using "
