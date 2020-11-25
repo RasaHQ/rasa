@@ -563,11 +563,13 @@ def _load_core_model(unpacked_model: Text) -> Optional["Agent"]:
     try:
         agent = Agent.load(unpacked_model)
         # Agent might be empty if no underlying Core model was found.
-        if agent.domain is None or agent.policy_ensemble is None:
-            return None
+        if agent.domain is not None and agent.policy_ensemble is not None:
+            return agent
     except Exception:
         # Anything might go wrong. In that case we skip model finetuning.
-        return None
+        pass
+
+    return None
 
 
 def _load_nlu_model(unpacked_model: Text) -> Optional["Interpreter"]:
@@ -578,7 +580,9 @@ def _load_nlu_model(unpacked_model: Text) -> Optional["Interpreter"]:
         return Interpreter.load(nlu_directory)
     except Exception:
         # Anything might go wrong. In that case we skip model finetuning.
-        return None
+        pass
+
+    return None
 
 
 def get_core_model_for_finetuning(
