@@ -215,7 +215,7 @@ class SklearnIntentClassifier(IntentClassifier):
             X: bow of input text
 
         Returns:
-            Vector of probabilities containing one entry for each label
+            Vector of probabilities containing one entry for each label.
         """
         return self.classifier.predict_proba(X)
 
