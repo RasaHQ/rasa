@@ -217,7 +217,7 @@ class Trainer:
         self,
         training_data: TrainingData,
         train_path: Path,
-        fixed_model_name: Text = None,
+        fixed_model_name: Optional[Text] = None,
         number_of_chunks: int = 5,
     ) -> Tuple["Interpreter", Text]:
         """Trains the underlying pipeline using the provided training data.
@@ -305,7 +305,7 @@ class Trainer:
 
     @staticmethod
     def _create_model_dir(
-        path: Path, fixed_model_name: Text = None
+        path: Path, fixed_model_name: Optional[Text] = None
     ) -> Tuple[Text, Text]:
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 

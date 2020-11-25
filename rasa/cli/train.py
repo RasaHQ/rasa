@@ -69,7 +69,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
 
-    config = get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
+    config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
         rasa.cli.utils.get_validated_path(
@@ -112,7 +112,7 @@ def train_core(
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
+        config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
 
         return train_core(
             domain=args.domain,
@@ -138,7 +138,7 @@ def train_nlu(
 
     output = train_path or args.out
 
-    config = get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
+    config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
     nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
@@ -180,7 +180,7 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
     return arguments
 
 
-def get_valid_config(
+def _get_valid_config(
     config: Optional[Text],
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,

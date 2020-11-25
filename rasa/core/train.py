@@ -4,6 +4,7 @@ import logging
 import os
 import tempfile
 import typing
+from pathlib import Path
 from typing import Dict, Optional, Text, Union, List
 
 import rasa.shared.utils.io
@@ -74,7 +75,7 @@ async def train(
 async def train_in_chunks(
     domain_file: Union[Domain, Text],
     training_resource: "TrainingDataImporter",
-    output_path: Text,
+    output_path: Path,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
     policy_config: Optional[Union[Text, Dict]] = None,
