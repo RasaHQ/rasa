@@ -80,6 +80,10 @@ these, `rasa train` will fall back to one of these commands by default.
 The name of the model by default is `<timestamp>.tar.gz`. If you want to name your model differently,
 you can specify the name using the `--fixed-model-name` flag.
 
+Use `rasa train finetune` if the model should not be trained from scratch but if you
+want to train a new model by improving the latest model in the `models/` directory.
+If have a specific model which you want to improve you may specify the path to this by
+running `rasa train finetune <path to model to finetune>`.
 The following arguments can be used to configure the training process:
 
 ```text [rasa train --help]
