@@ -16,7 +16,7 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
-from rasa.shared.core.events import Event, ActionExecuted
+from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common
 import rasa.utils.common
