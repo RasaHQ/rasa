@@ -108,12 +108,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         else:
             hf_transformers_loaded = "HFTransformersNLP" in model_config.component_names
 
-        component = cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
-
-        if domain:
-            component.extract_data_from_domain(domain)
-
-        return component
+        return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
 
     @classmethod
     def load(

@@ -525,9 +525,6 @@ class Component(metaclass=ComponentMetaclass):
 
         component = cls(component_config)
 
-        if domain:
-            component.extract_data_from_domain(domain)
-
         return component
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
@@ -764,17 +761,6 @@ class Component(metaclass=ComponentMetaclass):
             return language in supported_language_list
         else:
             return language not in not_supported_language_list
-
-    def extract_data_from_domain(self, domain: Domain) -> None:
-        """Extracts any information from the given domain.
-
-        For example, in case the component needs to know all intents or entities,
-        it can extract this kind of information directly from the domain.
-
-        Args:
-            domain: The domain.
-        """
-        pass
 
 
 C = typing.TypeVar("C", bound=Component)

@@ -57,12 +57,7 @@ class MitieNLP(Component):
         extractor = mitie.total_word_feature_extractor(model_file)
         cls.ensure_proper_language_model(extractor)
 
-        component = cls(component_config, extractor)
-
-        if domain:
-            component.extract_data_from_domain(domain)
-
-        return component
+        return cls(component_config, extractor)
 
     @classmethod
     def cache_key(

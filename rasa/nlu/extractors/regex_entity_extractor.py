@@ -1,10 +1,12 @@
 import logging
 import os
 import re
+import typing
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
+from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -19,6 +21,10 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.shared.core.domain import Domain
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.components import Component
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,13 +53,37 @@ class RegexEntityExtractor(EntityExtractor):
         self.patterns = patterns or []
         self.entity_names = None
 
-    def extract_data_from_domain(self, domain: Domain) -> None:
-        """Extract the names of all entities from the given domain.
+    @classmethod
+    def create(
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
+    ) -> "Component":
+        """Creates this component (e.g. before a training is started).
+
+        Method can access all configuration parameters.
 
         Args:
-            domain: The domain.
+            component_config: The components configuration parameters.
+            model_config: The model configuration parameters.
+            domain: The domain the model uses.
+
+        Returns:
+            The created component.
         """
-        self.entity_names = domain.entities
+        # Check language supporting
+        language = model_config.language
+        if not cls.can_handle_language(language):
+            # check failed
+            raise UnsupportedLanguageError(cls.name, language)
+
+        component = cls(component_config)
+
+        if domain is not None:
+            component.entity_names = domain.entities
+
+        return component
 
     def train(
         self,

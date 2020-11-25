@@ -82,12 +82,7 @@ class SpacyNLP(Component):
         nlp = cls.load_model(spacy_model_name)
 
         cls.ensure_proper_language_model(nlp)
-        component = cls(component_config, nlp)
-
-        if domain:
-            component.extract_data_from_domain(domain)
-
-        return component
+        return cls(component_config, nlp)
 
     @classmethod
     def cache_key(
