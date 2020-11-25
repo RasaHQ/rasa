@@ -292,9 +292,9 @@ for details.
 ### Memoization Policy
 
 The `MemoizationPolicy` remembers the stories from your
-training data. It checks if the current conversation matches a story
-in the training data. If so, it will predict the next action from the matching
-story of your training data with a confidence of `1.0`. If no matching conversation
+training data. It checks if the current conversation matches the stories in your
+`stories.yml` file. If so, it will predict the next action from the matching
+stories of your training data with a confidence of `1.0`. If no matching conversation
 is found, the policy predicts `None` with confidence `0.0`.
 
 When looking for a match in your training data, the policy will take the last
