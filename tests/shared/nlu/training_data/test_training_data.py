@@ -16,7 +16,7 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
@@ -24,6 +24,7 @@ from rasa.shared.nlu.training_data.util import (
     intent_response_key_to_template_key,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaException
 
 import rasa.shared.data
 
@@ -639,7 +640,7 @@ def test_fingerprint_is_same_when_loading_data_again():
 @pytest.mark.parametrize(
     "intent_frequencies, num_chunks", [([100, 82, 63, 43], 8), ([15, 12, 10, 7], 4)]
 )
-def test_divide_training_data_chunks(intent_frequencies, num_chunks):
+def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: int):
 
     # Create the initial training data
     all_messages = []
@@ -681,3 +682,28 @@ def test_divide_training_data_chunks(intent_frequencies, num_chunks):
                 or num_examples == ideal_size - 1
             )
         assert sum(num_examples_across_chunks) == intent_count
+
+
+def test_training_data_chunk_exception():
+
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(lookup_tables=[{"test_key": "test_val"}])
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(entity_synonyms={"test_key": "test_val"})
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(regex_features=[{"test_key": "test_val"}])
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )

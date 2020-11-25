@@ -26,6 +26,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
+from rasa.shared.exceptions import RasaException
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -692,19 +693,15 @@ class TrainingData:
             A list of all training data chunks.
         """
         all_chunks = []
-        data_to_chunk = copy.deepcopy(self)
 
-        for chunk_index in range(num_chunks):
+        data_to_chunk = self
+
+        for chunk_index in range(num_chunks - 1):
 
             chunk_size_fraction = 1 / (num_chunks - chunk_index)
             current_chunk, leftover_examples = data_to_chunk.split_nlu_examples(
                 1 - chunk_size_fraction
             )
-
-            if chunk_index == num_chunks - 1:
-                # There can be a small number of leftover examples
-                # during the last bit of chunking because of rounding errors.
-                current_chunk.extend(leftover_examples)
 
             # update the data to chunk in next iteration
             data_to_chunk = TrainingData(
@@ -721,11 +718,42 @@ class TrainingData:
                     ),
                 )
             )
+
+        # The last chunk is composed of whatever is left
+        all_chunks.append(
+            TrainingDataChunk(
+                data_to_chunk.training_examples, responses=data_to_chunk.responses
+            )
+        )
         return all_chunks
 
 
 class TrainingDataChunk(TrainingData):
-    """Holds a portion of the complete TrainingData."""
+    """Holds a portion of the complete TrainingData.
+
+    It can only hold training_examples and responses.
+    Setting entity synonyms, regex features and lookup
+    tables will result in an exception being raised.
+    """
+
+    def __init__(
+        self,
+        training_examples: Optional[List[Message]] = None,
+        entity_synonyms: Optional[Dict[Text, Text]] = None,
+        regex_features: Optional[List[Dict[Text, Text]]] = None,
+        lookup_tables: Optional[List[Dict[Text, Any]]] = None,
+        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
+    ) -> None:
+
+        if entity_synonyms or regex_features or lookup_tables:
+            raise RasaException(
+                f"{self.__class__} cannot have entity synonyms, "
+                f"regex features or lookup tables set. "
+                f"This is to reduce the memory overhead."
+            )
+        super().__init__(
+            training_examples, entity_synonyms, regex_features, lookup_tables, responses
+        )
 
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
         """Stores the chunk as TFRecord file to disk.
