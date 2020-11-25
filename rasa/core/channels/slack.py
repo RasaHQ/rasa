@@ -228,21 +228,22 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_user_message(slack_event: Dict[Text, Any]) -> bool:
         return (
-            (slack_event.get("event") is not None
+            slack_event.get("event") is not None
             and (
                 slack_event.get("event", {}).get("type") == "message"
                 or slack_event.get("event", {}).get("type") == "app_mention"
             )
             and slack_event.get("event", {}).get("text")
-            and not slack_event.get("event", {}).get("bot_id"))
-            or SlackInput._is_init_message(slack_event)
-        )
+            and not slack_event.get("event", {}).get("bot_id")
+        ) or SlackInput._is_init_message(slack_event)
+
     @staticmethod
     def _is_init_message(slack_event: Dict[Text, Any]) -> bool:
         return (
             slack_event.get("event") is not None
             and slack_event.get("event", {}).get("type") == "app_home_opened"
         )
+
     @staticmethod
     def _sanitize_user_message(
         text: Text, uids_to_remove: Optional[List[Text]]
@@ -523,9 +524,7 @@ class SlackInput(InputChannel):
                     )
                     return response.text("Bot message delivered.")
                 if self._is_init_message(output):
-                    logger.debug(
-                        "Init message recieved - sending to /init intent"
-                    )
+                    logger.debug("Init message recieved - sending to /init intent")
                     user_message = "/init"
                 if not self._is_supported_channel(output, metadata):
                     logger.warning(
@@ -570,7 +569,6 @@ class SlackInput(InputChannel):
             self._is_direct_message(slack_event)
             or self._is_app_mention(slack_event)
             or metadata["out_channel"] == self.slack_channel
-            
             or self._is_init_message(slack_event)
         )
 
