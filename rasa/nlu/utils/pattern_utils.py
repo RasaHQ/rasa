@@ -117,7 +117,7 @@ def extract_patterns(
 
     Args:
         training_data: The training data.
-        patter_names: List of pattern names to use. If list is empty or None all
+        patter_names: List of pattern names to use. If list is empty or `None` all
           patterns will be used.
         use_regexes: Boolean indicating whether to use regex features or not.
         use_lookup_tables: Boolean indicating whether to use lookup tables or not.
