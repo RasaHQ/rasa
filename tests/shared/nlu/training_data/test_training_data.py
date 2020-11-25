@@ -659,9 +659,13 @@ def test_persist_training_data_chunk(tmp_path):
     ]
 
     training_data_chunk = TrainingDataChunk(messages)
-    file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.porto")
+    file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.tfrecord")
 
-    TrainingDataChunk.load_chunk(file_path)
+    loaded_training_data_chunk = TrainingDataChunk.load_chunk(file_path)
+
+    original_fingerprint = training_data_chunk.fingerprint()
+    loaded_fingerprint = loaded_training_data_chunk.fingerprint()
+    assert original_fingerprint == loaded_fingerprint
 
 
 @pytest.mark.parametrize(

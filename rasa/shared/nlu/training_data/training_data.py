@@ -9,6 +9,7 @@ from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 import operator
 import tensorflow as tf
+import scipy.sparse
 
 import rasa.shared.data
 from rasa.shared.utils.common import lazy_property
@@ -780,11 +781,13 @@ class TrainingDataChunk(TrainingData):
             else:
                 data = feature.features.data
                 shape = feature.features.shape
-                indices = np.vstack([feature.features.row, feature.features.col])
+                row = feature.features.row
+                column = feature.features.col
 
                 tf_features[f"{key}#sparse#data"] = self._bytes_feature(data)
                 tf_features[f"{key}#sparse#shape"] = self._int_feature(shape)
-                tf_features[f"{key}#sparse#indices"] = self._bytes_feature(indices)
+                tf_features[f"{key}#sparse#row"] = self._int_feature(row)
+                tf_features[f"{key}#sparse#column"] = self._int_feature(column)
 
         return tf_features
 
@@ -823,11 +826,54 @@ class TrainingDataChunk(TrainingData):
         Returns:
             The loaded training data chunk.
         """
+        training_examples = []
+
         raw_dataset = tf.data.TFRecordDataset([file_path])
         for raw_record in raw_dataset:
             example = tf.train.Example()
             example.ParseFromString(raw_record.numpy())
-            print(example)
+
+            features = []
+            for key in example.features.feature.keys():
+                parts = key.split("#")
+
+                attribute = parts[0]
+                feature_type = parts[1]
+                origin = parts[2]
+
+                if parts[3] == "dense":
+                    value = example.features.feature[key].bytes_list.value[0]
+                    tensor = tf.io.parse_tensor(value, out_type=tf.float64)
+                    features.append(
+                        Features(tensor.numpy(), feature_type, attribute, origin)
+                    )
+
+                elif parts[3] == "sparse" and parts[4] == "data":
+                    prefix = f"{attribute}#{feature_type}#{origin}#sparse#"
+
+                    shape = example.features.feature[f"{prefix}shape"].int64_list.value
+                    data = example.features.feature[f"{prefix}data"].bytes_list.value[0]
+                    row = example.features.feature[f"{prefix}row"].int64_list.value
+                    column = example.features.feature[
+                        f"{prefix}column"
+                    ].int64_list.value
+
+                    data_tensor = tf.io.parse_tensor(data, out_type=tf.float64)
+
+                    features.append(
+                        Features(
+                            scipy.sparse.coo_matrix(
+                                (data_tensor.numpy(), (row, column)), shape
+                            ),
+                            feature_type,
+                            attribute,
+                            origin,
+                        )
+                    )
+
+            training_examples.append(Message(features=features))
+
+        return TrainingDataChunk(training_examples)
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
