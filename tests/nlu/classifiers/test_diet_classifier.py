@@ -32,6 +32,7 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils import train_utils
+from rasa.constants import DIAGNOSTIC_DATA
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
@@ -476,11 +477,12 @@ async def test_process_gives_diagnostic_data(
     loaded = Interpreter.load(persisted_path, component_builder)
 
     message = Message(data={TEXT: "hello"})
-    diagnostic_data = None
     for component in loaded.pipeline:
-        diagnostic_data = component.process(message)
+        component.process(message)
 
-    # The last component is DIETClassifier, which should return attention weights
+    diagnostic_data = message.get(DIAGNOSTIC_DATA)
+
+    # The last component is DIETClassifier, which should add attention weights
     assert isinstance(diagnostic_data, dict)
     assert "attention_weights" in diagnostic_data
     assert isinstance(diagnostic_data.get("attention_weights"), np.ndarray)
