@@ -30,7 +30,7 @@ class MitieIntentClassifier(IntentClassifier):
         """Construct a new intent classifier using the MITIE framework.
 
         Args:
-            component_config: the component configuration
+            component_config: The component configuration.
             classifier: the MITIE classifier
         """
         super().__init__(component_config)
