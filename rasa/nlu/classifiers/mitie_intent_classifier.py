@@ -31,7 +31,7 @@ class MitieIntentClassifier(IntentClassifier):
 
         Args:
             component_config: The component configuration.
-            classifier: the MITIE classifier
+            classifier: The MITIE classifier.
         """
         super().__init__(component_config)
 
