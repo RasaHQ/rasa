@@ -106,6 +106,15 @@ def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
 def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
+    """Trains a Rasa Core model only.
+
+    Args:
+        args: Command-line arguments to configure training.
+        train_path: Path were trained model but unzipped model should be stored.
+
+    Returns:
+        Path to trained model.
+    """
     from rasa.train import train_core
 
     output = train_path or args.out

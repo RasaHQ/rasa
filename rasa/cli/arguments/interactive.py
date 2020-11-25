@@ -7,6 +7,7 @@ import rasa.cli.arguments.run
 
 
 def set_interactive_arguments(parser: argparse.ArgumentParser) -> None:
+    """Specifies arguments for `rasa interactive`."""
     parser.add_argument(
         "--e2e",
         action="store_true",
@@ -26,6 +27,7 @@ def set_interactive_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def set_interactive_core_arguments(parser: argparse.ArgumentParser) -> None:
+    """Specifies arguments for `rasa interactive core`."""
     rasa.cli.arguments.default_arguments.add_model_param(
         parser, model_name="Rasa Core", default=None
     )
