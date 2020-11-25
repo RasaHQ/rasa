@@ -212,7 +212,7 @@ class SklearnIntentClassifier(IntentClassifier):
         """Given a bow vector of an input text, predict the intent label.
 
         Args:
-            X: bow of input text
+            X: bow of input text.
 
         Returns:
             Vector of probabilities containing one entry for each label.
