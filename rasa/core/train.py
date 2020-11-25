@@ -71,36 +71,40 @@ async def train(
 
 
 async def save_fingerprint(
-    story_file: Text, domain: Text, output_path: Text = "", policy_configs: List = None,
+    story_file_path: Text,
+    domain_file_path: Text,
+    output_path: Text,
+    policy_config_paths: List[Text],
 ) -> None:
-    """Create a model fingerprint and save it to the file.
+    """Create model fingerprints for every config in `policy_config_paths` and save them to files.
 
     Args:
-        story_file:
-        domain:
-        output_path:
-        policy_configs:
+        story_file_path: A path to the story file.
+        domain_file_path: A path to the domain file.
+        output_path: A path to a directory where the fingerprint will be saved.
+        policy_config_paths: A list of config paths.
     """
     from rasa import model
 
-    policy_configs = policy_configs or []
-    for policy_config in policy_configs:
+    policy_config_paths = list(set(policy_config_paths or []))
+    for policy_config_path in policy_config_paths:
         file_importer = TrainingDataImporter.load_core_importer_from_config(
-            policy_config, domain, [story_file]
+            policy_config_path, domain_file_path, [story_file_path]
         )
 
         new_fingerprint = await model.model_fingerprint(file_importer)
 
-        config_name = os.path.splitext(os.path.basename(policy_config))[0]
+        config_name = os.path.splitext(os.path.basename(policy_config_path))[0]
         filename = (
             f"{config_name}_{model.FINGERPRINT_FILE_PATH}"
-            if len(policy_configs) > 1
+            if len(policy_config_paths) > 1
             else model.FINGERPRINT_FILE_PATH
         )
         model.persist_fingerprint(output_path, new_fingerprint, filename)
 
         logging.info(
-            f"The fingerprint for {policy_config} has been saved to {os.path.join(output_path, filename)}"
+            f"The fingerprint for {policy_config_path} has "
+            f"been saved to {os.path.join(output_path, filename)}"
         )
 
 

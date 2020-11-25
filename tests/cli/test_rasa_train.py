@@ -318,6 +318,17 @@ def test_train_nlu_persist_nlu_data(
     )
 
 
+def test_train_fingerprint(run_in_simple_project: Callable[..., RunResult]) -> None:
+    run_in_simple_project(
+        "train", "fingerprint", "-c", "config.yml", "--out", "train_models",
+    )
+
+    assert os.path.exists("train_models")
+    files = rasa.shared.utils.io.list_files("train_models")
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "fingerprint.json"
+
+
 def test_train_help(run):
     output = run("train", "--help")
 
@@ -327,7 +338,7 @@ def test_train_help(run):
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force]
-                  {core,nlu} ..."""
+                  {core,nlu,fingerprint} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -360,6 +371,19 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
                        [--runs RUNS]"""
+
+    lines = help_text.split("\n")
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
+
+
+def test_train_fingerprint_help(run: Callable[..., RunResult]):
+    output = run("train", "fingerprint", "--help")
+
+    help_text = """usage: rasa train fingerprint [-h] [-v] [-vv] [--quiet] [-s STORIES]
+                       [-d DOMAIN] [-c CONFIG [CONFIG ...]] [--out OUT]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

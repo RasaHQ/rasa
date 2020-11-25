@@ -128,8 +128,8 @@ def _fingerprint(
     [
         (tempfile.mkdtemp(), None),
         (tempfile.mkdtemp(), "test.json"),
-        (os.path.join(tempfile.mkdtemp(), "test", "models"), "test.json")
-    ]
+        (os.path.join(tempfile.mkdtemp(), "test", "models"), "test.json"),
+    ],
 )
 def test_persist_and_load_fingerprint(output_directory, filename):
     from rasa.model import persist_fingerprint, fingerprint_from_path
