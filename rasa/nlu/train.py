@@ -131,6 +131,7 @@ async def train_in_chunks(
     storage: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
+    number_of_chunks: int = 5,
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""

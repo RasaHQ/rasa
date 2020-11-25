@@ -79,6 +79,7 @@ async def train_in_chunks(
     endpoints: "AvailableEndpoints" = None,
     policy_config: Optional[Union[Text, Dict]] = None,
     additional_arguments: Optional[Dict] = None,
+    number_of_chunks: int = 5,
 ) -> "Agent":
     """Trains the core model using smaller chunks.
 
