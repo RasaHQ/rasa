@@ -570,6 +570,7 @@ class SlackInput(InputChannel):
             self._is_direct_message(slack_event)
             or self._is_app_mention(slack_event)
             or metadata["out_channel"] == self.slack_channel
+            
             or self._is_init_message(slack_event)
         )
 
