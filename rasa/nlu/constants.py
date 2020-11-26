@@ -63,9 +63,6 @@ TOKENS_NAMES = {
     rasa.shared.nlu.constants.INTENT_RESPONSE_KEY: "intent_response_key_tokens",
 }
 
-TOKENS = "tokens"
-TOKEN_IDS = "token_ids"
-
 SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 

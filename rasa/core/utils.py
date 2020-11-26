@@ -269,18 +269,16 @@ def get_file_hash(path: Text) -> Text:
     return md5(file_as_bytes(path)).hexdigest()
 
 
-def get_dict_hash(
-    data: Dict, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING
-) -> Text:
-    """Calculate the md5 hash of a dictionary."""
-    return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
-
-
 async def download_file_from_url(url: Text) -> Text:
     """Download a story file from a url and persists it into a temp file.
 
-    Returns the file path of the temp file that contains the
-    downloaded content."""
+    Args:
+        url: url to download from
+
+    Returns:
+        The file path of the temp file that contains the
+        downloaded content.
+    """
     from rasa.nlu import utils as nlu_utils
 
     if not nlu_utils.is_url(url):

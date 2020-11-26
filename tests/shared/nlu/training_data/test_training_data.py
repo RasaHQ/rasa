@@ -661,3 +661,15 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
     assert training_data.training_examples
     assert not training_data.is_empty()
     assert len(training_data.nlu_examples) == 0
+
+
+def test_fingerprint_is_same_when_loading_data_again():
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    files = [
+        "data/examples/rasa/demo-rasa.md",
+        "data/examples/rasa/demo-rasa-responses.md",
+    ]
+    td1 = training_data_from_paths(files, language="en")
+    td2 = training_data_from_paths(files, language="en")
+    assert td1.fingerprint() == td2.fingerprint()

@@ -75,6 +75,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CHECKPOINT_MODEL,
     FEATURIZERS,
+    ENTITY_RECOGNITION,
 )
 from rasa.core.policies.ted_policy import (
     LENGTH,
@@ -141,10 +142,14 @@ class IntentTEDPolicy(TEDPolicy):
         },
         CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128},
         ENCODING_DIMENSION: 50,
-        # Number of units in transformer
+        # Number of units in sequence transformer
         TRANSFORMER_SIZE: 128,
-        # Number of transformer layers
+        # Number of sequence transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
+        # Number of units in dialogue transformer
+        f"{DIALOGUE}_{TRANSFORMER_SIZE}": 128,
+        # Number of dialogue transformer layers
+        f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}": 1,
         # Number of attention heads in transformer
         NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
@@ -228,10 +233,10 @@ class IntentTEDPolicy(TEDPolicy):
         # Specify what features to use as sequence and sentence features.
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        # If set to true, entities are predicted in user utterances.
+        ENTITY_RECOGNITION: False,
         # Whether to use augmented stories for threshold computation
         "use_augmentation_for_thresholds": True,
-        # What to use for thresholds
-        "use_probability_thresholds": False,
         # Whether to flag retrieval intents
         "ignore_retrieval_intents": True,
         # Other intents to ignore
@@ -245,14 +250,14 @@ class IntentTEDPolicy(TEDPolicy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
-        zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+        fake_features: Optional[Dict[Text, List["Features"]]] = None,
         intent_thresholds: Dict[int, float] = None,
         all_labels: Dict[Text, int] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
         super().__init__(
-            featurizer, priority, max_history, model, zero_state_features, **kwargs
+            featurizer, priority, max_history, model, fake_features, **kwargs
         )
 
         self._all_labels = all_labels
@@ -260,10 +265,12 @@ class IntentTEDPolicy(TEDPolicy):
         self.use_augmentation_for_thresholds = self.config[
             "use_augmentation_for_thresholds"
         ]
-        self.use_probability_thresholds = self.config["use_probability_thresholds"]
         self.ignore_intent_list = self.config["ignore_intents"]
         self.ignore_retrieval_intents = self.config["ignore_retrieval_intents"]
         self.distribution_folder = self.config["distribution_folder"]
+
+        # Set all invalid configuration parameters
+        self.config[ENTITY_RECOGNITION] = False
 
     @staticmethod
     def supported_data() -> SupportedData:
@@ -361,13 +368,13 @@ class IntentTEDPolicy(TEDPolicy):
 
         # print("Label data signature", self._label_data.get_signature())
 
-        model_train_data, train_label_ids = self._featurize_for_model(
-            domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
-        )
-
         # model_train_data, train_label_ids = self._featurize_for_model(
-        #     domain, encoded_all_labels, interpreter, all_trackers, **kwargs
+        #     domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         # )
+
+        model_train_data, train_label_ids = self._featurize_for_model(
+            domain, encoded_all_labels, interpreter, all_trackers, **kwargs
+        )
 
         if model_train_data.is_empty():
             logger.error(
@@ -384,6 +391,7 @@ class IntentTEDPolicy(TEDPolicy):
             self.config,
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
             self._label_data,
+            entity_tag_specs=None,
         )
 
         self.model.fit(
@@ -403,20 +411,15 @@ class IntentTEDPolicy(TEDPolicy):
                 domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
             )
 
-            # print("Computing thresholds")
             scores, sims = self.model.compute_scores(
                 model_augmented_data, augmented_label_ids
             )
 
             self.intent_thresholds = self.extract_thresholds_from_positive_labels(
-                augmented_label_ids, scores, sims, self.use_probability_thresholds
+                augmented_label_ids, sims
             )
             pos_values, neg_values = self.extract_distributions(
-                augmented_label_ids,
-                scores,
-                sims,
-                self.use_probability_thresholds,
-                label_to_id_map,
+                augmented_label_ids, sims, label_to_id_map
             )
 
         else:
@@ -424,14 +427,10 @@ class IntentTEDPolicy(TEDPolicy):
             # print("Computing thresholds")
             scores, sims = self.model.compute_scores(model_train_data, train_label_ids)
             self.intent_thresholds = self.extract_thresholds_from_positive_labels(
-                train_label_ids, scores, sims, self.use_probability_thresholds
+                train_label_ids, sims
             )
             pos_values, neg_values = self.extract_distributions(
-                train_label_ids,
-                scores,
-                sims,
-                self.use_probability_thresholds,
-                label_to_id_map,
+                train_label_ids, sims, label_to_id_map
             )
 
         for index in self.intent_thresholds:
@@ -440,7 +439,6 @@ class IntentTEDPolicy(TEDPolicy):
         self._dump_distributions(
             pos_values, neg_values, label_to_id_map, self.intent_thresholds
         )
-        #
 
     # TODO: This is just a helper function, should be removed in the end.
     def _dump_distributions(
@@ -458,9 +456,7 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def extract_thresholds_from_positive_labels(
-        label_ids, scores, sims, use_probability_thresholds
-    ):
+    def extract_thresholds_from_positive_labels(label_ids, sims):
         thresholds = {}
         # Collect all the probabilities for each label id
         for index, all_pos_labels in enumerate(label_ids):
@@ -469,22 +465,12 @@ class IntentTEDPolicy(TEDPolicy):
             if first_pos_label_id not in thresholds:
                 thresholds[first_pos_label_id] = []
 
-            thresholds[first_pos_label_id].append(
-                scores[index, 0, first_pos_label_id]
-                if use_probability_thresholds
-                else sims[index, 0, first_pos_label_id]
-            )
+            thresholds[first_pos_label_id].append(sims[index, 0, first_pos_label_id])
         for label_id in thresholds:
-            thresholds[label_id] = (
-                min(0.5, min(thresholds[label_id]))
-                if use_probability_thresholds
-                else min(thresholds[label_id])
-            )
+            thresholds[label_id] = min(thresholds[label_id])
         return thresholds
 
-    def extract_distributions(
-        self, label_ids, scores, sims, use_probability_thresholds, label_to_id_map
-    ):
+    def extract_distributions(self, label_ids, sims, label_to_id_map):
 
         user_labels = set(self._all_labels) - set(
             rasa.shared.core.constants.DEFAULT_INTENTS
@@ -500,11 +486,8 @@ class IntentTEDPolicy(TEDPolicy):
                 neg_values[intent_id] = []
 
             for index, all_pos_labels in enumerate(label_ids):
-                intent_value = (
-                    scores[index, 0, intent_id]
-                    if use_probability_thresholds
-                    else sims[index, 0, intent_id]
-                )
+                intent_value = sims[index, 0, intent_id]
+
                 if intent_id in all_pos_labels.tolist():
                     pos_values[intent_id].append(intent_value)
                 else:
@@ -521,12 +504,12 @@ class IntentTEDPolicy(TEDPolicy):
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
     ):
         # dealing with training data
-        tracker_state_features, label_ids = self.featurize_for_training(
+        tracker_state_features, label_ids, _ = self.featurize_for_training(
             trackers, domain, interpreter, **kwargs
         )
         # extract actual training data to feed to model
         model_data = self._create_model_data(
-            tracker_state_features, label_ids, encoded_all_labels
+            tracker_state_features, label_ids, None, encoded_all_labels
         )
         return model_data, label_ids
 
@@ -570,7 +553,7 @@ class IntentTEDPolicy(TEDPolicy):
         # create model data from tracker
         tracker_state_features = []
         if (
-            INTENT in self.zero_state_features
+            INTENT in self.fake_features
             or not tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
             # the first example in a batch uses intent
@@ -579,7 +562,7 @@ class IntentTEDPolicy(TEDPolicy):
                 [tracker], domain, interpreter, use_text_for_last_user_input=False
             )
         if (
-            TEXT in self.zero_state_features
+            TEXT in self.fake_features
             and tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
             # the second - text, but only after user utterance
@@ -597,11 +580,7 @@ class IntentTEDPolicy(TEDPolicy):
         output = self.model.predict(model_data)
 
         # take the last prediction in the sequence
-        confidences = (
-            output["intent_scores"].numpy()[:, -1, :]
-            if self.use_probability_thresholds
-            else output["sim_all"].numpy()[:, -1, :]
-        )
+        confidences = output["sim_all"].numpy()[:, -1, :]
 
         # Todo: remove this, as this was just for printing
         intent_confidences = {}
@@ -632,7 +611,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
-        if last_user_event:
+        if last_user_event and not tracker.active_loop_name:
             # If this is not the first intent
             query_label = last_user_event.intent_name
             query_label_id = label_to_id_map[query_label]
@@ -694,8 +673,7 @@ class IntentTEDPolicy(TEDPolicy):
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl",
-            self.zero_state_features,
+            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl", self.fake_features
         )
         io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
@@ -737,8 +715,8 @@ class IntentTEDPolicy(TEDPolicy):
         label_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
-        zero_state_features = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl"
+        fake_features = io_utils.pickle_load(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl"
         )
         intent_thresholds = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.intent_thresholds.pkl"
@@ -762,9 +740,9 @@ class IntentTEDPolicy(TEDPolicy):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
-            max_history_tracker_featurizer_used=isinstance(
-                featurizer, MaxHistoryTrackerFeaturizer
-            ),
+            # during prediction we don't care about previous dialogue turns,
+            # so to save computation time, use only the last one
+            use_only_last_dialogue_turns=True,
             label_data=label_data,
         )
 
@@ -786,7 +764,7 @@ class IntentTEDPolicy(TEDPolicy):
             featurizer=featurizer,
             priority=priority,
             model=model,
-            zero_state_features=zero_state_features,
+            fake_features=fake_features,
             intent_thresholds=intent_thresholds,
             all_labels=all_label_tags,
             **meta,
@@ -809,7 +787,11 @@ class IntentTED(TED):
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
-            DIALOGUE, self.config[DROP_RATE_DIALOGUE], self.config[DROP_RATE_ATTENTION]
+            DIALOGUE,
+            self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"],
+            self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"],
+            self.config[DROP_RATE_DIALOGUE],
+            self.config[DROP_RATE_ATTENTION],
         )
 
         self._prepare_embed_layers(DIALOGUE)
@@ -820,11 +802,13 @@ class IntentTED(TED):
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        all_labels_encoded = {
-            key: self._encode_features_per_attribute(self.tf_label_data, key)
-            for key in self.tf_label_data.keys()
-            if key != LABEL_KEY
-        }
+        all_labels_encoded = {}
+        for key in self.tf_label_data.keys():
+            if key != LABEL_KEY:
+                attribute_features, _, _ = self._encode_real_features_per_attribute(
+                    self.tf_label_data, key
+                )
+                all_labels_encoded[key] = attribute_features
 
         x = all_labels_encoded.pop(f"{LABEL_KEY}_{INTENT}")
 
@@ -843,6 +827,7 @@ class IntentTED(TED):
         #     tf.print(element)
         #     tf.print("====")
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+        self._compute_dialogue_indices(tf_batch_data)
 
         # tf.print("tf batch data")
         # tf.print(tf_batch_data[LABEL_KEY][LABEL_SUB_KEY])
@@ -865,10 +850,16 @@ class IntentTED(TED):
 
         # print("Batch labels embed shape", batch_labels_embed.shape)
 
-        dialogue_in = self._process_batch_data(tf_batch_data)
-        dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, tf_batch_data
-        )
+        (
+            dialogue_in,
+            text_transformer_output,
+            text_sequence_lengths,
+        ) = self._process_batch_data(tf_batch_data)
+        (
+            dialogue_embed,
+            dialogue_mask,
+            dialogue_transformer_output,
+        ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
@@ -890,13 +881,20 @@ class IntentTED(TED):
     ) -> tf.Tensor:
 
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+        self._compute_dialogue_indices(tf_batch_data)
 
         _, all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_in = self._process_batch_data(tf_batch_data)
-        dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, tf_batch_data
-        )
+        (
+            dialogue_in,
+            text_transformer_output,
+            text_sequence_lengths,
+        ) = self._process_batch_data(tf_batch_data)
+        (
+            dialogue_embed,
+            dialogue_mask,
+            dialogue_transformer_output,
+        ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
@@ -918,14 +916,21 @@ class IntentTED(TED):
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
+        self._compute_dialogue_indices(tf_batch_data)
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_in = self._process_batch_data(tf_batch_data)
-        dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, tf_batch_data
-        )
+        (
+            dialogue_in,
+            text_transformer_output,
+            text_sequence_lengths,
+        ) = self._process_batch_data(tf_batch_data)
+        (
+            dialogue_embed,
+            dialogue_mask,
+            dialogue_transformer_output,
+        ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(

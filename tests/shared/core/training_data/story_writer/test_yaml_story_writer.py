@@ -108,8 +108,6 @@ def test_yaml_writer_dumps_user_messages():
         - story: default
           steps:
           - intent: greet
-            user: |-
-              Hello
           - action: utter_greet
 
     """
@@ -139,10 +137,10 @@ def test_yaml_writer_avoids_dumping_not_existing_user_messages():
 
 
 @pytest.mark.parametrize(
-    "input_yaml_file", ["data/test_yaml_stories/rules_with_stories_sorted.yaml",],
+    "input_yaml_file", ["data/test_yaml_stories/rules_with_stories_sorted.yaml"]
 )
 def test_yaml_writer_dumps_rules(
-    input_yaml_file: Text, tmpdir: Path, default_domain: Domain,
+    input_yaml_file: Text, tmpdir: Path, default_domain: Domain
 ):
     original_yaml_reader = YAMLStoryReader(default_domain, None, False)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)

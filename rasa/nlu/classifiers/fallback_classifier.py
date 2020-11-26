@@ -1,3 +1,4 @@
+import copy
 import logging
 from typing import Any, List, Type, Text, Dict, Union, Tuple, Optional
 
@@ -121,3 +122,40 @@ def _fallback_intent() -> Dict[Text, Union[Text, float]]:
         # TODO: Re-consider how we represent the confidence here
         PREDICTED_CONFIDENCE_KEY: 1.0,
     }
+
+
+def is_fallback_classifier_prediction(prediction: Dict[Text, Any]) -> bool:
+    """Checks if the intent was predicted by the `FallbackClassifier`.
+
+    Args:
+        prediction: The prediction of the NLU model.
+
+    Returns:
+        `True` if the top classified intent was the fallback intent.
+    """
+    return (
+        prediction.get(INTENT, {}).get(INTENT_NAME_KEY)
+        == DEFAULT_NLU_FALLBACK_INTENT_NAME
+    )
+
+
+def undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Undo the prediction of the fallback intent.
+
+    Args:
+        prediction: The prediction of the NLU model.
+
+    Returns:
+        The prediction as if the `FallbackClassifier` wasn't present in the pipeline.
+        If the fallback intent is the only intent, return the prediction as it was
+        provided.
+    """
+    intent_ranking = prediction.get(INTENT_RANKING_KEY, [])
+    if len(intent_ranking) < 2:
+        return prediction
+
+    prediction = copy.deepcopy(prediction)
+    prediction[INTENT] = intent_ranking[1]
+    prediction[INTENT_RANKING_KEY] = prediction[INTENT_RANKING_KEY][1:]
+
+    return prediction

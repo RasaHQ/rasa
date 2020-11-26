@@ -61,17 +61,44 @@ class TrainingData:
 
         self._fill_response_phrases()
 
-    def merge(self, *others: "TrainingData") -> "TrainingData":
-        """Return merged instance of this data with other training data."""
+    def fingerprint(self) -> Text:
+        """Fingerprint the training data.
 
+        Returns:
+            hex string as a fingerprint of the training data.
+        """
+        relevant_attributes = {
+            "training_examples": list(
+                sorted(e.fingerprint() for e in self.training_examples)
+            ),
+            "entity_synonyms": self.entity_synonyms,
+            "regex_features": self.regex_features,
+            "lookup_tables": self.lookup_tables,
+            "responses": self.responses,
+        }
+
+        return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
+
+    def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
+        """Return merged instance of this data with other training data.
+
+        Args:
+            others: other training data instances to merge this one with
+
+        Returns:
+            Merged training data object. Merging is not done in place, this
+            will be a new instance.
+        """
         training_examples = copy.deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = copy.deepcopy(self.regex_features)
         lookup_tables = copy.deepcopy(self.lookup_tables)
         responses = copy.deepcopy(self.responses)
-        others = [other for other in others if other]
 
         for o in others:
+            if not o:
+                continue
+
             training_examples.extend(copy.deepcopy(o.training_examples))
             regex_features.extend(copy.deepcopy(o.regex_features))
             lookup_tables.extend(copy.deepcopy(o.lookup_tables))
@@ -109,10 +136,12 @@ class TrainingData:
         )
 
     def __hash__(self) -> int:
-        stringified = self.nlu_as_json() + self.nlg_as_markdown()
-        text_hash = rasa.shared.utils.io.get_text_hash(stringified)
+        """Calculate hash for the training data object.
 
-        return int(text_hash, 16)
+        Returns:
+            Hash of the training data object.
+        """
+        return int(self.fingerprint(), 16)
 
     @staticmethod
     def sanitize_examples(examples: List[Message]) -> List[Message]:

@@ -205,9 +205,9 @@ class SlackInput(InputChannel):
             rasa.shared.utils.io.raise_deprecation_warning(
                 "Your slack bot is missing a configured signing secret. Running a "
                 "bot without a signing secret is deprecated and will be removed in "
-                "the next release (2.1.0). You should add a `slack_signing_secret` "
+                "the next release (2.2.0). You should add a `slack_signing_secret` "
                 "parameter to your channel configuration.",
-                warn_until_version="2.1.0",
+                warn_until_version="2.2.0",
                 docs=DOCS_URL_CONNECTORS_SLACK,
             )
 

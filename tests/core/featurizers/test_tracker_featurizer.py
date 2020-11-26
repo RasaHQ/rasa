@@ -67,7 +67,7 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
     )
-    state_features, labels = tracker_featurizer.featurize_trackers(
+    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
         [tracker], moodbot_domain, RegexInterpreter()
     )
 
@@ -75,6 +75,8 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     assert len(state_features) > 0
     assert labels is not None
     assert len(labels) > 0
+    # moodbot doesn't contain e2e entities
+    assert not any([any(turn_tags) for turn_tags in entity_tags])
 
 
 def test_featurize_trackers_with_max_history_tracker_featurizer(moodbot_domain: Domain):
@@ -84,7 +86,7 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(moodbot_domain: 
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
     )
-    state_features, labels = tracker_featurizer.featurize_trackers(
+    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
         [tracker], moodbot_domain, RegexInterpreter()
     )
 
@@ -92,3 +94,5 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(moodbot_domain: 
     assert len(state_features) > 0
     assert labels is not None
     assert len(labels) > 0
+    # moodbot doesn't contain e2e entities
+    assert not any([any(turn_tags) for turn_tags in entity_tags])
