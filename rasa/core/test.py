@@ -1,7 +1,7 @@
 import logging
-import os
 import warnings
 import typing
+from pathlib import Path
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
@@ -784,7 +784,8 @@ async def test(
                 targets, predictions, output_dict=True
             )
 
-            report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
+            path_out_directory = Path(out_directory)
+            report_filename = path_out_directory / REPORT_STORIES_FILE
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
         else:
@@ -815,12 +816,12 @@ async def test(
     if errors and out_directory:
         _log_stories(
             story_evaluation.failed_stories,
-            os.path.join(out_directory, FAILED_STORIES_FILE),
+            str(path_out_directory / FAILED_STORIES_FILE),
         )
     if successes and out_directory:
         _log_stories(
             story_evaluation.successful_stories,
-            os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
+            str(path_out_directory / SUCCESSFUL_STORIES_FILE),
         )
 
     return {
@@ -866,9 +867,7 @@ def _plot_story_evaluation(
 
     confusion_matrix_filename = CONFUSION_MATRIX_STORIES_FILE
     if output_directory:
-        confusion_matrix_filename = os.path.join(
-            output_directory, confusion_matrix_filename
-        )
+        confusion_matrix_filename = Path(output_directory) / confusion_matrix_filename
 
     cnf_matrix = confusion_matrix(targets, predictions)
 
@@ -876,7 +875,7 @@ def _plot_story_evaluation(
         cnf_matrix,
         classes=unique_labels(targets, predictions),
         title="Action Confusion matrix",
-        output_file=confusion_matrix_filename,
+        output_file=str(confusion_matrix_filename),
     )
 
 
@@ -901,7 +900,7 @@ async def compare_models_in_dir(
 
             # The model files are named like <config-name>PERCENTAGE_KEY<number>.tar.gz
             # Remove the percentage key and number from the name to get the config name
-            config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
+            config_name = Path(model).name.split(PERCENTAGE_KEY)[0]
             number_of_correct_stories = await _evaluate_core_model(model, stories_file)
             number_correct_in_run[config_name].append(number_of_correct_stories)
 
@@ -909,7 +908,7 @@ async def compare_models_in_dir(
             number_correct[k].append(v)
 
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output, RESULTS_FILE), number_correct
+        Path(output) / RESULTS_FILE, number_correct
     )
 
 
@@ -925,10 +924,10 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
 
     for model in models:
         number_of_correct_stories = await _evaluate_core_model(model, stories_file)
-        number_correct[os.path.basename(model)].append(number_of_correct_stories)
+        number_correct[Path(model).name].append(number_of_correct_stories)
 
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output, RESULTS_FILE), number_correct
+        Path(output) / RESULTS_FILE, number_correct
     )
 
 

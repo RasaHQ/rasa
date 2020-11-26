@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Text
+from pathlib import Path
 
 from rasa import telemetry
 from rasa.shared.utils.cli import print_error
@@ -57,7 +58,7 @@ async def visualize(
         stories_path, output_path, max_history, nlu_training_data=nlu_training_data
     )
 
-    full_output_path = "file://{}".format(os.path.abspath(output_path))
+    full_output_path = f"file://{Path(output_path).resolve()}"
     logger.info(f"Finished graph creation. Saved into {full_output_path}")
 
     import webbrowser

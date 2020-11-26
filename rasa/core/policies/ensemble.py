@@ -1,8 +1,8 @@
 import importlib
 import json
 import logging
-import os
 import sys
+from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -233,7 +233,7 @@ class PolicyEnsemble:
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist exists
-        domain_spec_path = os.path.join(path, "metadata.json")
+        domain_spec_path = Path(path) / "metadata.json"
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [
@@ -265,10 +265,8 @@ class PolicyEnsemble:
 
     @classmethod
     def load_metadata(cls, path) -> Any:
-        metadata_path = os.path.join(path, "metadata.json")
-        metadata = json.loads(
-            rasa.shared.utils.io.read_file(os.path.abspath(metadata_path))
-        )
+        metadata_path = Path(path) / "metadata.json"
+        metadata = json.loads(rasa.shared.utils.io.read_file(metadata_path.resolve()))
         return metadata
 
     @staticmethod
@@ -312,7 +310,7 @@ class PolicyEnsemble:
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
             dir_name = f"policy_{i}_{policy_cls.__name__}"
-            policy_path = os.path.join(path, dir_name)
+            policy_path = Path(path) / dir_name
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
