@@ -3,7 +3,6 @@ import datetime
 import tensorflow as tf
 import numpy as np
 import logging
-import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -105,8 +104,8 @@ class RasaModel(tf.keras.models.Model):
         self.best_model_epoch = -1
         if self.checkpoint_model:
             model_checkpoint_dir = rasa.utils.io.create_temporary_directory()
-            self.best_model_file = os.path.join(
-                model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
+            self.best_model_file = (
+                Path(model_checkpoint_dir) / f"{CHECKPOINT_MODEL_NAME}.tf_model"
             )
 
     def _set_up_tensorboard_writer(self) -> None:
@@ -307,23 +306,26 @@ class RasaModel(tf.keras.models.Model):
         self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
 
     def copy_best(self, model_file_name: Text) -> None:
-        checkpoint_directory, checkpoint_file = os.path.split(self.best_model_file)
-        checkpoint_path = Path(checkpoint_directory)
+        best_model_file = Path(self.best_model_file)
+        checkpoint_directory = best_model_file.parent
+        checkpoint_file = best_model_file.name
 
         # Copy all tf2 model files from the temp location to the final destination
-        for f in checkpoint_path.glob(f"{checkpoint_file}*"):
+        for f in checkpoint_directory.glob(f"{checkpoint_file}*"):
             shutil.move(str(f.absolute()), model_file_name + f.suffix)
 
         # Generate the tf2 checkpoint file, copy+replace to ensure consistency
-        destination_path, destination_file = os.path.split(model_file_name)
-        with open(os.path.join(checkpoint_directory, "checkpoint")) as in_file, open(
-            os.path.join(destination_path, "checkpoint"), "w"
+        model_file_name = Path(model_file_name)
+        destination_path = model_file_name.parent
+        destination_file = model_file_name.name
+        with open(checkpoint_directory / "checkpoint") as in_file, open(
+            destination_path / "checkpoint", "w"
         ) as out_file:
             for line in in_file:
                 out_file.write(line.replace(checkpoint_file, destination_file))
 
         # Remove the old file
-        checkpoint_path.joinpath("checkpoint").unlink()
+        checkpoint_directory.joinpath("checkpoint").unlink()
 
     @classmethod
     def load(
