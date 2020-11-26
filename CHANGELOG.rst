@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.18] - 2020-11-26
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#7340 <https://github.com/rasahq/rasa/issues/7340>`_: Fixed an issues with the DynamoDB TrackerStore creating a new table entry/object for each TrackerStore update. The column `session_date` has been deprecated and should be removed manually in existing DynamoDB tables.
+
+
 [1.10.17] - 2020-11-12
 ^^^^^^^^^^^^^^^^^^^^^^
 
