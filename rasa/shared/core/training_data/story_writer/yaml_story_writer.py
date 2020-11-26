@@ -4,11 +4,12 @@ from typing import Any, Dict, List, Text, Union, Optional
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
-from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
 import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+import rasa.shared.core.events
 from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
@@ -216,12 +217,21 @@ class YAMLStoryWriter(StoryWriter):
             )
 
         if user_utterance.text and (
+            # We only print the utterance text if it was an end-to-end prediction
             user_utterance.use_text_for_featurization
             or user_utterance.use_text_for_featurization is None
+            # or if we want to print a conversation test story.
+            or is_test_story
         ):
-            result[KEY_USER_MESSAGE] = user_utterance.as_story_string()
+            result[KEY_USER_MESSAGE] = LiteralScalarString(
+                rasa.shared.core.events.md_format_message(
+                    user_utterance.text,
+                    user_utterance.intent_name,
+                    user_utterance.entities,
+                )
+            )
 
-        if len(user_utterance.entities):
+        if len(user_utterance.entities) and not is_test_story:
             entities = []
             for entity in user_utterance.entities:
                 if entity["value"]:
