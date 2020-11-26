@@ -525,11 +525,12 @@ class FormAction(LoopAction):
             None,
         )
 
-    def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
+    def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Optional[Text]:
         search_path = [
             f"action_ask_{self._form_name}_{slot_name}",
             f"{UTTER_PREFIX}ask_{self._form_name}_{slot_name}",
             f"action_ask_{slot_name}",
+            f"{UTTER_PREFIX}ask_{slot_name}",
         ]
 
         found_actions = (
@@ -538,7 +539,7 @@ class FormAction(LoopAction):
             if action_name in domain.action_names
         )
 
-        return next(found_actions, f"{UTTER_PREFIX}ask_{slot_name}")
+        return next(found_actions, None)
 
     async def _ask_for_slot(
         self,
@@ -550,13 +551,16 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
-        action_to_ask_for_next_slot = action.action_for_name_or_text(
-            self._name_of_utterance(domain, slot_name), domain, self.action_endpoint
-        )
-        events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
-            output_channel, nlg, tracker, domain
-        )
-        return events_to_ask_for_next_slot
+        action_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
+
+        if action_to_ask_for_next_slot:
+            action_to_ask_for_next_slot = action.action_for_name_or_text(
+                action_to_ask_for_next_slot, domain, self.action_endpoint
+            )
+            return await action_to_ask_for_next_slot.run(
+                output_channel, nlg, tracker, domain
+            )
+        return []
 
     # helpers
     @staticmethod
