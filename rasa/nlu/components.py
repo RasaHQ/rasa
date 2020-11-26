@@ -433,7 +433,12 @@ class Component(metaclass=ComponentMetaclass):
     not_supported_language_list = None
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        """Initialize the component.
 
+        Args:
+            component_config: the dictionary with the configuration parameters
+                for this component
+        """
         if not component_config:
             component_config = {}
 

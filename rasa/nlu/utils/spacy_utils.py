@@ -35,7 +35,7 @@ class SpacyNLP(Component):
     def __init__(
         self, component_config: Dict[Text, Any] = None, nlp: "Language" = None
     ) -> None:
-
+        """Initialize the component. See parent class for more information."""
         self.nlp = nlp
         super().__init__(component_config)
 
@@ -99,6 +99,10 @@ class SpacyNLP(Component):
         return cls.name + "-" + spacy_model_name
 
     def provide_context(self) -> Dict[Text, Any]:
+        """Initialize this component for a new pipeline.
+
+        See parent class for more information.
+        """
         return {"spacy_nlp": self.nlp}
 
     def _doc_for_text(self, text: Text) -> "Doc":
@@ -125,7 +129,6 @@ class SpacyNLP(Component):
         doc_lists: List[Tuple[int, "Doc"]],
     ) -> List[Tuple[int, "Doc"]]:
         """Merge lists with processed Docs back into their original order."""
-
         dct = dict(indexed_training_samples)
         dct.update(dict(doc_lists))
         return sorted(dct.items())
@@ -135,7 +138,6 @@ class SpacyNLP(Component):
         indexed_training_samples: List[Tuple[int, Text]]
     ) -> Tuple[List[Tuple[int, Text]], List[Tuple[int, Text]]]:
         """Separates empty training samples from content bearing ones."""
-
         docs_to_pipe = list(
             filter(
                 lambda training_sample: training_sample[1] != "",
@@ -154,7 +156,6 @@ class SpacyNLP(Component):
         self, samples_to_pipe: List[Tuple[int, Text]]
     ) -> List[Tuple[int, "Doc"]]:
         """Sends content bearing training samples to spaCy's pipe."""
-
         docs = [
             (to_pipe_sample[0], doc)
             for to_pipe_sample, doc in zip(
@@ -173,7 +174,6 @@ class SpacyNLP(Component):
         self, empty_samples: List[Tuple[int, Text]]
     ) -> List[Tuple[int, "Doc"]]:
         """Creates empty Doc-objects from zero-lengthed training samples strings."""
-
         from spacy.tokens import Doc
 
         n_docs = [
@@ -269,8 +269,8 @@ class SpacyNLP(Component):
     def _ensure_proper_language_model(nlp: Optional["Language"]) -> None:
         """Checks if the spacy language model is properly loaded.
 
-        Raises an exception if the model is invalid."""
-
+        Raises an exception if the model is invalid.
+        """
         if nlp is None:
             raise Exception(
                 "Failed to load spacy language model. "

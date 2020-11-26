@@ -75,6 +75,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
     ):
+        """Initialize the component. See parent class for more information."""
         super().__init__(component_config)
 
         self.feature_to_idx_dict = feature_to_idx_dict or {}
