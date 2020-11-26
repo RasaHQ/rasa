@@ -563,30 +563,16 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         )
         return hash(frozen_states)
 
-    @staticmethod
-    def _create_extra_listen_state(last_state):
-        if not last_state:
-            return {"prev_action": {"action_name": "action_listen"}}
-
-        if "user" in last_state:
-            extra_state = {
-                "user": last_state["user"],
-                "prev_action": {"action_name": "action_listen"},
-            }
-        else:
-            extra_state = {"prev_action": {"action_name": "action_listen"}}
-        # extra_state["prev_action"]["action_name"] = "action_listen"
-        return extra_state
-
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[State]], List[List[Text]]]:
+    ) -> Tuple[List[List[State]], List[List[Text]], List[bool]]:
         """Transforms list of trackers to lists of states and actions.
         Training data is padded up to the max_history with -1.
         """
 
         trackers_as_states = []
         trackers_as_actions = []
+        is_label_from_rules = []
 
         # from multiple states that create equal featurizations
         # we only need to keep one.
@@ -615,6 +601,8 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
 
         for tracker in pbar:
 
+            is_rule_tracker = tracker.is_rule_tracker
+
             states = self._create_states(tracker, domain)
 
             states_length_for_intent = 0
@@ -628,14 +616,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                         states[:states_length_for_intent], self.max_history
                     )
 
-                    # add an extra listen action
-                    # sliced_states.append(
-                    #     self._create_extra_listen_state(sliced_states[-1])
-                    # )
-                    # print(sliced_states, event.intent_name)
-
-                    # TODO: If there are duplicate tracker states with different intents as labels,
-                    #  then collect all intents here itself to construct the list of multiple labels
                     if self.remove_duplicates:
                         hashed_example = self._hash_example(
                             sliced_states, event.intent_name, tracker
@@ -652,6 +632,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                             # First create a new data point for this pair
                             trackers_as_states.append(sliced_states)
                             trackers_as_actions.append([event.intent_name])
+                            is_label_from_rules.append(is_rule_tracker)
 
                             # print(list(zip(trackers_as_states, trackers_as_actions)))
 
@@ -671,6 +652,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                         # First create a new data point for this pair
                         trackers_as_states.append(sliced_states)
                         trackers_as_actions.append([event.intent_name])
+                        is_label_from_rules.append(is_rule_tracker)
 
                         self._update_labels_for_all_states(
                             event.intent_name,
@@ -689,7 +671,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
 
         logger.debug("Created {} intent examples.".format(len(trackers_as_actions)))
 
-        return trackers_as_states, trackers_as_actions
+        return trackers_as_states, trackers_as_actions, is_label_from_rules
 
     @staticmethod
     def _update_labels_for_all_states(
@@ -796,9 +778,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             for states in trackers_as_states
         ]
 
-        # for states in trackers_as_states:
-        #     states.append(self._create_extra_listen_state(states[-1]))
-
         # print(trackers_as_states)
 
         return trackers_as_states
@@ -825,6 +804,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         List[List[Dict[Text, List["Features"]]]],
         np.ndarray,
         List[List[Dict[Text, List["Features"]]]],
+        List[bool],
     ]:
         """Featurize the training trackers.
         Args:
@@ -848,9 +828,11 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
 
         self.state_featurizer.prepare_from_domain(domain)
 
-        trackers_as_states, trackers_as_actions = self.training_states_and_actions(
-            trackers, domain
-        )
+        (
+            trackers_as_states,
+            trackers_as_actions,
+            is_label_from_rules,
+        ) = self.training_states_and_actions(trackers, domain)
 
         # print("Featurizing states")
 
@@ -879,4 +861,4 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         # print(domain.action_names)
         # print(label_ids)
 
-        return tracker_state_features, label_ids, []
+        return tracker_state_features, label_ids, [], is_label_from_rules

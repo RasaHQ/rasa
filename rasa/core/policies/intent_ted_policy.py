@@ -251,7 +251,7 @@ class IntentTEDPolicy(TEDPolicy):
         model: Optional[RasaModel] = None,
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         intent_thresholds: Dict[int, float] = None,
-        all_labels: Dict[Text, int] = None,
+        all_labels: List[Text] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -338,9 +338,75 @@ class IntentTEDPolicy(TEDPolicy):
 
         return augmented, non_augmented
 
+    def featurize_for_training(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> Tuple[
+        List[List[Dict[Text, List["Features"]]]],
+        np.ndarray,
+        List[List[Dict[Text, List["Features"]]]],
+        List[bool],
+    ]:
+        """Transform training trackers into a vector representation.
+
+        The trackers, consisting of multiple turns, will be transformed
+        into a float vector which can be used by a ML model.
+
+        Args:
+            training_trackers:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+
+        Returns:
+            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+              all training trackers
+            - the label ids (e.g. action ids) for every dialogue turn in all training
+              trackers
+        """
+
+        (
+            state_features,
+            label_ids,
+            entity_tags,
+            is_label_from_rules,
+        ) = self.featurizer.featurize_trackers(training_trackers, domain, interpreter)
+
+        max_training_samples = kwargs.get("max_training_samples")
+        if max_training_samples is not None:
+            logger.debug(
+                "Limit training data to {} training samples."
+                "".format(max_training_samples)
+            )
+            state_features = state_features[:max_training_samples]
+            label_ids = label_ids[:max_training_samples]
+            entity_tags = entity_tags[:max_training_samples]
+
+        return state_features, label_ids, entity_tags, is_label_from_rules
+
     @staticmethod
     def _get_label_key_to_ids_map(labels: List[Text]) -> Dict[Text, int]:
         return {label: index for index, label in enumerate(labels)}
+
+    def _get_label_ids_only_in_rules(
+        self, train_label_ids: np.ndarray, is_label_from_rules: List[bool]
+    ) -> List[int]:
+
+        label_to_ids = self._get_label_key_to_ids_map(self._all_labels)
+        labels_in_stories = set()
+        labels_in_rules = []
+        for data_index, labels in enumerate(train_label_ids):
+            if not is_label_from_rules[data_index]:
+                labels_in_stories.add(labels[0])
+        for label_id in label_to_ids.values():
+            if label_id not in labels_in_stories:
+                labels_in_rules.append(label_id)
+
+        return labels_in_rules
 
     def train(
         self,
@@ -355,6 +421,13 @@ class IntentTEDPolicy(TEDPolicy):
         augmented_trackers, non_augmented_trackers = self._separate_augmented_trackers(
             all_trackers
         )
+        if not len(augmented_trackers) and self.use_augmentation_for_thresholds:
+            rasa.shared.utils.io.raise_warning(
+                "'use_augmentation_for_thresholds' was set to True "
+                "but not augmented trackers were found. This can happen "
+                "if you explicitly ran training with `--augmentation 0`. "
+                "Thresholds will be computed from non-augmented trackers."
+            )
 
         # print(len(non_augmented_trackers), len(augmented_trackers))
 
@@ -362,14 +435,16 @@ class IntentTEDPolicy(TEDPolicy):
             domain, interpreter
         )
 
-        # print("Label data signature", self._label_data.get_signature())
-
-        model_train_data, train_label_ids = self._featurize_for_model(
-            domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
+        (
+            model_train_data,
+            train_label_ids,
+            is_label_from_rules,
+        ) = self._featurize_for_model(
+            domain, encoded_all_labels, interpreter, all_trackers, **kwargs
         )
-        # model_train_data, train_label_ids = self._featurize_for_model(
-        #     domain, encoded_all_labels, interpreter, all_trackers, **kwargs
-        # )
+
+        # print(train_label_ids.shape, len(is_label_from_rules))
+        # print([self._all_labels[index] for index in label_ids_in_rules])
 
         if model_train_data.is_empty():
             logger.error(
@@ -377,6 +452,10 @@ class IntentTEDPolicy(TEDPolicy):
                 f"Skipping training of the policy."
             )
             return
+
+        label_ids_in_rules = self._get_label_ids_only_in_rules(
+            train_label_ids, is_label_from_rules
+        )
 
         # keep one example for persisting and loading
         self.data_example = model_train_data.first_data_example()
@@ -398,11 +477,15 @@ class IntentTEDPolicy(TEDPolicy):
             batch_strategy=self.config[BATCH_STRATEGY],
         )
 
-        if self.use_augmentation_for_thresholds:
+        if self.use_augmentation_for_thresholds and len(augmented_trackers):
 
             # print("Computing feats")
             # Featurize augmented trackers for threshold computation
-            model_augmented_data, augmented_label_ids = self._featurize_for_model(
+            (
+                model_augmented_data,
+                augmented_label_ids,
+                is_label_from_rules,
+            ) = self._featurize_for_model(
                 domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
             )
 
@@ -414,7 +497,12 @@ class IntentTEDPolicy(TEDPolicy):
             self.intent_thresholds = self.model.compute_thresholds(
                 model_train_data, train_label_ids
             )
-        #
+
+        # omit all label ids that are part of only rules because IntentTED cannot predict them.
+        for label_id in label_ids_in_rules:
+            if label_id in self.intent_thresholds:
+                del self.intent_thresholds[label_id]
+
         for index in self.intent_thresholds:
             print(self._all_labels[index], index, self.intent_thresholds[index])
 
@@ -422,14 +510,17 @@ class IntentTEDPolicy(TEDPolicy):
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
     ):
         # dealing with training data
-        tracker_state_features, label_ids, _ = self.featurize_for_training(
-            trackers, domain, interpreter, **kwargs
-        )
+        (
+            tracker_state_features,
+            label_ids,
+            _,
+            is_label_from_rules,
+        ) = self.featurize_for_training(trackers, domain, interpreter, **kwargs)
         # extract actual training data to feed to model
         model_data = self._create_model_data(
             tracker_state_features, label_ids, None, encoded_all_labels
         )
-        return model_data, label_ids
+        return model_data, label_ids, is_label_from_rules
 
     @staticmethod
     def _default_predictions(domain: Domain) -> List[float]:
