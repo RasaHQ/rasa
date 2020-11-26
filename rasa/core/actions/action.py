@@ -137,10 +137,10 @@ def action_for_name_or_text(
 
     Raises:
         ActionNotFoundException: If action not in current domain.
+
     Returns:
         The instantiated action.
     """
-
     if action_name_or_text not in domain.action_names:
         domain.raise_action_not_found_exception(action_name_or_text)
 
@@ -232,7 +232,8 @@ class Action:
         raise NotImplementedError
 
     def __str__(self) -> Text:
-        return "Action('{}')".format(self.name())
+        """Returns text representation of form."""
+        return f"{self.__class__.__name__}('{self.name()}')"
 
     def event_for_successful_execution(
         self, prediction: PolicyPrediction
@@ -254,9 +255,17 @@ class ActionUtterTemplate(Action):
     """An action which only effect is to utter a template when it is run.
 
     Both, name and utter template, need to be specified using
-    the `name` method."""
+    the `name` method.
+    """
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False):
+        """Creates action.
+
+        Args:
+            name: Name of the action.
+            silent_fail: `True` if the action should fail silently in case no response
+                was defined for this action.
+        """
         self.template_name = name
         self.silent_fail = silent_fail
 
@@ -282,10 +291,8 @@ class ActionUtterTemplate(Action):
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
+        """Returns action name."""
         return self.template_name
-
-    def __str__(self) -> Text:
-        return "ActionUtterTemplate('{}')".format(self.name())
 
 
 class ActionEndToEndResponse(Action):
@@ -338,6 +345,7 @@ class ActionRetrieveResponse(ActionUtterTemplate):
     """An action which queries the Response Selector for the appropriate response."""
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False):
+        """Creates action. See docstring of parent class."""
         super().__init__(name, silent_fail)
         self.action_name = name
         self.silent_fail = silent_fail
@@ -393,10 +401,8 @@ class ActionRetrieveResponse(ActionUtterTemplate):
         return await super().run(output_channel, nlg, tracker, domain)
 
     def name(self) -> Text:
+        """Returns action name."""
         return self.action_name
-
-    def __str__(self) -> Text:
-        return "ActionRetrieveResponse('{}')".format(self.name())
 
 
 class ActionBack(ActionUtterTemplate):
