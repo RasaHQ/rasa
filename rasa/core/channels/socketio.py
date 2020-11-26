@@ -99,11 +99,8 @@ class SocketIOOutput(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        """Sends custom json to the output"""
-
-        json_message.setdefault("room", recipient_id)
-
-        await self.sio.emit(self.bot_message_evt, **json_message)
+        """Sends custom json to the output."""
+        await self.sio.emit(self.bot_message_evt, json_message, room=recipient_id)
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
