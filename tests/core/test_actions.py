@@ -61,7 +61,7 @@ from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.fixture(scope="module")
-def template_nlg():
+def template_nlg() -> TemplatedNaturalLanguageGenerator:
     templates = {
         "utter_ask_rephrase": [{"text": "can you rephrase that?"}],
         "utter_restart": [{"text": "congrats, you've restarted me!"}],
@@ -81,20 +81,8 @@ def template_nlg():
 
 
 @pytest.fixture(scope="module")
-def template_sender_tracker(default_domain):
+def template_sender_tracker(default_domain: Domain):
     return DialogueStateTracker("template-sender", default_domain.slots)
-
-
-def test_text_format():
-    assert "{}".format(ActionListen()) == "Action('action_listen')"
-    assert (
-        "{}".format(ActionUtterTemplate("my_action_name"))
-        == "ActionUtterTemplate('my_action_name')"
-    )
-    assert (
-        "{}".format(ActionRetrieveResponse("utter_test"))
-        == "ActionRetrieveResponse('utter_test')"
-    )
 
 
 def test_domain_action_instantiation():
