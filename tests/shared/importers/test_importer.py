@@ -361,3 +361,25 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     assert domain.retrieval_intent_templates == nlu_data.responses
     assert domain.templates != nlu_data.responses
     assert "utter_chitchat" in domain.action_names
+
+
+async def test_nlu_data_domain_sync_responses(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/default.yml"
+    data_paths = ["data/test_nlg/test_responses.yml"]
+
+    base_data_importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_paths
+    )
+
+    nlu_importer = NluDataImporter(base_data_importer)
+    core_importer = CoreDataImporter(base_data_importer)
+
+    importer = RetrievalModelsDataImporter(
+        CombinedDataImporter([nlu_importer, core_importer])
+    )
+    with pytest.warns(None):
+        domain = await importer.get_domain()
+
+    # Responses were sync between "test_responses.yml" and the "domain.yml"
+    assert "utter_rasa" in domain.templates.keys()

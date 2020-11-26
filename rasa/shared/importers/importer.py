@@ -314,19 +314,18 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         existing_domain = await self._importer.get_domain()
         existing_nlu_data = await self._importer.get_nlu_data()
 
-        # Check if NLU data has any retrieval intents, if yes
-        # add corresponding retrieval actions with `utter_` prefix automatically
-        # to an empty domain, update the properties of existing retrieval intents
-        # and merge response templates
-        if existing_nlu_data.retrieval_intents:
+        # Merge responses from NLU data with responses in the domain.
+        # If NLU data has any retrieval intents, then add corresponding
+        # retrieval actions with `utter_` prefix automatically to the
+        # final domain, update the properties of existing retrieval intents.
+        domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
+            existing_nlu_data.retrieval_intents,
+            existing_nlu_data.responses,
+            existing_domain,
+        )
 
-            domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
-                existing_nlu_data.retrieval_intents,
-                existing_nlu_data.responses,
-                existing_domain,
-            )
-
-            existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain.check_missing_templates()
 
         return existing_domain
 
@@ -351,7 +350,10 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         response_templates: Dict[Text, List[Dict[Text, Any]]],
         existing_domain: Domain,
     ) -> Domain:
-        """Construct a domain consisting of retrieval intents listed in the NLU training data.
+        """Construct a domain consisting of retrieval intents.
+
+         The result domain will have retrieval intents that are listed
+         in the NLU training data.
 
         Args:
             retrieval_intents: Set of retrieval intents defined in NLU training data.
@@ -360,7 +362,6 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         Returns: Domain with retrieval actions added to action names and properties
         for retrieval intents updated.
         """
-
         # Get all the properties already defined
         # for each retrieval intent in other domains
         # and add the retrieval intent property to them
