@@ -237,8 +237,6 @@ class IntentTEDPolicy(TEDPolicy):
         ENTITY_RECOGNITION: False,
         # Whether to use augmented stories for threshold computation
         "use_augmentation_for_thresholds": True,
-        # What to use for thresholds
-        "use_probability_thresholds": False,
         # Whether to flag retrieval intents
         "ignore_retrieval_intents": True,
         # Other intents to ignore
@@ -266,7 +264,6 @@ class IntentTEDPolicy(TEDPolicy):
         self.use_augmentation_for_thresholds = self.config[
             "use_augmentation_for_thresholds"
         ]
-        self.use_probability_thresholds = self.config["use_probability_thresholds"]
         self.ignore_intent_list = self.config["ignore_intents"]
         self.ignore_retrieval_intents = self.config["ignore_retrieval_intents"]
 
@@ -411,13 +408,11 @@ class IntentTEDPolicy(TEDPolicy):
 
             # print("Computing thresholds")
             self.intent_thresholds = self.model.compute_thresholds(
-                model_augmented_data,
-                augmented_label_ids,
-                self.use_probability_thresholds,
+                model_augmented_data, augmented_label_ids
             )
         else:
             self.intent_thresholds = self.model.compute_thresholds(
-                model_train_data, train_label_ids, self.use_probability_thresholds
+                model_train_data, train_label_ids
             )
         #
         for index in self.intent_thresholds:
@@ -503,11 +498,7 @@ class IntentTEDPolicy(TEDPolicy):
         output = self.model.predict(model_data)
 
         # take the last prediction in the sequence
-        confidences = (
-            output["intent_scores"].numpy()[:, -1, :]
-            if self.use_probability_thresholds
-            else output["sim_all"].numpy()[:, -1, :]
-        )
+        confidences = output["sim_all"].numpy()[:, -1, :]
 
         # Todo: remove this, as this was just for printing
         intent_confidences = {}
@@ -872,9 +863,7 @@ class IntentTED(TED):
 
         return {"intent_scores": scores, "sim_all": sim_all}
 
-    def compute_thresholds(
-        self, model_data: RasaModelData, label_ids, use_probability_thresholds: bool
-    ):
+    def compute_thresholds(self, model_data: RasaModelData, label_ids):
         self._training = False
 
         scores = None
@@ -907,17 +896,9 @@ class IntentTED(TED):
             if first_pos_label_id not in thresholds:
                 thresholds[first_pos_label_id] = []
 
-            thresholds[first_pos_label_id].append(
-                scores[index, 0, first_pos_label_id]
-                if use_probability_thresholds
-                else sims[index, 0, first_pos_label_id]
-            )
+            thresholds[first_pos_label_id].append(sims[index, 0, first_pos_label_id])
 
         for label_id in thresholds:
-            thresholds[label_id] = (
-                min(0.5, min(thresholds[label_id]))
-                if use_probability_thresholds
-                else min(thresholds[label_id])
-            )
+            thresholds[label_id] = min(thresholds[label_id])
 
         return thresholds
