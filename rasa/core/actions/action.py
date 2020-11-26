@@ -158,7 +158,7 @@ def action_for_name_or_text(
         return ActionRetrieveResponse(action_name_or_text)
 
     if action_name_or_text in domain.action_texts:
-        return EndToEndAction(action_name_or_text)
+        return ActionEndToEndResponse(action_name_or_text)
 
     if action_name_or_text.startswith(UTTER_PREFIX):
         return ActionUtterTemplate(action_name_or_text)
@@ -288,7 +288,7 @@ class ActionUtterTemplate(Action):
         return "ActionUtterTemplate('{}')".format(self.name())
 
 
-class EndToEndAction(Action):
+class ActionEndToEndResponse(Action):
     """Action to utter end-to-end responses to the user."""
 
     def __init__(self, action_text: Text) -> None:

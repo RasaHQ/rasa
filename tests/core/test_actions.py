@@ -17,7 +17,7 @@ from rasa.core.actions.action import (
     ActionRetrieveResponse,
     RemoteAction,
     ActionSessionStart,
-    EndToEndAction,
+    ActionEndToEndResponse,
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
@@ -786,7 +786,7 @@ def test_get_end_to_end_utterance_action():
 
     actual = action.action_for_name_or_text("Hi", domain, None)
 
-    assert isinstance(actual, EndToEndAction)
+    assert isinstance(actual, ActionEndToEndResponse)
     assert actual.name() == end_to_end_utterance
 
 
