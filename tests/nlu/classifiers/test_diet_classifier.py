@@ -32,7 +32,7 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils import train_utils
-from rasa.constants import DIAGNOSTIC_DATA
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 

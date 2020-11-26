@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import numpy as np
 
 from rasa.nlu import train
 from rasa.nlu.components import ComponentBuilder
@@ -17,6 +18,8 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     CHECKPOINT_MODEL,
 )
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -238,3 +241,54 @@ async def test_train_model_checkpointing(
     """
     all_files = list(best_model_file.rglob("*.*"))
     assert len(all_files) > 4
+
+
+async def test_process_gives_diagnostic_data(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
+    """Test if processing a message returns attention weights as numpy array."""
+
+    _name = "ResponseSelector"
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": _name,
+                    EPOCHS: 1,
+                    EVAL_NUM_EXAMPLES: 10,
+                    EVAL_NUM_EPOCHS: 1,
+                    NUM_TRANSFORMER_LAYERS: 1,
+                    TRANSFORMER_SIZE: 8,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    (trainer, trained, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data="data/test_selectors",
+        component_builder=component_builder,
+    )
+
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    message = Message(data={TEXT: "hello"})
+    for component in loaded.pipeline:
+        component.process(message)
+
+    diagnostic_data = message.get(DIAGNOSTIC_DATA)
+
+    # The last component is DIETClassifier, which should add attention weights
+    assert isinstance(diagnostic_data, dict)
+    assert _name in diagnostic_data
+    assert "attention_weights" in diagnostic_data[_name]
+    assert isinstance(diagnostic_data[_name].get("attention_weights"), np.ndarray)
+    assert "text_transformed" in diagnostic_data[_name]
+    assert isinstance(diagnostic_data[_name].get("text_transformed"), np.ndarray)

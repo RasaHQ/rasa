@@ -21,8 +21,8 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
-from rasa.constants import DIAGNOSTIC_DATA
-from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
+from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.utils.tensorflow.tf_to_numpy import values_to_numpy
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features

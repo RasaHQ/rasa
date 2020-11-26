@@ -6,8 +6,8 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-from rasa.constants import DIAGNOSTIC_DATA
-from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
+from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.utils.tensorflow.tf_to_numpy import values_to_numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException

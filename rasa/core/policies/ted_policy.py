@@ -22,7 +22,7 @@ from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, EN
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
-from rasa.constants import DIAGNOSTIC_DATA
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -30,7 +30,7 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
-from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
+from rasa.shared.utils.tensorflow.tf_to_numpy import values_to_numpy
 from rasa.utils.tensorflow.constants import (
     LABEL,
     TRANSFORMER_SIZE,
