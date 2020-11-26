@@ -136,6 +136,11 @@ def add_fingerprint_config_param(parser: argparse.ArgumentParser) -> None:
 def add_compare_params(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
+    """Add `--percentages` argument to a specified `parser`.
+
+    Args:
+        parser: An instance of `ArgumentParser` or `_ActionsContainer`.
+    """
     parser.add_argument(
         "--percentages",
         nargs="*",
@@ -151,6 +156,11 @@ def add_compare_params(
 def add_augmentation_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
+    """Add `--augmentation` argument to a specified `parser`.
+
+    Args:
+        parser: An instance of `ArgumentParser` or `_ActionsContainer`.
+    """
     parser.add_argument(
         "--augmentation",
         type=int,

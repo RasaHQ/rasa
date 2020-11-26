@@ -200,6 +200,16 @@ def train_fingerprint(args: argparse.Namespace) -> None:
 
 
 def extract_core_additional_arguments(args: argparse.Namespace) -> Dict:
+    """Extract and return the dictionary of additional arguments.
+
+    This command should be used with a parser for `rasa train core`.
+
+    Args:
+        args: An instance of `Namespace`.
+
+    Return:
+        A dictionary of arguments.
+    """
     arguments = {}
 
     if "augmentation" in args:
