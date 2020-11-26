@@ -54,14 +54,17 @@ class Message:
             self.features.append(features)
 
     def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
+        """Add diagnostic data from the component with name `origin`."""
         if origin in self.get(DIAGNOSTIC_DATA, {}):
             rasa.shared.utils.io.raise_warning(
                 f"Please make sure every pipeline component has a distinct name. "
-                f"The name '{self.name}' appears at least twice and diagnostic data will be overwritten."
+                f"The name '{self.name}' appears at least twice and diagnostic "
+                f"data will be overwritten."
             )
-        self.set(
-            DIAGNOSTIC_DATA, {origin: values_to_numpy(data)}
-        )
+        if DIAGNOSTIC_DATA in self.data:
+            self.data[DIAGNOSTIC_DATA][origin] = values_to_numpy(data)
+        else:
+            self.data[DIAGNOSTIC_DATA] = {origin: values_to_numpy(data)}
 
     def set(self, prop, info, add_to_output=False) -> None:
         self.data[prop] = info
