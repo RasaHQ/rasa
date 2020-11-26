@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Text, Union, Optional
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
-from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
 import rasa.shared.utils.io
 import rasa.shared.core.constants

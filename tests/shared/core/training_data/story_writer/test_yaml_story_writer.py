@@ -18,9 +18,6 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.core.training_data.structures import STORY_START
-from rasa.utils.endpoints import EndpointConfig
-
-import rasa.shared.utils.io
 
 
 @pytest.mark.parametrize(
