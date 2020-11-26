@@ -786,8 +786,14 @@ class TransformerRasaModel(RasaModel):
     #     )
 
     def _prepare_sparse_dense_layers(
-        self, data_signature: List[FeatureSignature], name: Text
+        self,
+        data_signature: List[FeatureSignature],
+        attribute: Text,
+        feature_type: Text,
+        dense_units: int,
     ) -> None:
+        name = f"{attribute}_{feature_type}"
+
         sparse = False
         dense = False
         for is_sparse, _, _ in data_signature:
@@ -796,20 +802,31 @@ class TransformerRasaModel(RasaModel):
             else:
                 dense = True
 
+        # anything sparse has to be ultimately turned into dense
         if sparse:
+            output_units = 0
+            for is_sparse, units, in data_signature:
+                if is_sparse:
+                    units += self.config[DENSE_DIMENSION][attribute]
+                else:
+                    units += units
+
             sparse_to_dense_layer_options = {
-                units: self.config[DENSE_DIMENSION][name],
-                reg_lambda: self.config[REGULARIZATION_CONSTANT],
+                "units": dense_units,
+                "reg_lambda": self.config[REGULARIZATION_CONSTANT],
+                "name": f"sparse_to_dense.{name}",
             }
             self._tf_layers[
                 f"concat_sparse_dense_features.{name}"
             ] = layers.ConcatenateSparseDenseFeatures(
-                dropout_rate=drop_rate,
+                dropout_rate=self.config[DROP_RATE],
                 sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
                 dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+                output_units=output_units,
                 layer_name_suffix=name,
                 sparse_to_dense_kw=sparse_to_dense_layer_options,
             )
+            print(f"### Adding sparse_dense for {name}")
 
             # self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
             #     units=dense_dim,
@@ -825,22 +842,8 @@ class TransformerRasaModel(RasaModel):
                     trainable=False,
                     name=f"sparse_to_dense_ids.{name}",
                 )
-
-    def _prepare_sequence_sentence_layers(self, name: Text, feature_type: Text) -> None:
-        # Ffnn layer is prepared separately for each feature type
-        self._prepare_ffnn_layer(
-            f"{name}_{feature_type}",
-            [self.config[CONCAT_DIMENSION][name]],
-            self.config[DROP_RATE],
-            prefix="unify_dims_for_concat",
-        )
-
-        # one sequence-sentence contatenation layer is used for all feature types
-        concat_sequence_sentence_name = f"concat_sequence_sentence_features.{name}"
-        if concat_sequence_sentence_name not in self._tf_layers:
-            self._tf_layers[
-                concat_sequence_sentence_name
-            ] = layers.ConcatenateSequenceSentenceFeatures(layer_name_suffix=name)
+        else:
+            print(f"### NOT Adding sparse_dense for {name}")
 
     def _prepare_input_layers(self, name: Text) -> None:
         self._prepare_ffnn_layer(
@@ -859,10 +862,26 @@ class TransformerRasaModel(RasaModel):
             # )
 
             self._prepare_sparse_dense_layers(
-                self.data_signature[name][feature_type], f"{name}_{feature_type}"
+                data_signature=self.data_signature[name][feature_type],
+                attribute=name,
+                feature_type=feature_type,
+                dense_units=self.config[DENSE_DIMENSION][name],
             )
 
-            self._prepare_sequence_sentence_layers(name, feature_type)
+            # Ffnn layer is prepared separately for each feature type
+            self._prepare_ffnn_layer(
+                f"{name}_{feature_type}",
+                [self.config[CONCAT_DIMENSION][name]],
+                self.config[DROP_RATE],
+                prefix="unify_dims_for_concat",
+            )
+
+        # one sequence-sentence contatenation layer is used for both feature types
+        self._tf_layers[
+            f"concat_sequence_sentence_features.{name}"
+        ] = layers.ConcatenateSequenceSentenceFeatures(
+            layer_name_suffix=name, output_units=self.config[CONCAT_DIMENSION][name]
+        )
 
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
@@ -929,6 +948,17 @@ class TransformerRasaModel(RasaModel):
 
     #     return tf.concat(dense_features, axis=-1) * mask
 
+    def _combine_sparse_dense_features(
+        self, features: List[Union[tf.Tensor, tf.SparseTensor]], name: Text
+    ) -> tf.Tensor:
+        layer_name = f"concat_sparse_dense_features.{name}"
+        if layer_name in self._tf_layers:
+            # sparse and possibly dense features are present, turn into dense and concat
+            return self._tf_layers[layer_name](features, self._training)
+        else:
+            # only dense features are present
+            return tf.concat(features, axis=-1)
+
     def _combine_sequence_sentence_features(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -948,9 +978,9 @@ class TransformerRasaModel(RasaModel):
             # sparse_dropout,
             # dense_dropout,
             # )
-            sequence_x = self._tf_layers[
-                f"concat_sparse_dense_features.{name}_{SEQUENCE}"
-            ](sequence_features, self._training)
+            sequence_x = self._combine_sparse_dense_features(
+                sequence_features, f"{name}_{SEQUENCE}"
+            )
             sequence_x = sequence_x * mask_sequence
         else:
             sequence_x = None
@@ -959,9 +989,9 @@ class TransformerRasaModel(RasaModel):
             # sentence_x = self._combine_sparse_dense_features(
             #     sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout
             # )
-            sentence_x = self._tf_layers[
-                f"concat_sparse_dense_features.{name}_{SENTENCE}"
-            ](sentence_features, self._training)
+            sentence_x = self._combine_sparse_dense_features(
+                sentence_features, f"{name}_{SENTENCE}"
+            )
         else:
             sentence_x = None
 
@@ -972,6 +1002,9 @@ class TransformerRasaModel(RasaModel):
             return sentence_x
 
         if sequence_x is not None and sentence_x is not None:
+            print(
+                f"GONNA COMBINE seq {type(sequence_features[0])} ({sequence_features[0].shape}) and sent {type(sentence_features[0])} ({sentence_features[0].shape})"
+            )
             if sequence_x.shape[-1] != sentence_x.shape[-1]:
                 sequence_x = self._tf_layers[
                     f"unify_dims_for_concat.{name}_{SEQUENCE}"
@@ -1064,6 +1097,15 @@ class TransformerRasaModel(RasaModel):
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
             seq_ids = None
+
+        print("<<<<<<<<<<< create_sequence >>>>>>>>>>>>>>>>>>")
+        print(f"> {name}")
+        print(f"> seq {sequence_features[0].shape} ({len(sequence_features)})")
+        print(f"> sent {sentence_features[0].shape} ({len(sentence_features)})")
+        if mask_sequence is not None:
+            print(f"> mask_seq {mask_sequence.shape}")
+        if mask is not None:
+            print(f"> mask {mask.shape}")
 
         inputs = self._combine_sequence_sentence_features(
             sequence_features,

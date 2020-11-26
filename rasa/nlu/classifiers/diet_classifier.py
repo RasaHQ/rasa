@@ -1326,8 +1326,8 @@ class DIET(TransformerRasaModel):
             sequence_mask,
             text_mask,
             name,
-            sparse_dropout,
-            dense_dropout,
+            # sparse_dropout,
+            # dense_dropout,
         )
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
         return self._tf_layers[f"ffnn.{name}"](x, self._training)

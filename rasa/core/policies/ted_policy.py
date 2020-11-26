@@ -497,6 +497,7 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
+            eager=True,  # TODO remove
         )
 
     def _featurize_tracker_for_e2e(
@@ -787,15 +788,43 @@ class TED(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
-            self._prepare_sparse_dense_layer_for(name, self.data_signature)
+            print(f"$$ data attribute: {name}")
+            # prepare a stack of sparse/dense, sentence/squence and transformer layers
             if name in SEQUENCE_FEATURES_TO_ENCODE:
                 self._prepare_sequence_layers(name)
+            # just a sparse/dense layer, combining sentence/sequence isn't needed
+            elif SENTENCE in self.data_signature[name]:
+                # self._prepare_sparse_dense_layer_for(name, self.data_signature)
+                self._prepare_sparse_dense_layers(
+                    data_signature=self.data_signature[name][SENTENCE],
+                    name=f"{name}_{SENTENCE}",
+                    dense_units=self.config[DENSE_DIMENSION][name],
+                )
+            else:
+                print(
+                    "> CREATING NO FEATURE COMBINING LAYERS for",
+                    name,
+                    self.data_signature[name],
+                )
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
-            self._prepare_sparse_dense_layer_for(name, self.label_signature)
+            print(f"$$ label attribute: {name}")
             if name in SEQUENCE_FEATURES_TO_ENCODE:
                 self._prepare_sequence_layers(name)
+            elif SENTENCE in self.label_signature[name]:
+                # self._prepare_sparse_dense_layer_for(name, self.label_signature)
+                self._prepare_sparse_dense_layers(
+                    data_signature=self.label_signature[name][SENTENCE],
+                    name=f"{name}_{SENTENCE}",
+                    dense_units=self.config[DENSE_DIMENSION][name],
+                )
+            else:
+                print(
+                    "> CREATING NO FEATURE COMBINING LAYERS for",
+                    name,
+                    self.label_signature[name],
+                )
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
@@ -814,33 +843,24 @@ class TED(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
-    # TODO get rid of this one
-    def _prepare_sparse_dense_layer_for(
-        self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
-    ) -> None:
-        """Prepare the sparse dense layer for the given attribute name. It is used to
-        combine the sparse and dense features of the attribute at the beginning of
-        the model.
+    # def _prepare_sparse_dense_layer_for(
+    #     self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
+    # ) -> None:
+    #     """Prepare the sparse dense layer for the given attribute name. It is used to
+    #     combine the sparse and dense features of the attribute at the beginning of
+    #     the model.
 
-        Args:
-            name: the attribute name
-            signature: data signature
-        """
-        for feature_type in VALID_FEATURE_TYPES:
-            if name not in signature or feature_type not in signature[name]:
-                # features for feature type are not present
-                continue
-
-            self._prepare_sparse_dense_dropout_layers(
-                f"{name}_{feature_type}", self.config[DROP_RATE]
-            )
-
-            # use the same configurable dense dimension for all sparse features
-            self._prepare_sparse_dense_layers(
-                signature[name][feature_type],
-                f"{name}_{feature_type}",
-                self.config[DENSE_DIMENSION][name],
-            )
+    #     Args:
+    #         name: the attribute name
+    #         signature: data signature
+    #     """
+    #     for feature_type in VALID_FEATURE_TYPES:
+    #         if feature_type in signature[name]:
+    #             self._prepare_sparse_dense_layers(
+    #                 data_signature=signature[name][feature_type],
+    #                 name=f"{name}_{feature_type}",
+    #                 dense_units=self.config[DENSE_DIMENSION][name]
+    #             )
 
     def _prepare_encoding_layers(self, name: Text) -> None:
         """Create ffnn layer for given attribute name. The layer is used just before
@@ -896,8 +916,10 @@ class TED(TransformerRasaModel):
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         # labels cannot have all features "fake"
         all_labels_encoded = {}
+        print(f"### label keys {self.tf_label_data.keys()}")
         for key in self.tf_label_data.keys():
             if key != LABEL_KEY:
+                print(f"#### encoding real features for {key}")
                 attribute_features, _, _ = self._encode_real_features_per_attribute(
                     self.tf_label_data, key
                 )
@@ -968,6 +990,7 @@ class TED(TransformerRasaModel):
         # Therefore actual input tensors will be empty.
         # Since we need actual numbers to create dialogue turn features, we create
         # zero tensors in `_encode_fake_features_per_attribute` for these attributes.
+        print("\n>>>>>> _encode_features_per_attribute")
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
             lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),
@@ -975,16 +998,23 @@ class TED(TransformerRasaModel):
         )
 
     def _get_dense_units(
-        self, attribute_features_list: List[tf.Tensor], attribute: Text
+        self,
+        attribute_features_list: List[tf.Tensor],
+        attribute: Text,
+        feature_type: Text,
     ) -> int:
         # TODO this should be done in corresponding layers once in init
-        units = 0
-        for f in attribute_features_list:
-            if isinstance(f, tf.SparseTensor):
-                units += self.config[DENSE_DIMENSION][attribute]
-            else:
-                units += f.shape[-1]
-        return units
+        print("\n\nGET_DENSE_UNITS\n\n")
+        return self._tf_layers[
+            "concat_sparse_dense_features.{attribute}_{feature_type}"
+        ].output_units
+        # units = 0
+        # for f in attribute_features_list:
+        #     if isinstance(f, tf.SparseTensor):
+        #         units += self.config[DENSE_DIMENSION][attribute]
+        #     else:
+        #         units += f.shape[-1]
+        # return units
 
     def _get_concat_units(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
@@ -992,10 +1022,10 @@ class TED(TransformerRasaModel):
         # TODO this should be done in corresponding layers once in init
         # calculate concat sequence sentence dim
         sentence_units = self._get_dense_units(
-            tf_batch_data[attribute][SENTENCE], attribute
+            tf_batch_data[attribute][SENTENCE], attribute, SENTENCE
         )
         sequence_units = self._get_dense_units(
-            tf_batch_data[attribute][SEQUENCE], attribute
+            tf_batch_data[attribute][SEQUENCE], attribute, SEQUENCE
         )
 
         if sequence_units and not sentence_units:
@@ -1005,7 +1035,7 @@ class TED(TransformerRasaModel):
             return sentence_units
 
         if sentence_units != sequence_units:
-            return self.config[CONCAT_DIMENSION][TEXT]
+            return self.config[CONCAT_DIMENSION][attribute]
 
         return sentence_units
 
@@ -1021,12 +1051,15 @@ class TED(TransformerRasaModel):
         if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
             units = self.config[ENCODING_DIMENSION]
         else:
-            units = self._get_dense_units(tf_batch_data[attribute][SENTENCE], attribute)
+            units = self._get_dense_units(
+                tf_batch_data[attribute][SENTENCE], attribute, SENTENCE
+            )
 
         attribute_features = tf.zeros(
             (batch_dim, dialogue_dim, units), dtype=tf.float32
         )
         if attribute == TEXT:
+            print(">>>>>>>>>>>> TEXT")
             # if the input features are fake, we don't process them further,
             # but we need to calculate correct last dim (units) so that tf could infer
             # the last shape of the tensors
@@ -1169,10 +1202,14 @@ class TED(TransformerRasaModel):
             )
 
         else:
-            # TODO ensure we don't need to check if tf_batch_data[attribute][SENTENCE] is empty
-            # TODO call the actual layer
-            # resulting attribute features will have shape
+            # TODO ensure we don't need to check if tf_batch_data[attribute][SENTENCE]
+            # is empty.
+            # Resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
+
+            # attribute_features = self._combine_sparse_dense_features(
+            #     tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
+            # )
             attribute_features = self._combine_sparse_dense_features(
                 tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
             )
@@ -1475,6 +1512,11 @@ class TED(TransformerRasaModel):
             The loss of the given batch.
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+        print("BATCH IN")
+        for k, v in tf_batch_data.items():
+            print(f"> {k}")
+            for k1, v1 in v.items():
+                print(f">>>> {k1}: {v1[0].shape}")
         self._compute_dialogue_indices(tf_batch_data)
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()

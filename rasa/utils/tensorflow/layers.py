@@ -219,6 +219,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         sparse_dropout: bool,
         dense_dropout: bool,
         layer_name_suffix: Text,
+        output_units: int,
         sparse_to_dense_kw: Dict[Text, Any] = {},
     ) -> None:
         super().__init__(name=f"concatenate_sparse_dense_features_{layer_name_suffix}")
@@ -232,6 +233,8 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
 
         if dense_dropout:
             self._dense_dropout = tf.keras.layers.Dropout(rate=dropout_rate)
+
+        self.output_units = output_units
 
     def call(
         self,
@@ -249,8 +252,8 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
 
                 dense_f = self._sparse_to_dense(_f)
 
-                # TODO dense features shouldn't use dropout,
-                # only the ones that were originally sparse?
+                # TODO according to original code, dense features shouldn't use dropout,
+                # only the ones that were originally sparse. Is this correct?
                 if self._dense_dropout:
                     dense_f = self._dense_dropout(dense_f, training)
 
@@ -258,23 +261,19 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
             else:
                 dense_features.append(f)
 
-        # if mask is None:
         return tf.concat(dense_features, axis=-1)
-        # return tf.concat(dense_features, axis=-1) * mask
 
 
 class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
     # TODO add docstring
-    def __init__(self, layer_name_suffix: Text) -> None:
+    def __init__(self, layer_name_suffix: Text, output_units: int) -> None:
         super().__init__(
             name=f"concatenate_sequence_sentence_features_{layer_name_suffix}"
         )
+        self.output_units = output_units
 
     def call(
-        self,
-        sequence_x: tf.Tensor,
-        sentence_x: tf.Tensor,
-        mask_text: tf.Tensor,
+        self, sequence_x: tf.Tensor, sentence_x: tf.Tensor, mask_text: tf.Tensor,
     ) -> tf.Tensor:
         # we need to concatenate the sequence features with the sentence features
         # we cannot use tf.concat as the sequence features are padded
@@ -283,6 +282,8 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
         last = mask_text * tf.math.cumprod(
             1 - mask_text, axis=1, exclusive=True, reverse=True
         )
+        print(f"> last {last.shape}")
+        print(f"last {type(last)}, sentence_x {type(sentence_x)}")
         # (2) multiply by sentence features so that we get a matrix of
         #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
         #     for the sentence features
