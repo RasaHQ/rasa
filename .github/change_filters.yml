@@ -1,0 +1,19 @@
+backend:
+  - 'pyproject.toml'
+  - 'rasa/**/*'
+  - 'tests/**/*'
+  - 'data/**/*'
+  - 'examples/**/*'
+
+docker:
+  - 'pyproject.toml'
+  - 'rasa/**/*'
+  - 'docker/**/*'
+
+docs:
+  - 'docs/**/*'
+  - 'changelog/*'
+  - 'CHANGELOG.mdx'
+  - 'tests/docs/*'
+  - 'data/**/*'
+  - 'examples/**/*'

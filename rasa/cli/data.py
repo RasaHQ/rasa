@@ -3,13 +3,18 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import List, Text, Dict
+from typing import Dict, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
+from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
+from rasa.core.training.converters.responses_prefix_converter import (
+    DomainResponsePrefixConverter,
+    StoryResponsePrefixConverter,
+)
 import rasa.nlu.convert
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
@@ -28,7 +33,6 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
-from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
@@ -43,6 +47,9 @@ from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
+
+if TYPE_CHECKING:
+    from rasa.shared.core.training_data.structures import StoryStep
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +105,11 @@ def _add_data_convert_parsers(
         "nlg",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Converts NLG data between formats.",
+        help=(
+            "Converts NLG data between formats. If you're migrating from 1.x, "
+            "please run `rasa data convert responses` to adapt the training data "
+            "to the new response selector format."
+        ),
     )
     convert_nlg_parser.set_defaults(func=_convert_nlg_data)
 
@@ -121,27 +132,28 @@ def _add_data_convert_parsers(
         help="Migrate model configuration between Rasa Open Source versions.",
     )
     migrate_config_parser.set_defaults(func=_migrate_model_config)
-    _add_migrate_config_arguments(migrate_config_parser)
-
-
-def _add_migrate_config_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "-c",
-        "--config",
-        default=DEFAULT_CONFIG_PATH,
-        help="Path to the model configuration which should be migrated",
-    )
-    parser.add_argument(
-        "-d", "--domain", default=DEFAULT_DOMAIN_PATH, help="Path to the model domain"
-    )
-    parser.add_argument(
-        "-o",
-        "--out",
-        type=str,
+    default_arguments.add_config_param(migrate_config_parser)
+    default_arguments.add_domain_param(migrate_config_parser)
+    default_arguments.add_out_param(
+        migrate_config_parser,
         default=os.path.join(DEFAULT_DATA_PATH, "rules.yml"),
-        help="Path to the file which should contain any rules which are created as "
-        "part of the migration. If the file doesn't exist, it will be created.",
+        help_text="Path to the file which should contain any rules which are created "
+        "as part of the migration. If the file doesn't exist, it will be created.",
     )
+
+    convert_responses_parser = convert_subparsers.add_parser(
+        "responses",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help=(
+            "Convert retrieval intent responses between Rasa Open Source versions. "
+            "Please also run `rasa data convert nlg` to convert training data files "
+            "to the right format."
+        ),
+    )
+    convert_responses_parser.set_defaults(func=_migrate_responses)
+    arguments.set_convert_arguments(convert_responses_parser, data_type="Rasa stories")
+    default_arguments.add_domain_param(convert_responses_parser)
 
 
 def _add_data_split_parsers(
@@ -292,7 +304,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         telemetry.track_data_convert(args.format, "nlu")
     elif args.format == "yaml":
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args, NLUMarkdownToYamlConverter())
+            _convert_to_yaml(args.out, args.data, NLUMarkdownToYamlConverter())
         )
         telemetry.track_data_convert(args.format, "nlu")
     else:
@@ -309,7 +321,7 @@ def _convert_core_data(args: argparse.Namespace) -> None:
 
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args, StoryMarkdownToYamlConverter())
+            _convert_to_yaml(args.out, args.data, StoryMarkdownToYamlConverter())
         )
         telemetry.track_data_convert(args.format, "core")
     else:
@@ -326,7 +338,7 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
 
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+            _convert_to_yaml(args.out, args.data, NLGMarkdownToYamlConverter())
         )
         telemetry.track_data_convert(args.format, "nlg")
     else:
@@ -336,18 +348,37 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
         )
 
 
+def _migrate_responses(args: argparse.Namespace) -> None:
+    """Migrate retrieval intent responses to the new 2.0 format.
+    It does so modifying the stories and domain files.
+    """
+    if args.format == "yaml":
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args.out, args.domain, DomainResponsePrefixConverter())
+        )
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args.out, args.data, StoryResponsePrefixConverter())
+        )
+        telemetry.track_data_convert(args.format, "responses")
+    else:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Could not recognize output format. Supported output formats: "
+            "'yaml'. Specify the desired output format with '--format'."
+        )
+
+
 async def _convert_to_yaml(
-    args: argparse.Namespace, converter: TrainingDataConverter
+    out_path: Text, data_path: Text, converter: TrainingDataConverter
 ) -> None:
 
-    output = Path(args.out)
+    output = Path(out_path)
     if not os.path.exists(output):
         rasa.shared.utils.cli.print_error_and_exit(
             f"The output path '{output}' doesn't exist. Please make sure to specify "
             f"an existing directory and try again."
         )
 
-    training_data = Path(args.data)
+    training_data = Path(data_path)
     if not os.path.exists(training_data):
         rasa.shared.utils.cli.print_error_and_exit(
             f"The training data path {training_data} doesn't exist "
@@ -583,7 +614,7 @@ def _get_rules_path(path: Text) -> Path:
     return rules_file
 
 
-def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
+def _dump_rules(path: Path, new_rules: List["StoryStep"]) -> None:
     existing_rules = []
     if path.exists():
         rules_reader = YAMLStoryReader()
@@ -605,7 +636,7 @@ def _backup(path: Path) -> None:
     shutil.copy(path, backup_file)
 
 
-def _print_success_message(new_rules: List[StoryStep], output_file: Path) -> None:
+def _print_success_message(new_rules: List["StoryStep"], output_file: Path) -> None:
     if len(new_rules) > 1:
         suffix = "rule"
         verb = "was"
