@@ -68,9 +68,11 @@ class Message:
 
     def set(self, prop: Text, info: Any, add_to_output=False) -> None:
         """Set property `prop` to `info`.
+
         Args:
             prop: Name of the property to be set.
             info: Value to be assigned to that property.
+            add_to_output: Decides whether to add `prop` to the `output_properties`.
         """
         self.data[prop] = info
         if add_to_output:
