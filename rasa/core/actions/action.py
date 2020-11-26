@@ -301,7 +301,8 @@ class EndToEndAction(Action):
 
     def name(self) -> Text:
         """Returns action name."""
-
+        # In case of an end-to-end action there is no label (aka name) for the action.
+        # We fake a name by returning the text which we respond to the user.
         return self.action_text
 
     async def run(
