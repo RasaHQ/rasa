@@ -251,7 +251,7 @@ they work for the projected work we have planned for the quarter, as well as wor
 #### A week before release day
 
 1. **Make sure the [milestone](https://github.com/RasaHQ/rasa/milestones) already exists and is scheduled for the 
-correct date**
+correct date.**
 2. **Take a look at the issues & PRs that are in the milestone**: does it look about right for the release highlights 
 we are planning to ship? Does it look like anything is missing? Don't worry about being aware of every PR that should 
 be in, but it's useful to take a moment to evaluate what's assigned to the milestone.
