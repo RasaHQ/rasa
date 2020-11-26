@@ -1,0 +1,1105 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker Stores</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Event Brokers" href="../event-brokers/" />
+    <link rel="prev" title="Tracker" href="../tracker/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Tracker Stores" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/api/tracker-stores" />
+  
+    <meta name="description" content="All conversations are stored within a tracker store. Read how Rasa Open Source
+provides implementations for different store types out of the box." />
+    <meta itemprop="description" content="All conversations are stored within a tracker store. Read how Rasa Open Source
+provides implementations for different store types out of the box.">
+    <meta name="twitter:description" content="All conversations are stored within a tracker store. Read how Rasa Open Source
+provides implementations for different store types out of the box." />
+    <meta property="og:description" content="All conversations are stored within a tracker store. Read how Rasa Open Source
+provides implementations for different store types out of the box." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Tracker Stores">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/api/tracker-stores/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tracker/">Tracker</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.18
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.18/api/tracker-stores/">1.10.18</a>
+              <a href="../../../1.10.17/api/tracker-stores/">1.10.17</a>
+              <a href="../../../1.10.16/api/tracker-stores/">1.10.16</a>
+              <a href="../../../1.10.15/api/tracker-stores/">1.10.15</a>
+              <a href="../../../1.10.14/api/tracker-stores/">1.10.14</a>
+              <a href="../../../1.10.13/api/tracker-stores/">1.10.13</a>
+              <a href="../../../1.10.12/api/tracker-stores/">1.10.12</a>
+              <a href="../../../1.10.11/api/tracker-stores/">1.10.11</a>
+              <a href="../../../1.10.10/api/tracker-stores/">1.10.10</a>
+              <a href="../../../1.10.9/api/tracker-stores/">1.10.9</a>
+              <a href="../../../1.10.8/api/tracker-stores/">1.10.8</a>
+              <a href="../../../1.10.7/api/tracker-stores/">1.10.7</a>
+              <a href="../../../1.10.6/api/tracker-stores/">1.10.6</a>
+              <a href="../../../1.10.5/api/tracker-stores/">1.10.5</a>
+              <a href="../../../1.10.4/api/tracker-stores/">1.10.4</a>
+              <a href="../../../1.10.3/api/tracker-stores/">1.10.3</a>
+              <a href="../../../1.10.2/api/tracker-stores/">1.10.2</a>
+              <a href="../../../1.10.1/api/tracker-stores/">1.10.1</a>
+              <a href="../../../1.10.0/api/tracker-stores/">1.10.0</a>
+              <a href="../../../1.9.7/api/tracker-stores/">1.9.7</a>
+              <a href="../../../1.9.6/api/tracker-stores/">1.9.6</a>
+              <a href="../../../1.9.5/api/tracker-stores/">1.9.5</a>
+              <a href="../../../1.9.4/api/tracker-stores/">1.9.4</a>
+              <a href="../../../1.9.3/api/tracker-stores/">1.9.3</a>
+              <a href="../../../1.9.2/api/tracker-stores/">1.9.2</a>
+              <a href="../../../1.9.1/api/tracker-stores/">1.9.1</a>
+              <a href="../../../1.9.0/api/tracker-stores/">1.9.0</a>
+              <a href="../../../1.8.3/api/tracker-stores/">1.8.3</a>
+              <a href="../../../1.8.2/api/tracker-stores/">1.8.2</a>
+              <a href="../../../1.8.1/api/tracker-stores/">1.8.1</a>
+              <a href="../../../1.8.0/api/tracker-stores/">1.8.0</a>
+              <a href="../../../1.7.4/api/tracker-stores/">1.7.4</a>
+              <a href="../../../1.7.3/api/tracker-stores/">1.7.3</a>
+              <a href="../../../1.7.2/api/tracker-stores/">1.7.2</a>
+              <a href="../../../1.7.1/api/tracker-stores/">1.7.1</a>
+              <a href="../../../1.7.0/api/tracker-stores/">1.7.0</a>
+              <a href="../../../1.6.2/api/tracker-stores/">1.6.2</a>
+              <a href="../../../1.5.3/api/tracker-stores/">1.5.3</a>
+              <a href="../../../1.4.6/api/tracker-stores/">1.4.6</a>
+              <a href="../../../1.3.10/api/tracker-stores/">1.3.10</a>
+              <a href="../../../1.2.9/api/tracker-stores/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="tracker-stores">
+<span id="id1"></span><h1><a class="toc-backref" href="#id3">Tracker Stores</a><a class="headerlink" href="#tracker-stores" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/tracker-stores.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>All conversations are stored within a tracker store.
+Rasa Open Source provides implementations for different store types out of the box.
+If you want to use another store, you can also build a custom tracker store by
+extending the <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code> class.</p>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#tracker-stores" id="id3">Tracker Stores</a></p>
+<ul>
+<li><p><a class="reference internal" href="#inmemorytrackerstore-default" id="id4">InMemoryTrackerStore (default)</a></p></li>
+<li><p><a class="reference internal" href="#sqltrackerstore" id="id5">SQLTrackerStore</a></p></li>
+<li><p><a class="reference internal" href="#redistrackerstore" id="id6">RedisTrackerStore</a></p></li>
+<li><p><a class="reference internal" href="#mongotrackerstore" id="id7">MongoTrackerStore</a></p></li>
+<li><p><a class="reference internal" href="#dynamotrackerstore" id="id8">DynamoTrackerStore</a></p></li>
+<li><p><a class="reference internal" href="#custom-tracker-store" id="id9">Custom Tracker Store</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="inmemorytrackerstore-default">
+<h2><a class="toc-backref" href="#id4">InMemoryTrackerStore (default)</a><a class="headerlink" href="#inmemorytrackerstore-default" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">InMemoryTrackerStore</span></code> is the default tracker store. It is used if no other
+tracker store is configured. It stores the conversation history in memory.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As this store keeps all history in memory, the entire history is lost if you restart the Rasa server.</p>
+</div>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><p>To use the <code class="docutils literal notranslate"><span class="pre">InMemoryTrackerStore</span></code> no configuration is needed.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="sqltrackerstore">
+<span id="sql-tracker-store"></span><h2><a class="toc-backref" href="#id5">SQLTrackerStore</a><a class="headerlink" href="#sqltrackerstore" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> can be used to store the conversation history in an SQL database.
+Storing your trackers this way allows you to query the event database by sender_id, timestamp, action name,
+intent name and typename.</p>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><p>To set up Rasa Open Source with SQL the following steps are required:</p>
+<ol class="arabic">
+<li><p>Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+    <span class="nt">dialect</span><span class="p">:</span> <span class="s">&quot;postgresql&quot;</span>  <span class="c1"># the dialect used to interact with the db</span>
+    <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;&quot;</span>  <span class="c1"># (optional) host of the sql db, e.g. &quot;localhost&quot;</span>
+    <span class="nt">db</span><span class="p">:</span> <span class="s">&quot;rasa&quot;</span>  <span class="c1"># path to your db</span>
+    <span class="nt">username</span><span class="p">:</span>  <span class="c1"># username used for authentication</span>
+    <span class="nt">password</span><span class="p">:</span>  <span class="c1"># password used for authentication</span>
+    <span class="nt">query</span><span class="p">:</span> <span class="c1"># optional dictionary to be added as a query string to the connection URL</span>
+      <span class="nt">driver</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-driver</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>To start the Rasa server using your SQL backend,
+add the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>If deploying your model in Docker Compose, add the service to your <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">postgres</span><span class="p">:</span>
+  <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">postgres:latest</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To route requests to the new service, make sure that the <code class="docutils literal notranslate"><span class="pre">url</span></code> in your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>
+references the service name:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span>  <span class="nt">tracker_store</span><span class="p">:</span>
+      <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+      <span class="nt">dialect</span><span class="p">:</span> <span class="s">&quot;postgresql&quot;</span>  <span class="c1"># the dialect used to interact with the db</span>
+<span class="hll">      <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;postgres&quot;</span>
+</span>      <span class="nt">db</span><span class="p">:</span> <span class="s">&quot;rasa&quot;</span>  <span class="c1"># path to your db</span>
+      <span class="nt">username</span><span class="p">:</span>  <span class="c1"># username used for authentication</span>
+      <span class="nt">password</span><span class="p">:</span>  <span class="c1"># password used for authentication</span>
+      <span class="nt">query</span><span class="p">:</span> <span class="c1"># optional dictionary to be added as a query string to the connection URL</span>
+        <span class="nt">driver</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-driver</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">domain</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Domain object associated with this tracker store</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dialect</span></code> (default: <code class="docutils literal notranslate"><span class="pre">sqlite</span></code>): The dialect used to communicate with your SQL backend.  Consult the <a class="reference external" href="https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls">SQLAlchemy docs</a> for available dialects.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL server</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Port of your SQL server</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa.db</span></code>): The path to the database to be used</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The username which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">event_broker</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Event broker to publish events to</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">login_db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Alternative database name to which initially  connect, and create the database specified by <code class="docutils literal notranslate"><span class="pre">db</span></code> (PostgreSQL only)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect</p></li>
+</ul>
+</dd>
+<dt class="field-even">Officially Compatible Databases</dt>
+<dd class="field-even"><ul class="simple">
+<li><p>PostgreSQL</p></li>
+<li><p>Oracle &gt; 11.0</p></li>
+<li><p>SQLite</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Oracle Configuration</dt>
+<dd class="field-odd"><p>To use the SQLTrackerStore with Oracle, there are a few additional steps.
+First, create a database <code class="docutils literal notranslate"><span class="pre">tracker</span></code> in your Oracle database and create a user with access to it.
+Create a sequence in the database with the following command, where username is the user you created
+(read more about creating sequences <a class="reference external" href="https://docs.oracle.com/cd/B28359_01/server.111/b28310/views002.htm#ADMIN11794">here</a>):</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="n">SEQUENCE</span> <span class="n">username</span><span class="p">.</span><span class="n">events_seq</span><span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
+First download the Oracle Instant Client from <a class="reference external" href="https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html">here</a>,
+rename it to <code class="docutils literal notranslate"><span class="pre">oracle.rpm</span></code> and store it in the directory from where you’ll be building the docker image.
+Copy the following into a file called <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
+<blockquote>
+<div><pre class="literal-block">FROM rasa/rasa:1.10.18-full
+
+# Switch to root user to install packages
+USER root
+
+RUN apt-get update -qq &amp;&amp; apt-get install -y --no-install-recommends alien libaio1 &amp;&amp; apt-get clean &amp;&amp; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy in oracle instaclient
+# <a class="reference external" href="https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html">https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html</a>
+COPY oracle.rpm oracle.rpm
+
+# Install the Python wrapper library for the Oracle drivers
+RUN pip install cx-Oracle
+
+# Install Oracle client libraries
+RUN alien -i oracle.rpm
+
+USER 1001</pre>
+</div></blockquote>
+<p>Then build the docker image:</p>
+<blockquote>
+<div><pre class="literal-block">docker build . -t rasa-oracle:1.10.18-oracle-full</pre>
+</div></blockquote>
+<p>Now you can configure the tracker store in the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as described above,
+and start the container. The <code class="docutils literal notranslate"><span class="pre">dialect</span></code> parameter with this setup will be <code class="docutils literal notranslate"><span class="pre">oracle+cx_oracle</span></code>.
+Read more about <a class="reference internal" href="../../user-guide/how-to-deploy/#deploying-your-rasa-assistant"><span class="std std-ref">Deploying Your Rasa Assistant</span></a>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="redistrackerstore">
+<span id="redis-tracker-store"></span><h2><a class="toc-backref" href="#id6">RedisTrackerStore</a><a class="headerlink" href="#redistrackerstore" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">RedisTrackerStore</span></code> can be used to store the conversation history in <a class="reference external" href="https://redis.io/">Redis</a>.
+Redis is a fast in-memory key-value store which can optionally also persist data.</p>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><p>To set up Rasa Open Source with Redis the following steps are required:</p>
+<ol class="arabic">
+<li><p>Start your Redis instance</p></li>
+<li><p>Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">redis</span>
+    <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;url of the redis instance, e.g. localhost&gt;</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;port of your redis instance, usually 6379&gt;</span>
+    <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;number of your database within redis, e.g. 0&gt;</span>
+    <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
+    <span class="nt">use_ssl</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;whether or not the communication is encrypted, default `false`&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>To start the Rasa server using your configured Redis instance,
+add the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>If deploying your model in Docker Compose, add the service to your <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">redis</span><span class="p">:</span>
+  <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">redis:latest</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To route requests to the new service, make sure that the <code class="docutils literal notranslate"><span class="pre">url</span></code> in your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>
+references the service name:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span> <span class="nt">tracker_store</span><span class="p">:</span>
+     <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">redis</span>
+<span class="hll">     <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;url of the redis instance, e.g. localhost&gt;</span>
+</span>     <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;port of your redis instance, usually 6379&gt;</span>
+     <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;number of your database within redis, e.g. 0&gt;</span>
+     <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
+     <span class="nt">use_ssl</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;whether or not the communication is encrypted, default `false`&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">localhost</span></code>): The url of your redis instance</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">6379</span></code>): The port which redis is running on</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>): The number of your redis database</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Password used for authentication
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> equals no authentication)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">record_exp</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Record expiry in seconds</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">use_ssl</span></code> (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>): whether or not to use SSL for transit encryption</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="mongotrackerstore">
+<span id="mongo-tracker-store"></span><h2><a class="toc-backref" href="#id7">MongoTrackerStore</a><a class="headerlink" href="#mongotrackerstore" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">MongoTrackerStore</span></code> can be used to store the conversation history in <a class="reference external" href="https://www.mongodb.com/">Mongo</a>.
+MongoDB is a free and open-source cross-platform document-oriented NoSQL database.</p>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><ol class="arabic">
+<li><p>Start your MongoDB instance.</p></li>
+<li><p>Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mongod</span>
+    <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;url to your mongo instance, e.g. mongodb://localhost:27017&gt;</span>
+    <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the db within your mongo instance, e.g. rasa&gt;</span>
+    <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;username used for authentication&gt;</span>
+    <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
+    <span class="nt">auth_source</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;database name associated with the user’s credentials&gt;</span>
+</pre></div>
+</div>
+<p>You can also add more advanced configurations (like enabling ssl) by appending
+a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true</p>
+</div></blockquote>
+</li>
+<li><p>To start the Rasa server using your configured MongoDB instance,
+add the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>If deploying your model in Docker Compose, add the service to your <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">mongo</span><span class="p">:</span>
+  <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mongo</span>
+  <span class="nt">environment</span><span class="p">:</span>
+    <span class="nt">MONGO_INITDB_ROOT_USERNAME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">rasa</span>
+    <span class="nt">MONGO_INITDB_ROOT_PASSWORD</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example</span>
+<span class="nt">mongo-express</span><span class="p">:</span>  <span class="c1"># this service is a MongoDB UI, and is optional</span>
+  <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mongo-express</span>
+  <span class="nt">ports</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">8081:8081</span>
+  <span class="nt">environment</span><span class="p">:</span>
+    <span class="nt">ME_CONFIG_MONGODB_ADMINUSERNAME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">rasa</span>
+    <span class="nt">ME_CONFIG_MONGODB_ADMINPASSWORD</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To route requests to this database, make sure to set the <code class="docutils literal notranslate"><span class="pre">url</span></code> in your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as the service name,
+and specify the user and password:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span> <span class="nt">tracker_store</span><span class="p">:</span>
+     <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mongod</span>
+<span class="hll">     <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mongodb://mongo:27017</span>
+</span>     <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the db within your mongo instance, e.g. rasa&gt;</span>
+<span class="hll">     <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;username used for authentication&gt;</span>
+</span><span class="hll">     <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
+</span>     <span class="nt">auth_source</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;database name associated with the user’s credentials&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">mongodb://localhost:27017</span></code>): URL of your MongoDB</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa</span></code>): The database name which should be used</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>): The username which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">auth_source</span></code> (default: <code class="docutils literal notranslate"><span class="pre">admin</span></code>): database name associated with the user’s credentials.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">collection</span></code> (default: <code class="docutils literal notranslate"><span class="pre">conversations</span></code>): The collection name which is
+used to store the conversations</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="dynamotrackerstore">
+<span id="tracker-stores-dynamo"></span><h2><a class="toc-backref" href="#id8">DynamoTrackerStore</a><a class="headerlink" href="#dynamotrackerstore" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">DynamoTrackerStore</span></code> can be used to store the conversation history in
+<a class="reference external" href="https://aws.amazon.com/dynamodb/">DynamoDB</a>. DynamoDB is a hosted NoSQL
+database offered by Amazon Web Services (AWS).</p>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><ol class="arabic">
+<li><p>Start your DynamoDB instance.</p></li>
+<li><p>Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">dynamo</span>
+    <span class="nt">tablename</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the table to create, e.g. rasa&gt;</span>
+    <span class="nt">region</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the region associated with the client&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>To start the Rasa server using your configured <code class="docutils literal notranslate"><span class="pre">DynamoDB</span></code> instance,
+add the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tablename</span></code> (default: <code class="docutils literal notranslate"><span class="pre">states</span></code>): name of the DynamoDB table</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">region</span></code> (default: <code class="docutils literal notranslate"><span class="pre">us-east-1</span></code>): name of the region associated with the client</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="custom-tracker-store">
+<span id="id2"></span><h2><a class="toc-backref" href="#id9">Custom Tracker Store</a><a class="headerlink" href="#custom-tracker-store" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If you require a tracker store which is not available out of the box, you can implement your own.
+This is done by extending the base class <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code>.</p>
+<dl class="py class">
+<dt id="rasa.core.tracker_store.TrackerStore">
+<em class="property">class </em><code class="sig-prename descclassname">rasa.core.tracker_store.</code><code class="sig-name descname">TrackerStore</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">event_broker</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">retrieve_events_from_previous_conversation_sessions</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.tracker_store.TrackerStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class to hold all of the TrackerStore classes</p>
+</dd></dl>
+
+</dd>
+<dt class="field-even">Steps</dt>
+<dd class="field-even"><ol class="arabic">
+<li><p>Extend the <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code> base class. Note that your constructor has to
+provide a parameter <code class="docutils literal notranslate"><span class="pre">url</span></code>.</p></li>
+<li><p>In your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> put in the module path to your custom tracker store
+and the parameters you require:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path.to.your.module.Class</span>
+  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">localhost</span>
+  <span class="nt">a_parameter</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">a value</span>
+  <span class="nt">another_parameter</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">another value</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>If you are deploying in Docker Compose, you have two options to add this store to Rasa Open Source:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>extending the Rasa image to include the module</p></li>
+<li><p>mounting the module as volume</p></li>
+</ul>
+</div></blockquote>
+<p>Make sure to add the corresponding service as well. For example, mounting it as a volume would look like so:</p>
+<p><code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rasa</span><span class="p">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">&lt;existing rasa service configuration&gt;</span>
+  <span class="l l-Scalar l-Scalar-Plain">volumes</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">&lt;existing volume mappings, if there are any&gt;</span>
+<span class="hll">    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">./path/to/your/module.py:/app/path/to/your/module.py</span>
+</span><span class="hll"><span class="nt">custom-tracker-store</span><span class="p">:</span>
+</span><span class="hll">  <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">custom-image:tag</span>
+</span></pre></div>
+</div>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path.to.your.module.Class</span>
+<span class="hll">  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">custom-tracker-store</span>
+</span>  <span class="nt">a_parameter</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">a value</span>
+  <span class="nt">another_parameter</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">another value</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>

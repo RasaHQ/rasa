@@ -1,0 +1,898 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Connectors</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Testing Your Assistant" href="../../testing-your-assistant/" />
+    <link rel="prev" title="Google Hangouts Chat" href="../hangouts/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Custom Connectors" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/user-guide/connectors/custom-connectors" />
+  
+    <meta name="description" content="Deploy and Run a Rasa Chat Bot on a custom chat interface" />
+    <meta itemprop="description" content="Deploy and Run a Rasa Chat Bot on a custom chat interface">
+    <meta name="twitter:description" content="Deploy and Run a Rasa Chat Bot on a custom chat interface" />
+    <meta property="og:description" content="Deploy and Run a Rasa Chat Bot on a custom chat interface" />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Custom Connectors">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/user-guide/connectors/custom-connectors/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.18
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../../1.10.18/user-guide/connectors/custom-connectors/">1.10.18</a>
+              <a href="../../../../1.10.17/user-guide/connectors/custom-connectors/">1.10.17</a>
+              <a href="../../../../1.10.16/user-guide/connectors/custom-connectors/">1.10.16</a>
+              <a href="../../../../1.10.15/user-guide/connectors/custom-connectors/">1.10.15</a>
+              <a href="../../../../1.10.14/user-guide/connectors/custom-connectors/">1.10.14</a>
+              <a href="../../../../1.10.13/user-guide/connectors/custom-connectors/">1.10.13</a>
+              <a href="../../../../1.10.12/user-guide/connectors/custom-connectors/">1.10.12</a>
+              <a href="../../../../1.10.11/user-guide/connectors/custom-connectors/">1.10.11</a>
+              <a href="../../../../1.10.10/user-guide/connectors/custom-connectors/">1.10.10</a>
+              <a href="../../../../1.10.9/user-guide/connectors/custom-connectors/">1.10.9</a>
+              <a href="../../../../1.10.8/user-guide/connectors/custom-connectors/">1.10.8</a>
+              <a href="../../../../1.10.7/user-guide/connectors/custom-connectors/">1.10.7</a>
+              <a href="../../../../1.10.6/user-guide/connectors/custom-connectors/">1.10.6</a>
+              <a href="../../../../1.10.5/user-guide/connectors/custom-connectors/">1.10.5</a>
+              <a href="../../../../1.10.4/user-guide/connectors/custom-connectors/">1.10.4</a>
+              <a href="../../../../1.10.3/user-guide/connectors/custom-connectors/">1.10.3</a>
+              <a href="../../../../1.10.2/user-guide/connectors/custom-connectors/">1.10.2</a>
+              <a href="../../../../1.10.1/user-guide/connectors/custom-connectors/">1.10.1</a>
+              <a href="../../../../1.10.0/user-guide/connectors/custom-connectors/">1.10.0</a>
+              <a href="../../../../1.9.7/user-guide/connectors/custom-connectors/">1.9.7</a>
+              <a href="../../../../1.9.6/user-guide/connectors/custom-connectors/">1.9.6</a>
+              <a href="../../../../1.9.5/user-guide/connectors/custom-connectors/">1.9.5</a>
+              <a href="../../../../1.9.4/user-guide/connectors/custom-connectors/">1.9.4</a>
+              <a href="../../../../1.9.3/user-guide/connectors/custom-connectors/">1.9.3</a>
+              <a href="../../../../1.9.2/user-guide/connectors/custom-connectors/">1.9.2</a>
+              <a href="../../../../1.9.1/user-guide/connectors/custom-connectors/">1.9.1</a>
+              <a href="../../../../1.9.0/user-guide/connectors/custom-connectors/">1.9.0</a>
+              <a href="../../../../1.8.3/user-guide/connectors/custom-connectors/">1.8.3</a>
+              <a href="../../../../1.8.2/user-guide/connectors/custom-connectors/">1.8.2</a>
+              <a href="../../../../1.8.1/user-guide/connectors/custom-connectors/">1.8.1</a>
+              <a href="../../../../1.8.0/user-guide/connectors/custom-connectors/">1.8.0</a>
+              <a href="../../../../1.7.4/user-guide/connectors/custom-connectors/">1.7.4</a>
+              <a href="../../../../1.7.3/user-guide/connectors/custom-connectors/">1.7.3</a>
+              <a href="../../../../1.7.2/user-guide/connectors/custom-connectors/">1.7.2</a>
+              <a href="../../../../1.7.1/user-guide/connectors/custom-connectors/">1.7.1</a>
+              <a href="../../../../1.7.0/user-guide/connectors/custom-connectors/">1.7.0</a>
+              <a href="../../../../1.6.2/user-guide/connectors/custom-connectors/">1.6.2</a>
+              <a href="../../../../1.5.3/user-guide/connectors/custom-connectors/">1.5.3</a>
+              <a href="../../../../1.4.6/user-guide/connectors/custom-connectors/">1.4.6</a>
+              <a href="../../../../1.3.10/user-guide/connectors/custom-connectors/">1.3.10</a>
+              <a href="../../../../1.2.9/user-guide/connectors/custom-connectors/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="custom-connectors">
+<span id="id1"></span><h1>Custom Connectors<a class="headerlink" href="#custom-connectors" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/connectors/custom-connectors.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>You can also implement your own custom channel. You can
+use the <code class="docutils literal notranslate"><span class="pre">rasa.core.channels.channel.RestInput</span></code> class as a template.
+The methods you need to implement are <code class="docutils literal notranslate"><span class="pre">blueprint</span></code> and <code class="docutils literal notranslate"><span class="pre">name</span></code>. The method
+needs to create a sanic blueprint that can be attached to a sanic server.</p>
+<p>This allows you to add REST endpoints to the server that the external
+messaging service can call to deliver messages.</p>
+<p>Your blueprint should have at least the two routes: <code class="docutils literal notranslate"><span class="pre">health</span></code> on <code class="docutils literal notranslate"><span class="pre">/</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">receive</span></code> on the HTTP route <code class="docutils literal notranslate"><span class="pre">/webhook</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">name</span></code> method defines the url prefix. E.g. if your component is
+named <code class="docutils literal notranslate"><span class="pre">myio</span></code>, the webhook you can use to attach the external service is:
+<code class="docutils literal notranslate"><span class="pre">http://localhost:5005/webhooks/myio/webhook</span></code> (replacing the hostname
+and port with your values).</p>
+<p>To send a message, you would run a command like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl -XPOST http://localhost:5005/webhooks/myio/webhook <span class="se">\</span>
+  -d <span class="s1">&#39;{&quot;sender&quot;: &quot;user1&quot;, &quot;message&quot;: &quot;hello&quot;}&#39;</span> <span class="se">\</span>
+  -H <span class="s2">&quot;Content-type: application/json&quot;</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">myio</span></code> is the name of your component.</p>
+<p>If you need to use extra information from your front end in your custom
+actions, you can add this information in the <code class="docutils literal notranslate"><span class="pre">metadata</span></code> dict of your user
+message. This information will accompany the user message through the rasa
+server into the action server when applicable, where you can find it stored in
+the <code class="docutils literal notranslate"><span class="pre">tracker</span></code>. Message metadata will not directly affect NLU classification
+or action prediction. If you want to change the way metadata is extracted for an
+existing channel, you can overwrite the function <code class="docutils literal notranslate"><span class="pre">get_metadata</span></code>. The return value
+of this method will be passed to the <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>.</p>
+<p>Here are all the attributes of <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>:</p>
+<dl class="py class">
+<dt id="rasa.core.channels.UserMessage">
+<em class="property">class </em><code class="sig-prename descclassname">rasa.core.channels.</code><code class="sig-name descname">UserMessage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parse_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">message_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents an incoming message.</p>
+<p>Includes the channel the responses should be sent to.</p>
+<dl class="py method">
+<dt id="rasa.core.channels.UserMessage.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parse_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">message_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – the message text content.</p></li>
+<li><p><strong>output_channel</strong> – the output channel which should be used to send
+bot responses back to the user.</p></li>
+<li><p><strong>sender_id</strong> – the message owner ID.</p></li>
+<li><p><strong>parse_data</strong> – rasa data about the message.</p></li>
+<li><p><strong>input_channel</strong> – the name of the channel which received this message.</p></li>
+<li><p><strong>message_id</strong> – ID of the message.</p></li>
+<li><p><strong>metadata</strong> – additional metadata for this message.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>In your implementation of the <code class="docutils literal notranslate"><span class="pre">receive</span></code> endpoint, you need to make
+sure to call <code class="docutils literal notranslate"><span class="pre">on_new_message(UserMessage(text,</span> <span class="pre">output,</span> <span class="pre">sender_id))</span></code>.
+This will tell Rasa Core to handle this user message. The <code class="docutils literal notranslate"><span class="pre">output</span></code>
+is an output channel implementing the <code class="docutils literal notranslate"><span class="pre">OutputChannel</span></code> class. You can
+either implement the methods for your particular chat channel (e.g. there
+are methods to send text and images) or you can use the
+<code class="docutils literal notranslate"><span class="pre">CollectingOutputChannel</span></code> to collect the bot responses Core
+creates while the bot is processing your messages and return
+them as part of your endpoint response. This is the way the <code class="docutils literal notranslate"><span class="pre">RestInput</span></code>
+channel is implemented. For examples on how to create and use your own output
+channel, take a look at the implementations of the other
+output channels, e.g. the <code class="docutils literal notranslate"><span class="pre">SlackBot</span></code> in <code class="docutils literal notranslate"><span class="pre">rasa.core.channels.slack</span></code>.</p>
+<p>To use a custom channel, you need to supply a credentials configuration file
+<code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the command line argument <code class="docutils literal notranslate"><span class="pre">--credentials</span></code>.
+This credentials file has to contain the module path of your custom channel and
+any required configuration parameters. For example, this could look like:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">mypackage.MyIO</span><span class="p">:</span>
+  <span class="nt">username</span><span class="p">:</span> <span class="s">&quot;user_name&quot;</span>
+  <span class="nt">another_parameter</span><span class="p">:</span> <span class="s">&quot;some</span><span class="nv"> </span><span class="s">value&quot;</span>
+</pre></div>
+</div>
+<p>Here is an example implementation for an input channel that receives the messages,
+hands them over to Rasa Core, collects the bot utterances, and returns
+these bot utterances as the json response to the webhook call that
+posted the message to the channel:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">RestInput</span><span class="p">(</span><span class="n">InputChannel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A custom http input channel.</span>
+
+<span class="sd">    This implementation is the basis for a custom implementation of a chat</span>
+<span class="sd">    frontend. You can customize this to send messages to Rasa Core and</span>
+<span class="sd">    retrieve responses from the agent.&quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;rest&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">on_message_wrapper</span><span class="p">(</span>
+        <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+        <span class="n">text</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">,</span>
+        <span class="n">sender_id</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">input_channel</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">collector</span> <span class="o">=</span> <span class="n">QueueOutputChannel</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
+
+        <span class="n">message</span> <span class="o">=</span> <span class="n">UserMessage</span><span class="p">(</span>
+            <span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="n">on_new_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>  <span class="c1"># pytype: disable=bad-return-type</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_extract_sender</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sender&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># noinspection PyMethodMayBeStatic</span>
+    <span class="k">def</span> <span class="nf">_extract_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_extract_input_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_channel&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">stream_response</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]],</span>
+        <span class="n">text</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">sender_id</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">input_channel</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]:</span>
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">stream</span><span class="p">(</span><span class="n">resp</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">on_message_wrapper</span><span class="p">(</span>
+                    <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="p">,</span> <span class="n">metadata</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># declare variable up front to avoid pytype error</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="s2">&quot;DONE&quot;</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">task</span>
+
+        <span class="k">return</span> <span class="n">stream</span>  <span class="c1"># pytype: disable=bad-return-type</span>
+
+    <span class="k">def</span> <span class="nf">blueprint</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Blueprint</span><span class="p">:</span>
+        <span class="n">custom_webhook</span> <span class="o">=</span> <span class="n">Blueprint</span><span class="p">(</span>
+            <span class="s2">&quot;custom_webhook_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span>
+            <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># noinspection PyUnusedLocal</span>
+        <span class="nd">@custom_webhook</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">])</span>
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">health</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTTPResponse</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">({</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">})</span>
+
+        <span class="nd">@custom_webhook</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/webhook&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">receive</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTTPResponse</span><span class="p">:</span>
+            <span class="n">sender_id</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_sender</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_message</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="n">should_use_stream</span> <span class="o">=</span> <span class="n">rasa</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">endpoints</span><span class="o">.</span><span class="n">bool_arg</span><span class="p">(</span>
+                <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;stream&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+            <span class="n">input_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_input_channel</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">should_use_stream</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">stream_response</span><span class="p">(</span>
+                        <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="p">,</span> <span class="n">metadata</span>
+                    <span class="p">),</span>
+                    <span class="n">content_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">collector</span> <span class="o">=</span> <span class="n">CollectingOutputChannel</span><span class="p">()</span>
+                <span class="c1"># noinspection PyBroadException</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">on_new_message</span><span class="p">(</span>
+                        <span class="n">UserMessage</span><span class="p">(</span>
+                            <span class="n">text</span><span class="p">,</span>
+                            <span class="n">collector</span><span class="p">,</span>
+                            <span class="n">sender_id</span><span class="p">,</span>
+                            <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span><span class="p">,</span>
+                            <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="n">CancelledError</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                        <span class="s2">&quot;Message handling timed out for &quot;</span>
+                        <span class="s2">&quot;user message &#39;</span><span class="si">{}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                        <span class="s2">&quot;An exception occured while handling &quot;</span>
+                        <span class="s2">&quot;user message &#39;</span><span class="si">{}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">(</span><span class="n">collector</span><span class="o">.</span><span class="n">messages</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">custom_webhook</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>

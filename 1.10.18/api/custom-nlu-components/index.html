@@ -1,0 +1,1145 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom NLU Components</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Rasa SDK" href="../rasa-sdk/" />
+    <link rel="prev" title="Agent" href="../agent/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Custom NLU Components" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/api/custom-nlu-components" />
+  
+    <meta name="description" content="Create custom components to create additional features like sentiment
+analysis to integrate with open source bot framework Rasa." />
+    <meta itemprop="description" content="Create custom components to create additional features like sentiment
+analysis to integrate with open source bot framework Rasa.">
+    <meta name="twitter:description" content="Create custom components to create additional features like sentiment
+analysis to integrate with open source bot framework Rasa." />
+    <meta property="og:description" content="Create custom components to create additional features like sentiment
+analysis to integrate with open source bot framework Rasa." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Custom NLU Components">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/api/custom-nlu-components/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../agent/">Agent</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.18
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.18/api/custom-nlu-components/">1.10.18</a>
+              <a href="../../../1.10.17/api/custom-nlu-components/">1.10.17</a>
+              <a href="../../../1.10.16/api/custom-nlu-components/">1.10.16</a>
+              <a href="../../../1.10.15/api/custom-nlu-components/">1.10.15</a>
+              <a href="../../../1.10.14/api/custom-nlu-components/">1.10.14</a>
+              <a href="../../../1.10.13/api/custom-nlu-components/">1.10.13</a>
+              <a href="../../../1.10.12/api/custom-nlu-components/">1.10.12</a>
+              <a href="../../../1.10.11/api/custom-nlu-components/">1.10.11</a>
+              <a href="../../../1.10.10/api/custom-nlu-components/">1.10.10</a>
+              <a href="../../../1.10.9/api/custom-nlu-components/">1.10.9</a>
+              <a href="../../../1.10.8/api/custom-nlu-components/">1.10.8</a>
+              <a href="../../../1.10.7/api/custom-nlu-components/">1.10.7</a>
+              <a href="../../../1.10.6/api/custom-nlu-components/">1.10.6</a>
+              <a href="../../../1.10.5/api/custom-nlu-components/">1.10.5</a>
+              <a href="../../../1.10.4/api/custom-nlu-components/">1.10.4</a>
+              <a href="../../../1.10.3/api/custom-nlu-components/">1.10.3</a>
+              <a href="../../../1.10.2/api/custom-nlu-components/">1.10.2</a>
+              <a href="../../../1.10.1/api/custom-nlu-components/">1.10.1</a>
+              <a href="../../../1.10.0/api/custom-nlu-components/">1.10.0</a>
+              <a href="../../../1.9.7/api/custom-nlu-components/">1.9.7</a>
+              <a href="../../../1.9.6/api/custom-nlu-components/">1.9.6</a>
+              <a href="../../../1.9.5/api/custom-nlu-components/">1.9.5</a>
+              <a href="../../../1.9.4/api/custom-nlu-components/">1.9.4</a>
+              <a href="../../../1.9.3/api/custom-nlu-components/">1.9.3</a>
+              <a href="../../../1.9.2/api/custom-nlu-components/">1.9.2</a>
+              <a href="../../../1.9.1/api/custom-nlu-components/">1.9.1</a>
+              <a href="../../../1.9.0/api/custom-nlu-components/">1.9.0</a>
+              <a href="../../../1.8.3/api/custom-nlu-components/">1.8.3</a>
+              <a href="../../../1.8.2/api/custom-nlu-components/">1.8.2</a>
+              <a href="../../../1.8.1/api/custom-nlu-components/">1.8.1</a>
+              <a href="../../../1.8.0/api/custom-nlu-components/">1.8.0</a>
+              <a href="../../../1.7.4/api/custom-nlu-components/">1.7.4</a>
+              <a href="../../../1.7.3/api/custom-nlu-components/">1.7.3</a>
+              <a href="../../../1.7.2/api/custom-nlu-components/">1.7.2</a>
+              <a href="../../../1.7.1/api/custom-nlu-components/">1.7.1</a>
+              <a href="../../../1.7.0/api/custom-nlu-components/">1.7.0</a>
+              <a href="../../../1.6.2/api/custom-nlu-components/">1.6.2</a>
+              <a href="../../../1.5.3/api/custom-nlu-components/">1.5.3</a>
+              <a href="../../../1.4.6/api/custom-nlu-components/">1.4.6</a>
+              <a href="../../../1.3.10/api/custom-nlu-components/">1.3.10</a>
+              <a href="../../../1.2.9/api/custom-nlu-components/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="custom-nlu-components">
+<span id="id1"></span><h1>Custom NLU Components<a class="headerlink" href="#custom-nlu-components" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/custom-nlu-components.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>You can create a custom component to perform a specific task which NLU doesn’t currently offer (for example, sentiment analysis).
+Below is the specification of the <a class="reference internal" href="#rasa.nlu.components.Component" title="rasa.nlu.components.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.components.Component</span></code></a> class with the methods you’ll need to implement.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is a detailed tutorial on building custom components <a class="reference external" href="https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/">here</a>.</p>
+</div>
+<p>You can add a custom component to your pipeline by adding the module path.
+So if you have a module called <code class="docutils literal notranslate"><span class="pre">sentiment</span></code>
+containing a <code class="docutils literal notranslate"><span class="pre">SentimentAnalyzer</span></code> class:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;sentiment.SentimentAnalyzer&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Also be sure to read the section on the <a class="reference internal" href="../../nlu/choosing-a-pipeline/#component-lifecycle"><span class="std std-ref">Component Lifecycle</span></a>.</p>
+<p>To get started, you can use this skeleton that contains the most important
+methods that you should implement:</p>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">typing</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Text</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Type</span>
+
+<span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
+<span class="kn">from</span> <span class="nn">rasa.nlu.config</span> <span class="kn">import</span> <span class="n">RasaNLUModelConfig</span>
+<span class="kn">from</span> <span class="nn">rasa.nlu.training_data</span> <span class="kn">import</span> <span class="n">Message</span><span class="p">,</span> <span class="n">TrainingData</span>
+
+<span class="k">if</span> <span class="n">typing</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">rasa.nlu.model</span> <span class="kn">import</span> <span class="n">Metadata</span>
+
+
+<span class="k">class</span> <span class="nc">MyComponent</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A new component&quot;&quot;&quot;</span>
+
+    <span class="c1"># Which components are required by this component.</span>
+    <span class="c1"># Listed components should appear before the component itself in the pipeline.</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">required_components</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Component</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Specify which components need to be present in the pipeline.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="c1"># Defines the default configuration parameters of a component</span>
+    <span class="c1"># these values can be overwritten in the pipeline configuration</span>
+    <span class="c1"># of the model. The component should choose sensible defaults</span>
+    <span class="c1"># and should be able to create reasonable results with the defaults.</span>
+    <span class="n">defaults</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Defines what language(s) this component can handle.</span>
+    <span class="c1"># This attribute is designed for instance method: `can_handle_language`.</span>
+    <span class="c1"># Default value is None which means it can handle all languages.</span>
+    <span class="c1"># This is an important feature for backwards compatibility of components.</span>
+    <span class="n">supported_language_list</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Defines what language(s) this component can NOT handle.</span>
+    <span class="c1"># This attribute is designed for instance method: `can_handle_language`.</span>
+    <span class="c1"># Default value is None which means it can handle all languages.</span>
+    <span class="c1"># This is an important feature for backwards compatibility of components.</span>
+    <span class="n">not_supported_language_list</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">component_config</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">training_data</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RasaNLUModelConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Train this component.</span>
+
+<span class="sd">        This is the components chance to train itself provided</span>
+<span class="sd">        with the training data. The component can rely on</span>
+<span class="sd">        any context attribute to be present, that gets created</span>
+<span class="sd">        by a call to :meth:`components.Component.pipeline_init`</span>
+<span class="sd">        of ANY component and</span>
+<span class="sd">        on any context attributes created by a call to</span>
+<span class="sd">        :meth:`components.Component.train`</span>
+<span class="sd">        of components previous to this one.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Process an incoming message.</span>
+
+<span class="sd">        This is the components chance to process an incoming</span>
+<span class="sd">        message. The component can rely on</span>
+<span class="sd">        any context attribute to be present, that gets created</span>
+<span class="sd">        by a call to :meth:`components.Component.pipeline_init`</span>
+<span class="sd">        of ANY component and</span>
+<span class="sd">        on any context attributes created by a call to</span>
+<span class="sd">        :meth:`components.Component.process`</span>
+<span class="sd">        of components previous to this one.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span> <span class="n">model_dir</span><span class="p">:</span> <span class="n">Text</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Persist this component to disk for future loading.&quot;&quot;&quot;</span>
+
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">model_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Metadata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cached_component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Component&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Component&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Load this component from file.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">cached_component</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cached_component</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you create a custom tokenizer you should implement the methods of <code class="docutils literal notranslate"><span class="pre">rasa.nlu.tokenizers.tokenizer.Tokenizer</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">train</span></code> and <code class="docutils literal notranslate"><span class="pre">process</span></code> methods are already implemented and you simply need to overwrite the <code class="docutils literal notranslate"><span class="pre">tokenize</span></code>
+method. <code class="docutils literal notranslate"><span class="pre">train</span></code> and <code class="docutils literal notranslate"><span class="pre">process</span></code> will automatically add a special token <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> to the end of list of tokens,
+which is needed further down the pipeline.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you create a custom featurizer you should return a sequence of features.
+E.g. your featurizer should return a matrix of size (number-of-tokens x feature-dimension).
+The feature vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token should contain features for the complete message.</p>
+</div>
+<div class="section" id="component">
+<h2>Component<a class="headerlink" href="#component" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="rasa.nlu.components.Component">
+<em class="property">class </em><code class="sig-prename descclassname">rasa.nlu.components.</code><code class="sig-name descname">Component</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">component_config</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component" title="Permalink to this definition">¶</a></dt>
+<dd><p>A component is a message processing unit in a pipeline.</p>
+<p>Components are collected sequentially in a pipeline. Each component
+is called one after another. This holds for
+initialization, training, persisting and loading the components.
+If a component comes first in a pipeline, its
+methods will be called first.</p>
+<p>E.g. to process an incoming message, the <code class="docutils literal notranslate"><span class="pre">process</span></code> method of
+each component will be called. During the processing
+(as well as the training, persisting and initialization)
+components can pass information to other components.
+The information is passed to other components by providing
+attributes to the so called pipeline context. The
+pipeline context contains all the information of the previous
+components a component can use to do its own
+processing. For example, a featurizer component can provide
+features that are used by another component down
+the pipeline to do intent classification.</p>
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.required_components">
+<em class="property">classmethod </em><code class="sig-name descname">required_components</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.required_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify which components need to be present in the pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The list of class names of required components.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Type</span></code>[<a class="reference internal" href="#rasa.nlu.components.Component" title="rasa.nlu.components.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.required_packages">
+<em class="property">classmethod </em><code class="sig-name descname">required_packages</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.required_packages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify which python packages need to be installed.</p>
+<p>E.g. <code class="docutils literal notranslate"><span class="pre">[&quot;spacy&quot;]</span></code>. More specifically, these should be
+importable python package names e.g. <cite>sklearn</cite> and not package
+names in the dependencies sense e.g. <cite>scikit-learn</cite></p>
+<p>This list of requirements allows us to fail early during training
+if a required package is not installed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The list of required package names.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.create">
+<em class="property">classmethod </em><code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">component_config</span></em>, <em class="sig-param"><span class="n">config</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates this component (e.g. before a training is started).</p>
+<p>Method can access all configuration parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>component_config</strong> – The components configuration parameters.</p></li>
+<li><p><strong>config</strong> – The model configuration parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The created component.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rasa.nlu.components.Component" title="rasa.nlu.components.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.provide_context">
+<code class="sig-name descname">provide_context</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.provide_context" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize this component for a new pipeline.</p>
+<p>This function will be called before the training
+is started and before the first message is processed using
+the interpreter. The component gets the opportunity to
+add information to the context that is passed through
+the pipeline during training and message parsing. Most
+components do not need to implement this method.
+It’s mostly used to initialize framework environments
+like MITIE and spacy
+(e.g. loading word vectors for the pipeline).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The updated component configuration.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_data</span></em>, <em class="sig-param"><span class="n">config</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train this component.</p>
+<p>This is the components chance to train itself provided
+with the training data. The component can rely on
+any context attribute to be present, that gets created
+by a call to <a class="reference internal" href="#rasa.nlu.components.Component.create" title="rasa.nlu.components.Component.create"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rasa.nlu.components.Component.create()</span></code></a>
+of ANY component and
+on any context attributes created by a call to
+<a class="reference internal" href="#rasa.nlu.components.Component.train" title="rasa.nlu.components.Component.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rasa.nlu.components.Component.train()</span></code></a>
+of components previous to this one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>training_data</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.training_data.TrainingData</span></code>.</p></li>
+<li><p><strong>config</strong> – The model configuration parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.process">
+<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process an incoming message.</p>
+<p>This is the components chance to process an incoming
+message. The component can rely on
+any context attribute to be present, that gets created
+by a call to <a class="reference internal" href="#rasa.nlu.components.Component.create" title="rasa.nlu.components.Component.create"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rasa.nlu.components.Component.create()</span></code></a>
+of ANY component and
+on any context attributes created by a call to
+<a class="reference internal" href="#rasa.nlu.components.Component.process" title="rasa.nlu.components.Component.process"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rasa.nlu.components.Component.process()</span></code></a>
+of components previous to this one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>message</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code> to process.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.persist">
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">model_dir</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Persist this component to disk for future loading.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_name</strong> – The file name of the model.</p></li>
+<li><p><strong>model_dir</strong> – The directory to store the model to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An optional dictionary with any information about the stored model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.prepare_partial_processing">
+<code class="sig-name descname">prepare_partial_processing</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">context</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.prepare_partial_processing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the pipeline and context used for partial processing.</p>
+<p>The pipeline should be a list of components that are
+previous to this one in the pipeline and
+have already finished their training (and can therefore
+be safely used to process messages).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pipeline</strong> – The list of components.</p></li>
+<li><p><strong>context</strong> – The context of processing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.partially_process">
+<code class="sig-name descname">partially_process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.partially_process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows the component to process messages during
+training (e.g. external training data).</p>
+<p>The passed message will be processed by all components
+previous to this one in the pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>message</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code> to process.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The processed <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.nlu.components.Component.can_handle_language">
+<em class="property">classmethod </em><code class="sig-name descname">can_handle_language</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">language</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.can_handle_language" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if component supports a specific language.</p>
+<p>This method can be overwritten when needed. (e.g. dynamically
+determine which language is supported.)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>language</strong> – The language to check.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>True</cite> if component can handle specific language, <cite>False</cite> otherwise.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>
