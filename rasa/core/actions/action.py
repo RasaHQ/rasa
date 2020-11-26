@@ -6,6 +6,7 @@ from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
 import aiohttp
 
 import rasa.core
+from rasa.core.policies.policy import PolicyPrediction
 
 from rasa.shared.core import events
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -244,6 +245,21 @@ class Action:
     def __str__(self) -> Text:
         return "Action('{}')".format(self.name())
 
+    def event_for_successful_execution(
+        self, prediction: PolicyPrediction
+    ) -> ActionExecuted:
+        """Event which should be logged for the successful execution of this action.
+
+        Args:
+            prediction: Prediction which led to the execution for this event.
+
+        Returns:
+            Event which should be logged onto the tracker.
+        """
+        return ActionExecuted(
+            self.name(), prediction.policy_name, prediction.max_confidence
+        )
+
 
 class ActionUtterTemplate(Action):
     """An action which only effect is to utter a template when it is run.
@@ -281,6 +297,51 @@ class ActionUtterTemplate(Action):
 
     def __str__(self) -> Text:
         return "ActionUtterTemplate('{}')".format(self.name())
+
+
+class EndToEndAction(Action):
+    """Action to utter end-to-end responses to the user."""
+
+    def __init__(self, action_text: Text) -> None:
+        """Creates action.
+
+        Args:
+            action_text: Text of end-to-end bot response.
+        """
+        self.action_text = action_text
+
+    def name(self) -> Text:
+        """Returns action name."""
+
+        return self.action_text
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        """Runs action (see parent class for full docstring)."""
+        message = {"text": self.action_text}
+        return [create_bot_utterance(message)]
+
+    def event_for_successful_execution(
+        self, prediction: PolicyPrediction
+    ) -> ActionExecuted:
+        """Event which should be logged for the successful execution of this action.
+
+        Args:
+            prediction: Prediction which led to the execution for this event.
+
+        Returns:
+            Event which should be logged onto the tracker.
+        """
+        return ActionExecuted(
+            policy=prediction.policy_name,
+            confidence=prediction.max_confidence,
+            action_text=self.action_text,
+        )
 
 
 class ActionRetrieveResponse(ActionUtterTemplate):

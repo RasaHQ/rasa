@@ -1092,7 +1092,7 @@ async def test_logging_of_end_to_end_action():
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(user_message, intent={"name": "greet"}),
         ActionExecuted(action_text=end_to_end_action),
-        BotUttered("hi, how are you?", {}, {"template_name": end_to_end_action}, 123),
+        BotUttered("hi, how are you?", {}, {}, 123),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
     for event, expected in zip(tracker.events, expected_events):

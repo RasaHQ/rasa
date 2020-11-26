@@ -359,8 +359,6 @@ responses:
     assert domain.templates == {
         "utter_greet": [{"text": "hey there!"}],
         "utter_goodbye": [{"text": "bye!"}],
-        "Bye": [{"text": "Bye"}],
-        "Hi": [{"text": "Hi"}],
     }
     # lists should be deduplicated and merged
     assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
@@ -377,8 +375,6 @@ responses:
     assert domain.templates == {
         "utter_greet": [{"text": "hey you!"}],
         "utter_goodbye": [{"text": "bye!"}],
-        "Bye": [{"text": "Bye"}],
-        "Hi": [{"text": "Hi"}],
     }
     assert domain.session_config == SessionConfig(20, True)
     assert domain.action_texts == ["Bye", "Hi"]

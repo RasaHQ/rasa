@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
+from rasa.core.actions.action import Action
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -766,7 +767,7 @@ class MessageProcessor:
             )
             events = []
 
-        self._log_action_on_tracker(tracker, action.name(), events, prediction)
+        self._log_action_on_tracker(tracker, action, events, prediction)
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):
@@ -809,7 +810,7 @@ class MessageProcessor:
     def _log_action_on_tracker(
         self,
         tracker: DialogueStateTracker,
-        action_name: Text,
+        action: Action,
         events: Optional[List[Event]],
         prediction: PolicyPrediction,
     ) -> None:
@@ -819,19 +820,19 @@ class MessageProcessor:
         if events is None:
             events = []
 
-        self._warn_about_new_slots(tracker, action_name, events)
+        self._warn_about_new_slots(tracker, action.name(), events)
 
         action_was_rejected_manually = any(
             isinstance(event, ActionExecutionRejected) for event in events
         )
-        if action_name is not None and not action_was_rejected_manually:
+        if not action_was_rejected_manually:
             logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
             tracker.update_with_events(prediction.events, self.domain)
 
             # log the action and its produced events
-            tracker.update(self._action_event_for_prediction(action_name, prediction))
+            tracker.update(action.event_for_successful_execution(prediction))
 
-        logger.debug(f"Action '{action_name}' ended with events '{events}'.")
+        logger.debug(f"Action '{action.name()}' ended with events '{events}'.")
         tracker.update_with_events(events, self.domain)
 
     def _action_event_for_prediction(
