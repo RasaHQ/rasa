@@ -13,6 +13,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
 )
 from rasa.shared.utils.io import json_to_string
+from rasa.nlu.constants import COMPONENT_INDEX
 
 logger = logging.getLogger(__name__)
 
@@ -76,9 +77,20 @@ def component_config_from_pipeline(
     pipeline: List[Dict[Text, Any]],
     defaults: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
+    """
+    Get the configuration of the `index`th component.
+    Args:
+        index: Index of the component.
+        pipeline: List of component configurations.
+        defaults: Default configuration.
+    Returns:
+        The `index`th component configuration, expanded
+        by the given defaults.
+    """
     try:
-        c = pipeline[index]
-        return override_defaults(defaults, c)
+        configuration = pipeline[index]
+        configuration[COMPONENT_INDEX] = index
+        return override_defaults(defaults, configuration)
     except IndexError:
         rasa.shared.utils.io.raise_warning(
             f"Tried to get configuration value for component "

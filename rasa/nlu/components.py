@@ -11,6 +11,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.constants import COMPONENT_INDEX
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
@@ -396,6 +397,15 @@ class Component(metaclass=ComponentMetaclass):
         """Access the class's property name from an instance."""
 
         return type(self).name
+
+    # The unique name can be used to distinguish components in
+    # a pipeline, e.g. when the pipeline contains multiple
+    # featurizers of the same type.
+    @property
+    def unique_name(self) -> Text:
+        """Get a unique name for the component in the pipeline."""
+        index = self.component_config.get(COMPONENT_INDEX)
+        return self.name if index is None else str(index) + "_" + self.name
 
     # Which components are required by this component.
     # Listed components should appear before the component itself in the pipeline.
