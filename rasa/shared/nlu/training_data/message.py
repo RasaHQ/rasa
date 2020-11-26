@@ -21,6 +21,8 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
+from rasa.constants import DIAGNOSTIC_DATA
+from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -50,6 +52,16 @@ class Message:
     def add_features(self, features: Optional["Features"]) -> None:
         if features is not None:
             self.features.append(features)
+
+    def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
+        if origin in self.get(DIAGNOSTIC_DATA, {}):
+            rasa.shared.utils.io.raise_warning(
+                f"Please make sure every pipeline component has a distinct name. "
+                f"The name '{self.name}' appears at least twice and diagnostic data will be overwritten."
+            )
+        self.set(
+            DIAGNOSTIC_DATA, {origin: values_to_numpy(data)}
+        )
 
     def set(self, prop, info, add_to_output=False) -> None:
         self.data[prop] = info

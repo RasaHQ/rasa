@@ -453,12 +453,13 @@ async def test_process_gives_diagnostic_data(
 ):
     """Test if processing a message returns attention weights as numpy array."""
 
+    _name = "DIETClassifier"
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", RANDOM_SEED: 1, EPOCHS: 1},
+                {"name": _name, RANDOM_SEED: 1, EPOCHS: 1},
             ],
             "language": "en",
         }
@@ -484,7 +485,8 @@ async def test_process_gives_diagnostic_data(
 
     # The last component is DIETClassifier, which should add attention weights
     assert isinstance(diagnostic_data, dict)
-    assert "attention_weights" in diagnostic_data
-    assert isinstance(diagnostic_data.get("attention_weights"), np.ndarray)
-    assert "text_transformed" in diagnostic_data
-    assert isinstance(diagnostic_data.get("text_transformed"), np.ndarray)
+    assert _name in diagnostic_data
+    assert "attention_weights" in diagnostic_data[_name]
+    assert isinstance(diagnostic_data[_name].get("attention_weights"), np.ndarray)
+    assert "text_transformed" in diagnostic_data[_name]
+    assert isinstance(diagnostic_data[_name].get("text_transformed"), np.ndarray)

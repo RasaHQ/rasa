@@ -435,8 +435,8 @@ class ResponseSelector(DIETClassifier):
 
         self._set_message_property(message, prediction_dict, selector_key)
 
-        if out:
-            message.set(DIAGNOSTIC_DATA, values_to_numpy(out.get(DIAGNOSTIC_DATA)))
+        if out and DIAGNOSTIC_DATA in out:
+            message.add_diagnostic_data(self.name, out.get(DIAGNOSTIC_DATA))
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
