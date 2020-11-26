@@ -2,6 +2,7 @@ from typing import List, Text
 
 import pytest
 
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
@@ -98,6 +99,7 @@ async def test_1st_affirmation_is_successful(default_processor: MessageProcessor
         tracker,
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.templates),
+        PolicyPrediction([], "some policy"),
     )
 
     applied_events = tracker.applied_events()
@@ -206,6 +208,7 @@ async def test_ask_rephrasing_successful(default_processor: MessageProcessor):
         tracker,
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.templates),
+        PolicyPrediction([], "some policy"),
     )
 
     applied_events = tracker.applied_events()
@@ -285,6 +288,7 @@ async def test_2nd_affirm_successful(default_processor: MessageProcessor):
         tracker,
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.templates),
+        PolicyPrediction([], "some policy"),
     )
 
     applied_events = tracker.applied_events()

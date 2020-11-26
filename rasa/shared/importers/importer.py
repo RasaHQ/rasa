@@ -382,7 +382,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             RetrievalModelsDataImporter._construct_retrieval_action_names(
                 retrieval_intents
             ),
-            [],
+            {},
         )
 
     async def get_stories(
@@ -443,7 +443,6 @@ class E2EImporter(TrainingDataImporter):
         return original.merge(e2e_domain)
 
     async def _get_domain_with_e2e_actions(self) -> Domain:
-        from rasa.shared.core.events import ActionExecuted
 
         stories = await self.get_stories()
 
@@ -460,7 +459,7 @@ class E2EImporter(TrainingDataImporter):
         additional_e2e_action_names = list(additional_e2e_action_names)
 
         return Domain(
-            [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
+            [], [], [], {}, action_names=additional_e2e_action_names, forms={}
         )
 
     async def get_stories(

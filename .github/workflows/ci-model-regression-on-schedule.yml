@@ -8,6 +8,7 @@ on:
 
 env:
   GKE_ZONE: us-central1-a
+  GCLOUD_VERSION: "318.0.0"
 
 jobs:
   read_test_configuration:
@@ -51,8 +52,9 @@ jobs:
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.2
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 
@@ -64,6 +66,16 @@ jobs:
         run: |-
           kubectl apply -f runner_deployment.yaml
           kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
+
+      - name: Notify slack on failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+          status: FAILED
+          color: danger
 
   model_regression_test_gpu:
     name: Model Regression Tests - GPU
@@ -217,8 +229,9 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.2
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 

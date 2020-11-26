@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
@@ -67,7 +68,7 @@ from tests.core.utilities import (
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
-from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -81,6 +82,9 @@ class MockRedisTrackerStore(RedisTrackerStore):
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
+
+        # Defined in RedisTrackerStore but needs to be added for the MockRedisTrackerStore
+        self.prefix = "tracker:"
 
         TrackerStore.__init__(self, _domain)
 
@@ -115,7 +119,7 @@ def test_tracker_duplicate():
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-def test_tracker_store_storage_and_retrieval(store):
+def test_tracker_store_storage_and_retrieval(store: TrackerStore):
     tracker = store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"
@@ -169,7 +173,11 @@ async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
     recovered = trackers[0]
     assert len(recovered.events) == 11
     assert recovered.events[4].type_name == "user"
-    assert recovered.events[4].intent == {"confidence": 1.0, "name": "mood_unhappy"}
+    assert recovered.events[4].intent == {
+        "confidence": 1.0,
+        "name": "mood_unhappy",
+        "full_retrieval_intent_name": None,
+    }
 
 
 async def test_tracker_state_regression_without_bot_utterance(default_agent: Agent):
@@ -289,7 +297,7 @@ def test_get_latest_entity_values(
     assert len(tracker.events) == 0
     assert list(tracker.get_latest_entity_values(entity_type)) == []
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(UserUttered("/greet", intent, entities))
 
     assert (
@@ -309,7 +317,7 @@ def test_tracker_update_slots_with_entity(default_domain: Domain):
     test_entity = default_domain.entities[0]
     expected_slot_value = "test user"
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(
         UserUttered(
             "/greet",
@@ -335,7 +343,7 @@ def test_restart_event(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
     tracker.update(ActionExecuted("my_action"))
@@ -384,7 +392,7 @@ def test_revert_action_event(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
     tracker.update(ActionExecuted("my_action"))
@@ -420,13 +428,13 @@ def test_revert_user_utterance_event(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent1 = {"name": "greet", "confidence": 1.0}
+    intent1 = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent1, []))
     tracker.update(ActionExecuted("my_action_1"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-    intent2 = {"name": "goodbye", "confidence": 1.0}
+    intent2 = {"name": "goodbye", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(UserUttered("/goodbye", intent2, []))
     tracker.update(ActionExecuted("my_action_2"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
@@ -462,11 +470,9 @@ def test_traveling_back_in_time(default_domain: Domain):
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
-    intent = {"name": "greet", "confidence": 1.0}
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
-
-    import time
 
     time.sleep(1)
     time_for_timemachine = time.time()
@@ -490,6 +496,13 @@ def test_traveling_back_in_time(default_domain: Domain):
     assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(tracker.events) == 2
     assert len(list(tracker.generate_all_prior_trackers())) == 2
+
+
+def test_tracker_init_copy(default_domain: Domain):
+    sender_id = "some-id"
+    tracker = DialogueStateTracker(sender_id, default_domain.slots)
+    tracker_copy = tracker.init_copy()
+    assert tracker.sender_id == tracker_copy.sender_id
 
 
 async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
@@ -1180,3 +1193,52 @@ def test_set_form_validation_deprecation_warning(validate: bool):
         tracker.set_form_validation(validate)
 
     assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
+
+
+@pytest.mark.parametrize(
+    "conversation_events,n_subtrackers",
+    [
+        (
+            # conversation contains multiple sessions
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                # second session begins here
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("goodbye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            2,
+        ),
+        (
+            # conversation contains only one session
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+            ],
+            1,
+        ),
+        (
+            # this conversation does not contain a session
+            [UserUttered("hi", {"name": "greet"}), ActionExecuted("utter_greet")],
+            1,
+        ),
+    ],
+)
+def test_trackers_for_conversation_sessions(
+    conversation_events: List[Event], n_subtrackers: int
+):
+    import rasa.shared.core.trackers as trackers_module
+
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID", conversation_events
+    )
+
+    subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
+
+    assert len(subtrackers) == n_subtrackers

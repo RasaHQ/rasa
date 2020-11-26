@@ -8,16 +8,17 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Unio
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
-from rasa.shared.core.domain import Domain  # pytype: disable=pyi-error
-from rasa.shared.core.events import (  # pytype: disable=pyi-error
+from rasa.shared.core.conversation import Dialogue
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
     SessionStarted,
 )
-from rasa.shared.core.trackers import DialogueStateTracker  # pytype: disable=pyi-error
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaCoreException
+
 
 if typing.TYPE_CHECKING:
     import networkx as nx
@@ -174,7 +175,7 @@ class StoryStep:
             if isinstance(s, UserUttered):
                 result += self._user_string(s, e2e)
             elif isinstance(s, Event):
-                converted = s.as_story_string()  # pytype: disable=attribute-error
+                converted = s.as_story_string()
                 if converted:
                     result += self._bot_string(s)
             elif isinstance(s, list):
@@ -194,20 +195,16 @@ class StoryStep:
     def is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-        # pytype: disable=attribute-error
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
-        # pytype: enable=attribute-error
 
     @staticmethod
     def is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-        # pytype: disable=attribute-error
         return (
             type(event) == ActionExecuted
             and event.action_name == ACTION_SESSION_START_NAME
         )
-        # pytype: enable=attribute-error
 
     def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self.is_action_listen(events[-1]):
@@ -231,11 +228,7 @@ class StoryStep:
             if isinstance(e, UserUttered):
                 self._add_action_listen(events)
                 events.append(e)
-                events.extend(
-                    domain.slots_for_entities(
-                        e.entities  # pytype: disable=attribute-error
-                    )
-                )
+                events.extend(domain.slots_for_entities(e.entities))
             else:
                 events.append(e)
 
@@ -401,14 +394,24 @@ class StoryGraph:
             self.story_end_checkpoints = {}
 
     def __hash__(self) -> int:
-        self_as_string = self.as_story_string()
-        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
+        """Return hash for the story step.
 
-        return int(text_hash, 16)
+        Returns:
+            Hash of the story step.
+        """
+        return int(self.fingerprint(), 16)
+
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the stories which is stable across python runs.
+
+        Returns:
+            fingerprint of the stories
+        """
+        self_as_string = self.as_story_string()
+        return rasa.shared.utils.io.get_text_hash(self_as_string)
 
     def ordered_steps(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""
-
         return [self.get(step_id) for step_id in self.ordered_ids]
 
     def cyclic_edges(self) -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]:

@@ -24,6 +24,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
 
 
@@ -43,10 +46,22 @@ class EntityExtractor(Component):
 
         return entity
 
+    def init_split_entities(self):
+        """Initialise the behaviour for splitting entities by comma (or not)."""
+        split_entities_config = self.component_config.get(
+            SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        if isinstance(split_entities_config, bool):
+            split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
+        else:
+            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[
+                SPLIT_ENTITIES_BY_COMMA
+            ]
+        return split_entities_config
+
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
-        """Only return dimensions the user configured"""
-
+        """Only return dimensions the user configured."""
         if requested_dimensions:
             return [
                 entity
@@ -118,15 +133,16 @@ class EntityExtractor(Component):
         text: Text,
         tokens: List[Token],
         tags: Dict[Text, List[Text]],
+        split_entities_config: Dict[Text, bool] = None,
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> List[Dict[Text, Any]]:
-        """
-        Convert predictions into entities.
+        """Convert predictions into entities.
 
         Args:
             text: The text message.
             tokens: Message tokens without CLS token.
             tags: Predicted tags.
+            split_entities_config: config for handling splitting a list of entities
             confidences: Confidences of predicted tags.
 
         Returns:
@@ -201,17 +217,22 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
-            elif token.start - last_token_end <= 1:
+            elif self._check_is_single_entity(
+                text, token, last_token_end, split_entities_config, current_entity_tag
+            ):
                 # current token has the same entity tag as the token before and
-                # the two tokens are only separated by at most one symbol (e.g. space,
-                # dash, etc.)
+                # the two tokens are separated by at most 3 symbols, where each
+                # of the symbols has to be either punctuation (e.g. "." or ",")
+                # and a whitespace.
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
                     self._update_confidence_values(entities, confidences, idx)
+
             else:
                 # the token has the same entity tag as the token before but the two
                 # tokens are separated by at least 2 symbols (e.g. multiple spaces,
-                # a comma and a space, etc.)
+                # a comma and a space, etc.) and also shouldn't be represented as a
+                # single entity
                 entity = self._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
@@ -253,6 +274,50 @@ class EntityExtractor(Component):
                 entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_GROUP],
                 confidences[ENTITY_ATTRIBUTE_GROUP][idx],
             )
+
+    @staticmethod
+    def _check_is_single_entity(
+        text: Text,
+        token: Token,
+        last_token_end: int,
+        split_entities_config: Dict[Text, bool],
+        current_entity_tag: Text,
+    ):
+        # current token has the same entity tag as the token before and
+        # the two tokens are only separated by at most one symbol (e.g. space,
+        # dash, etc.)
+        if token.start - last_token_end <= 1:
+            return True
+
+        # Tokens need to be no further than 3 positions apart
+        # The magic number 3 is chosen such that the following two cases can be extracted
+        #   - Schönhauser Allee 175, 10119 Berlin (address compounds separated by 2 tokens (", "))
+        #   - 22 Powderhall Rd., EH7 4GB (abbreviated "Rd." results in a separation of 3 tokens ("., "))
+        # More than 3 might already introduce cases that shouldn't be considered by this logic
+        tokens_within_range = token.start - last_token_end <= 3
+
+        # The interleaving tokens *must* be a full stop, a comma, or a whitespace
+        interleaving_text = text[last_token_end : token.start]
+        tokens_separated_by_allowed_chars = all(
+            filter(
+                lambda char: True
+                if char in SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET
+                else False,
+                interleaving_text,
+            )
+        )
+
+        # The current entity type must match with the config (default value is True)
+        default_value = split_entities_config[SPLIT_ENTITIES_BY_COMMA]
+        split_current_entity_type = split_entities_config.get(
+            current_entity_tag, default_value
+        )
+
+        return (
+            tokens_within_range
+            and tokens_separated_by_allowed_chars
+            and not split_current_entity_type
+        )
 
     @staticmethod
     def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text:

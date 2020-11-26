@@ -1,9 +1,18 @@
 # all hashtags are comments :)
 intents:
- - inform
+ - inform:
+     use_entities:
+       - GPE
+ - greet:
+     ignore_entities:
+       - GPE
 
 entities:
- - GPE
+  - GPE:
+      roles:
+        - destination
+        - origin
+  - name
 
 slots:
   GPE_origin:

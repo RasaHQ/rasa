@@ -1,3 +1,4 @@
+import json
 from typing import Any, Optional, Tuple, Text, Dict, Set, List
 
 import typing
@@ -86,10 +87,23 @@ class Message:
         if not isinstance(other, Message):
             return False
         else:
-            return ordered(other.data) == ordered(self.data)
+            return other.fingerprint() == self.fingerprint()
 
     def __hash__(self) -> int:
-        return hash(str(ordered(self.data)))
+        """Calculate a hash for the message.
+
+        Returns:
+            Hash of the message.
+        """
+        return int(self.fingerprint(), 16)
+
+    def fingerprint(self) -> Text:
+        """Calculate a string fingerprint for the message.
+
+        Returns:
+            Fingerprint of the message.
+        """
+        return rasa.shared.utils.io.deep_container_fingerprint(self.data)
 
     @classmethod
     def build(
@@ -126,9 +140,8 @@ class Message:
         if intent_metadata is not None:
             data[METADATA] = {METADATA_INTENT: intent_metadata}
         if example_metadata is not None:
-            # pytype: disable=unsupported-operands
             data.setdefault(METADATA, {})[METADATA_EXAMPLE] = example_metadata
-            # pytype: enable=unsupported-operands
+
         return cls(data, **kwargs)
 
     def get_full_intent(self) -> Text:
@@ -323,12 +336,3 @@ class Message:
                 and not (self.data.get(INTENT) or self.data.get(RESPONSE))
             )
         )
-
-
-def ordered(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return sorted((k, ordered(v)) for k, v in obj.items())
-    if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj

@@ -65,12 +65,11 @@ class SingleStateFeaturizer:
 
         self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
         self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
-        self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
+        self._default_feature_states[ENTITIES] = convert_to_dict(domain.entity_states)
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.action_texts = domain.action_texts
 
-    # pytype: disable=bad-return-type
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
     ) -> Dict[Text, int]:
@@ -91,8 +90,6 @@ class SingleStateFeaturizer:
                 f"Given attribute '{attribute}' is not supported. "
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
-
-    # pytype: enable=bad-return-type
 
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
