@@ -511,7 +511,7 @@ class MessageProcessor:
                 )
 
     def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
-        return rasa.core.actions.action.action_for_name(
+        return rasa.core.actions.action.action_for_name_or_text(
             action_name, self.domain, self.action_endpoint
         )
 

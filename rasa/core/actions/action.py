@@ -102,30 +102,7 @@ def action_for_index(
             f"Domain has {domain.num_actions} actions."
         )
 
-    return action_for_name(domain.action_names[index], domain, action_endpoint)
-
-
-def action_for_name(
-    action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
-) -> "Action":
-    """Create an `Action` object based on the name of the `Action`.
-
-    Args:
-        action_name: The name of the `Action`.
-        domain: The `Domain` of the current model. The domain contains the actions
-            provided by the user + the default actions.
-        action_endpoint: Can be used to run `custom_actions`
-            (e.g. using the `rasa-sdk`).
-
-    Returns:
-        The instantiated `Action` or `None` if no `Action` was found for the given
-        index.
-    """
-
-    if action_name not in domain.action_names:
-        domain.raise_action_not_found_exception(action_name)
-
-    return action_from_name(action_name, domain, action_endpoint)
+    return action_for_name_or_text(domain.action_names[index], domain, action_endpoint)
 
 
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
@@ -148,41 +125,53 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
     )
 
 
-def action_from_name(
-    name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+def action_for_name_or_text(
+    action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> "Action":
     """Retrieves an action by its name.
 
     Args:
-        name: The name of the action.
+        action_name_or_text: The name of the action.
         domain: The current model domain.
         action_endpoint: The endpoint to execute custom actions.
 
+    Raises:
+        ActionNotFoundException: If action not in current domain.
     Returns:
         The instantiated action.
     """
+
+    if action_name_or_text not in domain.action_names:
+        domain.raise_action_not_found_exception(action_name_or_text)
+
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
-    if name in defaults and name not in domain.user_actions_and_forms:
-        return defaults[name]
-
-    if name.startswith(UTTER_PREFIX) and is_retrieval_action(
-        name, domain.retrieval_intents
+    if (
+        action_name_or_text in defaults
+        and action_name_or_text not in domain.user_actions_and_forms
     ):
-        return ActionRetrieveResponse(name)
+        return defaults[action_name_or_text]
 
-    if name.startswith(UTTER_PREFIX) or name in domain.action_texts:
-        return ActionUtterTemplate(name)
+    if action_name_or_text.startswith(UTTER_PREFIX) and is_retrieval_action(
+        action_name_or_text, domain.retrieval_intents
+    ):
+        return ActionRetrieveResponse(action_name_or_text)
 
-    is_form = name in domain.form_names
+    if action_name_or_text in domain.action_texts:
+        return EndToEndAction(action_name_or_text)
+
+    if action_name_or_text.startswith(UTTER_PREFIX):
+        return ActionUtterTemplate(action_name_or_text)
+
+    is_form = action_name_or_text in domain.form_names
     # Users can override the form by defining an action with the same name as the form
-    user_overrode_form_action = is_form and name in domain.user_actions
+    user_overrode_form_action = is_form and action_name_or_text in domain.user_actions
     if is_form and not user_overrode_form_action:
         from rasa.core.actions.forms import FormAction
 
-        return FormAction(name, action_endpoint)
+        return FormAction(action_name_or_text, action_endpoint)
 
-    return RemoteAction(name, action_endpoint)
+    return RemoteAction(action_name_or_text, action_endpoint)
 
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:

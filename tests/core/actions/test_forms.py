@@ -1082,7 +1082,9 @@ async def test_ask_for_slot(
 
     action_from_name = Mock(return_value=action.ActionListen())
     endpoint_config = Mock()
-    monkeypatch.setattr(action, action.action_from_name.__name__, action_from_name)
+    monkeypatch.setattr(
+        action, action.action_for_name_or_text.__name__, action_from_name
+    )
 
     form = FormAction("my_form", endpoint_config)
     domain = Domain.from_dict(domain)

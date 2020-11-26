@@ -108,7 +108,7 @@ def test_domain_action_instantiation():
     )
 
     instantiated_actions = [
-        action.action_for_name(action_name, domain, None)
+        action.action_for_name_or_text(action_name, domain, None)
         for action_name in domain.action_names
     ]
 
@@ -722,7 +722,7 @@ def test_get_form_action(slot_mapping: Text):
     """
     )
 
-    actual = action.action_for_name(form_action_name, domain, None)
+    actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, FormAction)
 
 
@@ -738,7 +738,7 @@ def test_get_form_action_with_rasa_open_source_1_forms():
         """
         )
 
-    actual = action.action_for_name(form_action_name, domain, None)
+    actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, RemoteAction)
 
 
@@ -754,7 +754,7 @@ def test_overridden_form_action():
     """
     )
 
-    actual = action.action_for_name(form_action_name, domain, None)
+    actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, RemoteAction)
 
 
@@ -768,7 +768,7 @@ def test_get_form_action_if_not_in_forms():
     )
 
     with pytest.raises(ActionNotFoundException):
-        assert not action.action_for_name(form_action_name, domain, None)
+        assert not action.action_for_name_or_text(form_action_name, domain, None)
 
 
 def test_get_end_to_end_utterance_action():
@@ -784,7 +784,7 @@ def test_get_end_to_end_utterance_action():
 """
     )
 
-    actual = action.action_for_name("Hi", domain, None)
+    actual = action.action_for_name_or_text("Hi", domain, None)
 
     assert isinstance(actual, EndToEndAction)
     assert actual.name() == end_to_end_utterance
@@ -803,7 +803,7 @@ async def test_run_end_to_end_utterance_action():
 """
     )
 
-    e2e_action = action.action_for_name("Hi", domain, None)
+    e2e_action = action.action_for_name_or_text("Hi", domain, None)
     events = await e2e_action.run(
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.templates),
