@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 
 import rasa.utils.io as io_utils
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
@@ -40,7 +41,7 @@ def _sklearn_numpy_warning_fix():
                             category=DeprecationWarning)
 
 
-class flask_serving_classifier(Component):
+class flask_serving_classifier(IntentClassifier):
     """Intent classifier using the sklearn framework"""
 
     name = "flask_serving_classifier"
@@ -112,15 +113,13 @@ class flask_serving_classifier(Component):
             X = [i.get(TEXT) for i in training_data.intent_examples]
 
             categories = [i for i in set(y)]
-            model_name = 'datetime'
-            host = '185.190.206.134'
-            port = 9000
+            host = '127.0.0.1'
+            port = 9501
             url = f'http://{host}:{port}/train'
             data = {'text': X, 'labels': y, 'unique_labels': categories}
             print('ED DATA', data)
             tr = requests.put(url, json=data)  ###train
             print(tr.json())
-            self.clf = model_name
 
             # self.clf = self._create_classifier(num_threads, y)
 
@@ -131,7 +130,7 @@ class flask_serving_classifier(Component):
         """Return the most likely intent and its probability for a message."""
         logger.warn("ED CLASSIFIER PROCESS MESSAGE:")
         print('FLASK PROCESS PRINT')
-        print('ED message', message)
+        print('ED message', message.get(TEXT))
         X = message.get(TEXT)
         intent_ids, probabilities = self.predict(X)
         intents = self.transform_labels_num2str(np.ravel(intent_ids))
@@ -163,8 +162,8 @@ class flask_serving_classifier(Component):
         :param X: bow of input text
         :return: vector of probabilities containing one entry for each label"""
         data = {'text': X,'labels':[], 'unique_labels':[]}
-        host = '185.190.206.134'
-        port = 9000
+        host = '127.0.0.1'
+        port = 9501
         url = f'http://{host}:{port}/predict'
         pred = requests.post(url, json=data)
         out = np.array(pred.json()['prediction'])
@@ -191,7 +190,7 @@ class flask_serving_classifier(Component):
 
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
-        if self.clf and self.le:
+        if self.le:
             io_utils.json_pickle(
                 os.path.join(model_dir, encoder_file_name), self.le.classes_
             )

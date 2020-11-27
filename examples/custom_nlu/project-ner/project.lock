@@ -1,0 +1,49 @@
+corpus:
+  cmd: python -m spacy run corpus
+  script:
+    - python scripts/partition.py ner/data/data.iob ner/iob
+    - python -m spacy convert ner/iob corpus --n-sents 10
+  deps:
+    - path: ner/data
+      md5: 021ef376124b34bf4a13c85db4efa674
+  outs:
+    - path: corpus/train.spacy
+      md5: 3b746d5b7e0aed36309b0efcb2149bf1
+    - path: corpus/dev.spacy
+      md5: f5dd4b5984b03fb7d9c82f97ade4379a
+    - path: corpus/test.spacy
+      md5: d919aa1f13293f753d2c7a250184d821
+  spacy_version: 3.0.0rc2
+  spacy_git_version: ace6ae435
+train:
+  cmd: python -m spacy run train
+  script:
+    - python -m spacy train configs/default.cfg -o training/ --gpu-id -1 --paths.train
+      corpus/train.spacy --paths.dev corpus/dev.spacy
+  deps:
+    - path: corpus/train.spacy
+      md5: 3b746d5b7e0aed36309b0efcb2149bf1
+    - path: corpus/dev.spacy
+      md5: f5dd4b5984b03fb7d9c82f97ade4379a
+    - path: configs/default.cfg
+      md5: 7a296028b5bb154f8d96281787202b3c
+  outs:
+    - path: training/model-best
+      md5: d87a578b3693b32fc92bd60288b5a140
+  spacy_version: 3.0.0rc2
+  spacy_git_version: ace6ae435
+evaluate:
+  cmd: python -m spacy run evaluate
+  script:
+    - python -m spacy evaluate ./training/model-best ./corpus/test.spacy --output
+      ./metrics/default.json --gpu-id -1
+  deps:
+    - path: training/model-best
+      md5: d87a578b3693b32fc92bd60288b5a140
+    - path: corpus/test.spacy
+      md5: d919aa1f13293f753d2c7a250184d821
+  outs:
+    - path: metrics/default.json
+      md5: e447645e41905ffead2e2b28c01eb6f5
+  spacy_version: 3.0.0rc2
+  spacy_git_version: ace6ae435

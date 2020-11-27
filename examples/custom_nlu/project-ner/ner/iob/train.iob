@@ -1,0 +1,14 @@
+show|O me|O chinese|U-cuisine restaurants|O
+I|O am|O looking|O for|O mexican|B-cuisine indian|I-cuisine fusion|L-cuisine
+I|O am|O looking|O for|O asian|B-cuisine fusion|L-cuisine food|O
+anywhere|O in|O the|O west|U-location
+weather|O in|O Houston|O in|O Celsius|U-unit
+I|O am|O looking|O a|O restaurant|O in|O 29432|U-location
+show|O me|O chines|U-cuisine restaurants|O in|O the|O north|U-location
+show|O me|O the|O weather|O in|O celsius|U-unit
+tell|O me|O the|O weather|O in|O Sevilla|O in|O Fahrenheit|U-unit
+i|O 'm|O looking|O for|O a|O place|O in|O the|O north|U-location of|O town|O
+weather|O data|O in|O celsius|U-unit
+weather|O on|O Sunday|O in|O celsius|U-unit
+weather|O in|O celsius|U-unit
+central|U-location indian|U-cuisine restaurant|O

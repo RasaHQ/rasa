@@ -1,0 +1,10 @@
+{
+  "greet": {
+    "en": ["Hey! How are you?"],
+    "fr": ["Hey! Comment ça va?"]
+  },
+  "goodbye": {
+    "en": ["Bye"],
+    "fr": ["Au revoir"]
+  }
+}

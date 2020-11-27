@@ -1,0 +1,21 @@
+language: en
+
+pipeline:
+- name: SpacyCustomNER
+  custom_model: "project-ner/training/model-best"
+  project: "project-ner"
+- name: SpacyNLP
+  model: "en_core_web_md"
+- name: SpacyTokenizer
+- name: SpacyEntityExtractor
+- name: SpacyFeaturizer
+  pooling: mean
+- name: CountVectorsFeaturizer
+  analyzer: char_wb
+  min_ngram: 1
+  max_ngram: 4
+- name: DIETClassifier
+  epochs: 1
+
+policies:
+  - name: MappingPolicy

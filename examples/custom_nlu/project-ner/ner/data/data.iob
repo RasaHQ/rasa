@@ -1,0 +1,20 @@
+weather|O in|O Houston|O in|O Celsius|U-unit
+I|O 'd|O like|O to|O the|O weather|O in|O Spain|O in|O celsius|U-unit
+show|O me|O the|O weather|O in|O celsius|U-unit
+tell|O me|O the|O weather|O in|O Sevilla|O in|O Fahrenheit|U-unit
+weather|O in|O celsius|U-unit
+weather|O data|O in|O celsius|U-unit
+what|O is|O the|O weather|O tomorrow|O in|O New|O York|O in|O celsius|U-unit
+weather|O on|O Sunday|O in|O celsius|U-unit
+what|O will|O be|O the|O weather|O like|O on|O the|O weekend|O in|O celsius|U-unit
+i|O 'm|O looking|O for|O a|O place|O in|O the|O north|U-location of|O town|O
+show|O me|O chinese|U-cuisine restaurants|O
+show|O me|O chines|U-cuisine restaurants|O in|O the|O north|U-location
+show|O me|O a|O mexican|U-cuisine place|O in|O the|O centre|U-location
+i|O am|O looking|O for|O an|O indian|U-cuisine spot|O called|O olaolaolaolaolaola|O
+anywhere|O in|O the|O west|U-location
+anywhere|O near|O 18328|U-location
+I|O am|O looking|O for|O asian|B-cuisine fusion|L-cuisine food|O
+I|O am|O looking|O a|O restaurant|O in|O 29432|U-location
+I|O am|O looking|O for|O mexican|B-cuisine indian|I-cuisine fusion|L-cuisine
+central|U-location indian|U-cuisine restaurant|O
