@@ -124,6 +124,26 @@ def _fingerprint(
 
 
 @pytest.mark.parametrize(
+    "path, filename",
+    [
+        ((), None),
+        ((), "test.json"),
+        (("test", "models"), "test.json"),
+    ],
+)
+def test_persist_and_load_fingerprint(path, filename):
+    from rasa.model import persist_fingerprint, fingerprint_from_path
+
+    fingerprint = _fingerprint()
+    output_directory = os.path.join(tempfile.mkdtemp(), *path)
+
+    persist_fingerprint(output_directory, fingerprint)
+    actual = fingerprint_from_path(output_directory)
+
+    assert actual == fingerprint
+
+
+@pytest.mark.parametrize(
     "fingerprint2, changed",
     [
         (_fingerprint(config=["other"]), True),
