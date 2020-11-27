@@ -97,7 +97,7 @@ class TrackerStore:
                 f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
                 f"kwarg for the `{self.__class__.__name__}` class is deprecated and "
                 f"will be removed in Rasa Open Source 3.0. "
-                f"Please use the `retrieve_full_tracker()` method instead.",
+                f"Please use the `retrieve_full_tracker()` method instead."
             )
             self.retrieve_events_from_previous_conversation_sessions = (
                 retrieve_events_from_previous_conversation_sessions
@@ -1190,19 +1190,9 @@ def _load_from_module_name_in_endpoint_config(
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type
         )
-        init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
-        if "url" in init_args and "host" not in init_args:
-            # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
-                "The `url` initialization argument for custom tracker stores has "
-                "been removed. Your custom tracker store should take a `host` "
-                "argument in its `__init__()` instead."
-            )
-        else:
-            store.kwargs["host"] = store.url
 
         return tracker_store_class(
-            domain=domain, event_broker=event_broker, **store.kwargs
+            host=store.url, domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
         rasa.shared.utils.io.raise_warning(

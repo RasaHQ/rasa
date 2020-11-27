@@ -3,8 +3,6 @@ from pathlib import Path
 import jsonpickle
 import logging
 
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
-from rasa.shared.exceptions import RasaException
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any
 import numpy as np
@@ -18,6 +16,8 @@ from rasa.shared.core.trackers import (
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 
@@ -183,7 +183,7 @@ class TrackerFeaturizer:
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_from_domain(domain)
+        self.state_featurizer.prepare_for_training(domain, interpreter)
 
         (
             trackers_as_states,
