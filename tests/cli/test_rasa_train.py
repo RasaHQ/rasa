@@ -320,6 +320,23 @@ def test_train_nlu_persist_nlu_data(
 def test_train_in_chunks(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
+    os.remove("config.yml")
+    rasa.shared.utils.io.write_yaml(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", "epochs": 1},
+            ],
+            "policies": [
+                {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        "config.yml",
+    )
+
     run_in_simple_project(
         "train",
         "-c",
@@ -351,6 +368,23 @@ def test_train_in_chunks(run_in_simple_project: Callable[..., RunResult]):
 
 def test_train_nlu_in_chunks(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
+
+    os.remove("config.yml")
+    rasa.shared.utils.io.write_yaml(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", "epochs": 1},
+            ],
+            "policies": [
+                {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        "config.yml",
+    )
 
     run_in_simple_project(
         "train",
