@@ -54,13 +54,14 @@ is_url(resource_name: Text) -> bool
 
 Check whether the url specified is a well formed one.
 
-Regex adapted from https://stackoverflow.com/a/7160778/3001665
-
 **Arguments**:
 
 - `resource_name` - Remote URL to validate
   
-- `Returns` - `True` if valid, otherwise `False`.
+
+**Returns**:
+
+  `True` if valid, otherwise `False`.
 
 #### remove\_model
 
