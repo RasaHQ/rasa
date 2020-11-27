@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import InvalidModelError
 from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
@@ -36,12 +36,12 @@ class SpacyNLP(Component):
     def __init__(
         self, component_config: Dict[Text, Any] = None, nlp: "Language" = None
     ) -> None:
-
+        """Initialize the component. See parent class for more information."""
         self.nlp = nlp
         super().__init__(component_config)
 
     @staticmethod
-    def load_model(spacy_model_name: Text) -> "Language":
+    def _load_model(spacy_model_name: Text) -> "Language":
         """Try loading the model, catching the OSError if missing."""
         import spacy
 
@@ -58,6 +58,10 @@ class SpacyNLP(Component):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specify which python packages need to be installed.
+
+        See parent class for more information.
+        """
         return ["spacy"]
 
     @classmethod
@@ -67,7 +71,10 @@ class SpacyNLP(Component):
         model_config: RasaNLUModelConfig,
         domain: Optional[Domain] = None,
     ) -> "SpacyNLP":
-        """Creates this component (e.g. before a training is started)."""
+        """Creates this component (e.g. before a training is started).
+
+        See parent class for more information.
+        """
         component_config = override_defaults(cls.defaults, component_config)
 
         spacy_model_name = component_config.get("model")
@@ -79,9 +86,9 @@ class SpacyNLP(Component):
 
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
 
-        nlp = cls.load_model(spacy_model_name)
+        nlp = cls._load_model(spacy_model_name)
 
-        cls.ensure_proper_language_model(nlp)
+        cls._ensure_proper_language_model(nlp)
         return cls(component_config, nlp)
 
     @classmethod
@@ -96,14 +103,16 @@ class SpacyNLP(Component):
         return cls.name + "-" + spacy_model_name
 
     def provide_context(self) -> Dict[Text, Any]:
+        """Initialize this component for a new pipeline.
+
+        See parent class for more information.
+        """
         return {"spacy_nlp": self.nlp}
 
-    def doc_for_text(self, text: Text) -> "Doc":
+    def _doc_for_text(self, text: Text) -> "Doc":
+        return self.nlp(self._preprocess_text(text))
 
-        return self.nlp(self.preprocess_text(text))
-
-    def preprocess_text(self, text: Optional[Text]) -> Text:
-
+    def _preprocess_text(self, text: Optional[Text]) -> Text:
         if text is None:
             # converted to empty string so that it can still be passed to spacy.
             # Another option could be to neglect tokenization of the attribute of
@@ -115,27 +124,24 @@ class SpacyNLP(Component):
         else:
             return text.lower()
 
-    def get_text(self, example: Dict[Text, Any], attribute: Text) -> Text:
-
-        return self.preprocess_text(example.get(attribute))
+    def _get_text(self, example: Message, attribute: Text) -> Text:
+        return self._preprocess_text(example.get(attribute))
 
     @staticmethod
-    def merge_content_lists(
+    def _merge_content_lists(
         indexed_training_samples: List[Tuple[int, Text]],
         doc_lists: List[Tuple[int, "Doc"]],
     ) -> List[Tuple[int, "Doc"]]:
         """Merge lists with processed Docs back into their original order."""
-
         dct = dict(indexed_training_samples)
         dct.update(dict(doc_lists))
         return sorted(dct.items())
 
     @staticmethod
-    def filter_training_samples_by_content(
+    def _filter_training_samples_by_content(
         indexed_training_samples: List[Tuple[int, Text]]
     ) -> Tuple[List[Tuple[int, Text]], List[Tuple[int, Text]]]:
         """Separates empty training samples from content bearing ones."""
-
         docs_to_pipe = list(
             filter(
                 lambda training_sample: training_sample[1] != "",
@@ -150,11 +156,10 @@ class SpacyNLP(Component):
         )
         return docs_to_pipe, empty_docs
 
-    def process_content_bearing_samples(
+    def _process_content_bearing_samples(
         self, samples_to_pipe: List[Tuple[int, Text]]
     ) -> List[Tuple[int, "Doc"]]:
         """Sends content bearing training samples to spaCy's pipe."""
-
         docs = [
             (to_pipe_sample[0], doc)
             for to_pipe_sample, doc in zip(
@@ -169,11 +174,10 @@ class SpacyNLP(Component):
         ]
         return docs
 
-    def process_non_content_bearing_samples(
+    def _process_non_content_bearing_samples(
         self, empty_samples: List[Tuple[int, Text]]
     ) -> List[Tuple[int, "Doc"]]:
         """Creates empty Doc-objects from zero-lengthed training samples strings."""
-
         from spacy.tokens import Doc
 
         n_docs = [
@@ -184,30 +188,29 @@ class SpacyNLP(Component):
         ]
         return n_docs
 
-    def docs_for_training_data(
-        self, training_data: TrainingData
+    def _docs_for_training_examples(
+        self, training_examples: List[Message]
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
-            texts = [
-                self.get_text(e, attribute) for e in training_data.training_examples
-            ]
+            texts = [self._get_text(e, attribute) for e in training_examples]
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
             indexed_training_samples = [(idx, text) for idx, text in enumerate(texts)]
 
-            samples_to_pipe, empty_samples = self.filter_training_samples_by_content(
+            samples_to_pipe, empty_samples = self._filter_training_samples_by_content(
                 indexed_training_samples
             )
 
-            content_bearing_docs = self.process_content_bearing_samples(samples_to_pipe)
+            content_bearing_docs = self._process_content_bearing_samples(
+                samples_to_pipe
+            )
 
-            non_content_bearing_docs = self.process_non_content_bearing_samples(
+            non_content_bearing_docs = self._process_non_content_bearing_samples(
                 empty_samples
             )
 
-            attribute_document_list = self.merge_content_lists(
+            attribute_document_list = self._merge_content_lists(
                 indexed_training_samples,
                 content_bearing_docs + non_content_bearing_docs,
             )
@@ -217,18 +220,21 @@ class SpacyNLP(Component):
             attribute_docs[attribute] = [doc for _, doc in attribute_document_list]
         return attribute_docs
 
-    def train(
+    def train_chunk(
         self,
-        training_data: TrainingData,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
 
-        attribute_docs = self.docs_for_training_data(training_data)
-
+        See parent class for more information.
+        """
+        attribute_docs = self._docs_for_training_examples(
+            training_data_chunk.training_examples
+        )
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
-            for idx, example in enumerate(training_data.training_examples):
+            for idx, example in enumerate(training_data_chunk.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
                 if len(example_attribute_doc):
                     # If length is 0, that means the initial text feature
@@ -237,10 +243,11 @@ class SpacyNLP(Component):
                     example.set(SPACY_DOCS[attribute], example_attribute_doc)
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Process an incoming message. See parent class for more information."""
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
             if message.get(attribute):
                 message.set(
-                    SPACY_DOCS[attribute], self.doc_for_text(message.get(attribute))
+                    SPACY_DOCS[attribute], self._doc_for_text(message.get(attribute))
                 )
 
     @classmethod
@@ -258,16 +265,16 @@ class SpacyNLP(Component):
 
         model_name = meta.get("model")
 
-        nlp = cls.load_model(model_name)
-        cls.ensure_proper_language_model(nlp)
+        nlp = cls._load_model(model_name)
+        cls._ensure_proper_language_model(nlp)
         return cls(meta, nlp)
 
     @staticmethod
-    def ensure_proper_language_model(nlp: Optional["Language"]) -> None:
+    def _ensure_proper_language_model(nlp: Optional["Language"]) -> None:
         """Checks if the spacy language model is properly loaded.
 
-        Raises an exception if the model is invalid."""
-
+        Raises an exception if the model is invalid.
+        """
         if nlp is None:
             raise Exception(
                 "Failed to load spacy language model. "
