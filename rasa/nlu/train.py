@@ -162,7 +162,7 @@ async def train_in_chunks(
     training_data = await _load_training_data(training_data_importer, model_config)
 
     interpreter, persisted_path = trainer.train_in_chunks(
-        training_data, train_path, fixed_model_name, number_of_chunks
+        training_data, train_path, number_of_chunks, fixed_model_name
     )
 
     return trainer, interpreter, persisted_path

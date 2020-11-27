@@ -223,9 +223,9 @@ class Trainer:
     def train_in_chunks(
         self,
         training_data: TrainingData,
-        train_path: Text,
+        train_path: Path,
+        number_of_chunks: int,
         fixed_model_name: Optional[Text] = None,
-        number_of_chunks: int = 5,
     ) -> Tuple["Interpreter", Text]:
         """Trains the underlying pipeline in chunks using the provided training data.
 
@@ -260,7 +260,7 @@ class Trainer:
 
         data_chunk_dir = TempDirectoryPath(tempfile.mkdtemp())
 
-        dir_name, model_name = self._create_model_dir(train_path, fixed_model_name)
+        dir_name, model_name = self._create_model_dir(str(train_path), fixed_model_name)
 
         # perform tokenization & prepare other components for training in chunks
         for i, component in enumerate(self.pipeline):
