@@ -35,21 +35,22 @@ class MitieEntityExtractor(EntityExtractor):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specifies which python packages need to be installed."""
         return ["mitie"]
 
-    def extract_entities(
+    def _extract_entities(
         self, text: Text, tokens: List[Token], feature_extractor
     ) -> List[Dict[Text, Any]]:
-        ents = []
-        tokens_strs = [token.text for token in tokens]
+        entities = []
+        token_texts = [token.text for token in tokens]
         if self.ner:
-            entities = self.ner.extract_entities(tokens_strs, feature_extractor)
+            entities = self.ner.extract_entities(token_texts, feature_extractor)
             for e in entities:
                 if len(e[0]):
                     start = tokens[e[0][0]].start
                     end = tokens[e[0][-1]].end
 
-                    ents.append(
+                    entities.append(
                         {
                             "entity": e[1],
                             "value": text[start:end],
@@ -59,7 +60,7 @@ class MitieEntityExtractor(EntityExtractor):
                         }
                     )
 
-        return ents
+        return entities
 
     def train_chunk(
         self,
@@ -152,10 +153,10 @@ class MitieEntityExtractor(EntityExtractor):
                 "Missing a proper MITIE feature extractor."
             )
 
-        ents = self.extract_entities(
+        entities = self._extract_entities(
             message.get(TEXT), message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
         )
-        extracted = self.add_extractor_name(ents)
+        extracted = self.add_extractor_name(entities)
         message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @classmethod

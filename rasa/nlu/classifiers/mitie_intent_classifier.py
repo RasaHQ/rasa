@@ -24,13 +24,19 @@ class MitieIntentClassifier(IntentClassifier):
         return [MitieNLP, Tokenizer]
 
     def __init__(
-        self, component_config: Optional[Dict[Text, Any]] = None, clf=None
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        classifier: Optional[Any] = None,
     ) -> None:
-        """Construct a new intent classifier using the MITIE framework."""
+        """Construct a new intent classifier using the MITIE framework.
 
+        Args:
+            component_config: The component configuration.
+            classifier: The MITIE classifier.
+        """
         super().__init__(component_config)
 
-        self.clf = clf
+        self.classifier = classifier
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -80,10 +86,10 @@ class MitieIntentClassifier(IntentClassifier):
 
         if training_data.intent_examples:
             # we can not call train if there are no examples!
-            self.clf = trainer.train()
+            self.classifier = trainer.train()
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
+        """Process an incoming message."""
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
             raise Exception(
@@ -91,9 +97,9 @@ class MitieIntentClassifier(IntentClassifier):
                 "Missing a proper MITIE feature extractor."
             )
 
-        if self.clf:
-            token_strs = self._tokens_of_message(message)
-            intent, confidence = self.clf(token_strs, mitie_feature_extractor)
+        if self.classifier:
+            token_texts = self._tokens_of_message(message)
+            intent, confidence = self.classifier(token_texts, mitie_feature_extractor)
         else:
             # either the model didn't get trained or it wasn't
             # provided with any data
@@ -126,16 +132,24 @@ class MitieIntentClassifier(IntentClassifier):
         classifier_file = os.path.join(model_dir, file_name)
         if os.path.exists(classifier_file):
             classifier = mitie.text_categorizer(classifier_file)
-            return cls(meta, classifier)
+            return cls(meta, classifier=classifier)
         else:
             return cls(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        """Persist this component to disk for future loading.
 
-        if self.clf:
+        Args:
+            file_name: The file name of the model.
+            model_dir: The directory to store the model to.
+
+        Returns:
+            A dictionary with any information about the stored model.
+        """
+        if self.classifier:
             file_name = file_name + ".dat"
             classifier_file = os.path.join(model_dir, file_name)
-            self.clf.save_to_disk(classifier_file, pure_model=True)
+            self.classifier.save_to_disk(classifier_file, pure_model=True)
             return {"file": file_name}
         else:
             return {"file": None}
