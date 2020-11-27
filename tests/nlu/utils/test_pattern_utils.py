@@ -88,7 +88,7 @@ def test_extract_patterns_use_only_entities_regexes(
         training_data.regex_features = [regex_features]
 
     actual_patterns = pattern_utils.extract_patterns(
-        training_data, use_only_entities=True
+        training_data, patter_names=[entity]
     )
 
     assert actual_patterns == expected_patterns
@@ -124,7 +124,7 @@ def test_extract_patterns_use_only_entities_lookup_tables(
         training_data.lookup_tables = [lookup_tables]
 
     actual_patterns = pattern_utils.extract_patterns(
-        training_data, use_only_entities=True
+        training_data, patter_names=[entity]
     )
 
     assert actual_patterns == expected_patterns
