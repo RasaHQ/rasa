@@ -17,6 +17,7 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_domain_param(parser)
     add_out_param(parser, help_text="Directory where your models should be stored.")
 
+    add_dry_run_param(parser)
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
 
@@ -98,6 +99,22 @@ def add_compare_params(
     )
     parser.add_argument(
         "--runs", type=int, default=3, help="Number of runs for experiments."
+    )
+
+
+def add_dry_run_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
+    """Add `--dry-run` argument to a specified `parser`.
+
+    Args:
+        parser: An instance of `ArgumentParser` or `_ActionsContainer`.
+    """
+    parser.add_argument(
+        "--dry-run",
+        default=False,
+        action="store_true",
+        help=".", # TODO:
     )
 
 

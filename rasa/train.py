@@ -33,6 +33,7 @@ def train(
     config: Text,
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
+    dry_run: bool = False,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
@@ -61,6 +62,7 @@ async def train_async(
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
     output_path: Text = DEFAULT_MODELS_PATH,
+    dry_run: bool = False,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
@@ -74,6 +76,7 @@ async def train_async(
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
         output_path: Output path.
+        dry_run: XXX
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
@@ -103,6 +106,7 @@ async def train_async(
             file_importer,
             train_path,
             output_path,
+            dry_run,
             force_training,
             fixed_model_name,
             persist_nlu_training_data,
@@ -129,6 +133,7 @@ async def _train_async_internal(
     file_importer: TrainingDataImporter,
     train_path: Text,
     output_path: Text,
+    dry_run: bool,
     force_training: bool,
     fixed_model_name: Optional[Text],
     persist_nlu_training_data: bool,
@@ -141,6 +146,7 @@ async def _train_async_internal(
         file_importer: `TrainingDataImporter` which supplies the training data.
         train_path: Directory in which to train the model.
         output_path: Output path.
+        dry_run: XXX.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
@@ -156,6 +162,8 @@ async def _train_async_internal(
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
+
+    # TODO(alwx):
 
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(

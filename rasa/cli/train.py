@@ -83,6 +83,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         config=config,
         training_files=training_files,
         output=args.out,
+        dry_run=args.dry_run,
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
