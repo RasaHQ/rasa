@@ -628,7 +628,9 @@ async def _train_nlu_with_validated_data(
         print_color("Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
 
         if number_of_chunks > 1:
-            async with telemetry.track_model_training(file_importer, model_type="nlu"):
+            async with telemetry.track_model_training(
+                file_importer, model_type="nlu-in-chunks"
+            ):
                 await rasa.nlu.train_in_chunks(
                     config,
                     file_importer,
@@ -637,9 +639,7 @@ async def _train_nlu_with_validated_data(
                     fixed_model_name="nlu",
                 )
         else:
-            async with telemetry.track_model_training(
-                file_importer, model_type="nlu-in-chunks"
-            ):
+            async with telemetry.track_model_training(file_importer, model_type="nlu"):
                 try:
                     await rasa.nlu.train(
                         config,
