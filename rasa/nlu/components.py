@@ -11,6 +11,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDa
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
+from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -492,7 +493,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             the loaded component
         """
-
         if cached_component:
             return cached_component
 
@@ -500,7 +500,10 @@ class Component(metaclass=ComponentMetaclass):
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> "Component":
         """Creates this component (e.g. before a training is started).
 
@@ -508,19 +511,21 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             component_config: The components configuration parameters.
-            config: The model configuration parameters.
+            model_config: The model configuration parameters.
+            domain: The domain the model uses.
 
         Returns:
             The created component.
         """
-
         # Check language supporting
-        language = config.language
+        language = model_config.language
         if not cls.can_handle_language(language):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
 
-        return cls(component_config)
+        component = cls(component_config)
+
+        return component
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
         """Initialize this component for a new pipeline.
@@ -538,7 +543,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The updated component configuration.
         """
-
         pass
 
     def train(
@@ -564,7 +568,6 @@ class Component(metaclass=ComponentMetaclass):
             config: The model configuration parameters.
 
         """
-
         pass
 
     def train_chunk(
@@ -609,7 +612,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             An optional dictionary with any information about the stored model.
         """
-
         pass
 
     @classmethod
@@ -630,10 +632,14 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             A unique caching key.
         """
-
         return None
 
     def __getstate__(self) -> Any:
+        """Gets the current state of the component.
+
+        Returns:
+            The state information.
+        """
         d = self.__dict__.copy()
         # these properties should not be pickled
         if "partial_processing_context" in d:
@@ -660,7 +666,6 @@ class Component(metaclass=ComponentMetaclass):
             context: The context of processing.
 
         """
-
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
 
@@ -710,8 +715,8 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             `True` if component can handle specific language, `False` otherwise.
         """
-
-        # If both `supported_language_list` and `not_supported_language_list` are set to `None`,
+        # If both `supported_language_list` and `not_supported_language_list`
+        # are set to `None`,
         # it means: support all languages
         if language is None or (
             cls.supported_language_list is None
@@ -721,9 +726,11 @@ class Component(metaclass=ComponentMetaclass):
 
         # check language supporting settings
         if cls.supported_language_list and cls.not_supported_language_list:
-            # When user set both language supporting settings to not None, it will lead to ambiguity.
+            # When user set both language supporting settings to not None, it will
+            # lead to ambiguity.
             raise RasaException(
-                "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
+                "Only one of `supported_language_list` and "
+                "`not_supported_language_list` can be set to not None"
             )
 
         # convert to `list` for membership test
@@ -741,7 +748,8 @@ class Component(metaclass=ComponentMetaclass):
         # check if user provided a valid setting
         if not supported_language_list and not not_supported_language_list:
             # One of language settings must be valid (not None and not a empty list),
-            # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
+            # There are three combinations of settings are not valid:
+            # (None, []), ([], None) and ([], [])
             raise RasaException(
                 "Empty lists for both "
                 "`supported_language_list` and `not_supported language_list` "
@@ -847,7 +855,10 @@ class ComponentBuilder:
             )
 
     def create_component(
-        self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
+        self,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> Component:
         """Creates a component.
 
@@ -856,21 +867,23 @@ class ComponentBuilder:
 
         Args:
             component_config: The component configuration.
-            cfg: The model configuration.
+            model_config: The model configuration.
+            domain: The domain.
 
         Returns:
             The created component.
         """
-
         from rasa.nlu import registry
         from rasa.nlu.model import Metadata
 
         try:
             component, cache_key = self.__get_cached_component(
-                component_config, Metadata(cfg.as_dict(), None)
+                component_config, Metadata(model_config.as_dict(), None)
             )
             if component is None:
-                component = registry.create_component_by_config(component_config, cfg)
+                component = registry.create_component_by_config(
+                    component_config, model_config, domain
+                )
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
@@ -879,11 +892,18 @@ class ComponentBuilder:
                 f"Error: {e}"
             )
 
-    def create_component_from_class(self, component_class: Type[C], **cfg: Any) -> C:
+    def create_component_from_class(self, component_class: Type[C], **config: Any) -> C:
         """Create a component based on a class and a configuration.
 
-        Mainly used to make use of caching when instantiating component classes."""
+        Mainly used to make use of caching when instantiating component classes.
 
+        Args:
+            component_class: The component class.
+            **config: The model configuration.
+
+        Returns:
+            The component instance.
+        """
         component_config = {"name": component_class.name}
 
-        return self.create_component(component_config, RasaNLUModelConfig(cfg))
+        return self.create_component(component_config, RasaNLUModelConfig(config))
