@@ -114,7 +114,9 @@ def add_dry_run_param(
         "--dry-run",
         default=False,
         action="store_true",
-        help=".", # TODO(alwx):
+        help="If enabled, not actual training will be performed. Instead, "
+             "it will be determined whether a model should be re-trained "
+             "and this information will be printed as an output.",
     )
 
 

@@ -1,8 +1,9 @@
 import asyncio
 import os
+import sys
 import tempfile
 from contextlib import ExitStack
-from typing import Text, Optional, List, Union, Dict
+from typing import Text, Tuple, Optional, List, Union, Dict
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -77,14 +78,15 @@ async def train_async(
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
         output_path: Output path.
-        dry_run: XXX
+        dry_run: If `True` then no training will be done, and the information about
+            whether the training needs to be done will be printed.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
-                                   with the model.
+            with the model.
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
-                                  method of each NLU component.
+            method of each NLU component.
 
     Returns:
         Path of the trained model archive.
@@ -130,6 +132,27 @@ async def handle_domain_if_not_exists(
     return nlu_model_only
 
 
+def dry_run_result(fingerprint_comparison: FingerprintComparisonResult) -> Tuple[int, Text]:
+    """Returns a result of fingerprint comparison.
+
+    Args:
+        fingerprint_comparison: A result of fingerprint comparison operation.
+
+    Returns:
+        A tuple of code and human-readable text.
+    """
+    if not fingerprint_comparison.nlu and not fingerprint_comparison.core:
+        return 0, "No training required."
+
+    if not fingerprint_comparison.nlu:
+        return 1, "Core model should be retrained."
+
+    if not fingerprint_comparison.core:
+        return 2, "NLU model should be retrained."
+
+    return 3, "Both NLU and Core models should be retrained."
+
+
 async def _train_async_internal(
     file_importer: TrainingDataImporter,
     train_path: Text,
@@ -147,14 +170,15 @@ async def _train_async_internal(
         file_importer: `TrainingDataImporter` which supplies the training data.
         train_path: Directory in which to train the model.
         output_path: Output path.
-        dry_run: XXX.
+        dry_run: If `True` then no training will be done, and the information about
+            whether the training needs to be done will be printed.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
-                                   with the model.
+            with the model.
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
-                                  method of each NLU component.
+            method of each NLU component.
 
     Returns:
         Path of the trained model archive.
@@ -172,8 +196,9 @@ async def _train_async_internal(
         fingerprint_comparison = model.should_retrain(
             new_fingerprint, old_model, train_path
         )
-        print(fingerprint_comparison.core, fingerprint_comparison.nlu, fingerprint_comparison.nlg)
-        return
+        code, text = dry_run_result(fingerprint_comparison)
+        print_warning(text) if code > 0 else print_success(text)
+        sys.exit(code)
 
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(
