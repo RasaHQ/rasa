@@ -5,7 +5,7 @@ import rasa.cli.arguments.default_arguments as default_arguments
 from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 
-def set_train_arguments(parser: argparse.ArgumentParser):
+def set_train_arguments(parser: argparse.ArgumentParser) -> None:
     """Sets the command line arguments for the command 'rasa train'.
 
     Args:
