@@ -115,7 +115,15 @@ def test_remove_model_invalid(empty_model_dir):
         ("https://www.google.com", True),
         ("http://google.com", True),
         ("http://www.google.com", True),
-        ("http://a/b/c", False),
+        ("http://www.google.com?foo=bar", True),
+        ("http://a/b/c", True),
+        ("http://localhost:5002/api/projects/default/models/tags/production", True),
+        ("http://rasa-x:5002/api/projects/default/models/tags/production", True),
+        (
+            "http://rasa-x:5002/api/projects/default/models/tags/production?foo=bar",
+            True,
+        ),
+        ("file:///some/path/file", True),
     ],
 )
 def test_is_url(url: Text, result: bool):
