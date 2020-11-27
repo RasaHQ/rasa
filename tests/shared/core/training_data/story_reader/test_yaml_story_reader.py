@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text, List
+from typing import Text, List, Dict, Optional
 
 import pytest
 
@@ -14,6 +14,7 @@ from rasa.shared.core.training_data import loading
 from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
+    DEFAULT_VALUE_TEXT_SLOTS,
 )
 from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
@@ -37,6 +38,97 @@ async def test_can_read_test_story_with_slots(default_domain: Domain):
 
     assert trackers[0].events[-2] == SlotSet(key="name", value="peter")
     assert trackers[0].events[-1] == ActionExecuted("action_listen")
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "text"}}},
+        {"slots": {"my_slot": {"type": "list"}}},
+    ],
+)
+async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "categorical"}}},
+        {"slots": {"my_slot": {"type": "float"}}},
+    ],
+)
+async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
+    domain: Dict,
+):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    with pytest.warns(UserWarning):
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+
+
+async def test_default_slot_value_if_no_domain():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader()
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
+
+
+async def test_default_slot_value_if_unfeaturized_slot():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+    domain = Domain.from_dict(
+        {"intents": ["greet"], "slots": {"my_slot": {"type": "any"}}}
+    )
+    reader = YAMLStoryReader(domain)
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
 
 
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
@@ -141,7 +233,7 @@ async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
         remove_duplicates=False,
     )
 
-    assert tracker[0].events[-2] == SlotSet(key="name", value=None)
+    assert tracker[0].events[-2] == SlotSet(key="name", value=DEFAULT_VALUE_TEXT_SLOTS)
 
 
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
@@ -453,9 +545,30 @@ def test_or_statement_if_not_training_mode():
     assert or_statement[1].intent["name"] == "intent2"
 
 
-@pytest.mark.parametrize("is_conversation_test, no_events", [(True, 3), (False, 2)])
-def test_gracefully_handles_mixed_steps_in_non_test_e2e_stories(
-    is_conversation_test, no_events
+@pytest.mark.parametrize(
+    "file,warning",
+    [
+        ("data/test_yaml_stories/test_base_retrieval_intent_story.yml", None),
+        (
+            "data/test_yaml_stories/non_test_full_retrieval_intent_story.yml",
+            UserWarning,
+        ),
+    ],
+)
+async def test_story_with_retrieval_intent_warns(
+    file: Text, warning: Optional["Warning"]
+):
+    reader = YAMLStoryReader(is_used_for_training=False)
+
+    with pytest.warns(warning) as record:
+        reader.read_from_file(file)
+
+    assert len(record) == (1 if warning else 0)
+
+
+@pytest.mark.parametrize("is_conversation_test", [True, False])
+def test_handles_mixed_steps_for_test_and_e2e_stories(
+    is_conversation_test
 ):
     stories = """
     stories:
@@ -472,4 +585,4 @@ def test_gracefully_handles_mixed_steps_in_non_test_e2e_stories(
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
-    assert len(steps[0].events) == no_events
+    assert len(steps[0].events) == 3
