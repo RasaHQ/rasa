@@ -8,6 +8,7 @@ import traceback
 from functools import reduce, wraps
 from inspect import isawaitable
 from pathlib import Path
+from http import HTTPStatus
 from typing import (
     Any,
     Callable,
@@ -137,19 +138,19 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
     return decorator
 
 
-def ensure_conversation_exists(app: Sanic):
+def ensure_conversation_exists(app: Sanic) -> Callable[..., HTTPResponse]:
     """Wraps a request handler ensuring the conversation exists.
     """
 
     def decorator(f):
         @wraps(f)
-        def decorated(*args, **kwargs):
+        def decorated(*args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
-            tracker = app.agent.create_processor().get_tracker(conversation_id)
+            tracker = app.agent.tracker_store.retrieve(conversation_id)
             if tracker is not None:
                 return f(*args, **kwargs)
             else:
-                raise ErrorResponse(404, "Not found", "Conversation ID not found.")
+                raise ErrorResponse(HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found.")
 
         return decorated
 
