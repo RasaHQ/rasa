@@ -321,9 +321,9 @@ class Trainer:
         else:
             model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
-        path = os.path.abspath(path)
-        dir_name = os.path.join(path, model_name)
-        rasa.shared.utils.io.create_directory(dir_name)
+        path = path.absolute()
+        dir_name = path / model_name
+        rasa.shared.utils.io.create_directory(str(dir_name))
 
         return dir_name, model_name
 
@@ -381,7 +381,7 @@ class Trainer:
             component_number: the component number (index in the pipeline)
 
         Returns:
-            some metadata
+            Metadata about the component and its configuration.
         """
         file_name = self._file_name(component_number, component.name)
         update = component.persist(file_name, dir_name)

@@ -97,31 +97,44 @@ async def train(
     # trained in another subprocess
     trainer = Trainer(nlu_config, component_builder)
     persistor = create_persistor(storage)
-    if training_data_endpoint is not None:
-        training_data = await load_data_from_endpoint(
-            training_data_endpoint, nlu_config.language
-        )
-    elif isinstance(data, TrainingDataImporter):
-        training_data = await data.get_nlu_data(nlu_config.language)
-    else:
-        training_data = load_data(data, nlu_config.language)
 
-    training_data.print_stats()
-    if training_data.entity_roles_groups_used():
-        rasa.shared.utils.common.mark_as_experimental_feature(
-            "Entity Roles and Groups feature"
-        )
+    training_data = await _load_training_data(data, nlu_config, training_data_endpoint)
 
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
         persisted_path = trainer.persist(
-            path, persistor, fixed_model_name, persist_nlu_training_data
+            Path(path), persistor, fixed_model_name, persist_nlu_training_data
         )
     else:
         persisted_path = None
 
     return trainer, interpreter, persisted_path
+
+
+async def _load_training_data(
+    data: Union[Text, "TrainingDataImporter"],
+    model_config: RasaNLUModelConfig,
+    training_data_endpoint: Optional[EndpointConfig] = None,
+) -> TrainingData:
+
+    if training_data_endpoint is not None:
+        training_data = await load_data_from_endpoint(
+            training_data_endpoint, model_config.language
+        )
+    elif isinstance(data, TrainingDataImporter):
+        training_data = await data.get_nlu_data(model_config.language)
+    else:
+        training_data = load_data(data, model_config.language)
+
+    training_data.print_stats()
+
+    if training_data.entity_roles_groups_used():
+        rasa.shared.utils.common.mark_as_experimental_feature(
+            "Entity Roles and Groups feature"
+        )
+
+    return training_data
 
 
 async def train_in_chunks(
@@ -150,12 +163,7 @@ async def train_in_chunks(
 
     trainer = Trainer(model_config)
 
-    training_data = await training_data_importer.get_nlu_data(model_config.language)
-    training_data.print_stats()
-    if training_data.entity_roles_groups_used():
-        rasa.shared.utils.common.mark_as_experimental_feature(
-            "Entity Roles and Groups feature"
-        )
+    training_data = await _load_training_data(training_data_importer, model_config)
 
     interpreter, persisted_path = trainer.train_in_chunks(
         training_data, train_path, fixed_model_name, number_of_chunks

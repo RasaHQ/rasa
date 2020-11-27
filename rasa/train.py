@@ -50,7 +50,7 @@ def train(
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
-        output: Output path.
+        output: Path where the trained model should be stored.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
@@ -102,7 +102,7 @@ async def train_async(
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
-        output_path: Output path.
+        output_path: Path where the trained model should be stored.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
@@ -365,7 +365,7 @@ def train_core(
         domain: Path to the domain file.
         config: Path to the config file for Core.
         stories: Path to the Core training data.
-        output: Output path.
+        output: Path where the trained model should be stored.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
@@ -409,7 +409,7 @@ async def train_core_async(
         domain: Path to the domain file.
         config: Path to the config file for Core.
         stories: Path to the Core training data.
-        output: Output path.
+        output: Path where the trained model should be stored.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
@@ -478,8 +478,10 @@ async def _train_core_with_validated_data(
             file_importer.get_domain(), file_importer.get_config()
         )
 
-        async with telemetry.track_model_training(file_importer, model_type="core"):
-            if training_in_chunks:
+        if training_in_chunks:
+            async with telemetry.track_model_training(
+                file_importer, model_type="core-in-chunks"
+            ):
                 await rasa.core.train_in_chunks(
                     domain_file=domain,
                     training_resource=file_importer,
@@ -489,7 +491,8 @@ async def _train_core_with_validated_data(
                     interpreter=interpreter,
                     number_of_chunks=number_of_chunks,
                 )
-            else:
+        else:
+            async with telemetry.track_model_training(file_importer, model_type="core"):
                 try:
                     await rasa.core.train(
                         domain_file=domain,
@@ -507,6 +510,7 @@ async def _train_core_with_validated_data(
                         "using the flag '--in-chunks' for training.",
                         category=UserWarning,
                     )
+                    raise
         print_color(
             "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
@@ -542,7 +546,7 @@ def train_nlu(
     Args:
         config: Path to the config file for NLU.
         nlu_data: Path to the NLU training data.
-        output: Output path.
+        output: Path where the trained model should be stored.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of the model to be stored.
@@ -647,8 +651,8 @@ async def _train_nlu_with_validated_data(
 
         print_color("Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
 
-        async with telemetry.track_model_training(file_importer, model_type="nlu"):
-            if training_in_chunks:
+        if training_in_chunks:
+            async with telemetry.track_model_training(file_importer, model_type="nlu"):
                 await rasa.nlu.train_in_chunks(
                     config,
                     file_importer,
@@ -656,7 +660,10 @@ async def _train_nlu_with_validated_data(
                     fixed_model_name="nlu",
                     number_of_chunks=number_of_chunks,
                 )
-            else:
+        else:
+            async with telemetry.track_model_training(
+                file_importer, model_type="nlu-in-chunks"
+            ):
                 try:
                     await rasa.nlu.train(
                         config,
@@ -672,6 +679,7 @@ async def _train_nlu_with_validated_data(
                         "using the flag '--in-chunks' for training.",
                         category=UserWarning,
                     )
+                    raise
 
         print_color(
             "NLU model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
