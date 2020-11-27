@@ -162,7 +162,7 @@ class TrainingData:
 
     @lazy_property
     def nlu_examples(self) -> List[Message]:
-        """Returns examples which have come from NLU training data.
+        """Return examples which have come from NLU training data.
 
         E.g. If the example came from a story or domain it is not included.
 
