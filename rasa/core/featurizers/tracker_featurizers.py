@@ -68,17 +68,13 @@ class TrackerFeaturizer:
         trackers_as_states: List[List[State]],
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-
-        # TODO: Revert changes here back to original
-        featurized = []
-        for tracker_states in trackers_as_states:
-            state_features = []
-            for state in tracker_states:
-                state_features.append(
-                    self.state_featurizer.encode_state(state, interpreter)
-                )
-            featurized.append(state_features)
-        return featurized
+        return [
+            [
+                self.state_featurizer.encode_state(state, interpreter)
+                for state in tracker_states
+            ]
+            for tracker_states in trackers_as_states
+        ]
 
     @staticmethod
     def _convert_labels_to_ids(
@@ -719,7 +715,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             if num_pads:
                 ids.extend([0] * num_pads)
             new_label_ids.append(ids)
-        #
+
         new_label_ids = np.array(new_label_ids)
         return new_label_ids
 
@@ -756,19 +752,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         ]
 
         return trackers_as_states
-
-    @staticmethod
-    def _serialize_state_feature(features_list):
-
-        feats = []
-        for state in features_list:
-            new_state = {}
-            for key, val in state.items():
-                new_state[key] = []
-                for feat in val:
-                    new_state[key].append(feat.features.toarray().tolist())
-            feats.append(new_state)
-        return feats
 
     def featurize_trackers(
         self,

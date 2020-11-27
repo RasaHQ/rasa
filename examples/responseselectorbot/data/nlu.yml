@@ -16,7 +16,6 @@ nlu:
     - goodmorning
     - goodevening
     - good afternoon
-
 - intent: goodbye
   examples: |
     - good afternoon
@@ -30,7 +29,6 @@ nlu:
     - see you around
     - bye bye
     - see you later
-
 - intent: affirm
   examples: |
     - yes
@@ -39,7 +37,6 @@ nlu:
     - of course
     - that sounds good
     - correct
-
 - intent: deny
   examples: |
     - no
@@ -48,7 +45,6 @@ nlu:
     - I don't think so
     - don't like that
     - no way
-
 - intent: mood_great
   examples: |
     - perfect
@@ -65,7 +61,6 @@ nlu:
     - so so perfect
     - so good
     - so perfect
-
 - intent: mood_unhappy
   examples: |
     - my day was horrible
@@ -82,39 +77,24 @@ nlu:
     - extremly sad
     - so saad
     - so sad
-
 - intent: bot_challenge
   examples: |
     - are you a bot?
     - are you a human?
     - am I talking to a bot?
     - am I talking to a human?
-
 - intent: chitchat/ask_name
   examples: |
     - What is your name?
     - May I know your name?
     - What do people call you?
     - Do you have a name for yourself?
-
 - intent: chitchat/ask_weather
   examples: |
     - What's the weather like today?
     - Does it look sunny outside today?
     - Oh, do you mind checking the weather for me please?
     - I like sunny days in Berlin.
-
-- intent: faq/q1
-  examples: |
-    - is it q1?
-    - q1 is q1
-
-- intent: faq/q2
-  examples: |
-    - is it q2?
-    - asking q2 please
-
-
 responses:
   utter_chitchat/ask_name:
     - image: "https://i.imgur.com/zTvA58i.jpeg"
@@ -125,9 +105,3 @@ responses:
     - text: Oh, it does look sunny right now in Berlin.
       image: "https://i.imgur.com/vwv7aHN.png"
     - text: I am not sure of the whole week but I can see the sun is out today.
-
-  utter_faq/q1:
-    - text: Oh yes q1, what do you want?
-
-  utter_faq/q2:
-    - text: Hello q2, you are welcome.

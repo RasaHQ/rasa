@@ -1,8 +1,9 @@
 language: en
 
 pipeline:
-  - name: "WhitespaceTokenizer"
-  - name: "CountVectorsFeaturizer"
+  - name: "SpacyNLP"
+  - name: "SpacyTokenizer"
+  - name: "SpacyFeaturizer"
   - name: "DIETClassifier"
     entity_recognition: False
     epochs: 50

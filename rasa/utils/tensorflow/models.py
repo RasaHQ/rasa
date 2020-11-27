@@ -291,10 +291,6 @@ class RasaModel(tf.keras.models.Model):
             regularization_loss = tf.math.add_n(self.losses)
             total_loss = prediction_loss + regularization_loss
 
-            # print("Sim Pos", sim_pos.result())
-            # print("Sim Neg", sim_neg_il.result())
-            # print("----------------------------")
-
         self.total_loss.update_state(total_loss)
 
         # calculate the gradients that come from supervision signal
@@ -563,7 +559,6 @@ class RasaModel(tf.keras.models.Model):
         idx = 0
         for key, values in data_signature.items():
             for sub_key, signature in values.items():
-                # print(key, sub_key, idx)
                 for is_sparse, feature_dimension, number_of_dimensions in signature:
                     number_of_dimensions = (
                         number_of_dimensions if number_of_dimensions != 4 else 3
@@ -574,8 +569,6 @@ class RasaModel(tf.keras.models.Model):
                         shape = [
                             batch[idx + 2][i] for i in range(number_of_dimensions - 1)
                         ] + [feature_dimension]
-                        # print("Adding...", key, sub_key)
-                        # print(batch[idx], batch[idx + 1])
                         batch_data[key][sub_key].append(
                             tf.SparseTensor(batch[idx], batch[idx + 1], shape)
                         )
@@ -585,11 +578,6 @@ class RasaModel(tf.keras.models.Model):
                             batch_data[key][sub_key].append(batch[idx])
                         else:
                             # convert to Tensor
-                            # if key == "dialogue" and sub_key == "length":
-                            #     print("adding to batch data")
-                            #     print(signature)
-                            #     print(batch[idx].shape)
-                            #     print(idx)
                             batch_data[key][sub_key].append(
                                 tf.constant(batch[idx], dtype=tf.float32)
                             )

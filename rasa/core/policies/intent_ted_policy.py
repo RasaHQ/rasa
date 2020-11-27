@@ -81,7 +81,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.core.policies.ted_policy import (
     STATE_LEVEL_FEATURES,
-    FEATURES_TO_ENCODE,
+    SENTENCE_FEATURES_TO_ENCODE,
     SEQUENCE_FEATURES_TO_ENCODE,
     SEQUENCE_LENGTH,
     SEQUENCE,
@@ -625,7 +625,7 @@ class IntentTEDPolicy(TEDPolicy):
                 for feature_name, features in model_data_example.items()
                 if feature_name
                 # we need to remove label features for prediction if they are present
-                in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
+                in STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
             },
         )
         model.build_for_predict(predict_data_example)

@@ -972,8 +972,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Sample negative examples."""
 
-        # print("Inputs embed", inputs_embed.shape, "labels embed", labels_embed.shape)
-
         pos_inputs_embed = tf.expand_dims(
             inputs_embed, axis=-2, name="expand_pos_input"
         )
@@ -984,55 +982,22 @@ class MultiLabelDotProductLoss(DotProductLoss):
             name="expand_pos_labels",
         )
 
-        # tf.print("tensorsssss")
-        # tf.print(label_ids)
-        # tf.print("------------")
-
-        # print("Pos input embed shape", pos_inputs_embed.shape)
-        # print("Pos labels embed shape", pos_labels_embed.shape)
-
         # get neg ids from batch itself
         neg_ids = self._get_neg_indices(
             tf.shape(inputs_embed)[0], tf.shape(inputs_embed)[0]
         )
 
-        # tf.print(neg_ids)
-        # tf.print("------------")
-
-        # print("Neg ids shape", neg_ids.shape)
-        #
-        # print("labels_embed shape", labels_embed.shape)
-
-        # sample negative labels
-        # print("Neg ids", neg_ids.shape)
-        # neg_labels_embed = self._get_negs(labels_embed, label_ids, label_ids, neg_ids)
         neg_labels_embed = self._get_neg_values(labels_embed[:, 0, ...], neg_ids)
-        # neg_labels_embed = tf.squeeze(neg_labels_emb)
-        # neg_labels_embed = labels_embed
-        # neg_label_ids = self._get_negs(label_ids, label_ids, label_ids, neg_ids)
         neg_labels_ids = self._get_neg_values(label_ids[:, 0, ...], neg_ids)
 
-        # tf.print(neg_labels_ids)
-        # tf.print("------------")
-
-        # print("Neg labels embed shape", neg_labels_embed.shape)
-        # print("Neg label ids shape", neg_labels_ids.shape)
-
-        # print('Neg labels', neg_labels.shape, 'all_gt_labels', all_gt_labels.shape)
         max_label_id = tf.cast(tf.math.reduce_max(all_label_ids), dtype=tf.int32)
 
-        # tf.print(max_label_id)
-        # tf.print("------------")
-
-        # +1 for padding and dimension size is 1 indexed and hence 1 more than maximum label id
+        # dimension size is 1 indexed and hence 1 more than maximum label id
         depth_needed = max_label_id + 1
 
         batch_labels_one_hot = tf.one_hot(
             tf.cast(tf.squeeze(label_ids, axis=-1), tf.int32), depth_needed, axis=-1
         )  # bs x num_pos_labels(varied) x num label ids
-
-        # tf.print(batch_labels_one_hot)
-        # tf.print("------------")
 
         # Collapse the extra dimension aggregating all ones
         # Here tf.reduce_any is important and tf.reduce_sum
@@ -1043,16 +1008,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             tf.float32,
         )  # bs x num label ids
 
-        # tf.print(batch_labels_multi_hot)
-        # tf.print("------------")
-
-        # print("batch mh labels shape", batch_labels_multi_hot.shape)
-
         # Remove extra dimensions for gather
         neg_labels_ids = tf.squeeze(tf.squeeze(neg_labels_ids, 1), -1)
-
-        # tf.print(neg_labels_ids)
-        # tf.print("------------")
 
         # sample pos neg labels
         pos_neg_labels = tf.gather(
@@ -1063,24 +1020,10 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         pos_neg_labels = tf.cast(pos_neg_labels, tf.float32)
-        # tf.print(pos_neg_labels)
-        # tf.print("------------")
-        # print("Pos neg labels shape", pos_neg_labels.shape)
 
-        # tf.print("Label ids")
-        # tf.print(label_ids)
-        # tf.print("---------------")
-        # tf.print(neg_ids)
-        # tf.print("----------------")
-        # tf.print(batch_labels_multi_hot)
-        # tf.print("----------------")
-        # tf.print(pos_neg_labels)
-        # tf.print("=================================")
         return pos_inputs_embed, pos_labels_embed, neg_labels_embed, pos_neg_labels
 
     def _get_neg_indices(self, target_size, total_candidates):
-
-        # print('Target, cands = ', target_size, total_candidates)
 
         neg_ids = self._random_indices(target_size, total_candidates)
 
@@ -1098,8 +1041,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
         embeds_flat = self._make_flat(embeds)
         target_size = tf.shape(embeds_flat)[0]
         neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
-
-        # print("neg embeds inside _get_negs shape", neg_embeds.shape)
 
         # check if inputs have sequence dimension
         if len(embeds.shape) == 3:
@@ -1128,28 +1069,18 @@ class MultiLabelDotProductLoss(DotProductLoss):
     ) -> tf.Tensor:
         """Define sigmoid loss."""
 
-        # print("Sim pos", sim_pos.shape)
-        # print("Sim il", sim_neg_il.shape)
-        # print("Pos neg labels", pos_neg_labels.shape)
-
         logits = tf.concat([sim_pos, sim_neg_il], axis=-1, name="logit_concat")
         logits = tf.squeeze(logits, 1)
-
-        # print("logits", logits.shape)
 
         # create label_ids for sigmoid
         pos_label_ids = tf.ones_like(sim_pos, tf.float32)
         pos_label_ids = tf.squeeze(pos_label_ids, -1)
-
-        # print("pos label ids", pos_label_ids.shape)
 
         label_ids = tf.concat(
             [pos_label_ids, pos_neg_labels], axis=-1, name="gt_concat"
         )
 
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
-
-        # print("Loss shape", loss.shape)
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -1179,15 +1110,12 @@ class MultiLabelDotProductLoss(DotProductLoss):
         """Define similarity."""
 
         # calculate similarity with several
-        # embedded actions for the loss
+        # embedded intents for the loss
         # neg_inf = tf.constant(-1e9)
 
         sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
         sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask)
         # sem_neg_ll = self.sim(pos_labels_embed, neg_labels_embed, mask)
-
-        # print("Sim pos shape", sim_pos.shape)
-        # print("Sim neg_il shape", sim_neg_il.shape)
 
         # sim_neg_ll = (
         #     self.sim(pos_labels_embed, neg_labels_embed, mask) + neg_inf * bad_neg_labels
@@ -1230,16 +1158,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
             all_label_ids,
         )
 
-        # print("Sampled ------------")
-        # print(
-        #     pos_inputs_embed.shape,
-        #     pos_labels_embed.shape,
-        #     neg_labels_embed.shape,
-        #     pos_neg_labels.shape,
-        # )
-
-        # print("mask shape", mask.shape)
-
         # calculate similarities
         sim_pos, sim_neg_il = self._train_sim(
             pos_inputs_embed, pos_labels_embed, neg_labels_embed, mask
@@ -1273,9 +1191,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
             axis=-1,
             name="acc_concat_gt",
         )
-
-        # tf.print(all_pred_labels)
-        # tf.print(complete_gt)
 
         acc = tf.reduce_mean(
             tf.cast(tf.math.equal(all_pred_labels, complete_gt), tf.float32)

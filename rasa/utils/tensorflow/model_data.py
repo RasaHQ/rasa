@@ -606,31 +606,16 @@ class RasaModelData:
         if not data:
             data = self.data
 
-        signature = {}
-        for key, attribute_data in data.items():
-            signature[key] = {}
-            for sub_key, features in attribute_data.items():
-                s = []
-                for f in features:
-                    # print(key, sub_key, f)
-                    s.append(
-                        FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
-                    )
-
-                signature[key][sub_key] = s
-
-        return signature
-
-        # return {
-        #     key: {
-        #         sub_key: [
-        #             FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
-        #             for f in features
-        #         ]
-        #         for sub_key, features in attribute_data.items()
-        #     }
-        #     for key, attribute_data in data.items()
-        # }
+        return {
+            key: {
+                sub_key: [
+                    FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
+                    for f in features
+                ]
+                for sub_key, features in attribute_data.items()
+            }
+            for key, attribute_data in data.items()
+        }
 
     def as_tf_dataset(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
@@ -680,19 +665,15 @@ class RasaModelData:
             data = self.data
 
         batch_data = []
-        index = 0
 
         for key, attribute_data in data.items():
             for sub_key, f_data in attribute_data.items():
-                # print(key, sub_key, index)
                 # add None for not present values during processing
                 if not f_data:
                     if tuple_sizes:
                         batch_data += [None] * tuple_sizes[key]
-                        index += tuple_sizes[key]
                     else:
                         batch_data.append(None)
-                        index += 1
                     continue
 
                 for v in f_data:
@@ -707,14 +688,8 @@ class RasaModelData:
 
                     if _data.is_sparse:
                         batch_data.extend(self._scipy_matrix_to_values(_data))
-                        index += 3
                     else:
                         batch_data.append(self._pad_dense_data(_data))
-                        index += 1
-                        # if key == "dialogue" and sub_key == "length":
-                        #     print("adding to batch in prepare")
-                        #     print(self._pad_dense_data(_data).shape)
-                        #     print(index)
 
         # len of batch_data is equal to the number of keys in model data
         return tuple(batch_data)
@@ -777,11 +752,9 @@ class RasaModelData:
 
         label_ids = self._create_label_ids(data[self.label_key][self.label_sub_key][0])
 
-        # print(label_ids)
         unique_label_ids, counts_label_ids = np.unique(
             label_ids, return_counts=True, axis=0
         )
-        # print(unique_label_ids, counts_label_ids)
         num_label_ids = len(unique_label_ids)
 
         # group data points by their label
@@ -1064,7 +1037,6 @@ class RasaModelData:
         Returns:
             The single dim label array.
         """
-
         if label_ids.ndim == 1:
             return label_ids
 

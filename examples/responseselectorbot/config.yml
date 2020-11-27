@@ -1,15 +1,8 @@
 language: en
 
 pipeline:
-#  - name: "ConveRTTokenizer"
-#    model_url: /Users/daksh/.cache/tfhub/1a04c4bb0262921a412ea61367f41fa4402f8841
-##    model_url: https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz
-#  - name: "ConveRTFeaturizer"
-  - name: "HFTransformersNLP"
-    model_name: "bert"
-    model_weights: "rasa/LaBSE"
-  - name: "LanguageModelTokenizer"
-  - name: "LanguageModelFeaturizer"
+  - name: "WhitespaceTokenizer"
+  - name: "CountVectorsFeaturizer"
   - name: "DIETClassifier"
     entity_recognition: False
     epochs: 50
