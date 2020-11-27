@@ -297,11 +297,8 @@ class IntentTEDPolicy(TEDPolicy):
         encoded_all_labels = state_featurizer.encode_all_labels(
             domain, interpreter, self._all_labels
         )
-        # print("encoded all labels", encoded_all_labels)
 
         attribute_data, _ = convert_to_data_format(encoded_all_labels)
-
-        # print("Attribute data after conversion", attribute_data)
 
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
@@ -429,8 +426,6 @@ class IntentTEDPolicy(TEDPolicy):
                 "Thresholds will be computed from non-augmented trackers."
             )
 
-        # print(len(non_augmented_trackers), len(augmented_trackers))
-
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
@@ -442,9 +437,6 @@ class IntentTEDPolicy(TEDPolicy):
         ) = self._featurize_for_model(
             domain, encoded_all_labels, interpreter, all_trackers, **kwargs
         )
-
-        # print(train_label_ids.shape, len(is_label_from_rules))
-        # print([self._all_labels[index] for index in label_ids_in_rules])
 
         if model_train_data.is_empty():
             logger.error(
@@ -479,8 +471,6 @@ class IntentTEDPolicy(TEDPolicy):
 
         if self.use_augmentation_for_thresholds and len(augmented_trackers):
 
-            # print("Computing feats")
-            # Featurize augmented trackers for threshold computation
             (
                 model_augmented_data,
                 augmented_label_ids,
@@ -488,8 +478,6 @@ class IntentTEDPolicy(TEDPolicy):
             ) = self._featurize_for_model(
                 domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
             )
-
-            # print("Computing thresholds")
             self.intent_thresholds = self.model.compute_thresholds(
                 model_augmented_data, augmented_label_ids
             )
@@ -502,9 +490,6 @@ class IntentTEDPolicy(TEDPolicy):
         for label_id in label_ids_in_rules:
             if label_id in self.intent_thresholds:
                 del self.intent_thresholds[label_id]
-
-        for index in self.intent_thresholds:
-            print(self._all_labels[index], index, self.intent_thresholds[index])
 
     def _featurize_for_model(
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
@@ -600,8 +585,6 @@ class IntentTEDPolicy(TEDPolicy):
         for intent in set(self._all_labels) - set(
             rasa.shared.core.constants.DEFAULT_INTENTS
         ):
-            # print("Confidences", intent_confidences)
-            # print("thresholds", )
             if label_to_id_map[intent] in self.intent_thresholds:
                 confidences_to_print.append(
                     (
@@ -832,32 +815,17 @@ class IntentTED(TED):
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
-        # for element in batch_in:
-        #     tf.print(element)
-        #     tf.print("====")
+
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
         self._compute_dialogue_indices(tf_batch_data)
-
-        # tf.print("tf batch data")
-        # tf.print(tf_batch_data[LABEL_KEY][LABEL_SUB_KEY])
-        # tf.print("------------")
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
         batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][
             0
         ]  # This can have multiple ids
-        # tf.print("batch label ids")
-        # tf.print(batch_label_ids)
-        # tf.print("----------------")
 
         batch_labels_embed = self._get_labels_embed(batch_label_ids, all_labels_embed)
-
-        # tf.print("batch labels embed")
-        # tf.print(batch_labels_embed.shape, batch_label_ids)
-        # tf.print("----------------")
-
-        # print("Batch labels embed shape", batch_labels_embed.shape)
 
         (
             dialogue_in,
@@ -976,7 +944,6 @@ class IntentTED(TED):
             else:
                 scores = np.vstack([scores, batch_output["intent_scores"].numpy()])
                 sims = np.vstack([sims, batch_output["sim_all"].numpy()])
-            # print(index)
 
         thresholds = {}
 

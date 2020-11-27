@@ -390,11 +390,6 @@ class TEDPolicy(Policy):
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
-        # print("Inside create model data")
-
-        # print("Label ids", label_ids)
-        # print("Encoded_all_labels", encoded_all_labels)
-
         if label_ids is not None and encoded_all_labels is not None:
             label_ids = np.array(
                 [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
@@ -474,8 +469,6 @@ class TEDPolicy(Policy):
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
-
-        # print("Label data signature", self._label_data.get_signature())
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
@@ -978,8 +971,6 @@ class TED(TransformerRasaModel):
         # Therefore actual input tensors will be empty.
         # Since we need actual numbers to create dialogue turn features, we create
         # zero tensors in `_encode_fake_features_per_attribute` for these attributes.
-        # print("encoding for", attribute)
-        # print(tf_batch_data[attribute][SENTENCE])
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
             lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),
