@@ -106,7 +106,9 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
-        if event.text:
+        # train stories support both text and intent,
+        # but if intent is present, the text is ignored
+        if event.text and not event.intent_name:
             return {TEXT: event.text, ENTITIES: event.entities}
 
         # input is not textual, so add empty dict
