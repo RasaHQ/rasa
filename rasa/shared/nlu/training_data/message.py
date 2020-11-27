@@ -350,7 +350,7 @@ class Message:
         """Checks whether the message came from an e2e story.
 
         Returns:
-            True, if message is a from an e2e story.
+            `True`, if message is a from an e2e story, `False` otherwise.
         """
         return bool(
             (self.get(ACTION_TEXT) and not self.get(ACTION_NAME))
