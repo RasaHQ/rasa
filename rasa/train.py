@@ -47,6 +47,7 @@ def train(
             config=config,
             training_files=training_files,
             output_path=output,
+            dry_run=dry_run,
             force_training=force_training,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
@@ -163,7 +164,16 @@ async def _train_async_internal(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
 
-    # TODO(alwx):
+    # get the fingerprint
+    new_fingerprint = await model.model_fingerprint(file_importer)
+    old_model = model.get_latest_model(output_path)
+
+    if dry_run:
+        fingerprint_comparison = model.should_retrain(
+            new_fingerprint, old_model, train_path
+        )
+        print(fingerprint_comparison.core, fingerprint_comparison.nlu, fingerprint_comparison.nlg)
+        return
 
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(
@@ -190,9 +200,6 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
         )
-
-    new_fingerprint = await model.model_fingerprint(file_importer)
-    old_model = model.get_latest_model(output_path)
 
     if not force_training:
         fingerprint_comparison = model.should_retrain(
