@@ -83,7 +83,7 @@ def component_config_from_pipeline(
         index: Index of the component.
         pipeline: List of component configurations.
         defaults: Default configuration.
-        
+
     Returns:
         The `index`th component configuration, expanded
         by the given defaults.
