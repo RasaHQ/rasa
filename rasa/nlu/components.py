@@ -608,7 +608,8 @@ class Component(metaclass=ComponentMetaclass):
         """
         self.prepare_partial_training(training_data, config, **kwargs)
         training_data_chunk = TrainingDataChunk(
-            training_data.training_examples, training_data.responses
+            training_examples=training_data.training_examples,
+            responses=training_data.responses,
         )
         self.train_chunk(training_data_chunk, config, **kwargs)
 
