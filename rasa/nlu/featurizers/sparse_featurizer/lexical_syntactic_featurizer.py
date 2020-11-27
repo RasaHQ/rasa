@@ -13,7 +13,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
@@ -72,9 +72,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any],
+        component_config: Optional[Dict[Text, Any]] = None,
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
     ):
+        """Initialize the component. See parent class for more information."""
         super().__init__(component_config)
 
         self.feature_to_idx_dict = feature_to_idx_dict or {}
@@ -88,19 +89,34 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             ]
         )
 
-    def train(
+    def prepare_partial_training(
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self.number_of_features = self._calculate_number_of_features()
 
-        for example in training_data.training_examples:
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
+        for example in training_data_chunk.training_examples:
             self._create_sparse_features(example)
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Process an incoming message. See parent class for more information."""
         self._create_sparse_features(message)
 
     def _create_feature_to_idx_dict(

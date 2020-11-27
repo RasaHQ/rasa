@@ -8,7 +8,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -40,20 +40,24 @@ class MitieFeaturizer(DenseFeaturizer):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specify which python packages need to be installed.
+
+        See parent class for more information.
+        """
         return ["mitie", "numpy"]
 
-    def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
-        return feature_extractor.num_dimensions
-
-    def train(
+    def train_chunk(
         self,
-        training_data: TrainingData,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
 
+        See parent class for more information.
+        """
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        for example in training_data.training_examples:
+        for example in training_data_chunk.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self.process_training_example(
                     example, attribute, mitie_feature_extractor

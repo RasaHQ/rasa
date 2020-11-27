@@ -11,7 +11,7 @@ from rasa.nlu.model import Metadata
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -779,16 +779,16 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         return batch_docs
 
-    def train(
+    def train_chunk(
         self,
-        training_data: TrainingData,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Compute tokens and dense features for each message in training data.
 
         Args:
-            training_data: NLU training data to be tokenized and featurized
+            training_data_chunk: NLU training data to be tokenized and featurized
             config: NLU pipeline config consisting of all components.
         """
         batch_size = 64
@@ -796,7 +796,9 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
-                filter(lambda x: x.get(attribute), training_data.training_examples)
+                filter(
+                    lambda x: x.get(attribute), training_data_chunk.training_examples
+                )
             )
 
             batch_start_index = 0

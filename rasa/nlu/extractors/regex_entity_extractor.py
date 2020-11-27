@@ -85,13 +85,16 @@ class RegexEntityExtractor(EntityExtractor):
 
         return component
 
-    def train(
+    def prepare_partial_training(
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component."""
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
         if self.entity_names is None:
             self.entity_names = training_data.entities
 

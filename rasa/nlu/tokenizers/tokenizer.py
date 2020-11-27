@@ -4,7 +4,7 @@ import re
 from typing import Text, List, Optional, Dict, Any
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
@@ -14,6 +14,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
     ACTION_NAME,
 )
+from rasa.shared.exceptions import RasaTrainChunkException
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +85,33 @@ class Tokenizer(Component):
 
         raise NotImplementedError
 
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
+        raise RasaTrainChunkException(
+            "This method should neither be called nor implemented in our code."
+        )
+
     def train(
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Tokenize all training data."""
+        """Tokenize all training data.
 
+        Args:
+            training_data: the
+                :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+            config: The model configuration parameters.
+        """
         for example in training_data.training_examples:
             for attribute in MESSAGE_ATTRIBUTES:
                 if (
