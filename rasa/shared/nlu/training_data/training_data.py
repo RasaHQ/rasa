@@ -761,15 +761,13 @@ class TrainingDataChunk(TrainingData):
 
     @staticmethod
     def _bytes_feature(array: np.ndarray) -> tf.train.Feature:
-        """Returns a bytes_list from a string / byte."""
         value = tf.io.serialize_tensor(array)
-        if isinstance(value, type(tf.constant(0))):  # if value is tensor
-            value = value.numpy()  # get value of tensor
+        if isinstance(value, type(tf.constant(0))):
+            value = value.numpy()
         return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
     @staticmethod
     def _int_feature(array: Tuple[int]) -> tf.train.Feature:
-        """Returns an int64_list from a bool / enum / int / uint."""
         return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
 
     @staticmethod
@@ -813,10 +811,18 @@ class TrainingDataChunk(TrainingData):
                 row = feature.features.row
                 column = feature.features.col
 
-                tf_features[f"{key}#data"] = self._bytes_feature(data)
-                tf_features[f"{key}#shape"] = self._int_feature(shape)
-                tf_features[f"{key}#row"] = self._int_feature(row)
-                tf_features[f"{key}#column"] = self._int_feature(column)
+                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}data"] = self._bytes_feature(
+                    data
+                )
+                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}shape"] = self._int_feature(
+                    shape
+                )
+                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}row"] = self._int_feature(
+                    row
+                )
+                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}column"] = self._int_feature(
+                    column
+                )
 
         return tf_features
 
@@ -847,7 +853,7 @@ class TrainingDataChunk(TrainingData):
 
     @classmethod
     def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":
-        """Loads a training data chunk from the given file path.
+        """Loads a training data chunk from the given TFRecord file path.
 
         Args:
             file_path: The file path that contains the training data chunk to load.
@@ -873,11 +879,15 @@ class TrainingDataChunk(TrainingData):
                 ) = TrainingDataChunk._deconstruct_key(key)
 
                 if is_dense:
-                    cls._convert_to_numpy(example, attribute, feature_type, origin)
+                    features.append(
+                        cls._convert_to_numpy(example, attribute, feature_type, origin)
+                    )
 
                 elif not is_dense and extra_info == "data":
-                    cls._convert_to_sparse_matrix(
-                        example, attribute, feature_type, origin
+                    features.append(
+                        cls._convert_to_sparse_matrix(
+                            example, attribute, feature_type, origin
+                        )
                     )
 
             training_examples.append(Message(features=features))
@@ -915,7 +925,7 @@ class TrainingDataChunk(TrainingData):
         column = example.features.feature[
             f"{prefix}{TFRECORD_KEY_SEPARATOR}column"
         ].int64_list.value
-        data = tf.io.parse_tensor(data, out_type=tf.float64).numpy()
+        data = tf.io.parse_tensor(data, out_type=tf.int64).numpy()
 
         return Features(
             scipy.sparse.coo_matrix((data, (row, column)), shape),

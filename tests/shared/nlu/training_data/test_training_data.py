@@ -1,4 +1,7 @@
+from pathlib import Path
 from typing import Text, List
+import numpy as np
+import scipy.sparse
 
 import pytest
 
@@ -26,7 +29,7 @@ from rasa.shared.nlu.training_data.util import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaException
-
+from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.data
 
 
@@ -638,18 +641,15 @@ def test_fingerprint_is_same_when_loading_data_again():
     assert td1.fingerprint() == td2.fingerprint()
 
 
-def test_persist_training_data_chunk(tmp_path):
-    import numpy as np
-    import scipy.sparse
-    from shared.nlu.training_data.message import Message
-    from shared.nlu.training_data.features import Features
-
+def test_persist_load_training_data_chunk(tmp_path: Path):
     messages = [
         Message(
             features=[
-                Features(np.random.random([4, 3]), FEATURE_TYPE_SEQUENCE, TEXT, "cvf"),
                 Features(
-                    scipy.sparse.coo_matrix(np.random.random([4, 3])),
+                    np.random.random([4, 3]), FEATURE_TYPE_SEQUENCE, TEXT, "spacy"
+                ),
+                Features(
+                    scipy.sparse.coo_matrix(np.random.randint(0, 10, [4, 3])),
                     FEATURE_TYPE_SEQUENCE,
                     TEXT,
                     "regex",
@@ -659,13 +659,16 @@ def test_persist_training_data_chunk(tmp_path):
     ]
 
     training_data_chunk = TrainingDataChunk(messages)
+    original_fingerprint = training_data_chunk.fingerprint()
     file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.tfrecord")
 
     loaded_training_data_chunk = TrainingDataChunk.load_chunk(file_path)
 
-    original_fingerprint = training_data_chunk.fingerprint()
     loaded_fingerprint = loaded_training_data_chunk.fingerprint()
     assert original_fingerprint == loaded_fingerprint
+
+    loaded_message = loaded_training_data_chunk.training_examples[0]
+    assert messages[0] == loaded_message
 
 
 @pytest.mark.parametrize(
