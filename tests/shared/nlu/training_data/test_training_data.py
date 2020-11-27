@@ -676,6 +676,63 @@ def test_persist_load_training_data_chunk(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
+    "tf_record_key, attribute, feature_type, origin, is_dense",
+    [
+        (
+            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{TF_RECORD_KEY_SEPARATOR}spacy{TF_RECORD_KEY_SEPARATOR}dense",
+            TEXT,
+            FEATURE_TYPE_SEQUENCE,
+            "spacy",
+            True,
+        ),
+        (
+            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{TF_RECORD_KEY_SEPARATOR}regex{TF_RECORD_KEY_SEPARATOR}sparse"
+            f"{TF_RECORD_KEY_SEPARATOR}data",
+            TEXT,
+            FEATURE_TYPE_SEQUENCE,
+            "regex",
+            False,
+        ),
+    ],
+)
+def test_tf_record_key(
+    tf_record_key: Text,
+    attribute: Text,
+    feature_type: Text,
+    origin: Text,
+    is_dense: bool,
+):
+    (
+        actual_attribute,
+        actual_feature_type,
+        actual_origin,
+        actual_is_dense,
+        actual_extra_info,
+    ) = TrainingDataChunk._deconstruct_tf_record_key(tf_record_key)
+
+    assert attribute == actual_attribute
+    assert feature_type == actual_feature_type
+    assert origin == actual_origin
+    assert is_dense == actual_is_dense
+
+    if actual_extra_info:
+        assert not actual_is_dense
+        assert actual_extra_info in ["data", "row", "shape", "column"]
+        # remove the extra info from the key
+        tf_record_key = TF_RECORD_KEY_SEPARATOR.join(
+            tf_record_key.split(TF_RECORD_KEY_SEPARATOR)[:-1]
+        )
+
+    actual_key = TrainingDataChunk._construct_tf_record_key(
+        attribute, feature_type, origin, is_dense
+    )
+
+    assert tf_record_key == actual_key
+
+
+@pytest.mark.parametrize(
     "intent_frequencies, num_chunks", [([100, 82, 63, 43], 8), ([15, 12, 10, 7], 4)]
 )
 def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: int):
