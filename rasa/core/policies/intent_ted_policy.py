@@ -76,9 +76,10 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     FEATURIZERS,
     ENTITY_RECOGNITION,
+    IGNORE_INTENTS_LIST,
+    IGNORE_RETRIEVAL_INTENTS,
 )
 from rasa.core.policies.ted_policy import (
-    LENGTH,
     STATE_LEVEL_FEATURES,
     FEATURES_TO_ENCODE,
     SEQUENCE_FEATURES_TO_ENCODE,
@@ -235,12 +236,10 @@ class IntentTEDPolicy(TEDPolicy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: False,
-        # Whether to use augmented stories for threshold computation
-        "use_augmentation_for_thresholds": True,
         # Whether to flag retrieval intents
-        "ignore_retrieval_intents": True,
+        IGNORE_RETRIEVAL_INTENTS: True,
         # Other intents to ignore
-        "ignore_intents": [],
+        IGNORE_INTENTS_LIST: [],
     }
 
     def __init__(
@@ -261,10 +260,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         self._all_labels = all_labels
         self.intent_thresholds = intent_thresholds
-        self.use_augmentation_for_thresholds = self.config[
-            "use_augmentation_for_thresholds"
-        ]
-        self.ignore_intent_list = self.config["ignore_intents"]
+        self.ignore_intent_list = self.config["intents_to_ignore"]
         self.ignore_retrieval_intents = self.config["ignore_retrieval_intents"]
 
         # Set all invalid configuration parameters
@@ -291,7 +287,9 @@ class IntentTEDPolicy(TEDPolicy):
         #  the problem that labels may also need to be featurized from states prepared from domain.
         state_featurizer.prepare_for_training(domain, interpreter)
 
-        # Add an extra PAD to the vocabulary of labels
+        # Add an extra PAD to the vocabulary of labels.
+        # Needed because labels can be multi-label and
+        # padded to get to the same size
         self._all_labels = ["PAD"] + domain.intents
 
         encoded_all_labels = state_featurizer.encode_all_labels(
@@ -316,94 +314,8 @@ class IntentTEDPolicy(TEDPolicy):
         return label_data, encoded_all_labels
 
     @staticmethod
-    def _separate_augmented_trackers(
-        all_trackers: List[DialogueStateTracker],
-    ) -> Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]:
-        """Separate
-
-        Args:
-            all_trackers:
-
-        Returns:
-        """
-
-        augmented, non_augmented = [], []
-        for tracker in all_trackers:
-            augmented.append(tracker) if tracker.is_augmented else non_augmented.append(
-                tracker
-            )
-
-        return augmented, non_augmented
-
-    def featurize_for_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> Tuple[
-        List[List[Dict[Text, List["Features"]]]],
-        np.ndarray,
-        List[List[Dict[Text, List["Features"]]]],
-        List[bool],
-    ]:
-        """Transform training trackers into a vector representation.
-
-        The trackers, consisting of multiple turns, will be transformed
-        into a float vector which can be used by a ML model.
-
-        Args:
-            training_trackers:
-                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
-
-        Returns:
-            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
-              all training trackers
-            - the label ids (e.g. action ids) for every dialogue turn in all training
-              trackers
-        """
-
-        (
-            state_features,
-            label_ids,
-            entity_tags,
-            is_label_from_rules,
-        ) = self.featurizer.featurize_trackers(training_trackers, domain, interpreter)
-
-        max_training_samples = kwargs.get("max_training_samples")
-        if max_training_samples is not None:
-            logger.debug(
-                "Limit training data to {} training samples."
-                "".format(max_training_samples)
-            )
-            state_features = state_features[:max_training_samples]
-            label_ids = label_ids[:max_training_samples]
-            entity_tags = entity_tags[:max_training_samples]
-
-        return state_features, label_ids, entity_tags, is_label_from_rules
-
-    @staticmethod
     def _get_label_key_to_ids_map(labels: List[Text]) -> Dict[Text, int]:
         return {label: index for index, label in enumerate(labels)}
-
-    def _get_label_ids_only_in_rules(
-        self, train_label_ids: np.ndarray, is_label_from_rules: List[bool]
-    ) -> List[int]:
-
-        label_to_ids = self._get_label_key_to_ids_map(self._all_labels)
-        labels_in_stories = set()
-        labels_in_rules = []
-        for data_index, labels in enumerate(train_label_ids):
-            if not is_label_from_rules[data_index]:
-                labels_in_stories.add(labels[0])
-        for label_id in label_to_ids.values():
-            if label_id not in labels_in_stories:
-                labels_in_rules.append(label_id)
-
-        return labels_in_rules
 
     def train(
         self,
@@ -414,28 +326,27 @@ class IntentTEDPolicy(TEDPolicy):
     ) -> None:
         """Train the policy on given training trackers."""
 
-        # Filter non-augmented trackers from augmented ones.
-        augmented_trackers, non_augmented_trackers = self._separate_augmented_trackers(
-            all_trackers
-        )
-        if not len(augmented_trackers) and self.use_augmentation_for_thresholds:
-            rasa.shared.utils.io.raise_warning(
-                "'use_augmentation_for_thresholds' was set to True "
-                "but not augmented trackers were found. This can happen "
-                "if you explicitly ran training with `--augmentation 0`. "
-                "Thresholds will be computed from non-augmented trackers."
-            )
+        # Filter trackers from stories only
+        trackers_for_training = [
+            tracker for tracker in all_trackers if not tracker.is_rule_tracker
+        ]
 
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
 
-        (
-            model_train_data,
-            train_label_ids,
-            is_label_from_rules,
-        ) = self._featurize_for_model(
-            domain, encoded_all_labels, interpreter, all_trackers, **kwargs
+        if not len(trackers_for_training):
+            # No trackers from stories found. Skip training.
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No trackers "
+                f"were found to train on. This can happen if you do not "
+                f"have any stories in your training data."
+                f"Skipping training of the policy."
+            )
+            return
+
+        (model_train_data, train_label_ids,) = self._featurize_for_model(
+            domain, encoded_all_labels, interpreter, trackers_for_training, **kwargs
         )
 
         if model_train_data.is_empty():
@@ -444,10 +355,6 @@ class IntentTEDPolicy(TEDPolicy):
                 f"Skipping training of the policy."
             )
             return
-
-        label_ids_in_rules = self._get_label_ids_only_in_rules(
-            train_label_ids, is_label_from_rules
-        )
 
         # keep one example for persisting and loading
         self.data_example = model_train_data.first_data_example()
@@ -469,43 +376,22 @@ class IntentTEDPolicy(TEDPolicy):
             batch_strategy=self.config[BATCH_STRATEGY],
         )
 
-        if self.use_augmentation_for_thresholds and len(augmented_trackers):
-
-            (
-                model_augmented_data,
-                augmented_label_ids,
-                is_label_from_rules,
-            ) = self._featurize_for_model(
-                domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
-            )
-            self.intent_thresholds = self.model.compute_thresholds(
-                model_augmented_data, augmented_label_ids
-            )
-        else:
-            self.intent_thresholds = self.model.compute_thresholds(
-                model_train_data, train_label_ids
-            )
-
-        # omit all label ids that are part of only rules because IntentTED cannot predict them.
-        for label_id in label_ids_in_rules:
-            if label_id in self.intent_thresholds:
-                del self.intent_thresholds[label_id]
+        self.intent_thresholds = self.model.compute_thresholds(
+            model_train_data, train_label_ids
+        )
 
     def _featurize_for_model(
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
     ):
         # dealing with training data
-        (
-            tracker_state_features,
-            label_ids,
-            _,
-            is_label_from_rules,
-        ) = self.featurize_for_training(trackers, domain, interpreter, **kwargs)
+        (tracker_state_features, label_ids, _) = self.featurize_for_training(
+            trackers, domain, interpreter, **kwargs
+        )
         # extract actual training data to feed to model
         model_data = self._create_model_data(
             tracker_state_features, label_ids, None, encoded_all_labels
         )
-        return model_data, label_ids, is_label_from_rules
+        return model_data, label_ids
 
     @staticmethod
     def _default_predictions(domain: Domain) -> List[float]:
@@ -566,6 +452,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain, False)
         states = tracker_as_states[0]
+
         current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")
 
@@ -574,63 +461,54 @@ class IntentTEDPolicy(TEDPolicy):
         output = self.model.predict(model_data)
 
         # take the last prediction in the sequence
-        confidences = output["sim_all"].numpy()[:, -1, :]
+        similarities = output["sim_all"].numpy()[:, -1, :]
 
-        # Todo: remove this, as this was just for printing
-        intent_confidences = {}
+        intent_similarities = {}
         for index, intent in enumerate(self._all_labels):
-            intent_confidences[intent] = confidences[0][index]
+            intent_similarities[intent] = similarities[0][index]
 
-        confidences_to_print = []
-        for intent in set(self._all_labels) - set(
-            rasa.shared.core.constants.DEFAULT_INTENTS
-        ):
-            if label_to_id_map[intent] in self.intent_thresholds:
-                confidences_to_print.append(
-                    (
-                        intent,
-                        label_to_id_map[intent],
-                        intent_confidences[intent],
-                        self.intent_thresholds[label_to_id_map[intent]],
-                    )
-                )
-        confidences_to_print = list(
-            reversed(sorted(confidences_to_print, key=lambda x: x[2]))
+        sorted_intent_similarities = sorted(
+            [
+                (intent_label, confidence)
+                for intent_label, confidence in intent_similarities.items()
+            ],
+            key=lambda x: x[1],
         )
-        # for elem in confidences_to_print:
-        #     print(elem)
-        # print("======================")
 
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
+
+        # TODO: Fix the second part of the condition. Even
+        #  if there is an active loop, we should only flag
+        #  if the intent was not part of intents where a
+        #  slot should be extracted from or part of an intent
+        #  which actually occurs inside an active loop in training data.
         if last_user_event and not tracker.active_loop_name:
             # If this is not the first intent
             query_label = last_user_event.intent_name
             query_label_id = label_to_id_map[query_label]
-            query_label_prob = confidences[0][query_label_id]
+            query_label_similarity = similarities[0][query_label_id]
 
             if self._should_check_for_intent(query_label, domain):
-                # Check is only valid in this case, for all
-                # other cases it means that this intent did not appear in stories.
+
                 logger.debug(
                     f"User intent {query_label} is probable with "
-                    f"{query_label_prob}, while threshold is {self.intent_thresholds[query_label_id]}"
+                    f"{query_label_similarity}, while threshold is {self.intent_thresholds[query_label_id]}"
                 )
                 logger.debug(
-                    f"Top 5 intents that are likely here are: {confidences_to_print[:5]}"
+                    f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_similarities[-5: ]}"
                 )
 
                 # If prob is below threshold and the intent is not the most likely intent
                 if (
-                    query_label_prob < self.intent_thresholds[query_label_id]
-                    and query_label_id != confidences_to_print[1]
+                    query_label_similarity < self.intent_thresholds[query_label_id]
+                    and query_label_id != sorted_intent_similarities[-1][0]
                 ):
 
                     # Mark the corresponding user turn as interesting
                     last_user_event.set_as_not_probable()
-                    # print("marked as improbable")
 
-        return confidences.tolist(), False  # pytype: disable=bad-return-type
+        return similarities.tolist(), False  # pytype: disable=bad-return-type
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
