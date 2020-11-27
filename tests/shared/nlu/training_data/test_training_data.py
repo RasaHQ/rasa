@@ -20,7 +20,11 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingData,
+    TrainingDataChunk,
+    TF_RECORD_KEY_SEPARATOR,
+)
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
@@ -663,10 +667,10 @@ def test_persist_load_training_data_chunk(tmp_path: Path):
     file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.tfrecord")
 
     loaded_training_data_chunk = TrainingDataChunk.load_chunk(file_path)
-
     loaded_fingerprint = loaded_training_data_chunk.fingerprint()
-    assert original_fingerprint == loaded_fingerprint
 
+    # make sure the persisted data and the loaded data is the same
+    assert original_fingerprint == loaded_fingerprint
     loaded_message = loaded_training_data_chunk.training_examples[0]
     assert messages[0] == loaded_message
 

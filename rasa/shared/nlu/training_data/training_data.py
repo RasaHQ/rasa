@@ -34,7 +34,7 @@ DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
 
-TFRECORD_KEY_SEPARATOR = "#"
+TF_RECORD_KEY_SEPARATOR = "#"
 
 
 class TrainingData:
@@ -771,12 +771,12 @@ class TrainingDataChunk(TrainingData):
         return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
 
     @staticmethod
-    def _construct_key(
+    def _construct_tf_record_key(
         attribute: Text, feature_type: Text, origin: Text, is_dense: bool
     ) -> Text:
         prefix = (
-            f"{attribute}{TFRECORD_KEY_SEPARATOR}{feature_type}"
-            f"{TFRECORD_KEY_SEPARATOR}{origin}{TFRECORD_KEY_SEPARATOR}"
+            f"{attribute}{TF_RECORD_KEY_SEPARATOR}{feature_type}"
+            f"{TF_RECORD_KEY_SEPARATOR}{origin}{TF_RECORD_KEY_SEPARATOR}"
         )
 
         if is_dense:
@@ -784,8 +784,8 @@ class TrainingDataChunk(TrainingData):
         return f"{prefix}sparse"
 
     @staticmethod
-    def _deconstruct_key(key: Text) -> Tuple[Text, Text, Text, bool, Text]:
-        parts = key.split(TFRECORD_KEY_SEPARATOR)
+    def _deconstruct_tf_record_key(key: Text) -> Tuple[Text, Text, Text, bool, Text]:
+        parts = key.split(TF_RECORD_KEY_SEPARATOR)
 
         attribute = parts[0]
         feature_type = parts[1]
@@ -799,7 +799,7 @@ class TrainingDataChunk(TrainingData):
         tf_features = {}
 
         for feature in features:
-            key = self._construct_key(
+            key = self._construct_tf_record_key(
                 feature.attribute, feature.type, feature.origin, feature.is_dense()
             )
 
@@ -811,18 +811,18 @@ class TrainingDataChunk(TrainingData):
                 row = feature.features.row
                 column = feature.features.col
 
-                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}data"] = self._int_feature(
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}data"] = self._int_feature(
                     data
                 )
-                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}shape"] = self._int_feature(
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}shape"] = self._int_feature(
                     shape
                 )
-                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}row"] = self._int_feature(
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}row"] = self._int_feature(
                     row
                 )
-                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}column"] = self._int_feature(
-                    column
-                )
+                tf_features[
+                    f"{key}{TF_RECORD_KEY_SEPARATOR}column"
+                ] = self._int_feature(column)
 
         return tf_features
 
@@ -876,7 +876,7 @@ class TrainingDataChunk(TrainingData):
                     origin,
                     is_dense,
                     extra_info,
-                ) = TrainingDataChunk._deconstruct_key(key)
+                ) = TrainingDataChunk._deconstruct_tf_record_key(key)
 
                 if is_dense:
                     features.append(
@@ -898,7 +898,9 @@ class TrainingDataChunk(TrainingData):
     def _convert_to_numpy(
         cls, example: Any, attribute: Text, feature_type: Text, origin: Text
     ) -> Features:
-        key = TrainingDataChunk._construct_key(attribute, feature_type, origin, True)
+        key = TrainingDataChunk._construct_tf_record_key(
+            attribute, feature_type, origin, True
+        )
 
         bytes_list = example.features.feature[key].bytes_list.value[0]
         data = tf.io.parse_tensor(bytes_list, out_type=tf.float64).numpy()
@@ -909,21 +911,21 @@ class TrainingDataChunk(TrainingData):
     def _convert_to_sparse_matrix(
         cls, example: Any, attribute: Text, feature_type: Text, origin: Text
     ) -> Features:
-        prefix = TrainingDataChunk._construct_key(
+        prefix = TrainingDataChunk._construct_tf_record_key(
             attribute, feature_type, origin, False
         )
 
         shape = example.features.feature[
-            f"{prefix}{TFRECORD_KEY_SEPARATOR}shape"
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}shape"
         ].int64_list.value
         data = example.features.feature[
-            f"{prefix}{TFRECORD_KEY_SEPARATOR}data"
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}data"
         ].int64_list.value
         row = example.features.feature[
-            f"{prefix}{TFRECORD_KEY_SEPARATOR}row"
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}row"
         ].int64_list.value
         column = example.features.feature[
-            f"{prefix}{TFRECORD_KEY_SEPARATOR}column"
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}column"
         ].int64_list.value
 
         return Features(
