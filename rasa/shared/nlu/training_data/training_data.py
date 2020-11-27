@@ -6,7 +6,7 @@ import random
 from collections import Counter, OrderedDict
 import copy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable, Union
 import operator
 import tensorflow as tf
 import scipy.sparse
@@ -767,7 +767,7 @@ class TrainingDataChunk(TrainingData):
         return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
     @staticmethod
-    def _int_feature(array: Tuple[int]) -> tf.train.Feature:
+    def _int_feature(array: Union[Tuple[int], np.ndarray]) -> tf.train.Feature:
         return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
 
     @staticmethod
@@ -811,7 +811,7 @@ class TrainingDataChunk(TrainingData):
                 row = feature.features.row
                 column = feature.features.col
 
-                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}data"] = self._bytes_feature(
+                tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}data"] = self._int_feature(
                     data
                 )
                 tf_features[f"{key}{TFRECORD_KEY_SEPARATOR}shape"] = self._int_feature(
@@ -918,14 +918,13 @@ class TrainingDataChunk(TrainingData):
         ].int64_list.value
         data = example.features.feature[
             f"{prefix}{TFRECORD_KEY_SEPARATOR}data"
-        ].bytes_list.value[0]
+        ].int64_list.value
         row = example.features.feature[
             f"{prefix}{TFRECORD_KEY_SEPARATOR}row"
         ].int64_list.value
         column = example.features.feature[
             f"{prefix}{TFRECORD_KEY_SEPARATOR}column"
         ].int64_list.value
-        data = tf.io.parse_tensor(data, out_type=tf.int64).numpy()
 
         return Features(
             scipy.sparse.coo_matrix((data, (row, column)), shape),
