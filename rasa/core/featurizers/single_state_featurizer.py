@@ -281,12 +281,7 @@ class SingleStateFeaturizer:
         # transpose to have seq_len x 1
         return {
             ENTITY_TAGS: [
-                Features(
-                    np.array([_tags]).T,
-                    IDS,
-                    ENTITY_TAGS,
-                    TAG_ID_ORIGIN,
-                )
+                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN,)
             ]
         }
 

@@ -264,36 +264,79 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         return tf.concat(dense_features, axis=-1)
 
 
+from rasa.utils.tensorflow.constants import (
+    SEQUENCE,
+    SENTENCE
+)
 class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
     # TODO add docstring
-    def __init__(self, layer_name_suffix: Text, output_units: int) -> None:
+    def __init__(self, 
+        layer_name_suffix: Text,
+        concat_dimension: int,
+        sequence_signature: FeatureSignature = None,
+        sentence_signature: FeatureSignature = None,
+        concat_layers_kwargs: Dict[Any] = {}
+    ) -> None:
         super().__init__(
             name=f"concatenate_sequence_sentence_features_{layer_name_suffix}"
         )
-        self.output_units = output_units
+        
+        if sequence_signature and sentence_signature:
+            self.do_concatenation = True
+            if sequence_signature.units != sentence_signature.units:
+                self.unify_dimensions_before_concat = True
+                self.output_units = concat_dimension
+                for feature_type in [SEQUENCE, SENTENCE]:
+                    if "layer_name_suffix" not in concat_layers_kwargs:
+                        concat_layers_kwargs["layer_name_suffix"] = f"unify_dimensions_before_concat.{layer_name_suffix}_{feature_type}"
+                    self.unify_dimensions_layers[feature_type] = layers.Ffnn(
+                        **concat_layers_kwargs
+                    )
+            else:
+                self.unify_dimensions_before_concat = False
+                self.output_units = sequence_signature.units
+        else:
+            self.do_concatenation = False
+            if sequence_signature and not sentence_signature:
+                self.return_just = SEQUENCE
+                self.output_units = sequence_signature.units
+            elif sentence_signature and not sequence_signature:
+                self.return_just = SENTENCE
+                self.output_units = sentence_signature.units
+            else:
+                # TODO: raise ValueError?
+                self.return_just = None
 
     def call(
         self, sequence_x: tf.Tensor, sentence_x: tf.Tensor, mask_text: tf.Tensor,
     ) -> tf.Tensor:
-        # we need to concatenate the sequence features with the sentence features
-        # we cannot use tf.concat as the sequence features are padded
+        if self.do_concatenation:
+            if self.unify_dimensions_before_concat:
+                sequence_x = self.unify_dimensions_layers[SEQUENCE]
+                sentence_x = self.unify_dimensions_layers[SENTENCE]
+            
+            # we need to concatenate the sequence features with the sentence features
+            # we cannot use tf.concat as the sequence features are padded
 
-        # (1) get position of sentence features in mask
-        last = mask_text * tf.math.cumprod(
-            1 - mask_text, axis=1, exclusive=True, reverse=True
-        )
-        print(f"> last {last.shape}")
-        print(f"last {type(last)}, sentence_x {type(sentence_x)}")
-        # (2) multiply by sentence features so that we get a matrix of
-        #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
-        #     for the sentence features
-        sentence_x = last * sentence_x
+            # (1) get position of sentence features in mask
+            last = mask_text * tf.math.cumprod(
+                1 - mask_text, axis=1, exclusive=True, reverse=True
+            )
+            # (2) multiply by sentence features so that we get a matrix of
+            #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
+            #     for the sentence features
+            sentence_x = last * sentence_x
 
-        # (3) add a zero to the end of sequence matrix to match the final shape
-        sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
+            # (3) add a zero to the end of sequence matrix to match the final shape
+            sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
 
-        # (4) sum up sequence features and sentence features
-        return sequence_x + sentence_x
+            # (4) sum up sequence features and sentence features
+            return sequence_x + sentence_x
+        else:
+            if self.return_just == SEQUENCE:
+                return sequence_x
+            elif self.return_just == SENTENCE:
+                return sentence_x
 
 
 class Ffnn(tf.keras.layers.Layer):
