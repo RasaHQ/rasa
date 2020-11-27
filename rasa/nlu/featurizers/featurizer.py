@@ -12,9 +12,8 @@ class Featurizer(Component):
             component_config = {}
 
         # makes sure the alias name is set
-        self.component_config = (
-            component_config  # Necessary for `unique_name` to be defined
-        )
+        # Necessary for `unique_name` to be defined
+        self.component_config = component_config
         component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.unique_name)
 
         super().__init__(component_config)
