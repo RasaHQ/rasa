@@ -18,6 +18,8 @@ from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.shared.exceptions import RasaTrainChunkException
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
@@ -235,6 +237,12 @@ def test_if_train_chunk_raises(component_class: Type[Component]):
     if issubclass(component_class, ConveRTFeaturizer):
         return
 
+    # TODO tests for these classes are super slow
+    if issubclass(component_class, HFTransformersNLP) or issubclass(
+        component_class, LanguageModelFeaturizer
+    ):
+        return
+
     # Create dummy training data chunk
     training_data_chunk = TrainingDataChunk(
         [Message(text="some text", intent="some_intent")]
@@ -266,6 +274,12 @@ def test_if_train_chunk_raises(component_class: Type[Component]):
 def test_prepare_partial_training_do_not_modify_data(component_class: Type[Component]):
     # ConveRTFeaturizer cannot be created without a model
     if issubclass(component_class, ConveRTFeaturizer):
+        return
+
+    # TODO tests for these classes are super slow
+    if issubclass(component_class, HFTransformersNLP) or issubclass(
+        component_class, LanguageModelFeaturizer
+    ):
         return
 
     # Create dummy training data
