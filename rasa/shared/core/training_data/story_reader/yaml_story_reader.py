@@ -319,13 +319,6 @@ class YAMLStoryReader(StoryReader):
     def _parse_user_message(self, step: Dict[Text, Any]) -> None:
         has_user_text_and_intent = KEY_USER_INTENT in step
 
-        if has_user_text_and_intent and not self.use_e2e:
-            rasa.shared.utils.io.raise_warning(
-                f'Story step contains both "{KEY_USER_MESSAGE}" and "{KEY_USER_INTENT}"'
-                f" keys. This can only be used in test stories, not training."
-            )
-            return
-
         if not has_user_text_and_intent:
             intent = {"name": None}
         else:
