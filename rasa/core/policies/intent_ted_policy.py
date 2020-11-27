@@ -289,7 +289,7 @@ class IntentTEDPolicy(TEDPolicy):
         # TODO: Change TED also to do this before label data is created.
         #  Currently call to this is made inside featurize_trackers which masks
         #  the problem that labels may also need to be featurized from states prepared from domain.
-        state_featurizer.prepare_from_domain(domain)
+        state_featurizer.prepare_for_training(domain, interpreter)
 
         # Add an extra PAD to the vocabulary of labels
         self._all_labels = ["PAD"] + domain.intents

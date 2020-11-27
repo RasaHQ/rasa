@@ -826,7 +826,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_from_domain(domain)
+        self.state_featurizer.prepare_for_training(domain, interpreter)
 
         (
             trackers_as_states,
