@@ -112,6 +112,14 @@ class TrackerFeaturizer:
         # input is not textual, so add empty dict
         return {}
 
+    @staticmethod
+    def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
+        for states in trackers_as_states:
+            for state in states:
+                # remove text features to only use intent
+                if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
+                    del state[USER][TEXT]
+
     def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
@@ -365,6 +373,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_actions.append(actions)
             trackers_as_entities.append(entities)
 
+        self._remove_user_text_if_intent(trackers_as_states)
+
         return trackers_as_states, trackers_as_actions, trackers_as_entities
 
     def prediction_states(
@@ -516,6 +526,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 # reset entity_data for the the next turn
                 entity_data = {}
                 pbar.set_postfix({"# actions": "{:d}".format(len(trackers_as_actions))})
+
+        self._remove_user_text_if_intent(trackers_as_states)
 
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
