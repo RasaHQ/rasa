@@ -174,6 +174,7 @@ async def _train_async_internal(
             additional_arguments=nlu_additional_arguments,
         )
 
+    # We will train nlu if there are any nlu example, including from e2e stories.
     if nlu_data.is_empty():
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
@@ -370,7 +371,7 @@ async def train_core_async(
         )
         return None
 
-    if not await file_importer.get_stories():
+    if not stories:
         print_error(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."

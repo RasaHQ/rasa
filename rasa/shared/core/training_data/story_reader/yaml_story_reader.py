@@ -319,9 +319,9 @@ class YAMLStoryReader(StoryReader):
             self.current_step_builder.add_user_messages([utterance])
 
     def _parse_user_message(self, step: Dict[Text, Any]) -> None:
-        has_user_text_and_intent = KEY_USER_INTENT in step
+        has_intent = KEY_USER_INTENT in step
 
-        if not has_user_text_and_intent:
+        if not has_intent:
             intent = {"name": None}
         else:
             intent_name = self._user_intent_from_step(step)
