@@ -434,7 +434,12 @@ class Component(metaclass=ComponentMetaclass):
     not_supported_language_list = None
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        """Initialize the component.
 
+        Args:
+            component_config: the dictionary with the configuration parameters
+                for this component
+        """
         if not component_config:
             component_config = {}
 
@@ -545,6 +550,39 @@ class Component(metaclass=ComponentMetaclass):
         """
         pass
 
+    def prepare_partial_training(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        The complete training data can be used to extract some information
+        that might be missing when just a part of the training data is
+        seen during training.
+
+        Args:
+            training_data: The complete training data.
+            config: The model configuration parameters.
+        """
+        pass
+
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        Args:
+            training_data_chunk: the
+                :class:`rasa.shared.nlu.training_data.training_data.TrainingDataChunk`.
+            config: The model configuration parameters.
+        """
+        pass
+
     def train(
         self,
         training_data: TrainingData,
@@ -563,27 +601,17 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            training_data:
-                The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+            training_data: The
+                :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
 
         """
-        pass
-
-    def train_chunk(
-        self,
-        training_data_chunk: TrainingDataChunk,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-        """Train this component on the given chunk.
-
-        Args:
-            training_data_chunk: the
-                :class:`rasa.shared.nlu.training_data.training_data.TrainingDataChunk`.
-            config: The model configuration parameters.
-        """
-        pass
+        self.prepare_partial_training(training_data, config, **kwargs)
+        training_data_chunk = TrainingDataChunk(
+            training_examples=training_data.training_examples,
+            responses=training_data.responses,
+        )
+        self.train_chunk(training_data_chunk, config, **kwargs)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Process an incoming message.
@@ -668,18 +696,6 @@ class Component(metaclass=ComponentMetaclass):
         """
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
-
-    def prepare_partial_training(self, training_data: TrainingData) -> None:
-        """Prepare the component for training on just a part of the data.
-
-        The complete training data can be used to extract some information
-        that might be missing when just a part of the training data is
-        seen during training.
-
-        Args:
-            training_data: The complete training data.
-        """
-        pass
 
     def partially_process(self, message: Message) -> Message:
         """Allows the component to process messages during training.

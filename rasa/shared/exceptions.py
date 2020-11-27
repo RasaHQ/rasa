@@ -73,3 +73,7 @@ class FileIOException(RasaException):
 
 class InvalidConfigException(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
+
+
+class RasaTrainChunkException(RasaException):
+    """Basic exception for errors raised by `rasa train-in-chunks` commands."""
