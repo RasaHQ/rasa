@@ -399,7 +399,7 @@ class PolicyPrediction:
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
-        self.diagnostic_data = diagnostic_data or dict()
+        self.diagnostic_data = diagnostic_data or {}
 
     @staticmethod
     def for_action_name(
