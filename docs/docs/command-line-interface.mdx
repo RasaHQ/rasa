@@ -86,7 +86,9 @@ The following arguments can be used to configure the training process:
 ```
 
 :::note
-If you run into out of memory issues during training, consider using the argument `rasa train --in-chunks`.
+If you run into out of memory issues during training, consider using the argument `rasa train --number-of-chunks <n>`.
+This will split your dataset into `<n>` chunks and will process them one after each other.
+`<n>` should be greater than 1.
 :::
 
 ## rasa interactive

@@ -76,11 +76,11 @@ async def train_in_chunks(
     domain_file: Union[Domain, Text],
     training_resource: "TrainingDataImporter",
     output_path: Path,
+    number_of_chunks: int,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
     policy_config: Optional[Union[Text, Dict]] = None,
     additional_arguments: Optional[Dict] = None,
-    number_of_chunks: int = 5,
 ) -> "Agent":
     """Trains the core model using smaller chunks.
 
@@ -89,11 +89,11 @@ async def train_in_chunks(
         training_resource: either the path to the training data or a training data
           importer
         output_path: the path to store the model to
+        number_of_chunks: number of chunks to use
         interpreter: the trained interpreter
         endpoints: the available endpoints
         policy_config: the config to use
         additional_arguments: any additional arguments
-        number_of_chunks: number of chunks to use
 
     Returns:
         The trained agent.

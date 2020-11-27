@@ -91,12 +91,11 @@ def add_arguments_for_training_in_chunks(parser: argparse.ArgumentParser) -> Non
     )
 
     train_in_chunks_arguments.add_argument(
-        "--in-chunks",
-        action="store_true",
-        help="Trains your Rasa model in smaller chunks.",
-    )
-    train_in_chunks_arguments.add_argument(
-        "--number-of-chunks", type=int, default=5, help="Number of chunks to use.",
+        "--number-of-chunks",
+        type=int,
+        default=1,
+        help="Number of chunks to use. By default the complete dataset is used at "
+        "once.",
     )
 
 

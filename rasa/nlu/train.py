@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
 import rasa.shared.utils.common
-import rasa.utils.common as common_utils
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
@@ -87,8 +86,6 @@ async def train(
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
-    from rasa.shared.importers.importer import TrainingDataImporter
-
     if not isinstance(nlu_config, RasaNLUModelConfig):
         nlu_config = config.load(nlu_config)
 
@@ -104,7 +101,7 @@ async def train(
 
     if path:
         persisted_path = trainer.persist(
-            Path(path), persistor, fixed_model_name, persist_nlu_training_data
+            path, persistor, fixed_model_name, persist_nlu_training_data
         )
     else:
         persisted_path = None
@@ -116,7 +113,8 @@ async def _load_training_data(
     data: Union[Text, "TrainingDataImporter"],
     model_config: RasaNLUModelConfig,
     training_data_endpoint: Optional[EndpointConfig] = None,
-) -> TrainingData:
+) -> "TrainingData":
+    from rasa.shared.importers.importer import TrainingDataImporter
 
     if training_data_endpoint is not None:
         training_data = await load_data_from_endpoint(
@@ -140,24 +138,22 @@ async def _load_training_data(
 async def train_in_chunks(
     model_config: Union[Text, Dict, RasaNLUModelConfig],
     training_data_importer: "TrainingDataImporter",
+    number_of_chunks: int,
     train_path: Optional[Path] = None,
     fixed_model_name: Optional[Text] = None,
-    number_of_chunks: int = 5,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model in chunks.
 
     Args:
         model_config: The model configuration.
         training_data_importer: The training data importer.
+        number_of_chunks: The number of chunks to use.
         train_path: The training path.
         fixed_model_name: The fixed model name.
-        number_of_chunks: The number of chunks to use.
 
     Returns:
         The trainer, the trained interpreter, and the path to the persisted model.
     """
-    from rasa.shared.importers.importer import TrainingDataImporter
-
     if not isinstance(model_config, RasaNLUModelConfig):
         model_config = config.load(model_config)
 

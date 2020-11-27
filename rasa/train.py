@@ -41,8 +41,7 @@ def train(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -59,8 +58,8 @@ def train(
         nlu_additional_arguments: Additional training parameters forwarded to training
                                   method of each NLU component.
         loop: Loop to use for the execution.
-        number_of_chunks: Number of chunks to use for training in chunks.
-        training_in_chunks: If 'True' train the model in chunks.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+                          the complete dataset will be used for training at once.
 
     Returns:
         Path of the trained model archive.
@@ -76,7 +75,6 @@ def train(
             persist_nlu_training_data=persist_nlu_training_data,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
         ),
         loop,
@@ -93,8 +91,7 @@ async def train_async(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -110,8 +107,8 @@ async def train_async(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
                                   method of each NLU component.
-        number_of_chunks: Number of chunks to use for training in chunks
-        training_in_chunks: If 'True' train the model in chunks.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+                          the complete dataset will be used for training at once.
 
     Returns:
         Path of the trained model archive.
@@ -131,7 +128,6 @@ async def train_async(
                 output_path=output_path,
                 fixed_model_name=fixed_model_name,
                 persist_nlu_training_data=persist_nlu_training_data,
-                training_in_chunks=training_in_chunks,
                 number_of_chunks=number_of_chunks,
                 additional_arguments=nlu_additional_arguments,
             )
@@ -143,7 +139,6 @@ async def train_async(
             force_training=force_training,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
@@ -156,8 +151,7 @@ async def _handle_domain_if_not_exists(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Trains only NLU as the domain is not valid or does not exist."""
     nlu_model_only = await _train_nlu_with_validated_data(
@@ -166,7 +160,6 @@ async def _handle_domain_if_not_exists(
         fixed_model_name=fixed_model_name,
         persist_nlu_training_data=persist_nlu_training_data,
         additional_arguments=additional_arguments,
-        training_in_chunks=training_in_chunks,
         number_of_chunks=number_of_chunks,
     )
 
@@ -185,8 +178,7 @@ async def _train_async_internal(
     force_training: bool,
     fixed_model_name: Optional[Text],
     persist_nlu_training_data: bool,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
@@ -210,7 +202,6 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
         )
 
@@ -221,7 +212,6 @@ async def _train_async_internal(
             output=output_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
         )
 
@@ -247,7 +237,6 @@ async def _train_async_internal(
                 core_additional_arguments=core_additional_arguments,
                 nlu_additional_arguments=nlu_additional_arguments,
                 old_model_zip_path=old_model,
-                training_in_chunks=training_in_chunks,
                 number_of_chunks=number_of_chunks,
             )
 
@@ -275,8 +264,7 @@ async def _do_training(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     old_model_zip_path: Optional[Text] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ):
     """Trains a Rasa model (Core and NLU)."""
     if not fingerprint_comparison_result:
@@ -291,7 +279,6 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
         )
         interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
@@ -310,7 +297,6 @@ async def _do_training(
             additional_arguments=core_additional_arguments,
             interpreter=_load_interpreter(interpreter_path)
             or _interpreter_from_previous_model(old_model_zip_path),
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
@@ -356,8 +342,7 @@ def train_core(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -370,8 +355,8 @@ def train_core(
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
         additional_arguments: Additional training parameters.
-        number_of_chunks: Number of chunks to use for training in chunks
-        training_in_chunks: If 'True' train the model in chunks.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+                          the complete dataset will be used for training at once.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -386,7 +371,6 @@ def train_core(
             train_path=train_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=additional_arguments,
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
         )
     )
@@ -400,8 +384,7 @@ async def train_core_async(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -414,8 +397,8 @@ async def train_core_async(
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
         additional_arguments: Additional training parameters.
-        number_of_chunks: Number of chunks to use for training in chunks
-        training_in_chunks: If 'True' train the model in chunks.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+                          the complete dataset will be used for training at once.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -446,7 +429,6 @@ async def train_core_async(
         train_path=train_path,
         fixed_model_name=fixed_model_name,
         additional_arguments=additional_arguments,
-        training_in_chunks=training_in_chunks,
         number_of_chunks=number_of_chunks,
     )
 
@@ -458,8 +440,7 @@ async def _train_core_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
     interpreter: Optional[Interpreter] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
     import rasa.core.train
@@ -478,7 +459,7 @@ async def _train_core_with_validated_data(
             file_importer.get_domain(), file_importer.get_config()
         )
 
-        if training_in_chunks:
+        if number_of_chunks > 1:
             async with telemetry.track_model_training(
                 file_importer, model_type="core-in-chunks"
             ):
@@ -538,8 +519,7 @@ def train_nlu(
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
     domain: Optional[Union[Domain, Text]] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Trains an NLU model.
 
@@ -555,8 +535,8 @@ def train_nlu(
         additional_arguments: Additional training parameters which will be passed to
                               the `train` method of each component.
         domain: Path to the optional domain file/Domain object.
-        number_of_chunks: Number of chunks to use for training in chunks
-        training_in_chunks: If 'True' train the model in chunks.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+                          the complete dataset will be used for training at once.
 
 
     Returns:
@@ -573,7 +553,6 @@ def train_nlu(
             persist_nlu_training_data,
             additional_arguments,
             domain=domain,
-            training_in_chunks=training_in_chunks,
             number_of_chunks=number_of_chunks,
         )
     )
@@ -588,8 +567,7 @@ async def _train_nlu_async(
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
     domain: Optional[Union[Domain, Text]] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     if not nlu_data:
         print_error(
@@ -619,7 +597,6 @@ async def _train_nlu_async(
         fixed_model_name=fixed_model_name,
         persist_nlu_training_data=persist_nlu_training_data,
         additional_arguments=additional_arguments,
-        training_in_chunks=training_in_chunks,
         number_of_chunks=number_of_chunks,
     )
 
@@ -631,8 +608,7 @@ async def _train_nlu_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
-    training_in_chunks: bool = False,
-    number_of_chunks: int = 5,
+    number_of_chunks: int = 1,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
     import rasa.nlu.train
@@ -651,14 +627,14 @@ async def _train_nlu_with_validated_data(
 
         print_color("Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
 
-        if training_in_chunks:
+        if number_of_chunks > 1:
             async with telemetry.track_model_training(file_importer, model_type="nlu"):
                 await rasa.nlu.train_in_chunks(
                     config,
                     file_importer,
+                    number_of_chunks,
                     train_path=_train_path,
                     fixed_model_name="nlu",
-                    number_of_chunks=number_of_chunks,
                 )
         else:
             async with telemetry.track_model_training(
