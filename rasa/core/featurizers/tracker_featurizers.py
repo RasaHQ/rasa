@@ -855,6 +855,8 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         # for tracker_states, tracker_actions, label_id in zip(trackers_as_states, trackers_as_actions, label_ids):
         #     print(tracker_states, tracker_actions, label_id)
 
+        # exit(0)
+
         # label_ids = self._collect_multiple_labels(tracker_state_features, label_ids)
 
         # print(domain.intents)

@@ -620,11 +620,13 @@ class IntentTEDPolicy(TEDPolicy):
 
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
-        if last_user_event and not tracker.active_loop_name:
+        if last_user_event:
+
             # If this is not the first intent
             query_label = last_user_event.intent_name
             query_label_id = label_to_id_map[query_label]
             query_label_prob = confidences[0][query_label_id]
+            logger.debug(f"querying for intent {query_label}")
 
             if self._should_check_for_intent(query_label, domain):
                 # Check is only valid in this case, for all
