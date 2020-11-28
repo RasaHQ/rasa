@@ -355,6 +355,7 @@ def test_is_slack_message_false():
     slack_message = json.loads(payload)
     assert SlackInput._is_user_message(slack_message) is False
 
+
 def test_is_slack_message_true_init():
 
     event = {
@@ -362,11 +363,11 @@ def test_is_slack_message_true_init():
         "user": "UFDM2MG77",
         "channel": "A01G7854KUU",
         "tab": "messages",
-        "event_ts": "1606315650.276505"
+        "event_ts": "1606315650.276505",
     }
     payload = json.dumps({"event": event})
     slack_message = json.loads(payload)
-    assert SlackInput._is_user_message(slack_message) is True    
+    assert SlackInput._is_user_message(slack_message) is True
 
 
 def test_slackbot_init_one_parameter():
