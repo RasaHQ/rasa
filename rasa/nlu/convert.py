@@ -23,10 +23,13 @@ def convert_training_data(
     elif output_format == "md":
         td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
         output = td.nlu_as_markdown()
+    elif output_format == "yml":
+        td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
+        output = td.nlu_as_yaml()
     else:
         print_error(
-            "Did not recognize output format. Supported output formats: 'json' and "
-            "'md'. Specify the desired output format with '--format'."
+            "Did not recognize output format. Supported output formats: 'json', "
+            "'md' and 'yml'. Specify the desired output format with '--format'."
         )
         return
 
