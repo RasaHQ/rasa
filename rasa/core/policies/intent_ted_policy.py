@@ -478,21 +478,18 @@ class IntentTEDPolicy(TEDPolicy):
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
 
-        # TODO: Fix the second part of the condition. Even
-        #  if there is an active loop, we should only flag
-        #  if the intent was not part of intents where a
-        #  slot should be extracted from or part of an intent
-        #  which actually occurs inside an active loop in training data.
-        if last_user_event and not tracker.active_loop_name:
-            # If this is not the first intent
+        if last_user_event:
+
             query_label = last_user_event.intent_name
             query_label_id = label_to_id_map[query_label]
             query_label_similarity = similarities[0][query_label_id]
 
+            logger.debug(f"Querying for intent {query_label}")
+
             if self._should_check_for_intent(query_label, domain):
 
                 logger.debug(
-                    f"User intent {query_label} is probable with "
+                    f"Score for user intent {query_label} likely to occur here is "
                     f"{query_label_similarity}, while threshold is {self.intent_thresholds[query_label_id]}"
                 )
                 logger.debug(
