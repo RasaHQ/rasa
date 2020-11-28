@@ -239,6 +239,21 @@ class SlackInput(InputChannel):
 
     @staticmethod
     def _is_init_message(slack_event: Dict[Text, Any]) -> bool:
+        """
+        This method determines if a message sent is an initial message
+        from Slack when the user opens up the window with chatbot conversation.
+
+        This can happen multiple times throughout the conversation and the user 
+        needs to handle this on the chatbot side only actually invoking 
+        init intent e.g. if a certain time (like 24 hours) have passed since
+        last time welcome message (=init intent) display.
+
+        By default the init intent is not invoked as this message is normally
+        not invoked by Slack. For this method to work it needs to be subscribed
+        to in event subscription. 
+        Args:
+            slack_event: event from slack saying that user has started chatbot interaction
+        """
         return (
             slack_event.get("event") is not None
             and slack_event.get("event", {}).get("type") == "app_home_opened"
