@@ -115,6 +115,7 @@ def plot_confusion_matrix(
         fig.set_size_inches(20, 20)
         fig.savefig(output_file, bbox_inches="tight")
 
+
 def plot_comparative_histogram(
     hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None
 ) -> None:
