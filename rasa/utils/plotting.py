@@ -157,7 +157,8 @@ def plot_comparative_histogram(
 
     Args:
         hist_data: histogram data
-        output_file: output file to save the plot ot
+        title: title of the plot
+        output_file: output file to save the plot to
     """
     import matplotlib.pyplot as plt
 
