@@ -115,40 +115,6 @@ def plot_confusion_matrix(
         fig.set_size_inches(20, 20)
         fig.savefig(output_file, bbox_inches="tight")
 
-
-def plot_histogram(
-    hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None
-) -> None:
-    """
-    Plot a histogram of the confidence distribution of the predictions in two columns.
-
-    Args:
-        hist_data: histogram data
-        output_file: output file to save the plot ot
-    """
-    import matplotlib.pyplot as plt
-
-    plt.gcf().clear()
-
-    # Wine-ish colour for the confidences of hits.
-    # Blue-ish colour for the confidences of misses.
-    colors = ["#009292", "#920000"]
-    bins = [0.05 * i for i in range(1, 21)]
-
-    plt.xlim([0, 1])
-    plt.hist(hist_data, bins=bins, color=colors)
-    plt.xticks(bins)
-    plt.title(title)
-    plt.xlabel("Confidence")
-    plt.ylabel("Number of Samples")
-    plt.legend(["hits", "misses"])
-
-    if output_file:
-        fig = plt.gcf()
-        fig.set_size_inches(10, 10)
-        fig.savefig(output_file, bbox_inches="tight")
-
-
 def plot_comparative_histogram(
     hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None
 ) -> None:
