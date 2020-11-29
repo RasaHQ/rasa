@@ -149,6 +149,77 @@ def plot_histogram(
         fig.savefig(output_file, bbox_inches="tight")
 
 
+def plot_comparative_histogram(
+    hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None
+) -> None:
+    """
+    Plot a side-by-side comparative histogram of the confidence distribution (misses and hits).
+
+    Args:
+        hist_data: histogram data
+        output_file: output file to save the plot ot
+    """
+    import matplotlib.pyplot as plt
+
+    plt.gcf().clear()
+
+    # Wine-ish colour for the confidences of hits.
+    # Blue-ish colour for the confidences of misses.
+    colors = ["#009292", "#920000"]
+    bins = [0.05 * i for i in range(1, 21)]
+
+    binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
+
+    max_xlim = max(binned_data_sets[0] + binned_data_sets[1])
+    max_xlim += int(0.25 * max_xlim)  # padding
+
+    centers = 0.5 * (bins + np.roll(bins, 1))[:-1]
+    heights = 0.75 * np.diff(bins)
+
+    fig, axes = plt.subplots(ncols=2, sharey=True)
+    axes[0].barh(
+        centers,
+        binned_data_sets[0],
+        height=heights,
+        align="center",
+        color=colors[0],
+        label="hits",
+    )
+    axes[0].set(title="Correct")
+    axes[1].barh(
+        centers,
+        binned_data_sets[1],
+        height=heights,
+        align="center",
+        color=colors[1],
+        label="misses",
+    )
+    axes[1].set(title="Wrong")
+
+    axes[0].set(yticks=bins, xlim=(0, max_xlim))
+    axes[1].set(yticks=bins, xlim=(0, max_xlim))
+
+    axes[0].invert_xaxis()
+    axes[0].yaxis.tick_right()
+
+    fig.subplots_adjust(
+        wspace=0.14
+    )  # get the graphs exactly far enough apart for yaxis labels
+    fig.suptitle(title, fontsize="x-large", fontweight="bold")
+
+    # Add hidden plot to correctly add x and y labels
+    fig.add_subplot(111, frameon=False)
+    # Hide tick and tick label of the big axis
+    plt.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
+    plt.ylabel("Confidence")
+    plt.xlabel("Number of Samples")
+
+    if output_file:
+        fig = plt.gcf()
+        fig.set_size_inches(10, 10)
+        fig.savefig(output_file, bbox_inches="tight")
+
+
 def plot_curve(
     output_directory: Text,
     number_of_examples: List[int],

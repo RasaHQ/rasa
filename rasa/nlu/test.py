@@ -330,7 +330,7 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_comparative_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def plot_entity_confidences(
@@ -365,7 +365,7 @@ def plot_entity_confidences(
         if prediction not in (NO_ENTITY, target)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_comparative_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def evaluate_response_selections(
