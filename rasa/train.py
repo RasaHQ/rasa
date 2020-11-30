@@ -226,7 +226,9 @@ async def _train_async_internal(
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if fingerprint_comparison.is_training_required():
-        async with telemetry.track_model_training(file_importer, model_type="rasa"):
+        async with telemetry.track_model_training(
+            file_importer, model_type="rasa", number_of_chunks=number_of_chunks
+        ):
             await _do_training(
                 file_importer,
                 output_path=output_path,
@@ -461,7 +463,7 @@ async def _train_core_with_validated_data(
 
         if number_of_chunks > 1:
             async with telemetry.track_model_training(
-                file_importer, model_type="core-in-chunks"
+                file_importer, model_type="core", number_of_chunks=number_of_chunks
             ):
                 await rasa.core.train_in_chunks(
                     domain_file=domain,
@@ -629,7 +631,7 @@ async def _train_nlu_with_validated_data(
 
         if number_of_chunks > 1:
             async with telemetry.track_model_training(
-                file_importer, model_type="nlu-in-chunks"
+                file_importer, model_type="nlu", number_of_chunks=number_of_chunks
             ):
                 await rasa.nlu.train_in_chunks(
                     config,
