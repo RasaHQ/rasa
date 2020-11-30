@@ -567,9 +567,7 @@ async def test_story_with_retrieval_intent_warns(
 
 
 @pytest.mark.parametrize("is_conversation_test", [True, False])
-def test_handles_mixed_steps_for_test_and_e2e_stories(
-    is_conversation_test
-):
+def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
     stories = """
     stories:
     - story: hello world
