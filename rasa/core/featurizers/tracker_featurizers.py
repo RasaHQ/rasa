@@ -668,7 +668,9 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         trackers_as_actions.append([event.intent_name])
 
         # Also add this new label to all training examples where
-        # the same set of states exist
+        # the same set of states exist so that multiple labels for each
+        # data point are collected. Aggregating multiple labels here
+        # itself result in faster runtime during training.
         self._update_labels_for_all_states(
             event.intent_name,
             example_index,
