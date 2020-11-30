@@ -205,13 +205,32 @@ Stores conversation history in Redis
 
 Saves the current conversation state
 
+#### retrieve
+
+```python
+ | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Retrieves tracker for the latest conversation session.
+
+The Redis key is formed by appending a prefix to sender_id.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID to fetch the tracker for.
+  
+
+**Returns**:
+
+  Tracker containing events from the latest conversation sessions.
+
 #### keys
 
 ```python
  | keys() -> Iterable[Text]
 ```
 
-Returns keys of the Redis Tracker Store
+Returns keys of the Redis Tracker Store.
 
 ## DynamoTrackerStore Objects
 
