@@ -810,6 +810,7 @@ class TransformerRasaModel(RasaModel):
                 )
 
     def _prepare_input_layers(self, name: Text) -> None:
+        self._tf_layers["noise"] = layers.AdaptiveGaussianNoise()
         self._prepare_ffnn_layer(
             name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
         )
@@ -869,6 +870,7 @@ class TransformerRasaModel(RasaModel):
         mask: Optional[tf.Tensor] = None,
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
+        add_noise: bool = False,
     ) -> Optional[tf.Tensor]:
 
         if not features:
@@ -898,8 +900,10 @@ class TransformerRasaModel(RasaModel):
 
         if mask is None:
             return tf.concat(dense_features, axis=-1)
-
-        return tf.concat(dense_features, axis=-1) * mask
+        output = tf.concat(dense_features, axis=-1) * mask
+        if add_noise:
+            output = self._tf_layers["noise"](output, self._training)
+        return output
 
     def _combine_sequence_sentence_features(
         self,
@@ -910,6 +914,7 @@ class TransformerRasaModel(RasaModel):
         name: Text,
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
+        add_noise: bool = False,
     ) -> tf.Tensor:
         sequence_x = self._combine_sparse_dense_features(
             sequence_features,
@@ -917,9 +922,10 @@ class TransformerRasaModel(RasaModel):
             mask_sequence,
             sparse_dropout,
             dense_dropout,
+            add_noise=add_noise,
         )
         sentence_x = self._combine_sparse_dense_features(
-            sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout
+            sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout, add_noise=add_noise
         )
 
         if sequence_x is not None and sentence_x is None:
@@ -1006,6 +1012,7 @@ class TransformerRasaModel(RasaModel):
         dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
+        add_noise: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         if sequence_ids:
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
@@ -1020,7 +1027,18 @@ class TransformerRasaModel(RasaModel):
             name,
             sparse_dropout,
             dense_dropout,
+            add_noise=add_noise,
         )
+        # if not self._training:
+        #     noisy_inputs = inputs[1:, :, :]
+        #     noisy_inputs += tf.random.normal(
+        #         shape=tf.shape(noisy_inputs),
+        #         mean=0.,
+        #         stddev=tf.abs(tf.reduce_max(inputs)-tf.reduce_min(inputs))/10,
+        #         dtype=inputs.dtype
+        #     )
+        #     inputs = tf.concat([inputs[:1, :, :], noisy_inputs], axis=0)
+
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:

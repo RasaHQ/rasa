@@ -1426,6 +1426,7 @@ class DIET(TransformerRasaModel):
             dense_dropout=self.config[DENSE_INPUT_DROPOUT],
             masked_lm_loss=self.config[MASKED_LM],
             sequence_ids=True,
+            add_noise=True,
         )
 
         losses = []
@@ -1570,6 +1571,7 @@ class DIET(TransformerRasaModel):
             mask_sequence_text,
             mask,
             self.text_name,
+            add_noise=True,
         )
 
         predictions: Dict[Text, tf.Tensor] = {}

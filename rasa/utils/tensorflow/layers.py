@@ -13,6 +13,21 @@ logger = logging.getLogger(__name__)
 tfa.options.TF_ADDONS_PY_OPS = True
 
 
+class AdaptiveGaussianNoise(tf.keras.layers.Layer):
+    def call(self, inputs, training=None):
+        def noised_inputs() -> tf.Tensor:
+            return inputs + tf.random.normal(
+                shape=tf.shape(inputs),
+                mean=0.,
+                stddev=tf.abs(inputs)/10,
+                dtype=inputs.dtype
+            )
+
+        return tf_utils.smart_cond(
+            training, noised_inputs, lambda: tf.identity(inputs)
+        )
+
+
 class SparseDropout(tf.keras.layers.Dropout):
     """Applies Dropout to the input.
 

@@ -969,7 +969,7 @@ class TED(TransformerRasaModel):
         # zero tensors in `_encode_fake_features_per_attribute` for these attributes.
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
-            lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),
+            lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute, noise=True),
             lambda: self._encode_fake_features_per_attribute(tf_batch_data, attribute),
         )
 
@@ -1096,7 +1096,7 @@ class TED(TransformerRasaModel):
         )
 
     def _encode_real_features_per_attribute(
-        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text, add_noise: bool = False
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """Encodes features for a given attribute.
 
@@ -1139,6 +1139,7 @@ class TED(TransformerRasaModel):
                 dense_dropout=self.config[DENSE_INPUT_DROPOUT],
                 masked_lm_loss=self.config[MASKED_LM],
                 sequence_ids=False,
+                add_noise=add_noise,
             )
 
             if attribute == TEXT:
@@ -1171,7 +1172,7 @@ class TED(TransformerRasaModel):
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = self._combine_sparse_dense_features(
-                tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
+                tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}", noise=noise
             )
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
