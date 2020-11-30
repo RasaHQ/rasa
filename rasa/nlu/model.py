@@ -304,7 +304,7 @@ class Trainer:
         Metadata(metadata, dir_name).persist(dir_name)
 
         logger.info(
-            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
+            "Successfully saved model into '{}'.".format(os.path.abspath(dir_name))
         )
 
         return Interpreter(self.pipeline, context), dir_name
