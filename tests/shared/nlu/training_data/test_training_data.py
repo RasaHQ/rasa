@@ -1,4 +1,7 @@
+from pathlib import Path
 from typing import Text, List
+import numpy as np
+import scipy.sparse
 
 import pytest
 
@@ -12,11 +15,16 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITIES,
+    FEATURE_TYPE_SEQUENCE,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingData,
+    TrainingDataChunk,
+    TF_RECORD_KEY_SEPARATOR,
+)
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
@@ -25,7 +33,7 @@ from rasa.shared.nlu.training_data.util import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaException
-
+from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.data
 
 
@@ -635,6 +643,93 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+def test_persist_load_training_data_chunk(tmp_path: Path):
+    messages = [
+        Message(
+            features=[
+                Features(
+                    np.random.random([4, 3]), FEATURE_TYPE_SEQUENCE, TEXT, "spacy"
+                ),
+                Features(
+                    scipy.sparse.coo_matrix(np.random.randint(0, 10, [4, 3])),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "regex",
+                ),
+            ]
+        )
+    ]
+
+    training_data_chunk = TrainingDataChunk(messages)
+    original_fingerprint = training_data_chunk.fingerprint()
+    file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.tfrecord")
+
+    loaded_training_data_chunk = TrainingDataChunk.load_chunk(file_path)
+    loaded_fingerprint = loaded_training_data_chunk.fingerprint()
+
+    # make sure the persisted data and the loaded data is the same
+    assert original_fingerprint == loaded_fingerprint
+    loaded_message = loaded_training_data_chunk.training_examples[0]
+    assert messages[0] == loaded_message
+
+
+@pytest.mark.parametrize(
+    "tf_record_key, attribute, feature_type, origin, is_dense",
+    [
+        (
+            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{TF_RECORD_KEY_SEPARATOR}spacy{TF_RECORD_KEY_SEPARATOR}dense",
+            TEXT,
+            FEATURE_TYPE_SEQUENCE,
+            "spacy",
+            True,
+        ),
+        (
+            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{TF_RECORD_KEY_SEPARATOR}regex{TF_RECORD_KEY_SEPARATOR}sparse"
+            f"{TF_RECORD_KEY_SEPARATOR}data",
+            TEXT,
+            FEATURE_TYPE_SEQUENCE,
+            "regex",
+            False,
+        ),
+    ],
+)
+def test_tf_record_key(
+    tf_record_key: Text,
+    attribute: Text,
+    feature_type: Text,
+    origin: Text,
+    is_dense: bool,
+):
+    (
+        actual_attribute,
+        actual_feature_type,
+        actual_origin,
+        actual_is_dense,
+        actual_extra_info,
+    ) = TrainingDataChunk._deconstruct_tf_record_key(tf_record_key)
+
+    assert attribute == actual_attribute
+    assert feature_type == actual_feature_type
+    assert origin == actual_origin
+    assert is_dense == actual_is_dense
+
+    if actual_extra_info:
+        assert not actual_is_dense
+        assert actual_extra_info in ["data", "row", "shape", "column"]
+        # remove the extra info from the key
+        tf_record_key = TF_RECORD_KEY_SEPARATOR.join(
+            tf_record_key.split(TF_RECORD_KEY_SEPARATOR)[:-1]
+        )
+
+    actual_key = TrainingDataChunk._construct_tf_record_key(
+        attribute, feature_type, origin, is_dense
+    )
+
+    assert tf_record_key == actual_key
 
 
 @pytest.mark.parametrize(

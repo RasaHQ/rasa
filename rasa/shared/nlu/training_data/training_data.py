@@ -1,12 +1,15 @@
 import logging
 import os
+import numpy as np
 from pathlib import Path
 import random
 from collections import Counter, OrderedDict
 import copy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable, Union
 import operator
+import tensorflow as tf
+import scipy.sparse
 
 import rasa.shared.data
 from rasa.shared.utils.common import lazy_property
@@ -21,16 +24,17 @@ from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
     TEXT,
-    ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.exceptions import RasaException
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
+
+TF_RECORD_KEY_SEPARATOR = "#"
 
 
 class TrainingData:
@@ -755,6 +759,73 @@ class TrainingDataChunk(TrainingData):
             training_examples, entity_synonyms, regex_features, lookup_tables, responses
         )
 
+    @staticmethod
+    def _bytes_feature(array: np.ndarray) -> tf.train.Feature:
+        value = tf.io.serialize_tensor(array)
+        if isinstance(value, type(tf.constant(0))):
+            value = value.numpy()
+        return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+    @staticmethod
+    def _int_feature(array: Union[Tuple[int], np.ndarray]) -> tf.train.Feature:
+        return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
+
+    @staticmethod
+    def _construct_tf_record_key(
+        attribute: Text, feature_type: Text, origin: Text, is_dense: bool
+    ) -> Text:
+        prefix = (
+            f"{attribute}{TF_RECORD_KEY_SEPARATOR}{feature_type}"
+            f"{TF_RECORD_KEY_SEPARATOR}{origin}{TF_RECORD_KEY_SEPARATOR}"
+        )
+
+        if is_dense:
+            return f"{prefix}dense"
+        return f"{prefix}sparse"
+
+    @staticmethod
+    def _deconstruct_tf_record_key(key: Text) -> Tuple[Text, Text, Text, bool, Text]:
+        parts = key.split(TF_RECORD_KEY_SEPARATOR)
+
+        attribute = parts[0]
+        feature_type = parts[1]
+        origin = parts[2]
+        dense = parts[3] == "dense"
+        extra_info = parts[4] if not dense else ""
+
+        return attribute, feature_type, origin, dense, extra_info
+
+    def _to_tf_features(self, features: List[Features]) -> Dict[Text, tf.train.Feature]:
+        tf_features = {}
+
+        for feature in features:
+            key = self._construct_tf_record_key(
+                feature.attribute, feature.type, feature.origin, feature.is_dense()
+            )
+
+            if feature.is_dense():
+                tf_features[key] = self._bytes_feature(feature.features)
+            else:
+                data = feature.features.data
+                shape = feature.features.shape
+                row = feature.features.row
+                column = feature.features.col
+
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}data"] = self._int_feature(
+                    data
+                )
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}shape"] = self._int_feature(
+                    shape
+                )
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}row"] = self._int_feature(
+                    row
+                )
+                tf_features[
+                    f"{key}{TF_RECORD_KEY_SEPARATOR}column"
+                ] = self._int_feature(column)
+
+        return tf_features
+
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
         """Stores the chunk as TFRecord file to disk.
 
@@ -765,11 +836,24 @@ class TrainingDataChunk(TrainingData):
         Returns:
             The absolute file path the chunk is stored to.
         """
-        pass
+        file_path = os.path.join(dir_path, filename)
+
+        # Write to TFRecord
+        with tf.io.TFRecordWriter(file_path) as tfwriter:
+            for message in self.training_examples:
+                example = tf.train.Example(
+                    features=tf.train.Features(
+                        feature=self._to_tf_features(message.features)
+                    )
+                )
+                # Append each example into tfrecord
+                tfwriter.write(example.SerializeToString())
+
+        return file_path
 
     @classmethod
     def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":
-        """Loads a training data chunk from the given file path.
+        """Loads a training data chunk from the given TFRecord file path.
 
         Args:
             file_path: The file path that contains the training data chunk to load.
@@ -777,7 +861,79 @@ class TrainingDataChunk(TrainingData):
         Returns:
             The loaded training data chunk.
         """
-        pass
+        training_examples = []
+
+        raw_dataset = tf.data.TFRecordDataset([file_path])
+        for raw_record in raw_dataset:
+            example = tf.train.Example()
+            example.ParseFromString(raw_record.numpy())
+
+            features = []
+            for key in example.features.feature.keys():
+                (
+                    attribute,
+                    feature_type,
+                    origin,
+                    is_dense,
+                    extra_info,
+                ) = TrainingDataChunk._deconstruct_tf_record_key(key)
+
+                if is_dense:
+                    features.append(
+                        cls._convert_to_numpy(example, attribute, feature_type, origin)
+                    )
+
+                elif not is_dense and extra_info == "data":
+                    features.append(
+                        cls._convert_to_sparse_matrix(
+                            example, attribute, feature_type, origin
+                        )
+                    )
+
+            training_examples.append(Message(features=features))
+
+        return TrainingDataChunk(training_examples)
+
+    @classmethod
+    def _convert_to_numpy(
+        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
+    ) -> Features:
+        key = TrainingDataChunk._construct_tf_record_key(
+            attribute, feature_type, origin, True
+        )
+
+        bytes_list = example.features.feature[key].bytes_list.value[0]
+        data = tf.io.parse_tensor(bytes_list, out_type=tf.float64).numpy()
+
+        return Features(data, feature_type, attribute, origin)
+
+    @classmethod
+    def _convert_to_sparse_matrix(
+        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
+    ) -> Features:
+        prefix = TrainingDataChunk._construct_tf_record_key(
+            attribute, feature_type, origin, False
+        )
+
+        shape = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}shape"
+        ].int64_list.value
+        data = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}data"
+        ].int64_list.value
+        row = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}row"
+        ].int64_list.value
+        column = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}column"
+        ].int64_list.value
+
+        return Features(
+            scipy.sparse.coo_matrix((data, (row, column)), shape),
+            feature_type,
+            attribute,
+            origin,
+        )
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
