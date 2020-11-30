@@ -18,6 +18,8 @@ help:
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
 	@echo "        Check for type errors using mypy."
+	@echo "    static-checks"
+	@echo "        Run all python static checks."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -106,6 +108,8 @@ types:
 	--disable-error-code dict-item \
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
+
+static-checks: lint lint-security types
 
 prepare-tests-files:
 	poetry install -E spacy
