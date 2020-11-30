@@ -874,6 +874,25 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
 
+## [1.10.18] - 2020-11-26
+
+### Bugfixes
+- [#7340](https://github.com/rasahq/rasa/issues/7340>): Fixed an issues with the DynamoDB TrackerStore creating a new table entry/object for each TrackerStore update. The column ``session_date`` has been deprecated and should be removed manually in existing DynamoDB tables.
+
+
+## [1.10.17] - 2020-11-12
+
+### Bugfixes
+- [#7219](https://github.com/rasahq/rasa/issues/7219): Prevent the message handling process in ``PikaEventBroker`` from being terminated.
+
+
+## [1.10.16] - 2020-10-15
+
+### Bugfixes
+- [#6703](https://github.com/rasahq/rasa/issues/6703): Update Pika event broker to be a separate process and make it use a
+  ``multiprocessing.Queue`` to send and process messages. This change should help
+  avoid situations when events stop being sent after a while.
+
 ## [1.10.15] - 2020-10-09
 
 ### Bugfixes
