@@ -21,7 +21,7 @@ def test_cli_start(run: Callable[..., RunResult]):
     assert duration <= 20 if sys.platform == "win32" else 10
 
 
-def test_data_convert_help(run: Callable[..., RunResult]):
+def test_cli_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = """usage: rasa [-h] [--version]

@@ -2,9 +2,13 @@ import copy
 import datetime
 import logging
 import os
-from typing import Any, Dict, List, Optional, Text
+from contextlib import ExitStack
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.nlu
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -23,9 +27,10 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
+from rasa.utils.common import TempDirectoryPath
 from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
@@ -215,6 +220,112 @@ class Trainer:
 
         return Interpreter(self.pipeline, context)
 
+    def train_in_chunks(
+        self,
+        training_data: TrainingData,
+        train_path: Path,
+        number_of_chunks: int,
+        fixed_model_name: Optional[Text] = None,
+    ) -> Tuple["Interpreter", Text]:
+        """Trains the underlying pipeline in chunks using the provided training data.
+
+        Args:
+            training_data: The training data.
+            train_path: The training path to use.
+            fixed_model_name: The model name to use.
+            number_of_chunks: The number of chunks to use.
+
+        Returns:
+            The trained interpreter and the path to the persisted model.
+        """
+        import tempfile
+
+        # TODO do we really need this copy? can we avoid it somehow?
+        working_training_data = copy.deepcopy(training_data)
+        working_training_data.validate()
+
+        context = {}
+        for component in self.pipeline:
+            updates = component.provide_context()
+            if updates:
+                context.update(updates)
+
+        # Before the training starts: check that all arguments are provided
+        if not self.skip_validation:
+            components.validate_required_components_from_data(
+                self.pipeline, working_training_data
+            )
+
+        metadata = {"language": self.config["language"], "pipeline": []}
+
+        data_chunk_dir = TempDirectoryPath(tempfile.mkdtemp())
+
+        dir_name, model_name = self._create_model_dir(str(train_path), fixed_model_name)
+
+        # perform tokenization & prepare other components for training in chunks
+        for i, component in enumerate(self.pipeline):
+            if isinstance(component, Tokenizer):
+                component.train(working_training_data, self.config, **context)
+                metadata["pipeline"].append(
+                    self._persist_component(component, dir_name, i)
+                )
+            else:
+                component.prepare_partial_training(working_training_data)
+
+        training_data_chunks = working_training_data.divide_into_chunks(
+            number_of_chunks
+        )
+
+        # perform featurization
+        for i, data_chunk in enumerate(training_data_chunks):
+            for component in self.pipeline:
+                if isinstance(component, Featurizer):
+                    component.train_chunk(data_chunk, self.config, **context)
+            data_chunk.persist_chunk(data_chunk_dir, f"{i}_chunk.tfrecord")
+
+        # persist featurizers
+        for i, component in enumerate(self.pipeline):
+            if isinstance(component, Featurizer):
+                metadata["pipeline"].append(
+                    self._persist_component(component, dir_name, i)
+                )
+
+        # TODO training of classifiers probably needs to be adapted
+        for i, component in enumerate(self.pipeline):
+            if isinstance(component, (IntentClassifier, EntityExtractor)):
+                for j in range(number_of_chunks):
+                    file_path = os.path.join(data_chunk_dir, f"{j}_chunk.tfrecord")
+                    data_chunk = TrainingDataChunk.load_chunk(file_path)
+                    component.train_chunk(data_chunk, self.config, **context)
+                metadata["pipeline"].append(
+                    self._persist_component(component, dir_name, i)
+                )
+
+        Metadata(metadata, dir_name).persist(dir_name)
+
+        logger.info(
+            "Successfully saved model into '{}'.".format(os.path.abspath(dir_name))
+        )
+
+        return Interpreter(self.pipeline, context), dir_name
+
+    @staticmethod
+    def _create_model_dir(
+        path: Text, fixed_model_name: Optional[Text] = None
+    ) -> Tuple[Text, Text]:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+        if fixed_model_name:
+            model_name = fixed_model_name
+        else:
+            model_name = NLU_MODEL_NAME_PREFIX + timestamp
+
+        path = os.path.abspath(path)
+        dir_name = os.path.join(path, model_name)
+        rasa.shared.utils.io.create_directory(str(dir_name))
+
+        return dir_name, model_name
+
     @staticmethod
     def _file_name(index: int, name: Text) -> Text:
         return f"component_{index}_{name}"
@@ -226,35 +337,28 @@ class Trainer:
         fixed_model_name: Text = None,
         persist_nlu_training_data: bool = False,
     ) -> Text:
-        """Persist all components of the pipeline to the passed path.
+        """Persists all components of the pipeline to the passed path.
 
-        Returns the directory of the persisted model."""
+        Returns the directory of the persisted model.
 
-        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        Args:
+            path: The path to use.
+            persistor: The persistor to use.
+            fixed_model_name: The model name to use.
+            persist_nlu_training_data: If True the training data will be persisted.
+
+        Returns:
+            The path to the directory the model is stored.
+        """
         metadata = {"language": self.config["language"], "pipeline": []}
 
-        if fixed_model_name:
-            model_name = fixed_model_name
-        else:
-            model_name = NLU_MODEL_NAME_PREFIX + timestamp
-
-        path = os.path.abspath(path)
-        dir_name = os.path.join(path, model_name)
-
-        rasa.shared.utils.io.create_directory(dir_name)
+        dir_name, model_name = self._create_model_dir(path, fixed_model_name)
 
         if self.training_data and persist_nlu_training_data:
             metadata.update(self.training_data.persist(dir_name))
 
         for i, component in enumerate(self.pipeline):
-            file_name = self._file_name(i, component.name)
-            update = component.persist(file_name, dir_name)
-            component_meta = component.component_config
-            if update:
-                component_meta.update(update)
-            component_meta["class"] = utils.module_path_from_object(component)
-
-            metadata["pipeline"].append(component_meta)
+            metadata["pipeline"].append(self._persist_component(component, dir_name, i))
 
         Metadata(metadata, dir_name).persist(dir_name)
 
@@ -264,6 +368,27 @@ class Trainer:
             "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
         )
         return dir_name
+
+    def _persist_component(
+        self, component: Component, dir_name: Text, component_number: int
+    ) -> Dict[Text, Any]:
+        """Persists one component.
+
+        Args:
+            component: the component to persist
+            dir_name: the directory to store the component to
+            component_number: the component number (index in the pipeline)
+
+        Returns:
+            Metadata about the component and its configuration.
+        """
+        file_name = self._file_name(component_number, component.name)
+        update = component.persist(file_name, dir_name)
+        component_meta = component.component_config
+        if update:
+            component_meta.update(update)
+        component_meta["class"] = utils.module_path_from_object(component)
+        return component_meta
 
 
 class Interpreter:

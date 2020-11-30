@@ -6,12 +6,12 @@ from rasa.cli.arguments.default_arguments import (
     add_stories_param,
     add_model_param,
     add_endpoint_param,
+    add_config_param,
+    add_out_param,
 )
 from rasa.cli.arguments.train import (
     add_force_param,
     add_data_param,
-    add_config_param,
-    add_out_param,
     add_debug_plots_param,
     add_augmentation_param,
     add_persist_nlu_data_param,
