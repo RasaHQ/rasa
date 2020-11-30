@@ -50,7 +50,7 @@ class KafkaEventBroker(EventBroker):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event, retries = 60, retry_delay_in_seconds = 5) -> None:
+    def publish(self, event, retries=60, retry_delay_in_seconds=5) -> None:
         if self.producer is None:
             self._create_producer()
             connected = self.producer.bootstrap_connected()
@@ -80,7 +80,7 @@ class KafkaEventBroker(EventBroker):
                 retries -= 1
                 time.sleep(retry_delay_in_seconds)
 
-        logger.error(f"Failed to publish Kafka event.")
+        logger.error("Failed to publish Kafka event.")
 
     def _create_producer(self) -> None:
         import kafka
@@ -130,7 +130,7 @@ class KafkaEventBroker(EventBroker):
                 group_id=self.group_id,
             )
         else:
-            logger.error(f"Kafka security_protocol invalid or not set")
+            logger.error("Kafka security_protocol invalid or not set")
 
     def _publish(self, event) -> None:
         logger.debug(f"Calling kafka send({self.topic}, {event})")
