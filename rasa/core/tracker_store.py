@@ -420,8 +420,10 @@ class DynamoTrackerStore(TrackerStore):
                 attribute["AttributeName"] for attribute in table.attribute_definitions
             ]
             if "session_date" in column_names:
-                raise_warning(
-                    "Attribute 'session_date' is no longer required when using a DynamoDB TrackerStore. Please remove this attribute from any existing tables.",
+                rasa.shared.utils.io.raise_warning(
+                    "Attribute 'session_date' is no longer required when using a "
+                    "DynamoDB TrackerStore. Please remove this attribute from "
+                    "any existing tables.",
                     FutureWarning,
                 )
 
