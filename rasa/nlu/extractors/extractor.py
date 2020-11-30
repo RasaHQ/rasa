@@ -407,12 +407,26 @@ class EntityExtractor(Component):
                     entity_start not in token_start_positions
                     or entity_end not in token_end_positions
                 ):
+                    entities_repr = [
+                        (
+                            entity[ENTITY_ATTRIBUTE_START],
+                            entity[ENTITY_ATTRIBUTE_END],
+                            entity[ENTITY_ATTRIBUTE_VALUE],
+                        )
+                        for entity in example.get(ENTITIES)
+                    ]
+                    tokens_repr = [
+                        (t.start, t.end, t.text)
+                        for t in example.get(TOKENS_NAMES[TEXT])
+                    ]
                     rasa.shared.utils.io.raise_warning(
                         f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
-                        f"end values of entities in the training data match the token "
-                        f"boundaries (e.g. entities don't include trailing whitespaces "
-                        f"or punctuation).",
+                        f"end values of entities ('{entities_repr}') in the training "
+                        f"data match the token boundaries ('{tokens_repr}'). "
+                        "Common causes: 1) entities include trailing whitespaces or punctuation; "
+                        "2) the tokenizer gives an unexpected result, usually happens to "
+                        "languages such as Chinese that don't use whitespace as word separator.",
                         docs=DOCS_URL_TRAINING_DATA_NLU,
                     )
                     break
