@@ -620,34 +620,29 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                         if hashed_example not in hashed_examples:
                             hashed_examples.add(hashed_example)
 
-                            # First create a new data point for this pair
-                            trackers_as_states.append(sliced_states)
-                            trackers_as_actions.append([event.intent_name])
-
-                            self._update_labels_for_all_states(
-                                event.intent_name,
+                            example_index = self.create_new_training_example(
+                                event,
                                 example_index,
                                 hashed_state,
                                 hashed_states,
+                                sliced_states,
                                 states_indices,
                                 trackers_as_actions,
+                                trackers_as_states,
                             )
-                            example_index += 1
                     else:
                         hashed_state = self._hash_states(sliced_states, tracker)
-                        # First create a new data point for this pair
-                        trackers_as_states.append(sliced_states)
-                        trackers_as_actions.append([event.intent_name])
 
-                        self._update_labels_for_all_states(
-                            event.intent_name,
+                        example_index = self.create_new_training_example(
+                            event,
                             example_index,
                             hashed_state,
                             hashed_states,
+                            sliced_states,
                             states_indices,
                             trackers_as_actions,
+                            trackers_as_states,
                         )
-                        example_index += 1
 
                     pbar.set_postfix(
                         {"# intents": "{:d}".format(len(trackers_as_actions))}
@@ -656,6 +651,34 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         logger.debug("Created {} intent examples.".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
+
+    def create_new_training_example(
+        self,
+        event,
+        example_index,
+        hashed_state,
+        hashed_states,
+        sliced_states,
+        states_indices,
+        trackers_as_actions,
+        trackers_as_states,
+    ):
+        # First create a new data point for this pair
+        trackers_as_states.append(sliced_states)
+        trackers_as_actions.append([event.intent_name])
+
+        # Also add this new label to all training examples where
+        # the same set of states exist
+        self._update_labels_for_all_states(
+            event.intent_name,
+            example_index,
+            hashed_state,
+            hashed_states,
+            states_indices,
+            trackers_as_actions,
+        )
+        example_index += 1
+        return example_index
 
     @staticmethod
     def _update_labels_for_all_states(
@@ -705,7 +728,8 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             for tracker_intents in trackers_as_intents
         ]
 
-        # new_label_ids = label_ids
+        # Add zero padding to labels array so that
+        # each example has equal number of labels
         multiple_labels_count = [len(a) for a in label_ids]
         max_labels_count = max(multiple_labels_count)
         num_padding_needed = [max_labels_count - len(a) for a in label_ids]
