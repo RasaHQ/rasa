@@ -78,7 +78,7 @@ async def train_in_chunks(
     output_path: Path,
     number_of_chunks: int,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
-    endpoints: "AvailableEndpoints" = None,
+    endpoints: Optional["AvailableEndpoints"] = None,
     policy_config: Optional[Union[Text, Dict]] = None,
     additional_arguments: Optional[Dict] = None,
 ) -> "Agent":
