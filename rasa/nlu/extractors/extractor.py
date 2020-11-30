@@ -405,7 +405,9 @@ class EntityExtractor(Component):
                 continue
 
             current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_group_tag = bilou_utils.tag_without_prefix(current_group_tag)
             current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            current_role_tag = bilou_utils.tag_without_prefix(current_role_tag)
 
             group_or_role_changed = (
                 last_group_tag != current_group_tag or last_role_tag != current_role_tag

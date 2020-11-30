@@ -90,13 +90,14 @@ def test_check_labels_features_exist(messages, expected):
     "pipeline",
     [
         [
+            {"name": "SpacyNLP"},
             {
-                "name": "ConveRTTokenizer",
+                "name": "SpacyTokenizer",
                 "intent_tokenization_flag": True,
                 "intent_split_symbol": "+",
             },
             {"name": "CountVectorsFeaturizer"},
-            {"name": "ConveRTFeaturizer"},
+            {"name": "SpacyFeaturizer"},
             {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
         ],
         [

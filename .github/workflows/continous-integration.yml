@@ -57,11 +57,11 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -76,6 +76,10 @@ jobs:
       run: |
         sudo apt-get -y install libpq-dev
         make install-full
+
+        # 1.10.x doesn't support `pydocstyle` tests yet. Due to caching it's
+        # possible that the necessary libraries is installed anyway
+        poetry run pip uninstall -y flake8-docstrings || true
 
     - name: Lint Code 🎎
       run: make lint
@@ -126,11 +130,11 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -228,11 +232,11 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 

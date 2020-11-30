@@ -23,6 +23,10 @@ import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
+TF_HUB_MODULE_URL = (
+    "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
+)
+
 
 class ConveRTFeaturizer(DenseFeaturizer):
     """Featurizer using ConveRT model.
@@ -32,16 +36,22 @@ class ConveRTFeaturizer(DenseFeaturizer):
     for dense featurizable attributes of each message object.
     """
 
+    defaults = {
+        # Remote URL of hosted model
+        "model_url": TF_HUB_MODULE_URL
+    }
+
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [ConveRTTokenizer]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
-        super(ConveRTFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
-        model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
-        self.module = train_utils.load_tf_hub_model(model_url)
+        self.model_url = self.component_config.get("model_url", TF_HUB_MODULE_URL)
+
+        self.module = train_utils.load_tf_hub_model(self.model_url)
 
         self.sentence_encoding_signature = self.module.signatures["default"]
         self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
