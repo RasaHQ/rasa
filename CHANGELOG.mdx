@@ -16,6 +16,13 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.1.1] - 2020-11-23
+                       
+
+### Bugfixes
+- [#7338](https://github.com/rasahq/rasa/issues/7338): Sender ID is correctly set when copying the tracker and sending it to the action server (instead of sending the `default` value). This fixes a problem where the action server would only retrieve trackers with a `sender_id` `default`.
+
+
 ## [2.1.0] - 2020-11-17
                        
 
@@ -276,6 +283,27 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#6470](https://github.com/rasahq/rasa/issues/6470), [#7015](https://github.com/rasahq/rasa/issues/7015), [#7090](https://github.com/rasahq/rasa/issues/7090)
+
+
+## [2.0.8] - 2020-11-26
+                       
+
+### Bugfixes
+- [#7235](https://github.com/rasahq/rasa/issues/7235): Slots that use `initial_value` won't cause rule contradiction errors when `conversation_start: true` is used. Previously, two rules that differed only in their use of `conversation_start` would be flagged as contradicting when a slot used `initial_value`.
+
+  In checking for incomplete rules, an action will be required to have set _only_ those slots that the same action has set in another rule. Previously, an action was expected to have set also slots which, despite being present after this action in another rule, were not actually set by this action.
+
+
+## [2.0.7] - 2020-11-24
+                       
+
+### Bugfixes
+- [#5974](https://github.com/rasahq/rasa/issues/5974): `ActionRestart` will now trigger `ActionSessionStart` as a followup action.
+- [#7317](https://github.com/rasahq/rasa/issues/7317): Fixed Rasa Open Source not being able to fetch models from certain URLs.
+
+  This addresses an issue introduced in 2.0.3 where `rasa-production` could not use the models from `rasa-x` in Rasa X server mode.
+- [#7316](https://github.com/rasahq/rasa/issues/7316): `SingleStateFeaturizer` checks whether it was trained with `RegexInterpreter` as
+  NLU interpreter. If that is the case, `RegexInterpreter` is used during prediction.
 
 
 ## [2.0.6] - 2020-11-10
