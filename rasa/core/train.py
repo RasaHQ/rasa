@@ -74,7 +74,7 @@ async def train(
 
 async def train_in_chunks(
     domain_file: Union[Domain, Text],
-    training_resource: "TrainingDataImporter",
+    training_resource: TrainingDataImporter,
     output_path: Path,
     number_of_chunks: int,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
