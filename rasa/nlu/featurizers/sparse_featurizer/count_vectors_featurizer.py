@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Type, Tuple
+from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -26,10 +26,14 @@ from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     INTENT_RESPONSE_KEY,
+    RESPONSE,
+    ACTION_TEXT,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
 )
+
+BUFFER_SLOTS_PREFIX = "buf_"
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +88,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # indicates whether the featurizer should use the lemma of a word for
         # counting (if available) or not
         "use_lemma": True,
+        # Additional vocabulary size to be kept reserved
+        "additional_vocabulary_size": {TEXT: None, RESPONSE: None, ACTION_TEXT: None},
     }
 
     @classmethod
@@ -125,7 +131,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self.use_lemma = self.component_config["use_lemma"]
 
     # noinspection PyPep8Naming
-    def _load_OOV_params(self) -> None:
+    def _load_vocabulary_params(self) -> None:
         self.OOV_token = self.component_config["OOV_token"]
 
         self.OOV_words = self.component_config["OOV_words"]
@@ -142,6 +148,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self.OOV_token = self.OOV_token.lower()
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
+
+        # Additional vocabulary size to be kept reserved
+        self.additional_vocabulary_size = self.component_config[
+            "additional_vocabulary_size"
+        ]
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Check if trained vocabulary exists in attribute's count vectorizer"""
@@ -200,6 +211,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
+        finetune_mode: bool = False,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
@@ -209,7 +221,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self._load_count_vect_params()
 
         # handling Out-Of-Vocabulary (OOV) words
-        self._load_OOV_params()
+        self._load_vocabulary_params()
 
         # warn that some of config parameters might be ignored
         self._check_analyzer()
@@ -219,6 +231,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
+
+        self.finetune_mode = finetune_mode
 
     def _get_message_tokens_by_attribute(
         self, message: "Message", attribute: Text
@@ -341,71 +355,219 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return attribute_texts
 
-    def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
-        """Construct the vectorizers and train them with a shared vocab"""
+    @staticmethod
+    def _get_starting_empty_index(vocabulary: Dict[Text, int]) -> int:
+        for key in vocabulary.keys():
+            if key.startswith(BUFFER_SLOTS_PREFIX):
+                return int(key.split(BUFFER_SLOTS_PREFIX)[1])
+        return len(vocabulary)
 
-        self.vectorizers = self._create_shared_vocab_vectorizers(
-            {
-                "strip_accents": self.strip_accents,
-                "lowercase": self.lowercase,
-                "stop_words": self.stop_words,
-                "min_ngram": self.min_ngram,
-                "max_ngram": self.max_ngram,
-                "max_df": self.max_df,
-                "min_df": self.min_df,
-                "max_features": self.max_features,
-                "analyzer": self.analyzer,
-            }
-        )
+    def _update_vectorizer_vocabulary(
+        self, attribute: Text, vocabulary: Set[Text]
+    ) -> None:
+        """Update the existing vocabulary of the vectorizer with new unseen words.
 
-        combined_cleaned_texts = []
-        for attribute in self._attributes:
-            combined_cleaned_texts += attribute_texts[attribute]
+        These unseen words should only occupy the empty buffer slots.
 
-        try:
-            self.vectorizers[TEXT].fit(combined_cleaned_texts)
-        except ValueError:
+        Args:
+            attribute: Message attribute for which vocabulary should be updated.
+            vocabulary: Set of words to expand the vocabulary with if they are unseen.
+
+        """
+        existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
+        available_empty_index = self._get_starting_empty_index(existing_vocabulary)
+        # print(
+        #     attribute, len(existing_vocabulary), available_empty_index, len(vocabulary)
+        # )
+        if len(vocabulary) > len(existing_vocabulary):
             logger.warning(
-                "Unable to train a shared CountVectorizer. "
-                "Leaving an untrained CountVectorizer"
+                f"New data contains vocabulary of size {len(vocabulary)} for attribute {attribute} "
+                f"which is larger than the maximum vocabulary size({len(existing_vocabulary)}) "
+                f"of the original model. Some tokens will have to be dropped "
+                f"in order to continue training. It is advised to re-train the "
+                f"model from scratch on complete data."
             )
+        for token in vocabulary:
+            if token not in existing_vocabulary:
+                existing_vocabulary[token] = available_empty_index
+                del existing_vocabulary[f"{BUFFER_SLOTS_PREFIX}{available_empty_index}"]
+                available_empty_index += 1
+                if available_empty_index == len(existing_vocabulary):
+                    break
+        self._set_vocabulary(attribute, existing_vocabulary)
+
+    def _add_buffer_to_vocabulary(self, attribute: Text) -> None:
+        """Add extra tokens to vocabulary for incremental training.
+
+        These extra tokens act as buffer slots which are used up sequentially
+        when more data is received as part of incremental training. Each of
+        these tokens start with a prefix `buf_` followed by the extra slot index.
+        So for example - buf_1, buf_2, buf_3... and so on.
+
+        Args:
+            attribute: Name of the attribute for which the vocabulary should be expanded.
+
+        """
+        original_vocabulary = self.vectorizers[attribute].vocabulary_
+        current_vocabulary_size = self._get_starting_empty_index(original_vocabulary)
+        for index in range(
+            current_vocabulary_size,
+            current_vocabulary_size + self.additional_vocabulary_size[attribute],
+        ):
+            original_vocabulary[f"{BUFFER_SLOTS_PREFIX}{index}"] = index
+        self._set_vocabulary(attribute, original_vocabulary)
+
+    def _set_vocabulary(
+        self, attribute: Text, original_vocabulary: Dict[Text, int]
+    ) -> None:
+        """Set the vocabulary of the vectorizer of attribute
+
+        Args:
+            attribute: Message attribute for which vocabulary should be set
+            original_vocabulary: Vocabulary for the attribute to be set.
+
+        """
+        self.vectorizers[attribute].vocabulary_ = original_vocabulary
+        self.vectorizers[attribute]._validate_vocabulary()
+
+    @staticmethod
+    def _construct_vocabulary_from_texts(
+        vectorizer: CountVectorizer, texts: List[Text]
+    ) -> Set:
+        """Apply vectorizer's preprocessor on texts to get the vocabulary from texts.
+
+        Args:
+            vectorizer: Sklearn's count vectorizer which has been pre-configured.
+            texts: Examples from which the vocabulary should be constructed
+
+        Returns:
+            Set of unique vocabulary words extracted.
+        """
+        analyzer = vectorizer.build_analyzer()
+        vocabulary_words = set()
+        for example in texts:
+            example_vocabulary: List[Text] = analyzer(example)
+            vocabulary_words.update(example_vocabulary)
+        return vocabulary_words
 
     @staticmethod
     def _attribute_texts_is_non_empty(attribute_texts: List[Text]) -> bool:
         return any(attribute_texts)
 
+    def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
+        """Construct the vectorizers and train them with a shared vocab"""
+        combined_cleaned_texts = []
+        for attribute in self._attributes:
+            combined_cleaned_texts += attribute_texts[attribute]
+
+        if not self.finetune_mode:
+            self.vectorizers = self._create_shared_vocab_vectorizers(
+                {
+                    "strip_accents": self.strip_accents,
+                    "lowercase": self.lowercase,
+                    "stop_words": self.stop_words,
+                    "min_ngram": self.min_ngram,
+                    "max_ngram": self.max_ngram,
+                    "max_df": self.max_df,
+                    "min_df": self.min_df,
+                    "max_features": self.max_features,
+                    "analyzer": self.analyzer,
+                }
+            )
+
+            self._fit_vectorizer_from_scratch(TEXT, combined_cleaned_texts)
+
+        else:
+            self._fit_loaded_vectorizer(TEXT, combined_cleaned_texts)
+
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with an independent vocab"""
 
-        self.vectorizers = self._create_independent_vocab_vectorizers(
-            {
-                "strip_accents": self.strip_accents,
-                "lowercase": self.lowercase,
-                "stop_words": self.stop_words,
-                "min_ngram": self.min_ngram,
-                "max_ngram": self.max_ngram,
-                "max_df": self.max_df,
-                "min_df": self.min_df,
-                "max_features": self.max_features,
-                "analyzer": self.analyzer,
-            }
-        )
+        if not self.finetune_mode:
+            self.vectorizers = self._create_independent_vocab_vectorizers(
+                {
+                    "strip_accents": self.strip_accents,
+                    "lowercase": self.lowercase,
+                    "stop_words": self.stop_words,
+                    "min_ngram": self.min_ngram,
+                    "max_ngram": self.max_ngram,
+                    "max_df": self.max_df,
+                    "min_df": self.min_df,
+                    "max_features": self.max_features,
+                    "analyzer": self.analyzer,
+                }
+            )
 
-        for attribute in self._attributes:
-            if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
-                try:
-                    self.vectorizers[attribute].fit(attribute_texts[attribute])
-                except ValueError:
-                    logger.warning(
-                        f"Unable to train CountVectorizer for message "
-                        f"attribute {attribute}. Leaving an untrained "
-                        f"CountVectorizer for it."
+            for attribute in self._attributes:
+                if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
+                    self._fit_vectorizer_from_scratch(
+                        attribute, attribute_texts[attribute]
                     )
-            else:
-                logger.debug(
-                    f"No text provided for {attribute} attribute in any messages of "
-                    f"training data. Skipping training a CountVectorizer for it."
-                )
+                else:
+                    logger.debug(
+                        f"No text provided for {attribute} attribute in any messages of "
+                        f"training data. Skipping training a CountVectorizer for it."
+                    )
+        else:
+            for attribute in self._attributes:
+                if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
+                    try:
+                        self._fit_loaded_vectorizer(
+                            attribute, attribute_texts[attribute]
+                        )
+
+                    except ValueError:
+                        logger.warning(
+                            f"Unable to train CountVectorizer for message "
+                            f"attribute {attribute}. Leaving an untrained "
+                            f"CountVectorizer for it."
+                        )
+                else:
+                    logger.debug(
+                        f"No text provided for {attribute} attribute in any messages of "
+                        f"training data. Skipping training a CountVectorizer for it."
+                    )
+
+    def _fit_loaded_vectorizer(
+        self, attribute: Text, attribute_texts: List[Text]
+    ) -> None:
+        """Fit training texts to a previously trained count vectorizer.
+
+        We do not use the `.fit()` method because the new unseen
+        words should occupy the buffer slots of the vocabulary.
+
+        Args:
+            attribute: Message attribute for which the vectorizer is to be trained.
+            attribute_texts: Training texts for the attribute
+
+        """
+        # Get vocabulary words by the preprocessor
+        new_vocabulary = self._construct_vocabulary_from_texts(
+            self.vectorizers[attribute], attribute_texts
+        )
+        # update the vocabulary of vectorizer with new vocabulary
+        self._update_vectorizer_vocabulary(attribute, new_vocabulary)
+
+    def _fit_vectorizer_from_scratch(
+        self, attribute: Text, attribute_texts: List[Text]
+    ) -> None:
+        """Fit training texts to an untrained count vectorizer.
+
+        Args:
+            attribute: Message attribute for which the vectorizer is to be trained.
+            attribute_texts: Training texts for the attribute
+
+        """
+        try:
+            self.vectorizers[attribute].fit(attribute_texts)
+            # Add buffer for extra vocabulary tokens in future
+            self._add_buffer_to_vocabulary(attribute)
+        except ValueError:
+            logger.warning(
+                f"Unable to train CountVectorizer for message "
+                f"attribute {attribute}. Leaving an untrained "
+                f"CountVectorizer for it."
+            )
 
     def _create_features(
         self, attribute: Text, all_tokens: List[List[Text]]
@@ -674,6 +836,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
 
+        finetune_mode = kwargs.pop("finetune_mode")
+
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 
@@ -693,7 +857,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 meta, vocabulary=vocabulary
             )
 
-        ftr = cls(meta, vectorizers)
+        ftr = cls(meta, vectorizers, finetune_mode)
 
         # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:
