@@ -952,6 +952,8 @@ class DotProductLoss(tf.keras.layers.Layer):
 
 
 class MultiLabelDotProductLoss(DotProductLoss):
+    """Same as DotProductLoss but adapted for multiple labels for a single data point."""
+
     def _get_neg_values(self, tensor, neg_ids):
 
         tensor_expanded = tf.tile(
@@ -982,36 +984,42 @@ class MultiLabelDotProductLoss(DotProductLoss):
             name="expand_pos_labels",
         )
 
-        # get neg ids from batch itself
+        # get negative batch indices from batch itself.
         neg_ids = self._get_neg_indices(
             tf.shape(inputs_embed)[0], tf.shape(inputs_embed)[0]
         )
 
+        # Get the label embeddings corresponding to negative indices sampled earlier
         neg_labels_embed = self._get_neg_values(labels_embed[:, 0, ...], neg_ids)
+
+        # Get the label ids corresponding to negative indices sampled earlier
         neg_labels_ids = self._get_neg_values(label_ids[:, 0, ...], neg_ids)
 
         max_label_id = tf.cast(tf.math.reduce_max(all_label_ids), dtype=tf.int32)
-
         # dimension size is 1 indexed and hence 1 more than maximum label id
         depth_needed = max_label_id + 1
 
+        # Convert the positive label ids to their one_hot representation.
         batch_labels_one_hot = tf.one_hot(
             tf.cast(tf.squeeze(label_ids, axis=-1), tf.int32), depth_needed, axis=-1
-        )  # bs x num_pos_labels(varied) x num label ids
+        )  # bs x num_pos_labels(varied) x depth_needed
 
-        # Collapse the extra dimension aggregating all ones
+        # Collapse the extra dimension and convert to a multi-hot representation
+        # by aggregating all ones in the one-hot representation.
         # Here tf.reduce_any is important and tf.reduce_sum
         # cannot be used. Reason being that due to padding in label_ids,
-        # there can be more than one 1's at the 0'th dimension.
+        # there can be more than one 1's at the 0'th index of the last dimension.
+        # Otherwise the loss function will be highly unstable.
         batch_labels_multi_hot = tf.cast(
             tf.math.reduce_any(tf.cast(batch_labels_one_hot, dtype=tf.bool), axis=-2),
             tf.float32,
-        )  # bs x num label ids
+        )  # bs x num_pos_labels
 
         # Remove extra dimensions for gather
         neg_labels_ids = tf.squeeze(tf.squeeze(neg_labels_ids, 1), -1)
 
-        # sample pos neg labels
+        # Collect the labels corresponding to negative
+        # label ids sampled for each data point of the batch earlier.
         pos_neg_labels = tf.gather(
             batch_labels_multi_hot,
             tf.cast(neg_labels_ids, tf.int32),
@@ -1028,36 +1036,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
         neg_ids = self._random_indices(target_size, total_candidates)
 
         return neg_ids
-
-    def _get_negs(
-        self,
-        embeds: tf.Tensor,
-        labels: tf.Tensor,
-        target_labels: tf.Tensor,
-        neg_ids: tf.Tensor,
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Get negative examples from given tensor."""
-
-        embeds_flat = self._make_flat(embeds)
-        target_size = tf.shape(embeds_flat)[0]
-        neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
-
-        # check if inputs have sequence dimension
-        if len(embeds.shape) == 3:
-            # tensors were flattened for sampling, reshape back
-            # add sequence dimension if it was present in the inputs
-            target_shape = tf.shape(target_labels)
-            neg_embeds = tf.reshape(
-                neg_embeds, (target_shape[0], target_shape[1], -1, embeds.shape[-1])
-            )
-
-        return neg_embeds
-
-    def _get_bad_mask(self, pos_d: tf.Tensor, neg_d: tf.Tensor):
-
-        bad_mask = tf.cast(tf.reduce_all(tf.equal(pos_d, neg_d), axis=-1), pos_d.dtype)
-
-        return bad_mask
 
     def _loss_sigmoid(
         self,
@@ -1115,8 +1093,12 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
         sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask)
-        # sem_neg_ll = self.sim(pos_labels_embed, neg_labels_embed, mask)
 
+        # TODO: Check if adding an extra term for similarity
+        #  between pos and negative labels makes sense. It may not
+        #  because as opposed to action labels, intent labels are
+        #  not completely independent of each other as two intents
+        #  can be the positive label for the exact same input.
         # sim_neg_ll = (
         #     self.sim(pos_labels_embed, neg_labels_embed, mask) + neg_inf * bad_neg_labels
         # )
@@ -1168,9 +1150,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
         loss = self._loss_sigmoid(
             sim_pos,
             sim_neg_il,
-            pos_neg_labels
+            pos_neg_labels,
             # , sim_neg_ll
-            ,
             mask,
         )
 
@@ -1197,12 +1178,3 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         return acc
-
-    @staticmethod
-    def confidence_from_sim(sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
-        if similarity_type == COSINE:
-            # clip negative values to zero
-            return tf.nn.relu(sim)
-        else:
-            # normalize result to [0, 1] with sigmoid
-            return tf.nn.sigmoid(sim)

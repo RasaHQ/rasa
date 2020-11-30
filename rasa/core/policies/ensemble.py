@@ -607,24 +607,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 continue
             predictions[f"policy_{i}_{type(p).__name__}"] = prediction
 
-        if "IntentTEDPolicy" in [type(p).__name__ for p in self.policies]:
-            # Log improbable intents
-            last_user_event: Optional[UserUttered] = tracker.get_last_event_for(
-                UserUttered
-            )
-            if last_user_event:
-                # If this is not the first intent
-                # and also no active loop present
-                if not last_user_event.is_probable:
-                    logger.info(
-                        f"Last user intent '{last_user_event.intent_name}' is not "
-                        f"a likely intent according to the stories in the training data. "
-                        f"The dialogue policies may not be able to predict the correct "
-                        f"action for future user steps of the conversation. "
-                        f"You should pay attention to this conversation and add the story for it "
-                        f"to training data so that the dialogue policies "
-                        f"learn the correct actions for this conversation."
-                    )
+        self._log_improbable_user_event(tracker)
 
         if rejected_action_name:
             logger.debug(
@@ -637,6 +620,25 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 ] = 0.0
 
         return self._pick_best_policy(predictions)
+
+    def _log_improbable_user_event(self, tracker):
+
+        if "IntentTEDPolicy" in [type(p).__name__ for p in self.policies]:
+            # Log improbable intents
+            last_user_event: Optional[UserUttered] = tracker.get_last_event_for(
+                UserUttered
+            )
+            if last_user_event:
+                if not last_user_event.is_probable:
+                    logger.debug(
+                        f"Last user intent '{last_user_event.intent_name}' is not "
+                        f"a likely intent according to the stories in the training data. "
+                        f"The dialogue policies may not be able to predict the correct "
+                        f"action for future user steps of the conversation. "
+                        f"You should pay attention to this conversation and add the story for it "
+                        f"to training data so that the dialogue policies "
+                        f"learn the correct actions for this conversation."
+                    )
 
     @staticmethod
     def _get_prediction(

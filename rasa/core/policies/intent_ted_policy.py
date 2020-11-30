@@ -34,6 +34,7 @@ from rasa.utils.tensorflow.model_data import (
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.models import RasaModel
+from rasa.core.policies.policy import PolicyPrediction
 
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -423,10 +424,12 @@ class IntentTEDPolicy(TEDPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], Optional[bool]]:
+    ) -> PolicyPrediction:
 
         if self.model is None:
-            return self._default_predictions(domain), False
+            return self._prediction(
+                self._default_predictions(domain), is_end_to_end_prediction=False
+            )
 
         label_to_id_map = self._get_label_key_to_ids_map(self._all_labels)
 
@@ -463,10 +466,32 @@ class IntentTEDPolicy(TEDPolicy):
         # take the last prediction in the sequence
         similarities = output["sim_all"].numpy()[:, -1, :]
 
+        self._check_improbable_user_event(
+            domain, label_to_id_map, similarities, tracker
+        )
+
+        return self._prediction(similarities.tolist(), is_end_to_end_prediction=False)
+
+    def _check_improbable_user_event(
+        self, domain, label_to_id_map, similarities, tracker
+    ):
+        """Check if the latest user event is probable according to IntentTED predictions.
+
+        If the similarity prediction for the intent of
+        latest user event is lower than the threshold
+        calculated for that intent during training, the
+        corresponding user event is flagged as improbable.
+
+        Args:
+            domain: Domain of the assistant.
+            label_to_id_map: Map of labels(text) to their corresponding ids used during training.
+            similarities: Predicted similarities for all labels.
+            tracker: Current conversation tracker
+
+        """
         intent_similarities = {}
         for index, intent in enumerate(self._all_labels):
             intent_similarities[intent] = similarities[0][index]
-
         sorted_intent_similarities = sorted(
             [
                 (intent_label, confidence)
@@ -474,10 +499,8 @@ class IntentTEDPolicy(TEDPolicy):
             ],
             key=lambda x: x[1],
         )
-
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
-
         if last_user_event:
 
             query_label = last_user_event.intent_name
@@ -493,19 +516,16 @@ class IntentTEDPolicy(TEDPolicy):
                     f"{query_label_similarity}, while threshold is {self.intent_thresholds[query_label_id]}"
                 )
                 logger.debug(
-                    f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_similarities[-5: ]}"
+                    f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_similarities[-5:]}"
                 )
 
-                # If prob is below threshold and the intent is not the most likely intent
+                # If prob is below threshold and the intent is not the top likely intent
                 if (
                     query_label_similarity < self.intent_thresholds[query_label_id]
                     and query_label_id != sorted_intent_similarities[-1][0]
                 ):
-
                     # Mark the corresponding user turn as interesting
                     last_user_event.set_as_not_probable()
-
-        return similarities.tolist(), False  # pytype: disable=bad-return-type
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
