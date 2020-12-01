@@ -1029,15 +1029,15 @@ class TransformerRasaModel(RasaModel):
             dense_dropout,
             add_noise=add_noise,
         )
-        # if not self._training:
-        #     noisy_inputs = inputs[1:, :, :]
-        #     noisy_inputs += tf.random.normal(
-        #         shape=tf.shape(noisy_inputs),
-        #         mean=0.,
-        #         stddev=tf.abs(tf.reduce_max(inputs)-tf.reduce_min(inputs))/10,
-        #         dtype=inputs.dtype
-        #     )
-        #     inputs = tf.concat([inputs[:1, :, :], noisy_inputs], axis=0)
+        if not self._training:
+            noisy_inputs = tf.tile(inputs, (100, 1, 1))
+            noisy_inputs += tf.random.normal(
+                shape=tf.shape(noisy_inputs),
+                mean=0.,
+                stddev=tf.abs(inputs)*3,
+                dtype=inputs.dtype
+            )
+            inputs = tf.concat([inputs, noisy_inputs], axis=0)
 
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 

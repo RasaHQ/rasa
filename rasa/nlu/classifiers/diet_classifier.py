@@ -836,10 +836,28 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return label, label_ranking
 
         message_sim = predict_out["i_scores"].numpy()
+        # print(message_sim)
+        # exit()
+        # message_sim = message_sim.flatten()  # sim is a matrix
 
-        message_sim = message_sim.flatten()  # sim is a matrix
+        label_ids = message_sim.argsort()[:, ::-1]
 
-        label_ids = message_sim.argsort()[::-1]
+        unique_label_ids, counts_label_ids = np.unique(
+            label_ids[1:, 0], return_counts=True, axis=0
+        )
+        x = label_ids[0, 0]
+        if counts_label_ids[unique_label_ids == x]:
+            c_x = counts_label_ids[unique_label_ids == x][0]
+        else:
+            c_x = 0
+        f = c_x
+        # if c_x < 10:
+        #     f = True
+        # else:
+        #     f = False
+
+        message_sim = message_sim[0]
+        label_ids = label_ids[0]
 
         if (
             self.component_config[LOSS_TYPE] == SOFTMAX
@@ -857,7 +875,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label = {
                 "id": hash(self.index_label_id_mapping[label_ids[0]]),
                 "name": self.index_label_id_mapping[label_ids[0]],
-                "confidence": message_sim[0],
+                "confidence": f/100.0#message_sim[0],
             }
 
             if (
@@ -1575,6 +1593,8 @@ class DIET(TransformerRasaModel):
         )
 
         predictions: Dict[Text, tf.Tensor] = {}
+        if not self._training:
+            sequence_lengths = tf.tile(sequence_lengths, (101, ))
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(

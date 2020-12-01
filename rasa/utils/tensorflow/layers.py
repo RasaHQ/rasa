@@ -19,7 +19,7 @@ class AdaptiveGaussianNoise(tf.keras.layers.Layer):
             return inputs + tf.random.normal(
                 shape=tf.shape(inputs),
                 mean=0.,
-                stddev=tf.abs(inputs)/10,
+                stddev=tf.abs(inputs)*10,
                 dtype=inputs.dtype
             )
 
