@@ -397,7 +397,6 @@ class Component(metaclass=ComponentMetaclass):
         will be a proper pipeline definition where ``ComponentA``
         is the name of the first component of the pipeline.
         """
-
         return type(self).name
 
     @property
@@ -421,7 +420,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The class names of the required components.
         """
-
         return []
 
     # Defines the default configuration parameters of a component
