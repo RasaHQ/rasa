@@ -471,14 +471,18 @@ def test_response_evaluation_report(tmpdir_factory):
     response_results = [
         ResponseSelectionEvaluationResult(
             "chitchat",
+            "weather",
             "It's sunny in Berlin",
+            "weather",
             "It's sunny in Berlin",
             "What's the weather",
             0.65432,
         ),
         ResponseSelectionEvaluationResult(
             "chitchat",
+            "bot_name",
             "My name is Mr.bot",
+            "bot_name",
             "My name is Mr.bot",
             "What's your name?",
             0.98765,
@@ -506,7 +510,7 @@ def test_response_evaluation_report(tmpdir_factory):
     }
 
     assert len(report.keys()) == 5
-    assert report["My name is Mr.bot"] == name_query_results
+    assert report["bot_name"] == name_query_results
     assert result["predictions"][1] == prediction
 
 
@@ -591,11 +595,13 @@ def test_empty_intent_removal():
 def test_empty_response_removal():
     response_results = [
         ResponseSelectionEvaluationResult(
-            "chitchat", None, "It's sunny in Berlin", "What's the weather", 0.65432
+            "chitchat", None, None, "It's sunny in Berlin", None, "What's the weather", 0.65432
         ),
         ResponseSelectionEvaluationResult(
             "chitchat",
+            None,
             "My name is Mr.bot",
+            None,
             "My name is Mr.bot",
             "What's your name?",
             0.98765,
