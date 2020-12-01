@@ -391,7 +391,7 @@ class Component(metaclass=ComponentMetaclass):
     @property
     def name(self) -> Text:
         """Access the class's property name from an instance.
-        
+
         Component class name is used when integrating it in a
         pipeline. E.g. ``[ComponentA, ComponentB]``
         will be a proper pipeline definition where ``ComponentA``
@@ -403,7 +403,7 @@ class Component(metaclass=ComponentMetaclass):
     @property
     def unique_name(self) -> Text:
         """Get a unique name for the component in the pipeline.
-        
+
         The unique name can be used to distinguish components in
         a pipeline, e.g. when the pipeline contains multiple
         featurizers of the same type.
