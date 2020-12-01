@@ -51,7 +51,7 @@ class RegexFeaturizer(SparseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
     ) -> None:
-
+        """Construct new features for regexes and lookup table using regex expressions."""
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []

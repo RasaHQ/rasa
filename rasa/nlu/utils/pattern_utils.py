@@ -10,7 +10,8 @@ def _convert_lookup_tables_to_regex(
     use_only_entities: bool = False,
     use_word_boundaries: bool = True,
 ) -> List[Dict[Text, Text]]:
-    """Convert the lookup tables from the training data to regex patterns.
+    r"""Convert the lookup tables from the training data to regex patterns.
+
     Args:
         training_data: The training data.
         use_only_entities: If True only regex features with a name equal to a entity
@@ -34,7 +35,7 @@ def _convert_lookup_tables_to_regex(
 def _generate_lookup_regex(
     lookup_table: Dict[Text, Union[Text, List[Text]]], use_word_boundaries: bool = True
 ) -> Text:
-    """Creates a regex pattern from the given lookup table.
+    r"""Creates a regex pattern from the given lookup table.
 
     The lookup table is either a file or a list of entries.
 
@@ -121,7 +122,7 @@ def extract_patterns(
     use_only_entities: bool = False,
     use_word_boundaries: bool = True,
 ) -> List[Dict[Text, Text]]:
-    """Extract a list of patterns from the training data.
+    r"""Extract a list of patterns from the training data.
 
     The patterns are constructed using the regex features and lookup tables defined
     in the training data.
