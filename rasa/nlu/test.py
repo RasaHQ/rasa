@@ -31,7 +31,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    RESPONSE_KEY_ATTRIBUTE
+    RESPONSE_KEY_ATTRIBUTE,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -1056,7 +1056,9 @@ def get_eval_data(
             ).get("full_retrieval_intent", {})
 
             if isinstance(response_prediction_full_intent, str):
-                response_prediction_full_intent = response_prediction_full_intent.split("/")[1]
+                response_prediction_full_intent = response_prediction_full_intent.split(
+                    "/"
+                )[1]
 
             response_target = example.get("response", "")
             response_key = example.get(RESPONSE_KEY_ATTRIBUTE, "")
