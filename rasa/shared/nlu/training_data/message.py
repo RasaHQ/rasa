@@ -66,7 +66,7 @@ class Message:
         else:
             self.data[DIAGNOSTIC_DATA] = {origin: values_to_numpy(data)}
 
-    def set(self, prop: Text, info: Any, add_to_output=False) -> None:
+    def set(self, prop: Text, info: Any, add_to_output: bool = False) -> None:
         """Set property `prop` to `info`.
 
         Args:
