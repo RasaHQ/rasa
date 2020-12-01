@@ -104,6 +104,7 @@ class YAMLStoryWriter(StoryWriter):
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
+            is_test_story: `True` if the story is an end-to-end conversation test story.
         """
         from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
