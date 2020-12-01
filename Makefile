@@ -67,14 +67,15 @@ lint:
 	make lint-docstrings
 
 # Compare against `master` if no branch was provided
-BRANCH ?= "master"
+BRANCH ?= master
 lint-docstrings:
-	# Lint docstrings only against the the diff to avoid too many errors.
-	# Check only production code. Ignore other flake errors which are captured by `lint`
-	# Diff of committed changes (shows only changes introduced by your branch)
-	if [[ -n "$(BRANCH)" ]]; then \
-	    git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff; \
-	fi
+# Lint docstrings only against the the diff to avoid too many errors.
+# Check only production code. Ignore other flake errors which are captured by `lint`
+# Diff of committed changes (shows only changes introduced by your branch
+ifneq ($(strip $(BRANCH)),)
+	git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff
+endif
+
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 

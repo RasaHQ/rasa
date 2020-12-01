@@ -17,7 +17,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
@@ -221,7 +221,7 @@ class MemoizationPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         result = self._default_predictions(domain)
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
@@ -234,7 +234,7 @@ class MemoizationPolicy(Policy):
         else:
             logger.debug("There is no memorised next action")
 
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {

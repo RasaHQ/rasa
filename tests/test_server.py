@@ -861,7 +861,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "event": "action",
             "name": "action_session_start",
             "policy": None,
-            "confidence": None,
+            "confidence": 1,
             "timestamp": 1514764800,
         },
         {"event": "session_started", "timestamp": 1514764800},
@@ -941,7 +941,7 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
 
 
 @pytest.mark.parametrize(
-    "params", ["?execute_side_effects=true&output_channel=callback", ""],
+    "params", ["?execute_side_effects=true&output_channel=callback", ""]
 )
 async def test_pushing_event_while_executing_side_effects(
     rasa_server: Sanic, params: Text
@@ -1291,7 +1291,11 @@ async def test_trigger_intent_with_not_existing_intent(rasa_app: SanicASGITestCl
         ([], None, CollectingOutputChannel),
         ([RestInput()], "slack", CollectingOutputChannel),
         ([RestInput()], "rest", CollectingOutputChannel),
-        ([RestInput(), SlackInput("test")], "slack", SlackBot),
+        (
+            [RestInput(), SlackInput("test", slack_signing_secret="foobar")],
+            "slack",
+            SlackBot,
+        ),
     ],
 )
 def test_get_output_channel(
@@ -1313,7 +1317,7 @@ def test_get_output_channel(
     [
         ([], CollectingOutputChannel),
         ([RestInput()], CollectingOutputChannel),
-        ([RestInput(), SlackInput("test")], SlackBot),
+        ([RestInput(), SlackInput("test", slack_signing_secret="foobar")], SlackBot),
     ],
 )
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
@@ -1629,10 +1633,7 @@ async def test_update_conversation_with_events(
         tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
-        conversation_id,
-        rasa_app.app.agent.create_processor(),
-        domain,
-        events_to_append,
+        conversation_id, rasa_app.app.agent.create_processor(), domain, events_to_append
     )
 
     assert list(fetched_tracker.events) == expected_events

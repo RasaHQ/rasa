@@ -10,6 +10,34 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.0 to Rasa 2.1
+
+### Deprecations
+
+`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
+its behaviour. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: ConveRTFeaturizer
+      model_url: <Remote/Local path to model files>
+    ...
+```
+
+`HFTransformersNLP` and `LanguageModelTokenizer` components are now deprecated.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements their behaviour.
+To migrate, replace both the above components with any tokenizer and specify the model architecture and model weights
+as part of `LanguageModelFeaturizer`, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: LanguageModelFeaturizer
+      model_name: "bert"
+      model_weights: "rasa/LaBSE"
+    ...
+```
 
 ## Rasa 1.10 to Rasa 2.0
 
@@ -403,8 +431,15 @@ Response Selectors are a stable feature as of version 2.0.
 
 The [conversion command](./migration-guide.mdx#training-data-files) will automatically
 convert your `responses.md` file, stories and nlu training data to the new yaml format.
+It will also take care of adding the `utter_` prefix to your responses.
 Additionally you will need to rename the `respond_` actions in your stories files to use the
-`utter_` prefix instead. For example:
+`utter_` prefix instead. Run the following command to apply these changes:
+
+```bash
+rasa data convert responses --data {SOURCE_DIR} --out={TARGET_DIR}
+```
+
+You can also apply these changes manually. For example:
 
 ```yaml-rasa
 stories:
