@@ -683,6 +683,12 @@ class Domain:
         """
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
 
+    def setup_slots(self) -> None:
+        """Sets up the default slots and slot values for the domain."""
+        self.add_requested_slot()
+        self.add_knowledge_base_slots()
+        self.add_categorical_slot_default_value()
+
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
 
