@@ -155,7 +155,7 @@ class RulePolicy(MemoizationPolicy):
 
         if (
             domain is None
-            or rule_policy._fallback_action_name not in domain.action_names
+            or rule_policy._fallback_action_name not in domain.action_names_or_texts
         ):
             raise InvalidDomain(
                 f"The fallback action '{rule_policy._fallback_action_name}' which was "
@@ -415,7 +415,9 @@ class RulePolicy(MemoizationPolicy):
             probabilities != self._default_predictions(domain)
             or tracker.is_rule_tracker
         ):
-            predicted_action_name = domain.action_names[np.argmax(probabilities)]
+            predicted_action_name = domain.action_names_or_texts[
+                np.argmax(probabilities)
+            ]
 
         return predicted_action_name
 

@@ -152,7 +152,7 @@ class MessageProcessor:
 
         scores = [
             {"action": a, "score": p}
-            for a, p in zip(self.domain.action_names, prediction.probabilities)
+            for a, p in zip(self.domain.action_names_or_texts, prediction.probabilities)
         ]
         return {
             "scores": scores,
@@ -880,7 +880,7 @@ class MessageProcessor:
         followup_action = tracker.followup_action
         if followup_action:
             tracker.clear_followup_action()
-            if followup_action in self.domain.action_names:
+            if followup_action in self.domain.action_names_or_texts:
                 return PolicyPrediction.for_action_name(
                     self.domain, followup_action, FOLLOWUP_ACTION
                 )

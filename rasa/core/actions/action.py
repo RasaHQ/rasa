@@ -102,7 +102,9 @@ def action_for_index(
             f"Domain has {domain.num_actions} actions."
         )
 
-    return action_for_name_or_text(domain.action_names[index], domain, action_endpoint)
+    return action_for_name_or_text(
+        domain.action_names_or_texts[index], domain, action_endpoint
+    )
 
 
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
@@ -141,7 +143,7 @@ def action_for_name_or_text(
     Returns:
         The instantiated action.
     """
-    if action_name_or_text not in domain.action_names:
+    if action_name_or_text not in domain.action_names_or_texts:
         domain.raise_action_not_found_exception(action_name_or_text)
 
     defaults = {a.name(): a for a in default_actions(action_endpoint)}

@@ -395,7 +395,7 @@ class FormAction(LoopAction):
 
         validate_name = f"validate_{self.name()}"
 
-        if validate_name not in domain.action_names:
+        if validate_name not in domain.action_names_or_texts:
             return events
 
         _tracker = self._temporary_tracker(tracker, events, domain)
@@ -536,7 +536,7 @@ class FormAction(LoopAction):
         found_actions = (
             action_name
             for action_name in search_path
-            if action_name in domain.action_names
+            if action_name in domain.action_names_or_texts
         )
 
         return next(found_actions, None)

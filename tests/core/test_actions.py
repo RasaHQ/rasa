@@ -98,7 +98,7 @@ def test_domain_action_instantiation():
 
     instantiated_actions = [
         action.action_for_name_or_text(action_name, domain, None)
-        for action_name in domain.action_names
+        for action_name in domain.action_names_or_texts
     ]
 
     assert len(instantiated_actions) == 14

@@ -335,7 +335,10 @@ async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
 
     domain = await default_importer.get_domain()
 
-    assert all(action_name in domain.action_names for action_name in additional_actions)
+    assert all(
+        action_name in domain.action_names_or_texts
+        for action_name in additional_actions
+    )
 
 
 async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
@@ -362,4 +365,4 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
     assert domain.retrieval_intent_templates == nlu_data.responses
     assert domain.templates != nlu_data.responses
-    assert "utter_chitchat" in domain.action_names
+    assert "utter_chitchat" in domain.action_names_or_texts

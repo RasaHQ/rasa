@@ -545,8 +545,9 @@ class Domain:
         # only includes custom actions and utterance actions
         self.user_actions = self._combine_with_templates(action_names, templates)
 
-        # includes all actions (custom, utterance, default actions and forms)
-        self.action_names = (
+        # includes all action names (custom, utterance, default actions and forms)
+        # and action texts from end-to-end bot utterances
+        self.action_names_or_texts = (
             self._combine_user_with_default_actions(self.user_actions)
             + [
                 form_name
@@ -656,7 +657,7 @@ class Domain:
         ] = rasa.shared.utils.common.sort_list_of_dicts_by_first_key(
             self_as_dict[KEY_INTENTS]
         )
-        self_as_dict[KEY_ACTIONS] = self.action_names
+        self_as_dict[KEY_ACTIONS] = self.action_names_or_texts
         return rasa.shared.utils.io.get_dictionary_fingerprint(self_as_dict)
 
     @rasa.shared.utils.common.lazy_property
@@ -666,11 +667,20 @@ class Domain:
         return self.user_actions + self.form_names
 
     @rasa.shared.utils.common.lazy_property
+    def action_names(self) -> List[Text]:
+        rasa.shared.utils.io.raise_warning(
+            f"{Domain.__name__}.{Domain.action_names.__name__} "
+            f"is deprecated and will be removed version 3.0.0.",
+            category=DeprecationWarning,
+        )
+        return self.action_names_or_texts
+
+    @rasa.shared.utils.common.lazy_property
     def num_actions(self):
         """Returns the number of available actions."""
 
         # noinspection PyTypeChecker
-        return len(self.action_names)
+        return len(self.action_names_or_texts)
 
     @rasa.shared.utils.common.lazy_property
     def num_states(self):
@@ -734,7 +744,7 @@ class Domain:
         """
         if (
             rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
-            in self.action_names
+            in self.action_names_or_texts
         ):
             logger.warning(
                 "You are using an experiential feature: Action '{}'!".format(
@@ -755,12 +765,12 @@ class Domain:
         """Look up which action index corresponds to this action name."""
 
         try:
-            return self.action_names.index(action_name)
+            return self.action_names_or_texts.index(action_name)
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
     def raise_action_not_found_exception(self, action_name) -> NoReturn:
-        action_names = "\n".join([f"\t - {a}" for a in self.action_names])
+        action_names = "\n".join([f"\t - {a}" for a in self.action_names_or_texts])
         raise ActionNotFoundException(
             f"Cannot access action '{action_name}', "
             f"as that name is not a registered "
@@ -780,7 +790,8 @@ class Domain:
         import numpy as np
 
         rasa.shared.utils.io.raise_warning(
-            "This method is deprecated and will be removed version 3.0.0.",
+            f"'{Domain.__name__}.{Domain.random_template_for.__class__}' "
+            f"is deprecated and will be removed version 3.0.0.",
             category=DeprecationWarning,
         )
         if utter_action in self.templates:
@@ -854,7 +865,7 @@ class Domain:
             self.intents
             + self.entity_states
             + self.slot_states
-            + self.action_names
+            + self.action_names_or_texts
             + self.form_names
         )
 
@@ -1359,7 +1370,7 @@ class Domain:
             for intent, properties in intent_properties.items():
                 if "triggers" in properties:
                     triggered_action = properties.get("triggers")
-                    if triggered_action not in self.action_names:
+                    if triggered_action not in self.action_names_or_texts:
                         incorrect.append((intent, str(triggered_action)))
             return incorrect
 
@@ -1408,7 +1419,7 @@ class Domain:
                     )
             return message
 
-        duplicate_actions = get_duplicates(self.action_names)
+        duplicate_actions = get_duplicates(self.action_names_or_texts)
         duplicate_slots = get_duplicates([s.name for s in self.slots])
         duplicate_entities = get_duplicates(self.entities)
         incorrect_mappings = check_mappings(self.intent_properties)
@@ -1435,7 +1446,7 @@ class Domain:
 
         utterances = [
             a
-            for a in self.action_names
+            for a in self.action_names_or_texts
             if a.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
