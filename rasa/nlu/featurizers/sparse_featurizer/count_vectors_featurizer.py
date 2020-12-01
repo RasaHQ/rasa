@@ -153,6 +153,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self.additional_vocabulary_size = self.component_config[
             "additional_vocabulary_size"
         ]
+        if isinstance(self.additional_vocabulary_size, int):
+            # User defined a common value for all attributes
+            user_defined_additional_size = self.additional_vocabulary_size
+            self.additional_vocabulary_size = {}
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+                self.additional_vocabulary_size[
+                    attribute
+                ] = user_defined_additional_size
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Check if trained vocabulary exists in attribute's count vectorizer"""
@@ -376,9 +384,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
         available_empty_index = self._get_starting_empty_index(existing_vocabulary)
-        # print(
-        #     attribute, len(existing_vocabulary), available_empty_index, len(vocabulary)
-        # )
         if len(vocabulary) > len(existing_vocabulary):
             logger.warning(
                 f"New data contains vocabulary of size {len(vocabulary)} for attribute {attribute} "
@@ -396,6 +401,32 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     break
         self._set_vocabulary(attribute, existing_vocabulary)
 
+    def _get_additional_vocabulary_size(
+        self, attribute: Text, existing_vocabulary_size: int
+    ) -> int:
+        """Get additional vocabulary size to be saved for incremental training.
+
+        If `self.additional_vocabulary_size` is not None,
+        we return that as the user should have specified
+        this number. If not then we take the default
+        additional vocabulary size which is 1/2 of the
+        current vocabulary size.
+        Args:
+            attribute: Message attribute for which additional vocabulary size should be computed.
+            existing_vocabulary_size: Current size of vocabulary learnt from the training data.
+
+        Returns:
+            Size of additional vocabulary that should be set aside for incremental training.
+        """
+
+        # Vocabulary expansion for INTENTS, ACTION_NAME
+        # and INTENT_RESPONSE_KEY is currently not supported.
+        if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
+            return 0
+        if self.additional_vocabulary_size.get(attribute, None) is not None:
+            return self.additional_vocabulary_size[attribute]
+        return int(existing_vocabulary_size * 0.5)
+
     def _add_buffer_to_vocabulary(self, attribute: Text) -> None:
         """Add extra tokens to vocabulary for incremental training.
 
@@ -412,7 +443,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         current_vocabulary_size = self._get_starting_empty_index(original_vocabulary)
         for index in range(
             current_vocabulary_size,
-            current_vocabulary_size + self.additional_vocabulary_size[attribute],
+            current_vocabulary_size
+            + self._get_additional_vocabulary_size(attribute, current_vocabulary_size),
         ):
             original_vocabulary[f"{BUFFER_SLOTS_PREFIX}{index}"] = index
         self._set_vocabulary(attribute, original_vocabulary)
@@ -474,9 +506,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     "analyzer": self.analyzer,
                 }
             )
-
             self._fit_vectorizer_from_scratch(TEXT, combined_cleaned_texts)
-
         else:
             self._fit_loaded_vectorizer(TEXT, combined_cleaned_texts)
 
@@ -497,36 +527,19 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     "analyzer": self.analyzer,
                 }
             )
-
-            for attribute in self._attributes:
-                if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
+        for attribute in self._attributes:
+            if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
+                if not self.finetune_mode:
                     self._fit_vectorizer_from_scratch(
                         attribute, attribute_texts[attribute]
                     )
                 else:
-                    logger.debug(
-                        f"No text provided for {attribute} attribute in any messages of "
-                        f"training data. Skipping training a CountVectorizer for it."
-                    )
-        else:
-            for attribute in self._attributes:
-                if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
-                    try:
-                        self._fit_loaded_vectorizer(
-                            attribute, attribute_texts[attribute]
-                        )
-
-                    except ValueError:
-                        logger.warning(
-                            f"Unable to train CountVectorizer for message "
-                            f"attribute {attribute}. Leaving an untrained "
-                            f"CountVectorizer for it."
-                        )
-                else:
-                    logger.debug(
-                        f"No text provided for {attribute} attribute in any messages of "
-                        f"training data. Skipping training a CountVectorizer for it."
-                    )
+                    self._fit_loaded_vectorizer(attribute, attribute_texts[attribute])
+            else:
+                logger.debug(
+                    f"No text provided for {attribute} attribute in any messages of "
+                    f"training data. Skipping training a CountVectorizer for it."
+                )
 
     def _fit_loaded_vectorizer(
         self, attribute: Text, attribute_texts: List[Text]
@@ -560,14 +573,16 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """
         try:
             self.vectorizers[attribute].fit(attribute_texts)
-            # Add buffer for extra vocabulary tokens in future
-            self._add_buffer_to_vocabulary(attribute)
         except ValueError:
             logger.warning(
                 f"Unable to train CountVectorizer for message "
-                f"attribute {attribute}. Leaving an untrained "
+                f"attribute {attribute} since the call to sklearn's "
+                f"`.fit()` method failed. Leaving an untrained "
                 f"CountVectorizer for it."
             )
+        # Add buffer for extra vocabulary tokens
+        # that come in during incremental training.
+        self._add_buffer_to_vocabulary(attribute)
 
     def _create_features(
         self, attribute: Text, all_tokens: List[List[Text]]
