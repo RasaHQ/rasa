@@ -7,7 +7,7 @@ import tensorflow as tf
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.shared.utils.tensorflow.tf_to_numpy import values_to_numpy
+from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
@@ -436,7 +436,9 @@ class ResponseSelector(DIETClassifier):
         self._set_message_property(message, prediction_dict, selector_key)
 
         if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
+            message.add_diagnostic_data(
+                self.unique_name, values_to_numpy(out.get(DIAGNOSTIC_DATA))
+            )
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.

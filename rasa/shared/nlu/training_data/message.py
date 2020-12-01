@@ -22,7 +22,6 @@ from rasa.shared.nlu.constants import (
     ACTION_NAME,
 )
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.shared.utils.tensorflow.tf_to_numpy import values_to_numpy
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -62,9 +61,9 @@ class Message:
                 f"data will be overwritten."
             )
         if DIAGNOSTIC_DATA in self.data:
-            self.data[DIAGNOSTIC_DATA][origin] = values_to_numpy(data)
+            self.data[DIAGNOSTIC_DATA][origin] = data
         else:
-            self.data[DIAGNOSTIC_DATA] = {origin: values_to_numpy(data)}
+            self.data[DIAGNOSTIC_DATA] = {origin: data}
 
     def set(self, prop: Text, info: Any, add_to_output: bool = False) -> None:
         """Set property `prop` to `info`.
