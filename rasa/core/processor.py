@@ -835,21 +835,6 @@ class MessageProcessor:
         logger.debug(f"Action '{action.name()}' ended with events '{events}'.")
         tracker.update_with_events(events, self.domain)
 
-    def _action_event_for_prediction(
-        self, action_name: Text, prediction: PolicyPrediction
-    ) -> ActionExecuted:
-        action_text = None
-        if action_name in self.domain.action_texts:
-            action_text = action_name
-            action_name = None
-
-        return ActionExecuted(
-            action_name,
-            prediction.policy_name,
-            prediction.max_confidence,
-            action_text=action_text,
-        )
-
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.
 
