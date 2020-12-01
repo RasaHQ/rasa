@@ -21,6 +21,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
+from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.domain import (
     ActionNotFoundException,
     SessionConfig,
@@ -759,9 +760,10 @@ def test_get_form_action_if_not_in_forms():
         assert not action.action_for_name_or_text(form_action_name, domain, None)
 
 
-def test_get_end_to_end_utterance_action():
-    end_to_end_utterance = "Hi"
-
+@pytest.mark.parametrize(
+    "end_to_end_utterance", ["Hi", f"{UTTER_PREFIX} is a dangerous start"]
+)
+def test_get_end_to_end_utterance_action(end_to_end_utterance: Text):
     domain = Domain.from_yaml(
         f"""
     actions:
@@ -772,7 +774,7 @@ def test_get_end_to_end_utterance_action():
 """
     )
 
-    actual = action.action_for_name_or_text("Hi", domain, None)
+    actual = action.action_for_name_or_text(end_to_end_utterance, domain, None)
 
     assert isinstance(actual, ActionEndToEndResponse)
     assert actual.name() == end_to_end_utterance
