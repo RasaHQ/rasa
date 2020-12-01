@@ -77,7 +77,7 @@ def component_config_from_pipeline(
     pipeline: List[Dict[Text, Any]],
     defaults: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
-    """Get the configuration of the `index`th component.
+    """Gets the configuration of the `index`th component.
 
     Args:
         index: Index of the component.
