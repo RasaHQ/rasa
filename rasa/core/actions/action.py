@@ -128,7 +128,7 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 def action_for_name_or_text(
     action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> "Action":
-    """Retrieves an action by its name.
+    """Retrieves an action by its name or by its text in case it's an end-to-end action.
 
     Args:
         action_name_or_text: The name of the action.
@@ -241,7 +241,7 @@ class Action:
         """Event which should be logged for the successful execution of this action.
 
         Args:
-            prediction: Prediction which led to the execution for this event.
+            prediction: Prediction which led to the execution of this event.
 
         Returns:
             Event which should be logged onto the tracker.
@@ -258,7 +258,7 @@ class ActionUtterTemplate(Action):
     the `name` method.
     """
 
-    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
+    def __init__(self, name: Text, silent_fail: Optional[bool] = False) -> None:
         """Creates action.
 
         Args:
@@ -309,7 +309,7 @@ class ActionEndToEndResponse(Action):
     def name(self) -> Text:
         """Returns action name."""
         # In case of an end-to-end action there is no label (aka name) for the action.
-        # We fake a name by returning the text which we respond to the user.
+        # We fake a name by returning the text which the bot sends back to the user.
         return self.action_text
 
     async def run(
@@ -329,7 +329,7 @@ class ActionEndToEndResponse(Action):
         """Event which should be logged for the successful execution of this action.
 
         Args:
-            prediction: Prediction which led to the execution for this event.
+            prediction: Prediction which led to the execution of this event.
 
         Returns:
             Event which should be logged onto the tracker.
@@ -344,7 +344,7 @@ class ActionEndToEndResponse(Action):
 class ActionRetrieveResponse(ActionUtterTemplate):
     """An action which queries the Response Selector for the appropriate response."""
 
-    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
+    def __init__(self, name: Text, silent_fail: Optional[bool] = False) -> None:
         """Creates action. See docstring of parent class."""
         super().__init__(name, silent_fail)
         self.action_name = name
