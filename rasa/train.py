@@ -132,25 +132,39 @@ async def handle_domain_if_not_exists(
     return nlu_model_only
 
 
-def dry_run_result(fingerprint_comparison: FingerprintComparisonResult) -> Tuple[int, Text]:
-    """Returns a result of fingerprint comparison.
+def dry_run_result(fingerprint_comparison: FingerprintComparisonResult) -> Tuple[int, List[Text]]:
+    """Returns a dry run result.
 
     Args:
         fingerprint_comparison: A result of fingerprint comparison operation.
 
     Returns:
-        A tuple of code and human-readable text.
+        A tuple where the first element is the result code and the second
+        is the list of human-readable texts that need to be printed to the end user.
     """
-    if not fingerprint_comparison.nlu and not fingerprint_comparison.core:
-        return 0, "No training required."
+    code = 0
+    texts = []
 
-    if not fingerprint_comparison.nlu:
-        return 1, "Core model should be retrained."
+    if fingerprint_comparison.core:
+        code += 0b0001
+        texts.append("Core model should be retrained.")
 
-    if not fingerprint_comparison.core:
-        return 2, "NLU model should be retrained."
+    if fingerprint_comparison.core:
+        code += 0b0010
+        texts.append("NLU model should be retrained.")
 
-    return 3, "Both NLU and Core models should be retrained."
+    if fingerprint_comparison.nlg:
+        code += 0b0100
+        texts.append("Responses in the domain should be updated.")
+
+    if fingerprint_comparison.force_training:
+        code += 0b1000
+        texts.append("The training was forced.")
+
+    if code == 0:
+        texts.append("No training required.")
+
+    return code, texts
 
 
 async def _train_async_internal(
@@ -192,12 +206,14 @@ async def _train_async_internal(
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
+    fingerprint_comparison = model.should_retrain(
+        new_fingerprint, old_model, train_path
+    )
+
     if dry_run:
-        fingerprint_comparison = model.should_retrain(
-            new_fingerprint, old_model, train_path
-        )
-        code, text = dry_run_result(fingerprint_comparison)
-        print_warning(text) if code > 0 else print_success(text)
+        code, texts = dry_run_result(fingerprint_comparison)
+        for text in texts:
+            print_warning(text) if code > 0 else print_success(text)
         sys.exit(code)
 
     if stories.is_empty() and nlu_data.can_train_nlu_model():
@@ -226,11 +242,7 @@ async def _train_async_internal(
             additional_arguments=core_additional_arguments,
         )
 
-    if not force_training:
-        fingerprint_comparison = model.should_retrain(
-            new_fingerprint, old_model, train_path
-        )
-    else:
+    if force_training:
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if fingerprint_comparison.is_training_required():
