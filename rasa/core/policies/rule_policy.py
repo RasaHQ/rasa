@@ -756,8 +756,8 @@ class RulePolicy(MemoizationPolicy):
                 whether to use intent or text.
 
         Returns:
-            A tuple of the predicted action name (or `None` if no matching rule was
-            found), a description of the matching rule, and `True` if a loop action
+            A tuple of the predicted action name or text (or `None` if no matching rule
+            was found), a description of the matching rule, and `True` if a loop action
             was predicted after the loop has been in an unhappy path before.
         """
         if (

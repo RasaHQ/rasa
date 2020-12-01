@@ -668,6 +668,7 @@ class Domain:
 
     @rasa.shared.utils.common.lazy_property
     def action_names(self) -> List[Text]:
+        """Returns action names or texts."""
         rasa.shared.utils.io.raise_warning(
             f"{Domain.__name__}.{Domain.action_names.__name__} "
             f"is deprecated and will be removed version 3.0.0.",
@@ -676,9 +677,8 @@ class Domain:
         return self.action_names_or_texts
 
     @rasa.shared.utils.common.lazy_property
-    def num_actions(self):
+    def num_actions(self) -> int:
         """Returns the number of available actions."""
-
         # noinspection PyTypeChecker
         return len(self.action_names_or_texts)
 
@@ -762,17 +762,26 @@ class Domain:
                     self.slots.append(TextSlot(s, influence_conversation=False))
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
-        """Look up which action index corresponds to this action name."""
-
+        """Looks up which action index corresponds to this action."""
         try:
             return self.action_names_or_texts.index(action_name)
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
-    def raise_action_not_found_exception(self, action_name) -> NoReturn:
+    def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:
+        """Raises exception if action name or text not part of the domain.
+
+        Args:
+            action_name_or_text: Name of an action or its text in case it's an
+                end-to-end bot utterance.
+
+        Raises:
+            ActionNotFoundException: If `action_name_or_text` are not part of this
+                domain.
+        """
         action_names = "\n".join([f"\t - {a}" for a in self.action_names_or_texts])
         raise ActionNotFoundException(
-            f"Cannot access action '{action_name}', "
+            f"Cannot access action '{action_name_or_text}', "
             f"as that name is not a registered "
             f"action for this domain. "
             f"Available actions are: \n{action_names}"
@@ -860,7 +869,6 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
-
         return (
             self.intents
             + self.entity_states
@@ -1074,6 +1082,7 @@ class Domain:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Return serialized `Domain`."""
         return {
             "config": {"store_entities_as_slots": self.store_entities_as_slots},
             SESSION_CONFIG_KEY: {
@@ -1364,8 +1373,7 @@ class Domain:
         def check_mappings(
             intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
         ) -> List[Tuple[Text, Text]]:
-            """Check whether intent-action mappings use proper action names."""
-
+            """Checks whether intent-action mappings use valid action names or texts."""
             incorrect = []
             for intent, properties in intent_properties.items():
                 if "triggers" in properties:
