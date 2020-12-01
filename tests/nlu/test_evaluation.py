@@ -595,7 +595,13 @@ def test_empty_intent_removal():
 def test_empty_response_removal():
     response_results = [
         ResponseSelectionEvaluationResult(
-            "chitchat", None, None, "It's sunny in Berlin", None, "What's the weather", 0.65432
+            "chitchat",
+            None,
+            None,
+            "It's sunny in Berlin",
+            None,
+            "What's the weather",
+            0.65432,
         ),
         ResponseSelectionEvaluationResult(
             "chitchat",
