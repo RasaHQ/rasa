@@ -42,6 +42,8 @@ class RegexFeaturizer(SparseFeaturizer):
         "use_lookup_tables": True,
         # use regexes to generate features
         "use_regexes": True,
+        # use match word boundaries for lookup table
+        "use_word_boundaries": True,
     }
 
     def __init__(
@@ -66,6 +68,7 @@ class RegexFeaturizer(SparseFeaturizer):
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
+            use_word_boundaries=self.component_config["use_word_boundaries"],
         )
 
         for example in training_data.training_examples:
