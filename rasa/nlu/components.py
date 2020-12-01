@@ -405,7 +405,7 @@ class Component(metaclass=ComponentMetaclass):
     def unique_name(self) -> Text:
         """Get a unique name for the component in the pipeline."""
         index = self.component_config.get(COMPONENT_INDEX)
-        return self.name if index is None else str(index) + "_" + self.name
+        return self.name if index is None else f"{index}_{self.name}"
 
     # Which components are required by this component.
     # Listed components should appear before the component itself in the pipeline.
