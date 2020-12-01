@@ -182,7 +182,7 @@ class FloatSlot(Slot):
 
 
 class BooleanSlot(Slot):
-    """The value of this slot is as boolean."""
+    """A slot storing a truth value."""
 
     type_name = "bool"
 
