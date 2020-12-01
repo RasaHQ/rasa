@@ -31,6 +31,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    RESPONSE_KEY_ATTRIBUTE
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -62,7 +63,7 @@ IntentEvaluationResult = namedtuple(
 
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
-    "intent_target " "response_target " "response_prediction " "message " "confidence",
+    "intent_target response_key response_target response_prediction_full_intent response_prediction message confidence",
 )
 
 EntityEvaluationResult = namedtuple(
@@ -373,7 +374,7 @@ def evaluate_response_selections(
     )
 
     target_responses, predicted_responses = _targets_predictions_from(
-        response_selection_results, "response_target", "response_prediction"
+        response_selection_results, "response_key", "response_prediction_full_intent"
     )
 
     if report_folder:
@@ -1050,12 +1051,22 @@ def get_eval_data(
                 response_prediction_key, {}
             ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
 
+            response_prediction_full_intent = selector_properties.get(
+                response_prediction_key, {}
+            ).get("full_retrieval_intent", {})
+
+            if isinstance(response_prediction_full_intent, str):
+                response_prediction_full_intent = response_prediction_full_intent.split("/")[1]
+
             response_target = example.get("response", "")
+            response_key = example.get(RESPONSE_KEY_ATTRIBUTE, "")
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
                     intent_target,
+                    response_key,
                     response_target,
+                    response_prediction_full_intent,
                     response_prediction.get("name"),
                     result.get("text", {}),
                     response_prediction.get("confidence"),
