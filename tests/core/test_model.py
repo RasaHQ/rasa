@@ -9,6 +9,8 @@ from unittest.mock import Mock
 
 import pytest
 
+import rasa
+import rasa.constants
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.constants import (
@@ -22,6 +24,7 @@ from rasa.shared.core.domain import Domain
 from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
+    FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
     FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
     FINGERPRINT_NLG_KEY,
     FINGERPRINT_FILE_PATH,
@@ -32,7 +35,9 @@ from rasa.model import (
     FINGERPRINT_CONFIG_CORE_KEY,
     FINGERPRINT_CONFIG_NLU_KEY,
     SECTION_CORE,
+    SECTION_FINE_TUNE,
     SECTION_NLU,
+    can_fine_tune,
     create_package_rasa,
     get_latest_model,
     get_model,
@@ -102,6 +107,7 @@ def _fingerprint(
     config: Optional[Any] = None,
     config_nlu: Optional[Any] = None,
     config_core: Optional[Any] = None,
+    config_without_epochs: Optional[Any] = None,
     domain: Optional[Any] = None,
     nlg: Optional[Any] = None,
     stories: Optional[Any] = None,
@@ -114,6 +120,9 @@ def _fingerprint(
         if config_core is not None
         else ["test"],
         FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: config_without_epochs
+        if config_without_epochs
+        else ["test"],
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain if domain is not None else ["test"],
         FINGERPRINT_NLG_KEY: nlg if nlg is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
@@ -148,6 +157,7 @@ def test_persist_and_load_fingerprint():
         (_fingerprint(nlg=["other"]), False),
         (_fingerprint(nlu=["test", "other"]), False),
         (_fingerprint(config_nlu=["other"]), False),
+        (_fingerprint(config_without_epochs=["other"]), False),
     ],
 )
 def test_core_fingerprint_changed(fingerprint2, changed):
@@ -168,12 +178,35 @@ def test_core_fingerprint_changed(fingerprint2, changed):
         (_fingerprint(nlg=["other"]), False),
         (_fingerprint(config_core=["other"]), False),
         (_fingerprint(stories=["other"]), False),
+        (_fingerprint(config_without_epochs=["other"]), False),
     ],
 )
 def test_nlu_fingerprint_changed(fingerprint2, changed):
     fingerprint1 = _fingerprint()
     assert (
         did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_NLU)
+        is changed
+    )
+
+
+@pytest.mark.parametrize(
+    "fingerprint2, changed",
+    [
+        (_fingerprint(config=["other"]), True),
+        (_fingerprint(config_without_epochs=["other"]), True),
+        (_fingerprint(domain=["other"]), True),
+        (_fingerprint(rasa_version="100"), False),
+        (_fingerprint(config_core=["other"]), False),
+        (_fingerprint(config_nlu=["other"]), False),
+        (_fingerprint(nlu=["other"]), False),
+        (_fingerprint(nlg=["other"]), False),
+        (_fingerprint(stories=["other"]), False),
+    ],
+)
+def test_fine_tune_fingerprint_changed(fingerprint2, changed):
+    fingerprint1 = _fingerprint()
+    assert (
+        did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_FINE_TUNE)
         is changed
     )
 
@@ -231,6 +264,44 @@ async def test_fingerprinting_changed_response_text(project: Text):
         == new_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
     )
     assert old_fingerprint[FINGERPRINT_NLG_KEY] != new_fingerprint[FINGERPRINT_NLG_KEY]
+
+
+async def test_fingerprinting_changing_config_epochs(project: Text):
+    importer = _project_files(project)
+
+    old_fingerprint = await model_fingerprint(importer)
+    config = await importer.get_config()
+
+    for key in ["pipeline", "policies"]:
+        for p in config[key]:
+            if "epochs" in p:
+                p["epochs"] += 10
+
+    importer.get_config = asyncio.coroutine(lambda: config)
+    new_fingerprint = await model_fingerprint(importer)
+
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+        == new_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+    )
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_CORE_KEY]
+        != new_fingerprint[FINGERPRINT_CONFIG_CORE_KEY]
+    )
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_NLU_KEY]
+        != new_fingerprint[FINGERPRINT_CONFIG_NLU_KEY]
+    )
+
+    config["pipeline"].pop()
+
+    importer.get_config = asyncio.coroutine(lambda: config)
+    new_fingerprint = await model_fingerprint(importer)
+
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+        != new_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+    )
 
 
 async def test_fingerprinting_additional_action(project: Text):
@@ -418,3 +489,22 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
 
     assert actual.is_empty()
+
+
+@pytest.mark.parametrize(
+    "min_compatible_version, old_model_version, can_tune",
+    [("2.1.0", "2.1.0", True), ("2.0.0", "2.1.0", True), ("2.1.0", "2.0.0", False),],
+)
+async def test_can_fine_tune_min_version(
+    project: Text, monkeypatch, old_model_version, min_compatible_version, can_tune
+):
+    importer = _project_files(project)
+
+    monkeypatch.setattr(
+        rasa.constants, "MINIMUM_COMPATIBLE_VERSION", min_compatible_version
+    )
+    monkeypatch.setattr(rasa, "__version__", old_model_version)
+    old_fingerprint = await model_fingerprint(importer)
+    new_fingerprint = await model_fingerprint(importer)
+
+    assert can_fine_tune(old_fingerprint, new_fingerprint) == can_tune

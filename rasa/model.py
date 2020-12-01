@@ -10,6 +10,9 @@ import typing
 from pathlib import Path
 from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
+from packaging import version
+
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.cli.utils import create_output_path
@@ -42,6 +45,7 @@ FINGERPRINT_FILE_PATH = "fingerprint.json"
 FINGERPRINT_CONFIG_KEY = "config"
 FINGERPRINT_CONFIG_CORE_KEY = "core-config"
 FINGERPRINT_CONFIG_NLU_KEY = "nlu-config"
+FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY = "config-without-epochs"
 FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY = "domain"
 FINGERPRINT_NLG_KEY = "nlg"
 FINGERPRINT_RASA_VERSION_KEY = "version"
@@ -79,6 +83,14 @@ SECTION_NLU = Section(
     ],
 )
 SECTION_NLG = Section(name="NLG templates", relevant_keys=[FINGERPRINT_NLG_KEY])
+
+SECTION_FINE_TUNE = Section(
+    name="Fine-tune",
+    relevant_keys=[
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
+    ],
+)
 
 
 class FingerprintComparisonResult:
@@ -327,6 +339,9 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_CONFIG_NLU_KEY: _get_fingerprint_of_config(
             config, include_keys=CONFIG_KEYS_NLU
         ),
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: _get_fingerprint_of_config_without_epochs(
+            config
+        ),
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain.fingerprint(),
         FINGERPRINT_NLG_KEY: rasa.shared.utils.io.deep_container_fingerprint(responses),
         FINGERPRINT_PROJECT: project_fingerprint(),
@@ -350,6 +365,22 @@ def _get_fingerprint_of_config(
     sub_config = {k: config[k] for k in keys if k in config}
 
     return rasa.shared.utils.io.deep_container_fingerprint(sub_config)
+
+
+def _get_fingerprint_of_config_without_epochs(
+    config: Optional[Dict[Text, Any]],
+) -> Text:
+    if not config:
+        return ""
+
+    copied_config = copy.deepcopy(config)
+
+    for key in ["pipeline", "policies"]:
+        for p in copied_config[key]:
+            if "epochs" in p:
+                del p["epochs"]
+
+    return rasa.shared.utils.io.deep_container_fingerprint(copied_config)
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
@@ -466,6 +497,26 @@ def should_retrain(
             fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
 
         return fingerprint_comparison
+
+
+def can_fine_tune(last_fingerprint: Fingerprint, new_fingerprint: Fingerprint) -> bool:
+    """Check which components of a model should be retrained.
+
+    Args:
+        last_fingerprint: The fingerprint of the old model to potentially be fine-tuned.
+        new_fingerprint: The fingerprint of the new model.
+
+    Returns:
+        `True` if the old model can be fine-tuned, `False` otherwise.
+    """
+    fingerprint_changed = did_section_fingerprint_change(
+        last_fingerprint, new_fingerprint, SECTION_FINE_TUNE
+    )
+
+    old_model_above_min_version = version.parse(
+        last_fingerprint.get(FINGERPRINT_RASA_VERSION_KEY)
+    ) >= version.parse(MINIMUM_COMPATIBLE_VERSION)
+    return old_model_above_min_version and not fingerprint_changed
 
 
 def package_model(
