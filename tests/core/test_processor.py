@@ -1095,3 +1095,65 @@ async def test_policy_events_not_applied_if_rejected(
     ]
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
+
+
+async def test_logging_of_end_to_end_action():
+    end_to_end_action = "hi, how are you?"
+    domain = Domain(
+        intents=["greet"],
+        entities=[],
+        slots=[],
+        templates={},
+        action_names=[],
+        forms={},
+        action_texts=[end_to_end_action],
+    )
+
+    conversation_id = "test_logging_of_end_to_end_action"
+    user_message = "/greet"
+
+    class ConstantEnsemble(PolicyEnsemble):
+        def __init__(self) -> None:
+            super().__init__([])
+            self.number_of_calls = 0
+
+        def probabilities_using_best_policy(
+            self,
+            tracker: DialogueStateTracker,
+            domain: Domain,
+            interpreter: NaturalLanguageInterpreter,
+            **kwargs: Any,
+        ) -> PolicyPrediction:
+            if self.number_of_calls == 0:
+                prediction = PolicyPrediction.for_action_name(
+                    domain, end_to_end_action, "some policy"
+                )
+                prediction.is_end_to_end_prediction = True
+                self.number_of_calls += 1
+                return prediction
+            else:
+                return PolicyPrediction.for_action_name(domain, ACTION_LISTEN_NAME)
+
+    tracker_store = InMemoryTrackerStore(domain)
+    processor = MessageProcessor(
+        RegexInterpreter(),
+        ConstantEnsemble(),
+        domain,
+        tracker_store,
+        NaturalLanguageGenerator.create(None, domain),
+    )
+
+    await processor.handle_message(UserMessage(user_message, sender_id=conversation_id))
+
+    tracker = tracker_store.retrieve(conversation_id)
+    expected_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(user_message, intent={"name": "greet"}),
+        ActionExecuted(action_text=end_to_end_action),
+        BotUttered("hi, how are you?", {}, {}, 123),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    for event, expected in zip(tracker.events, expected_events):
+        assert event == expected

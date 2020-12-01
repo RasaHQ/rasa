@@ -172,7 +172,7 @@ def test_single_state_featurizer_creates_encoded_all_actions():
     f.prepare_for_training(domain, RegexInterpreter())
     encoded_actions = f.encode_all_actions(domain, RegexInterpreter())
 
-    assert len(encoded_actions) == len(domain.action_names)
+    assert len(encoded_actions) == len(domain.action_names_or_texts)
     assert all(
         [
             ACTION_NAME in encoded_action and ACTION_TEXT not in encoded_action

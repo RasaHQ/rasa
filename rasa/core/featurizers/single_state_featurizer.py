@@ -88,7 +88,9 @@ class SingleStateFeaturizer:
             }
 
         self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
-        self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
+        self._default_feature_states[ACTION_NAME] = convert_to_dict(
+            domain.action_names_or_texts
+        )
         self._default_feature_states[ENTITIES] = convert_to_dict(domain.entity_states)
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
@@ -304,7 +306,7 @@ class SingleStateFeaturizer:
         # transpose to have seq_len x 1
         return {
             ENTITY_TAGS: [
-                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN,)
+                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN)
             ]
         }
 
@@ -332,7 +334,8 @@ class SingleStateFeaturizer:
         """
 
         return [
-            self._encode_action(action, interpreter) for action in domain.action_names
+            self._encode_action(action, interpreter)
+            for action in domain.action_names_or_texts
         ]
 
 
