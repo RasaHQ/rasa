@@ -388,33 +388,38 @@ class Component(metaclass=ComponentMetaclass):
     the pipeline to do intent classification.
     """
 
-    # Component class name is used when integrating it in a
-    # pipeline. E.g. ``[ComponentA, ComponentB]``
-    # will be a proper pipeline definition where ``ComponentA``
-    # is the name of the first component of the pipeline.
     @property
     def name(self) -> Text:
-        """Access the class's property name from an instance."""
+        """Access the class's property name from an instance.
+        
+        Component class name is used when integrating it in a
+        pipeline. E.g. ``[ComponentA, ComponentB]``
+        will be a proper pipeline definition where ``ComponentA``
+        is the name of the first component of the pipeline.
+        """
 
         return type(self).name
 
-    # The unique name can be used to distinguish components in
-    # a pipeline, e.g. when the pipeline contains multiple
-    # featurizers of the same type.
     @property
     def unique_name(self) -> Text:
-        """Get a unique name for the component in the pipeline."""
+        """Get a unique name for the component in the pipeline.
+        
+        The unique name can be used to distinguish components in
+        a pipeline, e.g. when the pipeline contains multiple
+        featurizers of the same type.
+        """
         index = self.component_config.get(COMPONENT_INDEX)
-        return self.name if index is None else f"{index}_{self.name}"
+        return self.name if index is None else f"component_{index}_{self.name}"
 
-    # Which components are required by this component.
-    # Listed components should appear before the component itself in the pipeline.
     @classmethod
     def required_components(cls) -> List[Type["Component"]]:
         """Specify which components need to be present in the pipeline.
 
+        Which components are required by this component.
+        Listed components should appear before the component itself in the pipeline.
+
         Returns:
-            The list of class names of required components.
+            The class names of the required components.
         """
 
         return []

@@ -30,7 +30,7 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
-from rasa.shared.utils.tensorflow.tf_to_numpy import values_to_numpy
+from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
 from rasa.utils.tensorflow.constants import (
     LABEL,
     TRANSFORMER_SIZE,
