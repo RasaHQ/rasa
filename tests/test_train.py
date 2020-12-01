@@ -363,14 +363,16 @@ def test_train_nlu_autoconfig(
     [
         (rasa.model.FingerprintComparisonResult(force_training=True), 0b1000, 1),
         (rasa.model.FingerprintComparisonResult(nlg=True), 0b0100, 1),
-        (rasa.model.FingerprintComparisonResult(core=True, nlu=True, nlg=True), 0b0111, 3),
-        (rasa.model.FingerprintComparisonResult(), 0, 1)
+        (
+            rasa.model.FingerprintComparisonResult(core=True, nlu=True, nlg=True),
+            0b0111,
+            3,
+        ),
+        (rasa.model.FingerprintComparisonResult(), 0, 1),
     ],
 )
 def test_dry_run_result(
-    result: rasa.model.FingerprintComparisonResult,
-    code: int,
-    texts_count: int,
+    result: rasa.model.FingerprintComparisonResult, code: int, texts_count: int,
 ):
     result_code, texts = dry_run_result(result)
     assert result_code == code

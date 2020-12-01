@@ -132,7 +132,9 @@ async def handle_domain_if_not_exists(
     return nlu_model_only
 
 
-def dry_run_result(fingerprint_comparison: FingerprintComparisonResult) -> Tuple[int, List[Text]]:
+def dry_run_result(
+    fingerprint_comparison: FingerprintComparisonResult,
+) -> Tuple[int, List[Text]]:
     """Returns a dry run result.
 
     Args:

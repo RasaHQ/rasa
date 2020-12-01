@@ -194,6 +194,20 @@ def test_train_force(run_in_simple_project_with_model: Callable[..., RunResult])
     assert len(files) == 2
 
 
+def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+
+    output = run_in_simple_project_with_model("train", "--dry-run")
+    printed_output = set(output.outlines)
+
+    assert [s for s in printed_output if "No training required." in s]
+    assert output.ret == 0
+
+
 def test_train_with_only_nlu_data(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = Path.cwd()
 
@@ -322,7 +336,7 @@ def test_train_help(run):
     output = run("train", "--help")
 
     help_text = """usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
-                  [-c CONFIG] [-d DOMAIN] [--out OUT]
+                  [-c CONFIG] [-d DOMAIN] [--out OUT] [--dry-run]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
