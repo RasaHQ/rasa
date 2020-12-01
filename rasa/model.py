@@ -513,5 +513,5 @@ async def update_model_with_new_domain(
 
     model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
     domain = await importer.get_domain()
-
+    domain.setup_slots()
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
