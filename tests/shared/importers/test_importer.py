@@ -19,7 +19,7 @@ from rasa.shared.importers.importer import (
     NluDataImporter,
     CoreDataImporter,
     E2EImporter,
-    RetrievalModelsDataImporter,
+    ResponsesSyncImporter,
 )
 from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
@@ -113,7 +113,7 @@ def test_load_from_dict(
     )
 
     assert isinstance(actual, E2EImporter)
-    assert isinstance(actual.importer, RetrievalModelsDataImporter)
+    assert isinstance(actual.importer, ResponsesSyncImporter)
 
     actual_importers = [i.__class__ for i in actual.importer._importer._importers]
     assert actual_importers == expected
@@ -128,7 +128,7 @@ def test_load_from_config(tmpdir: Path):
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
-    assert isinstance(importer.importer, RetrievalModelsDataImporter)
+    assert isinstance(importer.importer, ResponsesSyncImporter)
     assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
 
 
@@ -140,7 +140,7 @@ async def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
-    assert isinstance(actual._importer, RetrievalModelsDataImporter)
+    assert isinstance(actual._importer, ResponsesSyncImporter)
 
     stories = await actual.get_stories()
     assert stories.is_empty()
@@ -350,7 +350,7 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     nlu_importer = NluDataImporter(base_data_importer)
     core_importer = CoreDataImporter(base_data_importer)
 
-    importer = RetrievalModelsDataImporter(
+    importer = ResponsesSyncImporter(
         CombinedDataImporter([nlu_importer, core_importer])
     )
     domain = await importer.get_domain()
@@ -375,7 +375,7 @@ async def test_nlu_data_domain_sync_responses(project: Text):
     nlu_importer = NluDataImporter(base_data_importer)
     core_importer = CoreDataImporter(base_data_importer)
 
-    importer = RetrievalModelsDataImporter(
+    importer = ResponsesSyncImporter(
         CombinedDataImporter([nlu_importer, core_importer])
     )
     with pytest.warns(None):

@@ -153,7 +153,7 @@ class TrainingDataImporter:
                 )
             ]
 
-        return E2EImporter(RetrievalModelsDataImporter(CombinedDataImporter(importers)))
+        return E2EImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
 
     @staticmethod
     def _importer_from_dict(
@@ -293,8 +293,8 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
 
-class RetrievalModelsDataImporter(TrainingDataImporter):
-    """A `TrainingDataImporter` that sets up the data for training retrieval models.
+class ResponsesSyncImporter(TrainingDataImporter):
+    """Importer that syncs `responses` between Domain and NLU training data.
 
     Synchronizes response templates between Domain and NLU
     and adds retrieval intent properties from the NLU training data
@@ -380,9 +380,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             [],
             [],
             response_templates,
-            RetrievalModelsDataImporter._construct_retrieval_action_names(
-                retrieval_intents
-            ),
+            ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
             {},
         )
 
