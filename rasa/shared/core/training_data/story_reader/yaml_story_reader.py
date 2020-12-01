@@ -275,10 +275,8 @@ class YAMLStoryReader(StoryReader):
                 f"'{RULE_SNIPPET_ACTION_NAME}'. It will be skipped.",
                 docs=self._get_docs_link(),
             )
-        elif KEY_USER_MESSAGE in step.keys():
-            self._parse_user_message(step)
         elif KEY_USER_INTENT in step.keys() or KEY_USER_MESSAGE in step.keys():
-            self._parse_labeled_user_utterance(step)
+            self._parse_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
         elif KEY_ACTION in step.keys():
@@ -312,33 +310,19 @@ class YAMLStoryReader(StoryReader):
     def _get_docs_link(self) -> Text:
         raise NotImplementedError()
 
-    def _parse_labeled_user_utterance(self, step: Dict[Text, Any]) -> None:
+    def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
-        if utterance:
-            self._validate_that_utterance_is_in_domain(utterance)
-            self.current_step_builder.add_user_messages([utterance])
 
-    def _parse_user_message(self, step: Dict[Text, Any]) -> None:
+        if not utterance:
+            return
+
         is_end_to_end_utterance = KEY_USER_INTENT not in step
-
         if is_end_to_end_utterance:
-            intent = {"name": None}
+            utterance.intent = {"name": None}
         else:
-            intent_name = self._user_intent_from_step(step)
-            intent = {"name": intent_name, "confidence": 1.0}
+            self._validate_that_utterance_is_in_domain(utterance)
 
-        user_message = step[KEY_USER_MESSAGE].strip()
-        entities = entities_parser.find_entities_in_training_example(user_message)
-        plain_text = entities_parser.replace_entities(user_message)
-
-        if plain_text.startswith(INTENT_MESSAGE_PREFIX):
-            entities = (
-                RegexInterpreter().synchronous_parse(plain_text).get(ENTITIES, [])
-            )
-
-        self.current_step_builder.add_user_messages(
-            [UserUttered(plain_text, intent, entities=entities)]
-        )
+        self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
 
