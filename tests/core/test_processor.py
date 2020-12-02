@@ -903,10 +903,12 @@ async def test_restart_triggers_session_start(
             [{"entity": entity, "start": 6, "end": 23, "value": "name1"}],
         ),
         SlotSet(entity, slot_1[entity]),
+        DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted("utter_greet"),
         BotUttered("hey there name1!", metadata={"template_name": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
+        DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted(ACTION_RESTART_NAME),
         Restarted(),
         ActionExecuted(ACTION_SESSION_START_NAME),
@@ -914,7 +916,8 @@ async def test_restart_triggers_session_start(
         # No previous slot is set due to restart.
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
-    assert list(tracker.events) == expected
+    for actual, expected in zip(tracker.events, expected):
+        assert actual == expected
 
 
 async def test_handle_message_if_action_manually_rejects(
