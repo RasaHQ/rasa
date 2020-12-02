@@ -9,6 +9,7 @@ from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
 import rasa.shared.core.events
+from rasa.exceptions import UnsupportedFeatureException
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.shared.core.events import (
     Event,
@@ -30,6 +31,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     md_format_message,
 )
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 
 
@@ -507,3 +509,20 @@ def test_events_begin_with_session_start(
         rasa.shared.core.events.do_events_begin_with_session_start(test_events)
         == begin_with_session_start
     )
+
+
+@pytest.mark.parametrize(
+    "end_to_end_event",
+    [
+        ActionExecuted(action_text="I insist on using Markdown"),
+        UserUttered(text="Markdown is much more readable"),
+        UserUttered(
+            text="but YAML ❤️",
+            intent={INTENT_NAME_KEY: "use_yaml"},
+            use_text_for_featurization=True,
+        ),
+    ],
+)
+def test_print_end_to_end_events_in_markdown(end_to_end_event: Event):
+    with pytest.raises(UnsupportedFeatureException):
+        end_to_end_event.as_story_string()

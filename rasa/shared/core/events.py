@@ -12,6 +12,7 @@ from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterabl
 import rasa.shared.utils.common
 from typing import Union
 
+from rasa.exceptions import UnsupportedFeatureException
 from rasa.shared.core.constants import (
     LOOP_NAME,
     EXTERNAL_MESSAGE_PREFIX,
@@ -323,6 +324,7 @@ class UserUttered(Event):
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
+        use_text_for_featurization: Optional[bool] = None,
     ) -> None:
         self.text = text
         self.intent = intent if intent else {}
@@ -332,6 +334,9 @@ class UserUttered(Event):
 
         super().__init__(timestamp, metadata)
 
+        # The featurization is set by the policies during prediction time using a
+        # `DefinePrevUserUtteredFeaturization` event.
+        self.use_text_for_featurization = use_text_for_featurization
         # define how this user utterance should be featurized
         if self.text and not self.intent_name:
             # happens during training
@@ -339,11 +344,6 @@ class UserUttered(Event):
         elif self.intent_name and not self.text:
             # happens during training
             self.use_text_for_featurization = False
-        else:
-            # happens during prediction
-            # featurization should be defined by the policy
-            # and set in the applied events
-            self.use_text_for_featurization = None
 
         self.parse_data = {
             "intent": self.intent,
@@ -489,17 +489,32 @@ class UserUttered(Event):
         return ""
 
     def as_story_string(self, e2e: bool = False) -> Text:
+        """Return event as string for Markdown training format.
+
+        Args:
+            e2e: `True` if the the event should be printed in the format for
+                end-to-end conversation tests.
+
+        Returns:
+            Event as string.
+        """
+        if self.use_text_for_featurization:
+            raise UnsupportedFeatureException(
+                "Printing end-to-end user utterances is not supported in the "
+                "Markdown training format. Please use the YAML training data instead."
+            )
+
         text_with_entities = md_format_message(
             self.text or "", self.intent_name, self.entities
         )
-        if e2e or self.use_text_for_featurization is None:
+        if e2e:
             intent_prefix = f"{self.intent_name}: " if self.intent_name else ""
             return f"{intent_prefix}{text_with_entities}"
 
-        if self.intent_name and not self.use_text_for_featurization:
+        if self.intent_name:
             return f"{self.intent_name or ''}{self._entity_string()}"
 
-        if self.text and self.use_text_for_featurization:
+        if self.text:
             return text_with_entities
 
         # UserUttered is empty
@@ -1217,9 +1232,11 @@ class ActionExecuted(Event):
         )
 
     def __hash__(self) -> int:
-        return hash(self.action_name)
+        """Returns unique hash for action event."""
+        return hash(self.action_name or self.action_text)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        """Checks if object is equal to another."""
         if not isinstance(other, ActionExecuted):
             return False
         else:
@@ -1230,6 +1247,12 @@ class ActionExecuted(Event):
             return equal
 
     def as_story_string(self) -> Text:
+        if self.action_text:
+            raise UnsupportedFeatureException(
+                "Printing end-to-end bot utterances is not supported in the "
+                "Markdown training format. Please use the YAML training data instead."
+            )
+
         return self.action_name
 
     @classmethod

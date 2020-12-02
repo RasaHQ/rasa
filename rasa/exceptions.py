@@ -35,4 +35,9 @@ class PublishingError(RasaException):
         super(PublishingError, self).__init__()
 
     def __str__(self) -> Text:
+        """Returns string representation of exception."""
         return str(self.timestamp)
+
+
+class UnsupportedFeatureException(RasaException):
+    """Raised if a certain feature is not supported."""
