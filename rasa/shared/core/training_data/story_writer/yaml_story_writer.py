@@ -213,7 +213,6 @@ class YAMLStoryWriter(StoryWriter):
         if user_utterance.text and (
             # We only print the utterance text if it was an end-to-end prediction
             user_utterance.use_text_for_featurization
-            or user_utterance.use_text_for_featurization is None
             # or if we want to print a conversation test story.
             or is_test_story
         ):
