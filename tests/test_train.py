@@ -384,12 +384,12 @@ def test_model_finetuning(
     )
 
     mocked_core_training.assert_called_once()
-    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
+    _, kwargs = mocked_core_training.call_args
+    assert isinstance(kwargs["model_to_finetune"], Agent)
 
     mocked_nlu_training.assert_called_once()
-    assert isinstance(
-        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
-    )
+    _, kwargs = mocked_nlu_training.call_args
+    assert isinstance(kwargs["model_to_finetune"], Interpreter)
 
 
 @pytest.mark.parametrize("use_latest_model", [True, False])
@@ -422,7 +422,8 @@ def test_model_finetuning_core(
     )
 
     mocked_core_training.assert_called_once()
-    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
+    _, kwargs = mocked_core_training.call_args
+    assert isinstance(kwargs["model_to_finetune"], Agent)
 
 
 @pytest.mark.parametrize("use_latest_model", [True, False])
@@ -453,9 +454,8 @@ def test_model_finetuning_nlu(
     )
 
     mocked_nlu_training.assert_called_once()
-    assert isinstance(
-        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
-    )
+    _, kwargs = mocked_nlu_training.call_args
+    assert isinstance(kwargs["model_to_finetune"], Interpreter)
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
@@ -490,10 +490,12 @@ def test_model_finetuning_with_invalid_model(
     )
 
     mocked_core_training.assert_called_once()
-    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
+    _, kwargs = mocked_core_training.call_args
+    assert kwargs["model_to_finetune"] is None
 
     mocked_nlu_training.assert_called_once()
-    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
+    _, kwargs = mocked_nlu_training.call_args
+    assert kwargs["model_to_finetune"] is None
 
     output = capsys.readouterr().out
     assert "No Core model for finetuning found" in output
@@ -527,7 +529,9 @@ def test_model_finetuning_with_invalid_model_core(
     )
 
     mocked_core_training.assert_called_once()
-    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
+
+    _, kwargs = mocked_core_training.call_args
+    assert kwargs["model_to_finetune"] is None
 
     assert "No Core model for finetuning found" in capsys.readouterr().out
 
@@ -559,8 +563,8 @@ def test_model_finetuning_with_invalid_model_nlu(
     )
 
     mocked_nlu_training.assert_called_once()
-    print(mocked_nlu_training.call_args)
-    print(mocked_nlu_training.call_args.kwargs)
-    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
+
+    _, kwargs = mocked_nlu_training.call_args
+    assert kwargs["model_to_finetune"] is None
 
     assert "No NLU model for finetuning found" in capsys.readouterr().out
