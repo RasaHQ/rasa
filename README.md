@@ -261,15 +261,19 @@ release, as well as:
     2. Reminding everyone to go over their issues and PRs and please assign them to the milestone
     3. Reminding everyone of the scheduled date for the release
 
+#### A day before release day
+
+1. **Go over the milestone and evaluate the status of any PR merging that's happening. Follow up with people on their 
+bugs and fixes.** If the release introduces new bugs or regressions that can't be fixed in time, we should discuss on 
+Slack about this and take a decision to go forward or postpone the release. The PR / issue owners are responsible for 
+communicating any issues which might be release relevant.
+
 #### Release day! 🚀
 
 1. **At the start of the day, post a small message on slack announcing release day!**. Communicate you'll be handling 
 the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and 
 cause delays)
-2. **Go over the milestone and evaluate the status of any PR merging that's happening. Follow up with people on their 
-bugs and fixes.** If the release introduces new bugs or regressions that can't be fixed in time, we should discuss on 
-Slack about this and take a decision to go forward or postpone the release. The PR / issue owners are responsible for 
-communicating any issues which might be release relevant.
+2. Make sure the milestone is empty (everything has been either merged or moved to the next milestone)
 3. Once everything in the milestone is taken care of, post a small message on Slack communicating you are about to 
 start the release process (in case anything is missing).
 4. **You may now do the release by following the instructions outlined in the 
