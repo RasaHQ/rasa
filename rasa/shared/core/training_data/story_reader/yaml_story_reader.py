@@ -277,7 +277,7 @@ class YAMLStoryReader(StoryReader):
             )
         elif KEY_USER_MESSAGE in step.keys():
             self._parse_user_message(step)
-        elif KEY_USER_INTENT in step.keys() or KEY_USER_MESSAGE in step.keys():
+        elif KEY_USER_INTENT in step.keys():
             self._parse_labeled_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
@@ -319,9 +319,9 @@ class YAMLStoryReader(StoryReader):
             self.current_step_builder.add_user_messages([utterance])
 
     def _parse_user_message(self, step: Dict[Text, Any]) -> None:
-        is_end_to_end_utterance = KEY_USER_INTENT not in step
+        also_has_intent = KEY_USER_INTENT in step
 
-        if is_end_to_end_utterance:
+        if not also_has_intent:
             intent = {"name": None}
         else:
             intent_name = self._user_intent_from_step(step)
