@@ -73,3 +73,7 @@ class FileIOException(RasaException):
 
 class InvalidConfigException(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
+
+
+class UnsupportedFeatureException(RasaCoreException):
+    """Raised if a certain feature is not supported."""

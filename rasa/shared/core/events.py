@@ -12,7 +12,6 @@ from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterabl
 import rasa.shared.utils.common
 from typing import Union
 
-from rasa.exceptions import UnsupportedFeatureException
 from rasa.shared.core.constants import (
     LOOP_NAME,
     EXTERNAL_MESSAGE_PREFIX,
@@ -23,6 +22,7 @@ from rasa.shared.core.constants import (
     ENTITY_LABEL_SEPARATOR,
     ACTION_SESSION_START_NAME,
 )
+from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     INTENT,
