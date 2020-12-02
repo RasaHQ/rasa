@@ -534,11 +534,11 @@ def get_model_for_finetuning(
         )
         return get_latest_model(previous_model_file)
 
-    if previous_model_file and Path(previous_model_file).is_file():
-        logger.debug(
-            "No valid model for finetuning found as directory either "
-            "contains no model or model file cannot be found."
-        )
+    if Path(previous_model_file).is_file():
         return previous_model_file
 
+    logger.debug(
+        "No valid model for finetuning found as directory either "
+        "contains no model or model file cannot be found."
+    )
     return None
