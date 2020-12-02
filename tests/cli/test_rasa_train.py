@@ -14,7 +14,7 @@ from rasa.train import (
     CODE_CORE_NEEDS_TO_BE_RETRAINED,
     CODE_NLU_NEEDS_TO_BE_RETRAINED,
     CODE_NLG_NEEDS_TO_BE_RETRAINED,
-    CODE_FORCED_TRAINING
+    CODE_FORCED_TRAINING,
 )
 
 # noinspection PyProtectedMember
@@ -213,7 +213,9 @@ def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult
     assert output.ret == 0
 
 
-def test_train_dry_run_failure(run_in_simple_project_with_model: Callable[..., RunResult]):
+def test_train_dry_run_failure(
+    run_in_simple_project_with_model: Callable[..., RunResult]
+):
     temp_dir = os.getcwd()
 
     domain = (
@@ -234,13 +236,26 @@ def test_train_dry_run_failure(run_in_simple_project_with_model: Callable[..., R
     printed_output = set(output.outlines)
 
     assert not any([s for s in printed_output if "No training required." in s])
-    assert (output.ret & CODE_CORE_NEEDS_TO_BE_RETRAINED == CODE_CORE_NEEDS_TO_BE_RETRAINED) and \
-           (output.ret & CODE_NLU_NEEDS_TO_BE_RETRAINED == CODE_NLU_NEEDS_TO_BE_RETRAINED) and \
-           (output.ret & CODE_NLG_NEEDS_TO_BE_RETRAINED == CODE_NLG_NEEDS_TO_BE_RETRAINED) and \
-           (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
+    assert (
+        (
+            output.ret & CODE_CORE_NEEDS_TO_BE_RETRAINED
+            == CODE_CORE_NEEDS_TO_BE_RETRAINED
+        )
+        and (
+            output.ret & CODE_NLU_NEEDS_TO_BE_RETRAINED
+            == CODE_NLU_NEEDS_TO_BE_RETRAINED
+        )
+        and (
+            output.ret & CODE_NLG_NEEDS_TO_BE_RETRAINED
+            == CODE_NLG_NEEDS_TO_BE_RETRAINED
+        )
+        and (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
+    )
 
 
-def test_train_dry_run_force(run_in_simple_project_with_model: Callable[..., RunResult]):
+def test_train_dry_run_force(
+    run_in_simple_project_with_model: Callable[..., RunResult]
+):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
