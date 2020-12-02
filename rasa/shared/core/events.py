@@ -515,6 +515,7 @@ class UserUttered(Event):
         return f"{self.intent_name or ''}{self._entity_string()}"
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to tracker. See docstring of `Event`."""
         tracker.latest_message = self
         tracker.clear_followup_action()
 
@@ -1220,10 +1221,15 @@ class ActionExecuted(Event):
 
         super().__init__(timestamp, metadata)
 
-    def __str__(self) -> Text:
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
         return "ActionExecuted(action: {}, policy: {}, confidence: {})".format(
             self.action_name, self.policy, self.confidence
         )
+
+    def __str__(self) -> Text:
+        """Returns event as human readable string."""
+        return self.action_name or self.action_text
 
     def __hash__(self) -> int:
         """Returns unique hash for action event."""
@@ -1241,6 +1247,7 @@ class ActionExecuted(Event):
             return equal
 
     def as_story_string(self) -> Text:
+        """Returns event in Markdown format."""
         if self.action_text:
             raise UnsupportedFeatureException(
                 "Printing end-to-end bot utterances is not supported in the "

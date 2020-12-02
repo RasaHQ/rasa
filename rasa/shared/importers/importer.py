@@ -216,6 +216,7 @@ class NluDataImporter(TrainingDataImporter):
 
 class CombinedDataImporter(TrainingDataImporter):
     """A `TrainingDataImporter` that combines multiple importers.
+
     Uses multiple `TrainingDataImporter` instances
     to load the data as if they were a single instance.
     """
