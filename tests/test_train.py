@@ -18,8 +18,7 @@ from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train
-from tests import conftest
-from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
+from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA, AsyncMock
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.test_model import _fingerprint
 
@@ -226,15 +225,15 @@ def test_trained_interpreter_passed_to_core_training(
     # Skip actual NLU training and return trained interpreter path from fixture
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
-    conftest.mock_async(
-        monkeypatch,
+    monkeypatch.setattr(
         sys.modules["rasa.train"],
         "_train_nlu_with_validated_data",
-        return_value=unpacked_trained_rasa_model,
+        AsyncMock(return_value=unpacked_trained_rasa_model),
     )
 
     # Mock the actual Core training
-    _train_core = conftest.mock_async(monkeypatch, rasa.core, "train")
+    _train_core = AsyncMock()
+    monkeypatch.setattr(rasa.core, "train", _train_core)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -264,7 +263,8 @@ def test_interpreter_of_old_model_passed_to_core_training(
     )
 
     # Mock the actual Core training
-    _train_core = conftest.mock_async(monkeypatch, rasa.core, "train")
+    _train_core = AsyncMock()
+    monkeypatch.setattr(rasa.core, "train", _train_core)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -304,8 +304,8 @@ def test_train_core_autoconfig(
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     # skip actual core training
-    conftest.mock_async(
-        monkeypatch, sys.modules["rasa.train"], "_train_core_with_validated_data"
+    monkeypatch.setattr(
+        sys.modules["rasa.train"], "_train_core_with_validated_data", AsyncMock()
     )
 
     # do training
@@ -333,8 +333,8 @@ def test_train_nlu_autoconfig(
     mocked_get_configuration = Mock()
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
-    conftest.mock_async(
-        monkeypatch, sys.modules["rasa.train"], "_train_nlu_with_validated_data"
+    monkeypatch.setattr(
+        sys.modules["rasa.train"], "_train_nlu_with_validated_data", AsyncMock()
     )
 
     # do training
@@ -360,12 +360,11 @@ def test_model_finetuning(
     trained_rasa_model: Text,
     use_latest_model: bool,
 ):
-    mocked_nlu_training = conftest.mock_async(
-        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
-    )
-    mocked_core_training = conftest.mock_async(
-        monkeypatch, rasa.core, rasa.core.train.__name__,
-    )
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -402,9 +401,8 @@ def test_model_finetuning_core(
     trained_rasa_model: Text,
     use_latest_model: bool,
 ):
-    mocked_core_training = conftest.mock_async(
-        monkeypatch, rasa.core, rasa.core.train.__name__,
-    )
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -436,9 +434,9 @@ def test_model_finetuning_nlu(
     trained_rasa_model: Text,
     use_latest_model: bool,
 ):
-    mocked_nlu_training = conftest.mock_async(
-        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
-    )
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -469,12 +467,11 @@ def test_model_finetuning_with_invalid_model(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_nlu_training = conftest.mock_async(
-        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
-    )
-    mocked_core_training = conftest.mock_async(
-        monkeypatch, rasa.core, rasa.core.train.__name__,
-    )
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -512,9 +509,8 @@ def test_model_finetuning_with_invalid_model_core(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_core_training = conftest.mock_async(
-        monkeypatch, rasa.core, rasa.core.train.__name__,
-    )
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -546,9 +542,8 @@ def test_model_finetuning_with_invalid_model_nlu(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_nlu_training = conftest.mock_async(
-        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
-    )
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
