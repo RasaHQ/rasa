@@ -349,6 +349,7 @@ def test_train_nlu_autoconfig(
     assert args[1] == autoconfig.TrainingType.NLU
 
 
+@pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -357,6 +358,7 @@ def test_model_finetuning(
     default_stack_config: Text,
     default_nlu_data: Text,
     trained_rasa_model: Text,
+    use_latest_model: bool,
 ):
     mocked_nlu_training = conftest.mock_async(
         monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
@@ -367,6 +369,9 @@ def test_model_finetuning(
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_rasa_model = str(Path(trained_rasa_model).parent)
 
     train(
         default_domain_path,
@@ -387,6 +392,7 @@ def test_model_finetuning(
     )
 
 
+@pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -394,6 +400,7 @@ def test_model_finetuning_core(
     default_stories_file: Text,
     default_stack_config: Text,
     trained_rasa_model: Text,
+    use_latest_model: bool,
 ):
     mocked_core_training = conftest.mock_async(
         monkeypatch, rasa.core, rasa.core.train.__name__,
@@ -401,6 +408,9 @@ def test_model_finetuning_core(
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_rasa_model = str(Path(trained_rasa_model).parent)
 
     train_core(
         default_domain_path,
@@ -415,6 +425,7 @@ def test_model_finetuning_core(
     assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
 
 
+@pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -422,12 +433,16 @@ def test_model_finetuning_nlu(
     default_nlu_data: Text,
     default_stack_config: Text,
     trained_rasa_model: Text,
+    use_latest_model: bool,
 ):
     mocked_nlu_training = conftest.mock_async(
         monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_rasa_model = str(Path(trained_rasa_model).parent)
 
     train_nlu(
         default_stack_config,
@@ -441,94 +456,6 @@ def test_model_finetuning_nlu(
     assert isinstance(
         mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
     )
-
-
-def test_model_finetuning_with_latest_model(
-    monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
-    default_nlu_data: Text,
-    trained_rasa_model: Text,
-    tmp_path: Path,
-):
-    mocked_nlu_training = conftest.mock_async(
-        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
-    )
-
-    mocked_core_training = conftest.mock_async(
-        monkeypatch, rasa.core, rasa.core.train.__name__,
-    )
-
-    train(
-        default_domain_path,
-        default_stack_config,
-        [default_stories_file, default_nlu_data],
-        output=str(tmp_path),
-        force_training=True,
-        model_to_finetune=str(Path(trained_rasa_model).parent),
-        finetuning_epoch_fraction=1,
-    )
-
-    mocked_core_training.assert_called_once()
-    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
-
-    mocked_nlu_training.assert_called_once()
-    assert isinstance(
-        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
-    )
-
-
-def test_model_finetuning_with_latest_model_nlu(
-    monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stack_config: Text,
-    default_nlu_data: Text,
-    trained_rasa_model: Text,
-    tmp_path: Path,
-):
-    mocked_nlu_training = conftest.mock_async(
-        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
-    )
-
-    train_nlu(
-        default_stack_config,
-        default_nlu_data,
-        domain=default_domain_path,
-        output=str(tmp_path),
-        model_to_finetune=str(Path(trained_rasa_model).parent),
-        finetuning_epoch_fraction=1,
-    )
-
-    mocked_nlu_training.assert_called_once()
-    assert isinstance(
-        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
-    )
-
-
-def test_model_finetuning_with_latest_model_core(
-    monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
-    trained_rasa_model: Text,
-    tmp_path: Path,
-):
-    mocked_core_training = conftest.mock_async(
-        monkeypatch, rasa.core, rasa.core.train.__name__,
-    )
-
-    train_core(
-        default_domain_path,
-        default_stack_config,
-        default_stories_file,
-        output=str(tmp_path),
-        model_to_finetune=str(Path(trained_rasa_model).parent),
-        finetuning_epoch_fraction=1,
-    )
-
-    mocked_core_training.assert_called_once()
-    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
@@ -613,7 +540,6 @@ def test_model_finetuning_with_invalid_model_nlu(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-
     mocked_nlu_training = conftest.mock_async(
         monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
