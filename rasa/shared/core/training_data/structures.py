@@ -407,6 +407,7 @@ class StoryGraph:
         Returns:
             fingerprint of the stories
         """
+        # TODO: Use yaml story writer
         self_as_string = self.as_story_string()
         return rasa.shared.utils.io.get_text_hash(self_as_string)
 

@@ -196,6 +196,7 @@ def _find_conflicting_states(
     # represented by its hash
     state_action_mapping = defaultdict(list)
     for element in _sliced_states_iterator(trackers, domain, max_history):
+        # TODO: Hash or just store as dict
         hashed_state = element.sliced_states_hash
         if element.event.as_story_string() not in state_action_mapping[hashed_state]:
             state_action_mapping[hashed_state] += [element.event.as_story_string()]
