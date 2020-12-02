@@ -13,7 +13,6 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
-    IS_ENTITY_E2E,
 )
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -330,11 +329,6 @@ class YAMLStoryReader(StoryReader):
 
         user_message = step[KEY_USER_MESSAGE].strip()
         entities = entities_parser.find_entities_in_training_example(user_message)
-        if is_end_to_end_utterance:
-            # the entities come from e2e text
-            for entity in entities:
-                entity[IS_ENTITY_E2E] = True
-
         plain_text = entities_parser.replace_entities(user_message)
 
         if plain_text.startswith(INTENT_MESSAGE_PREFIX):

@@ -430,20 +430,14 @@ class UserUttered(Event):
         Returns:
             a dictionary with intent name, text and entities
         """
-        # check that entity does'n come from e2e text, to make sure that we use
-        # only those entities as features that come from `entities:` key in the data
-        entities = [
-            entity.get(ENTITY_ATTRIBUTE_TYPE)
-            for entity in self.entities
-            if not entity.get(IS_ENTITY_E2E)
-        ]
+        entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
         entities.extend(
             (
                 f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
                 f"{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
             )
             for entity in self.entities
-            if ENTITY_ATTRIBUTE_ROLE in entity and not entity.get(IS_ENTITY_E2E)
+            if ENTITY_ATTRIBUTE_ROLE in entity
         )
         entities.extend(
             (
@@ -451,7 +445,7 @@ class UserUttered(Event):
                 f"{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
             )
             for entity in self.entities
-            if ENTITY_ATTRIBUTE_GROUP in entity and not entity.get(IS_ENTITY_E2E)
+            if ENTITY_ATTRIBUTE_GROUP in entity
         )
 
         out = {}
@@ -463,7 +457,8 @@ class UserUttered(Event):
             out[TEXT] = self.text
         if self.intent_name and not self.use_text_for_featurization:
             out[INTENT] = self.intent_name
-        if entities:
+        # don't add entities for e2e utterances
+        if entities and not self.use_text_for_featurization:
             out[ENTITIES] = entities
 
         return out
