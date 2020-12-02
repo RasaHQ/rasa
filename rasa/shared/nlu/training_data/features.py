@@ -7,7 +7,7 @@ from rasa.shared.nlu.constants import VALID_FEATURE_TYPES
 
 
 class Features:
-    """Stores the features produces by any featurizer."""
+    """Stores the features produced by any featurizer."""
 
     def __init__(
         self,
@@ -86,7 +86,9 @@ class Features:
         return (self.type, self.attribute, self.features, self.origin)
 
     def __hash__(self) -> int:
-        return hash(self.__key__())
+        return hash(
+            self.__key__()
+        )  # ToDo: This doesn't actually work for numpy arrays or sparse matrices @tanja
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Features):

@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Set, Text, Optional
+from typing import Set, Text, Optional, Dict, Any
 
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
@@ -17,6 +17,7 @@ from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -26,13 +27,18 @@ class Validator:
     """A class used to verify usage of intents and utterances."""
 
     def __init__(
-        self, domain: Domain, intents: TrainingData, story_graph: StoryGraph
+        self,
+        domain: Domain,
+        intents: TrainingData,
+        story_graph: StoryGraph,
+        config: Dict[Text, Any],
     ) -> None:
         """Initializes the Validator object. """
 
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
+        self.nlu_config = RasaNLUModelConfig(config)
 
     @classmethod
     async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
@@ -41,8 +47,9 @@ class Validator:
         domain = await importer.get_domain()
         story_graph = await importer.get_stories()
         intents = await importer.get_nlu_data()
+        config = await importer.get_config()
 
-        return cls(domain, intents, story_graph)
+        return cls(domain, intents, story_graph, config)
 
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
@@ -236,7 +243,7 @@ class Validator:
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(
-            trackers, self.domain, max_history
+            trackers, self.domain, max_history, self.nlu_config
         )
 
         if not conflicts:

@@ -9,6 +9,16 @@ from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT
 
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import FullDialogueTrackerFeaturizer
+from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.nlu.model import Trainer
+from rasa.nlu.components import Component
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.message import Message
+
 logger = logging.getLogger(__name__)
 
 
@@ -146,6 +156,7 @@ def find_story_conflicts(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int] = None,
+    nlu_config: Optional[RasaNLUModelConfig] = None,
 ) -> List[StoryConflict]:
     """Generates `StoryConflict` objects, describing conflicts in the given trackers.
 
@@ -153,34 +164,68 @@ def find_story_conflicts(
         trackers: Trackers in which to search for conflicts.
         domain: The domain.
         max_history: The maximum history length to be taken into account.
+        nlu_config: NLU config.
 
     Returns:
         StoryConflict objects.
     """
-    if not max_history:
-        max_history = _get_length_of_longest_story(trackers, domain)
+    if max_history:
+        logger.info(
+            f"Considering the preceding {max_history} turns for conflict analysis."
+        )
+    else:
+        logger.info("Considering all preceding turns for conflict analysis.")
 
-    logger.info(f"Considering the preceding {max_history} turns for conflict analysis.")
+    tokenizing_function = _get_tokenizing_function_from_nlu_config(nlu_config)
 
     # We do this in two steps, to reduce memory consumption:
 
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     conflicting_state_action_mapping = _find_conflicting_states(
-        trackers, domain, max_history
+        trackers, domain, max_history, tokenizing_function
     )
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers, domain, max_history, conflicting_state_action_mapping
+        trackers,
+        domain,
+        max_history,
+        conflicting_state_action_mapping,
+        tokenizing_function,
     )
 
     return conflicts
 
 
+def _get_tokenizing_function_from_nlu_config(
+    nlu_config: Optional[RasaNLUModelConfig] = None,
+) -> Optional[callable]:
+    """Extracts the `tokenize` function of the first Tokenizer in the pipeline.
+
+    Args:
+        nlu_config: NLU Config.
+    """
+    # ToDo: Deal with nlu_config == None
+    pipeline: List[Component] = Trainer(
+        nlu_config, skip_validation=True
+    ).pipeline  # ToDo: ComponentBuiilder?
+    tokenizer: Optional[Tokenizer] = None
+    for component in pipeline:
+        if isinstance(component, Tokenizer):
+            tokenizer = component
+            # A pipeline can have only one tokenizer # ToDo: Check this
+            break
+
+    return tokenizer.tokenize if tokenizer else None
+
+
 def _find_conflicting_states(
-    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    trackers: List[TrackerWithCachedStates],
+    domain: Domain,
+    max_history: Optional[int],
+    tokenizing_function: Optional[callable],
 ) -> Dict[int, Optional[List[Text]]]:
     """Identifies all states from which different actions follow.
 
@@ -188,6 +233,7 @@ def _find_conflicting_states(
         trackers: Trackers that contain the states.
         domain: The domain object.
         max_history: Number of turns to take into account for the state descriptions.
+        tokenizing_function: A `Tokenizer.tokenize` function.
 
     Returns:
         A dictionary mapping state-hashes to a list of actions that follow from each state.
@@ -195,7 +241,9 @@ def _find_conflicting_states(
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     state_action_mapping = defaultdict(list)
-    for element in _sliced_states_iterator(trackers, domain, max_history):
+    for element in _sliced_states_iterator(
+        trackers, domain, max_history, tokenizing_function
+    ):
         hashed_state = element.sliced_states_hash
         if element.event.as_story_string() not in state_action_mapping[hashed_state]:
             state_action_mapping[hashed_state] += [element.event.as_story_string()]
@@ -211,8 +259,9 @@ def _find_conflicting_states(
 def _build_conflicts_from_states(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
-    max_history: int,
+    max_history: Optional[int],
     conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
+    tokenizing_function: Optional[callable],
 ) -> List["StoryConflict"]:
     """Builds a list of `StoryConflict` objects for each given conflict.
 
@@ -222,6 +271,7 @@ def _build_conflicts_from_states(
         max_history: Number of turns to take into account for the state descriptions.
         conflicting_state_action_mapping: A dictionary mapping state-hashes to a list of actions
                                           that follow from each state.
+        tokenizing_function: A `Tokenizer.tokenize` function.
 
     Returns:
         A list of `StoryConflict` objects that describe inconsistencies in the story
@@ -230,7 +280,9 @@ def _build_conflicts_from_states(
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = {}
-    for element in _sliced_states_iterator(trackers, domain, max_history):
+    for element in _sliced_states_iterator(
+        trackers, domain, max_history, tokenizing_function
+    ):
         hashed_state = element.sliced_states_hash
 
         if hashed_state in conflicting_state_action_mapping:
@@ -252,7 +304,10 @@ def _build_conflicts_from_states(
 
 
 def _sliced_states_iterator(
-    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    trackers: List[TrackerWithCachedStates],
+    domain: Domain,
+    max_history: Optional[int],
+    tokenizing_function: Optional[callable],
 ) -> Generator[TrackerEventStateTuple, None, None]:
     """Creates an iterator over sliced states.
 
@@ -263,6 +318,7 @@ def _sliced_states_iterator(
         trackers: List of trackers.
         domain: Domain (used for tracker.past_states).
         max_history: Assumed `max_history` value for slicing.
+        tokenizing_function: A `Tokenizer.tokenize` function.
 
     Yields:
         A (tracker, event, sliced_states) triplet.
@@ -276,8 +332,31 @@ def _sliced_states_iterator(
                 sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                     states[: idx + 1], max_history
                 )
+                if tokenizing_function:
+                    _apply_tokenizer_to_states(tokenizing_function, sliced_states)
+                # ToDo: deal with oov (different tokens can lead to identical features if some of those tokens are out of vocabulary for all featurizers)
                 yield TrackerEventStateTuple(tracker, event, sliced_states)
                 idx += 1
+
+
+def _apply_tokenizer_to_states(
+    tokenizing_function: callable, states: List[State]
+) -> None:
+    """Split each user text into tokens and concatenate them again.
+
+    Args:
+        tokenizing_function: Should take a message and an attribute and return the tokens,
+        just like `Tokenizer.tokenize`.
+        states: The states to be tokenized.
+    """
+    for state in states:
+        if USER in state:
+            state[USER][TEXT] = "".join(
+                token.text
+                for token in tokenizing_function(
+                    Message({TEXT: state[USER][TEXT]}), TEXT
+                )
+            )
 
 
 def _get_previous_event(

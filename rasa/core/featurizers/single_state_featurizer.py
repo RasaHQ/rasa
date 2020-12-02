@@ -267,11 +267,13 @@ class SingleStateFeaturizer:
             # we cannot build a classifier if there are less than 2 class
             return {}
 
-        parsed_text = interpreter.featurize_message(Message({TEXT: entity_data[TEXT]}))
+        parsed_text = (
+            interpreter.featurize_message(Message({TEXT: entity_data[TEXT]})) or {}
+        )
         entities = entity_data.get(ENTITIES, [])
 
         _tags = []
-        for token in parsed_text.get(TOKENS_NAMES[TEXT]):
+        for token in parsed_text.get(TOKENS_NAMES[TEXT], []):
             _tag = determine_token_labels(
                 token, entities, attribute_key=ENTITY_ATTRIBUTE_TYPE
             )
@@ -281,7 +283,12 @@ class SingleStateFeaturizer:
         # transpose to have seq_len x 1
         return {
             ENTITY_TAGS: [
-                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN,)
+                Features(
+                    np.array([_tags]).T,
+                    IDS,
+                    ENTITY_TAGS,
+                    TAG_ID_ORIGIN,
+                )
             ]
         }
 
@@ -295,7 +302,7 @@ class SingleStateFeaturizer:
 
         return self._extract_state_features(action_as_sub_state, interpreter)
 
-    def encode_all_actions(
+    def encode_all_actions(  # Use this to get action names from indices
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all action from the domain using the given interpreter.

@@ -5,9 +5,9 @@ stories:
   steps:
   - user: |
       truly amazing
-  - action: utter_happy
+  - action: utter_greet
 - story: path 2 (should conflict path 1 when WhitespaceTokenizer is used)
   steps:
   - user: |
       truly  amazing
-  - action: utter_cheer_up
+  - action: utter_goodbye

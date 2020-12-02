@@ -80,6 +80,7 @@ async def test_verify_bad_story_structure():
 async def test_verify_bad_e2e_story_structure_when_text_identical():
     # The two stories in stories_e2e_conflicting_1.yml have identical user texts
     importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=["data/test_stories/stories_e2e_conflicting_1.yml"],
     )
@@ -91,11 +92,14 @@ async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace():
     # The two stories in stories_e2e_conflicting_2.yml have identical user texts
     # except for an additional whitespace between words
     importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=["data/test_stories/stories_e2e_conflicting_2.yml"],
     )
     validator = await Validator.from_importer(importer)
-    assert not validator.verify_story_structure(ignore_warnings=False)
+    assert not validator.verify_story_structure(
+        ignore_warnings=False
+    )  # ToDo: This test succeeds/fails randomly!
 
 
 async def test_verify_story_structure_ignores_rules():
