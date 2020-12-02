@@ -181,7 +181,7 @@ def add_finetune_params(
         nargs="?",
         # If the user doesn't specify `--finetune` at all
         default=None,
-        # If the user user only specifies `--finetune` without an additional path
+        # If the user only specifies `--finetune` without an additional path
         const=USE_LATEST_MODEL_FOR_FINE_TUNING,
         help="Fine-tune a previously trained model. If no model path is provided, Rasa "
         "Open Source will try to finetune the latest trained model from the "

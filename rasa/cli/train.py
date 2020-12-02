@@ -110,7 +110,7 @@ def train_core(
 
     Args:
         args: Command-line arguments to configure training.
-        train_path: Path were trained model but unzipped model should be stored.
+        train_path: Path where trained model but not unzipped model should be stored.
 
     Returns:
         Path to trained model.
