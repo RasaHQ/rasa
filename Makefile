@@ -26,6 +26,10 @@ help:
 	@echo "        Install system requirements for running tests on Windows."
 	@echo "    prepare-tests-files"
 	@echo "        Download all additional project files needed to run tests."
+	@echo "    prepare-spacy"
+	@echo "        Download all additional resources needed to use spacy as part of Rasa."
+	@echo "    prepare-mitie"
+	@echo "        Download all additional resources needed to use mitie as part of Rasa."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
@@ -103,13 +107,19 @@ types:
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 
-prepare-tests-files:
+prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
 	poetry run python -m spacy link en_core_web_md en --force
 	poetry run python -m spacy link de_core_news_sm de --force
-	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
+prepare-mitie:
+	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+	tar -xvjf data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C data/ MITIE-models/english/total_word_feature_extractor.dat
+	rm data/MITIE*.bz2
+
+prepare-tests-files: prepare-spacy prepare-mitie
 
 prepare-wget-macos:
 	brew install wget || true
