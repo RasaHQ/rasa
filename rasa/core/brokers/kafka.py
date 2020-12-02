@@ -39,10 +39,6 @@ class KafkaEventBroker(EventBroker):
                 to servers and can be used to identify specific server-side log entries
                 that correspond to this client. Also submitted to `GroupCoordinator` for
                 logging with respect to producer group administration.
-            group_id: The name of the producer group to join for dynamic partition
-                assignment (if enabled), and to use for fetching and committing offsets.
-                If None, auto-partition assignment (via group coordinator) and offset
-                commits are disabled.
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
             ssl_cafile: Optional filename of ca file to use in certificate
@@ -88,10 +84,37 @@ class KafkaEventBroker(EventBroker):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event) -> None:
-        self._create_producer()
-        self._publish(event)
-        self._close()
+    def publish(self, event, retries=60, retry_delay_in_seconds=5) -> None:
+        if self.producer is None:
+            self._create_producer()
+            connected = self.producer.bootstrap_connected()
+            if connected:
+                logger.debug("Connection to kafka successful.")
+            else:
+                logger.debug("Failed to connect kafka.")
+                return
+        while retries:
+            try:
+                self._publish(event)
+                return
+            except Exception as e:
+                logger.error(
+                    f"Could not publish message to kafka url '{self.url}'. "
+                    f"Failed with error: {e}"
+                )
+                connected = self.producer.bootstrap_connected()
+                if not connected:
+                    self._close()
+                    logger.debug("Connection to kafka lost, reconnecting...")
+                    self._create_producer()
+                    connected = self.producer.bootstrap_connected()
+                    if connected:
+                        logger.debug("Reconnection to kafka successful")
+                        self._publish(event)
+                retries -= 1
+                time.sleep(retry_delay_in_seconds)
+
+        logger.error("Failed to publish Kafka event.")
 
     def _create_producer(self) -> None:
         import kafka
