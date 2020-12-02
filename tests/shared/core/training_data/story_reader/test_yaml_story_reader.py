@@ -469,8 +469,7 @@ stories:
     """
 
     story_as_yaml = rasa.shared.utils.io.read_yaml(story)
-
-    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
+    steps = YAMLStoryReader(use_e2e=True).read_from_parsed_yaml(story_as_yaml)
     user_uttered = steps[0].events[0]
 
     assert user_uttered == UserUttered(
@@ -565,3 +564,23 @@ async def test_story_with_retrieval_intent_warns(
         reader.read_from_file(file)
 
     assert len(record) == (1 if warning else 0)
+
+
+@pytest.mark.parametrize("is_conversation_test", [True, False])
+def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
+    stories = """
+    stories:
+    - story: hello world
+      steps:
+      - user: Hi
+      - bot: Hello?
+      - user: Well...
+        intent: suspicion
+    """
+
+    reader = YAMLStoryReader(use_e2e=is_conversation_test)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(steps[0].events) == 3

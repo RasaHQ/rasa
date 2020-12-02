@@ -252,7 +252,7 @@ def test_features_present(
 
 
 @pytest.mark.parametrize(
-    "message, core_message",
+    "message, result",
     [
         (Message({INTENT: "intent", TEXT: "text"}), False),
         (Message({RESPONSE: "response", TEXT: "text"}), False),
@@ -262,7 +262,7 @@ def test_features_present(
         (Message({TEXT: "text"}), True),
     ],
 )
-def test_is_core_message(
-    message: Message, core_message: bool,
+def test_is_core_or_domain_message(
+    message: Message, result: bool,
 ):
-    assert core_message == message.is_core_message()
+    assert result == message.is_core_or_domain_message()
