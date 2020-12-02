@@ -224,7 +224,6 @@ def test_train_dry_run_failure(
         "  session_expiration_time: 60\n"
         "  carry_over_slots_to_new_session: true\n"
         "actions:\n"
-        "- respond_chitchat\n"
         "- utter_greet\n"
         "- utter_cheer_up"
     )
