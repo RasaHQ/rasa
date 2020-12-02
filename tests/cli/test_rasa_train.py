@@ -383,7 +383,7 @@ def test_train_fingerprint_help(run: Callable[..., RunResult]):
     output = run("train", "fingerprint", "--help")
 
     help_text = """usage: rasa train fingerprint [-h] [-v] [-vv] [--quiet] [-s STORIES]
-                       [-d DOMAIN] [-c CONFIG [CONFIG ...]] [--out OUT]"""
+                              [-d DOMAIN] [-c CONFIG [CONFIG ...]] [--out OUT]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

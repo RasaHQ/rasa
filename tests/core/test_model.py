@@ -125,11 +125,7 @@ def _fingerprint(
 
 @pytest.mark.parametrize(
     "path, filename",
-    [
-        ((), None),
-        ((), "test.json"),
-        (("test", "models"), "test.json"),
-    ],
+    [((), None), ((), "test.json"), (("test", "models"), "test.json"),],
 )
 def test_persist_and_load_fingerprint(path, filename):
     from rasa.model import persist_fingerprint, fingerprint_from_path
