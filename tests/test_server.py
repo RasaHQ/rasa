@@ -731,9 +731,9 @@ async def test_evaluate_stories_not_ready_agent(
 
 
 async def test_evaluate_stories_end_to_end(
-    rasa_app: SanicASGITestClient, end_to_end_story_file: Text
+    rasa_app: SanicASGITestClient, end_to_end_test_story_file
 ):
-    stories = rasa.shared.utils.io.read_file(end_to_end_story_file)
+    stories = rasa.shared.utils.io.read_file(end_to_end_test_story_file)
 
     _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories)
 
