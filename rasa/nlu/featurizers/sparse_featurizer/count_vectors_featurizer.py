@@ -163,7 +163,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 ] = user_defined_additional_size
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
-        """Check if trained vocabulary exists in attribute's count vectorizer"""
+        """Check if trained vocabulary exists in attribute's count vectorizer."""
         try:
             return hasattr(self.vectorizers[attribute], "vocabulary_")
         except (AttributeError, TypeError):
@@ -222,7 +222,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         finetune_mode: bool = False,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
-
         super().__init__(component_config)
 
         # parameters for sklearn's CountVectorizer
@@ -418,7 +417,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         Returns:
             Size of additional vocabulary that should be set aside for incremental training.
         """
-
         # Vocabulary expansion for INTENTS, ACTION_NAME
         # and INTENT_RESPONSE_KEY is currently not supported.
         if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
@@ -452,7 +450,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _set_vocabulary(
         self, attribute: Text, original_vocabulary: Dict[Text, int]
     ) -> None:
-        """Set the vocabulary of the vectorizer of attribute
+        """Set the vocabulary of the vectorizer of attribute.
 
         Args:
             attribute: Message attribute for which vocabulary should be set
@@ -487,7 +485,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return any(attribute_texts)
 
     def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
-        """Construct the vectorizers and train them with a shared vocab"""
+        """Construct the vectorizers and train them with a shared vocab."""
         combined_cleaned_texts = []
         for attribute in self._attributes:
             combined_cleaned_texts += attribute_texts[attribute]
@@ -511,8 +509,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self._fit_loaded_vectorizer(TEXT, combined_cleaned_texts)
 
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
-        """Construct the vectorizers and train them with an independent vocab"""
-
+        """Construct the vectorizers and train them with an independent vocab."""
         if not self.finetune_mode:
             self.vectorizers = self._create_independent_vocab_vectorizers(
                 {
@@ -851,7 +848,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
 
-        finetune_mode = kwargs.pop("finetune_mode")
+        finetune_mode = kwargs.pop("finetune_mode", False)
 
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)

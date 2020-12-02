@@ -72,7 +72,7 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = RegexFeaturizer({}, known_patterns=patterns)
+    ftr = RegexFeaturizer({"number_additional_patterns": 0}, known_patterns=patterns)
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer({})
@@ -132,7 +132,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         },
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
-    ftr = RegexFeaturizer()
+    ftr = RegexFeaturizer({"number_additional_patterns": 0})
     training_data = TrainingData()
     training_data.lookup_tables = lookups
     ftr.train(training_data)
@@ -173,7 +173,7 @@ def test_regex_featurizer_no_sequence(sentence, expected, expected_cls, spacy_nl
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = RegexFeaturizer({}, known_patterns=patterns)
+    ftr = RegexFeaturizer({"number_additional_patterns": 0}, known_patterns=patterns)
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer()
@@ -194,7 +194,9 @@ def test_regex_featurizer_train():
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
 
-    featurizer = RegexFeaturizer.create({}, RasaNLUModelConfig())
+    featurizer = RegexFeaturizer.create(
+        {"number_additional_patterns": 0}, RasaNLUModelConfig()
+    )
 
     sentence = "hey how are you today 19.12.2019 ?"
     message = Message(data={TEXT: sentence})
@@ -263,7 +265,10 @@ def test_regex_featurizer_case_sensitive(
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = RegexFeaturizer({"case_sensitive": case_sensitive}, known_patterns=patterns)
+    ftr = RegexFeaturizer(
+        {"case_sensitive": case_sensitive, "number_additional_patterns": 0},
+        known_patterns=patterns,
+    )
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer()
