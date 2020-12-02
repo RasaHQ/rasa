@@ -504,15 +504,15 @@ class UserUttered(Event):
                 "Markdown training format. Please use the YAML training data instead."
             )
 
+        if self.intent_name:
+            return f"{self.intent_name or ''}{self._entity_string()}"
+
         text_with_entities = md_format_message(
             self.text or "", self.intent_name, self.entities
         )
         if e2e:
             intent_prefix = f"{self.intent_name}: " if self.intent_name else ""
             return f"{intent_prefix}{text_with_entities}"
-
-        if self.intent_name:
-            return f"{self.intent_name or ''}{self._entity_string()}"
 
         if self.text:
             return text_with_entities
