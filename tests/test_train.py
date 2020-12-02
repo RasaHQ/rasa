@@ -495,7 +495,9 @@ def test_model_finetuning_with_invalid_model(
     mocked_nlu_training.assert_called_once()
     assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
 
-    assert "No model for finetuning found" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "No Core model for finetuning found" in output
+    assert "No NLU model for finetuning found" in output
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
@@ -527,7 +529,7 @@ def test_model_finetuning_with_invalid_model_core(
     mocked_core_training.assert_called_once()
     assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
 
-    assert "No model for finetuning found" in capsys.readouterr().out
+    assert "No Core model for finetuning found" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
@@ -559,4 +561,4 @@ def test_model_finetuning_with_invalid_model_nlu(
     mocked_nlu_training.assert_called_once()
     assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
 
-    assert "No model for finetuning found" in capsys.readouterr().out
+    assert "No NLU model for finetuning found" in capsys.readouterr().out

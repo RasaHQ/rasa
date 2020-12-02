@@ -22,8 +22,7 @@ from rasa.shared.constants import (
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
 
-if TYPE_CHECKING:
-    from rasa.core.agent import Agent
+from rasa.core.agent import Agent
 
 
 def train(
@@ -170,18 +169,7 @@ async def _train_async_internal(
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
-    old_core_model, old_nlu_model = None, None
-    if model_to_finetune:
-        old_core_model, old_nlu_model = model.get_models_for_finetuning(
-            model_to_finetune
-        )
 
-        if old_core_model is None and old_nlu_model is None:
-            rasa.shared.utils.cli.print_warning(
-                f"No model for finetuning found. Please make sure to either specify a "
-                f"path to a previous model or to have a finetunable model within the "
-                f"directory '{output_path}'."
-            )
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         rasa.shared.utils.cli.print_error(
             "No training data given. Please provide stories and NLU data in "
@@ -199,7 +187,7 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
-            nlu_model_to_finetune=old_nlu_model,
+            model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
 
@@ -212,7 +200,7 @@ async def _train_async_internal(
             output=output_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
-            core_model_to_finetune=old_core_model,
+            model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
 
@@ -228,9 +216,7 @@ async def _train_async_internal(
 
     if fingerprint_comparison.is_training_required():
         async with telemetry.track_model_training(
-            file_importer,
-            model_type="rasa",
-            is_finetuning=bool(old_core_model or old_nlu_model),
+            file_importer, model_type="rasa",
         ):
             await _do_training(
                 file_importer,
@@ -242,8 +228,7 @@ async def _train_async_internal(
                 core_additional_arguments=core_additional_arguments,
                 nlu_additional_arguments=nlu_additional_arguments,
                 old_model_zip_path=old_model,
-                core_model_to_finetune=old_core_model,
-                nlu_model_to_finetune=old_nlu_model,
+                model_to_finetune=model_to_finetune,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
 
@@ -271,8 +256,7 @@ async def _do_training(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     old_model_zip_path: Optional[Text] = None,
-    core_model_to_finetune: Optional["Agent"] = None,
-    nlu_model_to_finetune: Optional[Interpreter] = None,
+    model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ):
     if not fingerprint_comparison_result:
@@ -287,7 +271,7 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
-            nlu_model_to_finetune=nlu_model_to_finetune,
+            model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
         interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
@@ -306,7 +290,7 @@ async def _do_training(
             additional_arguments=core_additional_arguments,
             interpreter=_load_interpreter(interpreter_path)
             or _interpreter_from_previous_model(old_model_zip_path),
-            core_model_to_finetune=core_model_to_finetune,
+            model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
@@ -421,21 +405,13 @@ async def train_core_async(
         )
         return
 
-    if model_to_finetune:
-        model_to_finetune = model.get_core_model_for_finetuning(model_to_finetune)
-        if model_to_finetune is None:
-            rasa.shared.utils.cli.print_warning(
-                f"No model for finetuning found. Please make sure to either specify a "
-                f"path to a previous model or to have a finetunable model within the "
-                f"directory '{output}'."
-            )
     return await _train_core_with_validated_data(
         file_importer,
         output=output,
         train_path=train_path,
         fixed_model_name=fixed_model_name,
         additional_arguments=additional_arguments,
-        core_model_to_finetune=model_to_finetune,
+        model_to_finetune=model_to_finetune,
         finetuning_epoch_fraction=finetuning_epoch_fraction,
     )
 
@@ -447,7 +423,7 @@ async def _train_core_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
     interpreter: Optional[Interpreter] = None,
-    core_model_to_finetune: Optional["Agent"] = None,
+    model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
@@ -468,10 +444,21 @@ async def _train_core_with_validated_data(
         domain, config = await asyncio.gather(
             file_importer.get_domain(), file_importer.get_config()
         )
+
+        if model_to_finetune:
+            model_to_finetune = _core_model_for_finetuning(model_to_finetune)
+
+            if not model_to_finetune:
+                rasa.shared.utils.cli.print_warning(
+                    f"No Core model for finetuning found. Please make sure to either "
+                    f"specify a path to a previous model or to have a finetunable "
+                    f"model within the directory '{output}'."
+                )
+
         async with telemetry.track_model_training(
             file_importer,
             model_type="core",
-            is_finetuning=core_model_to_finetune is not None,
+            is_finetuning=model_to_finetune is not None,
         ):
             await rasa.core.train(
                 domain_file=domain,
@@ -480,7 +467,7 @@ async def _train_core_with_validated_data(
                 policy_config=config,
                 additional_arguments=additional_arguments,
                 interpreter=interpreter,
-                model_to_finetune=core_model_to_finetune,
+                model_to_finetune=model_to_finetune,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
         rasa.shared.utils.cli.print_color(
@@ -499,6 +486,23 @@ async def _train_core_with_validated_data(
             )
 
         return _train_path
+
+
+def _core_model_for_finetuning(model_to_finetune: Text) -> Optional[Agent]:
+    path_to_archive = model.get_model_for_finetuning(model_to_finetune)
+    if not path_to_archive:
+        return None
+
+    with model.unpack_model(path_to_archive) as unpacked:
+        try:
+            agent = Agent.load(unpacked)
+            # Agent might be empty if no underlying Core model was found.
+            if agent.domain is not None and agent.policy_ensemble is not None:
+                return agent
+        except Exception:
+            # Anything might go wrong. In that case we skip model finetuning.
+            pass
+    return None
 
 
 def train_nlu(
@@ -586,15 +590,6 @@ async def _train_nlu_async(
         )
         return
 
-    if model_to_finetune:
-        model_to_finetune = model.get_nlu_model_for_finetuning(model_to_finetune)
-
-        if model_to_finetune is None:
-            rasa.shared.utils.cli.print_warning(
-                f"No model for finetuning found. Please make sure to either specify a "
-                f"path to a previous model or to have a finetunable model within the "
-                f"directory '{output}'."
-            )
     return await _train_nlu_with_validated_data(
         file_importer,
         output=output,
@@ -602,7 +597,7 @@ async def _train_nlu_async(
         fixed_model_name=fixed_model_name,
         persist_nlu_training_data=persist_nlu_training_data,
         additional_arguments=additional_arguments,
-        nlu_model_to_finetune=model_to_finetune,
+        model_to_finetune=model_to_finetune,
         finetuning_epoch_fraction=finetuning_epoch_fraction,
     )
 
@@ -614,7 +609,7 @@ async def _train_nlu_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
-    nlu_model_to_finetune: Optional["Interpreter"] = None,
+    model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
@@ -634,10 +629,21 @@ async def _train_nlu_with_validated_data(
         rasa.shared.utils.cli.print_color(
             "Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
+
+        if model_to_finetune:
+            model_to_finetune = _nlu_model_for_finetuning(model_to_finetune)
+
+            if not model_to_finetune:
+                rasa.shared.utils.cli.print_warning(
+                    f"No NLU model for finetuning found. Please make sure to either "
+                    f"specify a path to a previous model or to have a finetunable "
+                    f"model within the directory '{output}'."
+                )
+
         async with telemetry.track_model_training(
             file_importer,
             model_type="nlu",
-            is_finetuning=nlu_model_to_finetune is not None,
+            is_finetuning=model_to_finetune is not None,
         ):
             await rasa.nlu.train(
                 config,
@@ -645,7 +651,7 @@ async def _train_nlu_with_validated_data(
                 _train_path,
                 fixed_model_name="nlu",
                 persist_nlu_training_data=persist_nlu_training_data,
-                model_to_finetune=nlu_model_to_finetune,
+                model_to_finetune=model_to_finetune,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
                 **additional_arguments,
             )
@@ -666,3 +672,21 @@ async def _train_nlu_with_validated_data(
             )
 
         return _train_path
+
+
+def _nlu_model_for_finetuning(model_to_finetune: Text) -> Optional[Interpreter]:
+    from rasa.core.interpreter import RasaNLUInterpreter
+
+    path_to_archive = model.get_model_for_finetuning(model_to_finetune)
+    if not path_to_archive:
+        return None
+
+    try:
+        interpreter = _interpreter_from_previous_model(path_to_archive)
+        if interpreter and isinstance(interpreter, RasaNLUInterpreter):
+            return interpreter.interpreter
+    except Exception:
+        # Anything might go wrong. In that case we skip model finetuning.
+        pass
+
+    return None
