@@ -407,26 +407,19 @@ async def test_parse_on_invalid_emulation_mode(rasa_app_nlu: SanicASGITestClient
     assert response.status == 400
 
 
-async def test_train_stack_success(
+async def test_train_stack_success_with_md(
     rasa_app: SanicASGITestClient,
     default_domain_path: Text,
-    default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
     tmp_path: Path,
 ):
-    with ExitStack() as stack:
-        domain_file = stack.enter_context(open(default_domain_path))
-        config_file = stack.enter_context(open(default_stack_config))
-        stories_file = stack.enter_context(open(default_stories_file))
-        nlu_file = stack.enter_context(open(default_nlu_data))
-
-        payload = dict(
-            domain=domain_file.read(),
-            config=config_file.read(),
-            stories=stories_file.read(),
-            nlu=nlu_file.read(),
-        )
+    payload = dict(
+        domain=Path(default_domain_path).read_text(),
+        config=Path(default_stack_config).read_text(),
+        stories=Path("data/test_stories/stories_defaultdomain.md").read_text(),
+        nlu=Path(default_nlu_data).read_text(),
+    )
 
     _, response = await rasa_app.post("/model/train", json=payload)
     assert response.status == 200
@@ -479,25 +472,24 @@ async def test_train_nlu_success(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-async def test_train_core_success(
+async def test_train_core_success_with(
     rasa_app: SanicASGITestClient,
     default_stack_config: Text,
     default_stories_file: Text,
     default_domain_path: Text,
     tmp_path: Path,
 ):
-    with ExitStack() as stack:
-        domain_file = stack.enter_context(open(default_domain_path))
-        config_file = stack.enter_context(open(default_stack_config))
-        core_file = stack.enter_context(open(default_stories_file))
+    payload = f"""
+{Path(default_domain_path).read_text()}
+{Path(default_stack_config).read_text()}
+{Path(default_stories_file).read_text()}
+    """
 
-        payload = dict(
-            domain=domain_file.read(),
-            config=config_file.read(),
-            stories=core_file.read(),
-        )
-
-    _, response = await rasa_app.post("/model/train", json=payload)
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=payload,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
     assert response.status == 200
 
     # save model to temporary file
@@ -697,7 +689,11 @@ async def test_evaluate_stories(
 ):
     stories = rasa.shared.utils.io.read_file(default_stories_file)
 
-    _, response = await rasa_app.post("/model/test/stories", data=stories)
+    _, response = await rasa_app.post(
+        "/model/test/stories",
+        data=stories,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
 
     assert response.status == 200
 
