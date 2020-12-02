@@ -283,7 +283,7 @@ start the release process (in case anything is missing).
 Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
 
 *Terminology*:
-* patch release (third version part increases): 1.1.2 -> 1.1.3
+* micro release (third version part increases): 1.1.2 -> 1.1.3
 * minor release (second version part increases): 1.1.3 -> 1.2.0
 * major release (first version part increases): 1.2.0 -> 2.0.0
 
@@ -291,7 +291,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for patch releases) 
+2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for micro releases) 
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 3. Run `make release`
