@@ -186,9 +186,9 @@ async def test_import_nlu_training_data_from_e2e_stories(
     importer_without_e2e.get_stories = mocked_stories
 
     # The wrapping `E2EImporter` simply forwards these method calls
-    assert (await importer_without_e2e.get_stories()).as_story_string() == (
+    assert (await importer_without_e2e.get_stories()).fingerprint() == (
         await default_importer.get_stories()
-    ).as_story_string()
+    ).fingerprint()
     assert (await importer_without_e2e.get_config()) == (
         await default_importer.get_config()
     )
@@ -208,8 +208,6 @@ async def test_import_nlu_training_data_from_e2e_stories(
         Message(data={TEXT: "how are you doing?"}),
         Message(data={ACTION_TEXT: "Hi Joey."}),
     ]
-
-    print([t.data for t in nlu_data.training_examples])
 
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
 
