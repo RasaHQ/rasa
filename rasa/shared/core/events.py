@@ -33,6 +33,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    IS_ENTITY_E2E,
 )
 
 if TYPE_CHECKING:
@@ -429,14 +430,20 @@ class UserUttered(Event):
         Returns:
             a dictionary with intent name, text and entities
         """
-        entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
+        # check that entity does'n come from e2e text, to make sure that we use
+        # only those entities as features that come from `entities:` key in the data
+        entities = [
+            entity.get(ENTITY_ATTRIBUTE_TYPE)
+            for entity in self.entities
+            if not entity.get(IS_ENTITY_E2E)
+        ]
         entities.extend(
             (
                 f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
                 f"{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
             )
             for entity in self.entities
-            if ENTITY_ATTRIBUTE_ROLE in entity
+            if ENTITY_ATTRIBUTE_ROLE in entity and not entity.get(IS_ENTITY_E2E)
         )
         entities.extend(
             (
@@ -444,7 +451,7 @@ class UserUttered(Event):
                 f"{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
             )
             for entity in self.entities
-            if ENTITY_ATTRIBUTE_GROUP in entity
+            if ENTITY_ATTRIBUTE_GROUP in entity and not entity.get(IS_ENTITY_E2E)
         )
 
         out = {}
