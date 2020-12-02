@@ -304,7 +304,7 @@ def test_train_core_autoconfig(
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     # skip actual core training
-    _train_core_with_validated_data = conftest.mock_async(
+    conftest.mock_async(
         monkeypatch, sys.modules["rasa.train"], "_train_core_with_validated_data"
     )
 
