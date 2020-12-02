@@ -33,7 +33,6 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
-    IS_ENTITY_E2E,
 )
 
 if TYPE_CHECKING:
