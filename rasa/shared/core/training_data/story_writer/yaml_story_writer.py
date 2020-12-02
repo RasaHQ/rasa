@@ -188,13 +188,6 @@ class YAMLStoryWriter(StoryWriter):
         )
 
     @staticmethod
-    def _text_is_real_message(user_utterance: UserUttered) -> bool:
-        return (
-            not user_utterance.intent
-            or user_utterance.text != user_utterance.as_story_string()
-        )
-
-    @staticmethod
     def process_user_utterance(
         user_utterance: UserUttered, is_test_story: bool = False
     ) -> OrderedDict:
