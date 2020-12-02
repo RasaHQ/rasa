@@ -249,9 +249,6 @@ async def _train_async_internal(
             additional_arguments=core_additional_arguments,
         )
 
-    if force_training:
-        fingerprint_comparison = FingerprintComparisonResult(force_training=True)
-
     if fingerprint_comparison.is_training_required():
         async with telemetry.track_model_training(file_importer, model_type="rasa"):
             await _do_training(
