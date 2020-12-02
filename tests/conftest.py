@@ -2,14 +2,16 @@ import asyncio
 import os
 import random
 import shutil
+from types import ModuleType
 
 import pytest
 import sys
 import uuid
 
+from _pytest.monkeypatch import MonkeyPatch
 from sanic.request import Request
 
-from typing import Iterator, Callable, Generator
+from typing import Iterator, Callable, Generator, Union
 
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
@@ -319,3 +321,29 @@ class MockExporter(Exporter):
         endpoints_path: Text = "",
     ) -> None:
         super().__init__(tracker_store, event_broker, endpoints_path)
+
+
+def mock_async(
+    monkeypatch: MonkeyPatch, target: Any, name: Text, return_value: Any = None
+) -> Mock:
+    """Mocks an `async` function.
+
+    Args:
+        monkeypatch: `pytest`'s monkeypatcher fixture.
+        target: The target of `monkeypatch.setattr`.
+        name:  The name of the thing which is mocked.
+        return_value: What the mock should return when it's called.
+
+    Returns:
+        The used mock object.
+    """
+    mock = Mock()
+
+    async def mock_async_func(*args: Any, **kwargs: Any) -> Any:
+        mock(*args, **kwargs)
+
+        return return_value
+
+    monkeypatch.setattr(target, name, mock_async_func)
+
+    return mock

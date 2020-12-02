@@ -18,6 +18,7 @@ from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train
+from tests import conftest
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.test_model import _fingerprint
@@ -225,22 +226,15 @@ def test_trained_interpreter_passed_to_core_training(
     # Skip actual NLU training and return trained interpreter path from fixture
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
-    async def mocked_nlu_training(*_: Any, **__: Any) -> Text:
-        return unpacked_trained_rasa_model
-
-    monkeypatch.setattr(
+    conftest.mock_async(
+        monkeypatch,
         sys.modules["rasa.train"],
         "_train_nlu_with_validated_data",
-        mocked_nlu_training,
+        return_value=unpacked_trained_rasa_model,
     )
 
     # Mock the actual Core training
-    _train_core = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
-        _train_core(*args, **kwargs)
-
-    monkeypatch.setattr(rasa.core, "train", mocked_train_core)
+    _train_core = conftest.mock_async(monkeypatch, rasa.core, "train")
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -270,12 +264,7 @@ def test_interpreter_of_old_model_passed_to_core_training(
     )
 
     # Mock the actual Core training
-    _train_core = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> None:
-        _train_core(*args, **kwargs)
-
-    monkeypatch.setattr(rasa.core, "train", mocked_train_core)
+    _train_core = conftest.mock_async(monkeypatch, rasa.core, "train")
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -315,13 +304,8 @@ def test_train_core_autoconfig(
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     # skip actual core training
-    _train_core_with_validated_data = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> None:
-        _train_core_with_validated_data(*args, **kwargs)
-
-    monkeypatch.setattr(
-        sys.modules["rasa.train"], "_train_core_with_validated_data", mocked_train_core,
+    _train_core_with_validated_data = conftest.mock_async(
+        monkeypatch, sys.modules["rasa.train"], "_train_core_with_validated_data"
     )
 
     # do training
@@ -349,12 +333,8 @@ def test_train_nlu_autoconfig(
     mocked_get_configuration = Mock()
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
-    # skip actual NLU training
-    async def mocked_train_nlu(*_: Any, **__: Any) -> None:
-        pass
-
-    monkeypatch.setattr(
-        sys.modules["rasa.train"], "_train_nlu_with_validated_data", mocked_train_nlu,
+    conftest.mock_async(
+        monkeypatch, sys.modules["rasa.train"], "_train_nlu_with_validated_data"
     )
 
     # do training
@@ -378,25 +358,11 @@ def test_model_finetuning(
     default_nlu_data: Text,
     trained_rasa_model: Text,
 ):
-    mocked_nlu_training = Mock()
-
-    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
-        assert isinstance(kwargs["model_to_finetune"], Interpreter)
-        mocked_nlu_training(*args, **kwargs)
-        return ""
-
-    monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
+    mocked_nlu_training = conftest.mock_async(
+        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
-
-    mocked_core_training = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
-        assert isinstance(kwargs["model_to_finetune"], Agent)
-        mocked_core_training(*args, **kwargs)
-
-    monkeypatch.setattr(
-        rasa.core, rasa.core.train.__name__, mocked_train_core,
+    mocked_core_training = conftest.mock_async(
+        monkeypatch, rasa.core, rasa.core.train.__name__,
     )
 
     (tmp_path / "models").mkdir()
@@ -413,7 +379,12 @@ def test_model_finetuning(
     )
 
     mocked_core_training.assert_called_once()
+    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
+
     mocked_nlu_training.assert_called_once()
+    assert isinstance(
+        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
+    )
 
 
 def test_model_finetuning_core(
@@ -424,14 +395,8 @@ def test_model_finetuning_core(
     default_stack_config: Text,
     trained_rasa_model: Text,
 ):
-    mocked_core_training = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
-        assert isinstance(kwargs["model_to_finetune"], Agent)
-        mocked_core_training(*args, **kwargs)
-
-    monkeypatch.setattr(
-        rasa.core, rasa.core.train.__name__, mocked_train_core,
+    mocked_core_training = conftest.mock_async(
+        monkeypatch, rasa.core, rasa.core.train.__name__,
     )
 
     (tmp_path / "models").mkdir()
@@ -447,6 +412,7 @@ def test_model_finetuning_core(
     )
 
     mocked_core_training.assert_called_once()
+    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
 
 
 def test_model_finetuning_nlu(
@@ -457,15 +423,8 @@ def test_model_finetuning_nlu(
     default_stack_config: Text,
     trained_rasa_model: Text,
 ):
-    mocked_nlu_training = Mock()
-
-    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
-        assert isinstance(kwargs["model_to_finetune"], Interpreter)
-        mocked_nlu_training(*args, **kwargs)
-        return ""
-
-    monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
+    mocked_nlu_training = conftest.mock_async(
+        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -479,6 +438,9 @@ def test_model_finetuning_nlu(
     )
 
     mocked_nlu_training.assert_called_once()
+    assert isinstance(
+        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
+    )
 
 
 def test_model_finetuning_with_latest_model(
@@ -490,26 +452,12 @@ def test_model_finetuning_with_latest_model(
     trained_rasa_model: Text,
     tmp_path: Path,
 ):
-    mocked_nlu_training = Mock()
-
-    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
-        assert isinstance(kwargs["model_to_finetune"], Interpreter)
-        mocked_nlu_training(*args, **kwargs)
-        return ""
-
-    monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
+    mocked_nlu_training = conftest.mock_async(
+        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
 
-    mocked_core_training = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
-        assert isinstance(kwargs["model_to_finetune"], Agent)
-
-        mocked_core_training(*args, **kwargs)
-
-    monkeypatch.setattr(
-        rasa.core, rasa.core.train.__name__, mocked_train_core,
+    mocked_core_training = conftest.mock_async(
+        monkeypatch, rasa.core, rasa.core.train.__name__,
     )
 
     train(
@@ -523,7 +471,12 @@ def test_model_finetuning_with_latest_model(
     )
 
     mocked_core_training.assert_called_once()
+    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
+
     mocked_nlu_training.assert_called_once()
+    assert isinstance(
+        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
+    )
 
 
 def test_model_finetuning_with_latest_model_nlu(
@@ -534,15 +487,8 @@ def test_model_finetuning_with_latest_model_nlu(
     trained_rasa_model: Text,
     tmp_path: Path,
 ):
-    mocked_nlu_training = Mock()
-
-    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
-        assert isinstance(kwargs["model_to_finetune"], Interpreter)
-        mocked_nlu_training(*args, **kwargs)
-        return ""
-
-    monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
+    mocked_nlu_training = conftest.mock_async(
+        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
 
     train_nlu(
@@ -555,6 +501,9 @@ def test_model_finetuning_with_latest_model_nlu(
     )
 
     mocked_nlu_training.assert_called_once()
+    assert isinstance(
+        mocked_nlu_training.call_args.kwargs["model_to_finetune"], Interpreter
+    )
 
 
 def test_model_finetuning_with_latest_model_core(
@@ -565,14 +514,8 @@ def test_model_finetuning_with_latest_model_core(
     trained_rasa_model: Text,
     tmp_path: Path,
 ):
-    mocked_core_training = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
-        assert isinstance(kwargs["model_to_finetune"], Agent)
-        mocked_core_training(*args, **kwargs)
-
-    monkeypatch.setattr(
-        rasa.core, rasa.core.train.__name__, mocked_train_core,
+    mocked_core_training = conftest.mock_async(
+        monkeypatch, rasa.core, rasa.core.train.__name__,
     )
 
     train_core(
@@ -585,6 +528,7 @@ def test_model_finetuning_with_latest_model_core(
     )
 
     mocked_core_training.assert_called_once()
+    assert isinstance(mocked_core_training.call_args.kwargs["model_to_finetune"], Agent)
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
@@ -598,25 +542,11 @@ def test_model_finetuning_with_invalid_model(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_nlu_training = Mock()
-
-    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
-        assert kwargs["model_to_finetune"] is None
-        mocked_nlu_training(*args, **kwargs)
-        return ""
-
-    monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
+    mocked_nlu_training = conftest.mock_async(
+        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
-
-    mocked_core_training = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
-        assert kwargs["model_to_finetune"] is None
-        mocked_core_training(*args, **kwargs)
-
-    monkeypatch.setattr(
-        rasa.core, rasa.core.train.__name__, mocked_train_core,
+    mocked_core_training = conftest.mock_async(
+        monkeypatch, rasa.core, rasa.core.train.__name__,
     )
 
     (tmp_path / "models").mkdir()
@@ -633,7 +563,10 @@ def test_model_finetuning_with_invalid_model(
     )
 
     mocked_core_training.assert_called_once()
+    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
+
     mocked_nlu_training.assert_called_once()
+    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
 
     assert "No model for finetuning found" in capsys.readouterr().out
 
@@ -648,14 +581,8 @@ def test_model_finetuning_with_invalid_model_core(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_core_training = Mock()
-
-    async def mocked_train_core(*args: Any, **kwargs: Any) -> Any:
-        assert kwargs["model_to_finetune"] is None
-        mocked_core_training(*args, **kwargs)
-
-    monkeypatch.setattr(
-        rasa.core, rasa.core.train.__name__, mocked_train_core,
+    mocked_core_training = conftest.mock_async(
+        monkeypatch, rasa.core, rasa.core.train.__name__,
     )
 
     (tmp_path / "models").mkdir()
@@ -671,6 +598,7 @@ def test_model_finetuning_with_invalid_model_core(
     )
 
     mocked_core_training.assert_called_once()
+    assert mocked_core_training.call_args.kwargs["model_to_finetune"] is None
 
     assert "No model for finetuning found" in capsys.readouterr().out
 
@@ -685,15 +613,9 @@ def test_model_finetuning_with_invalid_model_nlu(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_nlu_training = Mock()
 
-    async def mocked_train_nlu(*args: Any, **kwargs: Any) -> Text:
-        assert kwargs["model_to_finetune"] is None
-        mocked_nlu_training(*args, **kwargs)
-        return ""
-
-    monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.train.__name__, mocked_train_nlu,
+    mocked_nlu_training = conftest.mock_async(
+        monkeypatch, rasa.nlu, rasa.nlu.train.__name__, return_value=""
     )
 
     (tmp_path / "models").mkdir()
@@ -709,5 +631,6 @@ def test_model_finetuning_with_invalid_model_nlu(
     )
 
     mocked_nlu_training.assert_called_once()
+    assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
 
     assert "No model for finetuning found" in capsys.readouterr().out
