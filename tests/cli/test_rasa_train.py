@@ -10,6 +10,12 @@ import rasa.shared.utils.io
 from rasa import model
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data import training_data
+from rasa.train import (
+    CODE_CORE_NEEDS_TO_BE_RETRAINED,
+    CODE_NLU_NEEDS_TO_BE_RETRAINED,
+    CODE_NLG_NEEDS_TO_BE_RETRAINED,
+    CODE_FORCED_TRAINING
+)
 
 # noinspection PyProtectedMember
 from rasa.cli.train import _get_valid_config
@@ -18,7 +24,6 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
 )
-import rasa.utils.io as io_utils
 
 
 def test_train(run_in_simple_project: Callable[..., RunResult]):
@@ -206,6 +211,47 @@ def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult
 
     assert [s for s in printed_output if "No training required." in s]
     assert output.ret == 0
+
+
+def test_train_dry_run_failure(run_in_simple_project_with_model: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    domain = (
+        "version: '2.0'\n"
+        "session_config:\n"
+        "  session_expiration_time: 60\n"
+        "  carry_over_slots_to_new_session: true\n"
+        "actions:\n"
+        "- respond_chitchat\n"
+        "- utter_greet\n"
+        "- utter_cheer_up"
+    )
+
+    with open(os.path.join(temp_dir, "domain.yml"), "w") as f:
+        f.write(domain)
+
+    output = run_in_simple_project_with_model("train", "--dry-run")
+    printed_output = set(output.outlines)
+
+    assert not any([s for s in printed_output if "No training required." in s])
+    assert (output.ret & CODE_CORE_NEEDS_TO_BE_RETRAINED == CODE_CORE_NEEDS_TO_BE_RETRAINED) and \
+           (output.ret & CODE_NLU_NEEDS_TO_BE_RETRAINED == CODE_NLU_NEEDS_TO_BE_RETRAINED) and \
+           (output.ret & CODE_NLG_NEEDS_TO_BE_RETRAINED == CODE_NLG_NEEDS_TO_BE_RETRAINED) and \
+           (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
+
+
+def test_train_dry_run_force(run_in_simple_project_with_model: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+
+    output = run_in_simple_project_with_model("train", "--dry-run", "--force")
+    printed_output = set(output.outlines)
+
+    assert [s for s in printed_output if "The training was forced." in s]
+    assert output.ret == CODE_FORCED_TRAINING
 
 
 def test_train_with_only_nlu_data(run_in_simple_project: Callable[..., RunResult]):

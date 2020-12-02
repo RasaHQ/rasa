@@ -28,6 +28,11 @@ from rasa.shared.constants import (
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
 
+CODE_CORE_NEEDS_TO_BE_RETRAINED = 0b0001
+CODE_NLU_NEEDS_TO_BE_RETRAINED = 0b0010
+CODE_NLG_NEEDS_TO_BE_RETRAINED = 0b0100
+CODE_FORCED_TRAINING = 0b1000
+
 
 def train(
     domain: Text,
@@ -148,19 +153,19 @@ def dry_run_result(
     texts = []
 
     if fingerprint_comparison.core:
-        code += 0b0001
+        code += CODE_CORE_NEEDS_TO_BE_RETRAINED
         texts.append("Core model should be retrained.")
 
     if fingerprint_comparison.core:
-        code += 0b0010
+        code += CODE_NLU_NEEDS_TO_BE_RETRAINED
         texts.append("NLU model should be retrained.")
 
     if fingerprint_comparison.nlg:
-        code += 0b0100
+        code += CODE_NLG_NEEDS_TO_BE_RETRAINED
         texts.append("Responses in the domain should be updated.")
 
     if fingerprint_comparison.force_training:
-        code += 0b1000
+        code += CODE_FORCED_TRAINING
         texts.append("The training was forced.")
 
     if code == 0:
@@ -209,7 +214,7 @@ async def _train_async_internal(
     old_model = model.get_latest_model(output_path)
 
     fingerprint_comparison = model.should_retrain(
-        new_fingerprint, old_model, train_path
+        new_fingerprint, old_model, train_path, force_training
     )
 
     if dry_run:
