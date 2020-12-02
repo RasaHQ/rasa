@@ -10,7 +10,7 @@ from rasa.cli.arguments.default_arguments import (
 )
 from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
-USE_LATEST_MODEL_FOR_FINE_TUNING = "use latest model for finetuning"
+USE_LATEST_MODEL_FOR_FINE_TUNING = True
 
 
 def set_train_arguments(parser: argparse.ArgumentParser) -> None:
