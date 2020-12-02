@@ -4,7 +4,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import Domain
 import numpy as np
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, INTENT
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ENTITY_LABEL_SEPARATOR
 from rasa.shared.nlu.interpreter import RegexInterpreter
 import scipy.sparse
 
@@ -118,11 +118,11 @@ def test_single_state_featurizer_creates_encoded_all_actions():
         entities=[],
         slots=[],
         templates={},
-        forms=[],
+        forms={},
         action_names=["a", "b", "c", "d"],
     )
     f = SingleStateFeaturizer()
-    f.prepare_from_domain(domain)
+    f.prepare_for_training(domain, RegexInterpreter())
     encoded_actions = f.encode_all_actions(domain, RegexInterpreter())
     assert len(encoded_actions) == len(domain.action_names)
     assert all(
@@ -131,6 +131,46 @@ def test_single_state_featurizer_creates_encoded_all_actions():
             for encoded_action in encoded_actions
         ]
     )
+
+
+def test_single_state_featurizer_with_entity_roles_and_groups(
+    unpacked_trained_moodbot_path: Text,
+):
+    from rasa.core.agent import Agent
+
+    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+
+    f = SingleStateFeaturizer()
+    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
+    f._default_feature_states[ENTITIES] = {
+        "c": 0,
+        "d": 1,
+        f"d{ENTITY_LABEL_SEPARATOR}e": 2,
+    }
+    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
+    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
+    encoded = f.encode_state(
+        {
+            "user": {
+                "text": "a ball",
+                "intent": "b",
+                "entities": ["c", f"d{ENTITY_LABEL_SEPARATOR}e"],
+            },
+            "prev_action": {
+                "action_name": "action_listen",
+                "action_text": "throw a ball",
+            },
+            "active_loop": {"name": "k"},
+            "slots": {"e": (1.0,)},
+        },
+        interpreter=interpreter,
+    )
+    # check all the features are encoded and *_text features are encoded by a densefeaturizer
+    assert sorted(list(encoded.keys())) == sorted(
+        [TEXT, ENTITIES, ACTION_NAME, SLOTS, ACTIVE_LOOP, INTENT, ACTION_TEXT]
+    )
+    assert np.all(encoded[ENTITIES][0].features.toarray() == [1, 0, 1])
 
 
 def test_single_state_featurizer_uses_dtype_float():
@@ -255,3 +295,24 @@ def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
     assert (
         encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 0, 0, 1]])
     ).nnz == 0
+
+
+def test_single_state_featurizer_uses_regex_interpreter(
+    unpacked_trained_moodbot_path: Text,
+):
+    from rasa.core.agent import Agent
+
+    domain = Domain(
+        intents=[], entities=[], slots=[], templates={}, forms=[], action_names=[],
+    )
+    f = SingleStateFeaturizer()
+    # simulate that core was trained separately by passing
+    # RegexInterpreter to prepare_for_training
+    f.prepare_for_training(domain, RegexInterpreter())
+    # simulate that nlu and core models were manually combined for prediction
+    # by passing trained interpreter to encode_all_actions
+    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    features = f._extract_state_features({TEXT: "some text"}, interpreter)
+    # RegexInterpreter cannot create features for text, therefore since featurizer
+    # was trained without nlu, features for text should be empty
+    assert not features

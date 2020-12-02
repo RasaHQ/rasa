@@ -11,7 +11,7 @@
 <body>
 <div id="errormsg" style="color: #b00"></div>
 <svg>
-    <style>
+    <style id="graph-style">
         .node.invisible > rect {
             display: none;
         }
@@ -129,7 +129,7 @@
 
   if (isClient) {
     // Mark all nodes and their edges as active
-    cssRules = document.styleSheets[0].cssRules;
+    cssRules = document.getElementById('graph-style').sheet.cssRules;
     cssRules[3].style.opacity = 1;
     cssRules[4].style.opacity = 1;
 

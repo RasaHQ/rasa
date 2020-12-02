@@ -55,13 +55,19 @@ Rasa will automatically start streaming events when you restart the Rasa server.
 Here is how you add it using Python code:
 
 ```python
+import asyncio
+
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.tracker_store import InMemoryTrackerStore
 
+event_loop = asyncio.get_event_loop()
 pika_broker = PikaEventBroker('localhost',
                               'username',
                               'password',
-                              queues=['rasa_events'])
+                              queues=['rasa_events'],
+                              event_loop=event_loop
+                              )
+event_loop.run_until_complete(pika_broker.connect())
 
 tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 ```
@@ -123,19 +129,22 @@ If using the `SSL` protocol, the endpoints file should look like:
 
 ### Adding a Kafka Broker in Python
 
-The code below shows an example on how to instantiate a Kafka producer in you script.
+The code below shows an example on how to instantiate a Kafka producer in your script.
 
 ```python
 from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.shared.core.domain import Domain
 
-kafka_broker = KafkaEventBroker(host='localhost:9092',
+kafka_broker = KafkaEventBroker(url='localhost:9092',
                                 topic='rasa_events')
 
+
+domain = Domain.load("domain.yml")
 tracker_store = InMemoryTrackerStore(domain=domain, event_broker=kafka_broker)
 ```
 
-The host variable can be either a list of brokers addresses or a single one.
+The `url` argument can be either a list of broker addresses or a single one.
 If only one broker address is available, the client will connect to it and
 request the cluster Metadata.
 Therefore, the remaining brokers in the cluster can be discovered
@@ -198,7 +207,7 @@ according to the security protocol being used. The following implementation show
 
 ```python
 from kafka import KafkaConsumer
-from json import loads
+import json
 
 consumer = KafkaConsumer('rasa_events',
                           bootstrap_servers=['localhost:29093'],

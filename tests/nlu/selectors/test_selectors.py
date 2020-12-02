@@ -18,6 +18,8 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.mark.parametrize(
@@ -93,6 +95,34 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     for rank in ranking:
         assert rank.get("confidence") is not None
         assert rank.get("intent_response_key") is not None
+
+
+def test_preprocess_selector_multiple_retrieval_intents():
+
+    # use some available data
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
+    training_data_extra_intent = TrainingData(
+        [
+            Message.build(
+                text="Is it possible to detect the version?", intent="faq/q1"
+            ),
+            Message.build(text="How can I get a new virtual env", intent="faq/q2"),
+        ]
+    )
+    training_data = training_data.merge(training_data_responses).merge(
+        training_data_extra_intent
+    )
+
+    response_selector = ResponseSelector()
+
+    response_selector.preprocess_train_data(training_data)
+
+    assert sorted(response_selector.all_retrieval_intents) == ["chitchat", "faq"]
 
 
 @pytest.mark.parametrize(
