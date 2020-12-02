@@ -559,6 +559,8 @@ def test_model_finetuning_with_invalid_model_nlu(
     )
 
     mocked_nlu_training.assert_called_once()
+    print(mocked_nlu_training.call_args)
+    print(mocked_nlu_training.call_args.kwargs)
     assert mocked_nlu_training.call_args.kwargs["model_to_finetune"] is None
 
     assert "No NLU model for finetuning found" in capsys.readouterr().out
