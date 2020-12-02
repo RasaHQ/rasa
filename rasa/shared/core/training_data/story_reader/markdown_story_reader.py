@@ -209,8 +209,8 @@ class MarkdownStoryReader(StoryReader):
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>`. For the
-        syntax of `<example>` see the Rasa docs on NLU training data."""
-
+        syntax of `<example>` see the Rasa docs on NLU training data.
+        """
         # Match three groups:
         # 1) Potential "form" annotation
         # 2) The correct intent
