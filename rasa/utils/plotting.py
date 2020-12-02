@@ -116,7 +116,7 @@ def plot_confusion_matrix(
         fig.savefig(output_file, bbox_inches="tight")
 
 
-def plot_comparative_histogram(
+def plot_histogram(
     hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None
 ) -> None:
     """Plot a side-by-side comparative histogram of the confidence distribution (misses and hits).
@@ -137,8 +137,11 @@ def plot_comparative_histogram(
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
-    max_xlim = max(binned_data_sets[0] + binned_data_sets[1])
-    max_xlim += int(0.25 * max_xlim)  # padding
+    max_xlims = [max(binned_data_set) for binned_data_set in binned_data_sets]
+    max_xlims = [xlim + np.ceil(0.25 * xlim) for xlim in max_xlims]  # padding
+
+    min_ylim_idx = min([(binned_data_set != 0).argmax(axis=0) for binned_data_set in binned_data_sets])
+    min_ylim = bins[max(0, min_ylim_idx - 1)]  # ensures the lowest non-empty bin shows
 
     centers = 0.5 * (bins + np.roll(bins, 1))[:-1]
     heights = 0.75 * np.diff(bins)
@@ -163,8 +166,8 @@ def plot_comparative_histogram(
     )
     axes[1].set(title="Wrong")
 
-    axes[0].set(yticks=bins, xlim=(0, max_xlim))
-    axes[1].set(yticks=bins, xlim=(0, max_xlim))
+    axes[0].set(yticks=bins, xlim=(0, max_xlims[0]), ylim=(min_ylim, 1.0))
+    axes[1].set(yticks=bins, xlim=(0, max_xlims[1]), ylim=(min_ylim, 1.0))
 
     axes[0].invert_xaxis()
     axes[0].yaxis.tick_right()
