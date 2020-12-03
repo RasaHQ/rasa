@@ -217,6 +217,9 @@ class TrackerFeaturizer:
                 # remove intent features to only use text
                 if last_state.get(USER, {}).get(INTENT):
                     del last_state[USER][INTENT]
+                # don't add entities if text is used for featurization
+                if last_state.get(USER, {}).get(ENTITIES):
+                    del last_state[USER][ENTITIES]
             else:
                 # remove text features to only use intent
                 if last_state.get(USER, {}).get(TEXT):

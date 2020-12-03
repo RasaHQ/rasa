@@ -144,7 +144,7 @@ def test_single_state_featurizer_prepare_from_domain():
     )
 
     f = SingleStateFeaturizer()
-    f.prepare_from_domain(domain)
+    f.prepare_for_training(domain, RegexInterpreter())
 
     assert len(f._default_feature_states[INTENT]) > 1
     assert "greet" in f._default_feature_states[INTENT]
@@ -197,7 +197,7 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
         action_names=[],
     )
     f = SingleStateFeaturizer()
-    f.prepare_from_domain(domain)
+    f.prepare_for_training(domain, RegexInterpreter())
     encoded = f.encode_entities(
         {
             TEXT: "I am flying from London to Paris",

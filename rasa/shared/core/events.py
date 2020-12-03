@@ -456,7 +456,8 @@ class UserUttered(Event):
             out[TEXT] = self.text
         if self.intent_name and not self.use_text_for_featurization:
             out[INTENT] = self.intent_name
-        if entities:
+        # don't add entities for e2e utterances
+        if entities and not self.use_text_for_featurization:
             out[ENTITIES] = entities
 
         return out
