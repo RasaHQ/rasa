@@ -191,8 +191,8 @@ def tracker_with_six_scheduled_reminders(
 
 
 @pytest.fixture
-def default_nlg(_default_domain: Domain) -> NaturalLanguageGenerator:
-    return TemplatedNaturalLanguageGenerator(_default_domain.templates)
+def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
+    return TemplatedNaturalLanguageGenerator(default_domain.templates)
 
 
 @pytest.fixture
