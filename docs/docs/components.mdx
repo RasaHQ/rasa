@@ -2064,6 +2064,9 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   Make the entity extractor case sensitive by adding the `case_sensitive: True` option, the default being
   `case_sensitive: False`.
 
+  For correctly process languages such as Chinese that don't use whitespace for word separation,
+  user need add the `use_word_boundaries: False` option, the default being `use_word_boundaries: True`.
+
   ```yaml-rasa
       pipeline:
       - name: RegexEntityExtractor
@@ -2073,6 +2076,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         use_lookup_tables: True
         # use regexes to extract entities
         use_regexes: True
+        # use match word boundaries for lookup table
+        "use_word_boundaries": True
   ```
 
 
