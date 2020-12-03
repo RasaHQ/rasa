@@ -33,7 +33,14 @@ class Validator:
         story_graph: StoryGraph,
         config: Optional[Dict[Text, Any]],
     ) -> None:
-        """Initializes the Validator object. """
+        """Initializes the Validator object.
+
+        Args:
+            domain: The domain.
+            intents: Training data.
+            story_graph: The story graph.
+            config: The configuration.
+        """
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
@@ -51,7 +58,6 @@ class Validator:
 
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
-
         everything_is_alright = True
 
         nlu_data_intents = {e.data["intent"] for e in self.intents.intent_examples}

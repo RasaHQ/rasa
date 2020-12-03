@@ -16,6 +16,14 @@ class Features:
         attribute: Text,
         origin: Union[Text, List[Text]],
     ) -> None:
+        """Initializes the Features object.
+
+        Args:
+            features: The features.
+            feature_type: Type of the feature, e.g. FEATURE_TYPE_SENTENCE.
+            attribute: Message attribute, e.g. INTENT or TEXT.
+            origin: Name of the component that created the features.
+        """
         self.features = features
         self.type = feature_type
         self.origin = origin
@@ -83,12 +91,12 @@ class Features:
     ) -> Tuple[
         Text, Text, Union[np.ndarray, scipy.sparse.spmatrix], Union[Text, List[Text]]
     ]:
-        return (self.type, self.attribute, self.features, self.origin)
+        """Returns a 4-tuple of defining properties.
 
-    def __hash__(self) -> int:
-        return hash(
-            self.__key__()
-        )  # ToDo: This doesn't actually work for numpy arrays or sparse matrices
+        Returns:
+            Tuple of type, attribute, features, and origin properties.
+        """
+        return (self.type, self.attribute, self.features, self.origin)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Features):

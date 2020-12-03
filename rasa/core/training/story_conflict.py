@@ -132,6 +132,7 @@ class TrackerEventStateTuple(NamedTuple):
 
     @property
     def sliced_states_hash(self) -> int:
+        """Returns the hash of the sliced states."""
         return hash(_as_sorted_text(self.sliced_states))
 
 
@@ -140,6 +141,7 @@ def _as_sorted_text(obj: Any) -> Text:
 
     Args:
         obj: Something made up of lists and dicts and stringifiable objects.
+
     Returns:
         A string representation of the object that doesn't change
         randomly due to unsorted dicts or sets.
