@@ -9,7 +9,7 @@ from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
 import rasa.shared.core.events
-from rasa.exceptions import UnsupportedFeatureException
+from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.shared.core.events import (
     Event,
