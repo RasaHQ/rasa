@@ -534,7 +534,7 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     for idx, event in enumerate(applied_events):
         if isinstance(event, ActionExecuted):
-            bot_column.append(colored(event.action_name, "autocyan"))
+            bot_column.append(colored(str(event), "autocyan"))
             if event.confidence is not None:
                 bot_column[-1] += colored(f" {event.confidence:03.2f}", "autowhite")
 
