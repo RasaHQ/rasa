@@ -731,9 +731,9 @@ async def test_evaluate_stories_not_ready_agent(
 
 
 async def test_evaluate_stories_end_to_end(
-    rasa_app: SanicASGITestClient, end_to_end_story_file: Text
+    rasa_app: SanicASGITestClient, end_to_end_test_story_file
 ):
-    stories = rasa.shared.utils.io.read_file(end_to_end_story_file)
+    stories = rasa.shared.utils.io.read_file(end_to_end_test_story_file)
 
     _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories)
 
@@ -1293,7 +1293,11 @@ async def test_trigger_intent_with_not_existing_intent(rasa_app: SanicASGITestCl
         ([], None, CollectingOutputChannel),
         ([RestInput()], "slack", CollectingOutputChannel),
         ([RestInput()], "rest", CollectingOutputChannel),
-        ([RestInput(), SlackInput("test")], "slack", SlackBot),
+        (
+            [RestInput(), SlackInput("test", slack_signing_secret="foobar")],
+            "slack",
+            SlackBot,
+        ),
     ],
 )
 def test_get_output_channel(
@@ -1315,7 +1319,7 @@ def test_get_output_channel(
     [
         ([], CollectingOutputChannel),
         ([RestInput()], CollectingOutputChannel),
-        ([RestInput(), SlackInput("test")], SlackBot),
+        ([RestInput(), SlackInput("test", slack_signing_secret="foobar")], SlackBot),
     ],
 )
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):

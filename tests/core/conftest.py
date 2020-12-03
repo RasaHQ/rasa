@@ -5,7 +5,7 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Generator
+from typing import Text, Generator, Callable
 
 import pytest
 
@@ -30,7 +30,11 @@ DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
 
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
-DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
+DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
+
+DEFAULT_E2E_STORIES_FILE = "data/test_yaml_stories/stories_e2e.yml"
+
+SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
@@ -215,6 +219,21 @@ async def form_bot_agent(trained_async) -> Agent:
         training_files=[
             "examples/formbot/data/rules.yml",
             "examples/formbot/data/stories.yml",
+        ],
+    )
+
+    return Agent.load_local_model(zipped_model)
+
+
+@pytest.fixture(scope="session")
+async def response_selector_agent(trained_async: Callable) -> Agent:
+    zipped_model = await trained_async(
+        domain="examples/responseselectorbot/domain.yml",
+        config="examples/responseselectorbot/config.yml",
+        training_files=[
+            "examples/responseselectorbot/data/rules.yml",
+            "examples/responseselectorbot/data/stories.yml",
+            "examples/responseselectorbot/data/nlu.yml",
         ],
     )
 

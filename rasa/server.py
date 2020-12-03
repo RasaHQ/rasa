@@ -402,7 +402,7 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            broker = EventBroker.create(endpoints.event_broker)
+            broker = await EventBroker.create(endpoints.event_broker)
             tracker_store = TrackerStore.create(
                 endpoints.tracker_store, event_broker=broker
             )

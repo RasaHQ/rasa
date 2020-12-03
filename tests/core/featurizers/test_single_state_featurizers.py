@@ -144,7 +144,7 @@ def test_single_state_featurizer_prepare_from_domain():
     )
 
     f = SingleStateFeaturizer()
-    f.prepare_from_domain(domain)
+    f.prepare_for_training(domain, RegexInterpreter())
 
     assert len(f._default_feature_states[INTENT]) > 1
     assert "greet" in f._default_feature_states[INTENT]
@@ -169,10 +169,10 @@ def test_single_state_featurizer_creates_encoded_all_actions():
     )
 
     f = SingleStateFeaturizer()
-    f.prepare_from_domain(domain)
+    f.prepare_for_training(domain, RegexInterpreter())
     encoded_actions = f.encode_all_actions(domain, RegexInterpreter())
 
-    assert len(encoded_actions) == len(domain.action_names)
+    assert len(encoded_actions) == len(domain.action_names_or_texts)
     assert all(
         [
             ACTION_NAME in encoded_action and ACTION_TEXT not in encoded_action
@@ -197,7 +197,7 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
         action_names=[],
     )
     f = SingleStateFeaturizer()
-    f.prepare_from_domain(domain)
+    f.prepare_for_training(domain, RegexInterpreter())
     encoded = f.encode_entities(
         {
             TEXT: "I am flying from London to Paris",
@@ -400,3 +400,24 @@ def test_to_sparse_sentence_features():
     assert features[0].origin == sentence_features[0].origin
     assert features[0].attribute == sentence_features[0].attribute
     assert sentence_features[0].features.shape == (1, 10)
+
+
+def test_single_state_featurizer_uses_regex_interpreter(
+    unpacked_trained_moodbot_path: Text,
+):
+    from rasa.core.agent import Agent
+
+    domain = Domain(
+        intents=[], entities=[], slots=[], templates={}, forms=[], action_names=[],
+    )
+    f = SingleStateFeaturizer()
+    # simulate that core was trained separately by passing
+    # RegexInterpreter to prepare_for_training
+    f.prepare_for_training(domain, RegexInterpreter())
+    # simulate that nlu and core models were manually combined for prediction
+    # by passing trained interpreter to encode_all_actions
+    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    features = f._extract_state_features({TEXT: "some text"}, interpreter)
+    # RegexInterpreter cannot create features for text, therefore since featurizer
+    # was trained without nlu, features for text should be empty
+    assert not features

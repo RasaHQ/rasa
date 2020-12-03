@@ -324,13 +324,14 @@ class Message:
 
         return combined_features
 
-    def is_core_message(self) -> bool:
-        """Checks whether the message is a core message or not.
+    def is_core_or_domain_message(self) -> bool:
+        """Checks whether the message is a core message or from the domain.
 
-        E.g. a core message is created from a story, not from the NLU data.
+        E.g. a core message is created from a story or a domain action,
+        not from the NLU data.
 
         Returns:
-            True, if message is a core message, false otherwise.
+            True, if message is a core or domain message, false otherwise.
         """
         return bool(
             self.data.get(ACTION_NAME)
@@ -343,4 +344,15 @@ class Message:
                 self.data.get(TEXT)
                 and not (self.data.get(INTENT) or self.data.get(RESPONSE))
             )
+        )
+
+    def is_e2e_message(self) -> bool:
+        """Checks whether the message came from an e2e story.
+
+        Returns:
+            `True`, if message is a from an e2e story, `False` otherwise.
+        """
+        return bool(
+            (self.get(ACTION_TEXT) and not self.get(ACTION_NAME))
+            or (self.get(TEXT) and not self.get(INTENT))
         )
