@@ -357,10 +357,11 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
         Args:
             retrieval_intents: Set of retrieval intents defined in NLU training data.
+            response_templates: Response templates defined in NLU training data.
             existing_domain: Domain which is already loaded from the domain file.
 
         Returns: Domain with retrieval actions added to action names and properties
-        for retrieval intents updated.
+          for retrieval intents updated.
         """
         # Get all the properties already defined
         # for each retrieval intent in other domains
