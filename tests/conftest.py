@@ -1,13 +1,15 @@
 import asyncio
+import copy
 import os
 import random
+
 import pytest
 import sys
 import uuid
 
 from sanic.request import Request
 
-from typing import Iterator, Callable
+from typing import Iterator, Callable, Generator
 
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
@@ -90,7 +92,7 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(trained_async) -> Text:
+async def trained_moodbot_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",
@@ -126,8 +128,13 @@ def default_domain_path() -> Text:
 
 
 @pytest.fixture(scope="session")
-def default_domain() -> Domain:
+def _default_domain() -> Domain:
     return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+
+
+@pytest.fixture()
+def default_domain(_default_domain: Domain) -> Domain:
+    return copy.deepcopy(_default_domain)
 
 
 @pytest.fixture(scope="session")
@@ -187,6 +194,14 @@ async def trained_rasa_model(
     )
 
     return trained_stack_model_path
+
+
+@pytest.fixture(scope="session")
+async def unpacked_trained_rasa_model(
+    trained_rasa_model: Text,
+) -> Generator[Text, None, None]:
+    with get_model(trained_rasa_model) as path:
+        yield path
 
 
 @pytest.fixture(scope="session")
@@ -309,3 +324,10 @@ class MockExporter(Exporter):
         endpoints_path: Text = "",
     ) -> None:
         super().__init__(tracker_store, event_broker, endpoints_path)
+
+
+class AsyncMock(Mock):
+    """Helper class to mock async functions and methods."""
+
+    async def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return super().__call__(*args, **kwargs)

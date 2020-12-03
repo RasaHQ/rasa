@@ -75,8 +75,8 @@ def template_nlg():
 
 
 @pytest.fixture(scope="module")
-def template_sender_tracker(default_domain):
-    return DialogueStateTracker("template-sender", default_domain.slots)
+def template_sender_tracker(_default_domain: Domain):
+    return DialogueStateTracker("template-sender", _default_domain.slots)
 
 
 def test_text_format():

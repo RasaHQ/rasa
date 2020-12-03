@@ -83,6 +83,8 @@ async def train(
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     persist_nlu_training_data: bool = False,
+    model_to_finetune: Optional[Interpreter] = None,
+    finetuning_epoch_fraction: float = 1.0,
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
