@@ -1,17 +1,15 @@
 import asyncio
+import copy
 import os
 import random
-import shutil
-from types import ModuleType
 
 import pytest
 import sys
 import uuid
 
-from _pytest.monkeypatch import MonkeyPatch
 from sanic.request import Request
 
-from typing import Iterator, Callable, Generator, Union
+from typing import Iterator, Callable, Generator
 
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
@@ -130,8 +128,13 @@ def default_domain_path() -> Text:
 
 
 @pytest.fixture(scope="session")
-def default_domain() -> Domain:
+def _default_domain() -> Domain:
     return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+
+
+@pytest.fixture()
+def default_domain(_default_domain: Domain) -> Domain:
+    return copy.deepcopy(_default_domain)
 
 
 @pytest.fixture(scope="session")
