@@ -500,7 +500,7 @@ def should_retrain(
 
 
 def can_fine_tune(last_fingerprint: Fingerprint, new_fingerprint: Fingerprint) -> bool:
-    """Check which components of a model should be retrained.
+    """Checks if components of a model can be finetuned with incremental training.
 
     Args:
         last_fingerprint: The fingerprint of the old model to potentially be fine-tuned.

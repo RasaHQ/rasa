@@ -309,3 +309,10 @@ class MockExporter(Exporter):
         endpoints_path: Text = "",
     ) -> None:
         super().__init__(tracker_store, event_broker, endpoints_path)
+
+
+class AsyncMock(Mock):
+    """Helper class to mock async functions and methods."""
+
+    async def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return super().__call__(*args, **kwargs)

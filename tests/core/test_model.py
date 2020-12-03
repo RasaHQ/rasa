@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Text, Optional, Any
 from unittest.mock import Mock
 
+from _pytest.monkeypatch import MonkeyPatch
 import pytest
 
 import rasa
@@ -49,6 +50,7 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
+from tests.conftest import AsyncMock
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING
 
 
@@ -113,7 +115,7 @@ def _fingerprint(
     stories: Optional[Any] = None,
     nlu: Optional[Any] = None,
     rasa_version: Text = "1.0",
-):
+) -> Fingerprint:
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
         FINGERPRINT_CONFIG_CORE_KEY: config_core
@@ -160,7 +162,7 @@ def test_persist_and_load_fingerprint():
         (_fingerprint(config_without_epochs=["other"]), False),
     ],
 )
-def test_core_fingerprint_changed(fingerprint2, changed):
+def test_core_fingerprint_changed(fingerprint2: Fingerprint, changed: bool):
     fingerprint1 = _fingerprint()
     assert (
         did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_CORE)
@@ -181,7 +183,7 @@ def test_core_fingerprint_changed(fingerprint2, changed):
         (_fingerprint(config_without_epochs=["other"]), False),
     ],
 )
-def test_nlu_fingerprint_changed(fingerprint2, changed):
+def test_nlu_fingerprint_changed(fingerprint2: Fingerprint, changed: bool):
     fingerprint1 = _fingerprint()
     assert (
         did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_NLU)
@@ -192,9 +194,9 @@ def test_nlu_fingerprint_changed(fingerprint2, changed):
 @pytest.mark.parametrize(
     "fingerprint2, changed",
     [
-        (_fingerprint(config=["other"]), True),
         (_fingerprint(config_without_epochs=["other"]), True),
         (_fingerprint(domain=["other"]), True),
+        (_fingerprint(config=["other"]), False),
         (_fingerprint(rasa_version="100"), False),
         (_fingerprint(config_core=["other"]), False),
         (_fingerprint(config_nlu=["other"]), False),
@@ -203,7 +205,7 @@ def test_nlu_fingerprint_changed(fingerprint2, changed):
         (_fingerprint(stories=["other"]), False),
     ],
 )
-def test_fine_tune_fingerprint_changed(fingerprint2, changed):
+def test_fine_tune_fingerprint_changed(fingerprint2: Fingerprint, changed: bool):
     fingerprint1 = _fingerprint()
     assert (
         did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_FINE_TUNE)
@@ -277,7 +279,7 @@ async def test_fingerprinting_changing_config_epochs(project: Text):
             if "epochs" in p:
                 p["epochs"] += 10
 
-    importer.get_config = asyncio.coroutine(lambda: config)
+    importer.get_config = AsyncMock(return_value=config)
     new_fingerprint = await model_fingerprint(importer)
 
     assert (
@@ -295,7 +297,7 @@ async def test_fingerprinting_changing_config_epochs(project: Text):
 
     config["pipeline"].pop()
 
-    importer.get_config = asyncio.coroutine(lambda: config)
+    importer.get_config = AsyncMock(return_value=config)
     new_fingerprint = await model_fingerprint(importer)
 
     assert (
@@ -496,7 +498,11 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     [("2.1.0", "2.1.0", True), ("2.0.0", "2.1.0", True), ("2.1.0", "2.0.0", False),],
 )
 async def test_can_fine_tune_min_version(
-    project: Text, monkeypatch, old_model_version, min_compatible_version, can_tune
+    project: Text,
+    monkeypatch: MonkeyPatch,
+    old_model_version: Text,
+    min_compatible_version: Text,
+    can_tune: bool,
 ):
     importer = _project_files(project)
 
