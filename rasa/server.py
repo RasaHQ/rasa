@@ -146,11 +146,12 @@ def ensure_conversation_exists(app: Sanic) -> Callable[..., HTTPResponse]:
         @wraps(f)
         def decorated(*args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
-            tracker = app.agent.tracker_store.retrieve(conversation_id)
-            if tracker is not None:
+            if app.agent.tracker_store.exists(conversation_id):
                 return f(*args, **kwargs)
             else:
-                raise ErrorResponse(HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found.")
+                raise ErrorResponse(
+                    HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
+                )
 
         return decorated
 
