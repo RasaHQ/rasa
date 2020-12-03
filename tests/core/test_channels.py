@@ -194,10 +194,12 @@ def test_slack_channel():
     from rasa.core.channels.slack import SlackInput
 
     input_channel = SlackInput(
+        # this is the Slack Bot Token
         slack_token="YOUR_SLACK_TOKEN",
-        # this is the `bot_user_o_auth_access_token`
-        slack_channel="YOUR_SLACK_CHANNEL"
         # the name of your channel to which the bot posts (optional)
+        slack_channel="YOUR_SLACK_CHANNEL",
+        # signing secret from slack to verify incoming webhook messages
+        slack_signing_secret="YOUR_SIGNING_SECRET",
     )
 
     s = rasa.core.run.configure_app([input_channel], port=5004)

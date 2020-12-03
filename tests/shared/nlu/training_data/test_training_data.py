@@ -621,3 +621,15 @@ def test_custom_attributes(tmp_path):
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
     assert example.get("sentiment") == 0.8
+
+
+def test_fingerprint_is_same_when_loading_data_again():
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    files = [
+        "data/examples/rasa/demo-rasa.md",
+        "data/examples/rasa/demo-rasa-responses.md",
+    ]
+    td1 = training_data_from_paths(files, language="en")
+    td2 = training_data_from_paths(files, language="en")
+    assert td1.fingerprint() == td2.fingerprint()

@@ -403,7 +403,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         Returns: key of the cache for future retrievals.
         """
         _config = common.update_existing_keys(cls.defaults, component_meta)
-        return f"{cls.name}-{rasa.core.utils.get_dict_hash(_config)}"
+        return f"{cls.name}-{rasa.shared.utils.io.deep_container_fingerprint(_config)}"
 
     def provide_context(self) -> Dict[Text, Any]:
         """Store the model in pipeline context for future use."""

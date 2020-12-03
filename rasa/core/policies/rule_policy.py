@@ -125,7 +125,6 @@ class RulePolicy(MemoizationPolicy):
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
         """
-
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
@@ -194,7 +193,6 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             modified states
         """
-
         # leave only last 2 dialogue turns to
         # - capture previous meaningful action before action_listen
         # - ignore previous intent
@@ -226,7 +224,6 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             lookup dictionary
         """
-
         lookup = {}
         for states, actions in zip(trackers_as_states, trackers_as_actions):
             action = actions[0]
@@ -281,16 +278,13 @@ class RulePolicy(MemoizationPolicy):
             )
 
     @staticmethod
-    def _check_slots_fingerprint(
+    def _expected_but_missing_slots(
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
         expected_slots = set(fingerprint.get(SLOTS, {}))
         current_slots = set(state.get(SLOTS, {}).keys())
-        if expected_slots == current_slots:
-            # all expected slots are satisfied
-            return set()
-
-        return expected_slots
+        # report all slots that are expected but aren't set in current slots
+        return expected_slots.difference(current_slots)
 
     @staticmethod
     def _check_active_loops_fingerprint(
@@ -309,17 +303,17 @@ class RulePolicy(MemoizationPolicy):
     @staticmethod
     def _error_messages_from_fingerprints(
         action_name: Text,
-        fingerprint_slots: Set[Text],
+        missing_fingerprint_slots: Set[Text],
         fingerprint_active_loops: Set[Text],
         rule_name: Text,
     ) -> List[Text]:
         error_messages = []
-        if action_name and fingerprint_slots:
+        if action_name and missing_fingerprint_slots:
             error_messages.append(
-                f"- the action '{action_name}' in rule '{rule_name}' does not set all "
-                f"the slots, that it sets in other rules: "
-                f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
-                f"an appropriate slot or if it is the last action "
+                f"- the action '{action_name}' in rule '{rule_name}' does not set some "
+                f"of the slots that it sets in other rules. Slots not set in rule "
+                f"'{rule_name}': '{', '.join(missing_fingerprint_slots)}'. Please "
+                f"update the rule with an appropriate slot or if it is the last action "
                 f"add 'wait_for_user_input: false' after this action."
             )
         if action_name and fingerprint_active_loops:
@@ -375,14 +369,16 @@ class RulePolicy(MemoizationPolicy):
                     # for a previous action if current action is rule snippet action
                     continue
 
-                expected_slots = self._check_slots_fingerprint(fingerprint, state)
+                missing_expected_slots = self._expected_but_missing_slots(
+                    fingerprint, state
+                )
                 expected_active_loops = self._check_active_loops_fingerprint(
                     fingerprint, state
                 )
                 error_messages.extend(
                     self._error_messages_from_fingerprints(
                         previous_action_name,
-                        expected_slots,
+                        missing_expected_slots,
                         expected_active_loops,
                         tracker.sender_id,
                     )
@@ -429,10 +425,12 @@ class RulePolicy(MemoizationPolicy):
     ) -> Optional[Text]:
 
         predicted_action_name = self._predict_next_action(tracker, domain, interpreter)
+        # if there is an active_loop,
         # RulePolicy will always predict active_loop first,
         # but inside loop unhappy path there might be another action
         if (
-            predicted_action_name != gold_action_name
+            tracker.active_loop_name
+            and predicted_action_name != gold_action_name
             and predicted_action_name == tracker.active_loop_name
         ):
             rasa.core.test.emulate_loop_rejection(tracker)
@@ -658,24 +656,46 @@ class RulePolicy(MemoizationPolicy):
     def _is_rule_applicable(
         self, rule_key: Text, turn_index: int, conversation_state: State
     ) -> bool:
-        """Check if rule is satisfied with current state at turn."""
+        """Check if rule is satisfied with current state at turn.
 
+        Args:
+            rule_key: the textual representation of learned rule
+            turn_index: index of a current dialogue turn
+            conversation_state: the state that corresponds to turn_index
+
+        Returns:
+            a boolean that says whether the rule is applicable to current state
+        """
         # turn_index goes back in time
         reversed_rule_states = list(reversed(self._rule_key_to_state(rule_key)))
 
-        return bool(
-            # rule is shorter than current turn index
-            turn_index >= len(reversed_rule_states)
-            # current rule and state turns are empty
-            or (not reversed_rule_states[turn_index] and not conversation_state)
-            # check that current rule turn features are present in current state turn
-            or (
-                reversed_rule_states[turn_index]
-                and conversation_state
-                and self._does_rule_match_state(
-                    reversed_rule_states[turn_index], conversation_state
-                )
-            )
+        # the rule must be applicable because we got (without any applicability issues)
+        # further in the conversation history than the rule's length
+        if turn_index >= len(reversed_rule_states):
+            return True
+
+        # a state has previous action if and only if it is not a conversation start
+        # state
+        current_previous_action = conversation_state.get(PREVIOUS_ACTION)
+        rule_previous_action = reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
+
+        # current conversation state and rule state are conversation starters.
+        # any slots with initial_value set will necessarily be in both states and don't
+        # need to be checked.
+        if not rule_previous_action and not current_previous_action:
+            return True
+
+        # current rule state is a conversation starter (due to conversation_start: true)
+        # but current conversation state is not.
+        # or
+        # current conversation state is a starter
+        # but current rule state is not.
+        if not rule_previous_action or not current_previous_action:
+            return False
+
+        # check: current rule state features are present in current conversation state
+        return self._does_rule_match_state(
+            reversed_rule_states[turn_index], conversation_state
         )
 
     def _get_possible_keys(
