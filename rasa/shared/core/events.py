@@ -565,6 +565,46 @@ class DefinePrevUserUtteredFeaturization(Event):
 
 
 # noinspection PyProtectedMember
+class DefinePrevUserUtteredEntities(Event):
+
+    type_name = "user_entities"
+
+    def __init__(
+        self,
+        entities: List[Dict[Text, Any]],
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        self.entities = entities
+        super().__init__(timestamp, metadata)
+
+    def __str__(self) -> Text:
+        return f"DefinePrevUserUtteredEntities({self.entities})"
+
+    def __hash__(self) -> int:
+        return hash(self.entities)
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, DefinePrevUserUtteredEntities)
+
+    def as_story_string(self) -> None:
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredEntities":
+        return DefinePrevUserUtteredEntities(
+            parameters.get(ENTITIES),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        d.update({ENTITIES: self.entities})
+        return d
+
+
+# noinspection PyProtectedMember
 class BotUttered(Event):
     """The bot has said something to the user.
 

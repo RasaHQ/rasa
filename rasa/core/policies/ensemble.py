@@ -34,6 +34,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     ActionExecuted,
     DefinePrevUserUtteredFeaturization,
+    DefinePrevUserUtteredEntities,
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -562,6 +563,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_prediction.policy_priority,
             policy_events,
             is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
+            entities=best_prediction.entities,
         )
 
     def _best_policy_prediction(
@@ -741,6 +743,14 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 winning_prediction.events.append(
                     DefinePrevUserUtteredFeaturization(True)
                 )
+                if winning_prediction.entities is not None:
+                    logger.debug(
+                        f"Added `DefinePrevUserUtteredEntities("
+                        f"{winning_prediction.entities})` event."
+                    )
+                    winning_prediction.events.append(
+                        DefinePrevUserUtteredEntities(winning_prediction.entities)
+                    )
             else:
                 logger.debug("Made prediction using user intent.")
                 logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")

@@ -58,6 +58,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     DefinePrevUserUtteredFeaturization,
+    DefinePrevUserUtteredEntities,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -459,6 +460,10 @@ class DialogueStateTracker:
                 )
                 if event.use_text_for_featurization is None:
                     event.use_text_for_featurization = use_text_for_featurization
+                # update event's entities based on the future event
+                entities = self._define_user_entities(events_as_list[i + 1 :])
+                if event.entities is None:
+                    event.entities = entities
 
                 applied_events.append(event)
             else:
@@ -474,6 +479,12 @@ class DialogueStateTracker:
                 return False
             elif isinstance(future_event, DefinePrevUserUtteredFeaturization):
                 return future_event.use_text_for_featurization
+
+    @staticmethod
+    def _define_user_entities(future_events: List[Event]) -> List[Dict[Text, Any]]:
+        for future_event in future_events:
+            if isinstance(future_event, DefinePrevUserUtteredEntities):
+                return future_event.entities
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
