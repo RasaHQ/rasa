@@ -181,7 +181,7 @@ class PolicyTestCollection:
             tracker, domain, RegexInterpreter()
         ).probabilities
         index = scores.index(max(scores))
-        return domain.action_names[index]
+        return domain.action_names_or_texts[index]
 
 
 class TestSklearnPolicy(PolicyTestCollection):
@@ -941,7 +941,7 @@ class TestMappingPolicy(PolicyTestCollection):
             tracker, domain_with_mapping, RegexInterpreter()
         )
         index = prediction.probabilities.index(max(prediction.probabilities))
-        action_planned = domain_with_mapping.action_names[index]
+        action_planned = domain_with_mapping.action_names_or_texts[index]
         assert not prediction.is_end_to_end_prediction
         assert action_planned == ACTION_LISTEN_NAME
         assert prediction.probabilities != [0] * domain_with_mapping.num_actions

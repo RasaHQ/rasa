@@ -3,8 +3,6 @@ from pathlib import Path
 import jsonpickle
 import logging
 
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
-from rasa.shared.exceptions import RasaException
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any
 import numpy as np
@@ -18,6 +16,8 @@ from rasa.shared.core.trackers import (
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 
@@ -106,11 +106,21 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
-        if event.text:
+        # train stories support both text and intent,
+        # but if intent is present, the text is ignored
+        if event.text and not event.intent_name:
             return {TEXT: event.text, ENTITIES: event.entities}
 
         # input is not textual, so add empty dict
         return {}
+
+    @staticmethod
+    def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
+        for states in trackers_as_states:
+            for state in states:
+                # remove text features to only use intent
+                if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
+                    del state[USER][TEXT]
 
     def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -179,7 +189,7 @@ class TrackerFeaturizer:
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_from_domain(domain)
+        self.state_featurizer.prepare_for_training(domain, interpreter)
 
         (
             trackers_as_states,
@@ -207,6 +217,9 @@ class TrackerFeaturizer:
                 # remove intent features to only use text
                 if last_state.get(USER, {}).get(INTENT):
                     del last_state[USER][INTENT]
+                # don't add entities if text is used for featurization
+                if last_state.get(USER, {}).get(ENTITIES):
+                    del last_state[USER][ENTITIES]
             else:
                 # remove text features to only use intent
                 if last_state.get(USER, {}).get(TEXT):
@@ -365,6 +378,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_actions.append(actions)
             trackers_as_entities.append(entities)
 
+        self._remove_user_text_if_intent(trackers_as_states)
+
         return trackers_as_states, trackers_as_actions, trackers_as_entities
 
     def prediction_states(
@@ -516,6 +531,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 # reset entity_data for the the next turn
                 entity_data = {}
                 pbar.set_postfix({"# actions": "{:d}".format(len(trackers_as_actions))})
+
+        self._remove_user_text_if_intent(trackers_as_states)
 
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 

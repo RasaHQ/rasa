@@ -1,7 +1,7 @@
 import copy
 import json
 from pathlib import Path
-from typing import Dict, List, Text, Any, Union, Set
+from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
 
@@ -29,6 +29,7 @@ from rasa.shared.core.domain import (
     State,
     Domain,
     KEY_FORMS,
+    KEY_E2E_ACTIONS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -179,7 +180,7 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-    assert len(domain.action_names) == 15
+    assert len(domain.action_names_or_texts) == 15
 
 
 def test_avoid_action_repetition():
@@ -188,7 +189,9 @@ def test_avoid_action_repetition():
 
     assert not domain.is_empty() and not domain_with_no_actions.is_empty()
     assert len(domain.intents) == len(domain_with_no_actions.intents)
-    assert len(domain.action_names) == len(domain_with_no_actions.action_names)
+    assert len(domain.action_names_or_texts) == len(
+        domain_with_no_actions.action_names_or_texts
+    )
 
 
 def test_utter_templates():
@@ -249,7 +252,7 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 
 
 def test_domain_to_dict():
-    test_yaml = """
+    test_yaml = f"""
     actions:
     - action_save_world
     config:
@@ -263,8 +266,10 @@ def test_domain_to_dict():
     session_config:
       carry_over_slots_to_new_session: true
       session_expiration_time: 60
-    slots: {}"""
-
+    {KEY_E2E_ACTIONS}:
+    - Hello, dear user
+    - what's up
+    slots: {{}}"""
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
     assert domain_as_dict == {
@@ -280,6 +285,7 @@ def test_domain_to_dict():
             "session_expiration_time": 60,
         },
         "slots": {},
+        KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
     }
 
 
@@ -315,16 +321,18 @@ slots: {{}}
 
 
 def test_merge_yaml_domains():
-    test_yaml_1 = """config:
+    test_yaml_1 = f"""config:
   store_entities_as_slots: true
 entities: []
 intents: []
-slots: {}
+slots: {{}}
 responses:
   utter_greet:
-  - text: hey there!"""
+  - text: hey there!
+{KEY_E2E_ACTIONS}:
+- Hi"""
 
-    test_yaml_2 = """config:
+    test_yaml_2 = f"""config:
   store_entities_as_slots: false
 session_config:
     session_expiration_time: 20
@@ -336,6 +344,8 @@ intents:
 slots:
   cuisine:
     type: text
+{KEY_E2E_ACTIONS}:
+- Bye
 responses:
   utter_goodbye:
   - text: bye!
@@ -369,6 +379,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     assert domain.session_config == SessionConfig(20, True)
+    assert domain.action_texts == ["Bye", "Hi"]
 
 
 @pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
@@ -440,7 +451,8 @@ responses:
     assert merged.as_dict() == domain.as_dict()
 
 
-def test_merge_with_empty_other_domain():
+@pytest.mark.parametrize("other", [Domain.empty(), None])
+def test_merge_with_empty_other_domain(other: Optional[Domain]):
     domain = Domain.from_yaml(
         """config:
   store_entities_as_slots: false
@@ -461,7 +473,7 @@ responses:
   - text: hey you!"""
     )
 
-    merged = domain.merge(Domain.empty(), override=True)
+    merged = domain.merge(other, override=True)
 
     assert merged.as_dict() == domain.as_dict()
 
@@ -875,7 +887,7 @@ def test_add_knowledge_base_slots(default_domain: Domain):
     # don't modify default domain as it is used in other tests
     test_domain = copy.deepcopy(default_domain)
 
-    test_domain.action_names.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
+    test_domain.action_names_or_texts.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
 
     slot_names = [s.name for s in test_domain.slots]
 
@@ -1007,7 +1019,7 @@ def test_domain_deepcopy():
     assert new_domain.session_config == domain.session_config
     assert new_domain._custom_actions == domain._custom_actions
     assert new_domain.user_actions == domain.user_actions
-    assert new_domain.action_names == domain.action_names
+    assert new_domain.action_names_or_texts == domain.action_names_or_texts
     assert new_domain.store_entities_as_slots == domain.store_entities_as_slots
 
     # not the same objects
@@ -1025,7 +1037,7 @@ def test_domain_deepcopy():
     assert new_domain.session_config is not domain.session_config
     assert new_domain._custom_actions is not domain._custom_actions
     assert new_domain.user_actions is not domain.user_actions
-    assert new_domain.action_names is not domain.action_names
+    assert new_domain.action_names_or_texts is not domain.action_names_or_texts
 
 
 @pytest.mark.parametrize(
