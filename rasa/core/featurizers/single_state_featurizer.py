@@ -302,7 +302,7 @@ class SingleStateFeaturizer:
 
         return self._extract_state_features(action_as_sub_state, interpreter)
 
-    def encode_all_actions(  # Use this to get action names from indices
+    def encode_all_actions(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all action from the domain using the given interpreter.

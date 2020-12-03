@@ -97,9 +97,7 @@ async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace():
         training_data_paths=["data/test_stories/stories_e2e_conflicting_2.yml"],
     )
     validator = await Validator.from_importer(importer)
-    assert not validator.verify_story_structure(
-        ignore_warnings=False
-    )  # ToDo: This test succeeds/fails randomly!
+    assert not validator.verify_story_structure(ignore_warnings=False)
 
 
 async def test_verify_story_structure_ignores_rules():

@@ -1,6 +1,6 @@
 from collections import defaultdict
 import logging
-from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
+from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple, Any
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
@@ -18,6 +18,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.io import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,22 @@ class TrackerEventStateTuple(NamedTuple):
 
     @property
     def sliced_states_hash(self) -> int:
-        return hash(str(list(self.sliced_states)))
+        return hash(_as_sorted_text(self.sliced_states))
+
+
+def _as_sorted_text(obj: Any) -> Text:
+    if isinstance(obj, str):
+        return obj
+    elif isinstance(obj, dict):
+        return str(
+            [
+                (_as_sorted_text(key), _as_sorted_text(value))
+                for key, value in sorted(obj.items())
+            ]
+        )
+    elif isinstance(obj, (list, set)):
+        return str(sorted([_as_sorted_text(element) for element in obj]))
+    return str(obj)
 
 
 def _get_length_of_longest_story(
@@ -207,16 +223,22 @@ def _get_tokenizing_function_from_nlu_config(
     Args:
         nlu_config: NLU Config.
     """
-    # ToDo: Deal with nlu_config == None
+    if not nlu_config:
+        return None
+
     pipeline: List[Component] = Trainer(
         nlu_config, skip_validation=True
-    ).pipeline  # ToDo: ComponentBuiilder?
+    ).pipeline  # ToDo: ComponentBuilder?
     tokenizer: Optional[Tokenizer] = None
     for component in pipeline:
-        if isinstance(component, Tokenizer):
+        if isinstance(component, Tokenizer) and tokenizer:
+            raise_warning(
+                "The pipeline contains more than one tokenizer. "
+                "Only the first tokenizer will be used for story validation.",
+                category=UserWarning,
+            )
+        elif isinstance(component, Tokenizer):
             tokenizer = component
-            # A pipeline can have only one tokenizer # ToDo: Check this
-            break
 
     return tokenizer.tokenize if tokenizer else None
 
