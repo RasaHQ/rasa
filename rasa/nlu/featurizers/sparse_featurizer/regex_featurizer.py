@@ -27,6 +27,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.common import lazy_property
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,14 @@ class RegexFeaturizer(SparseFeaturizer):
         pattern_vocabulary_stats: Optional[Dict[Text, int]] = None,
         finetune_mode: bool = False,
     ) -> None:
+        """Construct a new regex pattern based binary featurizer.
 
+        Args:
+            component_config: Configuration for the component
+            known_patterns: Regex Patterns the component should pre-load itself with.
+            pattern_vocabulary_stats: Statistics about number of pattern slots filled and total number available.
+            finetune_mode: Load component in finetune mode.
+        """
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
@@ -76,31 +84,32 @@ class RegexFeaturizer(SparseFeaturizer):
                 f" needs vocabulary statistics to featurize in finetune mode."
             )
 
-    def _get_vocabulary_stats(self) -> Dict[Text, int]:
-        """
+    @lazy_property
+    def vocabulary_stats(self) -> Dict[Text, int]:
+        """Compute total vocabulary size and how much of it is consumed.
 
         Returns:
-
+            Computed vocabulary size and number of filled vocabulary slots.
         """
         if not self.finetune_mode:
             max_number_patterns = (
-                len(self.known_patterns) + self.number_additional_patterns
+                len(self.known_patterns) + self._get_num_additional_slots()
             )
             return {
                 "pattern_slots_filled": len(self.known_patterns),
                 "max_number_patterns": max_number_patterns,
             }
         else:
+            self.pattern_vocabulary_stats["pattern_slots_filled"] = len(
+                self.known_patterns
+            )
             return self.pattern_vocabulary_stats
 
-    def _merge_with_existing_patterns(self, new_patterns: List[Dict[Text, Text]]):
-        """
+    def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]):
+        """Update already known patterns with new patterns extracted from data.
 
         Args:
-            new_patterns:
-
-        Returns:
-
+            new_patterns: Patterns extracted from training data and to be merged with known patterns.
         """
         max_number_patterns = self.pattern_vocabulary_stats["max_number_patterns"]
         pattern_name_index_map = {
@@ -121,7 +130,7 @@ class RegexFeaturizer(SparseFeaturizer):
                 if len(self.known_patterns) == max_number_patterns:
                     patterns_dropped = True
                     continue
-                self.known_patterns.extend(extra_pattern)
+                self.known_patterns.append(extra_pattern)
         if patterns_dropped:
             logger.warning(
                 f"The originally trained model was configured to "
@@ -133,9 +142,11 @@ class RegexFeaturizer(SparseFeaturizer):
                 f"model from scratch."
             )
 
-    def _compute_num_additional_slots(self) -> None:
+    def _get_num_additional_slots(self) -> int:
+        """Compute number of additional pattern slots available in vocabulary on top of known patterns."""
         if self.number_additional_patterns is None:
             self.number_additional_patterns = max(10, len(self.known_patterns) * 2)
+        return self.number_additional_patterns
 
     def train(
         self,
@@ -143,7 +154,13 @@ class RegexFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train the component with all patterns extracted from training data.
 
+        Args:
+            training_data: Training data consisting of training examples and patterns available.
+            config: NLU Pipeline config
+            **kwargs: Any other arguments
+        """
         patterns_from_data = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
@@ -151,10 +168,9 @@ class RegexFeaturizer(SparseFeaturizer):
         )
         if self.finetune_mode:
             # Merge patterns extracted from data with known patterns
-            self._merge_with_existing_patterns(patterns_from_data)
+            self._merge_new_patterns(patterns_from_data)
         else:
             self.known_patterns = patterns_from_data
-            self._compute_num_additional_slots()
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
@@ -164,6 +180,12 @@ class RegexFeaturizer(SparseFeaturizer):
         self._text_features_with_regex(message, TEXT)
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
+        """Helper method to extract features and set them appropriately in the message object.
+
+        Args:
+            message: Message to be featurized.
+            attribute: Attribute of message to be featurized.
+        """
         if self.known_patterns:
             sequence_features, sentence_features = self._features_for_patterns(
                 message, attribute
@@ -191,11 +213,19 @@ class RegexFeaturizer(SparseFeaturizer):
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.coo_matrix], Optional[scipy.sparse.coo_matrix]]:
         """Checks which known patterns match the message.
+
         Given a sentence, returns a vector of {1,0} values indicating which
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
-        relating the name of the regex to whether it was matched."""
+        relating the name of the regex to whether it was matched.
 
+        Args:
+            message: Message to be featurized.
+            attribute: Attribute of message to be featurized.
+
+        Returns:
+           Token and sentence level features of message attribute.
+        """
         # Attribute not set (e.g. response not present)
         if not message.get(attribute):
             return None, None
@@ -212,7 +242,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
         sequence_length = len(tokens)
 
-        max_number_patterns = self._get_vocabulary_stats()["max_number_patterns"]
+        max_number_patterns = self.vocabulary_stats["max_number_patterns"]
 
         sequence_features = np.zeros([sequence_length, max_number_patterns])
         sentence_features = np.zeros([1, max_number_patterns])
@@ -249,23 +279,31 @@ class RegexFeaturizer(SparseFeaturizer):
         cached_component: Optional["RegexFeaturizer"] = None,
         **kwargs: Any,
     ) -> "RegexFeaturizer":
+        """Load a previously trained component.
 
+        Args:
+            meta: Configuration of trained component.
+            model_dir: Path where trained pipeline is stored.
+            model_metadata: Metadata for the trained pipeline.
+            cached_component: Previously cached component(if any).
+            **kwargs:
+        """
         finetune_mode = kwargs.pop("finetune_mode", False)
 
         file_name = meta.get("file")
 
         patterns_file_name = file_name + ".patterns.pkl"
-        regex_file = os.path.join(model_dir, patterns_file_name)
 
         vocabulary_stats_file_name = file_name + ".vocabulary_stats.pkl"
-        vocabulary_file = os.path.join(model_dir, vocabulary_stats_file_name)
 
         known_patterns = None
         vocabulary_stats = None
-        if os.path.exists(regex_file):
-            known_patterns = rasa.shared.utils.io.read_json_file(regex_file)
-        if os.path.exists(vocabulary_file):
-            vocabulary_stats = rasa.shared.utils.io.read_json_file(vocabulary_file)
+        if os.path.exists(patterns_file_name):
+            known_patterns = rasa.shared.utils.io.read_json_file(patterns_file_name)
+        if os.path.exists(vocabulary_stats_file_name):
+            vocabulary_stats = rasa.shared.utils.io.read_json_file(
+                vocabulary_stats_file_name
+            )
 
         return RegexFeaturizer(
             meta,
@@ -276,14 +314,19 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
+
+        Args:
+            file_name: Prefix to add to all files stored as part of this component.
+            model_dir: Path where files should be stored.
+
+        Returns:
+            Metadata necessary to load the model again.
+        """
         patterns_file_name = file_name + ".patterns.pkl"
         regex_file = os.path.join(model_dir, patterns_file_name)
         utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
         vocabulary_stats_file_name = file_name + ".vocabulary_stats.pkl"
         vocabulary_file = os.path.join(model_dir, vocabulary_stats_file_name)
-        utils.write_json_to_file(
-            vocabulary_file, self._get_vocabulary_stats(), indent=4
-        )
+        utils.write_json_to_file(vocabulary_file, self.vocabulary_stats, indent=4)
 
         return {"file": file_name}

@@ -866,9 +866,9 @@ def test_cvf_incremental_train_vocabulary_overflow(
     data = TrainingData([train_message, additional_train_message])
     tokenizer.train(data)
 
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.WARNING)
     caplog.clear()
-    with caplog.at_level(logging.DEBUG):
+    with caplog.at_level(logging.WARNING):
         new_featurizer.train(data)
     if overflow:
         assert "New data contains vocabulary of size" in caplog.text
