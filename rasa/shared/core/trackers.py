@@ -301,8 +301,12 @@ class DialogueStateTracker:
             self.active_loop[LOOP_REJECTED] = True
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
-        """Set latest action name
-        and reset form validation and rejection parameters
+        """Sets latest action name or text.
+
+        Resets loop validation and rejection parameters.
+
+        Args:
+            action: Serialized action event.
         """
         self.latest_action = action
         if self.active_loop_name:
@@ -385,9 +389,8 @@ class DialogueStateTracker:
 
     def init_copy(self) -> "DialogueStateTracker":
         """Creates a new state tracker with the same initial values."""
-
         return DialogueStateTracker(
-            DEFAULT_SENDER_ID,
+            self.sender_id or DEFAULT_SENDER_ID,
             self.slots.values(),
             self._max_event_history,
             is_rule_tracker=self.is_rule_tracker,

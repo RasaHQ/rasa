@@ -1572,7 +1572,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 * **Short**
 
   Classifies a message with the intent `nlu_fallback` if the NLU intent classification
-  scores are ambiguous.
+  scores are ambiguous. The confidence is set to `1 - top intent confidence`.
 
 * **Outputs**
 
@@ -1587,10 +1587,10 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
     ```json
 
         {
-            "intent": {"name": "nlu_fallback", "confidence": 1.0},
+            "intent": {"name": "nlu_fallback", "confidence": 0.7183846840434321},
             "intent_ranking": [
                 {
-                    "confidence": 1.0,
+                    "confidence": 0.7183846840434321,
                     "name": "nlu_fallback"
                 },
                 {

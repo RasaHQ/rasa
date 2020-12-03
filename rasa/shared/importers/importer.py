@@ -13,7 +13,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import INTENT, TEXT, ENTITIES, ACTION_NAME
+from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
@@ -100,8 +100,7 @@ class TrainingDataImporter:
         importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths, TrainingType.CORE
         )
-
-        return CoreDataImporter(importer)
+        return importer
 
     @staticmethod
     def load_nlu_importer_from_config(
@@ -464,7 +463,7 @@ class E2EImporter(TrainingDataImporter):
             [],
             {},
             action_names=[],
-            forms=[],
+            forms={},
             action_texts=additional_e2e_action_names,
         )
 
