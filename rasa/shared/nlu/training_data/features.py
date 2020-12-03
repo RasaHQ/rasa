@@ -88,7 +88,7 @@ class Features:
     def __hash__(self) -> int:
         return hash(
             self.__key__()
-        )  # ToDo: This doesn't actually work for numpy arrays or sparse matrices @tanja
+        )  # ToDo: This doesn't actually work for numpy arrays or sparse matrices
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Features):

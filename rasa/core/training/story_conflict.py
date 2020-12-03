@@ -9,9 +9,6 @@ from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT
 
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.tracker_featurizers import FullDialogueTrackerFeaturizer
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.nlu.model import Trainer
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
@@ -139,6 +136,14 @@ class TrackerEventStateTuple(NamedTuple):
 
 
 def _as_sorted_text(obj: Any) -> Text:
+    """Returns the string of `obj` after sorting lists and dicts.
+
+    Args:
+        obj: Something made up of lists and dicts and stringifiable objects.
+    Returns:
+        A string representation of the object that doesn't change
+        randomly due to unsorted dicts or sets.
+    """
     if isinstance(obj, str):
         return obj
     elif isinstance(obj, dict):

@@ -31,10 +31,9 @@ class Validator:
         domain: Domain,
         intents: TrainingData,
         story_graph: StoryGraph,
-        config: Dict[Text, Any],
+        config: Optional[Dict[Text, Any]],
     ) -> None:
         """Initializes the Validator object. """
-
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
@@ -43,7 +42,6 @@ class Validator:
     @classmethod
     async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
-
         domain = await importer.get_domain()
         story_graph = await importer.get_stories()
         intents = await importer.get_nlu_data()
