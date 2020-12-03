@@ -12,6 +12,7 @@ from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterabl
 import rasa.shared.utils.common
 from typing import Union
 
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.core.constants import (
     LOOP_NAME,
     EXTERNAL_MESSAGE_PREFIX,
@@ -500,8 +501,9 @@ class UserUttered(Event):
         """
         if self.use_text_for_featurization and not e2e:
             raise UnsupportedFeatureException(
-                "Printing end-to-end user utterances is not supported in the "
-                "Markdown training format. Please use the YAML training data instead."
+                f"Printing end-to-end user utterances is not supported in the "
+                f"Markdown training format. Please use the YAML training data format "
+                f"instead. Please see {DOCS_URL_TRAINING_DATA} for more information."
             )
 
         if e2e:
@@ -1250,8 +1252,9 @@ class ActionExecuted(Event):
         """Returns event in Markdown format."""
         if self.action_text:
             raise UnsupportedFeatureException(
-                "Printing end-to-end bot utterances is not supported in the "
-                "Markdown training format. Please use the YAML training data instead."
+                f"Printing end-to-end bot utterances is not supported in the "
+                f"Markdown training format. Please use the YAML training data format "
+                f"instead. Please see {DOCS_URL_TRAINING_DATA} for more information."
             )
 
         return self.action_name
