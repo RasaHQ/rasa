@@ -743,7 +743,7 @@ class TransformerRasaModel(RasaModel):
                 num_layers,
                 units,
                 self.config[NUM_HEADS],
-                self.config[TRANSFORMER_SIZE] * 4,
+                units * 4,
                 self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=drop_rate,
                 attention_dropout_rate=drop_rate_attention,
