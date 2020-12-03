@@ -488,14 +488,17 @@ async def _train_core_with_validated_data(
         return _train_path
 
 
-def _core_model_for_finetuning(model_to_finetune: Text) -> Optional[Agent]:
+def _core_model_for_finetuning(
+    model_to_finetune: Text, new_config: Optional[Dict] = None
+) -> Optional[Agent]:
     path_to_archive = model.get_model_for_finetuning(model_to_finetune)
     if not path_to_archive:
         return None
 
     with model.unpack_model(path_to_archive) as unpacked:
         try:
-            agent = Agent.load(unpacked)
+            # TODO: add new config
+            agent = Agent.load(unpacked, new_config)
             # Agent might be empty if no underlying Core model was found.
             if agent.domain is not None and agent.policy_ensemble is not None:
                 return agent

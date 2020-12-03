@@ -303,9 +303,12 @@ class PolicyEnsemble:
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "PolicyEnsemble":
+    def load(
+        cls, path: Union[Text, Path], new_config: Optional[Dict] = None
+    ) -> "PolicyEnsemble":
         """Loads policy and domain specification from storage"""
 
+        # TODO: Forawrd finetune here
         metadata = cls.load_metadata(path)
         cls.ensure_model_compatibility(metadata)
         policies = []
@@ -313,7 +316,15 @@ class PolicyEnsemble:
             policy_cls = registry.policy_from_module_path(policy_name)
             dir_name = f"policy_{i}_{policy_cls.__name__}"
             policy_path = os.path.join(path, dir_name)
-            policy = policy_cls.load(policy_path)
+
+            if "new_config" not in rasa.shared.utils.common.arguments_of(
+                policy_cls.load
+            ):
+                raise UnsupportedDialogueModelError("Not finetuneable")
+
+            config_for_policy = new_config["policies"][i]
+            policy = policy_cls.load(policy_path, new_config=config_for_policy)
+
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
         ensemble_cls = rasa.shared.utils.common.class_from_module_path(

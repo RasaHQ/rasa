@@ -1,0 +1,54 @@
+allowempty: True
+mapping:
+  version:
+    type: "str"
+    required: False
+    allowempty: False
+  nlu:
+    type: "seq"
+    matching: "any"
+    sequence:
+    - type: "map"
+      mapping:
+        intent: &intent_anchor
+          type: "str"
+          allowempty: False
+        metadata: &metadata_anchor
+          type: "any"
+          required: False
+        examples: &examples_anchor
+          type: "str"
+    - type: "map"
+      mapping:
+        intent: *intent_anchor
+        metadata: *metadata_anchor
+        examples:
+          type: "seq"
+          sequence:
+          - type: "map"
+            mapping:
+              text:
+                type: "str"
+                allowempty: False
+              metadata: *metadata_anchor
+    - type: "map"
+      mapping:
+        synonym:
+          type: "str"
+        examples: *examples_anchor
+    - type: "map"
+      mapping:
+        regex:
+          type: "str"
+        examples: *examples_anchor
+    - type: "map"
+      mapping:
+        lookup:
+          type: "str"
+        examples: *examples_anchor
+  responses:
+    # see rasa/utils/schemas.yml
+    include: responses
+  stories:
+    type: "any"
+    required: False

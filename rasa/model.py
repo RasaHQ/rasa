@@ -532,11 +532,12 @@ def get_model_for_finetuning(
             f"Trying to load latest model from '{previous_model_file}' for "
             f"finetuning."
         )
+        print(get_latest_model(previous_model_file))
         return get_latest_model(previous_model_file)
 
     if Path(previous_model_file).is_file():
         return previous_model_file
-
+    pdb
     logger.debug(
         "No valid model for finetuning found as directory either "
         "contains no model or model file cannot be found."

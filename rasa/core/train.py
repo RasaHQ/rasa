@@ -66,6 +66,9 @@ async def train(
     training_data = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
+    if model_to_finetune:
+        # TODO: Epochs & finetune mode
+        agent.policy_ensemble = model_to_finetune.policy_ensemble
     agent.train(training_data, **additional_arguments)
     agent.persist(output_path)
 

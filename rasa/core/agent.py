@@ -411,6 +411,7 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         path_to_model_archive: Optional[Text] = None,
+        new_config=None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         try:
@@ -441,7 +442,9 @@ class Agent:
 
         if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+            ensemble = (
+                PolicyEnsemble.load(core_model, new_config) if core_model else None
+            )
 
             # ensures the domain hasn't changed between test and train
             domain.compare_with_specification(core_model)

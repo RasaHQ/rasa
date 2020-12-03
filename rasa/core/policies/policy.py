@@ -272,7 +272,9 @@ class Policy:
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "Policy":
+    def load(
+        cls, path: Union[Text, Path], new_config: Optional[Dict] = None
+    ) -> "Policy":
         """Loads a policy from path.
 
         Args:
@@ -284,6 +286,8 @@ class Policy:
         metadata_file = Path(path) / cls._metadata_filename()
 
         if metadata_file.is_file():
+            # TODO: add finetune and new epochs here
+            # Only add epochs if has epochs
             data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
 
             if (Path(path) / FEATURIZER_FILE).is_file():
@@ -296,6 +300,7 @@ class Policy:
             f"Couldn't load metadata for policy '{cls.__name__}'. "
             f"File '{metadata_file}' doesn't exist."
         )
+        # TODO: add `is_finetuning` to all __init__
         return cls()
 
     @staticmethod
