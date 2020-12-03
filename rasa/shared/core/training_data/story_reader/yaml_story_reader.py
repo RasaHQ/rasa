@@ -372,7 +372,7 @@ class YAMLStoryReader(StoryReader):
     ) -> Tuple[Text, Optional[Text]]:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
-        if not user_intent:
+        if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User utterance cannot be empty. "
