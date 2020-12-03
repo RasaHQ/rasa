@@ -12,7 +12,11 @@ import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
+from rasa.nlu.constants import (
+    TOKENS_NAMES,
+    FEATURIZER_CLASS_ALIAS,
+    MIN_ADDITIONAL_REGEX_PATTERNS,
+)
 from rasa.shared.nlu.constants import (
     TEXT,
     RESPONSE,
@@ -145,7 +149,16 @@ class RegexFeaturizer(SparseFeaturizer):
     def _get_num_additional_slots(self) -> int:
         """Compute number of additional pattern slots available in vocabulary on top of known patterns."""
         if self.number_additional_patterns is None:
-            self.number_additional_patterns = max(10, len(self.known_patterns) * 2)
+            # We take twice the number of currently defined
+            # regex patterns as the number of additional
+            # vocabulary slots to support if this parameter
+            # is not configured by the user. Also, to avoid having
+            # to retrain from scratch very often, the default number
+            # of additional slots is kept to MIN_ADDITIONAL_SLOTS.
+            # This is an empirically tuned number.
+            self.number_additional_patterns = max(
+                MIN_ADDITIONAL_REGEX_PATTERNS, len(self.known_patterns) * 2
+            )
         return self.number_additional_patterns
 
     def train(

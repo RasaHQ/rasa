@@ -410,6 +410,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         this number. If not then we take the default
         additional vocabulary size which is 1/2 of the
         current vocabulary size.
+
         Args:
             attribute: Message attribute for which additional vocabulary size should be computed.
             existing_vocabulary_size: Current size of vocabulary learnt from the training data.
@@ -418,10 +419,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             Size of additional vocabulary that should be set aside for incremental training.
         """
         # Vocabulary expansion for INTENTS, ACTION_NAME
-        # and INTENT_RESPONSE_KEY is currently not supported.
+        # and INTENT_RESPONSE_KEY is currently not supported as
+        # incremental training does not support creation/deletion
+        # of new/existing labels(intents, actions, etc.)
         if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
             return 0
-        if self.additional_vocabulary_size.get(attribute, None) is not None:
+        if self.additional_vocabulary_size.get(attribute) is not None:
             return self.additional_vocabulary_size[attribute]
         return int(existing_vocabulary_size * 0.5)
 
@@ -438,7 +441,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         """
         original_vocabulary = self.vectorizers[attribute].vocabulary_
-        current_vocabulary_size = self._get_starting_empty_index(original_vocabulary)
+        current_vocabulary_size = len(original_vocabulary)
         for index in range(
             current_vocabulary_size,
             current_vocabulary_size
