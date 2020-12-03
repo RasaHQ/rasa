@@ -336,7 +336,7 @@ def test_persist_load(tmp_path: Path):
             "number_additional_patterns": 5,
             "file": os.path.join(str(tmp_path), persist_value["file"]),
         },
-        finetune_mode=True,
+        should_finetune=True,
     )
 
     # Test component loaded in finetune mode and also with
@@ -402,7 +402,7 @@ def test_incremental_train_featurization(tmp_path: Path):
             "number_additional_patterns": 5,
             "file": os.path.join(str(tmp_path), persist_value["file"]),
         },
-        finetune_mode=True,
+        should_finetune=True,
     )
 
     new_patterns = [

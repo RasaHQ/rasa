@@ -848,7 +848,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
 
-        finetune_mode = kwargs.pop("finetune_mode", False)
+        finetune_mode = kwargs.pop("should_finetune", False)
 
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)

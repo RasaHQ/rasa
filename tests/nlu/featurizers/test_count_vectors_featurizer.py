@@ -798,7 +798,7 @@ def test_cvf_incremental_train_vocabulary(
     meta = original_featurizer.component_config.copy()
     meta.update(file_dict)
     new_featurizer = CountVectorsFeaturizer.load(
-        meta, str(tmp_path), finetune_mode=True
+        meta, str(tmp_path), should_finetune=True
     )
 
     # Check total vocabulary size with buffer slots before finetuning
@@ -859,7 +859,7 @@ def test_cvf_incremental_train_vocabulary_overflow(
     meta = original_featurizer.component_config.copy()
     meta.update(file_dict)
     new_featurizer = CountVectorsFeaturizer.load(
-        meta, str(tmp_path), finetune_mode=True
+        meta, str(tmp_path), should_finetune=True
     )
 
     additional_train_message = Message(data={"text": additional_train_text})
