@@ -142,7 +142,7 @@ def ensure_conversation_exists(app: Sanic) -> Callable[..., HTTPResponse]:
     """Wraps a request handler ensuring the conversation exists.
     """
 
-    def decorator(f):
+    def decorator(f: Callable[..., HTTPResponse]) -> HTTPResponse:
         @wraps(f)
         def decorated(*args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
