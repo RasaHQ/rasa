@@ -115,10 +115,11 @@ You will need a running Kafka server.
 
 ### Authentication and Authorization
 
-Rasa's Kafka producer accepts two types of security protocols: `SASL_PLAINTEXT` and `SSL`.
+Rasa's Kafka producer accepts the following types of security protocols: `SASL_PLAINTEXT`, `SSL`, `PLAINTEXT`
+and `SASL_SSL`.
 
-For development environment, or if the brokers servers and clients are located
-into the same machine, you can use simple authentication with `SASL_PLAINTEXT`.
+For development environments, or if the brokers servers and clients are located
+into the same machine, you can use simple authentication with `SASL_PLAINTEXT` or `PLAINTEXT`.
 By using this protocol, the credentials and messages exchanged between the clients and servers
 will be sent in plaintext. Thus, this is not the most secure approach, but since it's simple
 to configure, it is useful for simple cluster configurations.
@@ -126,8 +127,8 @@ to configure, it is useful for simple cluster configurations.
 previously configured in the broker server.
 
 If the clients or the brokers in the kafka cluster are located in different
-machines, it's important to use the `SSL` protocol to ensure encryption of data and client
-authentication. After generating valid certificates for the brokers and the
+machines, it's important to use the `SSL` or `SASL_SSL` protocol to ensure encryption of data
+and client authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
 be provided as arguments, as well as the CA's root certificate.
 
@@ -142,12 +143,22 @@ You can instruct Rasa to stream all events to your Kafka event broker by adding 
 
 Using the `SASL_PLAINTEXT` protocol the endpoints file must have the following entries:
 
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml)
+```
+
+Using the `PLAINTEXT` protocol the endpoints file must have the following entries:
+
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
 ```
 
 If using the `SSL` protocol, the endpoints file should look like:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
+```
+
+If using the `SASL_SSL` protocol, the endpoints file should look like:
+
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
 ```
 
 ## SQL Event Broker
