@@ -228,6 +228,7 @@ class Policy:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        entities: Optional[List[Dict[Text, Any]]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -236,6 +237,7 @@ class Policy:
             events,
             optional_events,
             is_end_to_end_prediction,
+            entities,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
@@ -374,6 +376,7 @@ class PolicyPrediction:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        entities: Optional[List[Dict[Text, Any]]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -391,6 +394,7 @@ class PolicyPrediction:
                 you return as they can potentially influence the conversation flow.
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
+            entities: Entities predicted by the policy.
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -398,6 +402,7 @@ class PolicyPrediction:
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.entities = entities
 
     @staticmethod
     def for_action_name(
@@ -440,6 +445,7 @@ class PolicyPrediction:
             and self.events == other.events
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+            and self.entities == other.entities
         )
 
     @property

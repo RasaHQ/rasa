@@ -887,7 +887,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return []
 
-        predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
+        predicted_tags, confidence_values = train_utils.entity_label_to_tags(
+            predict_out, self._entity_tag_specs, self.component_config[BILOU_FLAG]
+        )
 
         entities = self.convert_predictions_into_entities(
             message.get(TEXT),
@@ -901,28 +903,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entities = message.get(ENTITIES, []) + entities
 
         return entities
-
-    def _entity_label_to_tags(
-        self, predict_out: Dict[Text, Any]
-    ) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
-        predicted_tags = {}
-        confidence_values = {}
-
-        for tag_spec in self._entity_tag_specs:
-            predictions = predict_out[f"e_{tag_spec.tag_name}_ids"].numpy()
-            confidences = predict_out[f"e_{tag_spec.tag_name}_scores"].numpy()
-            confidences = [float(c) for c in confidences[0]]
-            tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
-
-            if self.component_config[BILOU_FLAG]:
-                tags, confidences = bilou_utils.ensure_consistent_bilou_tagging(
-                    tags, confidences
-                )
-
-            predicted_tags[tag_spec.tag_name] = tags
-            confidence_values[tag_spec.tag_name] = confidences
-
-        return predicted_tags, confidence_values
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""

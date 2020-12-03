@@ -11,6 +11,9 @@ import tensorflow_addons as tfa
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
+import rasa.core.actions.action
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
@@ -29,6 +32,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
+    EXTRACTOR,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
@@ -97,7 +101,8 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
 )
-
+from rasa.shared.core.events import UserUttered
+from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -570,6 +575,7 @@ class TEDPolicy(Policy):
         model_data = self._create_model_data(tracker_state_features)
 
         output = self.model.predict(model_data)
+
         # take the last prediction in the sequence
         similarities = output["similarities"].numpy()[:, -1, :]
         confidences = output["action_scores"].numpy()[:, -1, :]
@@ -579,9 +585,51 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
+        entities = self._create_entities(output, interpreter, tracker)
+
         return self._prediction(
-            confidence.tolist(), is_end_to_end_prediction=is_e2e_prediction
+            confidence.tolist(),
+            is_end_to_end_prediction=is_e2e_prediction,
+            entities=entities,
         )
+
+    def _create_entities(
+        self,
+        output: Dict[Text, tf.Tensor],
+        interpreter: NaturalLanguageInterpreter,
+        tracker: DialogueStateTracker,
+    ) -> Optional[List[Dict[Text, Any]]]:
+        if not self.config[ENTITY_RECOGNITION]:
+            # entity recognition is not turned on, no entities can be predicted
+            return None
+
+        (
+            predicted_tags,
+            confidence_values,
+        ) = rasa.utils.train_utils.entity_label_to_tags(output, self._entity_tag_specs)
+
+        if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
+            # no entities detected
+            return None
+
+        # find last user uttered event as the predicted entities belong to
+        # that utterance
+        user_utterances = [e for e in tracker.events if isinstance(e, UserUttered)]
+        last_user_utterance = user_utterances[-1]
+
+        # convert the predicted tags to actual entities
+        text = last_user_utterance.text
+        parsed_message = interpreter.featurize_message(Message(data={TEXT: text}))
+        tokens = parsed_message.get(TOKENS_NAMES[TEXT])
+        entities = EntityExtractor.convert_predictions_into_entities(
+            text, tokens, predicted_tags, confidences=confidence_values
+        )
+
+        # add the extractor name
+        for entity in entities:
+            entity[EXTRACTOR] = "TEDPolicy"
+
+        return entities
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""

@@ -1,9 +1,10 @@
-from typing import Optional, Text, Dict, Any, Union, List, Tuple
+from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+import rasa.nlu.utils.bilou_utils
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -20,6 +21,9 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     COSINE,
 )
+
+if TYPE_CHECKING:
+    from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -186,3 +190,46 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     # note: call _replace_deprecated_option() here when there are options to deprecate
 
     return config
+
+
+def entity_label_to_tags(
+    model_predictions: Dict[Text, Any],
+    entity_tag_specs: List["EntityTagSpec"],
+    bilou_flag: bool = False,
+) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
+    """Convert the output predictions for entities to the actual entity tags.
+
+    Args:
+        model_predictions: the output predictions using the entity tag indices
+        entity_tag_specs: the entity tag specifications
+        bilou_flag: if 'True', the BILOU tagging schema was used
+
+    Returns:
+        A map of entity tag type, e.g. entity, role, group, to actual entity tags and
+        confidences.
+    """
+    predicted_tags = {}
+    confidence_values = {}
+
+    for tag_spec in entity_tag_specs:
+        predictions = model_predictions[f"e_{tag_spec.tag_name}_ids"].numpy()
+        confidences = model_predictions[f"e_{tag_spec.tag_name}_scores"].numpy()
+
+        if not np.any(predictions):
+            continue
+
+        confidences = [float(c) for c in confidences[0]]
+        tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
+
+        if bilou_flag:
+            (
+                tags,
+                confidences,
+            ) = rasa.nlu.utils.bilou_utils.ensure_consistent_bilou_tagging(
+                tags, confidences
+            )
+
+        predicted_tags[tag_spec.tag_name] = tags
+        confidence_values[tag_spec.tag_name] = confidences
+
+    return predicted_tags, confidence_values
