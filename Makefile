@@ -119,11 +119,11 @@ prepare-mitie:
 	ifeq ($(OS),Windows_NT)
 		7z x data/MITIE-models-v0.2.tar.bz2 -bb3
 		7z x MITIE-models-v0.2.tar -bb3
-        cp MITIE-models/english/total_word_feature_extractor.dat data/
+		cp MITIE-models/english/total_word_feature_extractor.dat data/
 		rm -r MITIE-models
+		rm MITIE-models-v0.2.tar
 	else
 		tar -xvjf data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C data/ MITIE-models/english/total_word_feature_extractor.dat
-
 	endif
 	rm data/MITIE*.bz2
 
