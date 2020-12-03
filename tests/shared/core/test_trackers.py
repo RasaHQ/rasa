@@ -1242,3 +1242,30 @@ def test_trackers_for_conversation_sessions(
     subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
 
     assert len(subtrackers) == n_subtrackers
+
+
+def test_tracker_persist_and_load_empty_tracker(tmp_path: Path, default_domain: Domain):
+    tracker = DialogueStateTracker("default", default_domain.slots)
+
+    # The retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    file_path = tracker.persist(str(tmp_path), "test.tracker")
+    loaded_tracker = DialogueStateTracker.load_tracker(file_path)
+
+    assert tracker == loaded_tracker
+
+
+def test_tracker_persist_and_load_tracker(tmp_path: Path, default_domain: Domain):
+    events = [
+        ActionExecuted("one"),
+        user_uttered("two", 1),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+    tracker = get_tracker(events)
+
+    file_path = tracker.persist(str(tmp_path), "test.tracker")
+    loaded_tracker = DialogueStateTracker.load_tracker(file_path)
+
+    assert tracker == loaded_tracker
