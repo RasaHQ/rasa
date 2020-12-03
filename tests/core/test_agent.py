@@ -172,7 +172,7 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
-    assert hash(agent.domain) == hash(default_domain)
+    assert agent.domain.as_dict() == default_domain.as_dict()
 
     expected_policies = PolicyEnsemble.load_metadata(
         str(Path(unpacked_trained_rasa_model, "core"))
