@@ -270,7 +270,8 @@ async def load_agent_on_start(
         )
     except Exception as e:
         rasa.shared.utils.io.raise_warning(
-            f"The model at '{model_path}' could not be loaded. " f"Error: {e}"
+            f"The model at '{model_path}' could not be loaded. "
+            f"Error: {type(e)}: {e}"
         )
         app.agent = None
 
