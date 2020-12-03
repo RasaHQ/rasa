@@ -247,12 +247,12 @@ stories:
     user: Hi
   - action: utter_greet
   - intent: greet
-    user: | 
+    user: |
       [Hi](test)
   - action: utter_greet
   - user: Hi
   - bot: Hi, I'm a bot.
-  - user: | 
+  - user: |
       [Hi](test)
   - bot: Hi, I'm a bot.
     """
