@@ -797,8 +797,8 @@ class TED(TransformerRasaModel):
                 # self._prepare_sparse_dense_layer_for(name, self.data_signature)
                 self._prepare_sparse_dense_layers(
                     data_signature=self.data_signature[name][SENTENCE],
-                    name=f"{name}_{SENTENCE}",
-                    dense_units=self.config[DENSE_DIMENSION][name],
+                    attribute=name,
+                    feature_type=SENTENCE,
                 )
             else:
                 print(
@@ -816,8 +816,8 @@ class TED(TransformerRasaModel):
                 # self._prepare_sparse_dense_layer_for(name, self.label_signature)
                 self._prepare_sparse_dense_layers(
                     data_signature=self.label_signature[name][SENTENCE],
-                    name=f"{name}_{SENTENCE}",
-                    dense_units=self.config[DENSE_DIMENSION][name],
+                    attribute=name,
+                    feature_type=SENTENCE,
                 )
             else:
                 print(

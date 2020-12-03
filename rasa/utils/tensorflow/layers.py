@@ -211,50 +211,83 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         return super().call(inputs)
 
 
+from rasa.utils.tensorflow.model_data import FeatureSignature
+
+
 class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
     # TODO add docstring
     def __init__(
         self,
+        attribute: Text,
+        feature_type: Text,
+        data_signature: List[FeatureSignature],
         dropout_rate: float,
         sparse_dropout: bool,
         dense_dropout: bool,
-        layer_name_suffix: Text,
-        output_units: int,
+        dense_concat_dimension: int,
         sparse_to_dense_kw: Dict[Text, Any] = {},
     ) -> None:
-        super().__init__(name=f"concatenate_sparse_dense_features_{layer_name_suffix}")
+        super().__init__(
+            name=f"concatenate_sparse_dense_features_{attribute}_{feature_type}"
+        )
 
-        if sparse_dropout:
-            self._sparse_dropout = SparseDropout(rate=dropout_rate)
+        self.do_nothing = not data_signature
 
-        if "name" not in sparse_to_dense_kw:
-            sparse_to_dense_kw["name"] = f"sparse_to_dense.{layer_name_suffix}"
-        self._sparse_to_dense = DenseForSparse(**sparse_to_dense_kw)
+        self.have_sparse_features = any(
+            [signature.is_sparse for signature in data_signature]
+        )
+        self.have_dense_features = any(
+            [not signature.is_sparse for signature in data_signature]
+        )
 
-        if dense_dropout:
+        all_sparse_units = sum(
+            [
+                dense_concat_dimension
+                for signature in data_signature
+                if signature.is_sparse
+            ]
+        )
+        all_dense_units = sum(
+            [signature.units for signature in data_signature if not signature.is_sparse]
+        )
+        self.output_units = all_sparse_units + all_dense_units
+
+        self.use_sparse_dropout = sparse_dropout
+        self.use_dense_dropout = dense_dropout
+
+        if self.have_sparse_features:
+            if "name" not in sparse_to_dense_kw:
+                sparse_to_dense_kw[
+                    "name"
+                ] = f"sparse_to_dense.{attribute}_{feature_type}"
+            self._sparse_to_dense = DenseForSparse(**sparse_to_dense_kw)
+
+            if self.use_sparse_dropout:
+                self._sparse_dropout = SparseDropout(rate=dropout_rate)
+
+        if self.use_dense_dropout:
             self._dense_dropout = tf.keras.layers.Dropout(rate=dropout_rate)
-
-        self.output_units = output_units
 
     def call(
         self,
         features: List[Union[tf.Tensor, tf.SparseTensor]],
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> tf.Tensor:
+        if self.do_nothing:
+            return None
+
         dense_features = []
 
         for f in features:
             if isinstance(f, tf.SparseTensor):
-                if self._sparse_dropout:
+                if self.use_sparse_dropout:
                     _f = self._sparse_dropout(f, training)
                 else:
                     _f = f
 
                 dense_f = self._sparse_to_dense(_f)
 
-                # TODO according to original code, dense features shouldn't use dropout,
-                # only the ones that were originally sparse. Is this correct?
-                if self._dense_dropout:
+                if self.use_dense_dropout:
                     dense_f = self._dense_dropout(dense_f, training)
 
                 dense_features.append(dense_f)
@@ -264,32 +297,39 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         return tf.concat(dense_features, axis=-1)
 
 
-from rasa.utils.tensorflow.constants import (
-    SEQUENCE,
-    SENTENCE
-)
+from rasa.utils.tensorflow.constants import SEQUENCE, SENTENCE
+
+
 class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
     # TODO add docstring
-    def __init__(self, 
+    def __init__(
+        self,
         layer_name_suffix: Text,
         concat_dimension: int,
-        sequence_signature: FeatureSignature = None,
-        sentence_signature: FeatureSignature = None,
-        concat_layers_kwargs: Dict[Any] = {}
+        sequence_signature: FeatureSignature,
+        sentence_signature: FeatureSignature,
+        concat_layers_kwargs: Dict[Text, Any] = {},
     ) -> None:
         super().__init__(
             name=f"concatenate_sequence_sentence_features_{layer_name_suffix}"
         )
-        
+
+        # self.do_nothing = not sequence_signature and not sentence_signature
+        # if self.do_nothing:
+        #     return
+
         if sequence_signature and sentence_signature:
             self.do_concatenation = True
             if sequence_signature.units != sentence_signature.units:
                 self.unify_dimensions_before_concat = True
                 self.output_units = concat_dimension
+                self.unify_dimensions_layers = {}
                 for feature_type in [SEQUENCE, SENTENCE]:
                     if "layer_name_suffix" not in concat_layers_kwargs:
-                        concat_layers_kwargs["layer_name_suffix"] = f"unify_dimensions_before_concat.{layer_name_suffix}_{feature_type}"
-                    self.unify_dimensions_layers[feature_type] = layers.Ffnn(
+                        concat_layers_kwargs[
+                            "layer_name_suffix"
+                        ] = f"unify_dimensions_before_concat.{layer_name_suffix}_{feature_type}"
+                    self.unify_dimensions_layers[feature_type] = Ffnn(
                         **concat_layers_kwargs
                     )
             else:
@@ -303,18 +343,18 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             elif sentence_signature and not sequence_signature:
                 self.return_just = SENTENCE
                 self.output_units = sentence_signature.units
-            else:
-                # TODO: raise ValueError?
-                self.return_just = None
 
     def call(
         self, sequence_x: tf.Tensor, sentence_x: tf.Tensor, mask_text: tf.Tensor,
     ) -> tf.Tensor:
+        # if self.do_nothing:
+        #     return None
+
         if self.do_concatenation:
             if self.unify_dimensions_before_concat:
-                sequence_x = self.unify_dimensions_layers[SEQUENCE]
-                sentence_x = self.unify_dimensions_layers[SENTENCE]
-            
+                sequence_x = self.unify_dimensions_layers[SEQUENCE](sequence_x)
+                sentence_x = self.unify_dimensions_layers[SENTENCE](sentence_x)
+
             # we need to concatenate the sequence features with the sentence features
             # we cannot use tf.concat as the sequence features are padded
 
