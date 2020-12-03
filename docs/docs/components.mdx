@@ -824,8 +824,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   Make the featurizer case insensitive by adding the `case_sensitive: False` option, the default being
   `case_sensitive: True`.
 
-  For correctly process languages such as Chinese that don't use whitespace for word separation,
-  user need add the `use_word_boundaries: False` option, the default being `use_word_boundaries: True`.
+  To correctly process languages such as Chinese that don't use whitespace for word separation,
+  the user needs to add the `use_word_boundaries: False` option, the default being `use_word_boundaries: True`.
 
   ```yaml-rasa
   pipeline:
@@ -2064,8 +2064,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   Make the entity extractor case sensitive by adding the `case_sensitive: True` option, the default being
   `case_sensitive: False`.
 
-  For correctly process languages such as Chinese that don't use whitespace for word separation,
-  user need add the `use_word_boundaries: False` option, the default being `use_word_boundaries: True`.
+  To correctly process languages such as Chinese that don't use whitespace for word separation,
+  the user needs to add the `use_word_boundaries: False` option, the default being `use_word_boundaries: True`.
 
   ```yaml-rasa
       pipeline:
