@@ -168,7 +168,9 @@ Each button in the list of `buttons` should have two keys:
 It's common to use buttons as a shortcut to bypass the machine-learning-based NLU interpreter.
 Messages starting with `/` are sent straight to the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format, e.g.
-`payload: "/inform{{\"planet\": \"saturn\"}}"`.
+```yaml-rasa {4-8}
+payload: "/inform{{\"planet\": \"saturn\"}}"
+```
 
 In the example of this section, if the user clicks a button, the user input
 will be directly classified as either the `mood_great` or `mood_sad` intent.
