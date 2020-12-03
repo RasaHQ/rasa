@@ -4,7 +4,7 @@ import jsonpickle
 import logging
 
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, INTENT
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union
 import numpy as np
@@ -17,6 +17,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -131,7 +132,7 @@ class TrackerFeaturizer:
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_from_domain(domain)
+        self.state_featurizer.prepare_for_training(domain, interpreter)
 
         trackers_as_states, trackers_as_actions = self.training_states_and_actions(
             trackers, domain

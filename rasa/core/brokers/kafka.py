@@ -1,9 +1,11 @@
 import json
 import logging
+from asyncio import AbstractEventLoop
 from typing import Any, Text, List, Optional, Union, Dict
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +77,12 @@ class KafkaEventBroker(EventBroker):
         logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional["KafkaEventBroker"]:
+    async def from_endpoint_config(
+        cls,
+        broker_config: EndpointConfig,
+        event_loop: Optional[AbstractEventLoop] = None,
+    ) -> Optional["KafkaEventBroker"]:
+        """Creates broker. See the parent class for more information."""
         if broker_config is None:
             return None
 

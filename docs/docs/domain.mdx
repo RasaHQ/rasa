@@ -26,11 +26,11 @@ rasa train --domain path_to_domain_directory
 ## Intents
 
 The `intents` key in your domain file lists all intents
-used in your NLU and conversation training data.
+used in your [NLU data](./nlu-training-data.mdx) and [conversation training data](./training-data-format.mdx#conversation-training-data).
 
-### Ignoring entities for certain intents
+### Ignoring Entities for Certain Intents
 
-If you want all entities to be ignored for certain intents, you can
+To ignore all entities for certain intents, you can
 add the `use_entities: []` parameter to the intent in your domain
 file like this:
 
@@ -54,7 +54,7 @@ intents:
       - age
 ```
 
-This means that excluded entities for those intents will be unfeaturized and therefore
+Excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up.
 
@@ -62,17 +62,19 @@ If you list your intents without this parameter, the entities will be
 featurized as normal.
 
 :::note
-If you really want these entities not to influence action prediction we
-suggest you set the [`influence_conversation: false`](./domain.mdx#slots-and-conversation-behavior)
+If you want these entities not to influence action prediction,
+set the [`influence_conversation: false`](./domain.mdx#slots-and-conversation-behavior)
 parameter for slots with the same name.
 
 :::
 
 ## Entities
 
-The `entities` section lists all entities
+The `entities` section lists all entities that can be
 extracted by any [entity extractor](./components.mdx) in your
 NLU pipeline.
+If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
+need to list the roles and groups of an entity in this section.
 
 For example:
 
@@ -82,6 +84,18 @@ entities:
    - time             # entity extracted by DucklingEntityExtractor
    - membership_type  # custom entity extracted by DIETClassifier
    - priority         # custom entity extracted by DIETClassifier
+   - city:            # custom entity extracted by DIETClassifier
+       roles:
+       - from
+       - to
+   - topping:         # custom entity extracted by DIETClassifier
+       groups:
+       - 1
+       - 2
+   - size:            # custom entity extracted by DIETClassifier
+       groups:
+       - 1
+       - 2
 ```
 
 ## Slots
@@ -104,23 +118,35 @@ slots:
 
 ### Slots and Conversation Behavior
 
-You can specify whether or not a slot influences the conversation with the property
-`influence_conversation`. If you want to store information but don't want a slot to
-influence the conversation, set the `influence_conversation` property of your slot
-to `false`.
-By default all slot types will influence the conversation except slots of the type
-`any`. Depending on the [slot type](./domain.mdx#slot-types), a slot with the
-`influence_conversation` property set to `true` will cause different behavior of
-your assistant.
+You can specify whether or not a slot influences the conversation with the
+`influence_conversation` property. 
 
-For example, if your user should provide their home city, you might
-use a slot called `home_city` to store this information. If the user asks for the
-weather, and you *don't* know their home city, you will have to ask
-them for it. You could make `home_city` a `text` slot and set the
-`influence_conversation` property to `true`. A [`text` slot](domain.mdx#text-slot) will
+If you want to store information in a slot without it influencing the conversation,
+set `influence_conversation: false` when defining your slot. 
+
+The following example defines a slot `age` which will store information about the
+user's age, but which will *not* influence the flow of the conversation. This means
+that the assistant will ignore the value of the slot each time it predicts the next action.
+
+```yaml
+slots:
+  age:
+    type: text
+    # this slot will not influence the predictions
+    # of the dialogue policies
+    influence_conversation: false
+```
+
+When defining a slot, if you leave out `influence_conversation` or set it to `true`,
+that slot will influence the next action prediction, unless it has slot type `any`.
+The way the slot influences the conversation
+will depend on its [slot type](./domain.mdx#slot-types).
+
+The following example defines a slot `home_city` that influences the conversation. 
+A [`text` slot](domain.mdx#text-slot) will
 influence the assistant's behavior depending on whether the slot has a value.
 The specific value of a `text` slot (e.g. *Bangalore* or *New York* or *Hong Kong*)
-doesn't make any difference.
+doesn't make any difference. 
 
 ```yaml
 slots:
@@ -131,18 +157,11 @@ slots:
     influence_conversation: true
 ```
 
-The following example defines a slot `age` which will store information about the
-user's age, but which will *not* influence the flow of the conversation. This means
-that the assistant will ignore the value of the slot during the conversation.
-
-```yaml
-slots:
-  age:
-    type: text
-    # this slot will not influence the predictions
-    # of the dialogue policies
-    influence_conversation: false
-```
+As an example, consider the two inputs "What is the weather like?" and "What is the
+weather like in Bangalore?" The conversation should diverge based on whether
+the `home_city` slot was set automatically by the NLU. If the slot is already set, the bot
+can predict the `action_forecast` action. If the slot is not set, it needs to get the `home_city`
+information before it is able to predict the weather.
 
 ### Slot Types
 
@@ -207,8 +226,9 @@ slots:
 * **Description**
 
   If `influence_conversation` is set to `true`, the assistant's behavior will change
-  depending on whether the slot is set to `true` or `false`. An empty `bool` slot
-  is the same as if the slot was set to `false`.
+  depending on whether the slot is empty, set to `true` or set to `false`. Note that an
+  empty `bool` slot influences the conversation differently than if the slot was set to
+  `false`.
 
 #### Categorical Slot
 
@@ -299,8 +319,8 @@ slots:
 * **Description**
 
   If `influence_conversation` is set to `true`, the assistant's behavior will change
-  depending on whether the list is empty or not. The **length of the list stored in
-  the slot does not influence the dialogue**.
+  depending on whether the list is empty or not. The length of the list stored in
+  the slot does not influence the dialogue. It only matters whether list length is zero or non-zero.
 
 #### Any Slot
 
@@ -334,10 +354,10 @@ for up to 6 people. In this case you want the *value* of the
 slot to influence the next selected action (and not just whether
 it's been specified). You can do this by defining a custom slot class.
 
-In the code below, we define a slot class called `NumberOfPeopleSlot`.
+The code below defines a custom slot class called `NumberOfPeopleSlot`.
 The featurization defines how the value of this slot gets converted to a vector
-to our machine learning model can deal with.
-Our slot has three possible “values”, which we can represent with
+so Rasa Open Source machine learning model can deal with it.
+The `NumberOfPeopleSlot` has three possible “values”, which can be represented with
 a vector of length `2`.
 
 |        |                |
@@ -364,8 +384,8 @@ class NumberOfPeopleSlot(Slot):
         return r
 ```
 
-Now we also need some training stories, so that Rasa Core
-can learn from these how to handle the different situations:
+Rasa Open Source needs some training stories to learn from how to handle the
+different situations:
 
 ```yaml-rasa
 stories:
@@ -422,9 +442,8 @@ The slot type `unfeaturized` is deprecated. Please use the property
 
 ### Slot Auto-fill
 
-If your NLU model picks up an entity, and your domain contains a
-slot with the same name as the entity type, the slot will be set automatically
-with the entity value. For example:
+The slot will be set automatically if your NLU model picks up an entity, and your domain
+ contains a slot with the same name. For example:
 
 ```yaml-rasa
 stories:
@@ -463,7 +482,7 @@ slots:
 
 ## Responses
 
-Responses are actions that simply send a message to a user without running any custom code or
+Responses are actions that send a message to a user without running any custom code or
 returning events. These responses can be defined directly in the domain file under the `responses` key
 and can include rich content such as buttons and attachments. For more information on responses and how to define them,
 see [Responses](./responses.mdx).
@@ -489,7 +508,7 @@ For example, an action could:
 
 * just about anything!
 
-All custom actions should be listed in your domain, except responses which need not be listed
+All [custom actions](./custom-actions.mdx) should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
 
 ## Session configuration
@@ -505,8 +524,11 @@ Conversation sessions can begin in three ways:
 
 You can define the period of inactivity after which a new conversation
 session is triggered in the domain under the `session_config` key.
-`session_expiration_time` defines the time of inactivity in minutes after which a
-new session will begin. `carry_over_slots_to_new_session` determines whether
+
+Available parameters are:
+- `session_expiration_time` defines the time of inactivity in minutes after which a
+new session will begin.
+- `carry_over_slots_to_new_session` determines whether
 existing set slots should be carried over to new sessions.
 
 The default session configuration looks as follows:
@@ -519,7 +541,7 @@ session_config:
 
 This means that if a user sends their first message after 60 minutes of inactivity, a
 new conversation session is triggered, and that any existing slots are carried over
-into the new session. Setting the value of `session_expiration_time` to 0 means
+into the new session. Setting the value of `session_expiration_time` to `0` means
 that sessions will not end (note that the `action_session_start` action will still
 be triggered at the very beginning of conversations).
 
