@@ -318,14 +318,13 @@ class YAMLStoryReader(StoryReader):
 
         is_end_to_end_utterance = KEY_USER_INTENT not in step
         if is_end_to_end_utterance:
-            utterance.intent = {"name": None}
+            utterance.intent = {INTENT_NAME_KEY: None}
         else:
             self._validate_that_utterance_is_in_domain(utterance)
 
         self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
-
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
         # check if this is a retrieval intent

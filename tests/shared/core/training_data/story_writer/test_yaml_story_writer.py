@@ -196,11 +196,11 @@ def test_writing_end_to_end_stories(default_domain: Domain):
         # Prediction story story with intent and action labels
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(text="Hi", intent={"name": "greet"}),
+        DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted("utter_greet"),
         ActionExecuted(ACTION_LISTEN_NAME),
         # End-To-End Training Story
         UserUttered(text="Hi"),
-        DefinePrevUserUtteredFeaturization(use_text_for_featurization=True),
         ActionExecuted(action_text="Hi, I'm a bot."),
         ActionExecuted(ACTION_LISTEN_NAME),
         # End-To-End Prediction Story
@@ -236,40 +236,29 @@ def test_writing_end_to_end_stories(default_domain: Domain):
     )
 
 
-def test_writing_end_to_end_stories_in_test_mode(default_domain: Domain):
+def test_reading_and_writing_end_to_end_stories_in_test_mode(default_domain: Domain):
     story_name = "test_writing_end_to_end_stories_in_test_mode"
-    events = [
-        # Conversation tests (end-to-end _testing_)
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered(text="Hi", intent={"name": "greet"}),
-        ActionExecuted("utter_greet"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        # Conversation tests (end-to-end _testing_) and entities
-        UserUttered(
-            text="Hi",
-            intent={"name": "greet"},
-            entities=[{"value": "Hi", "entity": "test", "start": 0, "end": 2}],
-        ),
-        ActionExecuted("utter_greet"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        # Conversation test with actual end-to-end utterances
-        UserUttered(text="Hi", intent={"name": "greet"}),
-        DefinePrevUserUtteredFeaturization(use_text_for_featurization=True),
-        ActionExecuted(action_text="Hi, I'm a bot."),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        # Conversation test with actual end-to-end utterances
-        UserUttered(
-            text="Hi",
-            intent={"name": "greet"},
-            entities=[{"value": "Hi", "entity": "test", "start": 0, "end": 2}],
-        ),
-        DefinePrevUserUtteredFeaturization(use_text_for_featurization=True),
-        ActionExecuted(action_text="Hi, I'm a bot."),
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
 
-    tracker = DialogueStateTracker.from_events(story_name, events)
-    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
+    conversation_tests = f"""
+stories:
+- story: {story_name}
+  steps:
+  - intent: greet
+    user: Hi
+  - action: utter_greet
+  - intent: greet
+    user: | 
+      [Hi](test)
+  - action: utter_greet
+  - user: Hi
+  - bot: Hi, I'm a bot.
+  - user: | 
+      [Hi](test)
+  - bot: Hi, I'm a bot.
+    """
+
+    end_to_end_tests = YAMLStoryReader().read_from_string(conversation_tests)
+    dump = YAMLStoryWriter().dumps(end_to_end_tests, is_test_story=True)
 
     assert (
         dump.strip()

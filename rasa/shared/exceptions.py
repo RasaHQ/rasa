@@ -76,4 +76,4 @@ class InvalidConfigException(ValueError, RasaException):
 
 
 class UnsupportedFeatureException(RasaCoreException):
-    """Raised if a certain feature is not supported."""
+    """Raised if a requested feature is not supported."""
