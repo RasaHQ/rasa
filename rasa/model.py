@@ -30,7 +30,6 @@ from rasa.utils.common import TempDirectoryPath
 if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -52,8 +51,7 @@ FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
 class Section(NamedTuple):
-    """Defines relevant fingerprint sections which are used to decide whether a model
-    should be retrained."""
+    """Specifies which fingerprint keys decide whether this sub-model is retrained."""
 
     name: Text
     relevant_keys: List[Text]
@@ -515,3 +513,32 @@ async def update_model_with_new_domain(
     domain = await importer.get_domain()
 
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
+
+
+def get_model_for_finetuning(
+    previous_model_file: Optional[Union[Path, Text]]
+) -> Optional[Text]:
+    """Gets validated path for model to finetune.
+
+    Args:
+        previous_model_file: Path to model file which should be used for finetuning or
+            a directory in case the latest trained model should be used.
+
+    Returns:
+        Path to model archive. `None` if there is no model.
+    """
+    if Path(previous_model_file).is_dir():
+        logger.debug(
+            f"Trying to load latest model from '{previous_model_file}' for "
+            f"finetuning."
+        )
+        return get_latest_model(previous_model_file)
+
+    if Path(previous_model_file).is_file():
+        return previous_model_file
+
+    logger.debug(
+        "No valid model for finetuning found as directory either "
+        "contains no model or model file cannot be found."
+    )
+    return None

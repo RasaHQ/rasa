@@ -318,7 +318,7 @@ def test_train_nlu_persist_nlu_data(
     )
 
 
-def test_train_help(run):
+def test_train_help(run: Callable[..., RunResult]):
     output = run("train", "--help")
 
     help_text = """usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
@@ -326,12 +326,14 @@ def test_train_help(run):
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
-                  [--force]
+                  [--force] [--finetune [FINETUNE]]
+                  [--epoch-fraction EPOCH_FRACTION]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
     printed_help = set(output.outlines)
+
     for line in lines:
         assert line in printed_help
 
@@ -342,7 +344,8 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [-d DOMAIN]
                       [--out OUT] [-u NLU] [--num-threads NUM_THREADS]
                       [--fixed-model-name FIXED_MODEL_NAME]
-                      [--persist-nlu-data]"""
+                      [--persist-nlu-data] [--finetune [FINETUNE]]
+                      [--epoch-fraction EPOCH_FRACTION]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -359,7 +362,8 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
-                       [--runs RUNS]"""
+                       [--runs RUNS] [--finetune [FINETUNE]]
+                       [--epoch-fraction EPOCH_FRACTION]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

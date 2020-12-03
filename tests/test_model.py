@@ -8,7 +8,9 @@ from typing import Text, Optional, Any
 from unittest.mock import Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.agent import Agent
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.constants import (
