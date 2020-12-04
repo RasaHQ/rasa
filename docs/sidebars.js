@@ -42,6 +42,7 @@ module.exports = {
           label: 'Preparing For Production',
           collapsed: true,
           items: [
+            'principles',
             'messaging-and-voice-channels',
             'tuning-your-model',
             'testing-your-assistant',

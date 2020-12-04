@@ -29,5 +29,6 @@ copyMarkdownFiles({
   docsDir: './docs',
   files: {
     '../CHANGELOG.mdx': 'changelog.mdx',
+    '../PRINCIPLES.mdx': 'principles.mdx',
   },
 });
