@@ -224,7 +224,7 @@ class RedisLockStore(LockStore):
         """
         import redis
 
-        if sentinel_name is None:
+        if sentinel_url is None:
             self.red = redis.StrictRedis(
                 host=host,
                 port=int(port),
