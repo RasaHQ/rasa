@@ -743,14 +743,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 winning_prediction.events.append(
                     DefinePrevUserUtteredFeaturization(True)
                 )
-                if winning_prediction.entities is not None:
-                    logger.debug(
-                        f"Added `DefinePrevUserUtteredEntities("
-                        f"{winning_prediction.entities})` event."
-                    )
-                    winning_prediction.events.append(
-                        DefinePrevUserUtteredEntities(winning_prediction.entities)
-                    )
             else:
                 logger.debug("Made prediction using user intent.")
                 logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")

@@ -101,7 +101,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
 )
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import UserUttered, DefinePrevUserUtteredEntities, Event
 from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
@@ -285,7 +285,6 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
@@ -320,7 +319,6 @@ class TEDPolicy(Policy):
 
     def _create_entity_tag_specs(self) -> List[EntityTagSpec]:
         """Create entity tag specifications with their respective tag id mappings."""
-
         _tag_specs = []
 
         tag_id_index_mapping = self.featurizer.state_featurizer.get_entity_tag_ids()
@@ -585,20 +583,22 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        entities = self._create_entities(output, interpreter, tracker)
+        optional_events = self._create_optional_event_for_entities(
+            output, interpreter, tracker
+        )
 
         return self._prediction(
             confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
-            entities=entities,
+            optional_events=optional_events,
         )
 
-    def _create_entities(
+    def _create_optional_event_for_entities(
         self,
         output: Dict[Text, tf.Tensor],
         interpreter: NaturalLanguageInterpreter,
         tracker: DialogueStateTracker,
-    ) -> Optional[List[Dict[Text, Any]]]:
+    ) -> Optional[List[Event]]:
         if not self.config[ENTITY_RECOGNITION]:
             # entity recognition is not turned on, no entities can be predicted
             return None
@@ -629,7 +629,7 @@ class TEDPolicy(Policy):
         for entity in entities:
             entity[EXTRACTOR] = "TEDPolicy"
 
-        return entities
+        return [DefinePrevUserUtteredEntities(entities)]
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
@@ -683,6 +683,7 @@ class TEDPolicy(Policy):
     @classmethod
     def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
         """Loads a policy from the storage.
+
         **Needs to load its featurizer**
         """
         model_path = Path(path)
@@ -781,6 +782,15 @@ class TED(TransformerRasaModel):
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> None:
+        """Intializes the TED model.
+
+        Args:
+            data_signature: the data signature of the input data
+            config: the model configuration
+            use_only_last_dialogue_turns: if 'True' only the last dialogue turn will be used
+            label_data: the label data
+            entity_tag_specs: the entity tag specifications
+        """
         super().__init__("TED", config, data_signature, label_data)
 
         self.use_only_last_dialogue_turns = use_only_last_dialogue_turns
@@ -865,9 +875,10 @@ class TED(TransformerRasaModel):
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
     ) -> None:
-        """Prepare the sparse dense layer for the given attribute name. It is used to
-        combine the sparse and dense features of the attribute at the beginning of
-        the model.
+        """Prepares the sparse dense layer for the given attribute name.
+
+        It is used to combine the sparse and dense features of the attribute at the
+        beginning of the model.
 
         Args:
             name: the attribute name
@@ -1258,7 +1269,6 @@ class TED(TransformerRasaModel):
         Returns:
             The converted attribute features
         """
-
         # in order to convert the attribute features with shape
         # (combined batch-size and dialogue length x 1 x units)
         # to a shape of (batch-size x dialogue length x units)
@@ -1573,6 +1583,7 @@ class TED(TransformerRasaModel):
     # ---PREDICTION---
 
     def prepare_for_predict(self) -> None:
+        """Prepares the model for prediction."""
         _, self.all_labels_embed = self._create_all_labels_embed()
 
     def batch_predict(

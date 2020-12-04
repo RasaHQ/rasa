@@ -489,6 +489,7 @@ class UserUttered(Event):
         return ""
 
     def as_story_string(self, e2e: bool = False) -> Text:
+
         text_with_entities = md_format_message(
             self.text or "", self.intent_name, self.entities
         )

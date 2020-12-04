@@ -481,7 +481,9 @@ class DialogueStateTracker:
                 return future_event.use_text_for_featurization
 
     @staticmethod
-    def _define_user_entities(future_events: List[Event]) -> List[Dict[Text, Any]]:
+    def _define_user_entities(
+        future_events: List[Event],
+    ) -> Optional[List[Dict[Text, Any]]]:
         for future_event in future_events:
             if isinstance(future_event, DefinePrevUserUtteredEntities):
                 return future_event.entities
