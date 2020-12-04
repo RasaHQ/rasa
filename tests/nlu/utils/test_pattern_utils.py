@@ -13,7 +13,7 @@ from rasa.shared.nlu.training_data.message import Message
         (
             {"name": "person", "elements": ["Max", "John"]},
             {},
-            [{"name": "person", "pattern": "(\\bMax\\b|\\bJohn\\b)"}],
+            [{"name": "person", "pattern": "(Max|John)"}],
         ),
         ({}, {}, []),
         (
@@ -26,7 +26,7 @@ from rasa.shared.nlu.training_data.message import Message
             {"name": "zipcode", "pattern": "[0-9]{5}"},
             [
                 {"name": "zipcode", "pattern": "[0-9]{5}"},
-                {"name": "person", "pattern": "(\\bMax\\b|\\bJohn\\b)"},
+                {"name": "person", "pattern": "(Max|John)"},
             ],
         ),
         (
@@ -36,7 +36,7 @@ from rasa.shared.nlu.training_data.message import Message
                 {"name": "zipcode", "pattern": "[0-9]{5}"},
                 {
                     "name": "plates",
-                    "pattern": "(\\btacos\\b|\\bbeef\\b|\\bmapo\\ tofu\\b|\\bburrito\\b|\\blettuce\\ wrap\\b)",
+                    "pattern": "(tacos|beef|mapo\\ tofu|burrito|lettuce\\ wrap)",
                 },
             ],
         ),
@@ -101,7 +101,7 @@ def test_extract_patterns_use_only_entities_regexes(
         (
             "person",
             {"name": "person", "elements": ["Max", "John"]},
-            [{"name": "person", "pattern": "(\\bMax\\b|\\bJohn\\b)"}],
+            [{"name": "person", "pattern": "(Max|John)"}],
         ),
         ("entity", {"name": "person", "elements": ["Max", "John"]}, []),
     ],
@@ -148,7 +148,7 @@ def test_extract_patterns_use_only_entities_lookup_tables(
             {"name": "zipcode", "pattern": "[0-9]{5}"},
             True,
             False,
-            [{"name": "person", "pattern": "(\\bMax\\b|\\bJohn\\b)"}],
+            [{"name": "person", "pattern": "(Max|John)"}],
         ),
         (
             {"name": "person", "elements": ["Max", "John"]},
