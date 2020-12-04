@@ -73,7 +73,7 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
     return [e for e in entities if isinstance(e, dict)]
 
 
-def md_format_message(
+def format_message(
     text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]
 ) -> Text:
     """Uses NLU parser information to generate a message with inline entity annotations.
@@ -513,7 +513,7 @@ class UserUttered(Event):
             )
 
         if e2e:
-            text_with_entities = md_format_message(
+            text_with_entities = format_message(
                 self.text or "", self.intent_name, self.entities
             )
 

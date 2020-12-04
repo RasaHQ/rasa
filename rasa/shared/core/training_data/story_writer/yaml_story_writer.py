@@ -217,7 +217,7 @@ class YAMLStoryWriter(StoryWriter):
             or is_test_story
         ):
             result[KEY_USER_MESSAGE] = LiteralScalarString(
-                rasa.shared.core.events.md_format_message(
+                rasa.shared.core.events.format_message(
                     user_utterance.text,
                     user_utterance.intent_name,
                     user_utterance.entities,
