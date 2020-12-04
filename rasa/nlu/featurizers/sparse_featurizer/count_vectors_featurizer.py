@@ -426,7 +426,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             return 0
         if self.additional_vocabulary_size.get(attribute) is not None:
             return self.additional_vocabulary_size[attribute]
-        return int(existing_vocabulary_size * 0)
+        return int(existing_vocabulary_size * 0.5)
 
     def _add_buffer_to_vocabulary(self, attribute: Text) -> None:
         """Add extra tokens to vocabulary for incremental training.
