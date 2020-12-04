@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import rasa.shared.utils.io
 from rasa.shared.core.domain import SubState, State, Domain
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.trackers import is_prev_action_listen_in_state
@@ -34,15 +34,29 @@ class SingleStateFeaturizer:
     """
 
     def __init__(self) -> None:
+        """Initialize the single state featurizer."""
+        # rasa core can be trained separately, therefore interpreter during training
+        # will be `RegexInterpreter`. If the model is combined with a rasa nlu model
+        # during prediction the interpreter might be different.
+        # If that is the case, we need to make sure to "reset" the interpreter.
+        self._use_regex_interpreter = False
         self._default_feature_states = {}
         self.action_texts = []
 
-    def prepare_from_domain(self, domain: Domain) -> None:
+    def prepare_for_training(
+        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+    ) -> None:
         """Gets necessary information for featurization from domain.
 
         Args:
             domain: An instance of :class:`rasa.shared.core.domain.Domain`.
+            interpreter: The interpreter used to encode the state
         """
+        if isinstance(interpreter, RegexInterpreter):
+            # this method is called during training,
+            # RegexInterpreter means that core was trained separately
+            self._use_regex_interpreter = True
+
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:
             return {
@@ -156,6 +170,15 @@ class SingleStateFeaturizer:
         interpreter: NaturalLanguageInterpreter,
         sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
+        # this method is called during both prediction and training,
+        # `self._use_regex_interpreter == True` means that core was trained
+        # separately, therefore substitute interpreter based on some trained
+        # nlu model with default RegexInterpreter to make sure
+        # that prediction and train time features are the same
+        if self._use_regex_interpreter and not isinstance(
+            interpreter, RegexInterpreter
+        ):
+            interpreter = RegexInterpreter()
 
         message = Message(data=sub_state)
         # remove entities from possible attributes

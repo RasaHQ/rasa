@@ -5,7 +5,8 @@ import pytest
 
 from rasa.nlu import registry, train
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
-from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
@@ -197,7 +198,7 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
         {"pipeline": [{"parameter": 4}]}
     )
 
-    with pytest.raises(InvalidConfigError):
+    with pytest.raises(InvalidConfigException):
         await train(
             _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
         )

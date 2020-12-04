@@ -1,0 +1,22 @@
+backend:
+  - 'pyproject.toml'
+  - 'rasa/**/*'
+  - 'tests/**/*'
+  - 'data/**/*'
+  - 'examples/**/*'
+  - 'Makefile'
+
+docker:
+  - 'pyproject.toml'
+  - 'rasa/**/*'
+  - 'docker/**/*'
+  - 'Makefile'
+
+docs:
+  - 'docs/**/*'
+  - 'changelog/*'
+  - 'CHANGELOG.mdx'
+  - 'tests/docs/*'
+  - 'data/**/*'
+  - 'examples/**/*'
+  - 'Makefile'
