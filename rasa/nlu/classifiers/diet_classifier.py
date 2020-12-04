@@ -1283,20 +1283,13 @@ class DIET(TransformerRasaModel):
             logger.debug(f"  {metric} ({name})")
 
     def _prepare_layers(self) -> None:
-        print("DATA SIGNATURE DURING LAYER PREPARATION")
-        for k, v in self.data_signature.items():
-            print(f"> {k}")
-            for kk, vv in v.items():
-                print(f">> {kk}: {vv}")
         self.text_name = TEXT
-        self._prepare_sequence_layers(self.text_name)
-        print(f"PREPARE SEQUENCE LAYERS for {self.text_name}")
+        self._prepare_sequence_layers(self.text_name, self.data_signature[self.text_name])
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
-            print(f"PREPARE INPUT LAYERS for {self.label_name}")
-            self._prepare_input_layers(self.label_name)
+            self._prepare_input_layers(self.label_name, self.label_signature[self.label_name])
             self._prepare_label_classification_layers()
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
@@ -1409,12 +1402,6 @@ class DIET(TransformerRasaModel):
         Returns:
             The loss of the given batch.
         """
-        print("DATA SIGNATURE DURING TRAINING")
-        for k, v in self.data_signature.items():
-            print(f"> {k}")
-            for kk, vv in v.items():
-                print(f">> {kk}: {vv}")
-
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         batch_dim = self._get_batch_dim(tf_batch_data[TEXT])

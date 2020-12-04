@@ -788,10 +788,9 @@ class TED(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
-            print(f"$$ data attribute: {name}")
             # prepare a stack of sparse/dense, sentence/squence and transformer layers
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name)
+                self._prepare_sequence_layers(name, self.data_signature[name])
             # just a sparse/dense layer, combining sentence/sequence isn't needed
             elif SENTENCE in self.data_signature[name]:
                 # self._prepare_sparse_dense_layer_for(name, self.data_signature)
@@ -809,9 +808,8 @@ class TED(TransformerRasaModel):
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
-            print(f"$$ label attribute: {name}")
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name)
+                self._prepare_sequence_layers(name, self.label_signature[name])
             elif SENTENCE in self.label_signature[name]:
                 # self._prepare_sparse_dense_layer_for(name, self.label_signature)
                 self._prepare_sparse_dense_layers(
@@ -916,10 +914,8 @@ class TED(TransformerRasaModel):
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         # labels cannot have all features "fake"
         all_labels_encoded = {}
-        print(f"### label keys {self.tf_label_data.keys()}")
         for key in self.tf_label_data.keys():
             if key != LABEL_KEY:
-                print(f"#### encoding real features for {key}")
                 attribute_features, _, _ = self._encode_real_features_per_attribute(
                     self.tf_label_data, key
                 )
@@ -990,7 +986,6 @@ class TED(TransformerRasaModel):
         # Therefore actual input tensors will be empty.
         # Since we need actual numbers to create dialogue turn features, we create
         # zero tensors in `_encode_fake_features_per_attribute` for these attributes.
-        print("\n>>>>>> _encode_features_per_attribute")
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
             lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),
@@ -1004,7 +999,6 @@ class TED(TransformerRasaModel):
         feature_type: Text,
     ) -> int:
         # TODO this should be done in corresponding layers once in init
-        print("\n\nGET_DENSE_UNITS\n\n")
         return self._tf_layers[
             "concat_sparse_dense_features.{attribute}_{feature_type}"
         ].output_units
@@ -1059,7 +1053,6 @@ class TED(TransformerRasaModel):
             (batch_dim, dialogue_dim, units), dtype=tf.float32
         )
         if attribute == TEXT:
-            print(">>>>>>>>>>>> TEXT")
             # if the input features are fake, we don't process them further,
             # but we need to calculate correct last dim (units) so that tf could infer
             # the last shape of the tensors
@@ -1512,11 +1505,6 @@ class TED(TransformerRasaModel):
             The loss of the given batch.
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-        print("BATCH IN")
-        for k, v in tf_batch_data.items():
-            print(f"> {k}")
-            for k1, v1 in v.items():
-                print(f">>>> {k1}: {v1[0].shape}")
         self._compute_dialogue_indices(tf_batch_data)
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()

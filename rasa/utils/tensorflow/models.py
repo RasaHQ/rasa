@@ -843,11 +843,10 @@ class TransformerRasaModel(RasaModel):
         # else:
         #     print(f"### NOT Adding sparse_dense for {name}")
 
-    def _prepare_input_layers(self, name: Text) -> None:
+    def _prepare_input_layers(self, name: Text, data_signature: Dict[Text, List[FeatureSignature]]) -> None:
         for feature_type in [SENTENCE, SEQUENCE]:
             if (
-                name not in self.data_signature
-                or feature_type not in self.data_signature[name]
+                feature_type not in data_signature
             ):
                 continue
 
@@ -856,9 +855,9 @@ class TransformerRasaModel(RasaModel):
             # )
 
             self._prepare_sparse_dense_layers(
-                data_signature=self.data_signature[name][feature_type],
+                data_signature=data_signature[feature_type],
                 attribute=name,
-                feature_type=feature_type,
+                feature_type=feature_type
             )
 
             # Ffnn layer is prepared separately for each feature type
@@ -868,15 +867,13 @@ class TransformerRasaModel(RasaModel):
             #     self.config[DROP_RATE],
             #     prefix="unify_dims_for_concat",
             # )
-
             if name == TEXT:
                 has_sparse = any(
-                    [signature.is_sparse for signature in self.data_signature[name][feature_type]]
+                    [signature.is_sparse for signature in data_signature[feature_type]]
                 )
                 has_dense = any(
-                    [not signature.is_sparse for signature in self.data_signature[name][feature_type]]
+                    [not signature.is_sparse for signature in data_signature[feature_type]]
                 )
-
                 if has_sparse and not has_dense:
                     # create dense labels for the input to use in negative sampling for MLM
                     self._tf_layers[
@@ -892,13 +889,15 @@ class TransformerRasaModel(RasaModel):
             name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
         )
 
-    def _prepare_sequence_sentence_concat_layers(self, name: Text) -> None:
+        self._prepare_sequence_sentence_concat_layers(name, data_signature)
+
+    def _prepare_sequence_sentence_concat_layers(self, name: Text, data_signature: Dict[Text, List[FeatureSignature]]) -> None:
         data_signatures = {}
         for feature_type in [SEQUENCE, SENTENCE]:
-            if feature_type in self.data_signature[name]:
+            if feature_type in data_signature:
                 # TODO: shall we account for ALL features, not assuming there's always
                 # just 1 per feature type?
-                data_signatures[feature_type] = self.data_signature[name][feature_type][
+                data_signatures[feature_type] = data_signature[feature_type][
                     0
                 ]
             else:
@@ -921,9 +920,8 @@ class TransformerRasaModel(RasaModel):
             layer_name_suffix=name
         )
 
-    def _prepare_sequence_layers(self, name: Text) -> None:
-        self._prepare_input_layers(name)
-        self._prepare_sequence_sentence_concat_layers(name)
+    def _prepare_sequence_layers(self, name: Text, data_signature: Dict[Text, List[FeatureSignature]]) -> None:
+        self._prepare_input_layers(name, data_signature)
         self._prepare_transformer_layer(
             name,
             self.config[NUM_TRANSFORMER_LAYERS],
@@ -1011,9 +1009,6 @@ class TransformerRasaModel(RasaModel):
         # sparse_dropout: bool = False,
         # dense_dropout: bool = False,
     ) -> tf.Tensor:
-        print("::::::::::::::::::")
-        [print(f"> {k}") for k in self._tf_layers.keys()]
-        
         sequence_x = self._combine_sparse_dense_features(
             sequence_features, f"{name}_{SEQUENCE}"
         )
@@ -1125,15 +1120,6 @@ class TransformerRasaModel(RasaModel):
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
             seq_ids = None
-
-        print("<<<<<<<<<<< create_sequence >>>>>>>>>>>>>>>>>>")
-        print(f"> {name}")
-        print(f"> seq {sequence_features[0].shape} ({len(sequence_features)})")
-        print(f"> sent {sentence_features[0].shape} ({len(sentence_features)})")
-        if mask_sequence is not None:
-            print(f"> mask_seq {mask_sequence.shape}")
-        if mask is not None:
-            print(f"> mask {mask.shape}")
 
         inputs = self._combine_sequence_sentence_features(
             sequence_features,
