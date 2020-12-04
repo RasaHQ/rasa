@@ -23,7 +23,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.constants import TEXT, INTENT
 
 skip_on_CI = pytest.mark.skipif(
-    os.environ.get("CI") == "true",
+    bool(os.environ.get("CI")),
     reason="Downloading model crashes github action" "workers",
 )
 
