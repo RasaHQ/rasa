@@ -13,6 +13,7 @@ import rasa.model
 import rasa.core
 import rasa.nlu
 import rasa.shared.importers.autoconfig as autoconfig
+import rasa.shared.utils.io
 from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
@@ -430,30 +431,44 @@ def test_model_finetuning_nlu(
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_nlu_data: Text,
-    default_stack_config: Text,
-    trained_rasa_model: Text,
+    trained_moodbot_path: Text,
     use_latest_model: bool,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
 
+    mock_interpreter_create = Mock(wraps=Interpreter.create)
+    monkeypatch.setattr(Interpreter, "create", mock_interpreter_create)
+
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
     if use_latest_model:
-        trained_rasa_model = str(Path(trained_rasa_model).parent)
+        trained_moodbot_path = str(Path(trained_moodbot_path).parent)
+
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config["pipeline"][-1]["epochs"] = 10
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
     train_nlu(
-        default_stack_config,
-        default_nlu_data,
+        str(new_config_path),
+        "examples/moodbot/data/nlu.yml",
         output=output,
-        model_to_finetune=trained_rasa_model,
-        finetuning_epoch_fraction=1,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=0.5,
     )
+
+    assert mock_interpreter_create.call_args[1]["should_finetune"]
 
     mocked_nlu_training.assert_called_once()
     _, kwargs = mocked_nlu_training.call_args
-    assert isinstance(kwargs["model_to_finetune"], Interpreter)
+    model_to_finetune = kwargs["model_to_finetune"]
+    assert isinstance(model_to_finetune, Interpreter)
+
+    new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
+    assert new_diet_metadata["name"] == "DIETClassifier"
+    assert new_diet_metadata["epochs"] == 5
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])

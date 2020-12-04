@@ -1,6 +1,7 @@
 import copy
 import datetime
 import logging
+from math import ceil
 import os
 from typing import Any, Dict, List, Optional, Text
 
@@ -340,9 +341,10 @@ class Interpreter:
         finetuning_epoch_fraction: float = 1.0,
     ):
         for p1, p2 in zip(model_metadata.metadata["pipeline"], new_config["pipeline"]):
-            assert p1.get("name") == p2.get("name")
+            if not p1.get("name") == p2.get("name"):
+                raise InvalidModelError("Inconsistent config for model to fine-tune.")
             if "epochs" in p1:
-                p1["epochs"] = (
+                p1["epochs"] = ceil(
                     p2.get("epochs", p1["epochs"]) * finetuning_epoch_fraction
                 )
 
