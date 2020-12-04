@@ -12,7 +12,7 @@ from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data import training_data
 
 # noinspection PyProtectedMember
-from rasa.cli.train import _get_valid_config
+from rasa.cli.utils import get_valid_config
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
@@ -466,10 +466,10 @@ def test_get_valid_config(parameters):
 
     if parameters["error"]:
         with pytest.raises(SystemExit):
-            _get_valid_config(config_path, parameters["mandatory_keys"])
+            get_valid_config(config_path, parameters["mandatory_keys"])
 
     else:
-        config_path = _get_valid_config(
+        config_path = get_valid_config(
             config_path, parameters["mandatory_keys"], default_config_path
         )
 
@@ -481,4 +481,4 @@ def test_get_valid_config(parameters):
 
 def test_get_valid_config_with_non_existing_file():
     with pytest.raises(SystemExit):
-        _get_valid_config("non-existing-file.yml", CONFIG_MANDATORY_KEYS)
+        get_valid_config("non-existing-file.yml", CONFIG_MANDATORY_KEYS)

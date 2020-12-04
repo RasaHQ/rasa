@@ -72,6 +72,11 @@ IntentEvaluationResult = namedtuple(
     "IntentEvaluationResult", "intent_target intent_prediction message confidence"
 )
 
+IntentReport = namedtuple(
+    "IntentReport",
+    ["report", "precision", "f1", "accuracy", "confustion_matrix", "labels"],
+)
+
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
     "intent_response_key_target intent_response_key_prediction message confidence",
@@ -201,15 +206,9 @@ def write_intent_successes(
         logger.info("No successful intent predictions found.")
 
 
-def write_intent_errors(
-    intent_results: List[IntentEvaluationResult], errors_filename: Text
-) -> None:
-    """Write incorrect intent predictions to a file.
-
-    Args:
-        intent_results: intent evaluation result
-        errors_filename: filename of file to save incorrect predictions to
-    """
+def extract_intent_errors_from_results(
+    intent_results: List[IntentEvaluationResult],
+) -> List[Dict[Text, Any]]:
     errors = [
         {
             "text": r.message,
@@ -222,6 +221,20 @@ def write_intent_errors(
         for r in intent_results
         if r.intent_target != r.intent_prediction
     ]
+
+    return errors
+
+
+def write_intent_errors(
+    intent_results: List[IntentEvaluationResult], errors_filename: Text
+) -> None:
+    """Write incorrect intent predictions to a file.
+
+    Args:
+        intent_results: intent evaluation result
+        errors_filename: filename of file to save incorrect predictions to
+    """
+    errors = extract_intent_errors_from_results(intent_results=intent_results)
 
     if errors:
         rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
@@ -554,12 +567,10 @@ def _add_confused_labels_to_report(
     return report
 
 
-def evaluate_intents(
+def create_intent_report(
     intent_results: List[IntentEvaluationResult],
-    output_directory: Optional[Text],
-    successes: bool,
-    errors: bool,
-    disable_plotting: bool,
+    add_confused_labels_to_report: bool,
+    metrics_as_dict: bool,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for intents.
 
@@ -597,22 +608,58 @@ def evaluate_intents(
     )
     labels = sklearn.utils.multiclass.unique_labels(target_intents, predicted_intents)
 
-    if output_directory:
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            target_intents, predicted_intents, output_dict=True
-        )
+    report, precision, f1, accuracy = get_evaluation_metrics(
+        target_intents, predicted_intents, output_dict=metrics_as_dict
+    )
+
+    if add_confused_labels_to_report:
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
+    return IntentReport(report, precision, f1, accuracy, confusion_matrix, labels)
+
+
+def evaluate_intents(
+    intent_results: List[IntentEvaluationResult],
+    output_directory: Optional[Text],
+    successes: bool,
+    errors: bool,
+    disable_plotting: bool,
+) -> Dict:  # pragma: no cover
+    """Creates summary statistics for intents.
+
+    Only considers those examples with a set intent. Others are filtered out.
+    Returns a dictionary of containing the evaluation result.
+
+    Args:
+        intent_results: intent evaluation results
+        output_directory: directory to store files to
+        successes: if True correct predictions are written to disk
+        errors: if True incorrect predictions are written to disk
+        disable_plotting: if True no plots are created
+
+    Returns: dictionary with evaluation results
+    """
+    intent_report = create_intent_report(
+        intent_results=intent_results,
+        add_confused_labels_to_report=output_directory is not None,
+        metrics_as_dict=output_directory is not None,
+    )
+
+    if output_directory:
         report_filename = os.path.join(output_directory, "intent_report.json")
-        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            report_filename, intent_report.report
+        )
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            target_intents, predicted_intents
-        )
-        if isinstance(report, str):
-            log_evaluation_table(report, precision, f1, accuracy)
+        if isinstance(intent_report.report, str):
+            log_evaluation_table(
+                intent_report.report,
+                intent_report.precision,
+                intent_report.f1,
+                intent_report.accuracy,
+            )
 
     if successes and output_directory:
         successes_filename = os.path.join(output_directory, "intent_successes.json")
@@ -631,8 +678,8 @@ def evaluate_intents(
                 output_directory, confusion_matrix_filename
             )
         plot_utils.plot_confusion_matrix(
-            confusion_matrix,
-            classes=labels,
+            intent_report.confusion_matrix,
+            classes=intent_report.labels,
             title="Intent Confusion matrix",
             output_file=confusion_matrix_filename,
         )
@@ -660,10 +707,10 @@ def evaluate_intents(
 
     return {
         "predictions": predictions,
-        "report": report,
-        "precision": precision,
-        "f1_score": f1,
-        "accuracy": accuracy,
+        "report": intent_report.report,
+        "precision": intent_report.precision,
+        "f1_score": intent_report.f1,
+        "accuracy": intent_report.accuracy,
     }
 
 

@@ -3,7 +3,7 @@ import itertools
 import os
 
 import numpy as np
-from typing import List, Text, Optional, Union, Any
+from typing import Dict, List, Text, Optional, Union, Any
 import matplotlib
 
 import rasa.shared.utils.io
@@ -197,3 +197,64 @@ def plot_curve(
     plt.savefig(graph_path, format="pdf")
 
     logger.info(f"Comparison graph saved to '{graph_path}'.")
+
+
+def plot_intent_augmentation_summary(
+    augmentation_summary: Dict[Text, Dict[Text, float]], metric: Text, output_file: Text
+) -> None:
+    """Plot the gain/loss curve per intent.
+
+    Args:
+        augmentation_summary: Performance summary dictionary.
+        metric: Metric to plot, must be one of "precision", "recall", or "f1-score".
+        output_file: Output file for plot.
+    """
+    import matplotlib.pyplot as plt
+
+    intents = list(augmentation_summary.keys())
+    num_intents = len(intents)
+
+    # Fiddle out total keys (weighted avg, macro avg, micro avg)
+    totals_idx = []
+    for totals_key in ["weighted avg", "micro avg", "macro avg"]:
+        try:
+            totals_idx.append(intents.index(totals_key))
+        except ValueError:
+            continue
+
+    ind = np.arange(num_intents)
+    performance = np.array(
+        list(map(lambda d: d[f"{metric}_change"], augmentation_summary.values()))
+    )
+
+    plt.figure()
+    plt.ylabel(f"Performance Change ({metric})", fontsize=16)
+    plt.xlabel("Intent", fontsize=16)
+    perf_bar = plt.bar(ind, performance)
+    for idx in totals_idx:
+        perf_bar[idx].set_color("lightgreen")
+    _autolabel(perf_bar)
+    plt.xlim((-1, num_intents))
+    plt.ylim((-1.2, 1.2))
+    plt.grid(True)
+    plt.xticks(ind, intents, rotation=90, fontsize=14)
+    plt.savefig(output_file, bbox_inches="tight")
+
+
+def _autolabel(rects):
+    """Attach a text label above each bar in *rects*, displaying its height."""
+    import matplotlib.pyplot as plt
+
+    for rect in rects:
+        height = rect.get_height()
+
+        plt.annotate(
+            f"{height:.2f}",
+            xy=(rect.get_x() + rect.get_width() / 2, height),
+            xytext=(0, 1),  # 3 points vertical offset
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=14,
+            rotation=90,
+        )

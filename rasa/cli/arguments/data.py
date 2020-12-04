@@ -6,6 +6,7 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
     add_data_param,
     add_domain_param,
+    add_config_param,
 )
 from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
 
@@ -70,22 +71,45 @@ def set_validator_arguments(parser: argparse.ArgumentParser):
 
 
 def set_suggest_arguments(parser: argparse.ArgumentParser):
-    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
+    add_config_param(parser)
+    add_domain_param(parser)
+
+    parser.add_argument(
+        "--nlu-training-data", type=str, help="File containing your NLU training data."
+    )
+
+    parser.add_argument(
+        "--nlu-evaluation-data",
+        type=str,
+        help="File containing your NLU evaluation data.",
+    )
 
     parser.add_argument(
         "--nlu-classification-report",
         type=str,
-        help="File containing your NLU classification report."
+        help="File containing your NLU classification report.",
     )
 
     parser.add_argument(
-        "--paraphrases",
-        type=str,
-        help="File or folder containing your paraphrases."
+        "--paraphrases", type=str, help="File or folder containing your paraphrases."
+    )
+
+    parser.add_argument(
+        "--num-intents",
+        type=int,
+        default=5,
+        help="Number of intents for which to suggest paraphrases for.",
     )
 
     add_out_param(
         parser,
         default="nlu_suggest",
-        help_text="Directory where the training data with the suggestions should be stored."
+        help_text="Directory where the training data with the suggestions should be stored.",
+    )
+
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=29306,
+        help="Seed to generate a random sample of paraphrases.",
     )

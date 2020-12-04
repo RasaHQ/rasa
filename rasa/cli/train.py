@@ -1,18 +1,15 @@
 import argparse
-import os
-import sys
 from typing import List, Optional, Text, Dict
 
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_error
+from rasa.cli.utils import get_valid_config
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
-    DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
@@ -69,7 +66,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
 
-    config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
+    config = rasa.cli.utils.get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
         rasa.cli.utils.get_validated_path(
@@ -112,7 +109,9 @@ def train_core(
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
+        config = rasa.cli.utils.get_valid_config(
+            args.config, CONFIG_MANDATORY_KEYS_CORE
+        )
 
         return train_core(
             domain=args.domain,
@@ -138,7 +137,7 @@ def train_nlu(
 
     output = train_path or args.out
 
-    config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
+    config = rasa.cli.utils.get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
     nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
@@ -178,41 +177,3 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
         arguments["num_threads"] = args.num_threads
 
     return arguments
-
-
-def _get_valid_config(
-    config: Optional[Text],
-    mandatory_keys: List[Text],
-    default_config: Text = DEFAULT_CONFIG_PATH,
-) -> Text:
-    """Get a config from a config file and check if it is valid.
-
-    Exit if the config isn't valid.
-
-    Args:
-        config: Path to the config file.
-        mandatory_keys: The keys that have to be specified in the config file.
-        default_config: default config to use if the file at `config` doesn't exist.
-
-    Returns: The path to the config file if the config is valid.
-    """
-    config = rasa.cli.utils.get_validated_path(config, "config", default_config)
-
-    if not os.path.exists(config):
-        print_error(
-            "The config file '{}' does not exist. Use '--config' to specify a "
-            "valid config file."
-            "".format(config)
-        )
-        sys.exit(1)
-
-    missing_keys = rasa.cli.utils.missing_config_keys(config, mandatory_keys)
-    if missing_keys:
-        print_error(
-            "The config file '{}' is missing mandatory parameters: "
-            "'{}'. Add missing parameters to config file and try again."
-            "".format(config, "', '".join(missing_keys))
-        )
-        sys.exit(1)
-
-    return config
