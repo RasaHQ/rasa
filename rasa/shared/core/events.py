@@ -306,6 +306,12 @@ class Event:
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         pass
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return True
+
 
 # noinspection PyProtectedMember
 class UserUttered(Event):
@@ -386,17 +392,17 @@ class UserUttered(Event):
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, UserUttered):
-            return False
-        else:
-            return (
-                self.text,
-                self.intent_name,
-                [jsonpickle.encode(ent) for ent in self.entities],
-            ) == (
-                other.text,
-                other.intent_name,
-                [jsonpickle.encode(ent) for ent in other.entities],
-            )
+            return NotImplemented
+
+        return (
+            self.text,
+            self.intent_name,
+            [jsonpickle.encode(ent) for ent in self.entities],
+        ) == (
+            other.text,
+            other.intent_name,
+            [jsonpickle.encode(ent) for ent in other.entities],
+        )
 
     def __str__(self) -> Text:
         return (
@@ -556,9 +562,6 @@ class DefinePrevUserUtteredFeaturization(Event):
     def __hash__(self) -> int:
         return hash(self.use_text_for_featurization)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, DefinePrevUserUtteredFeaturization)
-
     def as_story_string(self) -> None:
         return None
 
@@ -605,9 +608,9 @@ class BotUttered(Event):
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, BotUttered):
-            return False
-        else:
-            return self.__members() == other.__members()
+            return NotImplemented
+
+        return self.__members() == other.__members()
 
     def __str__(self) -> Text:
         return "BotUttered(text: {}, data: {}, metadata: {})".format(
@@ -696,9 +699,9 @@ class SlotSet(Event):
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, SlotSet):
-            return False
-        else:
-            return (self.key, self.value) == (other.key, other.value)
+            return NotImplemented
+
+        return (self.key, self.value) == (other.key, other.value)
 
     def as_story_string(self) -> Text:
         props = json.dumps({self.key: self.value}, ensure_ascii=False)
@@ -750,9 +753,6 @@ class Restarted(Event):
     def __hash__(self) -> int:
         return hash(32143124312)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, Restarted)
-
     def __str__(self) -> Text:
         return "Restarted()"
 
@@ -778,9 +778,6 @@ class UserUtteranceReverted(Event):
     def __hash__(self) -> int:
         return hash(32143124315)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, UserUtteranceReverted)
-
     def __str__(self) -> Text:
         return "UserUtteranceReverted()"
 
@@ -804,9 +801,6 @@ class AllSlotsReset(Event):
 
     def __hash__(self) -> int:
         return hash(32143124316)
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, AllSlotsReset)
 
     def __str__(self) -> Text:
         return "AllSlotsReset()"
@@ -870,9 +864,9 @@ class ReminderScheduled(Event):
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, ReminderScheduled):
-            return False
-        else:
-            return self.name == other.name
+            return NotImplemented
+
+        return self.name == other.name
 
     def __str__(self) -> Text:
         return (
@@ -960,9 +954,9 @@ class ReminderCancelled(Event):
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, ReminderCancelled):
-            return False
-        else:
-            return hash(self) == hash(other)
+            return NotImplemented
+
+        return hash(self) == hash(other)
 
     def __str__(self) -> Text:
         return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
@@ -1039,9 +1033,6 @@ class ActionReverted(Event):
     def __hash__(self) -> int:
         return hash(32143124318)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, ActionReverted)
-
     def __str__(self) -> Text:
         return "ActionReverted()"
 
@@ -1070,9 +1061,6 @@ class StoryExported(Event):
 
     def __hash__(self) -> int:
         return hash(32143124319)
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, StoryExported)
 
     def __str__(self) -> Text:
         return "StoryExported()"
@@ -1115,9 +1103,9 @@ class FollowupAction(Event):
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, FollowupAction):
-            return False
-        else:
-            return self.action_name == other.action_name
+            return NotImplemented
+
+        return self.action_name == other.action_name
 
     def __str__(self) -> Text:
         return f"FollowupAction(action: {self.action_name})"
@@ -1158,9 +1146,6 @@ class ConversationPaused(Event):
     def __hash__(self) -> int:
         return hash(32143124313)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, ConversationPaused)
-
     def __str__(self) -> Text:
         return "ConversationPaused()"
 
@@ -1182,9 +1167,6 @@ class ConversationResumed(Event):
 
     def __hash__(self) -> int:
         return hash(32143124314)
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, ConversationResumed)
 
     def __str__(self) -> Text:
         return "ConversationResumed()"
@@ -1240,13 +1222,13 @@ class ActionExecuted(Event):
     def __eq__(self, other: Any) -> bool:
         """Checks if object is equal to another."""
         if not isinstance(other, ActionExecuted):
-            return False
-        else:
-            equal = self.action_name == other.action_name
-            if hasattr(self, "action_text") and hasattr(other, "action_text"):
-                equal = equal and self.action_text == other.action_text
+            return NotImplemented
 
-            return equal
+        equal = self.action_name == other.action_name
+        if hasattr(self, "action_text") and hasattr(other, "action_text"):
+            equal = equal and self.action_text == other.action_text
+
+        return equal
 
     def as_story_string(self) -> Text:
         """Returns event in Markdown format."""
@@ -1332,12 +1314,12 @@ class AgentUttered(Event):
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, AgentUttered):
-            return False
-        else:
-            return (self.text, jsonpickle.encode(self.data)) == (
-                other.text,
-                jsonpickle.encode(other.data),
-            )
+            return NotImplemented
+
+        return (self.text, jsonpickle.encode(self.data)) == (
+            other.text,
+            jsonpickle.encode(other.data),
+        )
 
     def __str__(self) -> Text:
         return "AgentUttered(text: {}, data: {})".format(
@@ -1395,9 +1377,9 @@ class ActiveLoop(Event):
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, ActiveLoop):
-            return False
-        else:
-            return self.name == other.name
+            return NotImplemented
+
+        return self.name == other.name
 
     def as_story_string(self) -> Text:
         props = json.dumps({LOOP_NAME: self.name})
@@ -1462,10 +1444,10 @@ class LoopInterrupted(Event):
         return hash(self.is_interrupted)
 
     def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, LoopInterrupted)
-            and self.is_interrupted == other.is_interrupted
-        )
+        if not isinstance(other, LoopInterrupted):
+            return NotImplemented
+
+        return self.is_interrupted == other.is_interrupted
 
     def as_story_string(self) -> None:
         return None
@@ -1553,9 +1535,9 @@ class ActionExecutionRejected(Event):
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, ActionExecutionRejected):
-            return False
-        else:
-            return self.action_name == other.action_name
+            return NotImplemented
+
+        return self.action_name == other.action_name
 
     @classmethod
     def _from_parameters(cls, parameters) -> "ActionExecutionRejected":
@@ -1592,9 +1574,6 @@ class SessionStarted(Event):
 
     def __hash__(self) -> int:
         return hash(32143124320)
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, SessionStarted)
 
     def __str__(self) -> Text:
         return "SessionStarted()"
