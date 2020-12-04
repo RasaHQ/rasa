@@ -64,6 +64,7 @@ import rasa.utils.common
 import pathlib
 import rasa.shared
 import jsonpickle
+import rasa.exceptions
 
 if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
@@ -833,8 +834,8 @@ class DialogueStateTracker:
 
     @classmethod
     def load_tracker(
-        cls: Type[rasa.utils.common.T], file_path: Union[Text, pathlib.Path]
-    ) -> rasa.utils.common.T:
+        cls, file_path: Union[Text, pathlib.Path]
+    ) -> "DialogueStateTracker":
         """Loads a tracker from a file.
 
         Args:
@@ -845,7 +846,9 @@ class DialogueStateTracker:
         """
         tracker_file = pathlib.Path(file_path)
         if not tracker_file.is_file():
-            raise FileNotFoundError(f"Could not load tracker from '{file_path}'.")
+            raise rasa.exceptions.TrackerFileNotFound(
+                f"Could not load tracker from '{file_path}'."
+            )
 
         return jsonpickle.decode(rasa.shared.utils.io.read_file(tracker_file))
 
