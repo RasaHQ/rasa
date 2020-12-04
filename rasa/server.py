@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import json
 import logging
 import multiprocessing
 import os
@@ -20,6 +21,7 @@ from typing import (
     Dict,
     TYPE_CHECKING,
     NoReturn,
+    Coroutine,
 )
 
 import aiohttp
@@ -941,8 +943,33 @@ def create_app(
                 f"An unexpected error occurred during evaluation. Error: {e}",
             )
 
+    def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
+        @wraps(f)
+        async def decorated_function(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> HTTPResponse:
+            callback_url = request.args.get("callback_url")
+            if not callback_url:
+                return await f(request, *args, **kwargs)
+
+            async def wrapped() -> None:
+                try:
+                    result: HTTPResponse = await f(request, *args, **kwargs)
+                    payload = json.loads(result.body)
+                except ErrorResponse as e:
+                    payload = e.error_info
+
+                async with aiohttp.ClientSession() as session:
+                    await session.post(callback_url, json=payload)
+
+            app.add_task(wrapped())
+            return response.empty()
+
+        return decorated_function
+
     @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
+    @async_if_callback_url
     async def evaluate_intents(request: Request) -> HTTPResponse:
         """Evaluate intents against a Rasa model."""
         validate_request_body(
@@ -956,60 +983,40 @@ def create_app(
         # 2. Fix temporary files for training data
 
         # TODO: 2
+        # Callback url
+        # Inline everything
         # Add coroutine to loop
 
-        callback_url = request.args.get("callback_url")
-
-        async def run_evaluation():
-            if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-                payload = _training_payload_from_yaml(request)
-                config = payload.get("config", {})
-                test_data = payload.get("training_files")
-            else:
-                test_data = _test_data_file_from_payload(request)
-
-            cross_validation_folds = request.args.get("cross_validation_folds")
-
-            if cross_validation_folds:
-                # evaluate using cross-validation
-                return await _cross_validate(
-                    test_data, config, int(cross_validation_folds)
-                )
-            else:
-                return await _evaluate_model_using_test_set(
-                    request.args.get("model"), test_data
-                )
-
-        if not callback_url:
-            try:
-                return response.json(await run_evaluation())
-            except Exception as e:
-                logger.error(traceback.format_exc())
-                raise ErrorResponse(
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                    "TestingError",
-                    f"An unexpected error occurred during evaluation. Error: {e}",
-                )
+        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+            payload = _training_payload_from_yaml(request)
+            config = payload.get("config", {})
+            test_data = payload.get("training_files")
         else:
+            test_data = _test_data_file_from_payload(request)
 
-            async def wrapped():
-                try:
-                    evaluation_result = await run_evaluation()
-                except Exception as e:
-                    evaluation_result = ErrorResponse(
-                        HTTPStatus.INTERNAL_SERVER_ERROR,
-                        "TestingError",
-                        f"An unexpected error occurred during evaluation. Error: {e}",
-                    ).error_info
+        cross_validation_folds = request.args.get("cross_validation_folds")
 
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        callback_url, json=evaluation_result
-                    ) as resp:
-                        assert resp.status == HTTPStatus.OK
+        if cross_validation_folds:
+            # evaluate using cross-validation
+            test_coroutine = _cross_validate(
+                test_data, config, int(cross_validation_folds)
+            )
+        else:
+            test_coroutine = _evaluate_model_using_test_set(
+                request.args.get("model"), test_data
+            )
 
-            app.add_task(wrapped())
-            return response.text("", HTTPStatus.NO_CONTENT)
+        try:
+            evaluation = await test_coroutine
+            pprint(evaluation)
+            return response.json(evaluation)
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            raise ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "TestingError",
+                f"An unexpected error occurred during evaluation. Error: {e}",
+            )
 
     async def _evaluate_model_using_test_set(
         model_path: Text, test_data_file: Text
