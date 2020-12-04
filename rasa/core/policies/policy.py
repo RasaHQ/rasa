@@ -227,7 +227,6 @@ class Policy:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
-        entities: Optional[List[Dict[Text, Any]]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -236,7 +235,6 @@ class Policy:
             events,
             optional_events,
             is_end_to_end_prediction,
-            entities,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:

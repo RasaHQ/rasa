@@ -34,7 +34,6 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     ActionExecuted,
     DefinePrevUserUtteredFeaturization,
-    DefinePrevUserUtteredEntities,
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
