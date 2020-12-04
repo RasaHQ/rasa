@@ -982,11 +982,6 @@ def create_app(
         # 1. Update API Spec
         # 2. Fix temporary files for training data
 
-        # TODO: 2
-        # Callback url
-        # Inline everything
-        # Add coroutine to loop
-
         if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
             payload = _training_payload_from_yaml(request)
             config = payload.get("config", {})
@@ -996,19 +991,26 @@ def create_app(
 
         cross_validation_folds = request.args.get("cross_validation_folds")
 
-        if cross_validation_folds:
-            # evaluate using cross-validation
-            test_coroutine = _cross_validate(
-                test_data, config, int(cross_validation_folds)
-            )
-        else:
-            test_coroutine = _evaluate_model_using_test_set(
-                request.args.get("model"), test_data
-            )
+        def run() -> None:
+            thread_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(thread_loop)
+            if cross_validation_folds:
+                test_coroutine = _cross_validate(
+                    test_data, config, int(cross_validation_folds)
+                )
+            else:
+                test_coroutine = _evaluate_model_using_test_set(
+                    request.args.get("model"), test_data
+                )
+
+            result = thread_loop.run_until_complete(test_coroutine)
+            thread_loop.close()
+            return result
 
         try:
-            evaluation = await test_coroutine
-            pprint(evaluation)
+            # Run evaluation in separate thread to not block event loop with
+            # synchronous things
+            evaluation = await app.loop.run_in_executor(None, run)
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
