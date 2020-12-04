@@ -203,6 +203,9 @@ class RedisLockStore(LockStore):
         use_ssl: bool = False,
         key_prefix: Optional[Text] = None,
         socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
+        sentinel_name: Optional[Text] = "mymaster",
+        sentinel_url: Optional[Text] = None,
+        sentinel_port: Optional[Text] = 26379,
     ) -> None:
         """Create a lock store which uses Redis for persistence.
 
@@ -221,14 +224,22 @@ class RedisLockStore(LockStore):
         """
         import redis
 
-        self.red = redis.StrictRedis(
-            host=host,
-            port=int(port),
-            db=int(db),
-            password=password,
-            ssl=use_ssl,
-            socket_timeout=socket_timeout,
-        )
+        if sentinel_name is None:
+            self.red = redis.StrictRedis(
+                host=host,
+                port=int(port),
+                db=int(db),
+                password=password,
+                ssl=use_ssl,
+                socket_timeout=socket_timeout,
+            )
+        else:
+            self.red = RedisSentinel(
+                sentinel_url,
+                sentinel_port,
+                sentinel_url,
+                socket_timeout
+            )
 
         self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         if key_prefix:
@@ -259,6 +270,39 @@ class RedisLockStore(LockStore):
 
     def save_lock(self, lock: TicketLock) -> None:
         self.red.set(self.key_prefix + lock.conversation_id, lock.dumps())
+
+
+class RedisSentinel():
+    """Sentinel support for RedisLockStore."""
+
+    def __init__(
+        self,
+        sentinel_url,
+        sentinel_port,
+        sentinel_name,
+        socket_timeout
+    ):
+        from redis.sentinel import Sentinel
+        self._log_connection(sentinel_url, sentinel_port, sentinel_name)
+        self.sentinel = Sentinel([(sentinel_url, sentinel_port)], socket_timeout=socket_timeout)
+        self.sentinel_name = sentinel_name
+        self.socket_timeout = socket_timeout
+
+    def find_master(self):
+        return self.sentinel.master_for(self.sentinel_name, socket_timeout=self.socket_timeout)
+
+    def get(self, conversation_id: Text):
+        return self.find_master().get(conversation_id)
+
+    def delete(self, conversation_id: Text):
+        return self.find_master().delete(conversation_id)
+
+    def set(self, conversation_id, lock_dump):
+        return self.find_master().set(conversation_id, lock_dump)
+
+    @staticmethod
+    def _log_connection(sentinel_url, sentinel_port, sentinel_name):
+        logger.info(f"Connecting to RedisSentinel: {sentinel_url} on port: {sentinel_port}, master is: {sentinel_name}")
 
 
 class InMemoryLockStore(LockStore):
