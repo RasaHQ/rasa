@@ -167,6 +167,7 @@ class Policy:
             - the label ids (e.g. action ids) for every dialogue turn in all training
               trackers
         """
+
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter
         )

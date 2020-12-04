@@ -576,6 +576,13 @@ class DefinePrevUserUtteredEntities(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Initializes a DefinePrevUserUtteredEntities event.
+
+        Args:
+            entities: the entities of a previous user uttered event
+            timestamp: the timestamp
+            metadata: some optional metadata
+        """
         self.entities = entities
         super().__init__(timestamp, metadata)
 
@@ -589,6 +596,11 @@ class DefinePrevUserUtteredEntities(Event):
         return isinstance(other, DefinePrevUserUtteredEntities)
 
     def as_story_string(self) -> None:
+        """Returns the event as story string.
+
+        Returns:
+            None, as this event should not appear inside the story.
+        """
         return None
 
     @classmethod
@@ -600,6 +612,11 @@ class DefinePrevUserUtteredEntities(Event):
         )
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Converts the event into a dict.
+
+        Returns:
+            A dict that represents this event.
+        """
         d = super().as_dict()
         d.update({ENTITIES: self.entities})
         return d
