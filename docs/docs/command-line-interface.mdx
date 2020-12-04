@@ -80,6 +80,17 @@ these, `rasa train` will fall back to one of these commands by default.
 The name of the model by default is `<timestamp>.tar.gz`. If you want to name your model differently,
 you can specify the name using the `--fixed-model-name` flag.
 
+Use `rasa train finetune` if the model should not be trained from scratch but if you
+want to train a new model by improving the latest model in the `models/` directory.
+If have a specific model which you want to improve you may specify the path to this by
+running `rasa train finetune <path to model to finetune>`. Finetuning a model usually
+requires less epochs. It's suggested to either use a model configuration for finetuning
+which defines less epochs for the pipelines and policies or use the flag
+`--epoch-fraction`. `--epoch-fraction` will use a fraction of the epochs which are
+specified in the given model configuration file. If the `DIETClassifier` is for example
+configured to use 100 epochs, `--epoch-fraction 0.5` will only use 50 epochs for
+finetuning.
+
 The following arguments can be used to configure the training process:
 
 ```text [rasa train --help]

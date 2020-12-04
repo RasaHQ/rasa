@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Text, Optional, Any
 from unittest.mock import Mock
 
-from _pytest.monkeypatch import MonkeyPatch
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 import rasa
 import rasa.constants
