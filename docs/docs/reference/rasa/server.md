@@ -3,6 +3,30 @@ sidebar_label: server
 title: rasa.server
 ---
 
+## ErrorResponse Objects
+
+```python
+class ErrorResponse(Exception)
+```
+
+Common exception to handle failing API requests.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(status: Union[int, HTTPStatus], reason: Text, message: Text, details: Any = None, help_url: Optional[Text] = None) -> None
+```
+
+Creates error.
+
+**Arguments**:
+
+- `status` - The HTTP status code to return.
+- `reason` - Short summary of the error.
+- `message` - Detailed explanation of the error.
+- `details` - Additional details which describe the error. Must be serializable.
+- `help_url` - URL where users can get further help (e.g. docs).
+
 #### ensure\_loaded\_agent
 
 ```python
