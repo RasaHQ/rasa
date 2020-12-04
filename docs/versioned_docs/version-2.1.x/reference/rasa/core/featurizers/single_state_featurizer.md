@@ -17,10 +17,18 @@ to its features. Possible attributes are: INTENT, TEXT, ACTION_NAME,
 ACTION_TEXT, ENTITIES, SLOTS and ACTIVE_LOOP. Each attribute will be
 featurized into a list of `rasa.utils.features.Features`.
 
-#### prepare\_from\_domain
+#### \_\_init\_\_
 
 ```python
- | prepare_from_domain(domain: Domain) -> None
+ | __init__() -> None
+```
+
+Initialize the single state featurizer.
+
+#### prepare\_for\_training
+
+```python
+ | prepare_for_training(domain: Domain, interpreter: NaturalLanguageInterpreter) -> None
 ```
 
 Gets necessary information for featurization from domain.
@@ -28,6 +36,7 @@ Gets necessary information for featurization from domain.
 **Arguments**:
 
 - `domain` - An instance of :class:`rasa.shared.core.domain.Domain`.
+- `interpreter` - The interpreter used to encode the state
 
 #### encode\_state
 
