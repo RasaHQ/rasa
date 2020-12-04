@@ -510,6 +510,46 @@ def create_app(
 
     add_root_route(app)
 
+    def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
+        @wraps(f)
+        async def decorated_function(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> HTTPResponse:
+            callback_url = request.args.get("callback_url")
+            if not callback_url:
+                return await f(request, *args, **kwargs)
+
+            async def wrapped() -> None:
+                try:
+                    result: HTTPResponse = await f(request, *args, **kwargs)
+                    payload = json.loads(result.body)
+                except ErrorResponse as e:
+                    payload = e.error_info
+
+                async with aiohttp.ClientSession() as session:
+                    await session.post(callback_url, json=payload)
+
+            app.add_task(wrapped())
+            return response.empty()
+
+        return decorated_function
+
+    def computational_intense(f: Callable[..., Coroutine]) -> Callable:
+        @wraps(f)
+        async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
+            def run() -> HTTPResponse:
+                thread_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(thread_loop)
+
+                try:
+                    return thread_loop.run_until_complete(f(*args, **kwargs))
+                finally:
+                    thread_loop.close()
+
+            return await app.loop.run_in_executor(None, run)
+
+        return decorated_function
+
     @app.get("/version")
     async def version(request: Request):
         """Respond with the version number of the installed Rasa."""
@@ -857,6 +897,7 @@ def create_app(
 
     @app.post("/model/train")
     @requires_auth(app, auth_token)
+    @computational_intense
     async def train(request: Request) -> HTTPResponse:
         """Train a Rasa Model."""
 
@@ -875,14 +916,10 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            loop = asyncio.get_event_loop()
-
-            from rasa import train as train_model
+            from rasa.train import train_async
 
             # pass `None` to run in default executor
-            model_path = await loop.run_in_executor(
-                None, functools.partial(train_model, **training_payload)
-            )
+            model_path = await train_async(**training_payload)
 
             if model_path:
                 filename = os.path.basename(model_path)
@@ -943,33 +980,10 @@ def create_app(
                 f"An unexpected error occurred during evaluation. Error: {e}",
             )
 
-    def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
-        @wraps(f)
-        async def decorated_function(
-            request: Request, *args: Any, **kwargs: Any
-        ) -> HTTPResponse:
-            callback_url = request.args.get("callback_url")
-            if not callback_url:
-                return await f(request, *args, **kwargs)
-
-            async def wrapped() -> None:
-                try:
-                    result: HTTPResponse = await f(request, *args, **kwargs)
-                    payload = json.loads(result.body)
-                except ErrorResponse as e:
-                    payload = e.error_info
-
-                async with aiohttp.ClientSession() as session:
-                    await session.post(callback_url, json=payload)
-
-            app.add_task(wrapped())
-            return response.empty()
-
-        return decorated_function
-
     @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
     @async_if_callback_url
+    @computational_intense
     async def evaluate_intents(request: Request) -> HTTPResponse:
         """Evaluate intents against a Rasa model."""
         validate_request_body(
@@ -991,26 +1005,19 @@ def create_app(
 
         cross_validation_folds = request.args.get("cross_validation_folds")
 
-        def run() -> None:
-            thread_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(thread_loop)
-            if cross_validation_folds:
-                test_coroutine = _cross_validate(
-                    test_data, config, int(cross_validation_folds)
-                )
-            else:
-                test_coroutine = _evaluate_model_using_test_set(
-                    request.args.get("model"), test_data
-                )
-
-            result = thread_loop.run_until_complete(test_coroutine)
-            thread_loop.close()
-            return result
+        if cross_validation_folds:
+            test_coroutine = _cross_validate(
+                test_data, config, int(cross_validation_folds)
+            )
+        else:
+            test_coroutine = _evaluate_model_using_test_set(
+                request.args.get("model"), test_data
+            )
 
         try:
             # Run evaluation in separate thread to not block event loop with
             # synchronous things
-            evaluation = await app.loop.run_in_executor(None, run)
+            evaluation = await test_coroutine
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
