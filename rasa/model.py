@@ -92,6 +92,8 @@ SECTION_FINE_TUNE = Section(
 
 
 class FingerprintComparisonResult:
+    """Container for the results of a fingerprint comparison."""
+
     def __init__(
         self,
         nlu: bool = True,
