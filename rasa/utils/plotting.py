@@ -145,7 +145,7 @@ def plot_histogram(
     )
     min_ylim = bins[max(0, min_ylim_idx - 1)]  # ensures the lowest non-empty bin shows
 
-    centers = 0.5 * (bins + np.roll(bins, 1))[:-1]
+    centers = 0.5 * (0.05+(bins + np.roll(bins, 0))[:-1])
     heights = 0.75 * np.diff(bins)
 
     fig, axes = plt.subplots(ncols=2, sharey=True)
