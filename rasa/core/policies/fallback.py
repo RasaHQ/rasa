@@ -39,10 +39,12 @@ class FallbackPolicy(Policy):
         ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
         core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
+        **kwargs: Any,
     ) -> None:
         """Create a new Fallback policy.
 
         Args:
+            priority: Fallback policy priority.
             core_threshold: if NLU confidence threshold is met,
                 predict fallback action with confidence `core_threshold`.
                 If this is the highest confidence in the ensemble,
@@ -53,6 +55,7 @@ class FallbackPolicy(Policy):
             ambiguity_threshold: threshold for minimum difference
                 between confidences of the top two predictions
             fallback_action_name: name of the action to execute as a fallback
+
         """
         super().__init__(priority=priority)
 

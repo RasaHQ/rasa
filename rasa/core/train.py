@@ -31,7 +31,6 @@ async def train(
     exclusion_percentage: Optional[int] = None,
     additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional["Agent"] = None,
-    finetuning_epoch_fraction: float = 1.0,
 ) -> "Agent":
     from rasa.core import config, utils
     from rasa.core.utils import AvailableEndpoints
@@ -66,6 +65,8 @@ async def train(
     training_data = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
+    if model_to_finetune:
+        agent.policy_ensemble = model_to_finetune.policy_ensemble
     agent.train(training_data, **additional_arguments)
     agent.persist(output_path)
 

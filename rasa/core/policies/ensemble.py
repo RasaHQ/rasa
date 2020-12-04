@@ -1,12 +1,13 @@
 import importlib
 import json
 import logging
+from math import ceil
 import os
 import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, NamedTuple, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, Union
 
 import rasa.core
 import rasa.core.training.training
@@ -303,9 +304,13 @@ class PolicyEnsemble:
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "PolicyEnsemble":
-        """Loads policy and domain specification from storage"""
-
+    def load(
+        cls,
+        path: Union[Text, Path],
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
+    ) -> "PolicyEnsemble":
+        """Loads policy and domain specification from storage."""
         metadata = cls.load_metadata(path)
         cls.ensure_model_compatibility(metadata)
         policies = []
@@ -313,7 +318,27 @@ class PolicyEnsemble:
             policy_cls = registry.policy_from_module_path(policy_name)
             dir_name = f"policy_{i}_{policy_cls.__name__}"
             policy_path = os.path.join(path, dir_name)
-            policy = policy_cls.load(policy_path)
+
+            if new_config:
+                if "should_finetune" not in rasa.shared.utils.common.arguments_of(
+                    policy_cls.load
+                ):
+                    raise UnsupportedDialogueModelError(
+                        f"{policy_cls.__name__} does not support fine-tuning"
+                    )
+
+                config_for_policy = new_config["policies"][i]
+                epochs = None
+                if "epochs" in config_for_policy:
+                    epochs = ceil(
+                        config_for_policy["epochs"] * finetuning_epoch_fraction
+                    )
+                policy = policy_cls.load(
+                    policy_path, should_finetune=True, epoch_override=epochs
+                )
+            else:
+                policy = policy_cls.load(policy_path)
+
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
         ensemble_cls = rasa.shared.utils.common.class_from_module_path(

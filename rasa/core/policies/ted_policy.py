@@ -437,8 +437,14 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
+    def load(
+        cls,
+        path: Union[Text, Path],
+        should_finetune: bool = False,
+        epoch_override: Optional[float] = None,
+    ) -> "TEDPolicy":
         """Loads a policy from the storage.
+
         **Needs to load its featurizer**
         """
         model_path = Path(path)
@@ -499,6 +505,10 @@ class TEDPolicy(Policy):
             },
         )
         model.build_for_predict(predict_data_example)
+
+        meta["should_finetune"] = should_finetune
+        if epoch_override:
+            meta["epochs"] = epoch_override
 
         return cls(
             featurizer=featurizer,

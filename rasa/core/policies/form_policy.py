@@ -35,6 +35,7 @@ class FormPolicy(MemoizationPolicy):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> None:
 
         # max history is set to 2 in order to capture

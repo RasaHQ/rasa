@@ -83,6 +83,7 @@ class ConstantPolicy(Policy):
         is_end_to_end_prediction: bool = False,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
+        **kwargs: Any,
     ) -> None:
         super().__init__(priority=priority)
         self.predict_index = predict_index

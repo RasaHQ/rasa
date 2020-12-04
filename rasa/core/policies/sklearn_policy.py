@@ -302,7 +302,23 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> Policy:
+    def load(
+        cls,
+        path: Union[Text, Path],
+        should_finetune: bool = False,
+        epoch_override: Optional[float] = None,
+    ) -> Policy:
+        """Load the policy from path.
+
+        Args:
+            path: Path to load policy from.
+            should_finetune: Indicates if the model components will be fine-tuned.
+            epoch_override: Optionally override the number of epochs
+             for the loaded model.
+
+        Returns:
+            An instance of `SklearnPolicy`.
+        """
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
         if not Path(path).exists():
@@ -321,10 +337,15 @@ class SklearnPolicy(Policy):
         meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 
+        data = {"should_finetune": should_finetune}
+        if epoch_override:
+            data["epochs"] = epoch_override
+
         policy = cls(
             featurizer=featurizer,
             priority=meta["priority"],
             zero_state_features=zero_state_features,
+            **data,
         )
 
         state = io_utils.pickle_load(filename)

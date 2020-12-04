@@ -16,6 +16,8 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
+
+from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common
@@ -110,6 +112,7 @@ class Policy:
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
+        **kwargs: Any,
     ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
@@ -272,11 +275,19 @@ class Policy:
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "Policy":
+    def load(
+        cls,
+        path: Union[Text, Path],
+        should_finetune: bool = False,
+        epoch_override: Optional[float] = None,
+    ) -> "Policy":
         """Loads a policy from path.
 
         Args:
             path: Path to load policy from.
+            should_finetune: Indicates if the model components will be fine-tuned.
+            epoch_override: Optionally override the number of epochs
+             for the loaded model.
 
         Returns:
             An instance of `Policy`.
@@ -285,10 +296,23 @@ class Policy:
 
         if metadata_file.is_file():
             data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+            data["should_finetune"] = should_finetune
+            if epoch_override:
+                data["epochs"] = epoch_override
 
             if (Path(path) / FEATURIZER_FILE).is_file():
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
+
+            # TODO: figure out this mess
+            constructure_args = rasa.shared.utils.common.arguments_of(cls)
+            if "kwargs" not in constructure_args and (
+                (should_finetune and "should_finetune" not in constructure_args)
+                or (epoch_override or "epochs" not in constructure_args)
+            ):
+                raise UnsupportedDialogueModelError(
+                    f"{cls.__name__} does not support fine-tuning"
+                )
 
             return cls(**data)
 

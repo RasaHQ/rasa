@@ -108,6 +108,7 @@ class RulePolicy(MemoizationPolicy):
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
         check_for_contradictions: bool = True,
+        **kwargs: Any,
     ) -> None:
         """Create a `RulePolicy` object.
 
@@ -124,6 +125,8 @@ class RulePolicy(MemoizationPolicy):
                 if no rule matched.
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
+            restrict_rules: Restrict rules. TODO: better descriptions.
+            check_for_contradictions: Check for contradictions.
         """
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
