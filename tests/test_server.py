@@ -4,7 +4,6 @@ from http import HTTPStatus
 from multiprocessing.managers import DictProxy
 from pathlib import Path
 from unittest.mock import Mock, ANY
-
 import requests
 import time
 import uuid
@@ -183,7 +182,7 @@ def shared_statuses() -> DictProxy:
 
 @pytest.fixture
 def background_server(
-    shared_statuses: DictProxy, tmpdir: pathlib.Path
+    shared_statuses: DictProxy, tmpdir: pathlib.Path, monkeypatch: MonkeyPatch
 ) -> Generator[Process, None, None]:
     # Create a fake model archive which the mocked train function can return
 
@@ -194,7 +193,7 @@ def background_server(
     # Fake training function which blocks until we tell it to stop blocking
     # If we can send a status request while this is blocking, we can be sure that the
     # actual training is also not blocking
-    def mocked_training_function(*_, **__) -> Text:
+    async def mocked_training_function(*_, **__) -> Text:
         # Tell the others that we are now blocking
         shared_statuses["started_training"] = True
         # Block until somebody tells us to not block anymore
@@ -203,16 +202,19 @@ def background_server(
 
         return fake_model_path
 
-    def run_server() -> NoReturn:
-        rasa.train = mocked_training_function
+    def run_server(monkeypatch: MonkeyPatch) -> NoReturn:
+        import sys
+
+        monkeypatch.setattr(
+            sys.modules["rasa.train"], "train_async", mocked_training_function,
+        )
 
         from rasa import __main__
-        import sys
 
         sys.argv = ["rasa", "run", "--enable-api"]
         __main__.main()
 
-    server = Process(target=run_server)
+    server = Process(target=run_server, args=(monkeypatch,))
     yield server
     server.terminate()
 
