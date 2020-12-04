@@ -632,7 +632,6 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         intent_report_random.report,
     )
 
-    print(f"LEN REP TUPLE: {len(report_tuple)}")
     intent_summary_diverse = report_tuple[0]
     intent_report_diverse.report.update(report_tuple[1])
     intent_summary_random = report_tuple[2]
