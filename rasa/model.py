@@ -315,7 +315,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     domain = copy.copy(domain)
     # don't include the response texts in the fingerprint.
     # Their fingerprint is separate.
-    domain.templates = []
+    domain.templates = {}
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_fingerprint_of_config(
