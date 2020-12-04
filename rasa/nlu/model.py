@@ -138,6 +138,7 @@ class Trainer:
         cfg: RasaNLUModelConfig,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        model_to_finetune: Optional["Interpreter"] = None,
     ):
 
         self.config = cfg
@@ -154,8 +155,10 @@ class Trainer:
         if not self.skip_validation:
             components.validate_requirements(cfg.component_names)
 
-        # build pipeline
-        self.pipeline = self._build_pipeline(cfg, component_builder)
+        if model_to_finetune:
+            self.pipeline = model_to_finetune.pipeline
+        else:
+            self.pipeline = self._build_pipeline(cfg, component_builder)
 
     def _build_pipeline(
         self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
@@ -297,6 +300,8 @@ class Interpreter:
         model_dir: Text,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Interpreter":
         """Create an interpreter based on a persisted model.
 
@@ -307,25 +312,62 @@ class Interpreter:
             model_dir: The path of the model to load
             component_builder: The
                 :class:`rasa.nlu.components.ComponentBuilder` to use.
+            new_config: Optional new config to use for the new epochs.
+            finetuning_epoch_fraction: Value to multiply all epochs by.
 
         Returns:
             An interpreter that uses the loaded model.
         """
-
         model_metadata = Metadata.load(model_dir)
 
+        if new_config:
+            Interpreter._update_epochs_from_new_config(
+                model_metadata, new_config, finetuning_epoch_fraction
+            )
+
         Interpreter.ensure_model_compatibility(model_metadata)
-        return Interpreter.create(model_metadata, component_builder, skip_validation)
+        return Interpreter.create(
+            model_metadata,
+            component_builder,
+            skip_validation,
+            should_finetune=new_config is not None,
+        )
+
+    @staticmethod
+    def _update_epochs_from_new_config(
+        model_metadata: Metadata,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
+    ):
+        for p1, p2 in zip(model_metadata.metadata["pipeline"], new_config["pipeline"]):
+            assert p1.get("name") == p2.get("name")
+            if "epochs" in p1:
+                p1["epochs"] = (
+                    p2.get("epochs", p1["epochs"]) * finetuning_epoch_fraction
+                )
 
     @staticmethod
     def create(
         model_metadata: Metadata,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        should_finetune: bool = False,
     ) -> "Interpreter":
-        """Load stored model and components defined by the provided metadata."""
+        """Create model and components defined by the provided metadata.
 
-        context = {}
+        Args:
+            model_metadata: The metadata describing each component.
+            component_builder: The
+                :class:`rasa.nlu.components.ComponentBuilder` to use.
+            skip_validation: If set to `True`, does not check that all
+                required packages for the components are installed
+                before loading them.
+            should_finetune: Indicates if the model components will be fine-tuned.
+
+        Returns:
+            An interpreter that uses the created model.
+        """
+        context = {"finetune_mode": should_finetune}
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result
