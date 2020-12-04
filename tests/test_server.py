@@ -1,3 +1,4 @@
+import asyncio
 import os
 from http import HTTPStatus
 from multiprocessing.managers import DictProxy
@@ -27,6 +28,7 @@ import rasa.shared.constants
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.server
+import rasa.nlu
 from rasa.core import utils
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core import events
@@ -800,6 +802,31 @@ async def test_evaluate_intent_on_just_nlu_model(
     }
 
 
+async def test_evaluate_intent_with_model_param(
+    rasa_app: SanicASGITestClient, trained_nlu_model, default_nlu_data: Text
+):
+    _, response = await rasa_app.get("/status")
+    previous_model_file = response.json()["model_file"]
+
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
+
+    _, response = await rasa_app.post(
+        f"/model/test/intents?model={trained_nlu_model}",
+        data=nlu_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert set(response.json().keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
+
+    _, response = await rasa_app.get("/status")
+    assert previous_model_file == response.json()["model_file"]
+
+
 async def test_cross_validation(
     rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text
 ):
@@ -827,29 +854,71 @@ async def test_cross_validation(
             assert all(key in details for key in ["precision", "f1_score"])
 
 
-async def test_evaluate_intent_with_model_param(
-    rasa_app: SanicASGITestClient, trained_nlu_model, default_nlu_data: Text
+async def test_cross_validation_with_callback_success(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text
 ):
-    _, response = await rasa_app.get("/status")
-    previous_model_file = response.json()["model_file"]
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
 
-    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
+    callback_url = "https://example.com/webhooks/actions"
+    with aioresponses() as mocked:
+        mocked.post(callback_url, payload={})
 
-    _, response = await rasa_app.post(
-        f"/model/test/intents?model={trained_nlu_model}",
-        data=nlu_data,
-        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        _, response = await rasa_app_nlu.post(
+            "/model/test/intents",
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+            params={"cross_validation_folds": 3, "callback_url": callback_url},
+        )
+
+        assert response.status == HTTPStatus.NO_CONTENT
+
+        await asyncio.sleep(2)
+
+        last_request = latest_request(mocked, "POST", callback_url)
+        assert last_request
+
+        content = last_request[0].kwargs["json"]
+        for required_key in {
+            "intent_evaluation",
+            "entity_evaluation",
+            "response_selection_evaluation",
+        }:
+            assert required_key in content
+
+
+async def test_cross_validation_with_callback_error(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+):
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
+
+    monkeypatch.setattr(
+        rasa.nlu, rasa.nlu.cross_validate.__name__, Mock(side_effect=ValueError())
     )
 
-    assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
-        "intent_evaluation",
-        "entity_evaluation",
-        "response_selection_evaluation",
-    }
+    callback_url = "https://example.com/webhooks/actions"
+    with aioresponses() as mocked:
+        mocked.post(callback_url, payload={})
 
-    _, response = await rasa_app.get("/status")
-    assert previous_model_file == response.json()["model_file"]
+        _, response = await rasa_app_nlu.post(
+            "/model/test/intents",
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+            params={"cross_validation_folds": 3, "callback_url": callback_url},
+        )
+
+        assert response.status == HTTPStatus.NO_CONTENT
+
+        await asyncio.sleep(2)
+
+        last_request = latest_request(mocked, "POST", callback_url)
+        assert last_request
+
+        content = last_request[0].kwargs["json"]
+        assert content["code"] == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 async def test_predict(rasa_app: SanicASGITestClient):
