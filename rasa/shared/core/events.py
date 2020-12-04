@@ -489,6 +489,14 @@ class UserUttered(Event):
         return ""
 
     def as_story_string(self, e2e: bool = False) -> Text:
+        """Returns the story string of this event.
+
+        Args:
+            e2e: If 'True' the actual text will be used
+
+        Returns:
+            The story string of this event.
+        """
 
         text_with_entities = md_format_message(
             self.text or "", self.intent_name, self.entities
@@ -560,6 +568,11 @@ class DefinePrevUserUtteredFeaturization(Event):
         )
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Converts the event into a dict.
+
+        Returns:
+            A dict that represents this event.
+        """
         d = super().as_dict()
         d.update({USE_TEXT_FOR_FEATURIZATION: self.use_text_for_featurization})
         return d
@@ -628,7 +641,8 @@ class BotUttered(Event):
 
     This class is not used in the story training as it is contained in the
 
-    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``.
+    """
 
     type_name = "bot"
 
