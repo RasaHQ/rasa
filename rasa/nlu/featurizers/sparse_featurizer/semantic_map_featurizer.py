@@ -11,7 +11,11 @@ from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.utils.semantic_map_utils import SemanticMap
+from rasa.nlu.utils.semantic_map_utils import (
+    SemanticMap,
+    write_nlu_data_to_binary_file,
+    run_smap,
+)
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -21,6 +25,9 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
 )
+from rasa.utils.io import create_temporary_directory
+import tempfile
+import os
 
 
 class SemanticMapFeaturizer(SparseFeaturizer):
@@ -40,10 +47,10 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         # whether to convert all characters to lowercase
         "lowercase": True,
         # how to combine sequence features to a sentence feature
-        "pooling": "semantic_merge",
+        "pooling": "sum",
     }
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None,) -> None:
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         """Constructs a new semantic map vectorizer."""
         super().__init__(component_config)
 
@@ -51,19 +58,35 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         self.lowercase: bool = self.component_config["lowercase"]
         self.pooling: Text = self.component_config["pooling"]
 
-        if not self.semantic_map_filename or not os.path.exists(
-            self.semantic_map_filename
-        ):
-            raise FileNotFoundError(
-                f"Cannot find semantic map file '{self.semantic_map_filename}'"
-            )
-
-        self.semantic_map = SemanticMap(self.semantic_map_filename)
+        if self.semantic_map_filename:
+            if not os.path.exists(self.semantic_map_filename):
+                raise FileNotFoundError(
+                    f"Cannot find semantic map file '{self.semantic_map_filename}'"
+                )
+            self.semantic_map = SemanticMap(self.semantic_map_filename)
+        else:
+            self.semantic_map = None
 
         self._attributes = DENSE_FEATURIZABLE_ATTRIBUTES
 
     def train(self, training_data: TrainingData, *args: Any, **kwargs: Any,) -> None:
         """Converts tokens to features for training."""
+        # Learn vocabulary and train semantic map
+        if not self.semantic_map and len(training_data.nlu_examples) > 0:
+            with tempfile.TemporaryDirectory() as temp_directory:
+                if not os.path.exists(temp_directory):
+                    raise FileNotFoundError(
+                        f"Could not create temporary directory '{temp_directory}'."
+                    )
+                corpus_binary_filename = write_nlu_data_to_binary_file(
+                    training_data, temp_directory
+                )
+                print(temp_directory)
+                run_smap(temp_directory, corpus_binary_filename, 2, 2, epochs=2)
+                print(os.listdir(os.path.join(temp_directory, "smap")))
+                # TODO: CONTINUE HERE ...
+
+        # Add features to be used by other components in the pipeline
         for example in training_data.training_examples:
             for attribute in self._attributes:
                 self._set_semantic_map_features(example, attribute)
