@@ -647,12 +647,14 @@ rule my rule
     "headers, expected",
     [({}, False), ({"force_training": False}, False), ({"force_training": True}, True)],
 )
-def test_training_payload_from_yaml_force_training(headers: Dict, expected: bool):
+def test_training_payload_from_yaml_force_training(
+    headers: Dict, expected: bool, tmp_path: Path
+):
     request = Mock()
     request.body = b""
     request.args = headers
 
-    payload = rasa.server._training_payload_from_yaml(request)
+    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
     assert payload.get("force_training") == expected
 
 
@@ -668,13 +670,13 @@ def test_training_payload_from_yaml_force_training(headers: Dict, expected: bool
     ],
 )
 def test_training_payload_from_yaml_save_to_default_model_directory(
-    headers: Dict, expected: Text
+    headers: Dict, expected: Text, tmp_path: Path
 ):
     request = Mock()
     request.body = b""
     request.args = headers
 
-    payload = rasa.server._training_payload_from_yaml(request)
+    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
     assert payload.get("output")
     assert payload.get("output") == expected
 

@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import json
 import logging
 import multiprocessing
@@ -10,7 +9,6 @@ from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
-from pprint import pprint
 from typing import (
     Any,
     Callable,
@@ -898,7 +896,8 @@ def create_app(
     @app.post("/model/train")
     @requires_auth(app, auth_token)
     @computational_intense
-    async def train(request: Request) -> HTTPResponse:
+    @inject_temp_dir
+    async def train(request: Request, temporary_directory: Path) -> HTTPResponse:
         """Train a Rasa Model."""
 
         validate_request_body(
@@ -908,9 +907,9 @@ def create_app(
         )
 
         if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-            training_payload = _training_payload_from_yaml(request)
+            training_payload = _training_payload_from_yaml(request, temporary_directory)
         else:
-            training_payload = _training_payload_from_json(request)
+            training_payload = _training_payload_from_json(request, temporary_directory)
 
         try:
             with app.active_training_processes.get_lock():
@@ -955,7 +954,10 @@ def create_app(
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
-    async def evaluate_stories(request: Request) -> HTTPResponse:
+    @inject_temp_dir
+    async def evaluate_stories(
+        request: Request, temporary_directory: Path
+    ) -> HTTPResponse:
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
             request,
@@ -963,7 +965,7 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request)
+        test_data = _test_data_file_from_payload(request, temporary_directory)
 
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
@@ -984,7 +986,10 @@ def create_app(
     @requires_auth(app, auth_token)
     @async_if_callback_url
     @computational_intense
-    async def evaluate_intents(request: Request) -> HTTPResponse:
+    @inject_temp_dir
+    async def evaluate_intents(
+        request: Request, temporary_directory: Path
+    ) -> HTTPResponse:
         """Evaluate intents against a Rasa model."""
         validate_request_body(
             request,
@@ -996,21 +1001,21 @@ def create_app(
         # 2. Fix temporary files for training data
 
         if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-            payload = _training_payload_from_yaml(request)
+            payload = _training_payload_from_yaml(request, temporary_directory)
             config = payload.get("config", {})
             test_data = payload.get("training_files")
         else:
-            test_data = _test_data_file_from_payload(request)
+            test_data = _test_data_file_from_payload(request, temporary_directory)
 
         cross_validation_folds = request.args.get("cross_validation_folds")
 
         if cross_validation_folds:
             test_coroutine = _cross_validate(
-                test_data, config, int(cross_validation_folds)
+                test_data, config, int(cross_validation_folds), temporary_directory
             )
         else:
             test_coroutine = _evaluate_model_using_test_set(
-                request.args.get("model"), test_data
+                request.args.get("model"), test_data, temporary_directory
             )
 
         try:
@@ -1027,7 +1032,7 @@ def create_app(
             )
 
     async def _evaluate_model_using_test_set(
-        model_path: Text, test_data_file: Text
+        model_path: Text, test_data_file: Text, temporary_directory: Path
     ) -> Dict:
         eval_agent = app.agent
 
@@ -1051,46 +1056,50 @@ def create_app(
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
-        with tempfile.TemporaryDirectory() as output:
-            return run_evaluation(
-                data_path, nlu_model, disable_plotting=True, output_directory=output
-            )
+        return run_evaluation(
+            data_path,
+            nlu_model,
+            disable_plotting=True,
+            output_directory=str(temporary_directory),
+        )
 
-    async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
+    async def _cross_validate(
+        data_file: Text, config_file: Text, folds: int, temporary_directory: Path
+    ) -> Dict:
         importer = TrainingDataImporter.load_from_dict(
             None, config_path=config_file, training_data_paths=[data_file]
         )
         config = await importer.get_config()
         nlu_data = await importer.get_nlu_data()
 
-        with tempfile.TemporaryDirectory() as output:
-            rasa.nlu.cross_validate(
-                data=nlu_data, n_folds=folds, nlu_config=config, output=output
-            )
-            response_filename_mapping = {
-                "intent_evaluation": "intent_report.json",
-                "entity_evaluation": "entity_report.json",
-                "response_selection_evaluation": "response_selector.json",
+        rasa.nlu.cross_validate(
+            data=nlu_data,
+            n_folds=folds,
+            nlu_config=config,
+            output=str(temporary_directory),
+        )
+        response_filename_mapping = {
+            "intent_evaluation": "intent_report.json",
+            "entity_evaluation": "entity_report.json",
+            "response_selection_evaluation": "response_selector.json",
+        }
+
+        result = {
+            eval_name: _read_file_or_empty_dict(temporary_directory, filename)
+            for eval_name, filename in response_filename_mapping.items()
+        }
+
+        return {
+            eval_name: {
+                "report": report,
+                "precision": report.get("weighted avg", {}).get("precision"),
+                "f1_score": report.get("weighted avg", {}).get("f1-score"),
             }
+            for eval_name, report in result.items()
+        }
 
-            result = {
-                eval_name: _read_file_or_empty_dict(output, filename)
-                for eval_name, filename in response_filename_mapping.items()
-            }
-
-            result = {
-                eval_name: {
-                    "report": report,
-                    "precision": report.get("weighted avg", {}).get("precision"),
-                    "f1_score": report.get("weighted avg", {}).get("f1-score"),
-                }
-                for eval_name, report in result.items()
-            }
-
-            return result
-
-    def _read_file_or_empty_dict(directory: Text, file_name: Text) -> Dict:
-        path = Path(directory, file_name)
+    def _read_file_or_empty_dict(directory: Path, file_name: Text,) -> Dict:
+        path = directory / file_name
         if path.is_file():
             return rasa.shared.utils.io.read_json_file(path)
         return {}
@@ -1280,26 +1289,26 @@ def _get_output_channel(
     )
 
 
-def _test_data_file_from_payload(request: Request) -> Text:
+def _test_data_file_from_payload(request: Request, temporary_directory: Path) -> Text:
     if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-        return str(_training_payload_from_yaml(request)["training_files"])
+        return str(
+            _training_payload_from_yaml(request, temporary_directory)["training_files"]
+        )
     else:
         return rasa.utils.io.create_temporary_file(
             request.body, mode="w+b", suffix=".md"
         )
 
 
-def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_json(
+    request: Request, temp_dir: Path
+) -> Dict[Text, Union[Text, bool]]:
     logger.debug(
         "Extracting JSON payload with Markdown training data from request body."
     )
 
     request_payload = request.json
     _validate_json_training_payload(request_payload)
-
-    # create a temporary directory to store config, domain and
-    # training data
-    temp_dir = tempfile.mkdtemp()
 
     config_path = os.path.join(temp_dir, "config.yml")
 
@@ -1324,17 +1333,17 @@ def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool
         domain_path = os.path.join(temp_dir, "domain.yml")
         rasa.shared.utils.io.write_text_file(request_payload["domain"], domain_path)
 
-    model_output_directory = _model_output_directory(
-        request_payload.get(
-            "save_to_default_model_directory",
-            request.args.get("save_to_default_model_directory", True),
-        )
-    )
+    model_output_directory = str(temp_dir)
+    if request_payload.get(
+        "save_to_default_model_directory",
+        request.args.get("save_to_default_model_directory", True),
+    ):
+        model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
         domain=domain_path,
         config=config_path,
-        training_files=temp_dir,
+        training_files=str(temp_dir),
         output=model_output_directory,
         force_training=request_payload.get(
             "force", request.args.get("force_training", False)
@@ -1378,34 +1387,28 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(request: Request) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(
+    request: Request, temp_dir: Path
+) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
     _validate_yaml_training_payload(decoded)
 
-    temp_dir = tempfile.mkdtemp()
-    training_data = Path(temp_dir) / "data.yml"
+    training_data = temp_dir / "data.yml"
     rasa.shared.utils.io.write_text_file(decoded, training_data)
 
-    model_output_directory = _model_output_directory(
-        request.args.get("save_to_default_model_directory", True)
-    )
+    model_output_directory = str(temp_dir)
+    if request.args.get("save_to_default_model_directory", True):
+        model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
         domain=str(training_data),
         config=str(training_data),
-        training_files=temp_dir,
+        training_files=str(temp_dir),
         output=model_output_directory,
         force_training=request.args.get("force_training", False),
     )
-
-
-def _model_output_directory(save_to_default_model_directory: bool) -> Text:
-    if save_to_default_model_directory:
-        return DEFAULT_MODELS_PATH
-
-    return tempfile.gettempdir()
 
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
@@ -1418,3 +1421,12 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
             f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA,
         )
+
+
+def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
+    @wraps(f)
+    async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
+        with tempfile.TemporaryDirectory() as directory:
+            return await f(*args, temporary_directory=Path(directory), **kwargs)
+
+    return decorated_function
