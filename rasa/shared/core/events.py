@@ -304,13 +304,23 @@ class Event:
             raise ValueError(f"Unknown event name '{type_name}'.")
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state.
+
+        Args:
+            tracker: The current conversation state.
+        """
         pass
 
     def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, self.__class__):
             return NotImplemented
 
         return True
+
+    def __str__(self) -> Text:
+        """Returns text representation of event."""
+        return f"{self.__class__.__name__}()"
 
 
 # noinspection PyProtectedMember
@@ -333,6 +343,21 @@ class UserUttered(Event):
         metadata: Optional[Dict] = None,
         use_text_for_featurization: Optional[bool] = None,
     ) -> None:
+        """Creates event for incoming user message.
+
+        Args:
+            text: Text of user message.
+            intent: Intent prediction of user message.
+            entities: Extracted entities.
+            parse_data: Detailed NLU parsing result for message.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+            input_channel: Which channel the user used to send message.
+            message_id: Unique ID for message.
+            use_text_for_featurization: `True` if the message's text was used to predict
+                next action. `False` if the message's intent was used.
+
+        """
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
@@ -384,13 +409,16 @@ class UserUttered(Event):
         )
 
     def __hash__(self) -> int:
+        """Returns unique hash of object."""
         return hash((self.text, self.intent_name, jsonpickle.encode(self.entities)))
 
     @property
     def intent_name(self) -> Optional[Text]:
+        """Returns intent name or `None` if no intent."""
         return self.intent.get(INTENT_NAME_KEY)
 
     def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, UserUttered):
             return NotImplemented
 
@@ -544,6 +572,7 @@ class UserUttered(Event):
 
 # noinspection PyProtectedMember
 class DefinePrevUserUtteredFeaturization(Event):
+    """Stores information whether action was predicted based on text or intent."""
 
     type_name = "user_featurization"
 
@@ -553,16 +582,27 @@ class DefinePrevUserUtteredFeaturization(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Creates event.
+
+        Args:
+            use_text_for_featurization: `True` if message text was used to predict
+                action. `False` if intent was used.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         self.use_text_for_featurization = use_text_for_featurization
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return f"DefinePrevUserUtteredFeaturization({self.use_text_for_featurization})"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(self.use_text_for_featurization)
 
     def as_story_string(self) -> None:
+        """Skips representing the event in stories."""
         return None
 
     @classmethod
@@ -574,6 +614,7 @@ class DefinePrevUserUtteredFeaturization(Event):
         )
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update({USE_TEXT_FOR_FEATURIZATION: self.use_text_for_featurization})
         return d
@@ -590,6 +631,14 @@ class BotUttered(Event):
     type_name = "bot"
 
     def __init__(self, text=None, data=None, metadata=None, timestamp=None) -> None:
+        """Creates event for a bot response.
+
+        Args:
+            text: Plain text which bot responded with.
+            data: Additional data for more complex utterances (e.g. buttons).
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         self.text = text
         self.data = data or {}
         super().__init__(timestamp, metadata)
@@ -651,6 +700,7 @@ class BotUttered(Event):
         return BotUttered()
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update({"text": self.text, "data": self.data, "metadata": self.metadata})
         return d
@@ -670,13 +720,14 @@ class BotUttered(Event):
 
 # noinspection PyProtectedMember
 class SlotSet(Event):
-    """The user has specified their preference for the value of a ``slot``.
+    """The user has specified their preference for the value of a `slot`.
 
     Every slot has a name and a value. This event can be used to set a
     value for a slot on a conversation.
 
-    As a side effect the ``Tracker``'s slots will be updated so
-    that ``tracker.slots[key]=value``."""
+    As a side effect the `Tracker`'s slots will be updated so
+    that `tracker.slots[key]=value`.
+    """
 
     type_name = "slot"
 
@@ -687,17 +738,28 @@ class SlotSet(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Creates event to set slot.
+
+        Args:
+            key: Name of the slot which is set.
+            value: Value to which slot is set.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         self.key = key
         self.value = value
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return f"SlotSet(key: {self.key}, value: {self.value})"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash((self.key, jsonpickle.encode(self.value)))
 
     def __eq__(self, other) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, SlotSet):
             return NotImplemented
 
@@ -720,6 +782,7 @@ class SlotSet(Event):
             return None
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update({"name": self.key, "value": self.value})
         return d
@@ -737,6 +800,7 @@ class SlotSet(Event):
             raise ValueError(f"Failed to parse set slot event. {e}")
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker._set_slot(self.key, self.value)
 
 
@@ -746,17 +810,17 @@ class Restarted(Event):
 
     Instead of deleting all events, this event can be used to reset the
     trackers state (e.g. ignoring any past user messages & resetting all
-    the slots)."""
+    the slots).
+    """
 
     type_name = "restart"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124312)
 
-    def __str__(self) -> Text:
-        return "Restarted()"
-
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -771,20 +835,21 @@ class UserUtteranceReverted(Event):
 
     The bot will revert all events after the latest `UserUttered`, this
     also means that the last event on the tracker is usually `action_listen`
-    and the bot is waiting for a new user message."""
+    and the bot is waiting for a new user message.
+    """
 
     type_name = "rewind"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124315)
 
-    def __str__(self) -> Text:
-        return "UserUtteranceReverted()"
-
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker._reset()
         tracker.replay_events()
 
@@ -795,20 +860,21 @@ class AllSlotsReset(Event):
 
     If you want to keep the dialogue history and only want to reset the
     slots, you can use this event to set all the slots to their initial
-    values."""
+    values.
+    """
 
     type_name = "reset_slots"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124316)
 
-    def __str__(self) -> Text:
-        return "AllSlotsReset()"
-
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         return self.type_name
 
     def apply_to(self, tracker) -> None:
+        """Applies event to current conversation state."""
         tracker._reset_slots()
 
 
@@ -829,7 +895,7 @@ class ReminderScheduled(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
-        """Creates the reminder
+        """Creates the reminder.
 
         Args:
             intent: Name of the intent to be triggered.
@@ -852,6 +918,7 @@ class ReminderScheduled(Event):
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(
             (
                 self.intent,
@@ -891,10 +958,12 @@ class ReminderScheduled(Event):
         }
 
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         props = json.dumps(self._properties())
         return f"{self.type_name}{props}"
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update(self._properties())
         return d
@@ -943,7 +1012,6 @@ class ReminderCancelled(Event):
             timestamp: Optional timestamp.
             metadata: Optional event metadata.
         """
-
         self.name = name
         self.intent = intent
         self.entities = entities
@@ -1000,6 +1068,7 @@ class ReminderCancelled(Event):
         return str(hash(str(self.entities))) == entities_hash
 
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         props = json.dumps(
             {"name": self.name, "intent": self.intent, "entities": self.entities}
         )
@@ -1026,20 +1095,21 @@ class ActionReverted(Event):
     This includes the action itself, as well as any events that
     action created, like set slot events - the bot will now
     predict a new action using the state before the most recent
-    action."""
+    action.
+    """
 
     type_name = "undo"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124318)
 
-    def __str__(self) -> Text:
-        return "ActionReverted()"
-
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker._reset()
         tracker.replay_events()
 
@@ -1056,14 +1126,19 @@ class StoryExported(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Creates event about story exporting.
+
+        Args:
+            path: Path to which story was exported to.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         self.path = path
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124319)
-
-    def __str__(self) -> Text:
-        return "StoryExported()"
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -1076,9 +1151,11 @@ class StoryExported(Event):
         ]
 
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         if self.path:
             tracker.export_stories_to_file(self.path)
 
@@ -1095,22 +1172,33 @@ class FollowupAction(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Creates an event which forces the model to run a certain action next.
+
+        Args:
+            name: Name of the action to run.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         self.action_name = name
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(self.action_name)
 
     def __eq__(self, other) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, FollowupAction):
             return NotImplemented
 
         return self.action_name == other.action_name
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return f"FollowupAction(action: {self.action_name})"
 
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         props = json.dumps({"name": self.action_name})
         return f"{self.type_name}{props}"
 
@@ -1126,11 +1214,13 @@ class FollowupAction(Event):
         ]
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update({"name": self.action_name})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker.trigger_followup_action(self.action_name)
 
 
@@ -1138,21 +1228,22 @@ class FollowupAction(Event):
 class ConversationPaused(Event):
     """Ignore messages from the user to let a human take over.
 
-    As a side effect the ``Tracker``'s ``paused`` attribute will
-    be set to ``True``."""
+    As a side effect the `Tracker`'s `paused` attribute will
+    be set to `True`.
+    """
 
     type_name = "pause"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124313)
 
-    def __str__(self) -> Text:
-        return "ConversationPaused()"
-
     def as_story_string(self) -> Text:
-        return self.type_name
+        """Returns text representation of event."""
+        return str(self)
 
     def apply_to(self, tracker) -> None:
+        """Applies event to current conversation state."""
         tracker._paused = True
 
 
@@ -1160,21 +1251,22 @@ class ConversationPaused(Event):
 class ConversationResumed(Event):
     """Bot takes over conversation.
 
-    Inverse of ``PauseConversation``. As a side effect the ``Tracker``'s
-    ``paused`` attribute will be set to ``False``."""
+    Inverse of `PauseConversation`. As a side effect the `Tracker`'s
+    `paused` attribute will be set to `False`.
+    """
 
     type_name = "resume"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124314)
 
-    def __str__(self) -> Text:
-        return "ConversationResumed()"
-
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         return self.type_name
 
     def apply_to(self, tracker) -> None:
+        """Applies event to current conversation state."""
         tracker._paused = False
 
 
@@ -1197,6 +1289,18 @@ class ActionExecuted(Event):
         metadata: Optional[Dict] = None,
         action_text: Optional[Text] = None,
     ) -> None:
+        """Creates event for a successful event execution.
+
+        Args:
+            action_name: Name of the action which was executed. `None` if it was an
+                end-to-end prediction.
+            policy: Policy which predicted action.
+            confidence: Confidence with which policy predicted action.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+            action_text: In case it's an end-to-end action prediction, the text which
+                was predicted.
+        """
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
@@ -1216,7 +1320,7 @@ class ActionExecuted(Event):
         return self.action_name or self.action_text
 
     def __hash__(self) -> int:
-        """Returns unique hash for action event."""
+        """Returns unique hash for event."""
         return hash(self.action_name or self.action_text)
 
     def __eq__(self, other: Any) -> bool:
@@ -1256,6 +1360,7 @@ class ActionExecuted(Event):
         ]
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         policy = None  # for backwards compatibility (persisted events)
         if hasattr(self, "policy"):
@@ -1276,9 +1381,12 @@ class ActionExecuted(Event):
 
     def as_sub_state(self) -> Dict[Text, Text]:
         """Turns ActionExecuted into a dictionary containing action name or action text.
+
         One action cannot have both set at the same time
+
         Returns:
-            a dictionary containing action name or action text with the corresponding key
+            a dictionary containing action name or action text with the corresponding
+            key.
         """
         if self.action_name:
             return {ACTION_NAME: self.action_name}
@@ -1286,6 +1394,7 @@ class ActionExecuted(Event):
             return {ACTION_TEXT: self.action_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker.set_latest_action(self.as_sub_state())
         tracker.clear_followup_action()
 
@@ -1294,7 +1403,8 @@ class AgentUttered(Event):
     """The agent has said something to the user.
 
     This class is not used in the story training as it is contained in the
-    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``.
+    """
 
     type_name = "agent"
 
@@ -1305,14 +1415,17 @@ class AgentUttered(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """See docstring of `BotUttered`."""
         self.text = text
         self.data = data
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash((self.text, jsonpickle.encode(self.data)))
 
     def __eq__(self, other) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, AgentUttered):
             return NotImplemented
 
@@ -1322,25 +1435,20 @@ class AgentUttered(Event):
         )
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return "AgentUttered(text: {}, data: {})".format(
             self.text, json.dumps(self.data)
         )
 
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
-
-        pass
-
     def as_story_string(self) -> None:
+        """Skips representing the event in stories."""
         return None
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update({"text": self.text, "data": self.data})
         return d
-
-    @staticmethod
-    def empty() -> "AgentUttered":
-        return AgentUttered()
 
     @classmethod
     def _from_parameters(cls, parameters) -> "AgentUttered":
@@ -1366,22 +1474,33 @@ class ActiveLoop(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Creates event for active loop.
+
+        Args:
+            name: Name of activated loop or `None` if current loop is deactivated.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         self.name = name
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return f"Loop({self.name})"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(self.name)
 
     def __eq__(self, other) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, ActiveLoop):
             return NotImplemented
 
         return self.name == other.name
 
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         props = json.dumps({LOOP_NAME: self.name})
         return f"{ActiveLoop.type_name}{props}"
 
@@ -1397,11 +1516,13 @@ class ActiveLoop(Event):
         ]
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update({LOOP_NAME: self.name})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker.change_loop_to(self.name)
 
 
@@ -1415,6 +1536,7 @@ class LegacyForm(ActiveLoop):
     type_name = "form"
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
         # event type.
@@ -1423,8 +1545,10 @@ class LegacyForm(ActiveLoop):
 
 
 class LoopInterrupted(Event):
-    """Event added by FormPolicy and RulePolicy to notify form action
-    whether or not to validate the user input."""
+    """Event added by FormPolicy and RulePolicy.
+
+    Notifies form action whether or not to validate the user input.
+    """
 
     type_name = "loop_interrupted"
 
@@ -1438,18 +1562,22 @@ class LoopInterrupted(Event):
         self.is_interrupted = is_interrupted
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return f"{LoopInterrupted.__name__}({self.is_interrupted})"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(self.is_interrupted)
 
     def __eq__(self, other) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, LoopInterrupted):
             return NotImplemented
 
         return self.is_interrupted == other.is_interrupted
 
     def as_story_string(self) -> None:
+        """Skips representing event in stories."""
         return None
 
     @classmethod
@@ -1461,11 +1589,13 @@ class LoopInterrupted(Event):
         )
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update({LOOP_INTERRUPTED: self.is_interrupted})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker.interrupt_loop(self.is_interrupted)
 
 
@@ -1485,6 +1615,7 @@ class LegacyFormValidation(LoopInterrupted):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """See parent class docstring."""
         # `validate = True` is the same as `interrupted = False`
         super().__init__(not validate, timestamp, metadata)
 
@@ -1498,6 +1629,7 @@ class LegacyFormValidation(LoopInterrupted):
         )
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
         # event type.
@@ -1518,12 +1650,22 @@ class ActionExecutionRejected(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Creates event.
+
+        Args:
+            action_name: Action which was rejected.
+            policy: Policy which predicted the rejected action.
+            confidence: Confidence with which the reject action was predicted.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return (
             "ActionExecutionRejected("
             "action: {}, policy: {}, confidence: {})"
@@ -1531,9 +1673,11 @@ class ActionExecutionRejected(Event):
         )
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(self.action_name)
 
     def __eq__(self, other) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, ActionExecutionRejected):
             return NotImplemented
 
@@ -1550,9 +1694,11 @@ class ActionExecutionRejected(Event):
         )
 
     def as_story_string(self) -> None:
+        """Skips representing this event in stories."""
         return None
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         d = super().as_dict()
         d.update(
             {
@@ -1573,16 +1719,16 @@ class SessionStarted(Event):
     type_name = "session_started"
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(32143124320)
 
-    def __str__(self) -> Text:
-        return "SessionStarted()"
-
     def as_story_string(self) -> None:
+        """Skips representing event in stories."""
         logger.warning(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         # noinspection PyProtectedMember
         tracker._reset()

@@ -312,6 +312,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
+        """Returns text representation of event."""
         from rasa.shared.core.events import format_message
 
         correct_message = format_message(
