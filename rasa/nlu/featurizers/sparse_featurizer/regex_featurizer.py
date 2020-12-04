@@ -156,9 +156,10 @@ class RegexFeaturizer(SparseFeaturizer):
             # to retrain from scratch very often, the default number
             # of additional slots is kept to MIN_ADDITIONAL_SLOTS.
             # This is an empirically tuned number.
-            self.number_additional_patterns = max(
-                MIN_ADDITIONAL_REGEX_PATTERNS, len(self.known_patterns) * 2
-            )
+            # self.number_additional_patterns = max(
+            #     MIN_ADDITIONAL_REGEX_PATTERNS, len(self.known_patterns) * 2
+            # )
+            self.number_additional_patterns = 0
         return self.number_additional_patterns
 
     def train(
