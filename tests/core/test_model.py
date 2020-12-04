@@ -22,6 +22,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import KEY_RESPONSES
 from rasa.shared.core.domain import Domain
+import rasa.shared.utils.io
 from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
@@ -268,18 +269,73 @@ async def test_fingerprinting_changed_response_text(project: Text):
     assert old_fingerprint[FINGERPRINT_NLG_KEY] != new_fingerprint[FINGERPRINT_NLG_KEY]
 
 
-async def test_fingerprinting_changing_config_epochs(project: Text):
-    importer = _project_files(project)
+async def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
+    config1 = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "RegexFeaturizer"},
+            {"name": "LexicalSyntacticFeaturizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {
+                "name": "CountVectorsFeaturizer",
+                "analyzer": "char_wb",
+                "min_ngram": 1,
+                "max_ngram": 4,
+            },
+            {"name": "DIETClassifier", "epochs": 100},
+            {"name": "EntitySynonymMapper"},
+            {"name": "ResponseSelector", "epochs": 100},
+            {
+                "name": "FallbackClassifier",
+                "threshold": 0.3,
+                "ambiguity_threshold": 0.1,
+            },
+        ],
+        "policies": [
+            {"name": "MemoizationPolicy"},
+            {"name": "TEDPolicy", "max_history": 5, "epochs": 100},
+            {"name": "RulePolicy"},
+        ],
+    }
 
+    config1_path = tmp_path / "config1.yml"
+    rasa.shared.utils.io.write_yaml(config1, config1_path, True)
+    importer = TrainingDataImporter.load_from_config(str(config1_path))
     old_fingerprint = await model_fingerprint(importer)
-    config = await importer.get_config()
 
-    for key in ["pipeline", "policies"]:
-        for p in config[key]:
-            if "epochs" in p:
-                p["epochs"] += 10
+    config2 = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "RegexFeaturizer"},
+            {"name": "LexicalSyntacticFeaturizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {
+                "name": "CountVectorsFeaturizer",
+                "analyzer": "char_wb",
+                "min_ngram": 1,
+                "max_ngram": 4,
+            },
+            {"name": "DIETClassifier", "epochs": 50},
+            {"name": "EntitySynonymMapper"},
+            {"name": "ResponseSelector", "epochs": 50},
+            {
+                "name": "FallbackClassifier",
+                "threshold": 0.3,
+                "ambiguity_threshold": 0.1,
+            },
+        ],
+        "policies": [
+            {"name": "MemoizationPolicy"},
+            {"name": "TEDPolicy", "max_history": 5, "epochs": 50},
+            {"name": "RulePolicy"},
+        ],
+    }
 
-    importer.get_config = AsyncMock(return_value=config)
+    config2_path = tmp_path / "config2.yml"
+    rasa.shared.utils.io.write_yaml(config2, config2_path, True)
+    importer = TrainingDataImporter.load_from_config(str(config2_path))
     new_fingerprint = await model_fingerprint(importer)
 
     assert (
@@ -295,9 +351,19 @@ async def test_fingerprinting_changing_config_epochs(project: Text):
         != new_fingerprint[FINGERPRINT_CONFIG_NLU_KEY]
     )
 
-    config["pipeline"].pop()
+    config3 = {
+        "language": "en",
+        "pipeline": [{"name": "WhitespaceTokenizer"},],
+        "policies": [
+            {"name": "MemoizationPolicy"},
+            {"name": "TEDPolicy", "max_history": 5, "epochs": 50},
+            {"name": "RulePolicy"},
+        ],
+    }
 
-    importer.get_config = AsyncMock(return_value=config)
+    config3_path = tmp_path / "config3.yml"
+    rasa.shared.utils.io.write_yaml(config3, config3_path, True)
+    importer = TrainingDataImporter.load_from_config(str(config3_path))
     new_fingerprint = await model_fingerprint(importer)
 
     assert (
