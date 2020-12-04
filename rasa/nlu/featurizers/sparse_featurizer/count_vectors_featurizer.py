@@ -21,6 +21,7 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
+    MIN_ADDITIONAL_CVF_VOCABULARY,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -426,7 +427,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             return 0
         if self.additional_vocabulary_size.get(attribute) is not None:
             return self.additional_vocabulary_size[attribute]
-        return int(existing_vocabulary_size * 0.5)
+
+        # If the user hasn't defined additional vocabulary size,
+        # then we increase it by 1000 minimum. If the current
+        # vocabulary size is greater than 2000, we take half of
+        # that number as additional vocabulary size.
+        return max(MIN_ADDITIONAL_CVF_VOCABULARY, int(existing_vocabulary_size * 0.5))
 
     def _add_buffer_to_vocabulary(self, attribute: Text) -> None:
         """Add extra tokens to vocabulary for incremental training.

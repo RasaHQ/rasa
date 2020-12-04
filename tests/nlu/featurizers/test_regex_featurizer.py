@@ -332,11 +332,9 @@ def test_persist_load(tmp_path: Path):
     }
 
     loaded_featurizer = RegexFeaturizer.load(
-        meta={
-            "number_additional_patterns": 5,
-            "file": os.path.join(str(tmp_path), persist_value["file"]),
-        },
+        meta={"number_additional_patterns": 5, "file": persist_value["file"],},
         should_finetune=True,
+        model_dir=str(tmp_path),
     )
 
     # Test component loaded in finetune mode and also with
@@ -398,11 +396,9 @@ def test_incremental_train_featurization(tmp_path: Path):
 
     persist_value = featurizer.persist("ftr", str(tmp_path))
     loaded_featurizer = RegexFeaturizer.load(
-        meta={
-            "number_additional_patterns": 5,
-            "file": os.path.join(str(tmp_path), persist_value["file"]),
-        },
+        meta={"number_additional_patterns": 5, "file": persist_value["file"],},
         should_finetune=True,
+        model_dir=str(tmp_path),
     )
 
     new_patterns = [

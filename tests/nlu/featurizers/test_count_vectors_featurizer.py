@@ -568,7 +568,12 @@ def test_count_vector_featurizer_action_attribute_featurization(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer(
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+            "additional_vocabulary_size": {"text": 0, "response": 0, "action_text": 0},
+        }
+    )
     tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
@@ -632,7 +637,12 @@ def test_count_vector_featurizer_process_by_attribute(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer(
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+            "additional_vocabulary_size": {"text": 0, "response": 0, "action_text": 0},
+        }
+    )
     tk = WhitespaceTokenizer()
 
     # add a second example that has some response, so that the vocabulary for
@@ -669,7 +679,7 @@ def test_count_vector_featurizer_process_by_attribute(
 
 @pytest.mark.parametrize(
     "additional_size, text, real_vocabulary_size, total_vocabulary_size",
-    [(None, "hello my name is John.", 5, 7), (10, "hello my name is John.", 5, 15)],
+    [(None, "hello my name is John.", 5, 1005), (10, "hello my name is John.", 5, 15)],
 )
 def test_cvf_independent_train_vocabulary_expand(
     additional_size: Optional[int],
@@ -719,7 +729,7 @@ def test_cvf_independent_train_vocabulary_expand(
 
 @pytest.mark.parametrize(
     "additional_size, text, real_vocabulary_size, total_vocabulary_size",
-    [(None, "hello my name is John.", 7, 10), (10, "hello my name is John.", 7, 17)],
+    [(None, "hello my name is John.", 7, 1007), (10, "hello my name is John.", 7, 17)],
 )
 def test_cvf_shared_train_vocabulary_expand(
     additional_size: Optional[int],
@@ -766,7 +776,7 @@ def test_cvf_shared_train_vocabulary_expand(
     "additional_size, original_train_text, additional_train_text, total_vocabulary_size, remaining_buffer_size",
     [
         (10, "hello my name is John.", "I am also new.", 15, 6),
-        (None, "hello my name is John.", "I am also new.", 7, 0),
+        (None, "hello my name is John.", "I am also new.", 1005, 996),
     ],
 )
 def test_cvf_incremental_train_vocabulary(
@@ -831,7 +841,7 @@ def test_cvf_incremental_train_vocabulary(
     "additional_size, original_train_text, additional_train_text, overflow",
     [
         (10, "hello my name is John.", "I am also new.", False),
-        (None, "hello my name is John.", "I am also new.", True),
+        (None, "hello my name is John.", "I am also new.", False),
         (3, "hello my name is John.", "I am also new.", True),
     ],
 )
