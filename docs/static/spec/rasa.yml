@@ -549,6 +549,7 @@ paths:
         Evaluates NLU model against a model or using cross-validation.
       parameters:
       - $ref: '#/components/parameters/model'
+      - $ref: '#/components/parameters/callback_url'
       - in: query
         name: cross_validation_folds
         schema:
@@ -557,7 +558,7 @@ paths:
           description: >-
             Number of cross validation folds. If this parameter is specified
             the given training data will be used for a cross-validation instead of
-            using this as test set for the provided model.
+            using it as test set for the specified model.
       requestBody:
         required: true
         content:
@@ -902,7 +903,18 @@ components:
           - twilio
           - webexteams
           - socketio
-
+    callback_url:
+      in: query
+      name: callback_url
+      description: >-
+        If specified the call will return immediately with an empty response and status
+        code 204. The actual result or any errors will be sent to the given callback
+        URL as the body of a post request.
+      example: "https://example.com/rasa_evaluations"
+      schema:
+        type: string
+        default: None
+      required: false
   responses:
 
     200Tracker:
@@ -1527,13 +1539,13 @@ components:
       type: object
       properties:
         intent_evaluation:
-          description: Rasa NLU intent evaluation
+          description: Rasa NLU intent evaluation.
           $ref: '#/components/schemas/EvaluationItem'
         response_selection_evaluation:
           description: Evaluation for the retrieval intents.
           $ref: '#/components/schemas/EvaluationItem'
         entity_evaluation:
-          description: Rasa NLU entity evaluation
+          description: Rasa NLU entity evaluation.
           $ref: '#/components/schemas/EvaluationItem'
 
     EvaluationItem:

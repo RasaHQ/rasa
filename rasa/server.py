@@ -993,7 +993,6 @@ def create_app(
         )
 
         # TODO:
-        # 1. Update API Spec
         # 2. Fix temporary files for training data
 
         if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
