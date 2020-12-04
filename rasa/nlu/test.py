@@ -1638,7 +1638,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
 def cross_validate(
     data: TrainingData,
     n_folds: int,
-    nlu_config: Union[RasaNLUModelConfig, Text],
+    nlu_config: Union[RasaNLUModelConfig, Text, Dict],
     output: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
@@ -1661,7 +1661,7 @@ def cross_validate(
     """
     import rasa.nlu.config
 
-    if isinstance(nlu_config, str):
+    if isinstance(nlu_config, (str, Dict)):
         nlu_config = rasa.nlu.config.load(nlu_config)
 
     if output:

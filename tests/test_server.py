@@ -55,6 +55,8 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic
 from sanic.testing import SanicASGITestClient
+
+from tests.core.conftest import DEFAULT_STACK_CONFIG
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
 from ruamel.yaml import StringIO
@@ -796,6 +798,33 @@ async def test_evaluate_intent_on_just_nlu_model(
         "entity_evaluation",
         "response_selection_evaluation",
     }
+
+
+async def test_cross_validation(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text
+):
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
+
+    _, response = await rasa_app_nlu.post(
+        "/model/test/intents",
+        data=payload,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        params={"cross_validation_folds": 3},
+    )
+
+    assert response.status == HTTPStatus.OK
+    response_body = response.json()
+    for required_key in {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }:
+        assert required_key in response_body
+        details = response_body[required_key]
+        if details:
+            assert all(key in details for key in ["precision", "f1_score"])
 
 
 async def test_evaluate_intent_with_model_param(

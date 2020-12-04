@@ -9,6 +9,7 @@ from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
+from pprint import pprint
 from typing import (
     Any,
     Callable,
@@ -36,6 +37,7 @@ import rasa.utils.io
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa import model
 from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
@@ -948,11 +950,51 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request)
+        # TODO:
+        # 1. Update API Spec
+        # 2. Fix temporary files for training data
 
+        # TODO: 2
+        # Callback url
+        # Inline everything
+        # Add coroutine to loop
+
+        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+            payload = _training_payload_from_yaml(request)
+            config = payload.get("config", {})
+            test_data = payload.get("training_files")
+        else:
+            test_data = _test_data_file_from_payload(request)
+
+        cross_validation_folds = request.args.get("cross_validation_folds")
+
+        if cross_validation_folds:
+            # evaluate using cross-validation
+            test_coroutine = _cross_validate(
+                test_data, config, int(cross_validation_folds)
+            )
+        else:
+            test_coroutine = _evaluate_model_using_test_set(
+                request.args.get("model"), test_data
+            )
+
+        try:
+            evaluation = await test_coroutine
+            pprint(evaluation)
+            return response.json(evaluation)
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            raise ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "TestingError",
+                f"An unexpected error occurred during evaluation. Error: {e}",
+            )
+
+    async def _evaluate_model_using_test_set(
+        model_path: Text, test_data_file: Text
+    ) -> Dict:
         eval_agent = app.agent
 
-        model_path = request.args.get("model", None)
         if model_path:
             model_server = app.agent.model_server
             if model_server is not None:
@@ -961,7 +1003,7 @@ def create_app(
                 model_path, model_server, app.agent.remote_storage
             )
 
-        data_path = os.path.abspath(test_data)
+        data_path = os.path.abspath(test_data_file)
 
         if not eval_agent.model_directory or not os.path.exists(
             eval_agent.model_directory
@@ -973,16 +1015,49 @@ def create_app(
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
-        try:
-            evaluation = run_evaluation(data_path, nlu_model, disable_plotting=True)
-            return response.json(evaluation)
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            raise ErrorResponse(
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                "TestingError",
-                f"An unexpected error occurred during evaluation. Error: {e}",
+        with tempfile.TemporaryDirectory() as output:
+            return run_evaluation(
+                data_path, nlu_model, disable_plotting=True, output_directory=output
             )
+
+    async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
+        importer = TrainingDataImporter.load_from_dict(
+            None, config_path=config_file, training_data_paths=[data_file]
+        )
+        config = await importer.get_config()
+        nlu_data = await importer.get_nlu_data()
+
+        with tempfile.TemporaryDirectory() as output:
+            rasa.nlu.cross_validate(
+                data=nlu_data, n_folds=folds, nlu_config=config, output=output
+            )
+            response_filename_mapping = {
+                "intent_evaluation": "intent_report.json",
+                "entity_evaluation": "entity_report.json",
+                "response_selection_evaluation": "response_selector.json",
+            }
+
+            result = {
+                eval_name: _read_file_or_empty_dict(output, filename)
+                for eval_name, filename in response_filename_mapping.items()
+            }
+
+            result = {
+                eval_name: {
+                    "report": report,
+                    "precision": report.get("weighted avg", {}).get("precision"),
+                    "f1_score": report.get("weighted avg", {}).get("f1-score"),
+                }
+                for eval_name, report in result.items()
+            }
+
+            return result
+
+    def _read_file_or_empty_dict(directory: Text, file_name: Text) -> Dict:
+        path = Path(directory, file_name)
+        if path.is_file():
+            return rasa.shared.utils.io.read_json_file(path)
+        return {}
 
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
