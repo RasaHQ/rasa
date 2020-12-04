@@ -80,6 +80,8 @@ EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
 
 
 class ErrorResponse(Exception):
+    """Common exception to handle failing API requests."""
+
     def __init__(
         self,
         status: Union[int, HTTPStatus],
@@ -88,6 +90,15 @@ class ErrorResponse(Exception):
         details: Any = None,
         help_url: Optional[Text] = None,
     ) -> None:
+        """Creates error.
+
+        Args:
+            status: The HTTP status code to return.
+            reason: Short summary of the error.
+            message: Detailed explanation of the error.
+            details: Additional details which describe the error. Must be serializable.
+            help_url: URL where users can get further help (e.g. docs).
+        """
         self.error_info = {
             "version": rasa.__version__,
             "status": "failure",
@@ -1104,7 +1115,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
-
         accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
             domain = app.agent.domain.as_dict()
