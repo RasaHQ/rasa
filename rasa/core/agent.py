@@ -734,8 +734,8 @@ class Agent:
 
         Only removes files if the directory seems to contain a previously
         persisted model. Otherwise does nothing to avoid deleting
-        `/` by accident."""
-
+        `/` by accident.
+        """
         if not model_path.exists():
             return
 

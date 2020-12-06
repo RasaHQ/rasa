@@ -231,7 +231,6 @@ class PolicyEnsemble:
 
     def _persist_metadata(self, path: Text) -> None:
         """Persists the domain specification to storage."""
-
         # make sure the directory we persist exists
         domain_spec_path = Path(path) / "metadata.json"
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
@@ -265,6 +264,7 @@ class PolicyEnsemble:
 
     @classmethod
     def load_metadata(cls, path) -> Any:
+        """Load metadata from a file."""
         metadata_path = Path(path) / "metadata.json"
         metadata = json.loads(rasa.shared.utils.io.read_file(metadata_path.resolve()))
         return metadata

@@ -306,6 +306,7 @@ class RasaModel(tf.keras.models.Model):
         self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
 
     def copy_best(self, model_file_name: Text) -> None:
+        """Copy the best model file to model_file_name."""
         best_model_file = Path(self.best_model_file)
         checkpoint_directory = best_model_file.parent
         checkpoint_file = best_model_file.name
@@ -331,6 +332,7 @@ class RasaModel(tf.keras.models.Model):
     def load(
         cls, model_file_name: Text, model_data_example: RasaModelData, *args, **kwargs
     ) -> "RasaModel":
+        """Load a model."""
         logger.debug("Loading the model ...")
         # create empty model
         model = cls(*args, **kwargs)
