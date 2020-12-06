@@ -140,10 +140,14 @@ def plot_histogram(
     max_xlims = [max(binned_data_set) for binned_data_set in binned_data_sets]
     max_xlims = [xlim + np.ceil(0.25 * xlim) for xlim in max_xlims]  # padding
 
-    min_ylim_idx = min(
-        [(binned_data_set != 0).argmax(axis=0) for binned_data_set in binned_data_sets]
-    )
-    min_ylim = bins[max(0, min_ylim_idx - 1)]  # ensures the lowest non-empty bin shows
+    min_ylim = bins[
+        min(
+            [
+                (binned_data_set != 0).argmax(axis=0)
+                for binned_data_set in binned_data_sets
+            ]
+        )
+    ]
 
     centers = 0.5 * (0.05 + (bins + np.roll(bins, 0))[:-1])
     heights = 0.75 * np.diff(bins)
