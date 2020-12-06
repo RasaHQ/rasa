@@ -209,7 +209,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
     # in tests
     config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
     try:
-        Path(config_path).mkdir(parents=True, exist_ok=True)
+        Path(config_path).parent.mkdir(parents=True, exist_ok=True)
 
         c = read_global_config(config_path)
         c[name] = value
