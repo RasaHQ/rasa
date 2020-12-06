@@ -93,7 +93,7 @@ def _load_interpreter(
 
 
 def _load_domain_and_policy_ensemble(
-    core_path: Optional[Text],
+    core_path: Optional[Path],
 ) -> Tuple[Optional[Domain], Optional[PolicyEnsemble]]:
     """Load the domain and policy ensemble from the model at `core_path`.
 
@@ -108,7 +108,7 @@ def _load_domain_and_policy_ensemble(
 
     if core_path:
         policy_ensemble = PolicyEnsemble.load(core_path)
-        domain_path = Path(core_path).resolve() / DEFAULT_DOMAIN_PATH
+        domain_path = core_path.resolve() / DEFAULT_DOMAIN_PATH
         domain = Domain.load(domain_path)
 
     return domain, policy_ensemble
@@ -129,7 +129,7 @@ def _load_and_set_updated_model(
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
     interpreter = _load_interpreter(agent, nlu_path)
-    domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+    domain, policy_ensemble = _load_domain_and_policy_ensemble(Path(core_path))
 
     agent.update_model(
         domain, policy_ensemble, fingerprint, interpreter, model_directory

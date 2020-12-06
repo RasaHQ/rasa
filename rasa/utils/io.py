@@ -120,8 +120,7 @@ def create_temporary_directory() -> Text:
 
 def create_path(file_path: Text) -> None:
     """Makes sure all directories in the 'file_path' exists."""
-    file_path = Path(file_path).resolve()
-    parent_dir = (file_path.parent,)
+    parent_dir = Path(file_path).parent
     Path(parent_dir).mkdir(parents=True, exist_ok=True)
 
 
