@@ -28,6 +28,7 @@ from rasa.shared.core.domain import (
     IGNORE_ENTITIES_KEY,
     State,
     Domain,
+    KEY_FORMS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -477,7 +478,7 @@ def test_merge_domain_with_forms():
     forms:
       my_form3:
         slot1:
-          type: from_text
+        - type: from_text
     """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
@@ -1068,3 +1069,76 @@ def test_get_featurized_entities():
     featurized_entities = domain._get_featurized_entities(user_uttered)
 
     assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # No forms
+        {KEY_FORMS: {}},
+        # Deprecated but still support form syntax
+        {KEY_FORMS: ["my form", "other form"]},
+        # No slot mappings
+        {KEY_FORMS: {"my_form": None}},
+        {KEY_FORMS: {"my_form": {}}},
+        # Valid slot mappings
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_entity", "entity": "name"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": 5}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_intent", "value": "some value"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": False}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_trigger_intent", "value": 5}]}
+            }
+        },
+        {
+            KEY_FORMS: {
+                "my_form": {
+                    "slot_x": [{"type": "from_trigger_intent", "value": "some value"}]
+                }
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_text"}]}}},
+    ],
+)
+def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
+    Domain.from_dict(domain_as_dict)
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # Wrong type for slot names
+        {KEY_FORMS: {"my_form": []}},
+        {KEY_FORMS: {"my_form": 5}},
+        # Slot mappings not defined as list
+        {KEY_FORMS: {"my_form": {"slot1": {}}}},
+        # Unknown mapping
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "my slot mapping"}]}}},
+        # Mappings with missing keys
+        {
+            KEY_FORMS: {
+                "my_form": {"slot1": [{"type": "from_entity", "intent": "greet"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent"}]}}},
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent", "value": None}]}}},
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_trigger_intent"}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot1": [{"type": "from_trigger_intent", "value": None}]}
+            }
+        },
+    ],
+)
+def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)
