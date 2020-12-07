@@ -4,6 +4,8 @@ from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union
 
 import aio_pika.exceptions
+import psycopg2
+
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.exceptions import ConnectionException

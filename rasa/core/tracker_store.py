@@ -67,7 +67,7 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 CONNECTION_ERRORS = (
-    botocore.exceptions.NoCredentialsError,
+    NoCredentialsError,
     psycopg2.OperationalError,
     pymongo.errors.ConnectionFailure,
 )
