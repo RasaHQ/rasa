@@ -462,8 +462,8 @@ class DialogueStateTracker:
                     event.use_text_for_featurization = use_text_for_featurization
                 # update event's entities based on the future event
                 entities = self._define_user_entities(events_as_list[i + 1 :])
-                if event.entities is None:
-                    event.entities = entities
+                if event.use_text_for_featurization is None:
+                    event.entities.append(entities)
 
                 applied_events.append(event)
             else:

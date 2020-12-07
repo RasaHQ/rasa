@@ -616,7 +616,7 @@ class TEDPolicy(Policy):
 
         # find last user uttered event as the predicted entities belong to
         # that utterance
-        if tracker.latest_action == ACTION_LISTEN_NAME:
+        if tracker.latest_action_name == ACTION_LISTEN_NAME:
             last_user_utterance = tracker.latest_message
         else:
             return None
