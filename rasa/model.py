@@ -376,9 +376,10 @@ def _get_fingerprint_of_config_without_epochs(
     copied_config = copy.deepcopy(config)
 
     for key in ["pipeline", "policies"]:
-        for p in copied_config[key]:
-            if "epochs" in p:
-                del p["epochs"]
+        if key in copied_config:
+            for p in copied_config[key]:
+                if "epochs" in p:
+                    del p["epochs"]
 
     return rasa.shared.utils.io.deep_container_fingerprint(copied_config)
 
