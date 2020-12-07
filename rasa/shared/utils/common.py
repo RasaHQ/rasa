@@ -26,8 +26,10 @@ def class_from_module_path(
                      be found in the local / global scope.
         ensure_class: a boolean that will ensure that the loaded Python class
                       is actually class if True (by default).
+
     Returns:
         a Python class
+
     Raises:
         ImportError, in case the Python class cannot be found.
     """

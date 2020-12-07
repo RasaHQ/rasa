@@ -74,7 +74,7 @@ CONNECTION_ERRORS = (
 
 
 class TrackerStore:
-    """Class to hold all of the TrackerStore classes"""
+    """Class to hold all of the TrackerStore classes."""
 
     def __init__(
         self,
@@ -940,7 +940,6 @@ class SQLTrackerStore(TrackerStore):
     @staticmethod
     def _create_database(engine: "Engine", db: Text):
         """Create database `db` on `engine` if it does not exist."""
-
         conn = engine.connect()
 
         cursor = conn.connection.cursor()

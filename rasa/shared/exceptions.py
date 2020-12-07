@@ -84,8 +84,7 @@ class InvalidEntityFormatException(RasaException):
 
 
 class ConnectionException(RasaException):
-    """
-    Raised when a connection to a 3rd party service fails.
+    """Raised when a connection to a 3rd party service fails.
 
     It's used by our broker and tracker store classes, when
     they can't connect to services like postgres, s3, pika, mongo.
