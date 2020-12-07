@@ -71,7 +71,7 @@ class MemoizationPolicy(Policy):
         priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
-        **kwargs,
+        should_finetune: bool = False,
     ) -> None:
         """Initialize the policy.
 
@@ -81,6 +81,7 @@ class MemoizationPolicy(Policy):
             max_history: maximum history to take into account when featurizing trackers
             lookup: a dictionary that stores featurized tracker states and
                 predicted actions for them
+            should_finetune: Indicates if the model components will be fine-tuned.
         """
         if max_history == MAX_HISTORY_NOT_SET:
             max_history = OLD_DEFAULT_MAX_HISTORY  # old default value
@@ -97,7 +98,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, should_finetune=should_finetune)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}

@@ -112,13 +112,15 @@ class Policy:
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
-        **kwargs: Any,
+        should_finetune: bool = False,
     ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
+        self.should_finetune = should_finetune
 
     @property
     def featurizer(self):
+        """Returns the policy's featurizer."""
         return self.__featurizer
 
     @staticmethod
@@ -296,23 +298,22 @@ class Policy:
 
         if metadata_file.is_file():
             data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-            data["should_finetune"] = should_finetune
+            if should_finetune:
+                if "should_finetune" not in rasa.shared.utils.common.arguments_of(cls):
+                    raise UnsupportedDialogueModelError(
+                        f"{cls.__name__} does not support fine-tuning. "
+                        f"To support fine-tuning the `__init__` method must have the "
+                        f"argument `should_finetune`. This argument should be added to "
+                        f"all policies by Rasa Open Source 3.0.0."
+                    )
+                data["should_finetune"] = should_finetune
+
             if epoch_override:
                 data["epochs"] = epoch_override
 
             if (Path(path) / FEATURIZER_FILE).is_file():
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
-
-            # TODO: figure out this mess
-            constructure_args = rasa.shared.utils.common.arguments_of(cls)
-            if "kwargs" not in constructure_args and (
-                (should_finetune and "should_finetune" not in constructure_args)
-                or (epoch_override or "epochs" not in constructure_args)
-            ):
-                raise UnsupportedDialogueModelError(
-                    f"{cls.__name__} does not support fine-tuning"
-                )
 
             return cls(**data)
 

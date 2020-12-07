@@ -65,6 +65,7 @@ class SklearnPolicy(Policy):
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
         """Create a new sklearn policy.
@@ -72,6 +73,8 @@ class SklearnPolicy(Policy):
         Args:
             featurizer: Featurizer used to convert the training data into
                 vector format.
+            priority: Policy priority
+            max_history: Maximum history of the dialogs.
             model: The sklearn model or model pipeline.
             param_grid: If *param_grid* is not None and *cv* is given,
                 a grid search on the given *param_grid* is performed
@@ -84,8 +87,8 @@ class SklearnPolicy(Policy):
                 *inverse_transform* method.
             shuffle: Whether to shuffle training data.
             zero_state_features: Contains default feature values for attributes
+            should_finetune: Indicates if the model components will be fine-tuned.
         """
-
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
                 raise TypeError(
@@ -104,7 +107,7 @@ class SklearnPolicy(Policy):
                 )
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, should_finetune=should_finetune)
 
         self.model = model or self._default_model()
         self.cv = cv
@@ -308,17 +311,7 @@ class SklearnPolicy(Policy):
         should_finetune: bool = False,
         epoch_override: Optional[float] = None,
     ) -> Policy:
-        """Load the policy from path.
-
-        Args:
-            path: Path to load policy from.
-            should_finetune: Indicates if the model components will be fine-tuned.
-            epoch_override: Optionally override the number of epochs
-             for the loaded model.
-
-        Returns:
-            An instance of `SklearnPolicy`.
-        """
+        """See the docstring for `Policy.Load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
         if not Path(path).exists():

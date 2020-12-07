@@ -510,6 +510,8 @@ def _core_model_for_finetuning(
         if agent.domain is not None and agent.policy_ensemble is not None:
             return agent
 
+        return None
+
 
 def train_nlu(
     config: Text,

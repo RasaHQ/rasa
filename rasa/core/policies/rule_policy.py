@@ -108,7 +108,7 @@ class RulePolicy(MemoizationPolicy):
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
         check_for_contradictions: bool = True,
-        **kwargs: Any,
+        should_finetune: bool = False,
     ) -> None:
         """Create a `RulePolicy` object.
 
@@ -125,8 +125,11 @@ class RulePolicy(MemoizationPolicy):
                 if no rule matched.
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
-            restrict_rules: Restrict rules. TODO: better descriptions.
+            restrict_rules: If `True` rules are restricted to contain a maximum of 1
+                user message. This is used to avoid that users build a state machine
+                using the rules.
             check_for_contradictions: Check for contradictions.
+            should_finetune: Indicates if the model components will be fine-tuned.
         """
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
@@ -139,7 +142,11 @@ class RulePolicy(MemoizationPolicy):
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
-            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
+            featurizer=featurizer,
+            priority=priority,
+            max_history=None,
+            lookup=lookup,
+            should_finetune=should_finetune,
         )
 
     @classmethod

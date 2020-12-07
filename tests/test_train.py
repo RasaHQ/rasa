@@ -436,9 +436,9 @@ def test_model_finetuning_core(
     model_to_finetune = kwargs["model_to_finetune"]
     assert isinstance(model_to_finetune, Agent)
 
-    ted_config = model_to_finetune.policy_ensemble.policies[0].config
-    assert ted_config[EPOCHS] == 10
-    assert ted_config["should_finetune"] is True
+    ted = model_to_finetune.policy_ensemble.policies[0]
+    assert ted.config[EPOCHS] == 10
+    assert ted.should_finetune is True
 
 
 @pytest.mark.parametrize("use_latest_model", [True, False])

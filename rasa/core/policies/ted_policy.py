@@ -217,14 +217,14 @@ class TEDPolicy(Policy):
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, should_finetune=should_finetune)
         if isinstance(featurizer, FullDialogueTrackerFeaturizer):
             self.is_full_dialogue_featurizer_used = True
         else:
