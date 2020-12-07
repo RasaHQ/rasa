@@ -433,6 +433,7 @@ class UserUttered(Event):
         )
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return (
             f"UserUttered(text: {self.text}, intent: {self.intent}, "
             f"entities: {self.entities})"
@@ -653,29 +654,34 @@ class BotUttered(Event):
         )
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash(self.__members())
 
     def __eq__(self, other) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, BotUttered):
             return NotImplemented
 
         return self.__members() == other.__members()
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return "BotUttered(text: {}, data: {}, metadata: {})".format(
             self.text, json.dumps(self.data), json.dumps(self.metadata)
         )
 
     def __repr__(self) -> Text:
+        """Returns text representation of event for debugging."""
         return "BotUttered('{}', {}, {}, {})".format(
             self.text, json.dumps(self.data), json.dumps(self.metadata), self.timestamp
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-
+        """Applies event to current conversation state."""
         tracker.latest_bot_utterance = self
 
     def as_story_string(self) -> None:
+        """Skips representing the event in stories."""
         return None
 
     def message(self) -> Dict[Text, Any]:
@@ -697,6 +703,7 @@ class BotUttered(Event):
 
     @staticmethod
     def empty() -> "BotUttered":
+        """Creates an empty bot utterance."""
         return BotUttered()
 
     def as_dict(self) -> Dict[Text, Any]:
@@ -766,6 +773,7 @@ class SlotSet(Event):
         return (self.key, self.value) == (other.key, other.value)
 
     def as_story_string(self) -> Text:
+        """Returns text representation of event."""
         props = json.dumps({self.key: self.value}, ensure_ascii=False)
         return f"{self.type_name}{props}"
 
@@ -929,13 +937,15 @@ class ReminderScheduled(Event):
             )
         )
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, ReminderScheduled):
             return NotImplemented
 
         return self.name == other.name
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return (
             f"ReminderScheduled(intent: {self.intent}, trigger_date: {self.trigger_date_time}, "
             f"entities: {self.entities}, name: {self.name})"
@@ -1018,15 +1028,18 @@ class ReminderCancelled(Event):
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
+        """Returns unique hash for event."""
         return hash((self.name, self.intent, str(self.entities)))
 
     def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, ReminderCancelled):
             return NotImplemented
 
         return hash(self) == hash(other)
 
     def __str__(self) -> Text:
+        """Returns text representation of event."""
         return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
 
     def cancels_job_with_name(self, job_name: Text, sender_id: Text) -> bool:
@@ -1558,6 +1571,17 @@ class LoopInterrupted(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
+        """Event to notify that loop was interrupted.
+
+        This e.g. happens when a user is within a form, and is de-railing the
+        form-filling by asking FAQs.
+
+        Args:
+            is_interrupted: `True` if the loop execution was interrupted, and ML
+                policies had to take over the last prediction.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
         super().__init__(timestamp, metadata)
         self.is_interrupted = is_interrupted
 
@@ -1638,7 +1662,7 @@ class LegacyFormValidation(LoopInterrupted):
 
 
 class ActionExecutionRejected(Event):
-    """Notify Core that the execution of the action has been rejected"""
+    """Notify Core that the execution of the action has been rejected."""
 
     type_name = "action_execution_rejected"
 
@@ -1710,6 +1734,7 @@ class ActionExecutionRejected(Event):
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
         tracker.reject_action(self.action_name)
 
 
