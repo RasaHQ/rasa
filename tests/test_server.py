@@ -867,7 +867,7 @@ async def test_cross_validation_with_md(
     payload = """
     ## intent: greet
     - Hi
-    - Hello    
+    - Hello
         """
 
     _, response = await rasa_app_nlu.post(

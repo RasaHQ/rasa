@@ -83,6 +83,8 @@ EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
 
 
 class ErrorResponse(Exception):
+    """Custom exception class for errors during request handling."""
+
     def __init__(
         self,
         status: Union[int, HTTPStatus],
@@ -91,6 +93,15 @@ class ErrorResponse(Exception):
         details: Any = None,
         help_url: Optional[Text] = None,
     ) -> None:
+        """Creates exception.
+
+        Args:
+            status: The HTTP status code which should be returned.
+            reason: A short summary of the error reason.
+            message: A detailed error reason.
+            details: Additional, serializable data to describe the error.
+            help_url: URL where users can get more information / help.
+        """
         self.error_info = {
             "version": rasa.__version__,
             "status": "failure",
@@ -959,8 +970,6 @@ def create_app(
     @computational_intense
     @inject_temp_dir
     async def train(request: Request, temporary_directory: Path) -> HTTPResponse:
-        """Train a Rasa Model."""
-
         validate_request_body(
             request,
             "You must provide training data in the request body in order to "
@@ -1292,8 +1301,6 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def get_domain(request: Request) -> HTTPResponse:
-        """Get current domain in yaml or json format."""
-
         accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
             domain = app.agent.domain.as_dict()
