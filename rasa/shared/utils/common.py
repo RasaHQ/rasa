@@ -17,23 +17,32 @@ def class_from_module_path(
 ) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
-    The loaded class can be used to instantiate new objects."""
-    # load the module, will raise ImportError if module cannot be loaded
+    The loaded class can be used to instantiate new objects.
+
+    Args:
+        module_path: either an absolute path to a Python class,
+                     or the name of the class in the local / global scope.
+        lookup_path: a path where to load the class from, if it cannot
+                     be found in the local / global scope.
+        ensure_class: a boolean that will ensure that the loaded Python class
+                      is actually class if True (by default).
+    Returns:
+        a Python class
+    Raises:
+        ImportError, in case the Python class cannot be found.
+    """
     klass = None
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition(".")
         m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        klass = getattr(m, class_name)
+        klass = getattr(m, class_name, None)
     else:
         klass = globals().get(module_path, locals().get(module_path))
-        if module is not None:
-            klass = module
 
         if klass is None and lookup_path:
             # last resort: try to import the class from the lookup path
             m = importlib.import_module(lookup_path)
-            klass = getattr(m, module_path)
+            klass = getattr(m, module_path, None)
 
     if klass is None:
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
