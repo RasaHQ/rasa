@@ -81,7 +81,8 @@ Doing so can lead to unexpected and undesired bot behavior.
 ### TED Policy
 
 The Transformer Embedding Dialogue (TED) Policy is described in
-[our paper](https://arxiv.org/abs/1910.00486).
+[our paper](https://arxiv.org/abs/1910.00486) and on our
+[youtube channel](https://www.youtube.com/watch?v=j90NvurJI4I&list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb&index=14&ab_channel=Rasa).
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
@@ -291,9 +292,9 @@ for details.
 ### Memoization Policy
 
 The `MemoizationPolicy` remembers the stories from your
-training data. It checks if the current conversation matches a story
-in the training data. If so, it will predict the next action from the matching
-story of your training data with a confidence of `1.0`. If no matching conversation
+training data. It checks if the current conversation matches the stories in your
+`stories.yml` file. If so, it will predict the next action from the matching
+stories of your training data with a confidence of `1.0`. If no matching conversation
 is found, the policy predicts `None` with confidence `0.0`.
 
 When looking for a match in your training data, the policy will take the last
