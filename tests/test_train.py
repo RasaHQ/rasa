@@ -441,6 +441,43 @@ def test_model_finetuning_core(
     assert ted.should_finetune is True
 
 
+def test_model_finetuning_core_with_default_epochs(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_nlu_data: Text,
+    trained_moodbot_path: Text,
+):
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    # Providing a new config with no epochs will mean the default amount are used
+    # and then scaled by `finetuning_epoch_fraction`.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    del old_config["policies"][0]["epochs"]
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+
+    train_core(
+        "examples/moodbot/domain.yml",
+        str(new_config_path),
+        "examples/moodbot/data/stories.yml",
+        output=output,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=2,
+    )
+
+    mocked_core_training.assert_called_once()
+    _, kwargs = mocked_core_training.call_args
+    model_to_finetune = kwargs["model_to_finetune"]
+
+    ted = model_to_finetune.policy_ensemble.policies[0]
+    assert ted.config[EPOCHS] == TEDPolicy.defaults[EPOCHS] * 2
+
+
 @pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning_nlu(
     tmp_path: Path,

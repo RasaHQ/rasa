@@ -508,7 +508,7 @@ class TEDPolicy(Policy):
 
         meta["should_finetune"] = should_finetune
         if epoch_override:
-            meta["epochs"] = epoch_override
+            meta[EPOCHS] = epoch_override
 
         return cls(
             featurizer=featurizer,

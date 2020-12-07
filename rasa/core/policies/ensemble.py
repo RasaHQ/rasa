@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union
 
 import rasa.core
 import rasa.core.training.training
@@ -42,6 +42,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
+from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
 
@@ -304,11 +305,19 @@ class PolicyEnsemble:
             )
 
     @staticmethod
-    def _get_updated_epochs(config_for_policy, finetuning_epoch_fraction):
-        epochs = None
-        if "epochs" in config_for_policy:
-            epochs = math.ceil(config_for_policy["epochs"] * finetuning_epoch_fraction)
-        return epochs
+    def _get_updated_epochs(
+        policy_cls: Type[Policy],
+        config_for_policy: Dict[Text, Any],
+        finetuning_epoch_fraction: float,
+    ):
+        if EPOCHS in config_for_policy:
+            epochs = config_for_policy[EPOCHS]
+        else:
+            try:
+                epochs = policy_cls.defaults[EPOCHS]
+            except (KeyError, AttributeError):
+                return None
+        return math.ceil(epochs * finetuning_epoch_fraction)
 
     @classmethod
     def load(
@@ -339,7 +348,7 @@ class PolicyEnsemble:
 
                 config_for_policy = new_config["policies"][i]
                 epochs = cls._get_updated_epochs(
-                    config_for_policy, finetuning_epoch_fraction
+                    policy_cls, config_for_policy, finetuning_epoch_fraction
                 )
                 policy = policy_cls.load(
                     policy_path, should_finetune=True, epoch_override=epochs

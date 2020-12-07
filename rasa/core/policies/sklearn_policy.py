@@ -27,7 +27,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
 from rasa.shared.nlu.training_data.features import Features
-from rasa.utils.tensorflow.constants import SENTENCE
+from rasa.utils.tensorflow.constants import EPOCHS, SENTENCE
 from rasa.utils.tensorflow.model_data import Data
 
 # noinspection PyProtectedMember
@@ -332,7 +332,7 @@ class SklearnPolicy(Policy):
 
         data = {"should_finetune": should_finetune}
         if epoch_override:
-            data["epochs"] = epoch_override
+            data[EPOCHS] = epoch_override
 
         policy = cls(
             featurizer=featurizer,

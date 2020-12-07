@@ -36,6 +36,7 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.utils.tensorflow.constants import EPOCHS
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -114,6 +115,7 @@ class Policy:
         priority: int = DEFAULT_POLICY_PRIORITY,
         should_finetune: bool = False,
     ) -> None:
+        """Construct a new Policy object."""
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
         self.should_finetune = should_finetune
@@ -309,7 +311,7 @@ class Policy:
                 data["should_finetune"] = should_finetune
 
             if epoch_override:
-                data["epochs"] = epoch_override
+                data[EPOCHS] = epoch_override
 
             if (Path(path) / FEATURIZER_FILE).is_file():
                 featurizer = TrackerFeaturizer.load(path)
