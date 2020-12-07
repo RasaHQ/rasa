@@ -334,6 +334,18 @@ class RasaModel(tf.keras.models.Model):
         *args,
         **kwargs,
     ) -> "RasaModel":
+        """Loads a model from the given weights.
+
+        Args:
+            model_file_name: Path to file containing model weights.
+            model_data_example: Example data point to construct the model architecture.
+            finetune_mode: Indicates whether to load the model for further finetuning.
+            *args: Any other non key-worded arguments.
+            **kwargs: Any other key-worded arguments.
+
+        Returns:
+            Loaded model with weights appropriately set.
+        """
         logger.debug(f"Loading the model with finetune_mode={finetune_mode}...")
         # create empty model
         model = cls(*args, **kwargs)

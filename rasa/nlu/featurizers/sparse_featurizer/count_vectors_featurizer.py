@@ -371,7 +371,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return len(vocabulary)
 
     def _update_vectorizer_vocabulary(
-        self, attribute: Text, vocabulary: Set[Text]
+        self, attribute: Text, new_vocabulary: Set[Text]
     ) -> None:
         """Update the existing vocabulary of the vectorizer with new unseen words.
 
@@ -379,27 +379,34 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         Args:
             attribute: Message attribute for which vocabulary should be updated.
-            vocabulary: Set of words to expand the vocabulary with if they are unseen.
+            new_vocabulary: Set of words to expand the vocabulary with if they are unseen.
 
         """
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
-        available_empty_index = self._get_starting_empty_index(existing_vocabulary)
-        if len(vocabulary) > len(existing_vocabulary):
+        if len(new_vocabulary) > len(existing_vocabulary):
             logger.warning(
-                f"New data contains vocabulary of size {len(vocabulary)} for attribute {attribute} "
+                f"New data contains vocabulary of size {len(new_vocabulary)} for attribute {attribute} "
                 f"which is larger than the maximum vocabulary size({len(existing_vocabulary)}) "
                 f"of the original model. Some tokens will have to be dropped "
                 f"in order to continue training. It is advised to re-train the "
                 f"model from scratch on complete data."
             )
+        self._merge_new_vocabulary_tokens(existing_vocabulary, new_vocabulary)
+        self._set_vocabulary(attribute, existing_vocabulary)
+
+    def _merge_new_vocabulary_tokens(
+        self, existing_vocabulary: Dict[Text, int], vocabulary: Set[Text]
+    ):
+        available_empty_index = self._get_starting_empty_index(existing_vocabulary)
         for token in vocabulary:
             if token not in existing_vocabulary:
                 existing_vocabulary[token] = available_empty_index
                 del existing_vocabulary[f"{BUFFER_SLOTS_PREFIX}{available_empty_index}"]
                 available_empty_index += 1
                 if available_empty_index == len(existing_vocabulary):
+                    # We have exhausted all available vocabulary slots.
+                    # Drop the remaining vocabulary.
                     break
-        self._set_vocabulary(attribute, existing_vocabulary)
 
     def _get_additional_vocabulary_size(
         self, attribute: Text, existing_vocabulary_size: int
@@ -435,7 +442,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return max(MIN_ADDITIONAL_CVF_VOCABULARY, int(existing_vocabulary_size * 0.5))
 
     def _add_buffer_to_vocabulary(self, attribute: Text) -> None:
-        """Add extra tokens to vocabulary for incremental training.
+        """Adds extra tokens to vocabulary for incremental training.
 
         These extra tokens act as buffer slots which are used up sequentially
         when more data is received as part of incremental training. Each of
@@ -459,7 +466,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _set_vocabulary(
         self, attribute: Text, original_vocabulary: Dict[Text, int]
     ) -> None:
-        """Set the vocabulary of the vectorizer of attribute.
+        """Sets the vocabulary of the vectorizer of attribute.
 
         Args:
             attribute: Message attribute for which vocabulary should be set
@@ -518,7 +525,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self._fit_loaded_vectorizer(TEXT, combined_cleaned_texts)
 
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
-        """Construct the vectorizers and train them with an independent vocab."""
+        """Constructs the vectorizers and train them with an independent vocab."""
         if not self.finetune_mode:
             self.vectorizers = self._create_independent_vocab_vectorizers(
                 {
@@ -854,11 +861,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
-
-        finetune_mode = kwargs.pop("should_finetune", False)
-
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 
@@ -878,7 +883,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 meta, vocabulary=vocabulary
             )
 
-        ftr = cls(meta, vectorizers, finetune_mode)
+        ftr = cls(meta, vectorizers, should_finetune)
 
         # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:

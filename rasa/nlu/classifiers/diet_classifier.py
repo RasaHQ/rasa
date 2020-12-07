@@ -311,7 +311,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         finetune_mode: bool = False,
     ) -> None:
         """Declare instance variables with default values."""
-
         if component_config is not None and EPOCHS not in component_config:
             rasa.shared.utils.io.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
@@ -970,6 +969,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
@@ -980,8 +980,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 f"trained or the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)
-
-        finetune_mode = kwargs.pop("should_finetune", False)
 
         (
             index_label_id_mapping,
@@ -999,7 +997,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             meta,
             data_example,
             model_dir,
-            finetune_mode=finetune_mode,
+            finetune_mode=should_finetune,
         )
 
         return cls(
@@ -1007,7 +1005,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             index_label_id_mapping=index_label_id_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
-            finetune_mode=finetune_mode,
+            finetune_mode=should_finetune,
         )
 
     @classmethod

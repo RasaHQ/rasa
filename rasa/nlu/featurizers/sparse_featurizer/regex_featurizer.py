@@ -62,7 +62,7 @@ class RegexFeaturizer(SparseFeaturizer):
         pattern_vocabulary_stats: Optional[Dict[Text, int]] = None,
         finetune_mode: bool = False,
     ) -> None:
-        """Construct new features for regexes and lookup table using regex expressions.
+        """Constructs new features for regexes and lookup table using regex expressions.
 
         Args:
             component_config: Configuration for the component
@@ -92,7 +92,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
     @lazy_property
     def vocabulary_stats(self) -> Dict[Text, int]:
-        """Compute total vocabulary size and how much of it is consumed.
+        """Computes total vocabulary size and how much of it is consumed.
 
         Returns:
             Computed vocabulary size and number of filled vocabulary slots.
@@ -112,7 +112,7 @@ class RegexFeaturizer(SparseFeaturizer):
             return self.pattern_vocabulary_stats
 
     def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]):
-        """Update already known patterns with new patterns extracted from data.
+        """Updates already known patterns with new patterns extracted from data.
 
         Args:
             new_patterns: Patterns extracted from training data and to be merged with known patterns.
@@ -149,7 +149,7 @@ class RegexFeaturizer(SparseFeaturizer):
             )
 
     def _get_num_additional_slots(self) -> int:
-        """Compute number of additional pattern slots available in vocabulary on top of known patterns."""
+        """Computes number of additional pattern slots available in vocabulary on top of known patterns."""
         if self.number_additional_patterns is None:
             # We take twice the number of currently defined
             # regex patterns as the number of additional
@@ -169,7 +169,7 @@ class RegexFeaturizer(SparseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train the component with all patterns extracted from training data.
+        """Trains the component with all patterns extracted from training data.
 
         Args:
             training_data: Training data consisting of training examples and patterns available.
@@ -293,6 +293,7 @@ class RegexFeaturizer(SparseFeaturizer):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> "RegexFeaturizer":
         """Load a previously trained component.
@@ -302,10 +303,9 @@ class RegexFeaturizer(SparseFeaturizer):
             model_dir: Path where trained pipeline is stored.
             model_metadata: Metadata for the trained pipeline.
             cached_component: Previously cached component(if any).
+            should_finetune: Indicates whether to load the component for further finetuning.
             **kwargs:
         """
-        finetune_mode = kwargs.pop("should_finetune", False)
-
         file_name = meta.get("file")
 
         patterns_file_name = os.path.join(model_dir, file_name + ".patterns.pkl")
@@ -327,7 +327,7 @@ class RegexFeaturizer(SparseFeaturizer):
             meta,
             known_patterns=known_patterns,
             pattern_vocabulary_stats=vocabulary_stats,
-            finetune_mode=finetune_mode,
+            finetune_mode=should_finetune,
         )
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
