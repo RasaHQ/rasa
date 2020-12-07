@@ -69,6 +69,7 @@ from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
 from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
+from rasa.shared.exceptions import FileNotFoundException
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -1269,3 +1270,8 @@ def test_tracker_persist_and_load_tracker(tmp_path: Path, default_domain: Domain
     loaded_tracker = DialogueStateTracker.load_tracker(file_path)
 
     assert tracker == loaded_tracker
+
+
+def test_tracker_load_nonexistant_file_raises_error():
+    with pytest.raises(FileNotFoundException):
+        DialogueStateTracker.load_tracker("swgjnejirgnerg")
