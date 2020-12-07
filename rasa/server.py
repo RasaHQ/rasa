@@ -1058,18 +1058,26 @@ def create_app(
             "evaluate your model.",
         )
 
-        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+        is_yaml_payload = request.headers.get("Content-type") == YAML_CONTENT_TYPE
+        config_file = None
+        if is_yaml_payload:
             payload = _training_payload_from_yaml(request, temporary_directory)
-            config = payload.get("config", {})
+            config_file = payload.get("config")
             test_data = payload.get("training_files")
         else:
             test_data = _test_data_file_from_payload(request, temporary_directory)
 
         cross_validation_folds = request.args.get("cross_validation_folds")
 
-        if cross_validation_folds:
+        if cross_validation_folds and is_yaml_payload:
             test_coroutine = _cross_validate(
-                test_data, config, int(cross_validation_folds), temporary_directory
+                test_data, config_file, int(cross_validation_folds), temporary_directory
+            )
+        elif cross_validation_folds:
+            raise ErrorResponse(
+                HTTPStatus.BAD_REQUEST,
+                "TestingError",
+                "Cross-validation is only supported for YAML data.",
             )
         else:
             test_coroutine = _evaluate_model_using_test_set(
@@ -1077,8 +1085,6 @@ def create_app(
             )
 
         try:
-            # Run evaluation in separate thread to not block event loop with
-            # synchronous things
             evaluation = await test_coroutine
             return response.json(evaluation)
         except Exception as e:
@@ -1134,12 +1140,15 @@ def create_app(
             data=nlu_data,
             n_folds=folds,
             nlu_config=config,
+            # Use a temporary directory as `output` as we will only obtain the full
+            # validation results in that case.
             output=str(temporary_directory),
         )
         response_filename_mapping = {
             "intent_evaluation": "intent_report.json",
             "entity_evaluation": "entity_report.json",
             "response_selection_evaluation": "response_selector.json",
+            # TODO: ERRORs!
         }
 
         result = {

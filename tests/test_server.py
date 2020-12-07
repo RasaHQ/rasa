@@ -858,8 +858,24 @@ async def test_cross_validation(
             assert all(key in details for key in ["precision", "f1_score"])
 
 
-async def test_cross_validation_with_callback_success(
+async def test_cross_validation_with_md(
     rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text
+):
+    payload = """
+    ## intent: greet
+    - Hi
+    - Hello    
+        """
+
+    _, response = await rasa_app_nlu.post(
+        "/model/test/intents", data=payload, params={"cross_validation_folds": 3},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+
+
+async def test_cross_validation_with_callback_success(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
 ):
     nlu_data = Path(default_nlu_data).read_text()
     config = Path(DEFAULT_STACK_CONFIG).read_text()
@@ -868,6 +884,11 @@ async def test_cross_validation_with_callback_success(
     callback_url = "https://example.com/webhooks/actions"
     with aioresponses() as mocked:
         mocked.post(callback_url, payload={})
+
+        mocked_cross_validation = Mock()
+        monkeypatch.setattr(
+            rasa.nlu, rasa.nlu.cross_validate.__name__, mocked_cross_validation
+        )
 
         _, response = await rasa_app_nlu.post(
             "/model/test/intents",
@@ -878,7 +899,10 @@ async def test_cross_validation_with_callback_success(
 
         assert response.status == HTTPStatus.NO_CONTENT
 
-        await asyncio.sleep(2)
+        # Sleep to give event loop time to process things in the background
+        await asyncio.sleep(1)
+
+        mocked_cross_validation.assert_called_once()
 
         last_request = latest_request(mocked, "POST", callback_url)
         assert last_request
@@ -916,7 +940,7 @@ async def test_cross_validation_with_callback_error(
 
         assert response.status == HTTPStatus.NO_CONTENT
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
         last_request = latest_request(mocked, "POST", callback_url)
         assert last_request
