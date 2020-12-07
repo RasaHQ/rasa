@@ -369,7 +369,7 @@ class Interpreter:
         Returns:
             An interpreter that uses the created model.
         """
-        context = {"finetune_mode": should_finetune}
+        context = {"should_finetune": should_finetune}
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result

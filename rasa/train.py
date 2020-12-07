@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 from contextlib import ExitStack
-from typing import Text, Optional, List, Union, Dict, TYPE_CHECKING
+from typing import Any, Text, Optional, List, Union, Dict, TYPE_CHECKING
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -676,7 +676,9 @@ async def _train_nlu_with_validated_data(
 
 
 def _nlu_model_for_finetuning(
-    model_to_finetune: Text, new_config: Dict, finetuning_epoch_fraction: float = 1.0,
+    model_to_finetune: Text,
+    new_config: Dict[Text, Any],
+    finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Interpreter]:
     path_to_archive = model.get_model_for_finetuning(model_to_finetune)
     if not path_to_archive:
