@@ -1,6 +1,8 @@
 from pathlib import Path
-from typing import List, Any, Text, Optional
+from typing import List, Any, Text, Optional, Union
+from unittest.mock import Mock
 
+from _pytest.monkeypatch import MonkeyPatch
 import pytest
 import copy
 
@@ -77,7 +79,16 @@ def test_policy_loading_simple(tmp_path: Path):
 
 class NoFinetunePolicy(Policy):
     @classmethod
-    def load(cls, _) -> Policy:
+    def load(cls, path: Union[Text, Path]) -> Policy:
+        return NoFinetunePolicy()
+
+    def persist(self, _) -> None:
+        pass
+
+
+class NoFinetunePolicyEpochs(Policy):
+    @classmethod
+    def load(cls, path: Union[Text, Path], should_finetune: bool = False) -> Policy:
         return NoFinetunePolicy()
 
     def persist(self, _) -> None:
@@ -92,6 +103,20 @@ def test_policy_loading_unsupported_finetune(tmp_path: Path):
     with pytest.raises(UnsupportedDialogueModelError) as execinfo:
         PolicyEnsemble.load(str(tmp_path), new_config={"some": "new_config"})
     assert "NoFinetunePolicy does not support fine-tuning." in str(execinfo.value)
+
+
+def test_policy_loading_unsupported_finetune_epochs(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+):
+    original_policy_ensemble = PolicyEnsemble([NoFinetunePolicyEpochs()])
+    original_policy_ensemble.train([], None, RegexInterpreter())
+    original_policy_ensemble.persist(str(tmp_path))
+    monkeypatch.setattr(PolicyEnsemble, "_get_updated_epochs", Mock(return_value=10))
+
+    with pytest.raises(UnsupportedDialogueModelError) as execinfo:
+        PolicyEnsemble.load(str(tmp_path), new_config={"policies": [{}]})
+    assert "NoFinetunePolicyEpochs does not support fine-tuning." in str(execinfo.value)
+    assert "if the policy uses epochs." in str(execinfo.value)
 
 
 class ConstantPolicy(Policy):

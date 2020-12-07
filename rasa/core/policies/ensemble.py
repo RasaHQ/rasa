@@ -350,9 +350,23 @@ class PolicyEnsemble:
                 epochs = cls._get_updated_epochs(
                     policy_cls, config_for_policy, finetuning_epoch_fraction
                 )
-                policy = policy_cls.load(
-                    policy_path, should_finetune=True, epoch_override=epochs
-                )
+                if epochs:
+                    if "epoch_override" not in rasa.shared.utils.common.arguments_of(
+                        policy_cls.load
+                    ):
+                        raise UnsupportedDialogueModelError(
+                            f"{policy_cls.__name__} does not support fine-tuning. "
+                            f"To support fine-tuning the `load` method must have the "
+                            f"argument `epoch_override` if the policy uses epochs."
+                            f"This argument should be added to all policies by "
+                            f"Rasa Open Source 3.0.0."
+                        )
+
+                    policy = policy_cls.load(
+                        policy_path, should_finetune=True, epoch_override=epochs
+                    )
+                else:
+                    policy = policy_cls.load(policy_path, should_finetune=True)
             else:
                 policy = policy_cls.load(policy_path)
 

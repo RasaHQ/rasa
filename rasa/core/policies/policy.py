@@ -279,19 +279,12 @@ class Policy:
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(
-        cls,
-        path: Union[Text, Path],
-        should_finetune: bool = False,
-        epoch_override: Optional[float] = None,
-    ) -> "Policy":
+    def load(cls, path: Union[Text, Path], should_finetune: bool = False,) -> "Policy":
         """Loads a policy from path.
 
         Args:
             path: Path to load policy from.
             should_finetune: Indicates if the model components will be fine-tuned.
-            epoch_override: Optionally override the number of epochs
-             for the loaded model.
 
         Returns:
             An instance of `Policy`.
@@ -309,9 +302,6 @@ class Policy:
                         f"all policies by Rasa Open Source 3.0.0."
                     )
                 data["should_finetune"] = should_finetune
-
-            if epoch_override:
-                data[EPOCHS] = epoch_override
 
             if (Path(path) / FEATURIZER_FILE).is_file():
                 featurizer = TrackerFeaturizer.load(path)
