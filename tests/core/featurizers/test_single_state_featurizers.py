@@ -181,6 +181,7 @@ def test_single_state_featurizer_creates_encoded_all_actions():
     )
 
 
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_entity_roles_and_groups(
     unpacked_trained_moodbot_path: Text,
 ):
@@ -241,6 +242,7 @@ def test_single_state_featurizer_uses_dtype_float():
     assert encoded[ACTION_NAME][0].features.dtype == np.float32
 
 
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_interpreter_state_with_action_listen(
     unpacked_trained_moodbot_path: Text,
 ):
@@ -304,6 +306,7 @@ def test_single_state_featurizer_with_interpreter_state_with_action_listen(
     ).nnz == 0
 
 
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
     unpacked_trained_moodbot_path: Text,
 ):
@@ -340,6 +343,7 @@ def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
     ).nnz == 0
 
 
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
     unpacked_trained_moodbot_path: Text,
 ):
@@ -402,6 +406,7 @@ def test_to_sparse_sentence_features():
     assert sentence_features[0].features.shape == (1, 10)
 
 
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_uses_regex_interpreter(
     unpacked_trained_moodbot_path: Text,
 ):
