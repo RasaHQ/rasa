@@ -27,6 +27,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
+from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +141,7 @@ class Trainer:
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
         model_to_finetune: Optional["Interpreter"] = None,
-    ):
+    ) -> None:
 
         self.config = cfg
         self.skip_validation = skip_validation
@@ -340,12 +341,13 @@ class Interpreter:
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
     ):
-        for p1, p2 in zip(model_metadata.metadata["pipeline"], new_config["pipeline"]):
-            if not p1.get("name") == p2.get("name"):
-                raise InvalidModelError("Inconsistent config for model to fine-tune.")
-            if "epochs" in p1:
-                p1["epochs"] = ceil(
-                    p2.get("epochs", p1["epochs"]) * finetuning_epoch_fraction
+        for old_component_config, new_component_config in zip(
+            model_metadata.metadata["pipeline"], new_config["pipeline"]
+        ):
+            if EPOCHS in old_component_config:
+                old_component_config[EPOCHS] = ceil(
+                    new_component_config.get(EPOCHS, old_component_config[EPOCHS])
+                    * finetuning_epoch_fraction
                 )
 
     @staticmethod
