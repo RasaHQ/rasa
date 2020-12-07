@@ -49,7 +49,6 @@ class Persistor:
 
     def persist(self, model_directory: Text, model_name: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
-
         model_directory = Path(model_directory)
         if not model_directory.is_dir():
             raise ValueError(f"Target directory '{model_directory}' not found.")
@@ -71,7 +70,6 @@ class Persistor:
 
     def list_models(self) -> List[Text]:
         """Lists all the trained models."""
-
         raise NotImplementedError
 
     def _retrieve_tar(self, filename: Text) -> Text:

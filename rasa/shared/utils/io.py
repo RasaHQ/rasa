@@ -476,8 +476,8 @@ def dump_obj_as_yaml_to_string(
 def create_directory(directory_path: Union[Path, Text]) -> None:
     """Creates a directory and its super paths.
 
-    Succeeds even if the path already exists."""
-
+    Succeeds even if the path already exists.
+    """
     Path(directory_path).mkdir(parents=True, exist_ok=True)
 
 

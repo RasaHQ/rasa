@@ -94,6 +94,7 @@ class JiebaTokenizer(Tokenizer):
 
     @staticmethod
     def copy_files_dir_to_dir(input_dir: Text, output_dir: Text) -> None:
+        """Copy files from one dir to another."""
         create_directory(output_dir)
 
         target_file_list = glob.glob(f"{input_dir}/*")
@@ -102,7 +103,6 @@ class JiebaTokenizer(Tokenizer):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
-
         # copy custom dictionaries to model dir, if any
         if self.dictionary_path is not None:
             target_dictionary_path = Path(model_dir) / file_name

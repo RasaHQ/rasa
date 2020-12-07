@@ -51,6 +51,10 @@ class EntitySynonymMapper(EntityExtractor):
         message.set(ENTITIES, updated_entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this model into the passed directory.
+
+        Return the metadata necessary to load the model again.
+        """
         model_dir = Path(model_dir)
         if self.synonyms:
             file_name = file_name + ".json"

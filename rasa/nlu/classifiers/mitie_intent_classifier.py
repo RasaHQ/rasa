@@ -111,7 +111,10 @@ class MitieIntentClassifier(IntentClassifier):
             return cls(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        """Persist this model into the passed directory.
 
+        Return the metadata necessary to load the model again.
+        """
         if self.clf:
             file_name = f"{file_name}.dat"
             classifier_file = Path(model_dir) / file_name

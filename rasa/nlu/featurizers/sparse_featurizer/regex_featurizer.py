@@ -171,7 +171,9 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
+
+        Return the metadata necessary to load the model again.
+        """
         file_name = file_name + ".pkl"
         regex_file = Path(model_dir) / file_name
         utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
