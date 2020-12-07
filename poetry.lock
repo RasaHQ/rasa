@@ -9,6 +9,11 @@ python-versions = "*"
 [package.dependencies]
 six = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "aio-pika"
 version = "6.7.1"
@@ -24,6 +29,11 @@ yarl = "*"
 [package.extras]
 develop = ["aiomisc (>=10.1.6,<10.2.0)", "async-generator", "coverage (!=4.3)", "coveralls", "pylava", "pytest", "pytest-cov", "shortuuid", "nox", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "aiofiles"
 version = "0.6.0"
@@ -31,6 +41,11 @@ description = "File support for asyncio."
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "aiohttp"
@@ -41,16 +56,21 @@ optional = false
 python-versions = ">=3.5.3"
 
 [package.dependencies]
-async-timeout = ">=3.0,<4.0"
+async_timeout = ">=3.0,<4.0"
 attrs = ">=17.3.0"
 chardet = ">=2.0,<4.0"
 idna-ssl = {version = ">=1.0", markers = "python_version < \"3.7\""}
 multidict = ">=4.5,<5.0"
-typing-extensions = {version = ">=3.6.5", markers = "python_version < \"3.7\""}
+typing_extensions = {version = ">=3.6.5", markers = "python_version < \"3.7\""}
 yarl = ">=1.0,<1.6.0"
 
 [package.extras]
 speedups = ["aiodns", "brotlipy", "cchardet"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "aioresponses"
@@ -62,6 +82,11 @@ python-versions = "*"
 
 [package.dependencies]
 aiohttp = ">=2.0.0,<4.0.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "aiormq"
@@ -78,6 +103,11 @@ yarl = "*"
 [package.extras]
 develop = ["aiomisc (>=11.0,<12.0)", "async-generator", "coverage (!=4.3)", "coveralls", "pylava", "pytest", "pytest-cov", "tox (>=2.4)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "apipkg"
 version = "1.5"
@@ -86,6 +116,11 @@ category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "appdirs"
 version = "1.4.4"
@@ -93,6 +128,11 @@ description = "A small Python module for determining appropriate platform-specif
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "apscheduler"
@@ -120,6 +160,11 @@ tornado = ["tornado (>=4.3)"]
 twisted = ["twisted"]
 zookeeper = ["kazoo"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "astunparse"
 version = "1.6.3"
@@ -131,6 +176,11 @@ python-versions = "*"
 [package.dependencies]
 six = ">=1.6.1,<2.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "async-generator"
 version = "1.10"
@@ -138,6 +188,11 @@ description = "Async generators and context managers for Python 3.5+"
 category = "main"
 optional = false
 python-versions = ">=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "async-timeout"
@@ -147,6 +202,11 @@ category = "main"
 optional = false
 python-versions = ">=3.5.3"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "atomicwrites"
 version = "1.4.0"
@@ -154,6 +214,11 @@ description = "Atomic file writes."
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "attrs"
@@ -169,6 +234,11 @@ docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
 tests = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface"]
 tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "aws-sam-translator"
 version = "1.32.0"
@@ -183,7 +253,12 @@ jsonschema = ">=3.2,<4.0"
 six = ">=1.15,<2.0"
 
 [package.extras]
-dev = ["coverage (>=5.3,<6.0)", "flake8 (>=3.8.4,<3.9.0)", "tox (>=3.20.1,<3.21.0)", "pytest-cov (>=2.10.1,<2.11.0)", "pylint (>=1.7.2,<2.0)", "pyyaml (>=5.3.1,<5.4.0)", "mock (>=3.0.5,<4.0.0)", "parameterized (>=0.7.4,<0.8.0)", "requests (>=2.24.0,<2.25.0)", "docopt (>=0.6.2,<0.7.0)", "pytest (>=4.6.11,<4.7.0)", "pytest (>=6.1.1,<6.2.0)", "black (20.8b1)"]
+dev = ["black (==20.8b1)", "coverage (>=5.3,<6.0)", "docopt (>=0.6.2,<0.7.0)", "flake8 (>=3.8.4,<3.9.0)", "mock (>=3.0.5,<4.0.0)", "parameterized (>=0.7.4,<0.8.0)", "pylint (>=1.7.2,<2.0)", "pytest (>=4.6.11,<4.7.0)", "pytest (>=6.1.1,<6.2.0)", "pytest-cov (>=2.10.1,<2.11.0)", "pyyaml (>=5.3.1,<5.4.0)", "requests (>=2.24.0,<2.25.0)", "tox (>=3.20.1,<3.21.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "aws-xray-sdk"
@@ -199,6 +274,11 @@ future = "*"
 jsonpickle = "*"
 wrapt = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "azure-core"
 version = "1.9.0"
@@ -210,6 +290,11 @@ python-versions = "*"
 [package.dependencies]
 requests = ">=2.18.4"
 six = ">=1.6"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "azure-storage-blob"
@@ -223,6 +308,11 @@ python-versions = "*"
 azure-core = ">=1.6.0,<2.0.0"
 cryptography = ">=2.1.4"
 msrest = ">=0.6.10"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "black"
@@ -244,6 +334,11 @@ typed-ast = ">=1.4.0"
 [package.extras]
 d = ["aiohttp (>=3.3.2)", "aiohttp-cors"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "blis"
 version = "0.4.1"
@@ -255,6 +350,11 @@ python-versions = "*"
 [package.dependencies]
 numpy = ">=1.15.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "boto"
 version = "2.49.0"
@@ -263,22 +363,32 @@ category = "dev"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "boto3"
-version = "1.16.29"
+version = "1.16.30"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-botocore = ">=1.19.29,<1.20.0"
+botocore = ">=1.19.30,<1.20.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "botocore"
-version = "1.19.29"
+version = "1.19.30"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -289,6 +399,11 @@ jmespath = ">=0.7.1,<1.0.0"
 python-dateutil = ">=2.1,<3.0.0"
 urllib3 = {version = ">=1.25.4,<1.27", markers = "python_version != \"3.4\""}
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "cachetools"
 version = "4.1.1"
@@ -296,6 +411,11 @@ description = "Extensible memoizing collections and decorators"
 category = "main"
 optional = false
 python-versions = "~=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "catalogue"
@@ -308,13 +428,23 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 [package.dependencies]
 importlib-metadata = {version = ">=0.20", markers = "python_version < \"3.8\""}
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "certifi"
-version = "2020.11.8"
+version = "2020.12.5"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "cffi"
@@ -326,6 +456,11 @@ python-versions = "*"
 
 [package.dependencies]
 pycparser = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "cfn-lint"
@@ -345,6 +480,11 @@ networkx = {version = ">=2.4,<3.0", markers = "python_version >= \"3.5\""}
 pyyaml = {version = "*", markers = "python_version != \"3.4\""}
 six = ">=1.11,<2.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "chardet"
 version = "3.0.4"
@@ -352,6 +492,11 @@ description = "Universal encoding detector for Python 2 and 3"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "click"
@@ -361,6 +506,11 @@ category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "cloudpickle"
 version = "1.4.1"
@@ -368,6 +518,11 @@ description = "Extended pickling support for Python objects"
 category = "main"
 optional = false
 python-versions = ">=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "colorama"
@@ -377,6 +532,11 @@ category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "colorclass"
 version = "2.2.0"
@@ -384,6 +544,11 @@ description = "Colorful worry-free console applications for Linux, Mac OS X, and
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "coloredlogs"
@@ -399,13 +564,23 @@ humanfriendly = ">=7.1"
 [package.extras]
 cron = ["capturer (>=2.4)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "colorhash"
-version = "1.0.2"
-description = "Generate a color based on a value"
+version = "1.0.3"
+description = "Generate color based on any object"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.3,<4.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "contextvars"
@@ -418,6 +593,11 @@ python-versions = "*"
 [package.dependencies]
 immutables = ">=0.9"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "coverage"
 version = "5.3"
@@ -428,6 +608,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
 [package.extras]
 toml = ["toml"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "coveralls"
@@ -445,6 +630,11 @@ requests = ">=1.0.0"
 [package.extras]
 yaml = ["PyYAML (>=3.10)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "cryptography"
 version = "3.2.1"
@@ -458,11 +648,16 @@ cffi = ">=1.8,<1.11.3 || >1.11.3"
 six = ">=1.4.1"
 
 [package.extras]
-docs = ["sphinx (>=1.6.5,<1.8.0 || >1.8.0,<3.1.0 || >3.1.0,<3.1.1 || >3.1.1)", "sphinx-rtd-theme"]
+docs = ["sphinx (>=1.6.5,!=1.8.0,!=3.1.0,!=3.1.1)", "sphinx-rtd-theme"]
 docstest = ["doc8", "pyenchant (>=1.6.11)", "twine (>=1.12.0)", "sphinxcontrib-spelling (>=4.0.1)"]
 pep8test = ["black", "flake8", "flake8-import-order", "pep8-naming"]
 ssh = ["bcrypt (>=3.1.5)"]
-test = ["pytest (>=3.6.0,<3.9.0 || >3.9.0,<3.9.1 || >3.9.1,<3.9.2 || >3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,<3.79.2 || >3.79.2)"]
+test = ["pytest (>=3.6.0,!=3.9.0,!=3.9.1,!=3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "cycler"
@@ -475,13 +670,23 @@ python-versions = "*"
 [package.dependencies]
 six = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "cymem"
-version = "2.0.4"
+version = "2.0.5"
 description = "Manage calls to calloc/free through Cython"
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "dataclasses"
@@ -491,6 +696,11 @@ category = "main"
 optional = true
 python-versions = ">=3.6, <3.7"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "decorator"
 version = "4.4.2"
@@ -498,6 +708,11 @@ description = "Decorators for Humans"
 category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "dm-tree"
@@ -510,6 +725,11 @@ python-versions = "*"
 [package.dependencies]
 six = ">=1.12.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "dnspython"
 version = "1.16.0"
@@ -521,6 +741,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [package.extras]
 DNSSEC = ["pycryptodome", "ecdsa (>=0.13)"]
 IDNA = ["idna (>=2.1)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "docker"
@@ -540,6 +765,11 @@ websocket-client = ">=0.32.0"
 ssh = ["paramiko (>=2.4.2)"]
 tls = ["pyOpenSSL (>=17.5.0)", "cryptography (>=1.3.4)", "idna (>=2.0.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "docopt"
 version = "0.6.2"
@@ -547,6 +777,11 @@ description = "Pythonic argument parser, that will make you smile"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "docspec"
@@ -560,6 +795,11 @@ python-versions = "*"
 "nr.databind.core" = ">=0.0.19,<0.1.0"
 "nr.databind.json" = ">=0.0.9,<0.1.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "docspec-python"
 version = "0.0.7"
@@ -572,6 +812,11 @@ python-versions = "*"
 docspec = ">=0.2.0,<0.3.0"
 "nr.sumtype" = ">=0.0.3,<0.1.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "ecdsa"
 version = "0.14.1"
@@ -582,6 +827,11 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [package.dependencies]
 six = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "execnet"
@@ -596,6 +846,11 @@ apipkg = ">=1.4"
 
 [package.extras]
 testing = ["pre-commit"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "fakeredis"
@@ -614,6 +869,11 @@ sortedcontainers = "*"
 aioredis = ["aioredis"]
 lua = ["lupa"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "fbmessenger"
 version = "6.0.0"
@@ -625,6 +885,11 @@ python-versions = "*"
 [package.dependencies]
 requests = ">=2.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "filelock"
 version = "3.0.12"
@@ -632,6 +897,11 @@ description = "A platform independent file lock."
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "flake8"
@@ -647,6 +917,11 @@ mccabe = ">=0.6.0,<0.7.0"
 pycodestyle = ">=2.6.0a1,<2.7.0"
 pyflakes = ">=2.2.0,<2.3.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "flake8-docstrings"
 version = "1.5.0"
@@ -659,6 +934,11 @@ python-versions = "*"
 flake8 = ">=3"
 pydocstyle = ">=2.1"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "freezegun"
 version = "1.0.0"
@@ -670,6 +950,11 @@ python-versions = ">=3.5"
 [package.dependencies]
 python-dateutil = ">=2.7"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "future"
 version = "0.18.2"
@@ -678,6 +963,11 @@ category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "gast"
 version = "0.3.3"
@@ -685,6 +975,11 @@ description = "Python AST that abstracts the underlying Python version"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "github3.py"
@@ -702,7 +997,12 @@ uritemplate = ">=3.0.0"
 
 [package.extras]
 sni = ["pyopenssl", "ndg-httpsclient", "pyasn1"]
-test = ["betamax (>=0.8.0)", "pytest (>2.3.5)", "betamax-matchers (>=0.1.0)", "unittest2 (0.5.1)", "mock"]
+test = ["betamax (>=0.8.0)", "pytest (>2.3.5)", "betamax-matchers (>=0.1.0)", "unittest2 (==0.5.1)", "mock"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "google-api-core"
@@ -725,6 +1025,11 @@ grpc = ["grpcio (>=1.29.0,<2.0dev)"]
 grpcgcp = ["grpcio-gcp (>=0.2.2)"]
 grpcio-gcp = ["grpcio-gcp (>=0.2.2)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "google-auth"
 version = "1.23.0"
@@ -742,6 +1047,11 @@ six = ">=1.9.0"
 [package.extras]
 aiohttp = ["aiohttp (>=3.6.2,<4.0.0dev)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "google-auth-oauthlib"
 version = "0.4.2"
@@ -756,6 +1066,11 @@ requests-oauthlib = ">=0.7.0"
 
 [package.extras]
 tool = ["click"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "google-cloud-core"
@@ -772,6 +1087,11 @@ six = ">=1.12.0"
 [package.extras]
 grpc = ["grpcio (>=1.8.2,<2.0dev)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "google-cloud-storage"
 version = "1.33.0"
@@ -785,6 +1105,11 @@ google-auth = ">=1.11.0,<2.0dev"
 google-cloud-core = ">=1.4.1,<2.0dev"
 google-resumable-media = ">=1.0.0,<2.0dev"
 requests = ">=2.18.0,<3.0.0dev"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "google-crc32c"
@@ -800,6 +1125,11 @@ cffi = ">=1.0.0"
 [package.extras]
 testing = ["pytest"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "google-pasta"
 version = "0.2.0"
@@ -810,6 +1140,11 @@ python-versions = "*"
 
 [package.dependencies]
 six = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "google-resumable-media"
@@ -827,6 +1162,11 @@ six = "*"
 aiohttp = ["aiohttp (>=3.6.2,<4.0.0dev)"]
 requests = ["requests (>=2.18.0,<3.0.0dev)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "googleapis-common-protos"
 version = "1.52.0"
@@ -840,6 +1180,11 @@ protobuf = ">=3.6.0"
 
 [package.extras]
 grpc = ["grpcio (>=1.0.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "grpcio"
@@ -855,6 +1200,11 @@ six = ">=1.5.2"
 [package.extras]
 protobuf = ["grpcio-tools (>=1.34.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "h11"
 version = "0.9.0"
@@ -862,6 +1212,11 @@ description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "h2"
@@ -875,6 +1230,11 @@ python-versions = "*"
 hpack = ">=3.0,<4"
 hyperframe = ">=5.2.0,<6"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "h5py"
 version = "2.10.0"
@@ -887,6 +1247,11 @@ python-versions = "*"
 numpy = ">=1.7"
 six = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "hpack"
 version = "3.0.0"
@@ -894,6 +1259,11 @@ description = "Pure-Python HPACK header compression"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "hstspreload"
@@ -903,6 +1273,11 @@ category = "main"
 optional = false
 python-versions = ">=3.6"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "httplib2"
 version = "0.18.1"
@@ -910,6 +1285,11 @@ description = "A comprehensive HTTP client library."
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "httptools"
@@ -920,7 +1300,12 @@ optional = false
 python-versions = "*"
 
 [package.extras]
-test = ["Cython (0.29.14)"]
+test = ["Cython (==0.29.14)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "httpx"
@@ -941,6 +1326,11 @@ rfc3986 = ">=1.3,<2"
 sniffio = ">=1.0.0,<2.0.0"
 urllib3 = ">=1.0.0,<2.0.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "humanfriendly"
 version = "9.0"
@@ -952,6 +1342,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 [package.dependencies]
 pyreadline = {version = "*", markers = "sys_platform == \"win32\""}
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "hyperframe"
 version = "5.2.0"
@@ -960,6 +1355,11 @@ category = "main"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "idna"
 version = "2.10"
@@ -967,6 +1367,11 @@ description = "Internationalized Domain Names in Applications (IDNA)"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "idna-ssl"
@@ -979,6 +1384,11 @@ python-versions = "*"
 [package.dependencies]
 idna = ">=2.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "immutables"
 version = "0.14"
@@ -986,6 +1396,11 @@ description = "Immutable Collections"
 category = "main"
 optional = false
 python-versions = ">=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "importlib-metadata"
@@ -1000,7 +1415,12 @@ zipp = ">=0.5"
 
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
-testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "packaging", "pep517", "pyfakefs", "flufl.flake8", "pytest-black (>=0.3.7)", "pytest-mypy", "importlib-resources (>=1.3)"]
+testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "packaging", "pep517", "pyfakefs", "flufl.flake8", "pytest-black (>=0.3.7)", "pytest-mypy", "importlib-resources (>=1.3)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "importlib-resources"
@@ -1016,6 +1436,11 @@ zipp = {version = ">=0.4", markers = "python_version < \"3.8\""}
 [package.extras]
 docs = ["sphinx", "rst.linker", "jaraco.packaging"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "incremental"
 version = "17.5.0"
@@ -1027,6 +1452,11 @@ python-versions = "*"
 [package.extras]
 scripts = ["click (>=6.0)", "twisted (>=16.4.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "ipaddress"
 version = "1.0.23"
@@ -1034,6 +1464,11 @@ description = "IPv4/IPv6 manipulation library"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "isodate"
@@ -1046,6 +1481,11 @@ python-versions = "*"
 [package.dependencies]
 six = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "jieba"
 version = "0.42.1"
@@ -1053,6 +1493,11 @@ description = "Chinese Words Segmentation Utilities"
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "jinja2"
@@ -1068,6 +1513,11 @@ MarkupSafe = ">=0.23"
 [package.extras]
 i18n = ["Babel (>=0.8)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "jmespath"
 version = "0.10.0"
@@ -1075,6 +1525,11 @@ description = "JSON Matching Expressions"
 category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "joblib"
@@ -1084,6 +1539,11 @@ category = "main"
 optional = false
 python-versions = ">=3.6"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "jsondiff"
 version = "1.2.0"
@@ -1091,6 +1551,11 @@ description = "Diff JSON and JSON-like structures in Python"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "jsonpatch"
@@ -1102,6 +1567,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.dependencies]
 jsonpointer = ">=1.9"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "jsonpickle"
@@ -1116,8 +1586,13 @@ importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
-testing = ["coverage (<5)", "pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-black-multipy", "pytest-cov", "ecdsa", "feedparser", "numpy", "pandas", "pymongo", "sqlalchemy", "enum34", "jsonlib"]
+testing = ["coverage (<5)", "pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-black-multipy", "pytest-cov", "ecdsa", "feedparser", "numpy", "pandas", "pymongo", "sqlalchemy", "enum34", "jsonlib"]
 "testing.libs" = ["demjson", "simplejson", "ujson", "yajl"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "jsonpointer"
@@ -1126,6 +1601,11 @@ description = "Identify specific nodes in a JSON document (RFC 6901)"
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "jsonschema"
@@ -1145,6 +1625,11 @@ six = ">=1.11.0"
 format = ["idna", "jsonpointer (>1.13)", "rfc3987", "strict-rfc3339", "webcolors"]
 format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator (>0.1.0)", "rfc3339-validator"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "junit-xml"
 version = "1.9"
@@ -1155,6 +1640,11 @@ python-versions = "*"
 
 [package.dependencies]
 six = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "jwcrypto"
@@ -1167,6 +1657,11 @@ python-versions = "*"
 [package.dependencies]
 cryptography = ">=2.3"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "kafka-python"
 version = "2.0.2"
@@ -1177,6 +1672,11 @@ python-versions = "*"
 
 [package.extras]
 crc32c = ["crc32c"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "keras-preprocessing"
@@ -1195,6 +1695,11 @@ image = ["scipy (>=0.14)", "Pillow (>=5.2.0)"]
 pep8 = ["flake8"]
 tests = ["pandas", "pillow", "tensorflow", "keras", "pytest", "pytest-xdist", "pytest-cov"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "kiwisolver"
 version = "1.3.1"
@@ -1202,6 +1707,11 @@ description = "A fast implementation of the Cassowary constraint solver"
 category = "main"
 optional = false
 python-versions = ">=3.6"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "markdown"
@@ -1217,6 +1727,11 @@ importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 [package.extras]
 testing = ["coverage", "pyyaml"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "markupsafe"
 version = "1.1.1"
@@ -1224,6 +1739,11 @@ description = "Safely add untrusted strings to HTML/XML markup."
 category = "dev"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "matplotlib"
@@ -1241,6 +1761,11 @@ pillow = ">=6.2.0"
 pyparsing = ">=2.0.3,<2.0.4 || >2.0.4,<2.1.2 || >2.1.2,<2.1.6 || >2.1.6"
 python-dateutil = ">=2.1"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "mattermostwrapper"
 version = "2.2"
@@ -1252,6 +1777,11 @@ python-versions = "*"
 [package.dependencies]
 requests = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "mccabe"
 version = "0.6.1"
@@ -1259,6 +1789,11 @@ description = "McCabe checker, plugin for flake8"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "mock"
@@ -1273,6 +1808,11 @@ build = ["twine", "wheel", "blurb"]
 docs = ["sphinx"]
 test = ["pytest", "pytest-cov"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "mongomock"
 version = "3.21.0"
@@ -1285,6 +1825,11 @@ python-versions = "*"
 sentinels = "*"
 six = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "more-itertools"
 version = "8.6.0"
@@ -1292,6 +1837,11 @@ description = "More routines for operating on iterables, beyond itertools"
 category = "dev"
 optional = false
 python-versions = ">=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "moto"
@@ -1329,7 +1879,7 @@ zipp = "*"
 
 [package.extras]
 acm = ["cryptography (>=2.3.0)"]
-all = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,<0.96 || >0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
+all = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
 awslambda = ["docker (>=2.5.1)"]
 batch = ["docker (>=2.5.1)"]
 cloudformation = ["PyYAML (>=5.1)", "cfn-lint (>=0.4.0)"]
@@ -1338,8 +1888,13 @@ ec2 = ["cryptography (>=2.3.0)", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1
 iam = ["cryptography (>=2.3.0)"]
 iotdata = ["jsondiff (>=1.1.2)"]
 s3 = ["cryptography (>=2.3.0)"]
-server = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,<0.96 || >0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "flask", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
-xray = ["aws-xray-sdk (>=0.93,<0.96 || >0.96)"]
+server = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "flask", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
+xray = ["aws-xray-sdk (>=0.93,!=0.96)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "msrest"
@@ -1358,6 +1913,11 @@ requests-oauthlib = ">=0.5.0"
 [package.extras]
 async = ["aiohttp (>=3.0)", "aiodns"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "multidict"
 version = "4.7.6"
@@ -1366,13 +1926,23 @@ category = "main"
 optional = false
 python-versions = ">=3.5"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "murmurhash"
-version = "1.0.4"
+version = "1.0.5"
 description = "Cython bindings for MurmurHash"
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "mypy"
@@ -1390,6 +1960,11 @@ typing-extensions = ">=3.7.4"
 [package.extras]
 dmypy = ["psutil (>=4.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "mypy-extensions"
 version = "0.4.3"
@@ -1397,6 +1972,11 @@ description = "Experimental type system extensions for programs checked with the
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "networkx"
@@ -1422,6 +2002,11 @@ pytest = ["pytest"]
 pyyaml = ["pyyaml"]
 scipy = ["scipy"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "nr.collections"
 version = "0.0.1"
@@ -1437,6 +2022,11 @@ six = ">=1.11.0,<2.0.0"
 [package.extras]
 test = ["nr.fs (>=1.5.0,<2.0.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "nr.databind.core"
 version = "0.0.22"
@@ -1450,6 +2040,11 @@ python-versions = "*"
 "nr.interface" = ">=0.0.1,<0.1.0"
 "nr.pylang.utils" = ">=0.0.3,<0.1.0"
 "nr.stream" = ">=0.0.1,<0.1.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "nr.databind.json"
@@ -1466,6 +2061,11 @@ python-versions = "*"
 "nr.parsing.date" = ">=0.1.0,<1.0.0"
 "nr.pylang.utils" = ">=0.0.1,<0.1.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "nr.fs"
 version = "1.6.3"
@@ -1476,6 +2076,11 @@ python-versions = "*"
 
 [package.dependencies]
 six = ">=1.11.0,<2.0.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "nr.interface"
@@ -1491,6 +2096,11 @@ python-versions = "*"
 "nr.pylang.utils" = ">=0.0.1,<0.1.0"
 six = ">=1.11.0,<2.0.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "nr.metaclass"
 version = "0.0.6"
@@ -1498,6 +2108,11 @@ description = "Metaclass utilities."
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "nr.parsing.date"
@@ -1510,6 +2125,11 @@ python-versions = ">=3.5.0,<4.0.0"
 [package.dependencies]
 "nr.utils.re" = ">=0.1.0,<0.2.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "nr.pylang.utils"
 version = "0.0.4"
@@ -1520,6 +2140,11 @@ python-versions = ">=3.4.0,<4.0.0"
 
 [package.dependencies]
 "nr.collections" = ">=0.0.1,<1.0.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "nr.stream"
@@ -1534,6 +2159,11 @@ python-versions = "*"
 "nr.pylang.utils" = ">=0.0.1,<1.0.0"
 six = ">=1.11.0,<2.0.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "nr.sumtype"
 version = "0.0.4"
@@ -1546,6 +2176,11 @@ python-versions = "*"
 "nr.metaclass" = ">=0.0.4,<1.0.0"
 "nr.stream" = ">=0.0.2,<1.0.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "nr.utils.re"
 version = "0.1.1"
@@ -1554,6 +2189,11 @@ category = "dev"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "numpy"
 version = "1.18.5"
@@ -1561,6 +2201,11 @@ description = "NumPy is the fundamental package for array computing with Python.
 category = "main"
 optional = false
 python-versions = ">=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "oauth2client"
@@ -1577,6 +2222,11 @@ pyasn1-modules = ">=0.0.5"
 rsa = ">=3.1.4"
 six = ">=1.6.1"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "oauthlib"
 version = "3.1.0"
@@ -1590,6 +2240,11 @@ rsa = ["cryptography"]
 signals = ["blinker"]
 signedtoken = ["cryptography", "pyjwt (>=1.0.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "opt-einsum"
 version = "3.3.0"
@@ -1602,8 +2257,13 @@ python-versions = ">=3.5"
 numpy = ">=1.7"
 
 [package.extras]
-docs = ["sphinx (1.2.3)", "sphinxcontrib-napoleon", "sphinx-rtd-theme", "numpydoc"]
+docs = ["sphinx (==1.2.3)", "sphinxcontrib-napoleon", "sphinx-rtd-theme", "numpydoc"]
 tests = ["pytest", "pytest-cov", "pytest-pep8"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "packaging"
@@ -1616,6 +2276,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [package.dependencies]
 pyparsing = ">=2.0.2"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pamqp"
 version = "2.3.0"
@@ -1627,6 +2292,11 @@ python-versions = "*"
 [package.extras]
 codegen = ["lxml"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pathspec"
 version = "0.8.1"
@@ -1635,6 +2305,11 @@ category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pathtools"
 version = "0.1.2"
@@ -1642,6 +2317,11 @@ description = "File system general utilities"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pep440-version-utils"
@@ -1654,6 +2334,11 @@ python-versions = ">=3.6,<4.0"
 [package.dependencies]
 packaging = ">=20.3,<21.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pillow"
 version = "8.0.1"
@@ -1662,6 +2347,11 @@ category = "main"
 optional = false
 python-versions = ">=3.6"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "plac"
 version = "1.1.3"
@@ -1669,6 +2359,11 @@ description = "The smartest command line arguments parser in the world"
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pluggy"
@@ -1684,9 +2379,14 @@ importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 [package.extras]
 dev = ["pre-commit", "tox"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "preshed"
-version = "3.0.4"
+version = "3.0.5"
 description = "Cython hash table that trusts the keys are pre-hashed"
 category = "main"
 optional = true
@@ -1695,6 +2395,11 @@ python-versions = "*"
 [package.dependencies]
 cymem = ">=2.0.2,<2.1.0"
 murmurhash = ">=0.28.0,<1.1.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "prompt-toolkit"
@@ -1708,6 +2413,11 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 six = ">=1.9.0"
 wcwidth = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "protobuf"
 version = "3.14.0"
@@ -1719,6 +2429,11 @@ python-versions = "*"
 [package.dependencies]
 six = ">=1.9"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "psycopg2-binary"
 version = "2.8.6"
@@ -1726,6 +2441,11 @@ description = "psycopg2 - Python-PostgreSQL Database Adapter"
 category = "main"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "py"
@@ -1735,6 +2455,11 @@ category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pyasn1"
 version = "0.4.8"
@@ -1742,6 +2467,11 @@ description = "ASN.1 types and codecs"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pyasn1-modules"
@@ -1754,6 +2484,11 @@ python-versions = "*"
 [package.dependencies]
 pyasn1 = ">=0.4.6,<0.5.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pycodestyle"
 version = "2.6.0"
@@ -1762,6 +2497,11 @@ category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pycparser"
 version = "2.20"
@@ -1769,6 +2509,11 @@ description = "C parser in Python"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pydoc-markdown"
@@ -1804,6 +2549,11 @@ python-versions = ">=3.5"
 [package.dependencies]
 snowballstemmer = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pydot"
 version = "1.4.1"
@@ -1815,6 +2565,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [package.dependencies]
 pyparsing = ">=2.1.4"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pyflakes"
 version = "2.2.0"
@@ -1822,6 +2577,11 @@ description = "passive checker of Python programs"
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pyjwt"
@@ -1835,6 +2595,11 @@ python-versions = "*"
 crypto = ["cryptography (>=1.4)"]
 flake8 = ["flake8", "flake8-import-order", "pep8-naming"]
 test = ["pytest (>=4.0.1,<5.0.0)", "pytest-cov (>=2.6.0,<3.0.0)", "pytest-runner (>=4.2,<5.0.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pykwalify"
@@ -1851,6 +2616,11 @@ PyYAML = ">=3.11"
 
 [package.extras]
 ruamel = ["ruamel.yaml (>=0.11.0,<0.16.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pymongo"
@@ -1872,6 +2642,11 @@ srv = ["dnspython (>=1.16.0,<1.17.0)"]
 tls = ["ipaddress"]
 zstd = ["zstandard"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pyparsing"
 version = "2.4.7"
@@ -1879,6 +2654,11 @@ description = "Python parsing module"
 category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pyreadline"
@@ -1888,6 +2668,11 @@ category = "main"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pyrsistent"
 version = "0.17.3"
@@ -1895,6 +2680,11 @@ description = "Persistent/Functional/Immutable data structures"
 category = "main"
 optional = false
 python-versions = ">=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pytest"
@@ -1916,8 +2706,13 @@ py = ">=1.5.0"
 wcwidth = "*"
 
 [package.extras]
-checkqa-mypy = ["mypy (v0.761)"]
+checkqa-mypy = ["mypy (==v0.761)"]
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pytest-asyncio"
@@ -1933,6 +2728,11 @@ pytest = ">=3.0.6"
 [package.extras]
 testing = ["async-generator (>=1.3)", "coverage", "hypothesis (>=3.64)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pytest-cov"
 version = "2.10.1"
@@ -1946,7 +2746,12 @@ coverage = ">=4.4"
 pytest = ">=4.6"
 
 [package.extras]
-testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "pytest-xdist", "virtualenv"]
+testing = ["fields", "hunter", "process-tests (==2.0.2)", "six", "pytest-xdist", "virtualenv"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pytest-forked"
@@ -1960,6 +2765,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 py = "*"
 pytest = ">=3.10"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pytest-localserver"
 version = "0.5.0"
@@ -1970,6 +2780,11 @@ python-versions = "*"
 
 [package.dependencies]
 werkzeug = ">=0.10"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pytest-sanic"
@@ -1984,6 +2799,11 @@ aiohttp = ">=3.6.2,<4.0.0"
 async_generator = ">=1.10,<2.0"
 pytest = ">=5.2"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pytest-timeout"
 version = "1.4.2"
@@ -1994,6 +2814,11 @@ python-versions = "*"
 
 [package.dependencies]
 pytest = ">=3.6.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pytest-xdist"
@@ -2012,6 +2837,11 @@ six = "*"
 [package.extras]
 testing = ["filelock"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "python-crfsuite"
 version = "0.9.7"
@@ -2019,6 +2849,11 @@ description = "Python binding for CRFsuite"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "python-dateutil"
@@ -2030,6 +2865,11 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 
 [package.dependencies]
 six = ">=1.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "python-engineio"
@@ -2045,6 +2885,11 @@ six = ">=1.9.0"
 [package.extras]
 asyncio_client = ["aiohttp (>=3.4)"]
 client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "python-jose"
@@ -2066,6 +2911,11 @@ cryptography = ["cryptography"]
 pycrypto = ["pycrypto (>=2.6.0,<2.7.0)", "pyasn1"]
 pycryptodome = ["pycryptodome (>=3.3.1,<4.0.0)", "pyasn1"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "python-socketio"
 version = "4.6.1"
@@ -2081,6 +2931,11 @@ six = ">=1.9.0"
 [package.extras]
 asyncio_client = ["aiohttp (>=3.4)", "websockets (>=7.0)"]
 client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "python-telegram-bot"
@@ -2100,6 +2955,11 @@ tornado = ">=5.1"
 json = ["ujson"]
 socks = ["pysocks"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pytz"
 version = "2020.4"
@@ -2107,6 +2967,11 @@ description = "World timezone definitions, modern and historical"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "pywin32"
@@ -2116,6 +2981,11 @@ category = "dev"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "pyyaml"
 version = "5.3.1"
@@ -2123,6 +2993,11 @@ description = "YAML parser and emitter for Python"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "questionary"
@@ -2138,6 +3013,11 @@ prompt-toolkit = ">=2.0,<4.0"
 [package.extras]
 test = ["pytest", "pytest-pycodestyle", "pytest-cov", "coveralls"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "rasa-sdk"
 version = "2.2.0a1"
@@ -2152,6 +3032,11 @@ requests = ">=2.23,<3.0"
 sanic = ">=19.12.2,<21.0.0"
 sanic-cors = ">=0.10.0,<0.11.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "redis"
 version = "3.5.3"
@@ -2163,6 +3048,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 [package.extras]
 hiredis = ["hiredis (>=0.1.3)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "regex"
 version = "2020.9.27"
@@ -2170,6 +3060,11 @@ description = "Alternative regular expression module, to replace re."
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "requests"
@@ -2187,7 +3082,12 @@ urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
 security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
-socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
+socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "requests-oauthlib"
@@ -2204,6 +3104,11 @@ requests = ">=2.0.0"
 [package.extras]
 rsa = ["oauthlib[signedtoken] (>=3.0.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "requests-toolbelt"
 version = "0.9.1"
@@ -2214,6 +3119,11 @@ python-versions = "*"
 
 [package.dependencies]
 requests = ">=2.0.1,<3.0.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "responses"
@@ -2231,6 +3141,11 @@ urllib3 = ">=1.25.10"
 [package.extras]
 tests = ["coverage (>=3.7.1,<5.0.0)", "pytest-cov", "pytest-localserver", "flake8", "pytest (>=4.6,<5.0)", "pytest (>=4.6)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "rfc3986"
 version = "1.4.0"
@@ -2241,6 +3156,11 @@ python-versions = "*"
 
 [package.extras]
 idna2008 = ["idna"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "rocketchat-api"
@@ -2253,6 +3173,11 @@ python-versions = "*"
 [package.dependencies]
 requests = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "rsa"
 version = "4.6"
@@ -2263,6 +3188,11 @@ python-versions = ">=3.5, <4"
 
 [package.dependencies]
 pyasn1 = ">=0.1.3"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "ruamel.yaml"
@@ -2279,6 +3209,11 @@ python-versions = "*"
 docs = ["ryd"]
 jinja2 = ["ruamel.yaml.jinja2 (>=0.2)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "ruamel.yaml.clib"
 version = "0.2.2"
@@ -2286,6 +3221,11 @@ description = "C version of reader, parser and emitter for ruamel.yaml derived f
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "s3transfer"
@@ -2297,6 +3237,11 @@ python-versions = "*"
 
 [package.dependencies]
 botocore = ">=1.12.36,<2.0a.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sacremoses"
@@ -2312,6 +3257,11 @@ joblib = "*"
 regex = "*"
 six = "*"
 tqdm = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sanic"
@@ -2331,10 +3281,15 @@ uvloop = {version = ">=0.5.3", markers = "sys_platform != \"win32\" and implemen
 websockets = ">=7.0,<9.0"
 
 [package.extras]
-all = ["pytest (5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
-dev = ["pytest (5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
+all = ["pytest (==5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (==0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
+dev = ["pytest (==5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (==0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
 docs = ["sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments"]
-test = ["pytest (5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
+test = ["pytest (==5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (==0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sanic-cors"
@@ -2347,6 +3302,11 @@ python-versions = "*"
 [package.dependencies]
 sanic = ">=18.12.0"
 sanic-plugins-framework = ">=0.9.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sanic-jwt"
@@ -2363,6 +3323,11 @@ pyjwt = "*"
 all = ["sphinx", "sphinx"]
 docs = ["sphinx"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "sanic-plugins-framework"
 version = "0.9.4.post1"
@@ -2373,6 +3338,11 @@ python-versions = "*"
 
 [package.dependencies]
 sanic = ">=18.12.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "scikit-learn"
@@ -2388,8 +3358,10 @@ numpy = ">=1.13.3"
 scipy = ">=0.19.1"
 threadpoolctl = ">=2.0.0"
 
-[package.extras]
-alldeps = ["numpy (>=1.13.3)", "scipy (>=0.19.1)"]
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "scipy"
@@ -2399,8 +3371,10 @@ category = "main"
 optional = false
 python-versions = ">=3.6"
 
-[package.dependencies]
-numpy = ">=1.14.5"
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sentencepiece"
@@ -2410,6 +3384,11 @@ category = "main"
 optional = true
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "sentinels"
 version = "1.0.0"
@@ -2417,6 +3396,11 @@ description = "Various objects to denote special meanings in python"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sentry-sdk"
@@ -2446,6 +3430,11 @@ sanic = ["sanic (>=0.8)"]
 sqlalchemy = ["sqlalchemy (>=1.2)"]
 tornado = ["tornado (>=5)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "six"
 version = "1.15.0"
@@ -2453,6 +3442,11 @@ description = "Python 2 and 3 compatibility utilities"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sklearn-crfsuite"
@@ -2468,6 +3462,11 @@ six = "*"
 tabulate = "*"
 tqdm = ">=2.0"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "slackclient"
 version = "2.9.3"
@@ -2482,6 +3481,11 @@ aiohttp = ">3.5.2,<4.0.0"
 [package.extras]
 optional = ["aiodns (>1.0)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "sniffio"
 version = "1.2.0"
@@ -2493,6 +3497,11 @@ python-versions = ">=3.5"
 [package.dependencies]
 contextvars = {version = ">=2.1", markers = "python_version < \"3.7\""}
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "snowballstemmer"
 version = "2.0.0"
@@ -2500,6 +3509,11 @@ description = "This package provides 26 stemmers for 25 languages generated from
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sortedcontainers"
@@ -2509,13 +3523,18 @@ category = "dev"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "spacy"
 version = "2.2.4"
 description = "Industrial-strength Natural Language Processing (NLP) in Python"
 category = "main"
 optional = true
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
 
 [package.dependencies]
 blis = ">=0.4.0,<0.5.0"
@@ -2539,9 +3558,14 @@ cuda90 = ["cupy-cuda90 (>=5.0.0b4)"]
 cuda91 = ["cupy-cuda91 (>=5.0.0b4)"]
 cuda92 = ["cupy-cuda92 (>=5.0.0b4)"]
 ja = ["fugashi (>=0.1.3)"]
-ko = ["natto-py (0.9.0)"]
-lookups = ["spacy-lookups-data (>=0.0.5,<0.2.0)"]
+ko = ["natto-py (==0.9.0)"]
+lookups = ["spacy_lookups_data (>=0.0.5,<0.2.0)"]
 th = ["pythainlp (>=2.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "sqlalchemy"
@@ -2563,13 +3587,23 @@ postgresql_psycopg2binary = ["psycopg2-binary"]
 postgresql_psycopg2cffi = ["psycopg2cffi"]
 pymysql = ["pymysql"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "srsly"
-version = "1.0.4"
+version = "1.0.5"
 description = "Modern high-performance serialization utilities for Python"
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "tabulate"
@@ -2581,6 +3615,11 @@ python-versions = "*"
 
 [package.extras]
 widechars = ["wcwidth"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "tensorboard"
@@ -2603,6 +3642,11 @@ six = ">=1.10.0"
 tensorboard-plugin-wit = ">=1.6.0"
 werkzeug = ">=0.11.15"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "tensorboard-plugin-wit"
 version = "1.7.0"
@@ -2610,6 +3654,11 @@ description = "What-If Tool TensorBoard plugin."
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "tensorflow"
@@ -2636,6 +3685,11 @@ tensorflow-estimator = ">=2.3.0,<2.4.0"
 termcolor = ">=1.1.0"
 wrapt = ">=1.11.1"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "tensorflow-addons"
 version = "0.11.2"
@@ -2647,6 +3701,11 @@ python-versions = "*"
 [package.dependencies]
 typeguard = ">=2.7"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "tensorflow-estimator"
 version = "2.3.0"
@@ -2654,6 +3713,11 @@ description = "TensorFlow Estimator."
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "tensorflow-hub"
@@ -2672,6 +3736,11 @@ six = ">=1.12.0"
 make_image_classifier = ["keras-preprocessing"]
 make_nearest_neighbour_index = ["apache-beam", "annoy"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "tensorflow-probability"
 version = "0.11.1"
@@ -2689,8 +3758,13 @@ numpy = ">=1.13.3"
 six = ">=1.10.0"
 
 [package.extras]
-jax = ["jax (0.1.74)", "jaxlib (0.1.52)"]
+jax = ["jax (==0.1.74)", "jaxlib (==0.1.52)"]
 tfds = ["tensorflow-datasets (>=2.2.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "tensorflow-text"
@@ -2707,6 +3781,11 @@ tensorflow = ">=2.3.0,<2.4"
 tensorflow_gpu = ["tensorflow-gpu (>=2.1.0,<2.2)"]
 tests = ["absl-py", "pytest"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "termcolor"
 version = "1.1.0"
@@ -2715,6 +3794,11 @@ category = "main"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "terminaltables"
 version = "3.1.0"
@@ -2722,6 +3806,11 @@ description = "Generate simple tables in terminals from a nested list of strings
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "thinc"
@@ -2752,6 +3841,11 @@ cuda90 = ["cupy-cuda90 (>=5.0.0b4)"]
 cuda91 = ["cupy-cuda91 (>=5.0.0b4)"]
 cuda92 = ["cupy-cuda92 (>=5.0.0b4)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "threadpoolctl"
 version = "2.1.0"
@@ -2759,6 +3853,11 @@ description = "threadpoolctl"
 category = "main"
 optional = false
 python-versions = ">=3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "tokenizers"
@@ -2771,6 +3870,11 @@ python-versions = "*"
 [package.extras]
 testing = ["pytest"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "toml"
 version = "0.10.2"
@@ -2779,6 +3883,11 @@ category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "tornado"
 version = "6.1"
@@ -2786,6 +3895,11 @@ description = "Tornado is a Python web framework and asynchronous networking lib
 category = "main"
 optional = false
 python-versions = ">= 3.5"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "towncrier"
@@ -2801,6 +3915,11 @@ incremental = "*"
 jinja2 = "*"
 toml = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "tqdm"
 version = "4.50.2"
@@ -2811,6 +3930,11 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*"
 
 [package.extras]
 dev = ["py-make (>=0.1.0)", "twine", "argopt", "pydoc-markdown"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "transformers"
@@ -2845,6 +3969,11 @@ tf = ["tensorflow", "onnxconverter-common", "keras2onnx"]
 tf-cpu = ["tensorflow-cpu", "onnxconverter-common", "keras2onnx"]
 torch = ["torch"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "twilio"
 version = "6.45.4"
@@ -2859,6 +3988,11 @@ pytz = "*"
 requests = {version = ">=2.0.0", markers = "python_version >= \"3.0\""}
 six = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "typed-ast"
 version = "1.4.1"
@@ -2866,6 +4000,11 @@ description = "a fork of Python 2 and 3 ast modules with type comment support"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "typeguard"
@@ -2879,6 +4018,11 @@ python-versions = ">=3.5.3"
 doc = ["sphinx-rtd-theme", "sphinx-autodoc-typehints (>=1.2.0)"]
 test = ["pytest", "typing-extensions"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "typing-extensions"
 version = "3.7.4.3"
@@ -2886,6 +4030,11 @@ description = "Backported and Experimental Type Hints for Python 3.5+"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "tzlocal"
@@ -2898,6 +4047,11 @@ python-versions = "*"
 [package.dependencies]
 pytz = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "ujson"
 version = "3.2.0"
@@ -2906,6 +4060,11 @@ category = "main"
 optional = false
 python-versions = ">=3.5"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "uritemplate"
 version = "3.0.1"
@@ -2913,6 +4072,11 @@ description = "URI templates"
 category = "main"
 optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "urllib3"
@@ -2925,7 +4089,12 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 [package.extras]
 brotli = ["brotlipy (>=0.6.0)"]
 secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
-socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
+socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "uvloop"
@@ -2935,6 +4104,11 @@ category = "main"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "wasabi"
 version = "0.8.0"
@@ -2942,6 +4116,11 @@ description = "A lightweight console printing and formatting toolkit"
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "watchdog"
@@ -2957,6 +4136,11 @@ pathtools = ">=0.1.1"
 [package.extras]
 watchmedo = ["PyYAML (>=3.10)", "argh (>=0.24.1)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "wcwidth"
 version = "0.2.5"
@@ -2964,6 +4148,11 @@ description = "Measures the displayed width of unicode strings in a terminal"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "webexteamssdk"
@@ -2979,6 +4168,11 @@ PyJWT = "*"
 requests = ">=2.4.2"
 requests-toolbelt = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "websocket-client"
 version = "0.57.0"
@@ -2990,6 +4184,11 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [package.dependencies]
 six = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "websockets"
 version = "8.0.2"
@@ -2997,6 +4196,11 @@ description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
 category = "main"
 optional = false
 python-versions = ">=3.6"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "werkzeug"
@@ -3010,6 +4214,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 dev = ["pytest", "pytest-timeout", "coverage", "tox", "sphinx", "pallets-sphinx-themes", "sphinx-issues"]
 watchdog = ["watchdog"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "wrapt"
 version = "1.12.1"
@@ -3018,6 +4227,11 @@ category = "main"
 optional = false
 python-versions = "*"
 
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
 [[package]]
 name = "xmltodict"
 version = "0.12.0"
@@ -3025,6 +4239,11 @@ description = "Makes working with XML feel like you are working with JSON"
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "yarl"
@@ -3037,7 +4256,12 @@ python-versions = ">=3.5"
 [package.dependencies]
 idna = ">=2.0"
 multidict = ">=4.0"
-typing-extensions = {version = ">=3.7.4", markers = "python_version < \"3.8\""}
+typing_extensions = {version = ">=3.7.4", markers = "python_version < \"3.8\""}
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [[package]]
 name = "zipp"
@@ -3049,7 +4273,12 @@ python-versions = ">=3.6"
 
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
-testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
+testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
 
 [extras]
 full = ["spacy", "transformers", "jieba"]
@@ -3175,12 +4404,12 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.16.29-py2.py3-none-any.whl", hash = "sha256:744582cd239522695d9d093cc4822cabc919f9d3fe324b33486ddb6bdc1f248e"},
-    {file = "boto3-1.16.29.tar.gz", hash = "sha256:e6e326073bc4d98c96904003d47e25581aabc236b5e53a680413f8dc88ac0f30"},
+    {file = "boto3-1.16.30-py2.py3-none-any.whl", hash = "sha256:163ab6f9030ade265af9b36a10e608f12911cb5f3557e8e3390dffeba919262e"},
+    {file = "boto3-1.16.30.tar.gz", hash = "sha256:848aa8d11c9927daa13512072a501e2fc70ba86b073fc6927b86466f4a459b4d"},
 ]
 botocore = [
-    {file = "botocore-1.19.29-py2.py3-none-any.whl", hash = "sha256:240a727c5e017199ab9af2ff13fd1fe5d226963cc93f63b68db90be6283aef2a"},
-    {file = "botocore-1.19.29.tar.gz", hash = "sha256:9d60dc6bcb88ece9ed6a3def353e43393fb00dc4e8328ceb12de41452de24760"},
+    {file = "botocore-1.19.30-py2.py3-none-any.whl", hash = "sha256:70a8ec8d76096927b619a2f1f0dffe326fc9a4f9224afc6cf5d7ef2fd98a94a2"},
+    {file = "botocore-1.19.30.tar.gz", hash = "sha256:822f9dd11f11c54b9c4666cfec9b7246a32990dbca1be27528a75a8dabed4dc2"},
 ]
 cachetools = [
     {file = "cachetools-4.1.1-py3-none-any.whl", hash = "sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98"},
@@ -3191,8 +4420,8 @@ catalogue = [
     {file = "catalogue-1.0.0.tar.gz", hash = "sha256:d74d1d856c6b36a37bf14aa6dbbc27d0582667b7ab979a6108e61a575e8723f5"},
 ]
 certifi = [
-    {file = "certifi-2020.11.8-py2.py3-none-any.whl", hash = "sha256:1f422849db327d534e3d0c5f02a263458c3955ec0aae4ff09b95f195c59f4edd"},
-    {file = "certifi-2020.11.8.tar.gz", hash = "sha256:f05def092c44fbf25834a51509ef6e631dc19765ab8a57b4e7ab85531f0a9cf4"},
+    {file = "certifi-2020.12.5-py2.py3-none-any.whl", hash = "sha256:719a74fb9e33b9bd44cc7f3a8d94bc35e4049deebe19ba7d8e108280cfd59830"},
+    {file = "certifi-2020.12.5.tar.gz", hash = "sha256:1a4995114262bffbc2413b159f2a1a480c969de6e6eb13ee966d470af86af59c"},
 ]
 cffi = [
     {file = "cffi-1.14.4-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:ebb253464a5d0482b191274f1c8bf00e33f7e0b9c66405fbffc61ed2c839c775"},
@@ -3248,6 +4477,7 @@ cloudpickle = [
 ]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
+    {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 colorclass = [
     {file = "colorclass-2.2.0.tar.gz", hash = "sha256:b05c2a348dfc1aff2d502527d78a5b7b7e2f85da94a96c5081210d8e9ee8e18b"},
@@ -3257,9 +4487,8 @@ coloredlogs = [
     {file = "coloredlogs-14.0.tar.gz", hash = "sha256:a1fab193d2053aa6c0a97608c4342d031f1f93a3d1218432c59322441d31a505"},
 ]
 colorhash = [
-    {file = "colorhash-1.0.2-py2.py3-none-any.whl", hash = "sha256:f5a0019b7364fb12b0ed52e3fe05f69fe8c2d77622e6abf2f869e711308e14e1"},
-    {file = "colorhash-1.0.2.tar.bz2", hash = "sha256:e0f925c3d82d5ed6e5fe8039492325263b5b75490bddf38e24a221467c3ee764"},
-    {file = "colorhash-1.0.2.zip", hash = "sha256:5eeb6b490cbbf3545f50d39cf46993a1335b392b339cec6053f857e2785f83d8"},
+    {file = "colorhash-1.0.3-py3-none-any.whl", hash = "sha256:7a1f459e96ed62cab441ce8bb7668bc1912c0cbc989e2b43fae4161396917044"},
+    {file = "colorhash-1.0.3.tar.gz", hash = "sha256:1cca7226210c70b7afb7730293a73260d7b493ac327c3bf51fdbc7f3f3da38bb"},
 ]
 contextvars = [
     {file = "contextvars-2.4.tar.gz", hash = "sha256:f38c908aaa59c14335eeea12abea5f443646216c4e29380d7bf34d2018e2c39e"},
@@ -3333,19 +4562,19 @@ cycler = [
     {file = "cycler-0.10.0.tar.gz", hash = "sha256:cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8"},
 ]
 cymem = [
-    {file = "cymem-2.0.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:60b5d969f305a7598d86f34c93c37eb52b3388681e70b98081864f0f185da768"},
-    {file = "cymem-2.0.4-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:65e5759179b311b8350b82b29744324366e270f96095b16a8e249c73c3f9273f"},
-    {file = "cymem-2.0.4-cp36-cp36m-win_amd64.whl", hash = "sha256:02c3994ee57003dd57d9a34417beb9597e51176e9378a757344347b72510ce8d"},
-    {file = "cymem-2.0.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:a61684d01a1413049e9874e073c9577d406d866eabe0d167c5ee15bbeae090a6"},
-    {file = "cymem-2.0.4-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:f8f280f0aef46d32655b1b24ff049bea83b63365604b6c2decb112b44ed851fe"},
-    {file = "cymem-2.0.4-cp37-cp37m-win_amd64.whl", hash = "sha256:2d40dfa4b4edf64541192966c67c2706e5058a9c6ce0bdc356e4d6ef1935c9ae"},
-    {file = "cymem-2.0.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:7bb5791fde8dffa02005f158f5c98d64962adaf8501dac7a9b8156b8767c9a34"},
-    {file = "cymem-2.0.4-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:a61a4702dcc50ebd31fb86a90d1aba5526245af592d756c39c63d58d53360afc"},
-    {file = "cymem-2.0.4-cp38-cp38-win_amd64.whl", hash = "sha256:ae283889f6f0036fb34d12358fe052d4ea9f5724f05177317f33f302f304b47c"},
-    {file = "cymem-2.0.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:0f169ee07f30c2674ca811693cb13857e236dd7f92b4bc47b0f2bb201e27cc93"},
-    {file = "cymem-2.0.4-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:45b01ee36ce15aab6df041b4128de38016e3934274b934c44fec43de5100b64c"},
-    {file = "cymem-2.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:58f49a51bd8b76b260f38f8274ec2e4613c328423e0b543a503834de32dfa3c4"},
-    {file = "cymem-2.0.4.tar.gz", hash = "sha256:2baabeb408e4aaa0f51d7f6d8c53dd05f56decf34fb3f1f3180abe8755815890"},
+    {file = "cymem-2.0.5-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:9d72d69f7a62a280199c3aa7bc550685c47d6d0689b2d299e6492253b86d2437"},
+    {file = "cymem-2.0.5-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:8ea57e6923f40eb51012352161bb5707c14a5a5ce901ff72021e59df06221655"},
+    {file = "cymem-2.0.5-cp36-cp36m-win_amd64.whl", hash = "sha256:4bd023c2477198b39b660c2a6b0242880649765ecee8461688a57fd4afd2bfc0"},
+    {file = "cymem-2.0.5-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:1f0eb9b3d03623dcfc746cf8bff0663b0e347f4aea759965c8932087a0307ee9"},
+    {file = "cymem-2.0.5-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:a440d63577fcdc9c528c9cc026b7b4f8648193bac462bc0596c9eac10f9fba62"},
+    {file = "cymem-2.0.5-cp37-cp37m-win_amd64.whl", hash = "sha256:3d48902d7441645835fefc7832df49feb5362c7300d182475b63a01d25ae44ef"},
+    {file = "cymem-2.0.5-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:f2167c9959fcd639b95d51fa5efaa7c61eef8d686cb75a25412a914f428ce980"},
+    {file = "cymem-2.0.5-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:734d82d0d03c2ceb929bc1744c04dbe0a105e68a4947c8406056a36f86c41830"},
+    {file = "cymem-2.0.5-cp38-cp38-win_amd64.whl", hash = "sha256:01d3ea159f7a3f3192b1e800ed8207dac7586794d903a153198b9ea317f144bc"},
+    {file = "cymem-2.0.5-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:d307f7f6230d861a938837cae4b855226b6845a21c010242a15e9ce6853856cd"},
+    {file = "cymem-2.0.5-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:ce1e81c1d031f56b67bac2136e73b4512cbc794706cd570178972d54ba6115d8"},
+    {file = "cymem-2.0.5-cp39-cp39-win_amd64.whl", hash = "sha256:d19f68b90411e02ab33b1654118337f96f41c13a3cd00c4f44f7abed2bc712e7"},
+    {file = "cymem-2.0.5.tar.gz", hash = "sha256:190e15d9cf2c3bde60ae37bddbae6568a36044dc4a326d84081a5fa08818eee0"},
 ]
 dataclasses = [
     {file = "dataclasses-0.8-py3-none-any.whl", hash = "sha256:0201d89fa866f68c8ebd9d08ee6ff50c0b255f8ec63a71c16fda7af82bb887bf"},
@@ -3850,23 +5079,23 @@ multidict = [
     {file = "multidict-4.7.6.tar.gz", hash = "sha256:fbb77a75e529021e7c4a8d4e823d88ef4d23674a202be4f5addffc72cbb91430"},
 ]
 murmurhash = [
-    {file = "murmurhash-1.0.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:3736e65a926e4093e2adb9397394fb01b193b37b93b8a3eb16053401dea36840"},
-    {file = "murmurhash-1.0.4-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:c580e2df61bc9bdcd709edb01139070218071ae4768f4f7e81f6df773e1578aa"},
-    {file = "murmurhash-1.0.4-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:40172b79dcccbf36f861429102df4bdb16e22dc14aecfe8c83fd414d92787516"},
-    {file = "murmurhash-1.0.4-cp36-cp36m-win_amd64.whl", hash = "sha256:7cfeaf95bc2e9192b9f4d44a71ad117462578cb021c441fc8938cc809e518a0f"},
-    {file = "murmurhash-1.0.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:aebeb840c68af1998cb94dcae213fed3f62041cf21e9adfe41288a482a2a8f35"},
-    {file = "murmurhash-1.0.4-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:bfc0c9cf921045e001fe4fab32c77cf8a8c4f94fb1445d348df7d7ec862bb3ee"},
-    {file = "murmurhash-1.0.4-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:01f1aefaeaa8abf5ad102064bdbb7c1a2542240b105c0a13ee0cc81aea3dc081"},
-    {file = "murmurhash-1.0.4-cp37-cp37m-win_amd64.whl", hash = "sha256:bf8edbbad46a27fd32f44a7dec287cc012ce14c36eafba2e6c46564bfc3bfbb5"},
-    {file = "murmurhash-1.0.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:81998ffd671164e9c4bc48cba61d912c1cb6555226177985045b8c9845772817"},
-    {file = "murmurhash-1.0.4-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:9ae4a4e27cbfbc777cbf88ce863c8dc4ee3d9a6081a9a6a579592e25ebd874a5"},
-    {file = "murmurhash-1.0.4-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:de421d1e615d7c6560b3bfa447487bb6cd413ec94a7430b8a5c465abea795f8a"},
-    {file = "murmurhash-1.0.4-cp38-cp38-win_amd64.whl", hash = "sha256:2290e509ecbb8e79903e7859d9ec57b26f2019a8ffcaefab56862aa05f09e481"},
-    {file = "murmurhash-1.0.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:ce523418041baac542aaf48612d6fb47be3e14dffdc1273ce32197a1be565369"},
-    {file = "murmurhash-1.0.4-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:92145fb1f3ae037c7a3b192ef1beca69c66389fca1e48ca35da56cae899a6e9f"},
-    {file = "murmurhash-1.0.4-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:9086d0589b6afe24601c1d3e8eb55d9705fdb3d86c24fdfd97a85a3063274edf"},
-    {file = "murmurhash-1.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:64bdc91f13cbe24f5f631e82d3c1a8f621ee7a8ce4965cb4a50a29ab6363fa95"},
-    {file = "murmurhash-1.0.4.tar.gz", hash = "sha256:422084ac1fe994cb7c893689c600923dee4e2c3fc74e832f7d9a8d6fdcc362d5"},
+    {file = "murmurhash-1.0.5-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:ef8819d15973e0d6f69688bafc097a1fae081675c1de39807028869a1320b1a9"},
+    {file = "murmurhash-1.0.5-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:76251513a2acad6c2e4b7aeffc5fcb807ee97a66cad5c2990557556555a6b7e9"},
+    {file = "murmurhash-1.0.5-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:d58315961dc5a5e740f41f2ac5c3a0ebc61ef472f8afeb4db7eeb3b863243105"},
+    {file = "murmurhash-1.0.5-cp36-cp36m-win_amd64.whl", hash = "sha256:23c56182822a1ed88e2a098ac56958dfec380696a9a943df203b9b41e4bcf5e4"},
+    {file = "murmurhash-1.0.5-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:023391cfefe584ac544c1ea0936976c0119b17dd27bb8280652cef1704f76428"},
+    {file = "murmurhash-1.0.5-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:f00321998f0a6bad3fd068babf448a296d4b0b1f4dd424cab863ebe5ed54182f"},
+    {file = "murmurhash-1.0.5-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:8381172e03c5f6f947005fb146a53c5e5a9e0d630be4a40cbf8838e9324bfe1c"},
+    {file = "murmurhash-1.0.5-cp37-cp37m-win_amd64.whl", hash = "sha256:fed7578fbaa6c301f27ed80834c1f7494ea7d335e269e98b9aee477cf0b3b487"},
+    {file = "murmurhash-1.0.5-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d4c3a0242014cf4c84e9ea0ba3f13b48f02a3992de3da7b1116d11b816451195"},
+    {file = "murmurhash-1.0.5-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:99e55488476a5f70e8d305fd31258f140e52f724f788bcc50c31ec846a2b3766"},
+    {file = "murmurhash-1.0.5-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:b9292c532538cf47846ca81056cfeab08b877c35fe7521d6524aa92ddcd833e2"},
+    {file = "murmurhash-1.0.5-cp38-cp38-win_amd64.whl", hash = "sha256:fd17973fd4554715efd8d86b3e9200358e49e437fdb92a897ca127aced48b61c"},
+    {file = "murmurhash-1.0.5-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:81474a45c4074637a6dfc8fea4cdebf091ab5aa781c2cfcb94c43b16030badd7"},
+    {file = "murmurhash-1.0.5-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:a9bd2312996e6e47605af305a1e5f091eba1bdd637cdd9986aec4885cb4c5530"},
+    {file = "murmurhash-1.0.5-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:892749023da26420d194f37bfa30df1368aaac0149cfa3b2105db36b66549e37"},
+    {file = "murmurhash-1.0.5-cp39-cp39-win_amd64.whl", hash = "sha256:add366944eb8ec73013a4f36e166c5a4f0f7628ffe1746bc5fe031347489e5e8"},
+    {file = "murmurhash-1.0.5.tar.gz", hash = "sha256:98ec9d727bd998a35385abd56b062cf0cca216725ea7ec5068604ab566f7e97f"},
 ]
 mypy = [
     {file = "mypy-0.790-cp35-cp35m-macosx_10_6_x86_64.whl", hash = "sha256:bd03b3cf666bff8d710d633d1c56ab7facbdc204d567715cb3b9f85c6e94f669"},
@@ -4028,23 +5257,23 @@ pluggy = [
     {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
 ]
 preshed = [
-    {file = "preshed-3.0.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:a11cb04a47cc1ff08765a8cd2ee1849e49970dda85c73c2a72f7e130ba6073ba"},
-    {file = "preshed-3.0.4-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:717b76ebbda8dd458f0f345f514fb9b62a1507352555a00b9332eb54cc4f35d4"},
-    {file = "preshed-3.0.4-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:cbf3d38278fb6d20dd67e624651e296d0c734c4107f1c1a67c97ee578ce6e813"},
-    {file = "preshed-3.0.4-cp36-cp36m-win_amd64.whl", hash = "sha256:eb4cd05415ce15a483eb2526304df4f98a17aea6ba80564fcdbf55f718f661a0"},
-    {file = "preshed-3.0.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:606516fd7166ac42406d1b54941aa2b443f4fa1eee11edfa37d9646ac36010a1"},
-    {file = "preshed-3.0.4-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:9c04c80314423e18fcfb1a7198c98bb8885d3b843546561be96cba45d8d17ad1"},
-    {file = "preshed-3.0.4-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:6dd33a8d88cbe77ef5592366891c491462225b7cb66499e35d63e4f9900e16ff"},
-    {file = "preshed-3.0.4-cp37-cp37m-win_amd64.whl", hash = "sha256:8604bd028e94539061441cef926293efcdd9fd0b7a1f5bc4ac3cdb6400c83a9b"},
-    {file = "preshed-3.0.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:f415f994f422125d7c5a4718a3e4f57f0dfe0bde719799c5128761ab90b1f3b6"},
-    {file = "preshed-3.0.4-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:13de7525696fb7b1ab5d0dabca3cef49e17a49e662b9f651549ae2d953c3ad35"},
-    {file = "preshed-3.0.4-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:4e71b88ae027bd23d40f4f7b3e73d93479346abfec78cadea312d11d610e90f9"},
-    {file = "preshed-3.0.4-cp38-cp38-win_amd64.whl", hash = "sha256:496edf5de0065481272914f02173d80dc80d6dccf2372af67d8d62b415ac3aa9"},
-    {file = "preshed-3.0.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:15beb09341daab611fa3db79db7f0bcc7b2efdc5a99f417a6903e3d9d68a92db"},
-    {file = "preshed-3.0.4-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:dbbf660802ce87bcff683e89297dbf52a83ea260b94ec56ef1c2996bf967ad1a"},
-    {file = "preshed-3.0.4-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:c777b7603755e9cca67067d4382bde8ba01221e3f6b06f65ba832fc6135258d9"},
-    {file = "preshed-3.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:1df1b4452cbf4b8a36475e3025d2cfc3d44d1e1c5305163e119442a331b173ae"},
-    {file = "preshed-3.0.4.tar.gz", hash = "sha256:13a779205d55ce323976ac06df597f9ec2d6f0563ebcf5652176cf4520c7d540"},
+    {file = "preshed-3.0.5-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:572899224578d30f6a67fadecb3d62b824866b4d2b6bad73f71abf7585db1389"},
+    {file = "preshed-3.0.5-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:67c11e384ce4c008bc487ba3a29bafdfe038b9a2546ccfe0fe2160480b356fed"},
+    {file = "preshed-3.0.5-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:6e833f1632a1d0232bdc6df6c3542fb130ef044d8656b24576d9fd19e5f1e0d1"},
+    {file = "preshed-3.0.5-cp36-cp36m-win_amd64.whl", hash = "sha256:1ce0846cb7ebb2ea913d44ec2e296098c285443ecdea80ddf02656bbef4deacb"},
+    {file = "preshed-3.0.5-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:8a560850b8c53c1487ba51c2b0f5769535512b36d3b129ad5796b64653abe2f9"},
+    {file = "preshed-3.0.5-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:6f126bcc414a0304b54956f9dac2628a0f9bef1657d1b3a3837fc82b791aa2a1"},
+    {file = "preshed-3.0.5-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:1bdededa7fd81f26a42bc9d11d542657c74746b7ea7fc2b2ca6d0ddbf1f93792"},
+    {file = "preshed-3.0.5-cp37-cp37m-win_amd64.whl", hash = "sha256:9ebf444f8487782c84d7b5acb1d7195e603155882fafc4697344199eeeafbe5f"},
+    {file = "preshed-3.0.5-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:8a3adffde3126c2a0ab7d57cab1d605cb5f63da1ba88088ad3cf8debfd9aa4dc"},
+    {file = "preshed-3.0.5-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:56b9603517bb2a364418163236d6a147a1d722ff7546cbe085e76e25ae118e89"},
+    {file = "preshed-3.0.5-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:5e06a49477bd257eea02bf823b5d3e201d00a19d6976523a58da8606b2358481"},
+    {file = "preshed-3.0.5-cp38-cp38-win_amd64.whl", hash = "sha256:ca4a7681b643b8356e7dfdab9cf668b2b34bd07ef4b09ebed44c8aeb3b1626ee"},
+    {file = "preshed-3.0.5-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:85074eebf90a858a6b68242f1ae265ca99e1af45bf9dafcb9a83d49b0815a2e1"},
+    {file = "preshed-3.0.5-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:12cbe1e378b4f1c6b06f5e4130408befe916e55ea1616e6aa63c5cd0ccd9c927"},
+    {file = "preshed-3.0.5-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:30f0c8ea85113d0565a1e3eb6222d00513ec39b56f3f9a2615e304575e65422e"},
+    {file = "preshed-3.0.5-cp39-cp39-win_amd64.whl", hash = "sha256:fb4d2e82add82d63b2c97802b759a58ff200d06b632e2edc48a9ced1e6472faf"},
+    {file = "preshed-3.0.5.tar.gz", hash = "sha256:c6d3dba39ed5059aaf99767017b9568c75b2d0780c3481e204b1daecde00360e"},
 ]
 prompt-toolkit = [
     {file = "prompt_toolkit-2.0.10-py2-none-any.whl", hash = "sha256:e7f8af9e3d70f514373bf41aa51bc33af12a6db3f71461ea47fea985defb2c31"},
@@ -4102,42 +5331,23 @@ psycopg2-binary = [
     {file = "psycopg2_binary-2.8.6-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:2dac98e85565d5688e8ab7bdea5446674a83a3945a8f416ad0110018d1501b94"},
     {file = "psycopg2_binary-2.8.6-cp38-cp38-win32.whl", hash = "sha256:bd1be66dde2b82f80afb9459fc618216753f67109b859a361cf7def5c7968729"},
     {file = "psycopg2_binary-2.8.6-cp38-cp38-win_amd64.whl", hash = "sha256:8cd0fb36c7412996859cb4606a35969dd01f4ea34d9812a141cd920c3b18be77"},
+    {file = "psycopg2_binary-2.8.6-cp39-cp39-macosx_10_9_x86_64.macosx_10_9_intel.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:89705f45ce07b2dfa806ee84439ec67c5d9a0ef20154e0e475e2b2ed392a5b83"},
     {file = "psycopg2_binary-2.8.6-cp39-cp39-manylinux1_i686.whl", hash = "sha256:42ec1035841b389e8cc3692277a0bd81cdfe0b65d575a2c8862cec7a80e62e52"},
     {file = "psycopg2_binary-2.8.6-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:7312e931b90fe14f925729cde58022f5d034241918a5c4f9797cac62f6b3a9dd"},
+    {file = "psycopg2_binary-2.8.6-cp39-cp39-win32.whl", hash = "sha256:6422f2ff0919fd720195f64ffd8f924c1395d30f9a495f31e2392c2efafb5056"},
+    {file = "psycopg2_binary-2.8.6-cp39-cp39-win_amd64.whl", hash = "sha256:15978a1fbd225583dd8cdaf37e67ccc278b5abecb4caf6b2d6b8e2b948e953f6"},
 ]
 py = [
     {file = "py-1.9.0-py2.py3-none-any.whl", hash = "sha256:366389d1db726cd2fcfc79732e75410e5fe4d31db13692115529d34069a043c2"},
     {file = "py-1.9.0.tar.gz", hash = "sha256:9ca6883ce56b4e8da7e79ac18787889fa5206c79dcc67fb065376cd2fe03f342"},
 ]
 pyasn1 = [
-    {file = "pyasn1-0.4.8-py2.4.egg", hash = "sha256:fec3e9d8e36808a28efb59b489e4528c10ad0f480e57dcc32b4de5c9d8c9fdf3"},
-    {file = "pyasn1-0.4.8-py2.5.egg", hash = "sha256:0458773cfe65b153891ac249bcf1b5f8f320b7c2ce462151f8fa74de8934becf"},
-    {file = "pyasn1-0.4.8-py2.6.egg", hash = "sha256:5c9414dcfede6e441f7e8f81b43b34e834731003427e5b09e4e00e3172a10f00"},
-    {file = "pyasn1-0.4.8-py2.7.egg", hash = "sha256:6e7545f1a61025a4e58bb336952c5061697da694db1cae97b116e9c46abcf7c8"},
     {file = "pyasn1-0.4.8-py2.py3-none-any.whl", hash = "sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d"},
-    {file = "pyasn1-0.4.8-py3.1.egg", hash = "sha256:78fa6da68ed2727915c4767bb386ab32cdba863caa7dbe473eaae45f9959da86"},
-    {file = "pyasn1-0.4.8-py3.2.egg", hash = "sha256:08c3c53b75eaa48d71cf8c710312316392ed40899cb34710d092e96745a358b7"},
-    {file = "pyasn1-0.4.8-py3.3.egg", hash = "sha256:03840c999ba71680a131cfaee6fab142e1ed9bbd9c693e285cc6aca0d555e576"},
-    {file = "pyasn1-0.4.8-py3.4.egg", hash = "sha256:7ab8a544af125fb704feadb008c99a88805126fb525280b2270bb25cc1d78a12"},
-    {file = "pyasn1-0.4.8-py3.5.egg", hash = "sha256:e89bf84b5437b532b0803ba5c9a5e054d21fec423a89952a74f87fa2c9b7bce2"},
-    {file = "pyasn1-0.4.8-py3.6.egg", hash = "sha256:014c0e9976956a08139dc0712ae195324a75e142284d5f87f1a87ee1b068a359"},
-    {file = "pyasn1-0.4.8-py3.7.egg", hash = "sha256:99fcc3c8d804d1bc6d9a099921e39d827026409a58f2a720dcdb89374ea0c776"},
     {file = "pyasn1-0.4.8.tar.gz", hash = "sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba"},
 ]
 pyasn1-modules = [
     {file = "pyasn1-modules-0.2.8.tar.gz", hash = "sha256:905f84c712230b2c592c19470d3ca8d552de726050d1d1716282a1f6146be65e"},
-    {file = "pyasn1_modules-0.2.8-py2.4.egg", hash = "sha256:0fe1b68d1e486a1ed5473f1302bd991c1611d319bba158e98b106ff86e1d7199"},
-    {file = "pyasn1_modules-0.2.8-py2.5.egg", hash = "sha256:fe0644d9ab041506b62782e92b06b8c68cca799e1a9636ec398675459e031405"},
-    {file = "pyasn1_modules-0.2.8-py2.6.egg", hash = "sha256:a99324196732f53093a84c4369c996713eb8c89d360a496b599fb1a9c47fc3eb"},
-    {file = "pyasn1_modules-0.2.8-py2.7.egg", hash = "sha256:0845a5582f6a02bb3e1bde9ecfc4bfcae6ec3210dd270522fee602365430c3f8"},
     {file = "pyasn1_modules-0.2.8-py2.py3-none-any.whl", hash = "sha256:a50b808ffeb97cb3601dd25981f6b016cbb3d31fbf57a8b8a87428e6158d0c74"},
-    {file = "pyasn1_modules-0.2.8-py3.1.egg", hash = "sha256:f39edd8c4ecaa4556e989147ebf219227e2cd2e8a43c7e7fcb1f1c18c5fd6a3d"},
-    {file = "pyasn1_modules-0.2.8-py3.2.egg", hash = "sha256:b80486a6c77252ea3a3e9b1e360bc9cf28eaac41263d173c032581ad2f20fe45"},
-    {file = "pyasn1_modules-0.2.8-py3.3.egg", hash = "sha256:65cebbaffc913f4fe9e4808735c95ea22d7a7775646ab690518c056784bc21b4"},
-    {file = "pyasn1_modules-0.2.8-py3.4.egg", hash = "sha256:15b7c67fabc7fc240d87fb9aabf999cf82311a6d6fb2c70d00d3d0604878c811"},
-    {file = "pyasn1_modules-0.2.8-py3.5.egg", hash = "sha256:426edb7a5e8879f1ec54a1864f16b882c2837bfd06eee62f2c982315ee2473ed"},
-    {file = "pyasn1_modules-0.2.8-py3.6.egg", hash = "sha256:cbac4bc38d117f2a49aeedec4407d23e8866ea4ac27ff2cf7fb3e5b570df19e0"},
-    {file = "pyasn1_modules-0.2.8-py3.7.egg", hash = "sha256:c29a5e5cc7a3f05926aff34e097e84f8589cd790ce0ed41b67aed6857b26aafd"},
 ]
 pycodestyle = [
     {file = "pycodestyle-2.6.0-py2.py3-none-any.whl", hash = "sha256:2295e7b2f6b5bd100585ebcb1f616591b652db8a741695b3d8f5d28bdc934367"},
@@ -4224,9 +5434,6 @@ pymongo = [
     {file = "pymongo-3.10.1-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:ae65d65fde4135ef423a2608587c9ef585a3551fc2e4e431e7c7e527047581be"},
     {file = "pymongo-3.10.1-cp38-cp38-win32.whl", hash = "sha256:31d11a600eea0c60de22c8bdcb58cda63c762891facdcb74248c36713240987f"},
     {file = "pymongo-3.10.1-cp38-cp38-win_amd64.whl", hash = "sha256:5a2c492680c61b440272341294172fa3b3751797b1ab983533a770e4fb0a67ac"},
-    {file = "pymongo-3.10.1-py2.7-macosx-10.14-intel.egg", hash = "sha256:bd9c1e6f92b4888ae3ef7ae23262c513b962f09f3fb3b48581dde5df7d7a860a"},
-    {file = "pymongo-3.10.1-py2.7-win-amd64.egg", hash = "sha256:ad3dc88dfe61f0f1f9b99c6bc833ea2f45203a937a18f0d2faa57c6952656012"},
-    {file = "pymongo-3.10.1-py2.7-win32.egg", hash = "sha256:f4d06764a06b137e48db6d569dc95614d9d225c89842c885669ee8abc9f28c7a"},
     {file = "pymongo-3.10.1.tar.gz", hash = "sha256:993257f6ca3cde55332af1f62af3e04ca89ce63c08b56a387cdd46136c72f2fa"},
 ]
 pyparsing = [
@@ -4234,8 +5441,6 @@ pyparsing = [
     {file = "pyparsing-2.4.7.tar.gz", hash = "sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1"},
 ]
 pyreadline = [
-    {file = "pyreadline-2.1.win-amd64.exe", hash = "sha256:9ce5fa65b8992dfa373bddc5b6e0864ead8f291c94fbfec05fbd5c836162e67b"},
-    {file = "pyreadline-2.1.win32.exe", hash = "sha256:65540c21bfe14405a3a77e4c085ecfce88724743a4ead47c66b84defcf82c32e"},
     {file = "pyreadline-2.1.zip", hash = "sha256:4530592fc2e85b25b1a9f79664433da09237c1a270e4d78ea5aa3a2c7229e2d1"},
 ]
 pyrsistent = [
@@ -4294,16 +5499,6 @@ python-crfsuite = [
     {file = "python_crfsuite-0.9.7-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:946ef3481c8dcd7c331123dd39b227cc52a386322967db78db650c58a6c972df"},
     {file = "python_crfsuite-0.9.7-cp38-cp38-win32.whl", hash = "sha256:df9edb37c90744c3aafd5d7dbf7c50fc486fe189e0e85a1deaf7af995ecac7b5"},
     {file = "python_crfsuite-0.9.7-cp38-cp38-win_amd64.whl", hash = "sha256:caa980287a90fd8c659c6d936f5f4a5b28d0157ce530ad90a6430faed1cf147f"},
-    {file = "python_crfsuite-0.9.7-py2.7-win-amd64.egg", hash = "sha256:a14959d27475f379711798e1cbdad79ebcab07976ea52d5b4862c36132ae16f5"},
-    {file = "python_crfsuite-0.9.7-py2.7-win32.egg", hash = "sha256:9e8b03b02866c23e9618245757cf70cbdef18b9ce0893121c23ccd114fb78508"},
-    {file = "python_crfsuite-0.9.7-py3.5-win-amd64.egg", hash = "sha256:09faa4425b9d8c128946c68c58c8efd5f28908ddf6b941af97475e2072f61495"},
-    {file = "python_crfsuite-0.9.7-py3.5-win32.egg", hash = "sha256:4753c42cdd6c7f48ea745943f641c23d87a9547d22a07ea45903702cea1c7be2"},
-    {file = "python_crfsuite-0.9.7-py3.6-win-amd64.egg", hash = "sha256:9aede38a4c93c90b9fa1b291c2e12521bcf718d6900beae0f933667f184c68ba"},
-    {file = "python_crfsuite-0.9.7-py3.6-win32.egg", hash = "sha256:dfbfbfc298057e56532151910f042bb4b579502037d9403627a72cc51d572961"},
-    {file = "python_crfsuite-0.9.7-py3.7-win-amd64.egg", hash = "sha256:ac25832a8ab55f3a0a91c863e7f4f270ccac9d34b2bf1e2ac457fc8e97c81ba2"},
-    {file = "python_crfsuite-0.9.7-py3.7-win32.egg", hash = "sha256:468bcb736a98627df89708f631cfd0e0c5c7825b545ea1a1e91d7db2bbad88a6"},
-    {file = "python_crfsuite-0.9.7-py3.8-win-amd64.egg", hash = "sha256:5cff06b51c16594ab4132d72a8b4b381ff4351a1825e388e120739c223ca849e"},
-    {file = "python_crfsuite-0.9.7-py3.8-win32.egg", hash = "sha256:263f29c656fbb63d8d198d30ec9bca5b6fc7fab61fd20dd2f7cab795a613a85a"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.1.tar.gz", hash = "sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c"},
@@ -4354,6 +5549,8 @@ pyyaml = [
     {file = "PyYAML-5.3.1-cp37-cp37m-win_amd64.whl", hash = "sha256:73f099454b799e05e5ab51423c7bcf361c58d3206fa7b0d555426b1f4d9a3eaf"},
     {file = "PyYAML-5.3.1-cp38-cp38-win32.whl", hash = "sha256:06a0d7ba600ce0b2d2fe2e78453a470b5a6e000a985dd4a4e54e436cc36b0e97"},
     {file = "PyYAML-5.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:95f71d2af0ff4227885f7a6605c37fd53d3a106fcab511b8860ecca9fcf400ee"},
+    {file = "PyYAML-5.3.1-cp39-cp39-win32.whl", hash = "sha256:ad9c67312c84def58f3c04504727ca879cb0013b2517c85a9a253f0cb6380c0a"},
+    {file = "PyYAML-5.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:6034f55dab5fea9e53f436aa68fa3ace2634918e8b5994d82f3621c04ff5ed2e"},
     {file = "PyYAML-5.3.1.tar.gz", hash = "sha256:b8eac752c5e14d3eca0e6dd9199cd627518cb5ec06add0de9d32baeee6fe645d"},
 ]
 questionary = [
@@ -4404,7 +5601,6 @@ requests = [
 requests-oauthlib = [
     {file = "requests-oauthlib-1.3.0.tar.gz", hash = "sha256:b4261601a71fd721a8bd6d7aa1cc1d6a8a93b4a9f5e96626f8e4d91e8beeaa6a"},
     {file = "requests_oauthlib-1.3.0-py2.py3-none-any.whl", hash = "sha256:7f71572defaecd16372f9006f33c2ec8c077c3cfa6f5911a9a90202beb513f3d"},
-    {file = "requests_oauthlib-1.3.0-py3.7.egg", hash = "sha256:fa6c47b933f01060936d87ae9327fead68768b69c6c9ea2109c48be30f2d4dbc"},
 ]
 requests-toolbelt = [
     {file = "requests-toolbelt-0.9.1.tar.gz", hash = "sha256:968089d4584ad4ad7c171454f0a5c6dac23971e9472521ea3b6d49d610aa6fc0"},
@@ -4437,20 +5633,29 @@ rsa = [
     {file = "ruamel.yaml.clib-0.2.2-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:73b3d43e04cc4b228fa6fa5d796409ece6fcb53a6c270eb2048109cbcbc3b9c2"},
     {file = "ruamel.yaml.clib-0.2.2-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:53b9dd1abd70e257a6e32f934ebc482dac5edb8c93e23deb663eac724c30b026"},
     {file = "ruamel.yaml.clib-0.2.2-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:839dd72545ef7ba78fd2aa1a5dd07b33696adf3e68fae7f31327161c1093001b"},
+    {file = "ruamel.yaml.clib-0.2.2-cp35-cp35m-manylinux2014_aarch64.whl", hash = "sha256:1236df55e0f73cd138c0eca074ee086136c3f16a97c2ac719032c050f7e0622f"},
     {file = "ruamel.yaml.clib-0.2.2-cp35-cp35m-win32.whl", hash = "sha256:b1e981fe1aff1fd11627f531524826a4dcc1f26c726235a52fcb62ded27d150f"},
     {file = "ruamel.yaml.clib-0.2.2-cp35-cp35m-win_amd64.whl", hash = "sha256:4e52c96ca66de04be42ea2278012a2342d89f5e82b4512fb6fb7134e377e2e62"},
     {file = "ruamel.yaml.clib-0.2.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:a873e4d4954f865dcb60bdc4914af7eaae48fb56b60ed6daa1d6251c72f5337c"},
     {file = "ruamel.yaml.clib-0.2.2-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:ab845f1f51f7eb750a78937be9f79baea4a42c7960f5a94dde34e69f3cce1988"},
+    {file = "ruamel.yaml.clib-0.2.2-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:2fd336a5c6415c82e2deb40d08c222087febe0aebe520f4d21910629018ab0f3"},
     {file = "ruamel.yaml.clib-0.2.2-cp36-cp36m-win32.whl", hash = "sha256:e9f7d1d8c26a6a12c23421061f9022bb62704e38211fe375c645485f38df34a2"},
     {file = "ruamel.yaml.clib-0.2.2-cp36-cp36m-win_amd64.whl", hash = "sha256:2602e91bd5c1b874d6f93d3086f9830f3e907c543c7672cf293a97c3fabdcd91"},
     {file = "ruamel.yaml.clib-0.2.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:44c7b0498c39f27795224438f1a6be6c5352f82cb887bc33d962c3a3acc00df6"},
     {file = "ruamel.yaml.clib-0.2.2-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:8e8fd0a22c9d92af3a34f91e8a2594eeb35cba90ab643c5e0e643567dc8be43e"},
+    {file = "ruamel.yaml.clib-0.2.2-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:75f0ee6839532e52a3a53f80ce64925ed4aed697dd3fa890c4c918f3304bd4f4"},
     {file = "ruamel.yaml.clib-0.2.2-cp37-cp37m-win32.whl", hash = "sha256:464e66a04e740d754170be5e740657a3b3b6d2bcc567f0c3437879a6e6087ff6"},
     {file = "ruamel.yaml.clib-0.2.2-cp37-cp37m-win_amd64.whl", hash = "sha256:52ae5739e4b5d6317b52f5b040b1b6639e8af68a5b8fd606a8b08658fbd0cab5"},
     {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:4df5019e7783d14b79217ad9c56edf1ba7485d614ad5a385d1b3c768635c81c0"},
     {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:5254af7d8bdf4d5484c089f929cb7f5bafa59b4f01d4f48adda4be41e6d29f99"},
+    {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:8be05be57dc5c7b4a0b24edcaa2f7275866d9c907725226cdde46da09367d923"},
     {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-win32.whl", hash = "sha256:74161d827407f4db9072011adcfb825b5258a5ccb3d2cd518dd6c9edea9e30f1"},
     {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-win_amd64.whl", hash = "sha256:058a1cc3df2a8aecc12f983a48bda99315cebf55a3b3a5463e37bb599b05727b"},
+    {file = "ruamel.yaml.clib-0.2.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:c6ac7e45367b1317e56f1461719c853fd6825226f45b835df7436bb04031fd8a"},
+    {file = "ruamel.yaml.clib-0.2.2-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:b4b0d31f2052b3f9f9b5327024dc629a253a83d8649d4734ca7f35b60ec3e9e5"},
+    {file = "ruamel.yaml.clib-0.2.2-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:1f8c0a4577c0e6c99d208de5c4d3fd8aceed9574bb154d7a2b21c16bb924154c"},
+    {file = "ruamel.yaml.clib-0.2.2-cp39-cp39-win32.whl", hash = "sha256:46d6d20815064e8bb023ea8628cfb7402c0f0e83de2c2227a88097e239a7dffd"},
+    {file = "ruamel.yaml.clib-0.2.2-cp39-cp39-win_amd64.whl", hash = "sha256:6c0a5dc52fc74eb87c67374a4e554d4761fd42a4d01390b7e868b30d21f4b8bb"},
     {file = "ruamel.yaml.clib-0.2.2.tar.gz", hash = "sha256:2d24bd98af676f4990c4d715bcdc2a60b19c56a3fb3a763164d2d8ca0e806ba7"},
 ]
 s3transfer = [
@@ -4643,19 +5848,19 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.3.20.tar.gz", hash = "sha256:d2f25c7f410338d31666d7ddedfa67570900e248b940d186b48461bd4e5569a1"},
 ]
 srsly = [
-    {file = "srsly-1.0.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:39a8bd6b383b4ea5c3a6793d790e1356e236701f421badef278a0ea80bc95d30"},
-    {file = "srsly-1.0.4-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:02acfa09769380023e9bbed5c63f5f41b04dbc13ff392a7284df685127d224ae"},
-    {file = "srsly-1.0.4-cp36-cp36m-win_amd64.whl", hash = "sha256:c1fa001bbd87a771998c8e2487991fc0dfe16edc09e3dec0d64f9472832f89bd"},
-    {file = "srsly-1.0.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:b4fb0ff57e25a99e9ac9a61b262478efe8493b3cff0f50812c09534c76688b0b"},
-    {file = "srsly-1.0.4-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:deee259837443ea8a4c194967f56eb62809c3cf3a11cd9d4f425de4aea5ecb81"},
-    {file = "srsly-1.0.4-cp37-cp37m-win_amd64.whl", hash = "sha256:4b8bd311fa20fa5d1a0deac0dd8f3c43c7ca23df2c483a7102d96acf2cddb506"},
-    {file = "srsly-1.0.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:660b80ffa3ea4ef9db254e5a22d2f52294f15342910c3274844a8f5a81369cbc"},
-    {file = "srsly-1.0.4-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:2b9e2b7c00e522d6e54952564d702e72bc4729cc828e27a01b4dac70b870d44a"},
-    {file = "srsly-1.0.4-cp38-cp38-win_amd64.whl", hash = "sha256:3f46e5efbbb0e857f302394257539aae4487c201cdafc3519db4bde897341fee"},
-    {file = "srsly-1.0.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:f7aee40cd66f190e7694d7e7c83be018b1a7b9546a305db52c8793d93b1d0a7e"},
-    {file = "srsly-1.0.4-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:713766bf4289ebe6f21d1e5203b6b75f71fd4512e877dbe5a3f660b4a51d77ac"},
-    {file = "srsly-1.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:2ae6327e013934126f2b7082ce36284785eed951635ac99c73e39de75ecd1345"},
-    {file = "srsly-1.0.4.tar.gz", hash = "sha256:9ca5633a5303ce0d0b84d1bdb6d029f665ba2b7d320f5482525b125ddfb8a390"},
+    {file = "srsly-1.0.5-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:a696e9c925e91f76ec53840c55483a4fbf76cb717424410a4f249d4805439038"},
+    {file = "srsly-1.0.5-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:8fc4c0641537262e15c7b5b57edc47487b15ac47b696adcb81e0a770ef78e8f5"},
+    {file = "srsly-1.0.5-cp36-cp36m-win_amd64.whl", hash = "sha256:11447f8e659e1f62f29302252fb057f179031457b36c83426027182f624fe565"},
+    {file = "srsly-1.0.5-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:a2746afccfd4f51f0793cccc2b6d5e8a564c962870feec5c77408244c1dbb3c5"},
+    {file = "srsly-1.0.5-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:a1449da4195e30a3bd1fd3122e5b1a0c57703843c590643555c412fc87132aa0"},
+    {file = "srsly-1.0.5-cp37-cp37m-win_amd64.whl", hash = "sha256:23c7205b8c1cac49a03521bee37f0afe3680d9f0ec18c75ab3ac39bd3e15272b"},
+    {file = "srsly-1.0.5-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:2615b8713dfe793ca57925076b0869385d56754816b1eaee5490a6827a1cb5c7"},
+    {file = "srsly-1.0.5-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:b5b887328ac6e210842560fcf32a29c2a9c1ed38c6d47479cadc03d81940da8c"},
+    {file = "srsly-1.0.5-cp38-cp38-win_amd64.whl", hash = "sha256:fd5e1e01f5fd0f532a6f3977bb74facc42f1b7155402ee3d06c07a73e83e3c47"},
+    {file = "srsly-1.0.5-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:779ebfaa3cf1d5c0f1286ac1baf06af5f2a17bb103622992c71acc6ac20b2781"},
+    {file = "srsly-1.0.5-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:4c43a1f28e555891a1e65650adea2c5d0f0fe4b3d63821de65c8357f32c3a11c"},
+    {file = "srsly-1.0.5-cp39-cp39-win_amd64.whl", hash = "sha256:334f29435099e644a8047b63d60b8386a98b5f7b4739f7efc86b46ca0200aa0e"},
+    {file = "srsly-1.0.5.tar.gz", hash = "sha256:d3dd796372367c71946d0cd6f734e49db3d99dd13a57bdac937d9eb62689fc9e"},
 ]
 tabulate = [
     {file = "tabulate-0.8.7-py3-none-any.whl", hash = "sha256:ac64cb76d53b1231d364babcd72abbb16855adac7de6665122f97b593f1eb2ba"},
@@ -4827,19 +6032,28 @@ typed-ast = [
     {file = "typed_ast-1.4.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:269151951236b0f9a6f04015a9004084a5ab0d5f19b57de779f908621e7d8b75"},
     {file = "typed_ast-1.4.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:24995c843eb0ad11a4527b026b4dde3da70e1f2d8806c99b7b4a7cf491612652"},
     {file = "typed_ast-1.4.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:fe460b922ec15dd205595c9b5b99e2f056fd98ae8f9f56b888e7a17dc2b757e7"},
+    {file = "typed_ast-1.4.1-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:fcf135e17cc74dbfbc05894ebca928ffeb23d9790b3167a674921db19082401f"},
     {file = "typed_ast-1.4.1-cp36-cp36m-win32.whl", hash = "sha256:4e3e5da80ccbebfff202a67bf900d081906c358ccc3d5e3c8aea42fdfdfd51c1"},
     {file = "typed_ast-1.4.1-cp36-cp36m-win_amd64.whl", hash = "sha256:249862707802d40f7f29f6e1aad8d84b5aa9e44552d2cc17384b209f091276aa"},
     {file = "typed_ast-1.4.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:8ce678dbaf790dbdb3eba24056d5364fb45944f33553dd5869b7580cdbb83614"},
     {file = "typed_ast-1.4.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:c9e348e02e4d2b4a8b2eedb48210430658df6951fa484e59de33ff773fbd4b41"},
     {file = "typed_ast-1.4.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:bcd3b13b56ea479b3650b82cabd6b5343a625b0ced5429e4ccad28a8973f301b"},
+    {file = "typed_ast-1.4.1-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:f208eb7aff048f6bea9586e61af041ddf7f9ade7caed625742af423f6bae3298"},
     {file = "typed_ast-1.4.1-cp37-cp37m-win32.whl", hash = "sha256:d5d33e9e7af3b34a40dc05f498939f0ebf187f07c385fd58d591c533ad8562fe"},
     {file = "typed_ast-1.4.1-cp37-cp37m-win_amd64.whl", hash = "sha256:0666aa36131496aed8f7be0410ff974562ab7eeac11ef351def9ea6fa28f6355"},
     {file = "typed_ast-1.4.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:d205b1b46085271b4e15f670058ce182bd1199e56b317bf2ec004b6a44f911f6"},
     {file = "typed_ast-1.4.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:6daac9731f172c2a22ade6ed0c00197ee7cc1221aa84cfdf9c31defeb059a907"},
     {file = "typed_ast-1.4.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:498b0f36cc7054c1fead3d7fc59d2150f4d5c6c56ba7fb150c013fbc683a8d2d"},
+    {file = "typed_ast-1.4.1-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:7e4c9d7658aaa1fc80018593abdf8598bf91325af6af5cce4ce7c73bc45ea53d"},
     {file = "typed_ast-1.4.1-cp38-cp38-win32.whl", hash = "sha256:715ff2f2df46121071622063fc7543d9b1fd19ebfc4f5c8895af64a77a8c852c"},
     {file = "typed_ast-1.4.1-cp38-cp38-win_amd64.whl", hash = "sha256:fc0fea399acb12edbf8a628ba8d2312f583bdbdb3335635db062fa98cf71fca4"},
     {file = "typed_ast-1.4.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:d43943ef777f9a1c42bf4e552ba23ac77a6351de620aa9acf64ad54933ad4d34"},
+    {file = "typed_ast-1.4.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:92c325624e304ebf0e025d1224b77dd4e6393f18aab8d829b5b7e04afe9b7a2c"},
+    {file = "typed_ast-1.4.1-cp39-cp39-manylinux1_i686.whl", hash = "sha256:d648b8e3bf2fe648745c8ffcee3db3ff903d0817a01a12dd6a6ea7a8f4889072"},
+    {file = "typed_ast-1.4.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:fac11badff8313e23717f3dada86a15389d0708275bddf766cca67a84ead3e91"},
+    {file = "typed_ast-1.4.1-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:0d8110d78a5736e16e26213114a38ca35cb15b6515d535413b090bd50951556d"},
+    {file = "typed_ast-1.4.1-cp39-cp39-win32.whl", hash = "sha256:b52ccf7cfe4ce2a1064b18594381bccf4179c2ecf7f513134ec2f993dd4ab395"},
+    {file = "typed_ast-1.4.1-cp39-cp39-win_amd64.whl", hash = "sha256:3742b32cf1c6ef124d57f95be609c473d7ec4c14d0090e5a5e05a15269fb4d0c"},
     {file = "typed_ast-1.4.1.tar.gz", hash = "sha256:8c8aaad94455178e3187ab22c8b01a3837f8ee50e09cf31f1ba129eb293ec30b"},
 ]
 typeguard = [
