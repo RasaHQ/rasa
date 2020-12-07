@@ -72,8 +72,8 @@ class CustomSlot(Slot):
 
 # noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
-    def __init__(self, example_arg, **kwargs):
-        super(ExamplePolicy, self).__init__()
+    def __init__(self, example_arg, should_finetune=False):
+        super(ExamplePolicy, self).__init__(should_finetune=should_finetune)
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):

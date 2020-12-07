@@ -4,6 +4,7 @@ from typing import List, Any, Text, Optional
 import pytest
 import copy
 
+from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 
@@ -74,6 +75,25 @@ def test_policy_loading_simple(tmp_path: Path):
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
 
 
+class NoFinetunePolicy(Policy):
+    @classmethod
+    def load(cls, _) -> Policy:
+        return NoFinetunePolicy()
+
+    def persist(self, _) -> None:
+        pass
+
+
+def test_policy_loading_unsupported_finetune(tmp_path: Path):
+    original_policy_ensemble = PolicyEnsemble([NoFinetunePolicy()])
+    original_policy_ensemble.train([], None, RegexInterpreter())
+    original_policy_ensemble.persist(str(tmp_path))
+
+    with pytest.raises(UnsupportedDialogueModelError) as execinfo:
+        PolicyEnsemble.load(str(tmp_path), new_config={"some": "new_config"})
+    assert "NoFinetunePolicy does not support fine-tuning." in str(execinfo.value)
+
+
 class ConstantPolicy(Policy):
     def __init__(
         self,
@@ -83,9 +103,9 @@ class ConstantPolicy(Policy):
         is_end_to_end_prediction: bool = False,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
-        **kwargs: Any,
+        should_finetune: bool = False,
     ) -> None:
-        super().__init__(priority=priority)
+        super().__init__(priority=priority, should_finetune=should_finetune)
         self.predict_index = predict_index
         self.confidence = confidence
         self.is_end_to_end_prediction = is_end_to_end_prediction
