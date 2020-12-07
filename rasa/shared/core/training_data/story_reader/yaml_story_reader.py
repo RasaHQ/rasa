@@ -275,10 +275,8 @@ class YAMLStoryReader(StoryReader):
                 f"'{RULE_SNIPPET_ACTION_NAME}'. It will be skipped.",
                 docs=self._get_docs_link(),
             )
-        elif KEY_USER_MESSAGE in step.keys():
-            self._parse_user_message(step)
-        elif KEY_USER_INTENT in step.keys():
-            self._parse_labeled_user_utterance(step)
+        elif KEY_USER_INTENT in step.keys() or KEY_USER_MESSAGE in step.keys():
+            self._parse_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
         elif KEY_ACTION in step.keys():
@@ -312,36 +310,21 @@ class YAMLStoryReader(StoryReader):
     def _get_docs_link(self) -> Text:
         raise NotImplementedError()
 
-    def _parse_labeled_user_utterance(self, step: Dict[Text, Any]) -> None:
+    def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
-        if utterance:
-            self._validate_that_utterance_is_in_domain(utterance)
-            self.current_step_builder.add_user_messages([utterance])
 
-    def _parse_user_message(self, step: Dict[Text, Any]) -> None:
-        also_has_intent = KEY_USER_INTENT in step
+        if not utterance:
+            return
 
-        if not also_has_intent:
-            intent = {"name": None}
+        is_end_to_end_utterance = KEY_USER_INTENT not in step
+        if is_end_to_end_utterance:
+            utterance.intent = {INTENT_NAME_KEY: None}
         else:
-            intent_name = self._user_intent_from_step(step)
-            intent = {"name": intent_name, "confidence": 1.0}
+            self._validate_that_utterance_is_in_domain(utterance)
 
-        user_message = step[KEY_USER_MESSAGE].strip()
-        entities = entities_parser.find_entities_in_training_example(user_message)
-        plain_text = entities_parser.replace_entities(user_message)
-
-        if plain_text.startswith(INTENT_MESSAGE_PREFIX):
-            entities = (
-                RegexInterpreter().synchronous_parse(plain_text).get(ENTITIES, [])
-            )
-
-        self.current_step_builder.add_user_messages(
-            [UserUttered(plain_text, intent, entities=entities)]
-        )
+        self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
-
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
         # check if this is a retrieval intent
@@ -389,7 +372,7 @@ class YAMLStoryReader(StoryReader):
     ) -> Tuple[Text, Optional[Text]]:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
-        if not user_intent:
+        if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User utterance cannot be empty. "

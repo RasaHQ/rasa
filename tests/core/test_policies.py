@@ -1110,10 +1110,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert (
-            tracker.export_stories(MarkdownStoryWriter())
-            == "## sender\n* bye: Random\n"
-        )
+        assert tracker.export_stories(MarkdownStoryWriter()) == "## sender\n* bye\n"
 
     def test_affirm_rephrased_intent(
         self, trained_policy: Policy, default_domain: Domain
@@ -1158,10 +1155,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert (
-            tracker.export_stories(MarkdownStoryWriter())
-            == "## sender\n* bye: Random\n"
-        )
+        assert tracker.export_stories(MarkdownStoryWriter()) == "## sender\n* bye\n"
 
     def test_denied_rephrasing_affirmation(
         self, trained_policy: Policy, default_domain: Domain
