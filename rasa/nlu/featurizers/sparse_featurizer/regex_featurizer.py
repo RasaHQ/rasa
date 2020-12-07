@@ -51,6 +51,8 @@ class RegexFeaturizer(SparseFeaturizer):
         # Additional number of patterns to consider
         # for incremental training
         "number_additional_patterns": None,
+        # use match word boundaries for lookup table
+        "use_word_boundaries": True,
     }
 
     def __init__(
@@ -60,7 +62,7 @@ class RegexFeaturizer(SparseFeaturizer):
         pattern_vocabulary_stats: Optional[Dict[Text, int]] = None,
         finetune_mode: bool = False,
     ) -> None:
-        """Construct a new regex pattern based binary featurizer.
+        """Construct new features for regexes and lookup table using regex expressions.
 
         Args:
             component_config: Configuration for the component
@@ -178,6 +180,7 @@ class RegexFeaturizer(SparseFeaturizer):
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
+            use_word_boundaries=self.component_config["use_word_boundaries"],
         )
         if self.finetune_mode:
             # Merge patterns extracted from data with known patterns

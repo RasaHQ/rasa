@@ -12,12 +12,15 @@ from _pytest.monkeypatch import MonkeyPatch
 import rasa.model
 import rasa.core
 import rasa.nlu
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.shared.importers.autoconfig as autoconfig
+import rasa.shared.utils.io
 from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train
+from rasa.utils.tensorflow.constants import EPOCHS
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA, AsyncMock
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.test_model import _fingerprint
@@ -430,9 +433,61 @@ def test_model_finetuning_nlu(
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_nlu_data: Text,
-    default_stack_config: Text,
-    trained_rasa_model: Text,
+    trained_moodbot_path: Text,
     use_latest_model: bool,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    mock_interpreter_create = Mock(wraps=Interpreter.create)
+    monkeypatch.setattr(Interpreter, "create", mock_interpreter_create)
+
+    mock_DIET_load = Mock(wraps=DIETClassifier.load)
+    monkeypatch.setattr(DIETClassifier, "load", mock_DIET_load)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_moodbot_path = str(Path(trained_moodbot_path).parent)
+
+    # Typically models will be fine-tuned with a smaller number of epochs than training
+    # from scratch.
+    # Fine-tuning will use the number of epochs in the new config.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config["pipeline"][-1][EPOCHS] = 10
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+
+    train_nlu(
+        str(new_config_path),
+        "examples/moodbot/data/nlu.yml",
+        output=output,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=0.5,
+    )
+
+    assert mock_interpreter_create.call_args[1]["should_finetune"]
+
+    mocked_nlu_training.assert_called_once()
+    _, nlu_train_kwargs = mocked_nlu_training.call_args
+    model_to_finetune = nlu_train_kwargs["model_to_finetune"]
+    assert isinstance(model_to_finetune, Interpreter)
+
+    _, diet_kwargs = mock_DIET_load.call_args
+    assert diet_kwargs["should_finetune"] is True
+
+    new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
+    assert new_diet_metadata["name"] == "DIETClassifier"
+    assert new_diet_metadata[EPOCHS] == 5
+
+
+def test_model_finetuning_nlu_with_default_epochs(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_nlu_data: Text,
+    trained_moodbot_path: Text,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
@@ -440,20 +495,27 @@ def test_model_finetuning_nlu(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    if use_latest_model:
-        trained_rasa_model = str(Path(trained_rasa_model).parent)
+    # Providing a new config with no epochs will mean the default amount are used
+    # and then scaled by `finetuning_epoch_fraction`.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    del old_config["pipeline"][-1][EPOCHS]
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
     train_nlu(
-        default_stack_config,
-        default_nlu_data,
+        str(new_config_path),
+        "examples/moodbot/data/nlu.yml",
         output=output,
-        model_to_finetune=trained_rasa_model,
-        finetuning_epoch_fraction=1,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=0.5,
     )
 
     mocked_nlu_training.assert_called_once()
-    _, kwargs = mocked_nlu_training.call_args
-    assert isinstance(kwargs["model_to_finetune"], Interpreter)
+    _, nlu_train_kwargs = mocked_nlu_training.call_args
+    model_to_finetune = nlu_train_kwargs["model_to_finetune"]
+    new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
+    assert new_diet_metadata["name"] == "DIETClassifier"
+    assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.5
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
