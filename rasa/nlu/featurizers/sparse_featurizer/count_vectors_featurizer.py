@@ -164,7 +164,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 ] = user_defined_additional_size
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
-        """Check if trained vocabulary exists in attribute's count vectorizer."""
+        """Checks if trained vocabulary exists in attribute's count vectorizer."""
         try:
             return hasattr(self.vectorizers[attribute], "vocabulary_")
         except (AttributeError, TypeError):
@@ -390,7 +390,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 f"which is larger than the maximum vocabulary size({len(existing_vocabulary)}) "
                 f"of the original model. Some tokens will have to be dropped "
                 f"in order to continue training. It is advised to re-train the "
-                f"model from scratch on complete data."
+                f"model from scratch on the complete data."
             )
         for token in vocabulary:
             if token not in existing_vocabulary:
@@ -404,9 +404,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _get_additional_vocabulary_size(
         self, attribute: Text, existing_vocabulary_size: int
     ) -> int:
-        """Get additional vocabulary size to be saved for incremental training.
+        """Gets additional vocabulary size to be saved for incremental training.
 
-        If `self.additional_vocabulary_size` is not None,
+        If `self.additional_vocabulary_size` is not `None`,
         we return that as the user should have specified
         this number. If not then we take the default
         additional vocabulary size which is 1/2 of the
@@ -473,14 +473,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _construct_vocabulary_from_texts(
         vectorizer: CountVectorizer, texts: List[Text]
     ) -> Set:
-        """Apply vectorizer's preprocessor on texts to get the vocabulary from texts.
+        """Applies vectorizer's preprocessor on texts to get the vocabulary from texts.
 
         Args:
             vectorizer: Sklearn's count vectorizer which has been pre-configured.
             texts: Examples from which the vocabulary should be constructed
 
         Returns:
-            Set of unique vocabulary words extracted.
+            Unique vocabulary words extracted.
         """
         analyzer = vectorizer.build_analyzer()
         vocabulary_words = set()
@@ -493,8 +493,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _attribute_texts_is_non_empty(attribute_texts: List[Text]) -> bool:
         return any(attribute_texts)
 
-    def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
-        """Construct the vectorizers and train them with a shared vocab."""
+    def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]) -> None:
+        """Constructs the vectorizers and train them with a shared vocab."""
         combined_cleaned_texts = []
         for attribute in self._attributes:
             combined_cleaned_texts += attribute_texts[attribute]
@@ -517,7 +517,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         else:
             self._fit_loaded_vectorizer(TEXT, combined_cleaned_texts)
 
-    def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
+    def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]) -> None:
         """Construct the vectorizers and train them with an independent vocab."""
         if not self.finetune_mode:
             self.vectorizers = self._create_independent_vocab_vectorizers(
@@ -550,7 +550,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _fit_loaded_vectorizer(
         self, attribute: Text, attribute_texts: List[Text]
     ) -> None:
-        """Fit training texts to a previously trained count vectorizer.
+        """Fits training texts to a previously trained count vectorizer.
 
         We do not use the `.fit()` method because the new unseen
         words should occupy the buffer slots of the vocabulary.
@@ -570,7 +570,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _fit_vectorizer_from_scratch(
         self, attribute: Text, attribute_texts: List[Text]
     ) -> None:
-        """Fit training texts to an untrained count vectorizer.
+        """Fits training texts to an untrained count vectorizer.
 
         Args:
             attribute: Message attribute for which the vectorizer is to be trained.

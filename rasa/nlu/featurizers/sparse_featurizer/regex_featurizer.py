@@ -295,7 +295,7 @@ class RegexFeaturizer(SparseFeaturizer):
         cached_component: Optional["RegexFeaturizer"] = None,
         **kwargs: Any,
     ) -> "RegexFeaturizer":
-        """Load a previously trained component.
+        """Loads a previously trained component.
 
         Args:
             meta: Configuration of trained component.
