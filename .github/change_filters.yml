@@ -4,11 +4,13 @@ backend:
   - 'tests/**/*'
   - 'data/**/*'
   - 'examples/**/*'
+  - 'Makefile'
 
 docker:
   - 'pyproject.toml'
   - 'rasa/**/*'
   - 'docker/**/*'
+  - 'Makefile'
 
 docs:
   - 'docs/**/*'
@@ -17,3 +19,4 @@ docs:
   - 'tests/docs/*'
   - 'data/**/*'
   - 'examples/**/*'
+  - 'Makefile'
