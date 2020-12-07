@@ -5,11 +5,15 @@ import inspect
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
+import rasa.shared.utils.io as io_utils
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+
+
 logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text] = None, ensure_class: bool = False
+    module_path: Text, lookup_path: Optional[Text] = None, ensure_class: bool = True
 ) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
@@ -35,7 +39,12 @@ def class_from_module_path(
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
     if ensure_class and not inspect.isclass(klass):
-        # FIXME: surely another error more adapted
+        io_utils.raise_deprecation_warning(
+            f"`class_from_module_path()` is expected to return a class, "
+            f"but {module_path} is not one. "
+            f"This warning will be converted "
+            f"into an exception in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
+        )
         raise TypeError(f"Object at {module_path} is not a valid class.")
 
     return klass
