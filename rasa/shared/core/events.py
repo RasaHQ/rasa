@@ -434,9 +434,19 @@ class UserUttered(Event):
 
     def __str__(self) -> Text:
         """Returns text representation of event."""
+        entities = ""
+        if self.entities:
+            entities = [
+                f"{entity[ENTITY_ATTRIBUTE_VALUE]} "
+                f"(Type: {entity[ENTITY_ATTRIBUTE_TYPE]}, "
+                f"Role: {entity.get(ENTITY_ATTRIBUTE_ROLE)}, "
+                f"Group: {entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+                for entity in self.entities
+            ]
+            entities = f", entities: {', '.join(entities)}"
+
         return (
-            f"UserUttered(text: {self.text}, intent: {self.intent}, "
-            f"entities: {self.entities})"
+            f"UserUttered(text: {self.text}, intent: {self.intent_name}" f"{entities}))"
         )
 
     @staticmethod
@@ -513,7 +523,7 @@ class UserUttered(Event):
         except KeyError as e:
             raise ValueError(f"Failed to parse bot uttered event. {e}")
 
-    def _entity_string(self):
+    def _entity_string(self) -> Text:
         if self.entities:
             return json.dumps(
                 {
