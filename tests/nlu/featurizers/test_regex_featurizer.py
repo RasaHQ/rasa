@@ -94,6 +94,82 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 
 
 @pytest.mark.parametrize(
+    "sentence, tokens, expected, labeled_tokens",
+    [
+        (
+            "明天上海的天气怎么样？",
+            [("明天", 0), ("上海", 2), ("的", 4), ("天气", 5), ("怎么样", 7), ("？", 10)],
+            [
+                [0.0, 1.0],
+                [1.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [1.0, 1.0],
+            ],
+            [0.0, 1.0],
+        ),
+        (
+            "北京的天气如何？",
+            [("北京", 0), ("的", 2), ("天气", 3), ("如何", 5), ("？", 7)],
+            [[1.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [1.0, 0.0]],
+            [0.0],
+        ),
+        (
+            "昨天和今天的天气都不错",
+            [("昨天", 0), ("和", 2), ("今天", 3), ("的", 5), ("天气", 6), ("都", 8), ("不错", 9)],
+            [
+                [0.0, 1.0],
+                [0.0, 0.0],
+                [0.0, 1.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 1.0],
+            ],
+            [0.0, 2.0],
+        ),
+        (
+            "后天呢？",
+            [("后天", 0), ("呢", 2), ("？", 3)],
+            [[0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [0.0, 1.0]],
+            [0.0],
+        ),
+    ],
+)
+def test_lookup_tables_without_use_word_boundaries(
+    sentence, tokens, expected, labeled_tokens
+):
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.tokenizers.tokenizer import Token
+
+    lookups = [
+        {"name": "cites", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+        {"name": "dates", "elements": ["昨天", "今天", "明天", "后天"],},
+    ]
+    ftr = RegexFeaturizer({"use_word_boundaries": False})
+    training_data = TrainingData()
+    training_data.lookup_tables = lookups
+    ftr.train(training_data)
+
+    # adds tokens to the message
+    message = Message(data={TEXT: sentence})
+    message.set(TOKENS_NAMES[TEXT], [Token(word, start) for (word, start) in tokens])
+
+    sequence_features, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_features.toarray(), expected[:-1], atol=1e-10)
+    assert np.allclose(sentence_features.toarray(), expected[-1], atol=1e-10)
+
+    # the number of regex matches on each token should match
+    for i, token in enumerate(message.get(TOKENS_NAMES[TEXT])):
+        token_matches = token.get("pattern").values()
+        num_matches = sum(token_matches)
+        assert num_matches == labeled_tokens.count(i)
+
+
+@pytest.mark.parametrize(
     "sentence, expected, labeled_tokens",
     [
         (
