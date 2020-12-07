@@ -468,6 +468,107 @@ def add_root_route(app: Sanic):
         return response.text("Hello from Rasa: " + rasa.__version__)
 
 
+def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
+    """Decorator to enable async request handling.
+
+    If the incoming HTTP request specified a `callback_url` query parameter, the request
+    will return immediately with a 204 while the actual request response will
+    be sent to the `callback_url`. If an error happens, the error payload will also
+    be sent to the `callback_url`.
+
+    Args:
+        f: The request handler function which should be decorated.
+
+    Returns:
+        The decorated function.
+    """
+
+    @wraps(f)
+    async def decorated_function(
+        request: Request, *args: Any, **kwargs: Any
+    ) -> HTTPResponse:
+        callback_url = request.args.get("callback_url")
+        # Only process request asynchronously if the user specified a `callback_url`
+        # query parameter.
+        if not callback_url:
+            return await f(request, *args, **kwargs)
+
+        async def wrapped() -> None:
+            try:
+                result: HTTPResponse = await f(request, *args, **kwargs)
+                payload = json.loads(result.body)
+            except ErrorResponse as e:
+                # If an error happens, we sent the error payload to the `callback_url`
+                payload = e.error_info
+
+            async with aiohttp.ClientSession() as session:
+                await session.post(callback_url, json=payload)
+
+        # Run the request in the background on the event loop
+        request.app.add_task(wrapped())
+
+        # The incoming request will return immediately with a 204
+        return response.empty()
+
+    return decorated_function
+
+
+def computational_intense(f: Callable[..., Coroutine]) -> Callable:
+    """Decorator which runs request on a separate thread.
+
+    Some requests (e.g. training or cross-validation) are computional intense requests.
+    This means that they will block the event loop and hence the processing of other
+    requests. This decorator can be used to process these requests on a separate thread
+    to avoid blocking the processing of incoming requests.
+
+    Args:
+        f: The request handler function which should be decorated.
+
+    Returns:
+        The decorated function.
+    """
+
+    @wraps(f)
+    async def decorated_function(
+        request: Request, *args: Any, **kwargs: Any
+    ) -> HTTPResponse:
+        # Use a sync wrapper for our `async` function as `run_in_executor` only supports
+        # sync functions
+        def run() -> HTTPResponse:
+            # This is a new thread, so we need to create and set a new event loop
+            thread_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(thread_loop)
+
+            try:
+                return thread_loop.run_until_complete(f(request, *args, **kwargs))
+            finally:
+                thread_loop.close()
+
+        # Run decorated function in thread (`None` will use the `ThreadPoolExecutor`)
+        return await request.app.loop.run_in_executor(None, run)
+
+    return decorated_function
+
+
+def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
+    """Decorator to inject and clean up a temporary directory.
+
+    Args:
+        f: The request handler function which should be decorated.
+
+    Returns:
+        The decorated function.
+    """
+
+    @wraps(f)
+    async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
+        with tempfile.TemporaryDirectory() as directory:
+            # Decorated request handles need to have a parameter `temporary_directory`
+            return await f(*args, temporary_directory=Path(directory), **kwargs)
+
+    return decorated_function
+
+
 def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text], None] = "*",
@@ -507,46 +608,6 @@ def create_app(
         return response.json(exception.error_info, status=exception.status)
 
     add_root_route(app)
-
-    def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
-        @wraps(f)
-        async def decorated_function(
-            request: Request, *args: Any, **kwargs: Any
-        ) -> HTTPResponse:
-            callback_url = request.args.get("callback_url")
-            if not callback_url:
-                return await f(request, *args, **kwargs)
-
-            async def wrapped() -> None:
-                try:
-                    result: HTTPResponse = await f(request, *args, **kwargs)
-                    payload = json.loads(result.body)
-                except ErrorResponse as e:
-                    payload = e.error_info
-
-                async with aiohttp.ClientSession() as session:
-                    await session.post(callback_url, json=payload)
-
-            app.add_task(wrapped())
-            return response.empty()
-
-        return decorated_function
-
-    def computational_intense(f: Callable[..., Coroutine]) -> Callable:
-        @wraps(f)
-        async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
-            def run() -> HTTPResponse:
-                thread_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(thread_loop)
-
-                try:
-                    return thread_loop.run_until_complete(f(*args, **kwargs))
-                finally:
-                    thread_loop.close()
-
-            return await app.loop.run_in_executor(None, run)
-
-        return decorated_function
 
     @app.get("/version")
     async def version(request: Request):
@@ -997,9 +1058,6 @@ def create_app(
             "evaluate your model.",
         )
 
-        # TODO:
-        # 2. Fix temporary files for training data
-
         if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
             payload = _training_payload_from_yaml(request, temporary_directory)
             config = payload.get("config", {})
@@ -1421,12 +1479,3 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
             f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA,
         )
-
-
-def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
-    @wraps(f)
-    async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
-        with tempfile.TemporaryDirectory() as directory:
-            return await f(*args, temporary_directory=Path(directory), **kwargs)
-
-    return decorated_function
