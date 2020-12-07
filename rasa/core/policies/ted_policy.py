@@ -794,11 +794,13 @@ class TED(TransformerRasaModel):
             # just a sparse/dense layer, combining sentence/sequence isn't needed
             elif SENTENCE in self.data_signature[name]:
                 # self._prepare_sparse_dense_layer_for(name, self.data_signature)
-                self._prepare_sparse_dense_layers(
-                    data_signature=self.data_signature[name][SENTENCE],
-                    attribute=name,
-                    feature_type=SENTENCE,
-                )
+                # self._prepare_sparse_dense_layers(
+                #     data_signature=self.data_signature[name][SENTENCE],
+                #     attribute=name,
+                #     feature_type=SENTENCE,
+                # )
+                # TODO: roll back and only create sparse/dense for SENT attributes!
+                self._prepare_input_layers(name, self.data_signature[name])
             else:
                 print(
                     "> CREATING NO FEATURE COMBINING LAYERS for",
@@ -812,11 +814,12 @@ class TED(TransformerRasaModel):
                 self._prepare_sequence_layers(name, self.label_signature[name])
             elif SENTENCE in self.label_signature[name]:
                 # self._prepare_sparse_dense_layer_for(name, self.label_signature)
-                self._prepare_sparse_dense_layers(
-                    data_signature=self.label_signature[name][SENTENCE],
-                    attribute=name,
-                    feature_type=SENTENCE,
-                )
+                # self._prepare_sparse_dense_layers(
+                #     data_signature=self.label_signature[name][SENTENCE],
+                #     attribute=name,
+                #     feature_type=SENTENCE,
+                # )
+                self._prepare_input_layers(self, name, self.label_signature[name])
             else:
                 print(
                     "> CREATING NO FEATURE COMBINING LAYERS for",
@@ -1203,8 +1206,15 @@ class TED(TransformerRasaModel):
             # attribute_features = self._combine_sparse_dense_features(
             #     tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
             # )
-            attribute_features = self._combine_sparse_dense_features(
-                tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
+            # attribute_features = self._combine_sparse_dense_features(
+            #     tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
+            # )
+            attribute_features = self._tf_layers[f"{name}_input_layer"](
+                sequence_features=[],
+                sentence_features=tf_batch_data[attribute][SENTENCE],
+                mask_sequence=None,
+                mask_text=None,
+                training=self._training,
             )
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:

@@ -1284,12 +1284,21 @@ class DIET(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
-        self._prepare_sequence_layers(self.text_name, self.data_signature[self.text_name])
+        self._prepare_sequence_layers(
+            self.text_name, self.data_signature[self.text_name]
+        )
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
-            self._prepare_input_layers(self.label_name, self.label_signature[self.label_name])
+            self._prepare_input_layers(
+                self.label_name, self.label_signature[self.label_name]
+            )
+            self._prepare_ffnn_layer(
+                self.label_name,
+                self.config[HIDDEN_LAYERS_SIZES][self.label_name],
+                self.config[DROP_RATE],
+            )
             self._prepare_label_classification_layers()
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
@@ -1321,15 +1330,23 @@ class DIET(TransformerRasaModel):
         dense_dropout: bool = False,
     ) -> tf.Tensor:
 
-        x = self._combine_sequence_sentence_features(
+        # x = self._combine_sequence_sentence_features(
+        #     sequence_features,
+        #     sentence_features,
+        #     sequence_mask,
+        #     text_mask,
+        #     name,
+        #     # sparse_dropout,
+        #     # dense_dropout,
+        # )
+        x = self._tf_layers[f"{name}_input_layer"](
             sequence_features,
             sentence_features,
-            sequence_mask,
-            text_mask,
-            name,
-            # sparse_dropout,
-            # dense_dropout,
+            mask_sequence=sequence_mask,
+            mask_text=text_mask,
+            training=self._training,
         )
+
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
