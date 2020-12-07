@@ -350,3 +350,50 @@ def test_regex_featurizer_case_sensitive(
     sequence_featrures, sentence_features = ftr._features_for_patterns(message, TEXT)
     assert np.allclose(sequence_featrures.toarray()[0], sequence_vector, atol=1e-10)
     assert np.allclose(sentence_features.toarray()[-1], sentence_vector, atol=1e-10)
+
+
+@pytest.mark.parametrize(
+    "sentence, expected, labeled_tokens, use_word_boundaries",
+    [
+        ("how are you", [[1.0], [0.0], [0.0], [1.0]], [0.0], True),
+        ("how are you", [[1.0], [0.0], [0.0], [1.0]], [0.0], False),
+        ("Take a shower", [[0.0], [0.0], [0.0], [0.0]], [], True),
+        ("Take a shower", [[0.0], [0.0], [1.0], [1.0]], [2.0], False),
+        ("What a show", [[0.0], [0.0], [0.0], [0.0]], [], True),
+        ("What a show", [[0.0], [0.0], [1.0], [1.0]], [2.0], False),
+        ("The wolf howled", [[0.0], [0.0], [0.0], [0.0]], [], True),
+        ("The wolf howled", [[0.0], [0.0], [1.0], [1.0]], [2.0], False),
+    ],
+)
+def test_regex_featurizer_with_and_without_boundaries(
+    sentence: Text,
+    expected: List[float],
+    labeled_tokens: List[float],
+    use_word_boundaries: bool,
+    spacy_nlp: Any,
+):
+    lookups = [
+        {"name": "how", "elements": ["how"],},
+    ]
+    ftr = RegexFeaturizer({"use_word_boundaries": use_word_boundaries})
+    training_data = TrainingData()
+    training_data.lookup_tables = lookups
+    ftr.train(training_data)
+
+    # adds tokens to the message
+    tokenizer = SpacyTokenizer()
+    message = Message(data={TEXT: sentence})
+    message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+    tokenizer.process(message)
+
+    sequence_features, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_features.toarray(), expected[:-1], atol=1e-10)
+    assert np.allclose(sentence_features.toarray(), expected[-1], atol=1e-10)
+
+    # the tokenizer should have added tokens
+    assert len(message.get(TOKENS_NAMES[TEXT], [])) > 0
+    # the number of regex matches on each token should match
+    for i, token in enumerate(message.get(TOKENS_NAMES[TEXT])):
+        token_matches = token.get("pattern").values()
+        num_matches = sum(token_matches)
+        assert num_matches == labeled_tokens.count(i)
