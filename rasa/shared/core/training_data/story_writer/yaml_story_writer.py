@@ -9,6 +9,7 @@ from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarStri
 import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+import rasa.shared.core.events
 from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
@@ -103,6 +104,7 @@ class YAMLStoryWriter(StoryWriter):
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
+            is_test_story: `True` if the story is an end-to-end conversation test story.
         """
         from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
@@ -186,13 +188,6 @@ class YAMLStoryWriter(StoryWriter):
         )
 
     @staticmethod
-    def _text_is_real_message(user_utterance: UserUttered) -> bool:
-        return (
-            not user_utterance.intent
-            or user_utterance.text != user_utterance.as_story_string()
-        )
-
-    @staticmethod
     def process_user_utterance(
         user_utterance: UserUttered, is_test_story: bool = False
     ) -> OrderedDict:
@@ -216,12 +211,20 @@ class YAMLStoryWriter(StoryWriter):
             )
 
         if user_utterance.text and (
+            # We only print the utterance text if it was an end-to-end prediction
             user_utterance.use_text_for_featurization
-            or user_utterance.use_text_for_featurization is None
+            # or if we want to print a conversation test story.
+            or is_test_story
         ):
-            result[KEY_USER_MESSAGE] = user_utterance.as_story_string()
+            result[KEY_USER_MESSAGE] = LiteralScalarString(
+                rasa.shared.core.events.format_message(
+                    user_utterance.text,
+                    user_utterance.intent_name,
+                    user_utterance.entities,
+                )
+            )
 
-        if len(user_utterance.entities):
+        if len(user_utterance.entities) and not is_test_story:
             entities = []
             for entity in user_utterance.entities:
                 if entity["value"]:

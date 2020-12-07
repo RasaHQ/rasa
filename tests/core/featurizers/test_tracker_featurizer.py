@@ -21,7 +21,7 @@ def test_fail_to_load_non_existent_featurizer():
 
 def test_persist_and_load_tracker_featurizer(tmp_path: Text, moodbot_domain: Domain):
     state_featurizer = SingleStateFeaturizer()
-    state_featurizer.prepare_from_domain(moodbot_domain)
+    state_featurizer.prepare_for_training(moodbot_domain, RegexInterpreter())
     tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
 
     tracker_featurizer.persist(tmp_path)
