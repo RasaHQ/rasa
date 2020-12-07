@@ -3,12 +3,13 @@ import tempfile
 import os
 from pathlib import Path
 from typing import Text, Dict, Any
-from unittest.mock import Mock
+from unittest.mock import Mock, create_autospec
 
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.model
 import rasa.core
 import rasa.nlu
@@ -18,6 +19,7 @@ from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train
+from rasa.utils.tensorflow.constants import EPOCHS
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA, AsyncMock
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.test_model import _fingerprint
@@ -396,32 +398,47 @@ def test_model_finetuning_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
-    trained_rasa_model: Text,
+    default_nlu_data: Text,
+    trained_moodbot_path: Text,
     use_latest_model: bool,
 ):
     mocked_core_training = AsyncMock()
     monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
 
+    mock_agent_load = Mock(wraps=Agent.load)
+    monkeypatch.setattr(Agent, "load", mock_agent_load)
+
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
     if use_latest_model:
-        trained_rasa_model = str(Path(trained_rasa_model).parent)
+        trained_moodbot_path = str(Path(trained_moodbot_path).parent)
+
+    # Typically models will be fine-tuned with a smaller number of epochs than training
+    # from scratch.
+    # Fine-tuning will use the number of epochs in the new config.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config["policies"][0]["epochs"] = 20
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
     train_core(
-        default_domain_path,
-        default_stack_config,
-        default_stories_file,
+        "examples/moodbot/domain.yml",
+        str(new_config_path),
+        "examples/moodbot/data/stories.yml",
         output=output,
-        model_to_finetune=trained_rasa_model,
-        finetuning_epoch_fraction=1,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=0.5,
     )
 
     mocked_core_training.assert_called_once()
     _, kwargs = mocked_core_training.call_args
-    assert isinstance(kwargs["model_to_finetune"], Agent)
+    model_to_finetune = kwargs["model_to_finetune"]
+    assert isinstance(model_to_finetune, Agent)
+
+    ted_config = model_to_finetune.policy_ensemble.policies[0].config
+    assert ted_config[EPOCHS] == 10
+    assert ted_config["should_finetune"] is True
 
 
 @pytest.mark.parametrize("use_latest_model", [True, False])
