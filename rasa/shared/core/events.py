@@ -602,6 +602,7 @@ class DefinePrevUserUtteredEntities(Event):
 
     def __str__(self) -> Text:
         """Returns the string representation of the event."""
+        entity_str = [e[ENTITY_ATTRIBUTE_TYPE] for e in self.entities]
         return f"DefinePrevUserUtteredEntities({self.entities})"
 
     def __hash__(self) -> int:

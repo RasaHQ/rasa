@@ -485,6 +485,9 @@ class DialogueStateTracker:
         future_events: List[Event],
     ) -> Optional[List[Dict[Text, Any]]]:
         for future_event in future_events:
+            if isinstance(future_event, ActionExecuted):
+                # the search should happen only within one dialogue turn
+                return None
             if isinstance(future_event, DefinePrevUserUtteredEntities):
                 return future_event.entities
 

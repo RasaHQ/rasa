@@ -595,7 +595,7 @@ class TEDPolicy(Policy):
 
     def _create_optional_event_for_entities(
         self,
-        output: Dict[Text, tf.Tensor],
+        prediction_output: Dict[Text, tf.Tensor],
         interpreter: NaturalLanguageInterpreter,
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
@@ -606,7 +606,9 @@ class TEDPolicy(Policy):
         (
             predicted_tags,
             confidence_values,
-        ) = rasa.utils.train_utils.entity_label_to_tags(output, self._entity_tag_specs)
+        ) = rasa.utils.train_utils.entity_label_to_tags(
+            prediction_output, self._entity_tag_specs
+        )
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
             # no entities detected
@@ -614,8 +616,10 @@ class TEDPolicy(Policy):
 
         # find last user uttered event as the predicted entities belong to
         # that utterance
-        user_utterances = [e for e in tracker.events if isinstance(e, UserUttered)]
-        last_user_utterance = user_utterances[-1]
+        if tracker.latest_action == ACTION_LISTEN_NAME:
+            last_user_utterance = tracker.latest_message
+        else:
+            return None
 
         # convert the predicted tags to actual entities
         text = last_user_utterance.text
