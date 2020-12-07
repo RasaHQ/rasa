@@ -1146,9 +1146,11 @@ def create_app(
         )
         response_filename_mapping = {
             "intent_evaluation": "intent_report.json",
-            "entity_evaluation": "entity_report.json",
+            "intent_errors": "intent_errors.json",
+            "entity_evaluation": "DIETClassifier_report.json",
+            "entity_errors": "DIETClassifier_errors.json",
             "response_selection_evaluation": "response_selector.json",
-            # TODO: ERRORs!
+            "response_selection_errors": "response_selection_errors.json",
         }
 
         result = {

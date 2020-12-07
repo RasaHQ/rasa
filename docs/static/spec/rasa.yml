@@ -558,7 +558,8 @@ paths:
           description: >-
             Number of cross validation folds. If this parameter is specified
             the given training data will be used for a cross-validation instead of
-            using it as test set for the specified model.
+            using it as test set for the specified model. Note that this is only
+            supported for YAML data.
       requestBody:
         required: true
         content:
@@ -566,8 +567,8 @@ paths:
             schema:
               type: string
               description: >-
-                NLU training data and optional model config in case cross-validation
-                is used.
+                NLU training data and model configuration. The model configuration is
+                only required if cross-validation is used.
               example: >-
                 nlu:
                 - intent: greet
@@ -585,6 +586,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NLUEvaluationResult'
+        204:
+          $ref: '#/components/responses/204Callback'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -939,6 +942,11 @@ components:
                 intent: inform
               - action: utter_on_it
               - action: utter_ask_location
+    204Callback:
+      description: >-
+        The incoming request specified a `callback_url` and hence the request will
+        return immediately with an empty response. The actual response will be sent to
+        the provided `callback_url` via POST request.
     400BadRequest:
       description: Bad Request
       content:
@@ -1539,14 +1547,69 @@ components:
       type: object
       properties:
         intent_evaluation:
-          description: Rasa NLU intent evaluation.
+          description: Rasa NLU intent evaluation
           $ref: '#/components/schemas/EvaluationItem'
+        intent_errors:
+          description: Intent prediction errors which were made during the testing
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                description: Test message
+                example: are you alright?
+              intent_response_key_target:
+                description: Expected intent
+                type: string
+              intent_response_key_prediction:
+                description: Predicted intent
+                $ref: '#/components/schemas/Intent'
         response_selection_evaluation:
-          description: Evaluation for the retrieval intents.
+          description: Evaluation for the retrieval intents
           $ref: '#/components/schemas/EvaluationItem'
+        response_selection_errors:
+          description: >-
+            Prediction errors which were made during the testing of the response
+            selector components
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                description: Test message
+                example: are you alright?
+              intent_response_key_target:
+                description: Expected retrieval intent
+                type: string
+              intent_response_key_prediction:
+                description: Predicted retrieval intent
+                $ref: '#/components/schemas/Intent'
+
         entity_evaluation:
           description: Rasa NLU entity evaluation.
           $ref: '#/components/schemas/EvaluationItem'
+        entity_errors:
+          description: Entity prediction errors which were made during testing
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                description: Test message
+                example: what is the weather in zurich?
+              entities:
+                description: Expected entities
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entity'
+              predicted_entities:
+                description: Predicted entities
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entity'
 
     EvaluationItem:
       type: object
@@ -1565,7 +1628,7 @@ components:
           example: 0.036281179138321996
         predictions:
           type: array
-          description: The predictions for each item in the test set.
+          description: The predictions for each item in the test set
           items:
             type: object
             properties:

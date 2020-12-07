@@ -849,8 +849,11 @@ async def test_cross_validation(
     response_body = response.json()
     for required_key in {
         "intent_evaluation",
+        "intent_errors",
         "entity_evaluation",
+        "entity_errors",
         "response_selection_evaluation",
+        "response_selection_errors",
     }:
         assert required_key in response_body
         details = response_body[required_key]
@@ -910,8 +913,11 @@ async def test_cross_validation_with_callback_success(
         content = last_request[0].kwargs["json"]
         for required_key in {
             "intent_evaluation",
+            "intent_errors",
             "entity_evaluation",
+            "entity_errors",
             "response_selection_evaluation",
+            "response_selection_errors",
         }:
             assert required_key in content
 
