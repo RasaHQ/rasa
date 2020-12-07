@@ -770,12 +770,14 @@ def test_preserve_sentence_and_sequence_features_old_config():
     [
         (
             "购买 iPhone 12",  # whitespace ' ' is expected to be removed
-            [('购买', 0), (' ', 2), ('iPhone', 3), (' ', 9), ('12', 10)],
-            [('购买', 0), ('iPhone', 3), ('12', 10)]
+            [("购买", 0), (" ", 2), ("iPhone", 3), (" ", 9), ("12", 10)],
+            [("购买", 0), ("iPhone", 3), ("12", 10)],
         )
     ],
 )
-def test_lm_featurizer_correctly_handle_whitespace_token(text, tokens, expected_feature_tokens):
+def test_lm_featurizer_correctly_handle_whitespace_token(
+    text, tokens, expected_feature_tokens
+):
     from rasa.nlu.tokenizers.tokenizer import Token
 
     config = {
