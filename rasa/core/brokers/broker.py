@@ -3,11 +3,16 @@ import logging
 from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union
 
+import aio_pika.exceptions
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+
+
+CONNECTION_ERRORS = (psycopg2.OperationalError, aio_pika.exceptions.AMQPConnectionError)
 
 
 class EventBroker:
@@ -22,7 +27,10 @@ class EventBroker:
         if isinstance(obj, EventBroker):
             return obj
 
-        return await _create_from_endpoint_config(obj, loop)
+        try:
+            return await _create_from_endpoint_config(obj, loop)
+        except CONNECTION_ERRORS as error:
+            raise ConnectionException("Cannot connect to event broker.") from error
 
     @classmethod
     async def from_endpoint_config(

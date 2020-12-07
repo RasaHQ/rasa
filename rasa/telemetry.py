@@ -642,10 +642,6 @@ def initialize_error_reporting() -> None:
             asyncio.CancelledError,
             # rasa errors
             RasaException,
-            # 3rd party errors
-            botocore.exceptions.NoCredentialsError,
-            psycopg2.OperationalError,
-            pymongo.errors.ConnectionFailure,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables

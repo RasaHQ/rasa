@@ -21,7 +21,9 @@ from typing import (
 )
 
 from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, NoCredentialsError
+import psycopg2
+import pymongo.errors
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -42,6 +44,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
+from rasa.shared.exceptions import ConnectionException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
@@ -62,6 +65,12 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
 # default value for key prefix in RedisTrackerStore
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
+
+CONNECTION_ERRORS = (
+    botocore.exceptions.NoCredentialsError,
+    psycopg2.OperationalError,
+    pymongo.errors.ConnectionFailure,
+)
 
 
 class TrackerStore:
@@ -115,7 +124,10 @@ class TrackerStore:
         if isinstance(obj, TrackerStore):
             return obj
 
-        return _create_from_endpoint_config(obj, domain, event_broker)
+        try:
+            return _create_from_endpoint_config(obj, domain, event_broker)
+        except CONNECTION_ERRORS as error:
+            raise ConnectionException("Cannot connect to tracker store.") from error
 
     def get_or_create_tracker(
         self,
@@ -928,8 +940,6 @@ class SQLTrackerStore(TrackerStore):
     @staticmethod
     def _create_database(engine: "Engine", db: Text):
         """Create database `db` on `engine` if it does not exist."""
-
-        import psycopg2
 
         conn = engine.connect()
 
