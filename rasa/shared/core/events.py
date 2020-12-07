@@ -580,6 +580,7 @@ class DefinePrevUserUtteredFeaturization(Event):
 
 # noinspection PyProtectedMember
 class DefinePrevUserUtteredEntities(Event):
+    """Event that is used to set entities on a previous user uttered event."""
 
     type_name = "user_entities"
 
@@ -600,12 +601,15 @@ class DefinePrevUserUtteredEntities(Event):
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
+        """Returns the string representation of the event."""
         return f"DefinePrevUserUtteredEntities({self.entities})"
 
     def __hash__(self) -> int:
+        """Returns the hash value of the event."""
         return hash(self.entities)
 
     def __eq__(self, other) -> bool:
+        """Compares this event with another event."""
         return isinstance(other, DefinePrevUserUtteredEntities)
 
     def as_story_string(self) -> None:
