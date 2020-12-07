@@ -323,7 +323,7 @@ class Interpreter:
         model_metadata = Metadata.load(model_dir)
 
         if new_config:
-            Interpreter._update_epochs_from_new_config(
+            Interpreter._update_metadata_epochs(
                 model_metadata, new_config, finetuning_epoch_fraction
             )
 
@@ -342,11 +342,11 @@ class Interpreter:
         return get_component_class(name).defaults[key]
 
     @staticmethod
-    def _update_epochs_from_new_config(
+    def _update_metadata_epochs(
         model_metadata: Metadata,
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
-    ):
+    ) -> Metadata:
         for old_component_config, new_component_config in zip(
             model_metadata.metadata["pipeline"], new_config["pipeline"]
         ):
@@ -360,6 +360,7 @@ class Interpreter:
                 old_component_config[EPOCHS] = ceil(
                     new_epochs * finetuning_epoch_fraction
                 )
+        return model_metadata
 
     @staticmethod
     def create(
