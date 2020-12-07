@@ -410,7 +410,7 @@ class UserUttered(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash of object."""
-        return hash((self.text, self.intent_name, jsonpickle.encode(self.entities)))
+        return hash(json.dumps(self.as_sub_state()))
 
     @property
     def intent_name(self) -> Optional[Text]:
