@@ -6,6 +6,7 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+# from rasa.nlu.registry import get_component_class
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -336,6 +337,11 @@ class Interpreter:
         )
 
     @staticmethod
+    def _get_default_value_for_component(name: Text, key: Text) -> Any:
+        # return get_component_class(name).defaults[key]
+        return 300
+
+    @staticmethod
     def _update_epochs_from_new_config(
         model_metadata: Metadata,
         new_config: Optional[Dict] = None,
@@ -345,9 +351,14 @@ class Interpreter:
             model_metadata.metadata["pipeline"], new_config["pipeline"]
         ):
             if EPOCHS in old_component_config:
+                new_epochs = new_component_config.get(
+                    EPOCHS,
+                    Interpreter._get_default_value_for_component(
+                        old_component_config["class"], EPOCHS
+                    ),
+                )
                 old_component_config[EPOCHS] = ceil(
-                    new_component_config.get(EPOCHS, old_component_config[EPOCHS])
-                    * finetuning_epoch_fraction
+                    new_epochs * finetuning_epoch_fraction
                 )
 
     @staticmethod
