@@ -296,7 +296,7 @@ class RegexFeaturizer(SparseFeaturizer):
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "RegexFeaturizer":
-        """Load a previously trained component.
+        """Loads a previously trained component.
 
         Args:
             meta: Configuration of trained component.
