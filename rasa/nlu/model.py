@@ -6,7 +6,6 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
-# from rasa.nlu.registry import get_component_class
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -338,8 +337,9 @@ class Interpreter:
 
     @staticmethod
     def _get_default_value_for_component(name: Text, key: Text) -> Any:
-        # return get_component_class(name).defaults[key]
-        return 300
+        from rasa.nlu.registry import get_component_class
+
+        return get_component_class(name).defaults[key]
 
     @staticmethod
     def _update_epochs_from_new_config(

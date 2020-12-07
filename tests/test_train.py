@@ -482,6 +482,42 @@ def test_model_finetuning_nlu(
     assert new_diet_metadata[EPOCHS] == 5
 
 
+def test_model_finetuning_nlu_with_default_epochs(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_nlu_data: Text,
+    trained_moodbot_path: Text,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    # Providing a new config with no epochs will mean the default amount are used
+    # and then scaled by `finetuning_epoch_fraction`.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    del old_config["pipeline"][-1][EPOCHS]
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+
+    train_nlu(
+        str(new_config_path),
+        "examples/moodbot/data/nlu.yml",
+        output=output,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=0.5,
+    )
+
+    mocked_nlu_training.assert_called_once()
+    _, nlu_train_kwargs = mocked_nlu_training.call_args
+    model_to_finetune = nlu_train_kwargs["model_to_finetune"]
+    new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
+    assert new_diet_metadata["name"] == "DIETClassifier"
+    assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.5
+
+
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
 def test_model_finetuning_with_invalid_model(
     tmp_path: Path,
