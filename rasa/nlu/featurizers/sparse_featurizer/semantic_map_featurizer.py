@@ -60,6 +60,10 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         "epochs": 10,
         # whether to add intent tags to snippets
         "use_intents": True,
+        # whether to normalize fingerprints
+        "normalize": True,
+        # maximum density of any semantic fingerprint
+        "max_density": 0.02,
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
@@ -77,6 +81,8 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         )
         self._epochs = self.component_config["epochs"]
         self._use_intents = self.component_config["use_intents"]
+        self._normalize = self.component_config["normalize"]
+        self._max_density = self.component_config["max_density"]
         self._executable: Optional[Text] = self.component_config["executable"]
 
         if self.semantic_map_filename:
@@ -124,7 +130,10 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                     vocabulary_filename,
                     corpus_binary_filename,
                 ) = write_nlu_data_to_binary_file(
-                    training_data, temp_directory, use_intents=self._use_intents
+                    training_data,
+                    temp_directory,
+                    use_intents=self._use_intents,
+                    lowercase=self.lowercase,
                 )
                 height, width = self._size_for_training
                 epochs = self._epochs
@@ -140,7 +149,9 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                 )
                 smc = SemanticMapCreator(codebook_filename, vocabulary_filename,)
                 fps = smc.create_fingerprints(
-                    max_density=0.02, lowercase=self.lowercase
+                    max_density=self._max_density,
+                    lowercase=self.lowercase,
+                    normalize=self._normalize,
                 )
                 print(fps)
                 semantic_map_filename = os.path.join(temp_directory, "smap.json")

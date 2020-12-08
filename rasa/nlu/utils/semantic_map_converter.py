@@ -160,12 +160,12 @@ class Vocabulary(dict):
 
     """ A self-filling dictionary """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lowercase: bool = False, *args, **kwargs):
         super(Vocabulary, self).__init__(*args, **kwargs)
         self.max_index = -1
         self._locked = False
         self._used_vocab = defaultdict(int)
-        self._processor = KeywordProcessor(case_sensitive=False)
+        self._processor = KeywordProcessor(case_sensitive=(not lowercase))
 
     def __getitem__(self, item):
         value = self.get(item)
@@ -190,11 +190,11 @@ class Vocabulary(dict):
     def unlock(self):
         self._locked = False
 
-    def find_all_words(self, text: Text, enforce_lowercase: bool = True) -> List[Text]:
+    def find_all_words(self, text: Text) -> List[Text]:
         assert self._locked
 
-        if not enforce_lowercase:
-            raise NotImplementedError("case sensitive")
+        # if not enforce_lowercase:
+        # raise NotImplementedError("case sensitive")
 
         return self._processor.extract_keywords(text.replace("'", " '"))
 
@@ -205,7 +205,7 @@ class CorpusReader:
     ):
         self._vocabulary_file = vocabulary_file
         self._enforce_lowercase = enforce_lowercase
-        self._vocabulary = Vocabulary()
+        self._vocabulary = Vocabulary(lowercase=enforce_lowercase)
         self._index_pointers = [0]
 
         if vocabulary_file:
@@ -265,9 +265,7 @@ class TitlePrependingHierarchicalCorpusBinaryReader(CorpusReader):
         if DEBUGING:
             print(line)
         indices = set()
-        all_words_of_line = self.vocabulary.find_all_words(
-            line, self._enforce_lowercase
-        )
+        all_words_of_line = self.vocabulary.find_all_words(line)
         for word in all_words_of_line:
             word_index = self._vocabulary[word]
             if word_index is not None:

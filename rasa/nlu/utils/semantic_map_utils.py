@@ -229,7 +229,10 @@ def _wrap_tag(kind: str, text: str) -> str:
 
 
 def write_nlu_data_to_binary_file(
-    nlu_data: TrainingData, dir_name: Text, use_intents: bool = True
+    nlu_data: TrainingData,
+    dir_name: Text,
+    use_intents: bool = True,
+    lowercase: bool = True,
 ) -> Text:
     snippets = set()
     vocab = set()
@@ -277,7 +280,7 @@ def write_nlu_data_to_binary_file(
         data_directory_name=dir_name,
         data_filename_pattern="smap.corpus.txt",
         vocabulary_filename="smap.vocab.txt",
-        enforce_lower_case=True,
+        enforce_lower_case=lowercase,
         max_processes=1,
         use_weights=True,
         combine_lists=False,
@@ -327,6 +330,7 @@ CODEBOOK_FILE_BYTEORDER = "little"
 class SemanticMapCreator:
     def __init__(self, codebook_file_name: Text, vocabulary_file_name: Text):
         self.codebook: Optional[np.ndarray] = None
+        self._norm: Optional[np.ndarray] = None
         self.vocabulary: Optional[List[Text]] = None
 
         if os.path.exists(vocabulary_file_name):
@@ -361,12 +365,15 @@ class SemanticMapCreator:
             num_entires = height * width * input_dim
             self.codebook = np.fromfile(file, dtype=np.float32)
         self.codebook.shape = (height, width, input_dim)
+        self._norm = np.sum(self.codebook, axis=2).flatten()
 
     def _load_vocabulary(self, filename: Text) -> None:
         with open(filename, "r") as file:
             self.vocabulary = file.read().splitlines()
 
-    def _fingerprint(self, index: int, max_density: float) -> Tuple[Text, List[int]]:
+    def _fingerprint(
+        self, index: int, max_density: float = 0.02, normalize: bool = True
+    ) -> Tuple[Text, List[int]]:
         if not self.vocabulary or len(self.vocabulary) < index:
             raise ValueError(f"Vocabulary has no index {index}.")
 
@@ -379,10 +386,15 @@ class SemanticMapCreator:
         num_active_cells: int = max(1, np.math.ceil(max_density * height * width))
 
         dense_fingerprint = self.codebook[:, :, index].flatten()
+        if normalize:
+            dense_fingerprint /= self._norm
         kth_largest_value = np.partition(dense_fingerprint, -num_active_cells)[
             -num_active_cells
         ]
-        indices = np.argwhere(dense_fingerprint >= kth_largest_value).flatten().tolist()
+        indices = np.add(
+            np.argwhere(dense_fingerprint >= kth_largest_value).flatten(), 1
+        ).tolist()
+        print(indices)
 
         return term, indices
 
@@ -405,7 +417,9 @@ class SemanticMapCreator:
     ) -> Dict[Text, List[int]]:
         fingerprints = dict()
         for vocabulary_index in range(len(self.vocabulary)):
-            term, indices = self._fingerprint(vocabulary_index, max_density=max_density)
+            term, indices = self._fingerprint(
+                vocabulary_index, max_density=max_density, normalize=normalize
+            )
             if lowercase:
                 term = term.lower()
             fingerprints[term] = indices
