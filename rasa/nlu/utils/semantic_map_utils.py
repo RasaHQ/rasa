@@ -372,7 +372,11 @@ class SemanticMapCreator:
             self.vocabulary = file.read().splitlines()
 
     def _fingerprint(
-        self, index: int, max_density: float = 0.02, normalize: bool = True
+        self,
+        index: int,
+        max_density: float = 0.02,
+        normalize: bool = True,
+        use_fixed_density: bool = False,
     ) -> Tuple[Text, List[int]]:
         if not self.vocabulary or len(self.vocabulary) < index:
             raise ValueError(f"Vocabulary has no index {index}.")
@@ -384,6 +388,8 @@ class SemanticMapCreator:
         assert index < input_dim
 
         num_active_cells: int = max(1, np.math.ceil(max_density * height * width))
+        if not use_fixed_density:
+            raise NotImplementedError("Variable density is not implemented yet.")
 
         dense_fingerprint = self.codebook[:, :, index].flatten()
         if normalize:
@@ -394,7 +400,6 @@ class SemanticMapCreator:
         indices = np.add(
             np.argwhere(dense_fingerprint >= kth_largest_value).flatten(), 1
         ).tolist()
-        print(indices)
 
         return term, indices
 
@@ -413,12 +418,19 @@ class SemanticMapCreator:
         return width
 
     def create_fingerprints(
-        self, max_density: float = 0.02, normalize: bool = True, lowercase: bool = True,
+        self,
+        max_density: float = 0.02,
+        use_fixed_density: bool = True,
+        normalize: bool = True,
+        lowercase: bool = True,
     ) -> Dict[Text, List[int]]:
         fingerprints = dict()
         for vocabulary_index in range(len(self.vocabulary)):
             term, indices = self._fingerprint(
-                vocabulary_index, max_density=max_density, normalize=normalize
+                vocabulary_index,
+                use_fixed_density=use_fixed_density,
+                max_density=max_density,
+                normalize=normalize,
             )
             if lowercase:
                 term = term.lower()
