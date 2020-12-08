@@ -96,24 +96,23 @@ class SemanticMapFeaturizer(SparseFeaturizer):
 
         self._attributes = DENSE_FEATURIZABLE_ATTRIBUTES
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this component to disk for future loading.
+    # def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    #     """Persist this component to disk for future loading.
 
-        Args:
-            file_name: The file name of the model.
-            model_dir: The directory to store the model to.
+    #     Args:
+    #         file_name: The file name of the model.
+    #         model_dir: The directory to store the model to.
 
-        Returns:
-            An optional dictionary with any information about the stored model.
-        """
-        with open(os.path.join(model_dir, file_name), "w") as file:
-            json.dump(
-                {
-                    "pooling": self.pooling,
-                    "semantic_map": self.semantic_map.as_dict()
-                    or self.semantic_map_filename,
-                }
-            )
+    #     Returns:
+    #         An optional dictionary with any information about the stored model.
+    #     """
+    #     tracker_file = pathlib.Path(path) / filename
+    #     rasa.shared.utils.io.create_directory_for_file(tracker_file)
+
+    #     # noinspection PyTypeChecker
+    #     rasa.shared.utils.io.write_text_file(str(jsonpickle.encode(self)), tracker_file)
+
+    #     return tracker_file
 
     def train(self, training_data: TrainingData, *args: Any, **kwargs: Any,) -> None:
         """Converts tokens to features for training."""
