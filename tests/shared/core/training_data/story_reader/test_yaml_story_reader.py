@@ -5,7 +5,10 @@ import pytest
 
 from rasa.shared.exceptions import FileNotFoundException, YamlSyntaxException
 import rasa.shared.utils.io
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    DEFAULT_E2E_TESTS_PATH,
+)
 from rasa.core import training
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
@@ -396,6 +399,14 @@ async def test_active_loop_is_parsed(default_domain: Domain):
 
 def test_is_test_story_file(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
+    rasa.shared.utils.io.write_yaml({"stories": []}, path)
+    assert YAMLStoryReader.is_test_stories_file(path)
+
+
+def test_is_test_story_file_if_in_test_directory(tmp_path: Path):
+    parent_dir = tmp_path / DEFAULT_E2E_TESTS_PATH
+    parent_dir.mkdir()
+    path = parent_dir / "test_stories.yml"
     rasa.shared.utils.io.write_yaml({"stories": []}, path)
     assert YAMLStoryReader.is_test_stories_file(path)
 

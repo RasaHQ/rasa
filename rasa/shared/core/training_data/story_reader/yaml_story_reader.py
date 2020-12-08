@@ -23,6 +23,7 @@ from rasa.shared.constants import (
     TEST_STORIES_FILE_PREFIX,
     DOCS_URL_RULES,
     DOCS_URL_SLOTS,
+    DEFAULT_E2E_TESTS_PATH,
 )
 
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
@@ -180,7 +181,7 @@ class YAMLStoryReader(StoryReader):
         return any(key in content for key in keys)
 
     @classmethod
-    def _has_test_prefix(cls, file_path: Text) -> bool:
+    def _has_test_prefix(cls, file_path: Union[Text, Path]) -> bool:
         """Check if the filename of a file at a path has a certain prefix.
 
         Arguments:
@@ -202,7 +203,13 @@ class YAMLStoryReader(StoryReader):
             `True` if it's a conversation test file, otherwise `False`.
         """
 
-        return cls._has_test_prefix(file_path) and cls.is_stories_file(file_path)
+        in_test_directory = any(
+            parent.name == DEFAULT_E2E_TESTS_PATH
+            for parent in Path(file_path).absolute().parents
+        )
+        return (
+            cls._has_test_prefix(file_path) or in_test_directory
+        ) and cls.is_stories_file(file_path)
 
     def get_steps(self) -> List[StoryStep]:
         self._add_current_stories_to_result()
