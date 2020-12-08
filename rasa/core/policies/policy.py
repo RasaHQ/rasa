@@ -118,6 +118,7 @@ class Policy:
         """Constructs a new Policy object."""
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
+        self.finetune_mode = kwargs.pop("should_finetune", False)
 
     @property
     def featurizer(self):
@@ -296,8 +297,7 @@ class Policy:
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
 
-            if "should_finetune" in kwargs:
-                data["should_finetune"] = kwargs["should_finetune"]
+            data["should_finetune"] = kwargs.pop("should_finetune", False)
 
             constructor_args = rasa.shared.utils.common.arguments_of(cls)
             if "kwargs" not in constructor_args:

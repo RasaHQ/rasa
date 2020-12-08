@@ -349,12 +349,16 @@ class TEDPolicy(Policy):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
-        self.model = TED(
-            model_data.get_signature(),
-            self.config,
-            isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
-            self._label_data,
-        )
+        if not self.finetune_mode:
+            # This means the model wasn't loaded from a
+            # previously trained model and hence needs
+            # to be instantiated.
+            self.model = TED(
+                model_data.get_signature(),
+                self.config,
+                isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
+                self._label_data,
+            )
 
         self.model.fit(
             model_data,
@@ -476,6 +480,10 @@ class TEDPolicy(Policy):
         )
         meta = train_utils.update_similarity_type(meta)
 
+        meta["should_finetune"] = kwargs.get("should_finetune", False)
+        if "epoch_override" in kwargs:
+            meta[EPOCHS] = kwargs["epoch_override"]
+
         model = TED.load(
             str(tf_model_file),
             model_data_example,
@@ -485,24 +493,22 @@ class TEDPolicy(Policy):
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
             label_data=label_data,
+            finetune_mode=meta["should_finetune"],
         )
 
-        # build the graph for prediction
-        predict_data_example = RasaModelData(
-            label_key=LABEL_KEY,
-            label_sub_key=LABEL_SUB_KEY,
-            data={
-                feature_name: features
-                for feature_name, features in model_data_example.items()
-                if feature_name
-                in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
-            },
-        )
-        model.build_for_predict(predict_data_example)
-
-        meta["should_finetune"] = kwargs.get("should_finetune", False)
-        if "epoch_override" in kwargs:
-            meta[EPOCHS] = kwargs["epoch_override"]
+        if not meta["should_finetune"]:
+            # build the graph for prediction
+            predict_data_example = RasaModelData(
+                label_key=LABEL_KEY,
+                label_sub_key=LABEL_SUB_KEY,
+                data={
+                    feature_name: features
+                    for feature_name, features in model_data_example.items()
+                    if feature_name
+                    in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
+                },
+            )
+            model.build_for_predict(predict_data_example)
 
         return cls(
             featurizer=featurizer,
