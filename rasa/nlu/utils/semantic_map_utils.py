@@ -123,16 +123,23 @@ class SemanticFingerprint:
 
 
 class SemanticMap:
-    def __init__(self, filename: Text) -> None:
-        with open(filename, "r", encoding="utf-8") as file:
-            data = json.load(file)
+    def __init__(
+        self, filename: Optional[Text] = None, data: Optional[Dict[Text, Any]] = None
+    ) -> None:
+        if data and not filename:
+            _data = data
+        elif filename and not data:
+            with open(filename, "r", encoding="utf-8") as file:
+                _data = json.load(file)
+        else:
+            raise ValueError("Either filename or data must be provided")
 
-        self.width = data["Width"]
-        self.height = data["Height"]
-        self.local_topology = data["LocalTopology"]
-        self.global_topology = data["GlobalTopology"]
-        self.note = data["Note"]
-        self._embeddings: Dict[Text, List[int]] = data["Embeddings"]
+        self.width = _data["Width"]
+        self.height = _data["Height"]
+        self.local_topology = _data["LocalTopology"]
+        self.global_topology = _data["GlobalTopology"]
+        self.note = _data["Note"]
+        self._embeddings: Dict[Text, List[int]] = _data["Embeddings"]
         self._vocab_pattern = re.compile(
             "|".join(
                 [

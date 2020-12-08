@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.io import create_temporary_directory
 import tempfile
 import os
+import rasa.utils.io
 
 
 class SemanticMapFeaturizer(SparseFeaturizer):
@@ -73,8 +74,10 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         self.semantic_map_filename: Optional[Text] = self.component_config[
             "semantic_map"
         ]
+
         self.lowercase: bool = self.component_config["lowercase"]
         self.pooling: Text = self.component_config["pooling"]
+
         self._size_for_training = (
             self.component_config["height"],
             self.component_config["width"],
@@ -91,10 +94,53 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                     f"Cannot find semantic map file '{self.semantic_map_filename}'"
                 )
             self.semantic_map = SemanticMap(self.semantic_map_filename)
+        elif self.component_config["semantic_map_data"]:
+            self.semantic_map = SemanticMap(
+                data=self.component_config["semantic_map_data"]
+            )
         else:
             self.semantic_map = None
 
         self._attributes = DENSE_FEATURIZABLE_ATTRIBUTES
+
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this model into the passed directory.
+
+        Returns the metadata necessary to load the model again.
+        """
+
+        file_name = file_name + ".pkl"
+
+        if self.semantic_map:
+            featurizer_file = os.path.join(model_dir, file_name)
+            rasa.utils.io.json_pickle(
+                featurizer_file,
+                {
+                    "pooling": self.pooling,
+                    "lowercase": self.lowercase,
+                    "semantic_map_data": self.semantic_map.as_dict(),
+                },
+            )
+
+        return {"file": file_name}
+
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional[Metadata] = None,
+        cached_component: Optional["CountVectorsFeaturizer"] = None,
+        **kwargs: Any,
+    ) -> "SemanticMapFeaturizer":
+        file_name = meta.get("file")
+        featurizer_file = os.path.join(model_dir, file_name)
+
+        if not os.path.exists(featurizer_file):
+            return cls(meta)
+
+        data = io_utils.json_unpickle(featurizer_file)
+        return cls({**meta, **{"semantic_map_data": data}})
 
     # def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
     #     """Persist this component to disk for future loading.
