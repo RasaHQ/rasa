@@ -94,7 +94,7 @@ def test_policy_loading_no_kwargs_with_context(tmp_path: Path):
 
     with pytest.raises(UnsupportedDialogueModelError) as execinfo:
         PolicyEnsemble.load(str(tmp_path), new_config={"policies": [{}]})
-    assert "`PolicyWithoutLoadKwargs.load` does not accept **kwargs" in str(
+    assert "`PolicyWithoutLoadKwargs.load` does not accept `**kwargs`" in str(
         execinfo.value
     )
 

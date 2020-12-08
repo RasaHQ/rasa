@@ -1251,7 +1251,7 @@ def test_loading_policy_with_no_constructor_kwargs(tmp_path: Path):
     )
     with pytest.raises(UnsupportedDialogueModelError) as execinfo:
         PolicyWithoutInitKwargs.load(str(tmp_path), should_finetune=True)
-    assert "PolicyWithoutInitKwargs `__init__` method does not accept **kwargs." in str(
+    assert "`PolicyWithoutInitKwargs.__init__` does not accept `**kwargs`." in str(
         execinfo.value
     )
 

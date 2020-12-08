@@ -349,16 +349,16 @@ class PolicyEnsemble:
             if "kwargs" not in rasa.shared.utils.common.arguments_of(policy_cls.load):
                 if context:
                     raise UnsupportedDialogueModelError(
-                        f"`{policy_cls.__name__}.load` does not accept **kwargs. "
-                        f"Attempting to pass {context} to the policy. "
-                        f"This argument should be added to all policies by "
+                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
+                        f"accept `**kwargs`. Attempting to pass {context} to the "
+                        f"policy. `**kwargs` should be added to all policies by "
                         f"Rasa Open Source 3.0.0."
                     )
                 else:
                     rasa.shared.utils.io.raise_deprecation_warning(
-                        f"{policy_cls.__name__} `load` method does not "
-                        f"accept **kwargs. This is required for contextual"
-                        f" information e.g. the flag `should_finetune`.",
+                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
+                        f"accept `**kwargs`. `**kwargs` are required for contextual "
+                        f"information e.g. the flag `should_finetune`.",
                         warn_until_version="3.0.0",
                     )
 
