@@ -1260,4 +1260,5 @@ def test_loading_policy_with_no_constructor_kwargs_but_required_args(tmp_path: P
     rasa.shared.utils.io.write_text_file(
         "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
     )
-    PolicyWithoutInitKwargs.load(str(tmp_path))
+    with pytest.warns(FutureWarning):
+        PolicyWithoutInitKwargs.load(str(tmp_path))
