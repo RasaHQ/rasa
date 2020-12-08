@@ -599,6 +599,11 @@ class TEDPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
+        if tracker.latest_action_name != ACTION_LISTEN_NAME:
+            # entities belong to the last user message
+            # a user message is always followed by action listen
+            return None
+
         if not self.config[ENTITY_RECOGNITION]:
             # entity recognition is not turned on, no entities can be predicted
             return None
@@ -614,15 +619,9 @@ class TEDPolicy(Policy):
             # no entities detected
             return None
 
-        # find last user uttered event as the predicted entities belong to
-        # that utterance
-        if tracker.latest_action_name == ACTION_LISTEN_NAME:
-            last_user_utterance = tracker.latest_message
-        else:
-            return None
-
+        # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
-        text = last_user_utterance.text
+        text = tracker.latest_message.text
         parsed_message = interpreter.featurize_message(Message(data={TEXT: text}))
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
         entities = EntityExtractor.convert_predictions_into_entities(
