@@ -128,8 +128,8 @@ class EntityExtractor(Component):
 
         return filtered
 
+    @staticmethod
     def convert_predictions_into_entities(
-        self,
         text: Text,
         tokens: List[Token],
         tags: Dict[Text, List[Text]],
@@ -158,16 +158,22 @@ class EntityExtractor(Component):
         last_token_end = -1
 
         for idx, token in enumerate(tokens):
-            current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
+            current_entity_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_TYPE, idx
+            )
 
             if current_entity_tag == NO_ENTITY_TAG:
                 last_entity_tag = NO_ENTITY_TAG
                 last_token_end = token.end
                 continue
 
-            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_group_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_GROUP, idx
+            )
             current_group_tag = bilou_utils.tag_without_prefix(current_group_tag)
-            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            current_role_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_ROLE, idx
+            )
             current_role_tag = bilou_utils.tag_without_prefix(current_role_tag)
 
             group_or_role_changed = (
@@ -207,7 +213,7 @@ class EntityExtractor(Component):
 
             if new_tag_found:
                 # new entity found
-                entity = self._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,
@@ -217,7 +223,7 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
-            elif self._check_is_single_entity(
+            elif EntityExtractor._check_is_single_entity(
                 text, token, last_token_end, split_entities_config, current_entity_tag
             ):
                 # current token has the same entity tag as the token before and
@@ -226,14 +232,16 @@ class EntityExtractor(Component):
                 # and a whitespace.
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
-                    self._update_confidence_values(entities, confidences, idx)
+                    EntityExtractor._update_confidence_values(
+                        entities, confidences, idx
+                    )
 
             else:
                 # the token has the same entity tag as the token before but the two
                 # tokens are separated by at least 2 symbols (e.g. multiple spaces,
                 # a comma and a space, etc.) and also shouldn't be represented as a
                 # single entity
-                entity = self._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,

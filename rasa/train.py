@@ -175,7 +175,7 @@ async def _train_async_internal(
         )
 
     # We will train nlu if there are any nlu example, including from e2e stories.
-    if nlu_data.is_empty():
+    if nlu_data.contains_no_pure_nlu_data() and not nlu_data.has_e2e_examples():
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
             file_importer,

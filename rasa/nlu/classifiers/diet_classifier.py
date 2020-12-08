@@ -500,7 +500,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _check_input_dimension_consistency(self, model_data: RasaModelData) -> None:
         """Checks if features have same dimensionality if hidden layers are shared."""
-
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
             num_text_sentence_features = model_data.number_of_units(TEXT, SENTENCE)
             num_label_sentence_features = model_data.number_of_units(LABEL, SENTENCE)
@@ -519,7 +518,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self, label_examples: List[Message], attribute: Text = INTENT
     ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
         """Collects precomputed encodings."""
-
         features = defaultdict(list)
 
         for e in label_examples:
@@ -546,7 +544,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         labels_example: List[Message],
     ) -> List[FeatureArray]:
         """Computes one-hot representation for the labels."""
-
         logger.debug("No label features found. Computing default label features.")
 
         eye_matrix = np.eye(len(labels_example), dtype=np.float32)
@@ -571,7 +568,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         If the features are already computed, fetch them from the message object
         else compute a one hot encoding for the label as the feature vector.
         """
-
         # Collect one example for each label
         labels_idx_examples = []
         for label_name, idx in label_id_dict.items():
@@ -731,7 +727,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
@@ -887,7 +882,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return []
 
-        predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
+        predicted_tags, confidence_values = train_utils.entity_label_to_tags(
+            predict_out, self._entity_tag_specs, self.component_config[BILOU_FLAG]
+        )
 
         entities = self.convert_predictions_into_entities(
             message.get(TEXT),
@@ -902,31 +899,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
-    def _entity_label_to_tags(
-        self, predict_out: Dict[Text, Any]
-    ) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
-        predicted_tags = {}
-        confidence_values = {}
-
-        for tag_spec in self._entity_tag_specs:
-            predictions = predict_out[f"e_{tag_spec.tag_name}_ids"].numpy()
-            confidences = predict_out[f"e_{tag_spec.tag_name}_scores"].numpy()
-            confidences = [float(c) for c in confidences[0]]
-            tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
-
-            if self.component_config[BILOU_FLAG]:
-                tags, confidences = bilou_utils.ensure_consistent_bilou_tagging(
-                    tags, confidences
-                )
-
-            predicted_tags[tag_spec.tag_name] = tags
-            confidence_values[tag_spec.tag_name] = confidences
-
-        return predicted_tags, confidence_values
-
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
-
         out = self._predict(message)
 
         if self.component_config[INTENT_CLASSIFICATION]:
