@@ -541,7 +541,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
     return decorated_function
 
 
-def computational_intense(f: Callable[..., Coroutine]) -> Callable:
+def heavy_computation(f: Callable[..., Coroutine]) -> Callable:
     """Decorator which runs request on a separate thread.
 
     Some requests (e.g. training or cross-validation) are computional intense requests.
@@ -579,7 +579,7 @@ def computational_intense(f: Callable[..., Coroutine]) -> Callable:
 
 
 def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
-    """Decorator to inject and clean up a temporary directory.
+    """Decorator to inject a temporary directory before a request and clean up after.
 
     Args:
         f: The request handler function which should be decorated.
@@ -985,7 +985,7 @@ def create_app(
     @app.post("/model/train")
     @requires_auth(app, auth_token)
     @async_if_callback_url
-    @computational_intense
+    @heavy_computation
     @inject_temp_dir
     async def train(request: Request, temporary_directory: Path) -> HTTPResponse:
         validate_request_body(
@@ -1073,7 +1073,7 @@ def create_app(
     @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
     @async_if_callback_url
-    @computational_intense
+    @heavy_computation
     @inject_temp_dir
     async def evaluate_intents(
         request: Request, temporary_directory: Path
