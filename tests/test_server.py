@@ -957,6 +957,44 @@ async def test_cross_validation_with_callback_error(
         assert content["code"] == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
+async def test_callback_unexpected_error(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+):
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
+
+    async def raiseUnexpectedError() -> NoReturn:
+        raise ValueError()
+
+    monkeypatch.setattr(
+        rasa.server,
+        rasa.server._training_payload_from_yaml.__name__,
+        Mock(side_effect=ValueError()),
+    )
+
+    callback_url = "https://example.com/webhooks/actions"
+    with aioresponses() as mocked:
+        mocked.post(callback_url, payload={})
+
+        _, response = await rasa_app_nlu.post(
+            "/model/test/intents",
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+            params={"cross_validation_folds": 3, "callback_url": callback_url},
+        )
+
+        assert response.status == HTTPStatus.NO_CONTENT
+
+        await asyncio.sleep(1)
+
+        last_request = latest_request(mocked, "POST", callback_url)
+        assert last_request
+
+        content = last_request[0].kwargs["json"]
+        assert content["code"] == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
 async def test_predict(rasa_app: SanicASGITestClient):
     data = {
         "Events": {

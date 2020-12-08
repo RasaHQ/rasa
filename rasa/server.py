@@ -515,14 +515,20 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
                     "Sending result to callback URL."
                 )
 
-            except ErrorResponse as e:
+            except Exception as e:
+                if not isinstance(e, ErrorResponse):
+                    logger.error(e)
+                    e = ErrorResponse(
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        "UnexpectedError",
+                        f"An unexpected error occurred. Error: {e}",
+                    )
                 # If an error happens, we sent the error payload to the `callback_url`
                 payload = dict(json=e.error_info)
                 logger.debug(
                     "Error happened when processing request asynchronously. "
                     "Sending error to callback URL."
                 )
-
             async with aiohttp.ClientSession() as session:
                 await session.post(callback_url, raise_for_status=True, **payload)
 
