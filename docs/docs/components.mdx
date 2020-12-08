@@ -836,7 +836,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   This component needs to account for the additional patterns added during [incremental training](./command-line-interface.mdx#incremental-training).
   Use `number_additional_patterns` to configure this number while training the base model from scratch:
 
-  ```yaml-rasa
+  ```yaml-rasa {3}
   pipeline:
   - name: RegexFeaturizer
     number_additional_patterns: 10
@@ -980,7 +980,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   bring in during the process of [incremental training](./command-line-interface.mdx#incremental-training).
   Use `additional_vocabulary_size` while training the base model from scratch to account for this:
 
-  ```yaml-rasa
+  ```yaml-rasa {3-6}
   pipeline:
   - name: CountVectorsFeaturizer
     additional_vocabulary_size:
@@ -989,8 +989,12 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       action_text: 1000
   ```
 
-  If not configured by the user, the component will account for a minimum of 1000 additional
-  vocabulary slots and a maximum of half the current vocabulary size.
+  As the above example shows, you can define these values for each of
+  `text` (user message), `response` (bot messages used by `ResponseSelector`) and
+  `action_text` (text of bot actions). If you are building a shared
+  vocabulary (`use_shared_vocab=True`), you only need to define a value for the `text` attribute.
+  If any of the attributes is not configured by the user, the component will
+  account for a minimum of 1000 additional vocabulary slots and a maximum of half the current vocabulary size.
   Once the component runs out of additional available vocabulary slots
   during incremental training, the new vocabulary tokens are dropped
   and not considered during featurization. At this point, it is advisable
