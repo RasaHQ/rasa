@@ -96,25 +96,25 @@ training time of the new model.
 By default, the command picks up the latest model in the `models/` directory. If you have a specific model
 which you want to improve, you may specify the path to this by
 running `rasa train --finetune <path to model to finetune>`. Finetuning a model usually
-requires less number of epochs to train ML components like `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
-It's suggested to either use a model configuration for finetuning
-which defines lesser number of epochs than before or use the flag
-`--epoch-fraction`. `--epoch-fraction` will use a fraction of the epochs specified for each ML component
-in the given model configuration file. For e.g., if the `DIETClassifier` is configured to use 100 epochs,
+requires fewer epochs to train machine learning components like `DIETClassifier`, `ResponseSelector` and `TEDPolicy` compared to training from scratch.
+Either use a model configuration for finetuning
+which defines fewer epochs than before or use the flag
+`--epoch-fraction`. `--epoch-fraction` will use a fraction of the epochs specified for each machine learning component
+in the model configuration file. For example, if `DIETClassifier` is configured to use 100 epochs,
 specifying `--epoch-fraction 0.5` will only use 50 epochs for finetuning.
 
-You can also finetune an only NLU and only Core model by using
+You can also finetune an NLU-only or dialogue management-only model by using
 `rasa train nlu --finetune` and `rasa train core --finetune` respectively.
 
-Conditions for a model to be finetunable are as follows:
+To be able to fine tune a model, the following conditions must be met:
 
-1. The current configuration supplied should be exactly the same as the
+1. The configuration supplied should be exactly the same as the
 configuration used to train the model which is being finetuned.
-The only parameter that you can change is `epochs` for the individual ML components of the pipeline.
+The only parameter that you can change is `epochs` for the individual machine learning components and policies.
 
-2. The domain of the assistant hasn't changed which means no new
-intents, actions, entities and slots have been added to the training data.
-Adding new training examples for each of these is valid.
+2. The domain supplied should be exactly the same as the domain used to train the model initially. 
+That means no new intents, actions, entities or slots can be added to the domain.
+Only new training examples can be added.
 
 3. The model to be finetuned is trained with `MINIMUM_COMPATIBLE_VERSION` of the currently installed rasa version.
 
