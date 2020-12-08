@@ -270,6 +270,15 @@ def _configure_logging(args: argparse.Namespace):
 
 
 def is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool:
+    """Checks if `project_path` contains a valid Rasa Open Source project.
+
+    Args:
+        args: Command-line arguments.
+        project_path: Path to the possible Rasa Open Source project.
+
+    Returns:
+        `True` if `project_path` is a valid Rasa Open Source project, `False` otherwise.
+    """
     config_path = _get_config_path(args)
     domain_path = _get_domain_path(args)
 
