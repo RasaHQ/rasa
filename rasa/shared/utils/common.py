@@ -56,7 +56,6 @@ def class_from_module_path(
             f"This warning will be converted "
             f"into an exception in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
         )
-        raise TypeError(f"Object at {module_path} is not a valid class.")
 
     return klass
 
