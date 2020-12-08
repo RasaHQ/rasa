@@ -188,7 +188,7 @@ You can clone it and follow the instructions in `README` to try out the full ver
 
 To schedule a reminder, you need to define a custom action that returns
 the `ReminderScheduled` event. For example, the following custom action
-schedules a reminder for five seconds from now:
+schedules a reminder for five minutes from now:
 
 ```python  title="actions.py"
 import datetime
@@ -208,9 +208,9 @@ class ActionSetReminder(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        dispatcher.utter_message("I will remind you in 5 seconds.")
+        dispatcher.utter_message("I will remind you in 5 minutes.")
 
-        date = datetime.datetime.now() + datetime.timedelta(seconds=5)
+        date = datetime.datetime.now() + datetime.timedelta(minutes=5)
         entities = tracker.latest_message.get("entities")
 
         reminder = ReminderScheduled(
@@ -434,4 +434,4 @@ You'll also need to start the action server to schedule, react to, and cancel yo
 See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot) for details.
 
 Then, if you send the bot a message like `Remind me to call Paul Pots`, you should get a reminder
-back five seconds later that says `Remember to call Paul Pots!`.
+back five minutes later that says `Remember to call Paul Pots!`.
