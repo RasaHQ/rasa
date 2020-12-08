@@ -43,7 +43,7 @@ class MappingPolicy(Policy):
     def _standard_featurizer() -> None:
         return None
 
-    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY, **kwargs,) -> None:
+    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY, **kwargs: Any) -> None:
         """Create a new Mapping policy."""
         super().__init__(priority=priority, **kwargs)
 

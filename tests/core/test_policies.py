@@ -1234,14 +1234,14 @@ def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
 
 
 class PolicyWithoutInitKwargs(Policy):
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         pass
 
     def persist(self, _) -> None:
         pass
 
     @classmethod
-    def _metadata_filename(cls):
+    def _metadata_filename(cls) -> Text:
         return "no_finetune_policy"
 
 

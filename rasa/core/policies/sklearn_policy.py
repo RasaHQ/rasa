@@ -303,7 +303,7 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs,) -> Policy:
+    def load(cls, path: Union[Text, Path], **kwargs: Any) -> Policy:
         """See the docstring for `Policy.load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"

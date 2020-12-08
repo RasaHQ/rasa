@@ -436,7 +436,7 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs,) -> "TEDPolicy":
+    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "TEDPolicy":
         """Loads a policy from the storage.
 
         **Needs to load its featurizer**

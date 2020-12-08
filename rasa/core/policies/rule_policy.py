@@ -108,7 +108,7 @@ class RulePolicy(MemoizationPolicy):
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
         check_for_contradictions: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Create a `RulePolicy` object.
 

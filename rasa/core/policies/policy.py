@@ -113,7 +113,7 @@ class Policy:
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Constructs a new Policy object."""
         self.__featurizer = self._create_featurizer(featurizer)
@@ -278,7 +278,7 @@ class Policy:
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs) -> "Policy":
+    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
         """Loads a policy from path.
 
         Args:

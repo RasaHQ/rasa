@@ -39,7 +39,7 @@ class FallbackPolicy(Policy):
         ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
         core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Create a new Fallback policy.
 

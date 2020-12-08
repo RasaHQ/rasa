@@ -71,7 +71,7 @@ class MemoizationPolicy(Policy):
         priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize the policy.
 

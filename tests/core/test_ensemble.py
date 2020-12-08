@@ -41,7 +41,7 @@ from rasa.shared.core.constants import (
 
 class WorkingPolicy(Policy):
     @classmethod
-    def load(cls, *args, **kwargs) -> Policy:
+    def load(cls, *args: Any, **kwargs: Any) -> Policy:
         return WorkingPolicy()
 
     def persist(self, _) -> None:
@@ -118,7 +118,7 @@ class ConstantPolicy(Policy):
         is_end_to_end_prediction: bool = False,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         super().__init__(priority=priority, **kwargs)
         self.predict_index = predict_index

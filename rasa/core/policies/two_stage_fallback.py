@@ -62,7 +62,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Create a new Two-stage Fallback policy.
 
