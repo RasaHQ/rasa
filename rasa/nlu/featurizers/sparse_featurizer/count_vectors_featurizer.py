@@ -380,7 +380,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         Args:
             attribute: Message attribute for which vocabulary should be updated.
             new_vocabulary: Set of words to expand the vocabulary with if they are unseen.
-
         """
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
         if len(new_vocabulary) > len(existing_vocabulary):
@@ -451,7 +450,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         Args:
             attribute: Name of the attribute for which the vocabulary should be expanded.
-
         """
         original_vocabulary = self.vectorizers[attribute].vocabulary_
         current_vocabulary_size = len(original_vocabulary)
@@ -471,7 +469,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         Args:
             attribute: Message attribute for which vocabulary should be set
             original_vocabulary: Vocabulary for the attribute to be set.
-
         """
         self.vectorizers[attribute].vocabulary_ = original_vocabulary
         self.vectorizers[attribute]._validate_vocabulary()
@@ -567,7 +564,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         Args:
             attribute: Message attribute for which the vectorizer is to be trained.
             attribute_texts: Training texts for the attribute
-
         """
         # Get vocabulary words by the preprocessor
         new_vocabulary = self._construct_vocabulary_from_texts(
@@ -584,7 +580,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         Args:
             attribute: Message attribute for which the vectorizer is to be trained.
             attribute_texts: Training texts for the attribute
-
         """
         try:
             self.vectorizers[attribute].fit(attribute_texts)

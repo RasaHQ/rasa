@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 from pathlib import Path
 from _pytest.logging import LogCaptureFixture
-import os
 import logging
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -402,8 +401,8 @@ def test_persist_load(tmp_path: Path):
 
     # Test all artifacts stored as part of persist
     assert persist_value["file"] == "ftr"
-    assert os.path.exists(os.path.join(str(tmp_path), "ftr.patterns.pkl"))
-    assert os.path.exists(os.path.join(str(tmp_path), "ftr.vocabulary_stats.pkl"))
+    assert tmp_path.joinpath("ftr.patterns.pkl").exists()
+    assert tmp_path.joinpath("ftr.vocabulary_stats.pkl").exists()
     assert featurizer.vocabulary_stats == {
         "max_number_patterns": 8,
         "pattern_slots_filled": 3,
@@ -541,7 +540,6 @@ def test_vocabulary_overflow_log(caplog: LogCaptureFixture):
     ]
 
     caplog.set_level(logging.WARNING)
-    caplog.clear()
     with caplog.at_level(logging.WARNING):
         featurizer.train(TrainingData([], regex_features=additional_patterns))
     assert (

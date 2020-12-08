@@ -336,7 +336,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.finetune_mode = finetune_mode
 
         if not self.model and self.finetune_mode:
-            raise rasa.utils.exceptions.RasaException(
+            raise rasa.shared.exceptions.InvalidParameterException(
                 f"{self.__class__.__name__} was instantiated "
                 f"with `model=None` and `finetune_mode=True`. "
                 f"This is not a valid combination as the component "

@@ -1,8 +1,7 @@
 import logging
-import os
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
-
+from pathlib import Path
 import numpy as np
 import scipy.sparse
 
@@ -30,7 +29,6 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.common import lazy_property
 
 logger = logging.getLogger(__name__)
@@ -83,7 +81,7 @@ class RegexFeaturizer(SparseFeaturizer):
         if self.finetune_mode and not self.pattern_vocabulary_stats:
             # If the featurizer is instantiated in finetune mode,
             # the vocabulary stats for it should be known.
-            raise RasaException(
+            raise rasa.shared.exceptions.InvalidParameterException(
                 f"{self.__class__.__name__} was instantiated with"
                 f" `finetune_mode=True` but `pattern_vocabulary_stats`"
                 f" was left to `None`. This is invalid since the featurizer"
@@ -308,19 +306,21 @@ class RegexFeaturizer(SparseFeaturizer):
         """
         file_name = meta.get("file")
 
-        patterns_file_name = os.path.join(model_dir, file_name + ".patterns.pkl")
+        patterns_file_name = Path(model_dir).joinpath(file_name + ".patterns.pkl")
 
-        vocabulary_stats_file_name = os.path.join(
-            model_dir, file_name + ".vocabulary_stats.pkl"
+        vocabulary_stats_file_name = Path(model_dir).joinpath(
+            file_name + ".vocabulary_stats.pkl"
         )
 
         known_patterns = None
         vocabulary_stats = None
-        if os.path.exists(patterns_file_name):
-            known_patterns = rasa.shared.utils.io.read_json_file(patterns_file_name)
-        if os.path.exists(vocabulary_stats_file_name):
+        if patterns_file_name.exists():
+            known_patterns = rasa.shared.utils.io.read_json_file(
+                str(patterns_file_name)
+            )
+        if vocabulary_stats_file_name.exists():
             vocabulary_stats = rasa.shared.utils.io.read_json_file(
-                vocabulary_stats_file_name
+                str(vocabulary_stats_file_name)
             )
 
         return RegexFeaturizer(
@@ -341,10 +341,10 @@ class RegexFeaturizer(SparseFeaturizer):
             Metadata necessary to load the model again.
         """
         patterns_file_name = file_name + ".patterns.pkl"
-        regex_file = os.path.join(model_dir, patterns_file_name)
-        utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
+        regex_file = Path(model_dir).joinpath(patterns_file_name)
+        utils.write_json_to_file(str(regex_file), self.known_patterns, indent=4)
         vocabulary_stats_file_name = file_name + ".vocabulary_stats.pkl"
-        vocabulary_file = os.path.join(model_dir, vocabulary_stats_file_name)
-        utils.write_json_to_file(vocabulary_file, self.vocabulary_stats, indent=4)
+        vocabulary_file = Path(model_dir).joinpath(vocabulary_stats_file_name)
+        utils.write_json_to_file(str(vocabulary_file), self.vocabulary_stats, indent=4)
 
         return {"file": file_name}

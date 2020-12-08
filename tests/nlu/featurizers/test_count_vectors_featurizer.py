@@ -877,7 +877,6 @@ def test_cvf_incremental_train_vocabulary_overflow(
     tokenizer.train(data)
 
     caplog.set_level(logging.WARNING)
-    caplog.clear()
     with caplog.at_level(logging.WARNING):
         new_featurizer.train(data)
     if overflow:
