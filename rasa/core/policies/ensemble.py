@@ -326,7 +326,7 @@ class PolicyEnsemble:
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
     ) -> "PolicyEnsemble":
-        """Loads policy and domain specification from storage."""
+        """Loads policy and domain specification from disk."""
         metadata = cls.load_metadata(path)
         cls.ensure_model_compatibility(metadata)
         policies = []

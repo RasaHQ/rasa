@@ -304,7 +304,7 @@ class SklearnPolicy(Policy):
 
     @classmethod
     def load(cls, path: Union[Text, Path], **kwargs,) -> Policy:
-        """See the docstring for `Policy.Load`."""
+        """See the docstring for `Policy.load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
         if not Path(path).exists():
