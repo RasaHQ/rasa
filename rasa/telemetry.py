@@ -602,10 +602,7 @@ def initialize_error_reporting() -> None:
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
     from the `rasa` package."""
-    import botocore.exceptions
     import sentry_sdk
-    import psycopg2
-    import pymongo.errors
     from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
