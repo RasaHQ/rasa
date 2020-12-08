@@ -1,4 +1,4 @@
-from typing import Text, Set, Optional, Dict, List, BinaryIO
+from typing import Text, Set, Optional, Dict, List, BinaryIO, Tuple, Any
 from scipy.sparse import csr_matrix, coo_matrix
 import json
 import numpy as np
@@ -156,6 +156,12 @@ class SemanticMap:
     def num_cells(self):
         return self.height * self.width
 
+    @property
+    def vocabulary(self) -> Set[Text]:
+        if not self._embeddings:
+            return set()
+        return set(self._embeddings.keys())
+
     def get_empty_fingerprint(self):
         return SemanticFingerprint(self.height, self.width, set())
 
@@ -207,12 +213,24 @@ class SemanticMap:
     def vocabulary(self) -> Set[Text]:
         return set(self._embeddings.keys())
 
+    def as_dict(self) -> Dict[Text, Any]:
+        return {
+            "Width": self.width,
+            "Height": self.height,
+            "LocalTopology": self.local_topology,
+            "GlobalTopology": self.global_topology,
+            "Note": self.note,
+            "Embeddings": self._embeddings,
+        }
+
 
 def _wrap_tag(kind: str, text: str) -> str:
     return f"[{kind}-{text}]"
 
 
-def write_nlu_data_to_binary_file(nlu_data: TrainingData, dir_name: Text) -> Text:
+def write_nlu_data_to_binary_file(
+    nlu_data: TrainingData, dir_name: Text, use_intents: bool = True
+) -> Text:
     snippets = set()
     vocab = set()
     tag_vocab = set()
@@ -237,9 +255,12 @@ def write_nlu_data_to_binary_file(nlu_data: TrainingData, dir_name: Text) -> Tex
             word = _wrap_tag("intent", intent)
             tag_vocab.add(word)
             title += f"{word} "
-
         title += "=\n"
-        snippets.add(title + snippet)
+
+        if use_intents:
+            snippets.add(title + snippet)
+        else:
+            snippets.add(snippet)
 
     with open(f"{dir_name}/smap.vocab.txt", "w") as file:
         file.writelines({v + "\n" for v in tag_vocab})
@@ -262,19 +283,22 @@ def write_nlu_data_to_binary_file(nlu_data: TrainingData, dir_name: Text) -> Tex
         combine_lists=False,
     )
 
-    return f"{dir_name}/smap.corpus.bin"
+    return f"{dir_name}/smap.vocab.txt", f"{dir_name}/smap.corpus.bin"
 
-
-SMAP_EXECUTABLE = "/home/jem-mosig/rasa/semantic-map/build/smap"
 
 from subprocess import CalledProcessError, check_call, check_output
 
 
 def run_smap(
-    dir_name: Text, corpus_binary_filename: Text, height: int, width: int, epochs: int,
+    exe: Text,
+    dir_name: Text,
+    corpus_binary_filename: Text,
+    height: int,
+    width: int,
+    epochs: int,
 ) -> Text:
     cmd = [
-        SMAP_EXECUTABLE,
+        exe,
         "create",
         corpus_binary_filename,
         str(height),
@@ -295,6 +319,97 @@ def run_smap(
     stdout = check_output(cmd)
     print(stdout.decode())
     return os.path.join(dir_name, "smap", "codebook.bin")
+
+
+CODEBOOK_FILE_BYTEORDER = "little"
+
+
+class SemanticMapCreator:
+    def __init__(self, codebook_file_name: Text, vocabulary_file_name: Text):
+        self.codebook: Optional[np.ndarray] = None
+        self.vocabulary: Optional[List[Text]] = None
+
+        if os.path.exists(vocabulary_file_name):
+            self._load_vocabulary(vocabulary_file_name)
+        else:
+            raise FileNotFoundError(f"File {vocabulary_file_name} not found")
+
+        if os.path.exists(codebook_file_name):
+            self._load_codebook(codebook_file_name)
+        else:
+            raise FileNotFoundError(f"File {codebook_file_name} not found")
+
+        assert len(self.vocabulary) == self.codebook.shape[2]
+
+    def _load_codebook(self, filename: Text) -> None:
+        with open(filename, "rb") as file:
+            format_version: int = int.from_bytes(
+                file.read(1), byteorder=CODEBOOK_FILE_BYTEORDER, signed=False
+            )  # [uint8_t]
+            assert format_version == 0
+
+            height: int = int.from_bytes(
+                file.read(8), byteorder=CODEBOOK_FILE_BYTEORDER, signed=False
+            )  # [uint64_t]
+            width: int = int.from_bytes(
+                file.read(8), byteorder=CODEBOOK_FILE_BYTEORDER, signed=False
+            )  # [uint64_t]
+            input_dim: int = int.from_bytes(
+                file.read(8), byteorder=CODEBOOK_FILE_BYTEORDER, signed=False
+            )  # [uint64_t]
+
+            num_entires = height * width * input_dim
+            self.codebook = np.fromfile(file, dtype=np.float32)
+        self.codebook.shape = (height, width, input_dim)
+
+    def _load_vocabulary(self, filename: Text) -> None:
+        with open(filename, "r") as file:
+            self.vocabulary = file.read().splitlines()
+
+    def _fingerprint(self, index: int, max_density: float) -> Tuple[Text, List[int]]:
+        if not self.vocabulary or len(self.vocabulary) < index:
+            raise ValueError(f"Vocabulary has no index {index}.")
+
+        term = self.vocabulary[index]
+
+        height, width, input_dim = self.codebook.shape
+        assert 0 <= index
+        assert index < input_dim
+
+        num_active_cells: int = max(1, np.math.ceil(max_density * height * width))
+
+        dense_fingerprint = self.codebook[:, :, index].flatten()
+        kth_largest_value = np.partition(dense_fingerprint, -num_active_cells)[
+            -num_active_cells
+        ]
+        indices = np.argwhere(dense_fingerprint >= kth_largest_value).flatten().tolist()
+
+        return term, indices
+
+    @property
+    def height(self) -> Optional[int]:
+        if not self.codebook:
+            return None
+        height, _, _ = self.codebook.shape
+        return height
+
+    @property
+    def width(self) -> Optional[int]:
+        if not self.codebook:
+            return None
+        _, width, _ = self.codebook.shape
+        return width
+
+    def create_fingerprints(
+        self, max_density: float = 0.02, normalize: bool = True, lowercase: bool = True,
+    ) -> Dict[Text, List[int]]:
+        fingerprints = dict()
+        for vocabulary_index in range(len(self.vocabulary)):
+            term, indices = self._fingerprint(vocabulary_index, max_density=max_density)
+            if lowercase:
+                term = term.lower()
+            fingerprints[term] = indices
+        return fingerprints
 
 
 def semantic_overlap(

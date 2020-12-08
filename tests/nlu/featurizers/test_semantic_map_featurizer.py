@@ -20,7 +20,7 @@ from rasa.nlu.featurizers.sparse_featurizer.semantic_map_featurizer import (
 
 @pytest.mark.timeout(99999999)
 def test_semantic_map_featurizer():
-    featurizer = SemanticMapFeaturizer()
+    featurizer = SemanticMapFeaturizer({"width": 2, "height": 2, "epochs": 2})
     tokenizer = WhitespaceTokenizer()
 
     training_messages = [
@@ -34,7 +34,23 @@ def test_semantic_map_featurizer():
     tokenizer.train(training_data)
     featurizer.train(training_data)
 
-    assert False
+    expected_vocab = {
+        "[intent-goodbye]",
+        "[intent-greet]",
+        "are",
+        "there",
+        "auf",
+        "bye",
+        "hi",
+        "hello",
+        "how",
+        "wiedersehen",
+        "bis",
+        "you",
+        "demnächst",
+    }
+
+    assert featurizer.semantic_map.vocabulary == expected_vocab
 
 
 # @pytest.mark.parametrize(

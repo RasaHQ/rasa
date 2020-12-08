@@ -1,6 +1,7 @@
 from typing import List, Type, Text, Optional, Dict, Any, Tuple
 import os
 import re
+import json
 import numpy as np
 import scipy.sparse
 
@@ -13,6 +14,7 @@ from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.nlu.utils.semantic_map_utils import (
     SemanticMap,
+    SemanticMapCreator,
     write_nlu_data_to_binary_file,
     run_smap,
 )
@@ -48,15 +50,34 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         "lowercase": True,
         # how to combine sequence features to a sentence feature
         "pooling": "sum",
+        # if no map name is given, the following parameters are relevant:
+        # path to the semantic map training executable
+        "executable": "/home/jem-mosig/rasa/semantic-map/build/smap",
+        # map size
+        "height": 8,
+        "width": 8,
+        # number of training epochs
+        "epochs": 10,
+        # whether to add intent tags to snippets
+        "use_intents": True,
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         """Constructs a new semantic map vectorizer."""
         super().__init__(component_config)
 
-        self.semantic_map_filename: Text = self.component_config["semantic_map"]
+        self.semantic_map_filename: Optional[Text] = self.component_config[
+            "semantic_map"
+        ]
         self.lowercase: bool = self.component_config["lowercase"]
         self.pooling: Text = self.component_config["pooling"]
+        self._size_for_training = (
+            self.component_config["height"],
+            self.component_config["width"],
+        )
+        self._epochs = self.component_config["epochs"]
+        self._use_intents = self.component_config["use_intents"]
+        self._executable: Optional[Text] = self.component_config["executable"]
 
         if self.semantic_map_filename:
             if not os.path.exists(self.semantic_map_filename):
@@ -69,22 +90,74 @@ class SemanticMapFeaturizer(SparseFeaturizer):
 
         self._attributes = DENSE_FEATURIZABLE_ATTRIBUTES
 
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this component to disk for future loading.
+
+        Args:
+            file_name: The file name of the model.
+            model_dir: The directory to store the model to.
+
+        Returns:
+            An optional dictionary with any information about the stored model.
+        """
+        with open(os.path.join(model_dir, file_name), "w") as file:
+            json.dump(
+                {
+                    "pooling": self.pooling,
+                    "semantic_map": self.semantic_map.as_dict()
+                    or self.semantic_map_filename,
+                }
+            )
+
     def train(self, training_data: TrainingData, *args: Any, **kwargs: Any,) -> None:
         """Converts tokens to features for training."""
         # Learn vocabulary and train semantic map
-        if not self.semantic_map and len(training_data.nlu_examples) > 0:
+        if not self.semantic_map:
+            if len(training_data.nlu_examples) == 0:
+                raise ValueError("No nlu examples to train semantic map on.")
             with tempfile.TemporaryDirectory() as temp_directory:
                 if not os.path.exists(temp_directory):
                     raise FileNotFoundError(
                         f"Could not create temporary directory '{temp_directory}'."
                     )
-                corpus_binary_filename = write_nlu_data_to_binary_file(
-                    training_data, temp_directory
+                (
+                    vocabulary_filename,
+                    corpus_binary_filename,
+                ) = write_nlu_data_to_binary_file(
+                    training_data, temp_directory, use_intents=self._use_intents
                 )
-                print(temp_directory)
-                run_smap(temp_directory, corpus_binary_filename, 2, 2, epochs=2)
-                print(os.listdir(os.path.join(temp_directory, "smap")))
-                # TODO: CONTINUE HERE ...
+                height, width = self._size_for_training
+                epochs = self._epochs
+                local_topology = 6
+                global_topology = 0
+                codebook_filename = run_smap(
+                    self._executable,
+                    temp_directory,
+                    corpus_binary_filename,
+                    height,
+                    width,
+                    epochs=epochs,
+                )
+                smc = SemanticMapCreator(codebook_filename, vocabulary_filename,)
+                fps = smc.create_fingerprints(
+                    max_density=0.02, lowercase=self.lowercase
+                )
+                print(fps)
+                semantic_map_filename = os.path.join(temp_directory, "smap.json")
+                with open(semantic_map_filename, "w") as file:
+                    json.dump(
+                        {
+                            "Width": width,
+                            "Height": height,
+                            "LocalTopology": local_topology,
+                            "GlobalTopology": global_topology,
+                            "TrainingDataHash": training_data.fingerprint(),
+                            "Note": "",
+                            "Embeddings": fps,
+                        },
+                        file,
+                    )
+                self.semantic_map = SemanticMap(semantic_map_filename)
 
         # Add features to be used by other components in the pipeline
         for example in training_data.training_examples:
