@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from http import HTTPStatus
 from multiprocessing.managers import DictProxy
@@ -910,7 +911,8 @@ async def test_cross_validation_with_callback_success(
         last_request = latest_request(mocked, "POST", callback_url)
         assert last_request
 
-        content = last_request[0].kwargs["json"]
+        content = last_request[0].kwargs["data"]
+        content = json.loads(content)
         for required_key in {
             "intent_evaluation",
             "intent_errors",

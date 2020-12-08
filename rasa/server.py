@@ -507,13 +507,24 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
         async def wrapped() -> None:
             try:
                 result: HTTPResponse = await f(request, *args, **kwargs)
-                payload = json.loads(result.body)
+                payload = dict(
+                    data=result.body, headers={"Content-Type": result.content_type}
+                )
+                logger.debug(
+                    "Asynchronous processing of request was successful. "
+                    "Sending result to callback URL."
+                )
+
             except ErrorResponse as e:
                 # If an error happens, we sent the error payload to the `callback_url`
-                payload = e.error_info
+                payload = dict(json=e.error_info)
+                logger.debug(
+                    "Error happened when processing request asynchronously. "
+                    "Sending error to callback URL."
+                )
 
             async with aiohttp.ClientSession() as session:
-                await session.post(callback_url, json=payload)
+                await session.post(callback_url, raise_for_status=True, **payload)
 
         # Run the request in the background on the event loop
         request.app.add_task(wrapped())
@@ -1152,19 +1163,26 @@ def create_app(
             # Use a temporary directory as `output` as we will only obtain the full
             # validation results in that case.
             output=str(temporary_directory),
+            disable_plotting=True,
+            errors=True,
         )
-        response_filename_mapping = {
+
+        evaluation_results = _get_evaluation_results(temporary_directory)
+        prediction_errors = _get_prediction_errors(temporary_directory)
+        evaluation_results.update(prediction_errors)
+
+        return evaluation_results
+
+    def _get_evaluation_results(temporary_directory: Path) -> Dict[Text, Any]:
+        report_filename_mapping = {
             "intent_evaluation": "intent_report.json",
-            "intent_errors": "intent_errors.json",
             "entity_evaluation": "DIETClassifier_report.json",
-            "entity_errors": "DIETClassifier_errors.json",
             "response_selection_evaluation": "response_selector.json",
-            "response_selection_errors": "response_selection_errors.json",
         }
 
-        result = {
-            eval_name: _read_file_or_empty_dict(temporary_directory, filename)
-            for eval_name, filename in response_filename_mapping.items()
+        evaluation_results = {
+            eval_name: _read_file_or_empty(temporary_directory, filename)
+            for eval_name, filename in report_filename_mapping.items()
         }
 
         return {
@@ -1173,14 +1191,28 @@ def create_app(
                 "precision": report.get("weighted avg", {}).get("precision"),
                 "f1_score": report.get("weighted avg", {}).get("f1-score"),
             }
-            for eval_name, report in result.items()
+            for eval_name, report in evaluation_results.items()
         }
 
-    def _read_file_or_empty_dict(directory: Path, file_name: Text,) -> Dict:
+    def _get_prediction_errors(temporary_directory: Path) -> Dict[Text, Any]:
+        prediction_errors_filename_mapping = {
+            "intent_errors": "intent_errors.json",
+            "entity_errors": "DIETClassifier_errors.json",
+            "response_selection_errors": "response_selection_errors.json",
+        }
+
+        return {
+            error_name: _read_file_or_empty(temporary_directory, filename, empty=list)
+            for error_name, filename in prediction_errors_filename_mapping.items()
+        }
+
+    def _read_file_or_empty(
+        directory: Path, file_name: Text, empty: Callable[[], Any] = dict
+    ) -> Any:
         path = directory / file_name
         if path.is_file():
             return rasa.shared.utils.io.read_json_file(path)
-        return {}
+        return empty()
 
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
