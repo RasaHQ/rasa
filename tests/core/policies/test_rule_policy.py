@@ -656,6 +656,48 @@ def test_all_policy_attributes_are_persisted(tmpdir: Path):
     assert persisted_policy._enable_fallback_prediction == enable_fallback_prediction
 
 
+async def test_rule_policy_finetune(
+    tmpdir: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
+):
+
+    trained_rule_policy.persist(tmpdir)
+
+    loaded_policy = RulePolicy.load(tmpdir, should_finetune=True)
+
+    assert loaded_policy.finetune_mode
+
+    new_rule = TrackerWithCachedStates.from_events(
+        "stop story",
+        domain=trained_rule_policy_domain,
+        slots=trained_rule_policy_domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "stopp"}),
+            ActionExecuted("utter_stop"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    new_rule.is_rule_tracker = True
+
+    original_data = await training.load_data(
+        "examples/rules/data/rules.yml", trained_rule_policy_domain
+    )
+
+    loaded_policy.train(
+        original_data + [new_rule], trained_rule_policy_domain, RegexInterpreter()
+    )
+
+    assert (
+        len(loaded_policy.lookup["rules"])
+        == len(trained_rule_policy.lookup["rules"]) + 1
+    )
+    assert (
+        """[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "stopp"}}]"""
+        in loaded_policy.lookup["rules"]
+    )
+
+
 def test_faq_rule():
     domain = Domain.from_yaml(
         f"""
