@@ -464,6 +464,7 @@ paths:
           type: boolean
           default: False
           description: Force a model training even if the data has not changed
+      - $ref: '#/components/parameters/callback_url'
       requestBody:
         required: true
         description: >-
@@ -489,6 +490,8 @@ paths:
             application/octet-stream:
               schema:
                 $ref: '#/components/schemas/TrainingResult'
+        204:
+          $ref: '#/components/responses/204Callback'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:

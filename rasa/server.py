@@ -978,6 +978,7 @@ def create_app(
 
     @app.post("/model/train")
     @requires_auth(app, auth_token)
+    @async_if_callback_url
     @computational_intense
     @inject_temp_dir
     async def train(request: Request, temporary_directory: Path) -> HTTPResponse:
