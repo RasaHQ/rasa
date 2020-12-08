@@ -469,38 +469,42 @@ class RasaInputLayer(tf.keras.layers.Layer):
                     )
 
         # SEQUENCE + SENTENCE
-        data_signatures = {}
-        for feature_type in [SEQUENCE, SENTENCE]:
-            if feature_type in data_signature:
-                # TODO: shall we account for ALL features, not assuming there's always
-                # just 1 per feature type?
-                data_signatures[feature_type] = data_signature[feature_type][0]
+        self.do_seq_sent_concat = all(
+            [feature_type in data_signature for feature_type in [SEQUENCE, SENTENCE]]
+        )
+        if self.do_seq_sent_concat:
+            data_signatures = {}
+            for feature_type in [SEQUENCE, SENTENCE]:
+                if feature_type in data_signature:
+                    # TODO: shall we account for ALL features, not assuming there's always
+                    # just 1 per feature type?
+                    data_signatures[feature_type] = data_signature[feature_type][0]
+                else:
+                    data_signatures[feature_type] = None
+
+            concat_layers_kwargs = {
+                "layer_sizes": [config[CONCAT_DIMENSION][name]],
+                "dropout_rate": config[DROP_RATE],
+                "reg_lambda": config[REGULARIZATION_CONSTANT],
+                "sparsity": config[WEIGHT_SPARSITY],
+            }
+
+            self.concat_seq_sent = ConcatenateSequenceSentenceFeatures(
+                sequence_signature=data_signatures[SEQUENCE],
+                sentence_signature=data_signatures[SENTENCE],
+                concat_dimension=config[CONCAT_DIMENSION][name],
+                concat_layers_kwargs=concat_layers_kwargs,
+                layer_name_suffix=name,
+            )
+        else:
+            if SEQUENCE in data_signature:
+                self.concat_seq_sent = (
+                    lambda seq_features, sent_features, text_mask: seq_features
+                )
             else:
-                data_signatures[feature_type] = None
-
-        concat_layers_kwargs = {
-            "layer_sizes": [config[CONCAT_DIMENSION][name]],
-            "dropout_rate": config[DROP_RATE],
-            "reg_lambda": config[REGULARIZATION_CONSTANT],
-            "sparsity": config[WEIGHT_SPARSITY],
-        }
-
-        self.concat_seq_sent = ConcatenateSequenceSentenceFeatures(
-            sequence_signature=data_signatures[SEQUENCE],
-            sentence_signature=data_signatures[SENTENCE],
-            concat_dimension=config[CONCAT_DIMENSION][name],
-            concat_layers_kwargs=concat_layers_kwargs,
-            layer_name_suffix=name,
-        )
-
-        # FFNN
-        self.ffnn = Ffnn(
-            config[HIDDEN_LAYERS_SIZES][name],
-            config[DROP_RATE],
-            config[REGULARIZATION_CONSTANT],
-            config[WEIGHT_SPARSITY],
-            layer_name_suffix=name,
-        )
+                self.concat_seq_sent = (
+                    lambda seq_features, sent_features, text_mask: sent_features
+                )
 
     def call(
         self,

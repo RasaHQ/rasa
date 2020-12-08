@@ -497,7 +497,7 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
-            eager=True,  # TODO remove
+            eager=False,  # TODO remove
         )
 
     def _featurize_tracker_for_e2e(
@@ -819,7 +819,7 @@ class TED(TransformerRasaModel):
                 #     attribute=name,
                 #     feature_type=SENTENCE,
                 # )
-                self._prepare_input_layers(self, name, self.label_signature[name])
+                self._prepare_input_layers(name, self.label_signature[name])
             else:
                 print(
                     "> CREATING NO FEATURE COMBINING LAYERS for",
@@ -1209,7 +1209,7 @@ class TED(TransformerRasaModel):
             # attribute_features = self._combine_sparse_dense_features(
             #     tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
             # )
-            attribute_features = self._tf_layers[f"{name}_input_layer"](
+            attribute_features = self._tf_layers[f"{attribute}_input_layer"](
                 sequence_features=[],
                 sentence_features=tf_batch_data[attribute][SENTENCE],
                 mask_sequence=None,
