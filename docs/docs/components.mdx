@@ -833,7 +833,11 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   **Configuring for incremental training**
 
-  To account for additional patterns added during [incremental training](./command-line-interface.mdx#incremental-training), configure the `number_additional_patterns` parameter while training the base model from scratch:
+  To ensure that `sparse_features` are of fixed size during
+  [incremental training](./command-line-interface.mdx#incremental-training), the
+  component should be configured to account for additional patterns that may be
+  added to the training data in future. To do so, configure the `number_additional_patterns`
+  parameter while training the base model from scratch:
 
   ```yaml-rasa {3}
   pipeline:
@@ -975,8 +979,11 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   **Configuring for incremental training**
 
-  To account for the extra vocabulary that new training examples will
-  bring in during [incremental training](./command-line-interface.mdx#incremental-training), configure the `additional_vocabulary_size` parameter while training the base model from scratch:
+  To ensure that `sparse_features` are of fixed size during
+  [incremental training](./command-line-interface.mdx#incremental-training), the
+  component should be configured to account for additional vocabulary tokens
+  that may be added as part of new training examples in the future.
+  To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
 
   ```yaml-rasa {3-6}
   pipeline:
@@ -987,7 +994,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       action_text: 1000
   ```
 
-  As  in the above example, you can define additional vocabulary size for each of
+  As in the above example, you can define additional vocabulary size for each of
   `text` (user messages), `response` (bot responses used by `ResponseSelector`) and
   `action_text` (bot responses not used by `ResponseSelector`). If you are building a shared
   vocabulary (`use_shared_vocab=True`), you only need to define a value for the `text` attribute.
