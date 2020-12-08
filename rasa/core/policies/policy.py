@@ -296,7 +296,6 @@ class Policy:
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
 
-            data = {}
             if "should_finetune" in kwargs:
                 data["should_finetune"] = kwargs["should_finetune"]
 
@@ -413,7 +412,7 @@ class PolicyPrediction:
                 you return as they can potentially influence the conversation flow.
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
-        """
+         """
         self.probabilities = probabilities
         self.policy_name = policy_name
         self.policy_priority = (policy_priority,)
