@@ -850,16 +850,21 @@ async def test_cross_validation(
     response_body = response.json()
     for required_key in {
         "intent_evaluation",
-        "intent_errors",
         "entity_evaluation",
-        "entity_errors",
         "response_selection_evaluation",
-        "response_selection_errors",
     }:
         assert required_key in response_body
         details = response_body[required_key]
-        if details:
+        if required_key:
             assert all(key in details for key in ["precision", "f1_score"])
+
+    for required_key in {
+        "intent_errors",
+        "entity_errors",
+        "response_selection_errors",
+    }:
+        assert required_key in response_body
+        assert isinstance(response_body[required_key], list)
 
 
 async def test_cross_validation_with_md(
