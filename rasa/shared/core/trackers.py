@@ -58,6 +58,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     DefinePrevUserUtteredFeaturization,
+    DefinePrevUserUtteredEntities,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -459,6 +460,12 @@ class DialogueStateTracker:
                 )
                 if event.use_text_for_featurization is None:
                     event.use_text_for_featurization = use_text_for_featurization
+                # update event's entities based on the future event
+                entities = self._define_user_entities(events_as_list[i + 1 :])
+                if entities is not None:
+                    for entity in entities:
+                        if entity not in event.entities:
+                            event.entities.append(entity)
 
                 applied_events.append(event)
             else:
@@ -476,9 +483,23 @@ class DialogueStateTracker:
                 return future_event.use_text_for_featurization
 
     @staticmethod
+    def _define_user_entities(
+        future_events: List[Event],
+    ) -> Optional[List[Dict[Text, Any]]]:
+        for future_event in future_events:
+            if isinstance(future_event, ActionExecuted):
+                # the search should happen only within one dialogue turn
+                return None
+            if isinstance(future_event, DefinePrevUserUtteredEntities):
+                return future_event.entities
+
+    @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
-        """Removes events from `done_events` until the first occurrence `event_type`
-        is found which is also removed."""
+        """Removes events from `done_events`.
+
+        Removes events from `done_events` until the first occurrence `event_type`
+        is found which is also removed.
+        """
         # list gets modified - hence we need to copy events!
         for e in reversed(done_events[:]):
             del done_events[-1]

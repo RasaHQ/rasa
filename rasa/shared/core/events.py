@@ -633,12 +633,75 @@ class DefinePrevUserUtteredFeaturization(Event):
 
 
 # noinspection PyProtectedMember
+class DefinePrevUserUtteredEntities(Event):
+    """Event that is used to set entities on a previous user uttered event."""
+
+    type_name = "user_entities"
+
+    def __init__(
+        self,
+        entities: List[Dict[Text, Any]],
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Initializes a DefinePrevUserUtteredEntities event.
+
+        Args:
+            entities: the entities of a previous user uttered event
+            timestamp: the timestamp
+            metadata: some optional metadata
+        """
+        self.entities = entities
+        super().__init__(timestamp, metadata)
+
+    def __str__(self) -> Text:
+        """Returns the string representation of the event."""
+        entity_str = [e[ENTITY_ATTRIBUTE_TYPE] for e in self.entities]
+        return f"DefinePrevUserUtteredEntities({entity_str})"
+
+    def __hash__(self) -> int:
+        """Returns the hash value of the event."""
+        return hash(self.entities)
+
+    def __eq__(self, other) -> bool:
+        """Compares this event with another event."""
+        return isinstance(other, DefinePrevUserUtteredEntities)
+
+    def as_story_string(self) -> None:
+        """Returns the event as story string.
+
+        Returns:
+            None, as this event should not appear inside the story.
+        """
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredEntities":
+        return DefinePrevUserUtteredEntities(
+            parameters.get(ENTITIES),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Converts the event into a dict.
+
+        Returns:
+            A dict that represents this event.
+        """
+        d = super().as_dict()
+        d.update({ENTITIES: self.entities})
+        return d
+
+
+# noinspection PyProtectedMember
 class BotUttered(Event):
     """The bot has said something to the user.
 
     This class is not used in the story training as it is contained in the
 
-    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``.
+    """
 
     type_name = "bot"
 
