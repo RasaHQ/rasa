@@ -3,7 +3,6 @@ from typing import Text, List
 import numpy as np
 import pytest
 import logging
-import os
 
 from _pytest.logging import LogCaptureFixture
 
@@ -21,11 +20,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.constants import TEXT, INTENT
-
-skip_on_CI = pytest.mark.skipif(
-    bool(os.environ.get("CI")),
-    reason="Downloading model crashes github action" "workers",
-)
+from tests.nlu.conftest import skip_on_CI
 
 
 @pytest.mark.parametrize(
@@ -376,20 +371,136 @@ def test_attention_mask(
 
 
 @pytest.mark.parametrize(
+    "model_name, model_weights, texts, expected_number_of_sub_tokens",
+    [
+        (
+            "bert",
+            None,
+            [
+                "Good evening.",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+            ],
+            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
+        ),
+        (
+            "bert",
+            "bert-base-chinese",
+            [
+                "晚上好",  # normal & easy case
+                "没问题！",  # `！` is a Chinese punctuation
+                "去东畈村",  # `畈` is a OOV token for bert-base-chinese
+                "好的😃",  # include a emoji which is common in Chinese text-based chat
+            ],
+            [[3], [4], [4], [3]],
+        ),
+        (
+            "gpt",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+            ],
+            [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
+        ),
+        (
+            "gpt2",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+            ],
+            [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
+        ),
+        (
+            "xlnet",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+            ],
+            [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 3, 1]],
+        ),
+        (
+            "distilbert",
+            None,
+            [
+                "Good evening.",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+            ],
+            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1]],
+        ),
+        (
+            "roberta",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+            ],
+            [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
+        ),
+    ],
+)
+@skip_on_CI
+@pytest.mark.skip_on_windows
+def test_lm_featurizer_edge_cases(
+    model_name: Text,
+    model_weights: Text,
+    texts: List[Text],
+    expected_number_of_sub_tokens: List[List[float]],
+):
+
+    if model_weights is None:
+        model_weights_config = {}
+    else:
+        model_weights_config = {"model_weights": model_weights}
+    transformers_config = {**{"model_name": model_name}, **model_weights_config}
+
+    lm_featurizer = LanguageModelFeaturizer(transformers_config)
+    whitespace_tokenizer = WhitespaceTokenizer()
+
+    for i, text in enumerate(texts):
+        message = Message.build(text=text)
+
+        td = TrainingData([message])
+        whitespace_tokenizer.train(td)
+        lm_featurizer.train(td)
+
+        assert [
+            t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
+        ] == expected_number_of_sub_tokens[i]
+
+
+@pytest.mark.parametrize(
     "model_name, text, expected_number_of_sub_tokens",
     [
         ("bert", "sentence embeddings", [1, 2]),
-        ("bert", "this is a test", [1, 1, 1, 1]),
         ("gpt", "sentence embeddings", [1, 2]),
-        ("gpt", "this is a test", [1, 1, 1, 1]),
         ("gpt2", "sentence embeddings", [2, 3]),
-        ("gpt2", "this is a test", [1, 1, 1, 1]),
         ("xlnet", "sentence embeddings", [1, 3]),
-        ("xlnet", "this is a test", [1, 1, 1, 1]),
         ("distilbert", "sentence embeddings", [1, 4]),
-        ("distilbert", "this is a test", [1, 1, 1, 1]),
         ("roberta", "sentence embeddings", [2, 3]),
-        ("roberta", "this is a test", [1, 1, 1, 1]),
     ],
 )
 @skip_on_CI
