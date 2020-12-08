@@ -391,7 +391,7 @@ def test_regex_featurizer_case_sensitive(
         ("The wolf howled", [[0.0], [0.0], [1.0]], [1.0], [2.0], False),
     ],
 )
-def test_generate_pattern_from_lookup_with_and_without_boundaries(
+def test_lookup_with_and_without_boundaries(
     sentence: Text,
     expected_sequence_features: List[List[float]],
     expected_sentence_features: List[float],
