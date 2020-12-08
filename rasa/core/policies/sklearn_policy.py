@@ -324,8 +324,6 @@ class SklearnPolicy(Policy):
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 
         data = {"should_finetune": kwargs.get("should_finetune", False)}
-        if "epoch_override" in kwargs:
-            data[EPOCHS] = kwargs["epoch_override"]
 
         policy = cls(
             featurizer=featurizer,
