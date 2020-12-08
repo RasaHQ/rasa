@@ -65,7 +65,6 @@ class SklearnPolicy(Policy):
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
-        should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
         """Create a new sklearn policy.
@@ -87,7 +86,6 @@ class SklearnPolicy(Policy):
                 *inverse_transform* method.
             shuffle: Whether to shuffle training data.
             zero_state_features: Contains default feature values for attributes
-            should_finetune: Indicates if the model components will be fine-tuned.
         """
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
@@ -107,7 +105,7 @@ class SklearnPolicy(Policy):
                 )
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority, should_finetune=should_finetune)
+        super().__init__(featurizer, priority, **kwargs)
 
         self.model = model or self._default_model()
         self.cv = cv
@@ -305,12 +303,7 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(
-        cls,
-        path: Union[Text, Path],
-        should_finetune: bool = False,
-        epoch_override: Optional[float] = None,
-    ) -> Policy:
+    def load(cls, path: Union[Text, Path], **kwargs,) -> Policy:
         """See the docstring for `Policy.Load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
@@ -330,9 +323,9 @@ class SklearnPolicy(Policy):
         meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 
-        data = {"should_finetune": should_finetune}
-        if epoch_override:
-            data[EPOCHS] = epoch_override
+        data = {"should_finetune": kwargs.get("should_finetune", False)}
+        if "epoch_override" in kwargs:
+            data[EPOCHS] = kwargs["epoch_override"]
 
         policy = cls(
             featurizer=featurizer,

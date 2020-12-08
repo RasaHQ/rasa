@@ -62,7 +62,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
-        should_finetune: bool = False,
+        **kwargs,
     ) -> None:
         """Create a new Two-stage Fallback policy.
 
@@ -83,7 +83,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 denies the recognised intent for the second time.
             deny_suggestion_intent_name: The name of the intent which is used
                  to detect that the user denies the suggested intents.
-            should_finetune: Indicates if the model components will be fine-tuned.
         """
         super().__init__(
             priority,
@@ -91,7 +90,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             ambiguity_threshold,
             core_threshold,
             fallback_core_action_name,
-            should_finetune=should_finetune,
+            **kwargs,
         )
 
         self.fallback_nlu_action_name = fallback_nlu_action_name

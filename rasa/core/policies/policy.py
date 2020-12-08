@@ -113,12 +113,11 @@ class Policy:
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
-        should_finetune: bool = False,
+        **kwargs,
     ) -> None:
-        """Construct a new Policy object."""
+        """Constructs a new Policy object."""
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
-        self.should_finetune = should_finetune
 
     @property
     def featurizer(self):
@@ -279,12 +278,11 @@ class Policy:
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path], should_finetune: bool = False,) -> "Policy":
+    def load(cls, path: Union[Text, Path], **kwargs) -> "Policy":
         """Loads a policy from path.
 
         Args:
             path: Path to load policy from.
-            should_finetune: Indicates if the model components will be fine-tuned.
 
         Returns:
             An instance of `Policy`.
@@ -293,19 +291,31 @@ class Policy:
 
         if metadata_file.is_file():
             data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-            if should_finetune:
-                if "should_finetune" not in rasa.shared.utils.common.arguments_of(cls):
-                    raise UnsupportedDialogueModelError(
-                        f"{cls.__name__} does not support fine-tuning. "
-                        f"To support fine-tuning the `__init__` method must have the "
-                        f"argument `should_finetune`. This argument should be added to "
-                        f"all policies by Rasa Open Source 3.0.0."
-                    )
-                data["should_finetune"] = should_finetune
 
             if (Path(path) / FEATURIZER_FILE).is_file():
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
+
+            data = {}
+            if "should_finetune" in kwargs:
+                data["should_finetune"] = kwargs["should_finetune"]
+
+            constructor_args = rasa.shared.utils.common.arguments_of(cls)
+            if "kwargs" not in constructor_args:
+                if set(data.keys()).issubset(set(constructor_args)):
+                    rasa.shared.utils.io.raise_deprecation_warning(
+                        f"{cls.__name__} `__init__` method does not accept **kwargs "
+                        f"This is required for contextual information e.g. the flag "
+                        f"`should_finetune`.",
+                        warn_until_version="3.0.0",
+                    )
+                else:
+                    raise UnsupportedDialogueModelError(
+                        f"{cls.__name__} `__init__` method does not accept **kwargs. "
+                        f"Attempting to pass {data} to the policy. "
+                        f"This argument should be added to all policies by "
+                        f"Rasa Open Source 3.0.0."
+                    )
 
             return cls(**data)
 

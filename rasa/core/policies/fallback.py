@@ -39,7 +39,7 @@ class FallbackPolicy(Policy):
         ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
         core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
-        should_finetune: bool = False,
+        **kwargs,
     ) -> None:
         """Create a new Fallback policy.
 
@@ -55,10 +55,8 @@ class FallbackPolicy(Policy):
             ambiguity_threshold: threshold for minimum difference
                 between confidences of the top two predictions
             fallback_action_name: name of the action to execute as a fallback
-            should_finetune: Indicates if the model components will be fine-tuned.
-
         """
-        super().__init__(priority=priority, should_finetune=should_finetune)
+        super().__init__(priority=priority, **kwargs)
 
         self.nlu_threshold = nlu_threshold
         self.ambiguity_threshold = ambiguity_threshold

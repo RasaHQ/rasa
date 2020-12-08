@@ -217,14 +217,13 @@ class TEDPolicy(Policy):
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
-        should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority, should_finetune=should_finetune)
+        super().__init__(featurizer, priority, **kwargs)
         if isinstance(featurizer, FullDialogueTrackerFeaturizer):
             self.is_full_dialogue_featurizer_used = True
         else:
@@ -437,12 +436,7 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(
-        cls,
-        path: Union[Text, Path],
-        should_finetune: bool = False,
-        epoch_override: Optional[float] = None,
-    ) -> "TEDPolicy":
+    def load(cls, path: Union[Text, Path], **kwargs,) -> "TEDPolicy":
         """Loads a policy from the storage.
 
         **Needs to load its featurizer**
@@ -506,9 +500,9 @@ class TEDPolicy(Policy):
         )
         model.build_for_predict(predict_data_example)
 
-        meta["should_finetune"] = should_finetune
-        if epoch_override:
-            meta[EPOCHS] = epoch_override
+        meta["should_finetune"] = kwargs.get("should_finetune", False)
+        if "epoch_override" in kwargs:
+            meta[EPOCHS] = kwargs["epoch_override"]
 
         return cls(
             featurizer=featurizer,

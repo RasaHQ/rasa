@@ -43,11 +43,9 @@ class MappingPolicy(Policy):
     def _standard_featurizer() -> None:
         return None
 
-    def __init__(
-        self, priority: int = MAPPING_POLICY_PRIORITY, should_finetune: bool = False,
-    ) -> None:
+    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY, **kwargs,) -> None:
         """Create a new Mapping policy."""
-        super().__init__(priority=priority, should_finetune=should_finetune)
+        super().__init__(priority=priority, **kwargs)
 
         rasa.shared.utils.io.raise_deprecation_warning(
             f"'{MappingPolicy.__name__}' is deprecated and will be removed in "

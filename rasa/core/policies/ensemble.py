@@ -335,43 +335,37 @@ class PolicyEnsemble:
             dir_name = f"policy_{i}_{policy_cls.__name__}"
             policy_path = os.path.join(path, dir_name)
 
+            context = {}
             if new_config:
-                if "should_finetune" not in rasa.shared.utils.common.arguments_of(
-                    policy_cls.load
-                ):
-                    raise UnsupportedDialogueModelError(
-                        f"{policy_cls.__name__} does not support fine-tuning. "
-                        f"To support fine-tuning the `load` method must have the "
-                        f"argument `should_finetune`. This argument should be added to "
-                        f"all policies by Rasa Open Source 3.0.0."
-                    )
+                context["should_finetune"] = True
 
                 config_for_policy = new_config["policies"][i]
                 epochs = cls._get_updated_epochs(
                     policy_cls, config_for_policy, finetuning_epoch_fraction
                 )
                 if epochs:
-                    if "epoch_override" not in rasa.shared.utils.common.arguments_of(
-                        policy_cls.load
-                    ):
-                        raise UnsupportedDialogueModelError(
-                            f"{policy_cls.__name__} does not support fine-tuning. "
-                            f"To support fine-tuning the `load` method must have the "
-                            f"argument `epoch_override` if the policy uses epochs."
-                            f"This argument should be added to all policies by "
-                            f"Rasa Open Source 3.0.0."
-                        )
+                    context["epoch_override"] = epochs
 
-                    policy = policy_cls.load(
-                        policy_path, should_finetune=True, epoch_override=epochs
+            if "kwargs" not in rasa.shared.utils.common.arguments_of(policy_cls.load):
+                if context:
+                    raise UnsupportedDialogueModelError(
+                        f"`{policy_cls.__name__}.load` does not accept **kwargs. "
+                        f"Attempting to pass {context} to the policy. "
+                        f"This argument should be added to all policies by "
+                        f"Rasa Open Source 3.0.0."
                     )
                 else:
-                    policy = policy_cls.load(policy_path, should_finetune=True)
-            else:
-                policy = policy_cls.load(policy_path)
+                    rasa.shared.utils.io.raise_deprecation_warning(
+                        f"{policy_cls.__name__} `load` method does not "
+                        f"accept **kwargs. This is required for contextual"
+                        f" information e.g. the flag `should_finetune`.",
+                        warn_until_version="3.0.0",
+                    )
 
+            policy = policy_cls.load(policy_path, **context)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
+
         ensemble_cls = rasa.shared.utils.common.class_from_module_path(
             metadata["ensemble_name"]
         )

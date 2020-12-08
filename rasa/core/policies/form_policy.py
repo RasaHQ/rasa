@@ -35,7 +35,7 @@ class FormPolicy(MemoizationPolicy):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
-        should_finetune: bool = False,
+        **kwargs,
     ) -> None:
 
         # max history is set to 2 in order to capture
@@ -45,7 +45,7 @@ class FormPolicy(MemoizationPolicy):
             priority=priority,
             max_history=2,
             lookup=lookup,
-            should_finetune=should_finetune,
+            **kwargs,
         )
 
         rasa.shared.utils.io.raise_deprecation_warning(

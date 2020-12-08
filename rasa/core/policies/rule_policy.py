@@ -108,7 +108,7 @@ class RulePolicy(MemoizationPolicy):
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
         check_for_contradictions: bool = True,
-        should_finetune: bool = False,
+        **kwargs,
     ) -> None:
         """Create a `RulePolicy` object.
 
@@ -129,7 +129,6 @@ class RulePolicy(MemoizationPolicy):
                 user message. This is used to avoid that users build a state machine
                 using the rules.
             check_for_contradictions: Check for contradictions.
-            should_finetune: Indicates if the model components will be fine-tuned.
         """
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
@@ -146,7 +145,7 @@ class RulePolicy(MemoizationPolicy):
             priority=priority,
             max_history=None,
             lookup=lookup,
-            should_finetune=should_finetune,
+            **kwargs,
         )
 
     @classmethod

@@ -1233,8 +1233,8 @@ def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
         policy(None)
 
 
-class NoFinetunePolicy(Policy):
-    def __init__(self):
+class PolicyWithoutInitKwargs(Policy):
+    def __init__(self, *args):
         pass
 
     def persist(self, _) -> None:
@@ -1245,10 +1245,19 @@ class NoFinetunePolicy(Policy):
         return "no_finetune_policy"
 
 
-def test_loading_unsupported_policy_as_finetune(tmp_path: Path):
+def test_loading_policy_with_no_constructor_kwargs(tmp_path: Path):
     rasa.shared.utils.io.write_text_file(
-        "{}", tmp_path / NoFinetunePolicy._metadata_filename()
+        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
     )
     with pytest.raises(UnsupportedDialogueModelError) as execinfo:
-        NoFinetunePolicy.load(str(tmp_path), should_finetune=True)
-    assert "NoFinetunePolicy does not support fine-tuning." in str(execinfo.value)
+        PolicyWithoutInitKwargs.load(str(tmp_path), should_finetune=True)
+    assert "PolicyWithoutInitKwargs `__init__` method does not accept **kwargs." in str(
+        execinfo.value
+    )
+
+
+def test_loading_policy_with_no_constructor_kwargs_but_required_args(tmp_path: Path):
+    rasa.shared.utils.io.write_text_file(
+        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
+    )
+    PolicyWithoutInitKwargs.load(str(tmp_path))
