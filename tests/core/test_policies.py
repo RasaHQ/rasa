@@ -7,8 +7,10 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.channels import OutputChannel
+from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.generator import TrackerWithCachedStates
+import rasa.shared.utils.io
 
 from rasa.core import training
 import rasa.core.actions.action
@@ -1229,3 +1231,34 @@ def test_get_training_trackers_for_policy(
 def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
     with pytest.warns(FutureWarning):
         policy(None)
+
+
+class PolicyWithoutInitKwargs(Policy):
+    def __init__(self, *args: Any) -> None:
+        pass
+
+    def persist(self, _) -> None:
+        pass
+
+    @classmethod
+    def _metadata_filename(cls) -> Text:
+        return "no_finetune_policy"
+
+
+def test_loading_policy_with_no_constructor_kwargs(tmp_path: Path):
+    rasa.shared.utils.io.write_text_file(
+        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
+    )
+    with pytest.raises(UnsupportedDialogueModelError) as execinfo:
+        PolicyWithoutInitKwargs.load(str(tmp_path), should_finetune=True)
+    assert "`PolicyWithoutInitKwargs.__init__` does not accept `**kwargs`." in str(
+        execinfo.value
+    )
+
+
+def test_loading_policy_with_no_constructor_kwargs_but_required_args(tmp_path: Path):
+    rasa.shared.utils.io.write_text_file(
+        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
+    )
+    with pytest.warns(FutureWarning):
+        PolicyWithoutInitKwargs.load(str(tmp_path))

@@ -220,11 +220,10 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, **kwargs)
         if isinstance(featurizer, FullDialogueTrackerFeaturizer):
             self.is_full_dialogue_featurizer_used = True
         else:
@@ -437,8 +436,9 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
+    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "TEDPolicy":
         """Loads a policy from the storage.
+
         **Needs to load its featurizer**
         """
         model_path = Path(path)
@@ -499,6 +499,10 @@ class TEDPolicy(Policy):
             },
         )
         model.build_for_predict(predict_data_example)
+
+        meta["should_finetune"] = kwargs.get("should_finetune", False)
+        if "epoch_override" in kwargs:
+            meta[EPOCHS] = kwargs["epoch_override"]
 
         return cls(
             featurizer=featurizer,
