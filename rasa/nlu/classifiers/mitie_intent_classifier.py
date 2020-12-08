@@ -10,8 +10,9 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaTrainChunkException
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -39,8 +40,25 @@ class MitieIntentClassifier(IntentClassifier):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        """Specifies which python packages need to be installed."""
+        """Specify which python packages need to be installed.
+
+        See parent class for more information.
+        """
         return ["mitie"]
+
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
+        raise RasaTrainChunkException(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def train(
         self,
@@ -48,7 +66,7 @@ class MitieIntentClassifier(IntentClassifier):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train the intent classifier on a data set."""
+        """Train this component. See parent class for more information."""
         import mitie
 
         model_file = kwargs.get("mitie_file")

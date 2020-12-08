@@ -14,7 +14,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     TOKENS_NAMES,
@@ -492,18 +492,16 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 )
                 message.add_features(final_sentence_features)
 
-    def train(
+    def prepare_partial_training(
         self,
         training_data: TrainingData,
-        cfg: Optional[RasaNLUModelConfig] = None,
+        config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train the featurizer.
+        """Prepare the component for training on just a part of the data.
 
-        Take parameters from config and
-        construct a new count vectorizer using the sklearn framework.
+        See parent class for more information.
         """
-
         spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
             # create spacy lemma_ for OOV_words
@@ -527,10 +525,24 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         else:
             self._train_with_independent_vocab(attribute_texts)
 
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
         # transform for all attributes
         for attribute in self._attributes:
+            all_tokens = [
+                self._get_processed_message_tokens_by_attribute(example, attribute)
+                for example in training_data_chunk.training_examples
+            ]
             sequence_features, sentence_features = self._get_featurized_attribute(
-                attribute, processed_attribute_tokens[attribute]
+                attribute, all_tokens
             )
 
             if sequence_features and sentence_features:
@@ -538,7 +550,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     attribute,
                     sequence_features,
                     sentence_features,
-                    training_data.training_examples,
+                    training_data_chunk.training_examples,
                 )
 
     def process(self, message: Message, **kwargs: Any) -> None:

@@ -88,6 +88,10 @@
         "num_regexes": {
           "type": "integer",
           "description": "Total number of regexes defined."
+        },
+        "num_chunks": {
+          "type": "integer",
+          "description": "Number of chunks used for training."
         }
       },
       "additionalProperties": false,

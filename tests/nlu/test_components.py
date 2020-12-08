@@ -8,6 +8,19 @@ from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_pa
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
+from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
+from rasa.shared.exceptions import RasaTrainChunkException
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
@@ -216,3 +229,84 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: P
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]
+
+
+@pytest.mark.parametrize("component_class", registry.component_classes)
+def test_if_train_chunk_raises(component_class: Type[Component]):
+    # ConveRTFeaturizer cannot be created without a model
+    if issubclass(component_class, ConveRTFeaturizer):
+        return
+
+    # TODO tests for these classes are super slow
+    if issubclass(component_class, HFTransformersNLP) or issubclass(
+        component_class, LanguageModelFeaturizer
+    ):
+        return
+
+    # Create dummy training data chunk
+    training_data_chunk = TrainingDataChunk(
+        [Message(text="some text", intent="some_intent")]
+    )
+    # create an instance of component
+    component = component_class()
+    # check that those components cannot be trained in chunks
+    if (
+        isinstance(component, Tokenizer)
+        or isinstance(component, MitieIntentClassifier)
+        or isinstance(component, MitieEntityExtractor)
+        or isinstance(component, KeywordIntentClassifier)
+        or isinstance(component, SklearnIntentClassifier)
+        or isinstance(component, CRFEntityExtractor)
+    ):
+        with pytest.raises(RasaTrainChunkException):
+            component.train_chunk(training_data_chunk)
+    else:
+        # because components depend on each other `train_chunk` can raise
+        # exceptions if other components are not trained,
+        # however they should not raise RasaTrainChunkException
+        try:
+            component.train_chunk(training_data_chunk)
+        except Exception as e:
+            assert not isinstance(e, RasaTrainChunkException)
+
+
+@pytest.mark.parametrize("component_class", registry.component_classes)
+def test_prepare_partial_training_do_not_modify_data(component_class: Type[Component]):
+    # ConveRTFeaturizer cannot be created without a model
+    if issubclass(component_class, ConveRTFeaturizer):
+        return
+
+    # TODO tests for these classes are super slow
+    if issubclass(component_class, HFTransformersNLP) or issubclass(
+        component_class, LanguageModelFeaturizer
+    ):
+        return
+
+    # Create dummy training data
+    training_data = TrainingData([Message(text="some text", intent="some_intent")])
+    # `prepare_partial_training` should only depend on the tokenizer
+    # so train tokenizer first to add tokens to training_data
+    tokenizer = next(
+        (
+            required_component
+            for required_component in component_class.required_components()
+            if isinstance(required_component, Tokenizer)
+        ),
+        None,
+    )
+    if tokenizer is not None:
+        # Tokenizer itself is an abstract class
+        if type(tokenizer) == Tokenizer:
+            tokenizer = WhitespaceTokenizer()
+        tokenizer.train(training_data)
+    # get the fingerprint after tokenizer is trained
+    original_fingerprint = training_data.fingerprint()
+
+    # create an instance of component
+    component = component_class()
+    # prepare component
+    component.prepare_partial_training(training_data)
+
+    new_fingerprint = training_data.fingerprint()
+    # Original training data shouldn't be modified
+    assert original_fingerprint == new_fingerprint

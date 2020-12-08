@@ -88,6 +88,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
+        number_of_chunks=args.number_of_chunks,
     )
 
 
@@ -122,6 +123,7 @@ def train_core(
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
             additional_arguments=additional_arguments,
+            number_of_chunks=args.number_of_chunks,
         )
     else:
         from rasa.core.train import do_compare_training
@@ -157,6 +159,7 @@ def train_nlu(
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),
         domain=args.domain,
+        number_of_chunks=args.number_of_chunks,
     )
 
 

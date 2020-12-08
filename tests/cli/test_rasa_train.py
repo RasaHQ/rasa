@@ -18,7 +18,6 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
 )
-import rasa.utils.io as io_utils
 
 
 def test_train(run_in_simple_project: Callable[..., RunResult]):
@@ -318,6 +317,133 @@ def test_train_nlu_persist_nlu_data(
     )
 
 
+def test_train_in_chunks(run_in_simple_project: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    os.remove("config.yml")
+    rasa.shared.utils.io.write_yaml(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", "epochs": 1},
+            ],
+            "policies": [
+                {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        "config.yml",
+    )
+
+    run_in_simple_project(
+        "train",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--data",
+        "data",
+        "--out",
+        "train_models",
+        "--fixed-model-name",
+        "test-model",
+        "--number-of-chunks",
+        "2",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is None
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
+
+def test_train_nlu_in_chunks(run_in_simple_project: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    os.remove("config.yml")
+    rasa.shared.utils.io.write_yaml(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", "epochs": 1},
+            ],
+            "policies": [
+                {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        "config.yml",
+    )
+
+    run_in_simple_project(
+        "train",
+        "nlu",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--nlu",
+        "data",
+        "--out",
+        "train_models",
+        "--fixed-model-name",
+        "test-model",
+        "--number-of-chunks",
+        "2",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is None
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
+
+def test_train_core_in_chunks(run_in_simple_project: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    run_in_simple_project(
+        "train",
+        "core",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--stories",
+        "data",
+        "--out",
+        "train_models",
+        "--fixed-model-name",
+        "test-model",
+        "--number-of-chunks",
+        "2",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+
+
 def test_train_help(run):
     output = run("train", "--help")
 
@@ -326,7 +452,7 @@ def test_train_help(run):
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
-                  [--force]
+                  [--force] [--number-of-chunks NUMBER_OF_CHUNKS]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -342,7 +468,8 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [-d DOMAIN]
                       [--out OUT] [-u NLU] [--num-threads NUM_THREADS]
                       [--fixed-model-name FIXED_MODEL_NAME]
-                      [--persist-nlu-data]"""
+                      [--persist-nlu-data]
+                      [--number-of-chunks NUMBER_OF_CHUNKS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -359,7 +486,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
-                       [--runs RUNS]"""
+                       [--runs RUNS] [--number-of-chunks NUMBER_OF_CHUNKS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
