@@ -166,7 +166,9 @@ def test_lookup_tables_without_use_word_boundaries(
         {"name": "cites", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
         {"name": "dates", "elements": ["昨天", "今天", "明天", "后天"],},
     ]
-    ftr = RegexFeaturizer({"use_word_boundaries": False})
+    ftr = RegexFeaturizer(
+        {"use_word_boundaries": False, "number_additional_patterns": 0}
+    )
     training_data = TrainingData()
     training_data.lookup_tables = lookups
     ftr.train(training_data)
