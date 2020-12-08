@@ -1,5 +1,4 @@
 import sys
-import tarfile
 import tempfile
 import os
 from pathlib import Path
@@ -572,6 +571,7 @@ def test_model_finetuning_nlu_with_default_epochs(
     assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.5
 
 
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
 def test_model_finetuning_with_invalid_model(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -579,6 +579,7 @@ def test_model_finetuning_with_invalid_model(
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
+    model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
@@ -596,7 +597,7 @@ def test_model_finetuning_with_invalid_model(
         [default_stories_file, default_nlu_data],
         output=output,
         force_training=True,
-        model_to_finetune="invalid-path-to-model",
+        model_to_finetune=model_to_fine_tune,
         finetuning_epoch_fraction=1,
     )
 
@@ -613,12 +614,14 @@ def test_model_finetuning_with_invalid_model(
     assert "No NLU model for finetuning found" in output
 
 
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
 def test_model_finetuning_with_invalid_model_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
+    model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
     mocked_core_training = AsyncMock()
@@ -632,7 +635,7 @@ def test_model_finetuning_with_invalid_model_core(
         default_stack_config,
         default_stories_file,
         output=output,
-        model_to_finetune="invalid-path-to-model",
+        model_to_finetune=model_to_fine_tune,
         finetuning_epoch_fraction=1,
     )
 
@@ -644,12 +647,14 @@ def test_model_finetuning_with_invalid_model_core(
     assert "No Core model for finetuning found" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
 def test_model_finetuning_with_invalid_model_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
+    model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
@@ -663,7 +668,7 @@ def test_model_finetuning_with_invalid_model_nlu(
         default_nlu_data,
         domain=default_domain_path,
         output=output,
-        model_to_finetune="invalid-path-to-model",
+        model_to_finetune=model_to_fine_tune,
         finetuning_epoch_fraction=1,
     )
 
