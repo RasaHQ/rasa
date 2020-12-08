@@ -309,7 +309,7 @@ class PolicyEnsemble:
         policy_cls: Type[Policy],
         config_for_policy: Dict[Text, Any],
         finetuning_epoch_fraction: float,
-    ):
+    ) -> Optional[int]:
         if EPOCHS in config_for_policy:
             epochs = config_for_policy[EPOCHS]
         else:
