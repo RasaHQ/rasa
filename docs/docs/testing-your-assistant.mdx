@@ -56,7 +56,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
   stories:
-  - story: A basic end-to-end test
+  - story: A basic story test
     steps:
     - user: |
         hello
@@ -161,7 +161,7 @@ You can test your assistant against them by running:
 rasa test
 ```
 
-End-to-end conversation testing is only as thorough and accurate as the test
+Conversation testing is only as thorough and accurate as the test
 cases you include, so you should continue to grow your set of test stories
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
 to be representative of the true distribution of real conversations.
@@ -182,7 +182,7 @@ for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx
 
 ## Evaluating an NLU Model
 
-In addition to end-to-end testing, you can also test the natural language understanding (NLU) model separately.
+In addition to testing stories, you can also test the natural language understanding (NLU) model separately.
 Once your assistant is deployed in the real world, it will be processing messages that it hasn't seen
 in the training data. To simulate this, you should always set aside some part of your data for testing.
 You can [split your NLU data](./command-line-interface.mdx#rasa-data-split)
