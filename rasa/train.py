@@ -446,7 +446,11 @@ async def _train_core_with_validated_data(
         )
 
         if model_to_finetune:
-            model_to_finetune = _core_model_for_finetuning(model_to_finetune)
+            model_to_finetune = _core_model_for_finetuning(
+                model_to_finetune,
+                new_config=config,
+                finetuning_epoch_fraction=finetuning_epoch_fraction,
+            )
 
             if not model_to_finetune:
                 rasa.shared.utils.cli.print_warning(
@@ -468,7 +472,6 @@ async def _train_core_with_validated_data(
                 additional_arguments=additional_arguments,
                 interpreter=interpreter,
                 model_to_finetune=model_to_finetune,
-                finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
         rasa.shared.utils.cli.print_color(
             "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
@@ -488,21 +491,26 @@ async def _train_core_with_validated_data(
         return _train_path
 
 
-def _core_model_for_finetuning(model_to_finetune: Text) -> Optional[Agent]:
+def _core_model_for_finetuning(
+    model_to_finetune: Text,
+    new_config: Optional[Dict] = None,
+    finetuning_epoch_fraction: float = 1.0,
+) -> Optional[Agent]:
     path_to_archive = model.get_model_for_finetuning(model_to_finetune)
     if not path_to_archive:
         return None
 
     with model.unpack_model(path_to_archive) as unpacked:
-        try:
-            agent = Agent.load(unpacked)
-            # Agent might be empty if no underlying Core model was found.
-            if agent.domain is not None and agent.policy_ensemble is not None:
-                return agent
-        except Exception:
-            # Anything might go wrong. In that case we skip model finetuning.
-            pass
-    return None
+        agent = Agent.load(
+            unpacked,
+            new_config=new_config,
+            finetuning_epoch_fraction=finetuning_epoch_fraction,
+        )
+        # Agent might be empty if no underlying Core model was found.
+        if agent.domain is not None and agent.policy_ensemble is not None:
+            return agent
+
+        return None
 
 
 def train_nlu(
