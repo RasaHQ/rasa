@@ -1278,8 +1278,7 @@ class DIET(TransformerRasaModel):
             self._prepare_entity_recognition_layers()
 
     def _prepare_mask_lm_layers(self, name: Text) -> None:
-        self._tf_layers[f"{name}_input_mask"] = layers.InputMask()
-
+        # self._tf_layers[f"{name}_input_mask"] = layers.InputMask()
         self._prepare_embed_layers(f"{name}_lm_mask")
         self._prepare_embed_layers(f"{name}_golden_token")
 
@@ -1413,10 +1412,10 @@ class DIET(TransformerRasaModel):
             mask_sequence_text,
             mask_text,
             self.text_name,
-            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
-            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            # sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            # dense_dropout=self.config[DENSE_INPUT_DROPOUT],
             masked_lm_loss=self.config[MASKED_LM],
-            sequence_ids=True,
+            # sequence_ids=True,
         )
 
         losses = []

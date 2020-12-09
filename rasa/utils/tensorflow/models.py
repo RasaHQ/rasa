@@ -870,7 +870,7 @@ class TransformerRasaModel(RasaModel):
         #     self.config[DROP_RATE],
         #     prefix="unify_dims_for_concat",
         # )
-        #     if name == TEXT:
+        #     if name == TEXT:`
         #         has_sparse = any(
         #             [signature.is_sparse for signature in data_signature[feature_type]]
         #         )
@@ -1119,10 +1119,10 @@ class TransformerRasaModel(RasaModel):
         mask_sequence: tf.Tensor,
         mask: tf.Tensor,
         name: Text,
-        sparse_dropout: bool = False,
-        dense_dropout: bool = False,
+        # sparse_dropout: bool = False,
+        # dense_dropout: bool = False,
         masked_lm_loss: bool = False,
-        sequence_ids: bool = False,
+        # sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         return self._tf_layers[f"{name}_sequence_layer"](
             sequence_features,
@@ -1132,7 +1132,7 @@ class TransformerRasaModel(RasaModel):
             name,
             training=self._training,
             masked_lm_loss=masked_lm_loss,
-            sequence_ids=sequence_ids,
+            # sequence_ids=sequence_ids,
         )
         # if sequence_ids:
         #     seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")

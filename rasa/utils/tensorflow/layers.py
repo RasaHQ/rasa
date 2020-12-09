@@ -263,9 +263,6 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         super().__init__(
             name=f"concatenate_sparse_dense_features_{attribute}_{feature_type}"
         )
-
-        # self.do_nothing = not data_signature
-
         self.have_sparse_features = any(
             [signature.is_sparse for signature in data_signature]
         )
@@ -306,11 +303,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         features: List[Union[tf.Tensor, tf.SparseTensor]],
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> Optional[tf.Tensor]:
-        # if self.do_nothing:
-        #     return None
-
         dense_features = []
-
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 if self.use_sparse_dropout:
@@ -346,11 +339,6 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
         super().__init__(
             name=f"concatenate_sequence_sentence_features_{layer_name_suffix}"
         )
-
-        # self.do_nothing = not sequence_signature and not sentence_signature
-        # if self.do_nothing:
-        #     return
-
         if sequence_signature and sentence_signature:
             self.do_concatenation = True
             if sequence_signature.units != sentence_signature.units:
@@ -380,9 +368,6 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
     def call(
         self, sequence_x: tf.Tensor, sentence_x: tf.Tensor, mask_text: tf.Tensor,
     ) -> tf.Tensor:
-        # if self.do_nothing:
-        #     return None
-
         if self.do_concatenation:
             if self.unify_dimensions_before_concat:
                 sequence_x = self.unify_dimensions_layers[SEQUENCE](sequence_x)
@@ -426,7 +411,6 @@ class RasaInputLayer(tf.keras.layers.Layer):
         super().__init__(name=f"rasa_input_layer_{name}")
         # SPARSE + DENSE
         self.concat_sparse_dense = {}
-        self.sparse_to_dense_ids = {}
         for feature_type in [SENTENCE, SEQUENCE]:
             if feature_type in data_signature:
                 sparse_to_dense_layer_options = {
@@ -446,65 +430,55 @@ class RasaInputLayer(tf.keras.layers.Layer):
                 )
             else:
                 self.concat_sparse_dense[feature_type] = lambda features, training: None
-                continue
-
-            # TODO: move out of here!
-            if name == TEXT:
-                has_sparse = any(
-                    [signature.is_sparse for signature in data_signature[feature_type]]
-                )
-                has_dense = any(
-                    [
-                        not signature.is_sparse
-                        for signature in data_signature[feature_type]
-                    ]
-                )
-                if has_sparse and not has_dense:
-                    # create dense labels for the input to use in negative sampling for MLM
-                    self.sparse_to_dense_ids[feature_type] = DenseForSparse(
-                        units=2,
-                        use_bias=False,
-                        trainable=False,
-                        name=f"sparse_to_dense_ids.{name}_{feature_type}",
-                    )
 
         # SEQUENCE + SENTENCE
         self.do_seq_sent_concat = all(
             [feature_type in data_signature for feature_type in [SEQUENCE, SENTENCE]]
         )
-        if self.do_seq_sent_concat:
-            data_signatures = {}
-            for feature_type in [SEQUENCE, SENTENCE]:
-                if feature_type in data_signature:
-                    # TODO: shall we account for ALL features, not assuming there's always
-                    # just 1 per feature type?
-                    data_signatures[feature_type] = data_signature[feature_type][0]
-                else:
-                    data_signatures[feature_type] = None
+        # if self.do_seq_sent_concat:
+        seq_sent_data_signatures = {}
+        for feature_type in [SEQUENCE, SENTENCE]:
+            if feature_type in data_signature:
+                signature_existing = data_signature[feature_type][0]
+                signature_new = FeatureSignature(
+                    is_sparse=False,
+                    units=self.concat_sparse_dense[feature_type].output_units,
+                    number_of_dimensions=signature_existing.number_of_dimensions,
+                )
+                # signature.is_sparse = False
+                # signature.units = self.concat_sparse_dense[feature_type].output_units
+                seq_sent_data_signatures[feature_type] = signature_new
+            else:
+                seq_sent_data_signatures[feature_type] = None
 
+        if self.do_seq_sent_concat:
             concat_layers_kwargs = {
                 "layer_sizes": [config[CONCAT_DIMENSION][name]],
                 "dropout_rate": config[DROP_RATE],
                 "reg_lambda": config[REGULARIZATION_CONSTANT],
                 "sparsity": config[WEIGHT_SPARSITY],
             }
-
-            self.concat_seq_sent = ConcatenateSequenceSentenceFeatures(
-                sequence_signature=data_signatures[SEQUENCE],
-                sentence_signature=data_signatures[SENTENCE],
-                concat_dimension=config[CONCAT_DIMENSION][name],
-                concat_layers_kwargs=concat_layers_kwargs,
-                layer_name_suffix=name,
-            )
         else:
-            if SEQUENCE in data_signature:
-                self.concat_seq_sent = (
-                    lambda seq_features, sent_features, text_mask: seq_features
-                )
-            else:
-                self.concat_seq_sent = (
-                    lambda seq_features, sent_features, text_mask: sent_features
-                )
+            concat_layers_kwargs = {}
+
+        self.concat_seq_sent = ConcatenateSequenceSentenceFeatures(
+            sequence_signature=seq_sent_data_signatures[SEQUENCE],
+            sentence_signature=seq_sent_data_signatures[SENTENCE],
+            concat_dimension=config[CONCAT_DIMENSION].get(name, None),
+            concat_layers_kwargs=concat_layers_kwargs,
+            layer_name_suffix=name,
+        )
+        # else:
+        #     if SEQUENCE in data_signature:
+        #         self.concat_seq_sent = (
+        #             lambda seq_features, sent_features, text_mask: seq_features
+        #         )
+        #     else:
+        #         self.concat_seq_sent = (
+        #             lambda seq_features, sent_features, text_mask: sent_features
+        #         )
+
+        self.output_units = self.concat_seq_sent.output_units
 
     def call(
         self,
@@ -524,11 +498,13 @@ class RasaInputLayer(tf.keras.layers.Layer):
 
 
 from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.core.constants import DIALOGUE
 
 # does:
 # 1. input_layer
 # 2. ffnn
-# 3. transformer
+# [3. MLM: masking & creating dense labels to sample from]
+# 4. transformer
 class RasaSequenceLayer(tf.keras.layers.Layer):
     # TODO add docstring
     def __init__(
@@ -552,6 +528,31 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             layer_name_suffix=name,
         )
 
+        # MLM
+        # for sequential text features prepare the logic for producing dense token embeddings
+        # to be used as labels in MLM. these will be sampled from for negative sampling.
+        if name == TEXT and SEQUENCE in data_signature:
+            self.input_mask_layer = InputMask()
+
+            self.produce_dense_token_ids = True
+            has_sparse = any(
+                [signature.is_sparse for signature in data_signature[SEQUENCE]]
+            )
+            has_dense = any(
+                [not signature.is_sparse for signature in data_signature[SEQUENCE]]
+            )
+            # if dense features are present, we use those as unique token-level embeddings,
+            # otherwise we create these from the sparse features by using a simple layer.
+            if has_sparse and not has_dense:
+                self.sparse_to_dense_token_ids = DenseForSparse(
+                    units=2,
+                    use_bias=False,
+                    trainable=False,
+                    name=f"sparse_to_dense_token_ids.{name}",
+                )
+        else:
+            self.produce_dense_token_ids = False
+
         # TRANSFORMER
         if config[NUM_TRANSFORMER_LAYERS] > 0:
             self.transformer = TransformerEncoder(
@@ -573,6 +574,15 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             # create lambda so that it can be used later without the check
             self.transformer = lambda x, mask, training: x
 
+        # TODO: should this simply use NUM_TRANSFORMER_LAYERS?
+        # if config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
+        if config[NUM_TRANSFORMER_LAYERS] > 0:
+            self.output_units = config[TRANSFORMER_SIZE]
+        elif config[HIDDEN_LAYERS_SIZES][TEXT]:
+            self.output_units = config[HIDDEN_LAYERS_SIZES][TEXT][-1]
+        else:
+            self.output_units = self.input_layer.concat_seq_sent.output_units
+
     def _features_as_seq_ids(
         self, features: List[Union[tf.Tensor, tf.SparseTensor]]
     ) -> Optional[tf.Tensor]:
@@ -589,9 +599,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # use additional sparse to dense layer
         for f in features:
             if isinstance(f, tf.SparseTensor):
-                seq_ids = tf.stop_gradient(
-                    self.input_layer.sparse_to_dense_ids[SEQUENCE](f)
-                )
+                seq_ids = tf.stop_gradient(self.sparse_to_dense_token_ids(f))
                 # add a zero to the seq dimension for the sentence features
                 seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
                 return seq_ids
@@ -609,28 +617,23 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # sparse_dropout: bool = False,
         # dense_dropout: bool = False,
         masked_lm_loss: bool = False,
-        sequence_ids: bool = False,
+        # sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
-        # TODO: move out of here
-        if sequence_ids:
-            # raise ValueError("You're not supposed to want sequence ids!!!")
-            seq_ids = self._features_as_seq_ids(sequence_features)
-        else:
-            seq_ids = None
 
         inputs = self.input_layer(
-            sequence_features,
-            sentence_features,
-            mask_sequence,
-            mask,
-            # name
+            sequence_features, sentence_features, mask_sequence, mask
         )
 
         inputs = self.ffnn(inputs, training)
 
-        # TODO: take care of this
+        if self.produce_dense_token_ids:
+            seq_ids = self._features_as_seq_ids(sequence_features)
+        else:
+            seq_ids = None
+
+        # TODO unify this with self.produce_dense_token_ids?
         if masked_lm_loss:
-            transformer_inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
+            transformer_inputs, lm_mask_bool = self.input_mask_layer(
                 inputs, mask, training
             )
         else:
