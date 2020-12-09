@@ -247,6 +247,10 @@ class WronglyPredictedAction(ActionExecuted):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ) -> None:
+        """Creates event for a successful event execution.
+
+        See the docstring of the parent class `ActionExecuted` for more information.
+        """
         self.action_name_prediction = action_name_prediction
         super().__init__(
             action_name_target,

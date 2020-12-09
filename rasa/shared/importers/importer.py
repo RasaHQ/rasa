@@ -449,6 +449,10 @@ class E2EImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
+        """Retrieves the stories that should be used for training.
+
+        See parent class for details.
+        """
         return await self.importer.get_stories(
             template_variables, use_e2e, exclusion_percentage
         )
