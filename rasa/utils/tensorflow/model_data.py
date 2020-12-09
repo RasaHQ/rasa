@@ -76,6 +76,11 @@ class FeatureArray(np.ndarray):
         self.number_of_dimensions = number_of_dimensions
 
     def __array_finalize__(self, obj: Any) -> None:
+        """This method is called whenever the system internally allocates a new array from obj.
+
+        Args:
+            obj: A subclass (subtype) of ndarray.
+        """
         if obj is None:
             return
 
@@ -91,7 +96,20 @@ class FeatureArray(np.ndarray):
         self.__dict__.update(default_attributes)
 
     # pytype: disable=attribute-error
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    def __array_ufunc__(self, ufunc: Any, method: Text, *inputs, **kwargs) -> Any:
+        """Overwrite this method as we are subclassing numpy array.
+
+        Args:
+            ufunc: The ufunc object that was called.
+            method: A string indicating which Ufunc method was called
+                    (one of "__call__", "reduce", "reduceat", "accumulate", "outer",
+                    "inner").
+            *inputs: A tuple of the input arguments to the ufunc.
+            **kwargs: Any additional arguments
+
+        Returns:
+            The result of the operation.
+        """
         f = {
             "reduce": ufunc.reduce,
             "accumulate": ufunc.accumulate,
@@ -109,8 +127,12 @@ class FeatureArray(np.ndarray):
         output.__dict__ = self.__dict__  # carry forward attributes
         return output
 
-    def __reduce__(self):
-        # Needed in order to pickle this object
+    def __reduce__(self) -> Tuple[Any, Any, Any]:
+        """Needed in order to pickle this object
+
+        Returns:
+            A tuple.
+        """
         pickled_state = super(FeatureArray, self).__reduce__()
         new_state = pickled_state[2] + (
             self.number_of_dimensions,
@@ -119,7 +141,14 @@ class FeatureArray(np.ndarray):
         )
         return pickled_state[0], pickled_state[1], new_state
 
-    def __setstate__(self, state, **kwargs):
+    def __setstate__(self, state, **kwargs) -> None:
+        """Sets the state.
+
+        Args:
+            state: The state argument must be a sequence that contains the following
+                   elements version, shape, dtype, isFortan, rawdata.
+            **kwargs: Any additional parameter
+        """
         # Needed in order to load the object
         self.number_of_dimensions = state[-3]
         self.is_sparse = state[-2]
