@@ -28,13 +28,10 @@ class NLGMarkdownReader(MarkdownReader):
     def __init__(self, ignore_deprecation_warning: bool = False) -> None:
         """Creates reader. See parent class docstring for more information."""
         self.responses = {}
-        super(NLGMarkdownReader, self).__init__(
-            ignore_deprecation_warning=ignore_deprecation_warning
-        )
+        super().__init__(ignore_deprecation_warning=ignore_deprecation_warning)
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
-        self.__init__()
         lines = s.splitlines()
         self.responses = self.process_lines(lines)
         return TrainingData(responses=self.responses)

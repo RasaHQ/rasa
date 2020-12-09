@@ -44,9 +44,12 @@ async def test_nlu_intents_are_converted(tmp_path: Path):
 
     training_data_file.write_text(simple_nlg_md)
 
-    await NLGMarkdownToYamlConverter().convert_and_write(
-        training_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await NLGMarkdownToYamlConverter().convert_and_write(
+            training_data_file, converted_data_folder
+        )
+
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
