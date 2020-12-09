@@ -447,7 +447,7 @@ def test_model_finetuning_core(
 
     ted = model_to_finetune.policy_ensemble.policies[0]
     assert ted.config[EPOCHS] == 2
-    assert ted.config["should_finetune"] is True
+    assert ted.finetune_mode
 
 
 def test_model_finetuning_core_with_default_epochs(

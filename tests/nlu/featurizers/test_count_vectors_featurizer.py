@@ -837,22 +837,10 @@ def test_cvf_incremental_train_vocabulary(
             assert new_vocabulary.get(vocab_token) == vocab_index
 
 
-@pytest.mark.parametrize(
-    "additional_size, original_train_text, additional_train_text, overflow",
-    [
-        (10, "hello my name is John.", "I am also new.", False),
-        (None, "hello my name is John.", "I am also new.", False),
-        (3, "hello my name is John.", "I am also new.", True),
-    ],
-)
-def test_cvf_incremental_train_vocabulary_overflow(
-    additional_size: Optional[int],
-    original_train_text: Text,
-    additional_train_text: Text,
-    overflow: bool,
-    tmp_path: Path,
-    caplog: LogCaptureFixture,
-):
+def test_cvf_incremental_train_vocabulary_overflow(tmp_path: Path,):
+    additional_size = 3
+    original_train_text = "hello my name is John."
+    additional_train_text = "I am also new."
     tokenizer = WhitespaceTokenizer()
     original_featurizer = CountVectorsFeaturizer(
         {"additional_vocabulary_size": {"text": additional_size}}, finetune_mode=False,
@@ -876,9 +864,6 @@ def test_cvf_incremental_train_vocabulary_overflow(
     data = TrainingData([train_message, additional_train_message])
     tokenizer.train(data)
 
-    with caplog.at_level(logging.WARNING):
+    with pytest.warns(UserWarning) as warning:
         new_featurizer.train(data)
-    if overflow:
-        assert "New data contains vocabulary of size" in caplog.text
-    else:
-        assert "New data contains vocabulary of size" not in caplog.text
+    assert "New data contains vocabulary of size" in warning[0].message.args[0]

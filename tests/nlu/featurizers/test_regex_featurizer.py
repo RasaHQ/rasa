@@ -517,7 +517,7 @@ def test_incremental_train_featurization(tmp_path: Path):
     assert pattern_to_check == [new_patterns[1]]
 
 
-def test_vocabulary_overflow_log(caplog: LogCaptureFixture):
+def test_vocabulary_overflow_log():
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
@@ -536,9 +536,9 @@ def test_vocabulary_overflow_log(caplog: LogCaptureFixture):
         {"pattern": "\\bhello+", "name": "greet", "usage": "intent"},
     ]
 
-    with caplog.at_level(logging.WARNING):
+    with pytest.warns(UserWarning) as warning:
         featurizer.train(TrainingData([], regex_features=additional_patterns))
     assert (
         "The originally trained model was configured to handle a maximum number of 4 patterns"
-        in caplog.text
+        in warning[0].message.args[0]
     )
