@@ -383,7 +383,7 @@ def test_model_finetuning(
         output=output,
         force_training=True,
         model_to_finetune=trained_rasa_model,
-        finetuning_epoch_fraction=1,
+        finetuning_epoch_fraction=0.1,
     )
 
     mocked_core_training.assert_called_once()
@@ -399,8 +399,6 @@ def test_model_finetuning(
 def test_model_finetuning_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_nlu_data: Text,
     trained_moodbot_path: Text,
     use_latest_model: bool,
 ):
@@ -420,7 +418,7 @@ def test_model_finetuning_core(
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
     old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
-    old_config["policies"][0]["epochs"] = 20
+    old_config["policies"][0]["epochs"] = 10
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
@@ -430,7 +428,7 @@ def test_model_finetuning_core(
         "examples/moodbot/data/stories.yml",
         output=output,
         model_to_finetune=trained_moodbot_path,
-        finetuning_epoch_fraction=0.5,
+        finetuning_epoch_fraction=0.2,
     )
 
     mocked_core_training.assert_called_once()
@@ -439,16 +437,12 @@ def test_model_finetuning_core(
     assert isinstance(model_to_finetune, Agent)
 
     ted = model_to_finetune.policy_ensemble.policies[0]
-    assert ted.config[EPOCHS] == 10
+    assert ted.config[EPOCHS] == 2
     assert ted.config["should_finetune"] is True
 
 
 def test_model_finetuning_core_with_default_epochs(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_nlu_data: Text,
-    trained_moodbot_path: Text,
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
     mocked_core_training = AsyncMock()
     monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
@@ -484,8 +478,6 @@ def test_model_finetuning_core_with_default_epochs(
 def test_model_finetuning_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_nlu_data: Text,
     trained_moodbot_path: Text,
     use_latest_model: bool,
 ):
@@ -517,7 +509,7 @@ def test_model_finetuning_nlu(
         "examples/moodbot/data/nlu.yml",
         output=output,
         model_to_finetune=trained_moodbot_path,
-        finetuning_epoch_fraction=0.5,
+        finetuning_epoch_fraction=0.2,
     )
 
     assert mock_interpreter_create.call_args[1]["should_finetune"]
@@ -532,15 +524,11 @@ def test_model_finetuning_nlu(
 
     new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
     assert new_diet_metadata["name"] == "DIETClassifier"
-    assert new_diet_metadata[EPOCHS] == 5
+    assert new_diet_metadata[EPOCHS] == 2
 
 
 def test_model_finetuning_nlu_with_default_epochs(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_nlu_data: Text,
-    trained_moodbot_path: Text,
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
@@ -560,7 +548,7 @@ def test_model_finetuning_nlu_with_default_epochs(
         "examples/moodbot/data/nlu.yml",
         output=output,
         model_to_finetune=trained_moodbot_path,
-        finetuning_epoch_fraction=0.5,
+        finetuning_epoch_fraction=0.1,
     )
 
     mocked_nlu_training.assert_called_once()
@@ -568,7 +556,7 @@ def test_model_finetuning_nlu_with_default_epochs(
     model_to_finetune = nlu_train_kwargs["model_to_finetune"]
     new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
     assert new_diet_metadata["name"] == "DIETClassifier"
-    assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.5
+    assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.1
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
