@@ -80,21 +80,44 @@ these, `rasa train` will fall back to one of these commands by default.
 The name of the model by default is `<timestamp>.tar.gz`. If you want to name your model differently,
 you can specify the name using the `--fixed-model-name` flag.
 
-Use `rasa train finetune` if the model should not be trained from scratch but if you
-want to train a new model by improving the latest model in the `models/` directory.
-If have a specific model which you want to improve you may specify the path to this by
-running `rasa train finetune <path to model to finetune>`. Finetuning a model usually
-requires less epochs. It's suggested to either use a model configuration for finetuning
-which defines less epochs for the pipelines and policies or use the flag
-`--epoch-fraction`. `--epoch-fraction` will use a fraction of the epochs which are
-specified in the given model configuration file. If the `DIETClassifier` is for example
-configured to use 100 epochs, `--epoch-fraction 0.5` will only use 50 epochs for
-finetuning.
-
 The following arguments can be used to configure the training process:
 
 ```text [rasa train --help]
 ```
+
+### Incremental training
+
+In order to improve the performance of an assistant, it's helpful to practice [CDD](./conversation-driven-development.mdx)
+and add new training examples based on how your users have talked to your assistant. You can use `rasa train --finetune`
+to initialize the pipeline with an already trained model and further finetune it on the
+new training dataset that includes the additional training examples. This will help reduce the
+training time of the new model.
+
+By default, the command picks up the latest model in the `models/` directory. If you have a specific model
+which you want to improve, you may specify the path to this by
+running `rasa train --finetune <path to model to finetune>`. Finetuning a model usually
+requires fewer epochs to train machine learning components like `DIETClassifier`, `ResponseSelector` and `TEDPolicy` compared to training from scratch.
+Either use a model configuration for finetuning
+which defines fewer epochs than before or use the flag
+`--epoch-fraction`. `--epoch-fraction` will use a fraction of the epochs specified for each machine learning component
+in the model configuration file. For example, if `DIETClassifier` is configured to use 100 epochs,
+specifying `--epoch-fraction 0.5` will only use 50 epochs for finetuning.
+
+You can also finetune an NLU-only or dialogue management-only model by using
+`rasa train nlu --finetune` and `rasa train core --finetune` respectively.
+
+To be able to fine tune a model, the following conditions must be met:
+
+1. The configuration supplied should be exactly the same as the
+configuration used to train the model which is being finetuned.
+The only parameter that you can change is `epochs` for the individual machine learning components and policies.
+
+2. The domain supplied should be exactly the same as the domain used to train the model initially. 
+That means no new intents, actions, entities or slots can be added to the domain.
+Only new training examples can be added.
+
+3. The model to be finetuned is trained with `MINIMUM_COMPATIBLE_VERSION` of the currently installed rasa version.
+
 
 ## rasa interactive
 
