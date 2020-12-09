@@ -520,6 +520,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self._fit_vectorizer_from_scratch(TEXT, combined_cleaned_texts)
         else:
             self._fit_loaded_vectorizer(TEXT, combined_cleaned_texts)
+        self._log_vocabulary_stats(TEXT)
 
     def _train_with_independent_vocab(
         self, attribute_texts: Dict[Text, List[Text]]
@@ -547,11 +548,28 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     )
                 else:
                     self._fit_loaded_vectorizer(attribute, attribute_texts[attribute])
+
+                self._log_vocabulary_stats(attribute)
             else:
                 logger.debug(
                     f"No text provided for {attribute} attribute in any messages of "
                     f"training data. Skipping training a CountVectorizer for it."
                 )
+
+    def _log_vocabulary_stats(self, attribute: Text) -> None:
+        """Logs number of vocabulary slots filled out of the total number of available slots.
+
+        Args:
+            attribute: Message attribute for which vocabulary stats are logged.
+        """
+        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            attribute_vocabulary = self.vectorizers[attribute].vocabulary_
+            first_empty_index = self._get_starting_empty_index(attribute_vocabulary)
+            logger.info(
+                f"{first_empty_index - 1} vocabulary slots "
+                f"consumed out of {len(attribute_vocabulary)} "
+                f"slots configured for {attribute} attribute"
+            )
 
     def _fit_loaded_vectorizer(
         self, attribute: Text, attribute_texts: List[Text]
