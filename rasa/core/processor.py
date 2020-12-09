@@ -623,6 +623,7 @@ class MessageProcessor:
                 id=e.name,
                 replace_existing=True,
                 name=e.scheduled_job_name(tracker.sender_id),
+                misfire_grace_time=30,
             )
 
     @staticmethod
