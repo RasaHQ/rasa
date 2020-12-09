@@ -303,7 +303,9 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "SklearnPolicy":
+    def load(
+        cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any
+    ) -> Policy:
         """See the docstring for `Policy.load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
@@ -329,7 +331,7 @@ class SklearnPolicy(Policy):
             featurizer=featurizer,
             priority=meta["priority"],
             zero_state_features=zero_state_features,
-            **data,
+            should_finetune=should_finetune,
         )
 
         state = io_utils.pickle_load(filename)
