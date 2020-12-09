@@ -115,14 +115,15 @@ class Message:
         example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
-        """
-        Build a Message from `UserUttered` data.
+        """Build a Message from `UserUttered` data.
+
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
             intent_metadata: optional metadata for the intent
             example_metadata: optional metadata for the intent example
+
         Returns:
             Message
         """
@@ -186,9 +187,11 @@ class Message:
         """Get all sparse features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Sparse features.
         """
@@ -210,9 +213,11 @@ class Message:
         """Get all dense features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Dense features.
         """
@@ -234,9 +239,11 @@ class Message:
         """Get all features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             features.
         """
@@ -248,12 +255,14 @@ class Message:
     def features_present(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> bool:
-        """Check if there are any features present for the given attribute and
-        featurizers.
+        """Check if there are any features present for the attribute and featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             ``True``, if features are present, ``False`` otherwise
         """

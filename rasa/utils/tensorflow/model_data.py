@@ -128,7 +128,7 @@ class FeatureArray(np.ndarray):
         return output
 
     def __reduce__(self) -> Tuple[Any, Any, Any]:
-        """Needed in order to pickle this object
+        """Needed in order to pickle this object.
 
         Returns:
             A tuple.
@@ -221,7 +221,7 @@ class FeatureArray(np.ndarray):
         ],
         List[int],
     ]:
-        """Returns the shape and type information needed to convert this feature array into tensors.
+        """Returns shapes and types needed to convert this feature array into tensors.
 
         Returns:
             A list of shape tuples.
