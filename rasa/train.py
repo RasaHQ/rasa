@@ -107,7 +107,7 @@ async def train_async(
             method of each NLU component.
 
     Returns:
-        Path of the trained model archive.
+        An instance of `TrainingResult`.
     """
 
     file_importer = TrainingDataImporter.load_from_config(
@@ -215,7 +215,7 @@ async def _train_async_internal(
             method of each NLU component.
 
     Returns:
-        Path of the trained model archive.
+        An instance of `TrainingResult`.
     """
 
     stories, nlu_data = await asyncio.gather(

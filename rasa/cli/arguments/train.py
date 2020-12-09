@@ -116,9 +116,13 @@ def add_dry_run_param(
         action="store_true",
         help="If enabled, not actual training will be performed. Instead, "
         "it will be determined whether a model should be re-trained "
-        "and this information will be printed as an output. This information"
-        "will be printed out and also contained in a return code."
-        "",
+        "and this information will be printed as the output. The return "
+        "code is a 4-bit bitmask that can also be used to determine what exactly needs "
+        "to be retrained:\n"
+        "- 0b0001 means Core needs to be retrained\n"
+        "- 0b0010 means NLU needs to be retrained\n"
+        "- 0b0100 means responses in the domain should be updated\n"
+        "- 0b1000 means the training was forced (--force argument is specified)",
     )
 
 
