@@ -89,7 +89,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # indicates whether the featurizer should use the lemma of a word for
         # counting (if available) or not
         "use_lemma": True,
-        # Additional vocabulary size to be kept reserved
+        # Additional vocabulary size to be kept reserved for finetuning
         "additional_vocabulary_size": {TEXT: None, RESPONSE: None, ACTION_TEXT: None},
     }
 
@@ -131,7 +131,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # use the lemma of the words or not
         self.use_lemma = self.component_config["use_lemma"]
 
-    # noinspection PyPep8Naming
     def _load_vocabulary_params(self) -> None:
         self.OOV_token = self.component_config["OOV_token"]
 
@@ -157,11 +156,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         if isinstance(self.additional_vocabulary_size, int):
             # User defined a common value for all attributes
             user_defined_additional_size = self.additional_vocabulary_size
-            self.additional_vocabulary_size = {}
-            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-                self.additional_vocabulary_size[
-                    attribute
-                ] = user_defined_additional_size
+            self.additional_vocabulary_size = {
+                attribute: user_defined_additional_size
+                for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+            }
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Checks if trained vocabulary exists in attribute's count vectorizer."""
@@ -373,7 +371,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _update_vectorizer_vocabulary(
         self, attribute: Text, new_vocabulary: Set[Text]
     ) -> None:
-        """Update the existing vocabulary of the vectorizer with new unseen words.
+        """Updates the existing vocabulary of the vectorizer with new unseen words.
 
         These unseen words should only occupy the empty buffer slots.
 
@@ -383,7 +381,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
         if len(new_vocabulary) > len(existing_vocabulary):
-            logger.warning(
+            rasa.shared.utils.io.raise_warning(
                 f"New data contains vocabulary of size {len(new_vocabulary)} for attribute {attribute} "
                 f"which is larger than the maximum vocabulary size({len(existing_vocabulary)}) "
                 f"of the original model. Some tokens will have to be dropped "
@@ -431,8 +429,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # of new/existing labels(intents, actions, etc.)
         if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
             return 0
-        if self.additional_vocabulary_size.get(attribute) is not None:
-            return self.additional_vocabulary_size[attribute]
+
+        configured_additional_size = self.additional_vocabulary_size.get(attribute)
+        if configured_additional_size is not None:
+            return configured_additional_size
 
         # If the user hasn't defined additional vocabulary size,
         # then we increase it by 1000 minimum. If the current
@@ -568,7 +568,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             logger.info(
                 f"{first_empty_index - 1} vocabulary slots "
                 f"consumed out of {len(attribute_vocabulary)} "
-                f"slots configured for {attribute} attribute"
+                f"slots configured for {attribute} attribute."
             )
 
     def _fit_loaded_vectorizer(

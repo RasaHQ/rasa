@@ -346,7 +346,9 @@ class RasaModel(tf.keras.models.Model):
         Returns:
             Loaded model with weights appropriately set.
         """
-        logger.debug(f"Loading the model with finetune_mode={finetune_mode}...")
+        logger.debug(
+            f"Loading the model from {model_file_name} with finetune_mode={finetune_mode}..."
+        )
         # create empty model
         model = cls(*args, **kwargs)
         # need to train on 1 example to build weights of the correct size

@@ -657,12 +657,12 @@ def test_all_policy_attributes_are_persisted(tmpdir: Path):
 
 
 async def test_rule_policy_finetune(
-    tmpdir: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
+    tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
 ):
 
-    trained_rule_policy.persist(tmpdir)
+    trained_rule_policy.persist(tmp_path)
 
-    loaded_policy = RulePolicy.load(tmpdir, should_finetune=True)
+    loaded_policy = RulePolicy.load(tmp_path, should_finetune=True)
 
     assert loaded_policy.finetune_mode
 
@@ -677,8 +677,8 @@ async def test_rule_policy_finetune(
             ActionExecuted("utter_stop"),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
+        is_rule_tracker=True,
     )
-    new_rule.is_rule_tracker = True
 
     original_data = await training.load_data(
         "examples/rules/data/rules.yml", trained_rule_policy_domain

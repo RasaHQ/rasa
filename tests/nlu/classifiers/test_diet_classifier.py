@@ -138,7 +138,7 @@ async def _train_persist_load_with_different_settings(
 
 @pytest.mark.skip_on_windows
 async def test_train_persist_load_with_different_settings_non_windows(
-    component_builder: ComponentBuilder, tmpdir: Path
+    component_builder: ComponentBuilder, tmp_path: Path
 ):
     pipeline = [
         {
@@ -150,10 +150,10 @@ async def test_train_persist_load_with_different_settings_non_windows(
         {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
     ]
     await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir, False
+        pipeline, component_builder, tmp_path, should_finetune=False
     )
     await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir, True
+        pipeline, component_builder, tmp_path, should_finetune=True
     )
 
 
@@ -164,10 +164,10 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
         {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
     ]
     await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir, False
+        pipeline, component_builder, tmpdir, should_finetune=False
     )
     await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir, True
+        pipeline, component_builder, tmpdir, should_finetune=True
     )
 
 

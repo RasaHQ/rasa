@@ -375,8 +375,7 @@ def test_regex_featurizer_case_sensitive(
     assert np.allclose(sentence_features.toarray()[-1], sentence_vector, atol=1e-10)
 
 
-def test_persist_load(tmp_path: Path):
-
+def test_persist_load_for_finetuning(tmp_path: Path):
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
@@ -401,8 +400,8 @@ def test_persist_load(tmp_path: Path):
 
     # Test all artifacts stored as part of persist
     assert persist_value["file"] == "ftr"
-    assert tmp_path.joinpath("ftr.patterns.pkl").exists()
-    assert tmp_path.joinpath("ftr.vocabulary_stats.pkl").exists()
+    assert (tmp_path / "ftr.patterns.pkl").exists()
+    assert (tmp_path / "ftr.vocabulary_stats.pkl").exists()
     assert featurizer.vocabulary_stats == {
         "max_number_patterns": 8,
         "pattern_slots_filled": 3,
@@ -435,7 +434,6 @@ def test_persist_load(tmp_path: Path):
 
 
 def test_incremental_train_featurization(tmp_path: Path):
-
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
@@ -520,7 +518,6 @@ def test_incremental_train_featurization(tmp_path: Path):
 
 
 def test_vocabulary_overflow_log(caplog: LogCaptureFixture):
-
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
@@ -539,7 +536,6 @@ def test_vocabulary_overflow_log(caplog: LogCaptureFixture):
         {"pattern": "\\bhello+", "name": "greet", "usage": "intent"},
     ]
 
-    caplog.set_level(logging.WARNING)
     with caplog.at_level(logging.WARNING):
         featurizer.train(TrainingData([], regex_features=additional_patterns))
     assert (

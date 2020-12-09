@@ -109,7 +109,7 @@ class RegexFeaturizer(SparseFeaturizer):
             )
             return self.pattern_vocabulary_stats
 
-    def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]):
+    def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]) -> None:
         """Updates already known patterns with new patterns extracted from data.
 
         Args:
@@ -136,7 +136,7 @@ class RegexFeaturizer(SparseFeaturizer):
                     continue
                 self.known_patterns.append(extra_pattern)
         if patterns_dropped:
-            logger.warning(
+            rasa.shared.utils.io.raise_warning(
                 f"The originally trained model was configured to "
                 f"handle a maximum number of {max_number_patterns} patterns. "
                 f"The current training data exceeds this number as "
@@ -306,21 +306,19 @@ class RegexFeaturizer(SparseFeaturizer):
         """
         file_name = meta.get("file")
 
-        patterns_file_name = Path(model_dir).joinpath(file_name + ".patterns.pkl")
+        patterns_file_name = Path(model_dir) / file_name + ".patterns.pkl"
 
-        vocabulary_stats_file_name = Path(model_dir).joinpath(
-            file_name + ".vocabulary_stats.pkl"
+        vocabulary_stats_file_name = (
+            Path(model_dir) / file_name + ".vocabulary_stats.pkl"
         )
 
         known_patterns = None
         vocabulary_stats = None
         if patterns_file_name.exists():
-            known_patterns = rasa.shared.utils.io.read_json_file(
-                str(patterns_file_name)
-            )
+            known_patterns = rasa.shared.utils.io.read_json_file(patterns_file_name)
         if vocabulary_stats_file_name.exists():
             vocabulary_stats = rasa.shared.utils.io.read_json_file(
-                str(vocabulary_stats_file_name)
+                vocabulary_stats_file_name
             )
 
         return RegexFeaturizer(
@@ -341,10 +339,10 @@ class RegexFeaturizer(SparseFeaturizer):
             Metadata necessary to load the model again.
         """
         patterns_file_name = file_name + ".patterns.pkl"
-        regex_file = Path(model_dir).joinpath(patterns_file_name)
-        utils.write_json_to_file(str(regex_file), self.known_patterns, indent=4)
+        regex_file = Path(model_dir) / patterns_file_name
+        utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
         vocabulary_stats_file_name = file_name + ".vocabulary_stats.pkl"
-        vocabulary_file = Path(model_dir).joinpath(vocabulary_stats_file_name)
-        utils.write_json_to_file(str(vocabulary_file), self.vocabulary_stats, indent=4)
+        vocabulary_file = Path(model_dir) / vocabulary_stats_file_name
+        utils.write_json_to_file(vocabulary_file, self.vocabulary_stats, indent=4)
 
         return {"file": file_name}

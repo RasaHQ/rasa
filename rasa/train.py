@@ -500,9 +500,8 @@ def _core_model_for_finetuning(
     if not path_to_archive:
         return None
 
-    rasa.shared.utils.cli.print_color(
-        f"Loading model from {path_to_archive} for finetuning...",
-        color=rasa.shared.utils.io.bcolors.OKBLUE,
+    rasa.shared.utils.cli.print_info(
+        f"Loading Core model from {path_to_archive} for finetuning...",
     )
 
     with model.unpack_model(path_to_archive) as unpacked:
@@ -697,9 +696,8 @@ def _nlu_model_for_finetuning(
     if not path_to_archive:
         return None
 
-    rasa.shared.utils.cli.print_color(
-        f"Loading model from {path_to_archive} for finetuning...",
-        color=rasa.shared.utils.io.bcolors.OKBLUE,
+    rasa.shared.utils.cli.print_info(
+        f"Loading NLU model from {path_to_archive} for finetuning...",
     )
     with model.unpack_model(path_to_archive) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
