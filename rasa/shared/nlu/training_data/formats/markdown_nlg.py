@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Text, Union
 
 from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.formats import MarkdownWriter, MarkdownReader
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -21,12 +22,15 @@ logger = logging.getLogger(__name__)
 NLG_MARKDOWN_MARKER_REGEX = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
-class NLGMarkdownReader(TrainingDataReader):
+class NLGMarkdownReader(MarkdownReader):
     """Reads markdown training data containing NLG stories and creates a TrainingData object."""
 
-    def __init__(self) -> None:
+    def __init__(self, ignore_deprecation_warning: bool = False) -> None:
+        """Creates reader. See parent class docstring for more information."""
         self.responses = {}
-        super(NLGMarkdownReader, self).__init__()
+        super(NLGMarkdownReader, self).__init__(
+            ignore_deprecation_warning=ignore_deprecation_warning
+        )
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
@@ -101,7 +105,7 @@ class NLGMarkdownReader(TrainingDataReader):
         return re.search(NLG_MARKDOWN_MARKER_REGEX, content) is not None
 
 
-class NLGMarkdownWriter(TrainingDataWriter):
+class NLGMarkdownWriter(MarkdownWriter):
     def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms the NlG part of TrainingData object into a markdown string."""
 
