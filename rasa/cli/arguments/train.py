@@ -104,7 +104,7 @@ def add_compare_params(
 
 def add_dry_run_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
     """Add `--dry-run` argument to a specified `parser`.
 
     Args:
@@ -116,7 +116,9 @@ def add_dry_run_param(
         action="store_true",
         help="If enabled, not actual training will be performed. Instead, "
         "it will be determined whether a model should be re-trained "
-        "and this information will be printed as an output.",
+        "and this information will be printed as an output. This information"
+        "will be printed out and also contained in a return code."
+        "",
     )
 
 

@@ -37,6 +37,7 @@ from rasa.core.channels import (
     SlackInput,
     CallbackInput,
 )
+from rasa.train import TrainingResult
 from rasa.core.channels.slack import SlackBot
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain, SessionConfig
@@ -189,14 +190,14 @@ def background_server(
     # Fake training function which blocks until we tell it to stop blocking
     # If we can send a status request while this is blocking, we can be sure that the
     # actual training is also not blocking
-    def mocked_training_function(*_, **__) -> Text:
+    def mocked_training_function(*_, **__) -> TrainingResult:
         # Tell the others that we are now blocking
         shared_statuses["started_training"] = True
         # Block until somebody tells us to not block anymore
         while shared_statuses.get("stop_training") is not True:
             time.sleep(1)
 
-        return fake_model_path
+        return TrainingResult(model=fake_model_path)
 
     def run_server() -> NoReturn:
         rasa.train = mocked_training_function

@@ -65,7 +65,9 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
         output = os.path.join(path, create_output_path())
 
-        args.model = rasa.train(domain, config, training_files, output)
+        training_result = rasa.train(domain, config, training_files, output)
+        if training_result:
+            args.model = training_result.model
 
         print_run_or_instructions(args)
 

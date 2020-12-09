@@ -16,7 +16,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
-
+from rasa.train import TrainingResult
 import rasa.utils.common
 
 
@@ -78,7 +78,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    return rasa.train(
+    training_result = rasa.train(
         domain=domain,
         config=config,
         training_files=training_files,
@@ -90,6 +90,10 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
     )
+    if training_result.code != 0:
+        sys.exit(training_result.code)
+
+    return training_result.model
 
 
 def train_core(

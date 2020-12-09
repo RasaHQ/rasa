@@ -15,7 +15,7 @@ import rasa.core
 import rasa.shared.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
 
-from rasa.train import train_core, train_nlu, train, dry_run_result
+from rasa.train import train_core, train_nlu, train, dry_run_result, TrainingResult
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.core.test_model import _fingerprint

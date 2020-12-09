@@ -29,7 +29,10 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import train_async
+from rasa.train import (
+    TrainingResult,
+    train_async
+)
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -164,7 +167,7 @@ def default_config() -> List[Policy]:
 def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
     async def _train(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
-    ) -> Optional[Text]:
+    ) -> Optional[TrainingResult]:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 

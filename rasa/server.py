@@ -856,15 +856,15 @@ def create_app(
             from rasa import train as train_model
 
             # pass `None` to run in default executor
-            model_path = await loop.run_in_executor(
+            training_result = await loop.run_in_executor(
                 None, functools.partial(train_model, **training_payload)
             )
 
-            if model_path:
-                filename = os.path.basename(model_path)
+            if training_result and training_result.model:
+                filename = os.path.basename(training_result.model)
 
                 return await response.file(
-                    model_path, filename=filename, headers={"filename": filename}
+                    training_result.model, filename=filename, headers={"filename": filename}
                 )
             else:
                 raise ErrorResponse(

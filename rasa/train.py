@@ -1,6 +1,5 @@
 import asyncio
 import os
-import sys
 import tempfile
 from contextlib import ExitStack
 from typing import Text, Tuple, Optional, List, Union, Dict
@@ -21,6 +20,7 @@ from rasa.shared.utils.cli import (
     print_error,
     print_color,
 )
+import rasa.shared.exceptions
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
@@ -32,6 +32,19 @@ CODE_CORE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_NLU_NEEDS_TO_BE_RETRAINED = 0b0010
 CODE_NLG_NEEDS_TO_BE_RETRAINED = 0b0100
 CODE_FORCED_TRAINING = 0b1000
+
+
+class TrainingResult:
+    """Holds information about the results of training."""
+
+    def __init__(self, code: Optional[int] = 0, model: Optional[Text] = None) -> None:
+        """Creates an instance of `TrainingResult`.
+
+        Args:
+            code: Training result code. 0 if the training was successful.
+            model: Path to a trained model."""
+        self.code = code
+        self.model = model
 
 
 def train(
@@ -46,7 +59,7 @@ def train(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
-) -> Optional[Text]:
+) -> Optional[TrainingResult]:
     return rasa.utils.common.run_in_loop(
         train_async(
             domain=domain,
@@ -75,7 +88,7 @@ async def train_async(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-) -> Optional[Text]:
+) -> Optional[TrainingResult]:
     """Trains a Rasa model (Core and NLU).
 
     Args:
@@ -184,7 +197,7 @@ async def _train_async_internal(
     persist_nlu_training_data: bool,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-) -> Optional[Text]:
+) -> Optional[TrainingResult]:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
     Args:
@@ -209,7 +222,6 @@ async def _train_async_internal(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
 
-    # get the fingerprint
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
@@ -221,7 +233,7 @@ async def _train_async_internal(
         code, texts = dry_run_result(fingerprint_comparison)
         for text in texts:
             print_warning(text) if code > 0 else print_success(text)
-        sys.exit(code)
+        return TrainingResult(code=code)
 
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(
@@ -232,22 +244,24 @@ async def _train_async_internal(
 
     if stories.is_empty():
         print_warning("No stories present. Just a Rasa NLU model will be trained.")
-        return await _train_nlu_with_validated_data(
+        trained_model = await _train_nlu_with_validated_data(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
         )
+        return TrainingResult(model=trained_model)
 
     if nlu_data.can_train_nlu_model():
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
-        return await _train_core_with_validated_data(
+        trained_model = await _train_core_with_validated_data(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
         )
+        return TrainingResult(model=trained_model)
 
     if fingerprint_comparison.is_training_required():
         async with telemetry.track_model_training(file_importer, model_type="rasa"):
@@ -262,19 +276,19 @@ async def _train_async_internal(
                 nlu_additional_arguments=nlu_additional_arguments,
                 old_model_zip_path=old_model,
             )
-
-        return model.package_model(
+        trained_model = model.package_model(
             fingerprint=new_fingerprint,
             output_directory=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
         )
+        return TrainingResult(model=trained_model)
 
     print_success(
         "Nothing changed. You can use the old model stored at '{}'."
         "".format(os.path.abspath(old_model))
     )
-    return old_model
+    return TrainingResult(model=old_model)
 
 
 async def _do_training(
