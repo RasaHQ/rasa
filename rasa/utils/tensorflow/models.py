@@ -330,7 +330,7 @@ class RasaModel(tf.keras.models.Model):
         cls,
         model_file_name: Text,
         model_data_example: RasaModelData,
-        finetune_mode=False,
+        finetune_mode: bool = False,
         *args,
         **kwargs,
     ) -> "RasaModel":

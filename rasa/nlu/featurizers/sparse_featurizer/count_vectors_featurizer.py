@@ -395,7 +395,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     def _merge_new_vocabulary_tokens(
         self, existing_vocabulary: Dict[Text, int], vocabulary: Set[Text]
-    ):
+    ) -> None:
         available_empty_index = self._get_starting_empty_index(existing_vocabulary)
         for token in vocabulary:
             if token not in existing_vocabulary:
@@ -405,7 +405,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 if available_empty_index == len(existing_vocabulary):
                     # We have exhausted all available vocabulary slots.
                     # Drop the remaining vocabulary.
-                    break
+                    return
 
     def _get_additional_vocabulary_size(
         self, attribute: Text, existing_vocabulary_size: int
