@@ -324,7 +324,6 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A tuple of list of states, list of actions and list of entity data.
         """
-
         trackers_as_states = []
         trackers_as_actions = []
         trackers_as_entities = []
@@ -398,7 +397,6 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A list of states.
         """
-
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers
         ]
@@ -469,7 +467,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A tuple of list of states, list of actions and list of entity data.
         """
-
         trackers_as_states = []
         trackers_as_actions = []
         trackers_as_entities = []
@@ -554,7 +551,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A list of states.
         """
-
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers
         ]

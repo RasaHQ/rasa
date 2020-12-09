@@ -234,6 +234,14 @@ class DialogueStateTracker:
 
     @staticmethod
     def freeze_current_state(state: State) -> FrozenState:
+        """Convert State dict into a hashable format FrozenState.
+
+        Args:
+            state: The state which should be converted
+
+        Return:
+            hashable form of the state of type `FrozenState`
+        """
         return frozenset(
             {
                 key: frozenset(values.items())
