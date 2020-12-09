@@ -100,6 +100,16 @@ async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace():
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
+async def test_verify_correct_e2e_story_structure():
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_e2e_1.yml"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_story_structure(ignore_warnings=False)
+
+
 async def test_verify_story_structure_ignores_rules():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",

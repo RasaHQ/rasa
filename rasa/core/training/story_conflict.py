@@ -1,5 +1,6 @@
 from collections import defaultdict
 import logging
+import json
 from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple, Any
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -7,7 +8,6 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
 from rasa.shared.core.domain import Domain, PREV_PREFIX, State, SubState
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.nlu.constants import INTENT
 
 from rasa.nlu.model import Trainer
 from rasa.nlu.components import Component
@@ -133,31 +133,7 @@ class TrackerEventStateTuple(NamedTuple):
     @property
     def sliced_states_hash(self) -> int:
         """Returns the hash of the sliced states."""
-        return hash(_as_sorted_text(self.sliced_states))
-
-
-def _as_sorted_text(obj: Any) -> Text:
-    """Returns the string of `obj` after sorting lists and dicts.
-
-    Args:
-        obj: Something made up of lists and dicts and stringifiable objects.
-
-    Returns:
-        A string representation of the object that doesn't change
-        randomly due to unsorted dicts or sets.
-    """
-    if isinstance(obj, str):
-        return obj
-    elif isinstance(obj, dict):
-        return str(
-            [
-                (_as_sorted_text(key), _as_sorted_text(value))
-                for key, value in sorted(obj.items())
-            ]
-        )
-    elif isinstance(obj, (list, set)):
-        return str(sorted([_as_sorted_text(element) for element in obj]))
-    return str(obj)
+        return hash(json.dumps(self.sliced_states, sort_keys=True))
 
 
 def _get_length_of_longest_story(
@@ -199,32 +175,28 @@ def find_story_conflicts(
     else:
         logger.info("Considering all preceding turns for conflict analysis.")
 
-    tokenizing_function = _get_tokenizing_function_from_nlu_config(nlu_config)
+    tokenizer = _get_tokenizer_from_nlu_config(nlu_config)
 
     # We do this in two steps, to reduce memory consumption:
 
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     conflicting_state_action_mapping = _find_conflicting_states(
-        trackers, domain, max_history, tokenizing_function
+        trackers, domain, max_history, tokenizer
     )
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers,
-        domain,
-        max_history,
-        conflicting_state_action_mapping,
-        tokenizing_function,
+        trackers, domain, max_history, conflicting_state_action_mapping, tokenizer,
     )
 
     return conflicts
 
 
-def _get_tokenizing_function_from_nlu_config(
+def _get_tokenizer_from_nlu_config(
     nlu_config: Optional[RasaNLUModelConfig] = None,
-) -> Optional[callable]:
+) -> Optional[Tokenizer]:
     """Extracts the `tokenize` function of the first Tokenizer in the pipeline.
 
     Args:
@@ -247,14 +219,14 @@ def _get_tokenizing_function_from_nlu_config(
         elif isinstance(component, Tokenizer):
             tokenizer = component
 
-    return tokenizer.tokenize if tokenizer else None
+    return tokenizer
 
 
 def _find_conflicting_states(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
-    tokenizing_function: Optional[callable],
+    tokenizer: Optional[Tokenizer],
 ) -> Dict[int, Optional[List[Text]]]:
     """Identifies all states from which different actions follow.
 
@@ -262,7 +234,7 @@ def _find_conflicting_states(
         trackers: Trackers that contain the states.
         domain: The domain object.
         max_history: Number of turns to take into account for the state descriptions.
-        tokenizing_function: A `Tokenizer.tokenize` function.
+        tokenizer: A tokenizer to tokenize the user messages.
 
     Returns:
         A dictionary mapping state-hashes to a list of actions that follow from each state.
@@ -270,9 +242,7 @@ def _find_conflicting_states(
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     state_action_mapping = defaultdict(list)
-    for element in _sliced_states_iterator(
-        trackers, domain, max_history, tokenizing_function
-    ):
+    for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
         current_hash = hash(element.event)
         if current_hash not in state_action_mapping[hashed_state]:
@@ -291,7 +261,7 @@ def _build_conflicts_from_states(
     domain: Domain,
     max_history: Optional[int],
     conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
-    tokenizing_function: Optional[callable],
+    tokenizer: Optional[Tokenizer],
 ) -> List["StoryConflict"]:
     """Builds a list of `StoryConflict` objects for each given conflict.
 
@@ -301,7 +271,7 @@ def _build_conflicts_from_states(
         max_history: Number of turns to take into account for the state descriptions.
         conflicting_state_action_mapping: A dictionary mapping state-hashes to a list of actions
                                           that follow from each state.
-        tokenizing_function: A `Tokenizer.tokenize` function.
+        tokenizer: A tokenizer to tokenize the user messages.
 
     Returns:
         A list of `StoryConflict` objects that describe inconsistencies in the story
@@ -310,9 +280,7 @@ def _build_conflicts_from_states(
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = {}
-    for element in _sliced_states_iterator(
-        trackers, domain, max_history, tokenizing_function
-    ):
+    for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
 
         if hashed_state in conflicting_state_action_mapping:
@@ -336,7 +304,7 @@ def _sliced_states_iterator(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
-    tokenizing_function: Optional[callable],
+    tokenizer: Optional[Tokenizer],
 ) -> Generator[TrackerEventStateTuple, None, None]:
     """Creates an iterator over sliced states.
 
@@ -347,7 +315,7 @@ def _sliced_states_iterator(
         trackers: List of trackers.
         domain: Domain (used for tracker.past_states).
         max_history: Assumed `max_history` value for slicing.
-        tokenizing_function: A `Tokenizer.tokenize` function.
+        tokenizer: A tokenizer to tokenize the user messages.
 
     Yields:
         A (tracker, event, sliced_states) triplet.
@@ -361,28 +329,25 @@ def _sliced_states_iterator(
                 sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                     states[: idx + 1], max_history
                 )
-                if tokenizing_function:
-                    _apply_tokenizer_to_states(tokenizing_function, sliced_states)
+                if tokenizer:
+                    _apply_tokenizer_to_states(tokenizer, sliced_states)
                 # ToDo: deal with oov (different tokens can lead to identical features if some of those tokens are out of vocabulary for all featurizers)
                 yield TrackerEventStateTuple(tracker, event, sliced_states)
                 idx += 1
 
 
-def _apply_tokenizer_to_states(
-    tokenizing_function: callable, states: List[State]
-) -> None:
+def _apply_tokenizer_to_states(tokenizer: Tokenizer, states: List[State]) -> None:
     """Split each user text into tokens and concatenate them again.
 
     Args:
-        tokenizing_function: Should take a message and an attribute and return the tokens,
-        just like `Tokenizer.tokenize`.
+        tokenizer: A tokenizer to tokenize the user messages.
         states: The states to be tokenized.
     """
     for state in states:
         if USER in state:
             state[USER][TEXT] = "".join(
                 token.text
-                for token in tokenizing_function(
+                for token in tokenizer.tokenize(
                     Message({TEXT: state[USER][TEXT]}), TEXT
                 )
             )
