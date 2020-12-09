@@ -379,7 +379,7 @@ def evaluate_response_selections(
     successes: bool,
     errors: bool,
     disable_plotting: bool,
-    report_as_dict: bool = False,
+    report_as_dict: Optional[bool] = None,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for response selection.
 
@@ -394,7 +394,10 @@ def evaluate_response_selections(
         errors: if True errors are written down to disk
         disable_plotting: if True no plots are created
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
-            Otherwise it's returned in a human-readable text format.
+            If `False` the report is returned in a human-readable text format. If `None`
+            `report_as_dict` is considered as `True` in case an `output_directory` is
+            given.
+
     Returns: dictionary with evaluation results
     """
     # remove empty response targets
@@ -545,7 +548,7 @@ def evaluate_intents(
     successes: bool,
     errors: bool,
     disable_plotting: bool,
-    report_as_dict: bool = False,
+    report_as_dict: Optional[bool] = None,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for intents.
 
@@ -559,7 +562,9 @@ def evaluate_intents(
         errors: if True incorrect predictions are written to disk
         disable_plotting: if True no plots are created
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
-            Otherwise it's returned in a human-readable text format.
+            If `False` the report is returned in a human-readable text format. If `None`
+            `report_as_dict` is considered as `True` in case an `output_directory` is
+            given.
 
     Returns: dictionary with evaluation results
     """
@@ -640,7 +645,7 @@ def _calculate_report(
     output_directory: Optional[Text],
     targets: Iterable[Any],
     predictions: Iterable[Any],
-    report_as_dict: bool = False,
+    report_as_dict: Optional[bool] = None,
     exclude_label: Optional[Text] = None,
 ) -> Tuple[Union[Text, Dict], float, float, float, np.ndarray, List[Text]]:
     from rasa.test import get_evaluation_metrics
@@ -650,9 +655,15 @@ def _calculate_report(
     confusion_matrix = sklearn.metrics.confusion_matrix(targets, predictions)
     labels = sklearn.utils.multiclass.unique_labels(targets, predictions)
 
+    if report_as_dict is None:
+        report_as_dict = bool(output_directory)
+
     if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
-            targets, predictions, output_dict=True, exclude_label=exclude_label
+            targets,
+            predictions,
+            output_dict=report_as_dict,
+            exclude_label=exclude_label,
         )
         report = _add_confused_labels_to_report(
             report,
@@ -834,7 +845,7 @@ def evaluate_entities(
     successes: bool,
     errors: bool,
     disable_plotting: bool,
-    report_as_dict: bool = False,
+    report_as_dict: Optional[bool] = None,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
@@ -848,7 +859,9 @@ def evaluate_entities(
         errors: if True incorrect predictions are written to disk
         disable_plotting: if True no plots are created
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
-            Otherwise it's returned in a human-readable text format.
+            If `False` the report is returned in a human-readable text format. If `None`
+            `report_as_dict` is considered as `True` in case an `output_directory` is
+            given.
 
     Returns: dictionary with evaluation results
     """
@@ -1414,7 +1427,7 @@ def run_evaluation(
     errors: bool = False,
     component_builder: Optional[ComponentBuilder] = None,
     disable_plotting: bool = False,
-    report_as_dict: bool = False,
+    report_as_dict: Optional[bool] = None,
 ) -> Dict:  # pragma: no cover
     """Evaluate intent classification, response selection and entity extraction.
 
@@ -1427,7 +1440,9 @@ def run_evaluation(
         component_builder: component builder
         disable_plotting: if true confusion matrix and histogram will not be rendered
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
-            Otherwise it's returned in a human-readable text format.
+            If `False` the report is returned in a human-readable text format. If `None`
+            `report_as_dict` is considered as `True` in case an `output_directory` is
+            given.
 
     Returns: dictionary containing evaluation results
     """
@@ -1605,7 +1620,7 @@ def cross_validate(
     successes: bool = False,
     errors: bool = False,
     disable_plotting: bool = False,
-    report_as_dict: bool = False,
+    report_as_dict: Optional[bool] = None,
 ) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]:
     """Stratified cross validation on data.
 
@@ -1618,7 +1633,9 @@ def cross_validate(
         errors: if true incorrect predictions are written to a file
         disable_plotting: if true no confusion matrix and historgram plates are created
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
-            Otherwise it's returned in a human-readable text format.
+            If `False` the report is returned in a human-readable text format. If `None`
+            `report_as_dict` is considered as `True` in case an `output_directory` is
+            given.
 
     Returns:
         dictionary with key, list structure, where each entry in list
