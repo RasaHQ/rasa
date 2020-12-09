@@ -31,6 +31,7 @@ import rasa.server
 import rasa.nlu
 from rasa.core import utils
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.core import events
 from rasa.core.agent import Agent
 from rasa.core.channels import (
@@ -854,17 +855,11 @@ async def test_cross_validation(
         "response_selection_evaluation",
     }:
         assert required_key in response_body
-        details = response_body[required_key]
-        if required_key:
-            assert all(key in details for key in ["precision", "f1_score"])
 
-    for required_key in {
-        "intent_errors",
-        "entity_errors",
-        "response_selection_errors",
-    }:
-        assert required_key in response_body
-        assert isinstance(response_body[required_key], list)
+        details = response_body[required_key]
+        assert all(
+            key in details for key in ["precision", "f1_score", "report", "errors"]
+        )
 
 
 async def test_cross_validation_with_md(
@@ -894,7 +889,13 @@ async def test_cross_validation_with_callback_success(
     with aioresponses() as mocked:
         mocked.post(callback_url, payload={})
 
-        mocked_cross_validation = Mock()
+        mocked_cross_validation = Mock(
+            return_value=(
+                CVEvaluationResult({}, {}, {}),
+                CVEvaluationResult({}, {}, {}),
+                CVEvaluationResult({}, {}, {}),
+            )
+        )
         monkeypatch.setattr(
             rasa.nlu, rasa.nlu.cross_validate.__name__, mocked_cross_validation
         )
@@ -917,16 +918,18 @@ async def test_cross_validation_with_callback_success(
         assert last_request
 
         content = last_request[0].kwargs["data"]
-        content = json.loads(content)
+        response_body = json.loads(content)
         for required_key in {
             "intent_evaluation",
-            "intent_errors",
             "entity_evaluation",
-            "entity_errors",
             "response_selection_evaluation",
-            "response_selection_errors",
         }:
-            assert required_key in content
+            assert required_key in response_body
+
+            details = response_body[required_key]
+            assert all(
+                key in details for key in ["precision", "f1_score", "report", "errors"]
+            )
 
 
 async def test_cross_validation_with_callback_error(

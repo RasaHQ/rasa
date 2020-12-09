@@ -1552,67 +1552,16 @@ components:
         intent_evaluation:
           description: Rasa NLU intent evaluation
           $ref: '#/components/schemas/EvaluationItem'
-        intent_errors:
-          description: Intent prediction errors which were made during the testing
-          type: array
-          items:
-            type: object
-            properties:
-              text:
-                type: string
-                description: Test message
-                example: are you alright?
-              intent_response_key_target:
-                description: Expected intent
-                type: string
-              intent_response_key_prediction:
-                description: Predicted intent
-                $ref: '#/components/schemas/Intent'
         response_selection_evaluation:
           description: Evaluation for the retrieval intents
           $ref: '#/components/schemas/EvaluationItem'
-        response_selection_errors:
-          description: >-
-            Prediction errors which were made during the testing of the response
-            selector components
-          type: array
-          items:
-            type: object
-            properties:
-              text:
-                type: string
-                description: Test message
-                example: are you alright?
-              intent_response_key_target:
-                description: Expected retrieval intent
-                type: string
-              intent_response_key_prediction:
-                description: Predicted retrieval intent
-                $ref: '#/components/schemas/Intent'
-
         entity_evaluation:
           description: Rasa NLU entity evaluation.
-          $ref: '#/components/schemas/EvaluationItem'
-        entity_errors:
-          description: Entity prediction errors which were made during testing
-          type: array
-          items:
+          type: object
+          additionalProperties:
             type: object
-            properties:
-              text:
-                type: string
-                description: Test message
-                example: what is the weather in zurich?
-              entities:
-                description: Expected entities
-                type: array
-                items:
-                  $ref: '#/components/schemas/Entity'
-              predicted_entities:
-                description: Predicted entities
-                type: array
-                items:
-                  $ref: '#/components/schemas/Entity'
+            description: Evaluation for a specific extractor
+            $ref: '#/components/schemas/EvaluationItem'
 
     EvaluationItem:
       type: object
@@ -1647,6 +1596,63 @@ components:
               confidence:
                 type: number
                 example: 0.9973567
+        errors:
+          description: The errors which were made during the testing.
+          type: array
+          items:
+            oneOf:
+            - $ref: '#/components/schemas/IntentTestError'
+            - $ref: '#/components/schemas/EntityTestError'
+            - $ref: '#/components/schemas/ResponseSelectorTestError'
+
+    IntentTestError:
+      description: Intent prediction errors which was made during testing
+      type: object
+      properties:
+        text:
+          type: string
+          description: Test message
+          example: are you alright?
+        intent_response_key_target:
+          description: Expected intent
+          type: string
+        intent_response_key_prediction:
+          description: Predicted intent
+          $ref: '#/components/schemas/Intent'
+
+    EntityTestError:
+      description: Entity prediction errors which was made during testing
+      type: object
+      properties:
+        text:
+          type: string
+          description: Test message
+          example: what is the weather in zurich?
+        entities:
+          description: Expected entities
+          type: array
+          items:
+            $ref: '#/components/schemas/Entity'
+        predicted_entities:
+          description: Predicted entities
+          type: array
+          items:
+            $ref: '#/components/schemas/Entity'
+
+    ResponseSelectorTestError:
+      description: Error during response prediction which was made during testing
+      type: object
+      properties:
+        text:
+          type: string
+          description: Test message
+          example: are you alright?
+        intent_response_key_target:
+          description: Expected retrieval intent
+          type: string
+        intent_response_key_prediction:
+          description: Predicted retrieval intent
+          $ref: '#/components/schemas/Intent'
 
     EvaluationReport:
       type: object

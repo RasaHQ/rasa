@@ -1,10 +1,10 @@
 import asyncio
-import json
 import logging
 import multiprocessing
 import os
 import tempfile
 import traceback
+from collections import defaultdict
 from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
@@ -65,7 +65,7 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
-from rasa.nlu.test import run_evaluation
+from rasa.nlu.test import run_evaluation, CVEvaluationResult
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
@@ -1098,7 +1098,7 @@ def create_app(
 
         if cross_validation_folds and is_yaml_payload:
             test_coroutine = _cross_validate(
-                test_data, config_file, int(cross_validation_folds), temporary_directory
+                test_data, config_file, int(cross_validation_folds)
             )
         elif cross_validation_folds:
             raise ErrorResponse(
@@ -1108,7 +1108,7 @@ def create_app(
             )
         else:
             test_coroutine = _evaluate_model_using_test_set(
-                request.args.get("model"), test_data, temporary_directory
+                request.args.get("model"), test_data
             )
 
         try:
@@ -1123,7 +1123,7 @@ def create_app(
             )
 
     async def _evaluate_model_using_test_set(
-        model_path: Text, test_data_file: Text, temporary_directory: Path
+        model_path: Text, test_data_file: Text
     ) -> Dict:
         eval_agent = app.agent
 
@@ -1148,78 +1148,49 @@ def create_app(
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
         return run_evaluation(
-            data_path,
-            nlu_model,
-            disable_plotting=True,
-            output_directory=str(temporary_directory),
+            data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
-    async def _cross_validate(
-        data_file: Text, config_file: Text, folds: int, temporary_directory: Path
-    ) -> Dict:
+    async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
         importer = TrainingDataImporter.load_from_dict(
             None, config_path=config_file, training_data_paths=[data_file]
         )
         config = await importer.get_config()
         nlu_data = await importer.get_nlu_data()
 
-        rasa.nlu.cross_validate(
+        evaluations = rasa.nlu.cross_validate(
             data=nlu_data,
             n_folds=folds,
             nlu_config=config,
-            # Use a temporary directory as `output` as we will only obtain the full
-            # validation results in that case.
-            output=str(temporary_directory),
             disable_plotting=True,
             errors=True,
+            report_as_dict=True,
         )
-
-        evaluation_results = _get_evaluation_results(temporary_directory)
-        prediction_errors = _get_prediction_errors(temporary_directory)
-        evaluation_results.update(prediction_errors)
+        evaluation_results = _get_evaluation_results(*evaluations)
 
         return evaluation_results
 
-    def _get_evaluation_results(temporary_directory: Path) -> Dict[Text, Any]:
-        report_filename_mapping = {
-            "intent_evaluation": "intent_report.json",
-            "entity_evaluation": "DIETClassifier_report.json",
-            "response_selection_evaluation": "response_selector.json",
+    def _get_evaluation_results(
+        intent_report: CVEvaluationResult,
+        entity_report: CVEvaluationResult,
+        response_selector_report: CVEvaluationResult,
+    ) -> Dict[Text, Any]:
+        eval_name_mapping = {
+            "intent_evaluation": intent_report,
+            "entity_evaluation": entity_report,
+            "response_selection_evaluation": response_selector_report,
         }
 
-        evaluation_results = {
-            eval_name: _read_file_or_empty(temporary_directory, filename)
-            for eval_name, filename in report_filename_mapping.items()
-        }
+        result = defaultdict(dict)
+        for evaluation_name, evaluation in eval_name_mapping.items():
+            report = evaluation.evaluation.get("report", {})
+            averages = report.get("weighted avg", {})
+            result[evaluation_name]["report"] = report
+            result[evaluation_name]["precision"] = averages.get("precision")
+            result[evaluation_name]["f1_score"] = averages.get("1-score")
+            result[evaluation_name]["errors"] = evaluation.evaluation.get("errors", [])
 
-        return {
-            eval_name: {
-                "report": report,
-                "precision": report.get("weighted avg", {}).get("precision"),
-                "f1_score": report.get("weighted avg", {}).get("f1-score"),
-            }
-            for eval_name, report in evaluation_results.items()
-        }
-
-    def _get_prediction_errors(temporary_directory: Path) -> Dict[Text, Any]:
-        prediction_errors_filename_mapping = {
-            "intent_errors": "intent_errors.json",
-            "entity_errors": "DIETClassifier_errors.json",
-            "response_selection_errors": "response_selection_errors.json",
-        }
-
-        return {
-            error_name: _read_file_or_empty(temporary_directory, filename, empty=list)
-            for error_name, filename in prediction_errors_filename_mapping.items()
-        }
-
-    def _read_file_or_empty(
-        directory: Path, file_name: Text, empty: Callable[[], Any] = dict
-    ) -> Any:
-        path = directory / file_name
-        if path.is_file():
-            return rasa.shared.utils.io.read_json_file(path)
-        return empty()
+        return result
 
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
