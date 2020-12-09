@@ -262,9 +262,9 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        poetry config virtualenvs.create false
         poetry config virtualenvs.in-project false
-        poetry config virtualenvs.path .venv
+        poetry config virtualenvs.path ${{ github.workspace}}/.venv
+        poetry env list
         make test
 
     - name: Send Coverage Report 📊
