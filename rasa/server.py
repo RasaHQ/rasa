@@ -1155,7 +1155,7 @@ def create_app(
 
     async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
         importer = TrainingDataImporter.load_from_dict(
-            None, config_path=config_file, training_data_paths=[data_file]
+            config=None, config_path=config_file, training_data_paths=[data_file]
         )
         config = await importer.get_config()
         nlu_data = await importer.get_nlu_data()

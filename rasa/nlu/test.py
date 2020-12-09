@@ -225,11 +225,7 @@ def _write_errors(errors: List[Dict], errors_filename: Text, error_type: Text) -
             f"correctly: \n{errors}"
         )
     else:
-        if error_type.endswith("y"):
-            error_type_plural = f"{error_type[:-1]}ies"
-        else:
-            error_type_plural = f"{error_type}s"
-        logger.info(f"Your model predicted all {error_type_plural}s successfully.")
+        logger.info(f"Every {error_type} was predicted correctly by the model.")
 
 
 def _get_intent_errors(intent_results: List[IntentEvaluationResult]) -> List[Dict]:
