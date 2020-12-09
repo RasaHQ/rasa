@@ -419,12 +419,13 @@ def evaluate_response_selections(
     )
 
     report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
-        "response_selection_report.json",
         output_directory,
         target_intent_response_keys,
         predicted_intent_response_keys,
         report_as_dict,
     )
+    if output_directory:
+        _dump_report(output_directory, "response_selection_report.json", report)
 
     if successes:
         successes_filename = "response_selection_successes.json"
@@ -576,12 +577,10 @@ def evaluate_intents(
     )
 
     report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
-        "intent_report.json",
-        output_directory,
-        target_intents,
-        predicted_intents,
-        report_as_dict,
+        output_directory, target_intents, predicted_intents, report_as_dict,
     )
+    if output_directory:
+        _dump_report(output_directory, "intent_report.json", report)
 
     if successes and output_directory:
         successes_filename = os.path.join(output_directory, "intent_successes.json")
@@ -638,7 +637,6 @@ def evaluate_intents(
 
 
 def _calculate_report(
-    filename: Text,
     output_directory: Optional[Text],
     targets: Iterable[Any],
     predictions: Iterable[Any],
@@ -662,11 +660,6 @@ def _calculate_report(
             labels,
             exclude_labels=[exclude_label] if exclude_label else [],
         )
-
-        report_filename = os.path.join(output_directory, filename)
-        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
-        logger.info(f"Classification report saved to {report_filename}.")
-
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
             targets,
@@ -678,6 +671,12 @@ def _calculate_report(
             log_evaluation_table(report, precision, f1, accuracy)
 
     return report, precision, f1, accuracy, confusion_matrix, labels
+
+
+def _dump_report(output_directory: Text, filename: Text, report: Dict) -> None:
+    report_filename = os.path.join(output_directory, filename)
+    rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
+    logger.info(f"Classification report saved to {report_filename}.")
 
 
 def merge_labels(
@@ -868,13 +867,14 @@ def evaluate_entities(
         logger.info(f"Evaluation for entity extractor: {extractor} ")
 
         report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
-            f"{extractor}_report.json",
             output_directory,
             merged_targets,
             merged_predictions,
             report_as_dict,
             exclude_label=NO_ENTITY,
         )
+        if output_directory:
+            _dump_report(output_directory, f"{extractor}_report.json", report)
 
         if successes:
             successes_filename = f"{extractor}_successes.json"
