@@ -5,12 +5,14 @@ backend:
   - 'tests/**/*'
   - 'data/**/*'
   - 'examples/**/*'
+  - 'Makefile'
 
 docker:
   - 'pyproject.toml'
   - 'poetry.lock'
   - 'rasa/**/*'
   - 'docker/**/*'
+  - 'Makefile'
 
 docs:
   - 'docs/**/*'
@@ -19,3 +21,4 @@ docs:
   - 'tests/docs/*'
   - 'data/**/*'
   - 'examples/**/*'
+  - 'Makefile'
