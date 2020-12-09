@@ -258,7 +258,12 @@ def write_nlu_data_to_binary_file(
     vocab = set()
     tag_vocab = set()
     for message in nlu_data.intent_examples:
-        text_tokens = [token.text for token in message.get(f"{TEXT}_tokens", [])]
+        if lowercase:
+            text_tokens = [
+                token.text.lower() for token in message.get(f"{TEXT}_tokens", [])
+            ]
+        else:
+            text_tokens = [token.text for token in message.get(f"{TEXT}_tokens", [])]
         intent = message.get(INTENT)
         intent_response_key = message.get(INTENT_RESPONSE_KEY)
         # entities = message.get(ENTITIES, [])
@@ -320,7 +325,7 @@ def run_smap(
     height: int,
     width: int,
     epochs: int,
-) -> Text:
+) -> Tuple[Text, Text]:
     cmd = [
         exe,
         "create",
@@ -342,7 +347,10 @@ def run_smap(
     print(cmd)
     stdout = check_output(cmd)
     print(stdout.decode())
-    return os.path.join(dir_name, "smap", "codebook.bin")
+    return (
+        os.path.join(dir_name, "smap", "codebook.bin"),
+        os.path.join(dir_name, "smap", "convergence.tsv"),
+    )
 
 
 CODEBOOK_FILE_BYTEORDER = "little"

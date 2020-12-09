@@ -66,6 +66,8 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         "normalize": True,
         # maximum density of any semantic fingerprint
         "max_density": 0.02,
+        # whether to generate fingerprints with fixed density
+        "fixed_density": False,
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
@@ -88,6 +90,7 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         self._normalize = self.component_config["normalize"]
         self._max_density = self.component_config["max_density"]
         self._executable: Optional[Text] = self.component_config["executable"]
+        self.stats: Optional[Text] = None
 
         if self.semantic_map_filename:
             if not os.path.exists(self.semantic_map_filename):
@@ -142,6 +145,7 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                 {
                     "pooling": self.pooling,
                     "lowercase": self.lowercase,
+                    "stats": self.stats,
                     "semantic_map_data": self.semantic_map.as_dict(),
                 },
             )
@@ -190,7 +194,7 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                 epochs = self._epochs
                 local_topology = 6
                 global_topology = 0
-                codebook_filename = run_smap(
+                codebook_filename, convergence_stats_filename = run_smap(
                     self._executable,
                     temp_directory,
                     corpus_binary_filename,
@@ -219,6 +223,9 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                         file,
                     )
                 self.semantic_map = SemanticMap(semantic_map_filename)
+                self.stats = str(
+                    rasa.shared.utils.io.read_file(convergence_stats_filename)
+                )
 
         # Add features to be used by other components in the pipeline
         for example in training_data.training_examples:
