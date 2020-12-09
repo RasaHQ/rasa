@@ -99,6 +99,15 @@ class Features:
         return (self.type, self.attribute, self.features, self.origin)
 
     def __eq__(self, other: Any) -> bool:
+        """Tests whether two Features are the same.
+
+        Args:
+            other: The other object.
+
+        Returns:
+            True when the other object is a Feature and has the same
+            type, attribute, and feature tensors.
+        """
         if not isinstance(other, Features):
             return False
 
