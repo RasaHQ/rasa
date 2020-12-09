@@ -296,8 +296,7 @@ class Policy:
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
 
-            if "should_finetune" in kwargs:
-                data["should_finetune"] = kwargs["should_finetune"]
+            data.update(kwargs)
 
             constructor_args = rasa.shared.utils.common.arguments_of(cls)
             if "kwargs" not in constructor_args:

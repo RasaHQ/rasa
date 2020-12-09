@@ -303,7 +303,9 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs: Any) -> Policy:
+    def load(
+        cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any
+    ) -> Policy:
         """See the docstring for `Policy.load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
@@ -323,13 +325,11 @@ class SklearnPolicy(Policy):
         meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 
-        data = {"should_finetune": kwargs.get("should_finetune", False)}
-
         policy = cls(
             featurizer=featurizer,
             priority=meta["priority"],
             zero_state_features=zero_state_features,
-            **data,
+            should_finetune=should_finetune,
         )
 
         state = io_utils.pickle_load(filename)
