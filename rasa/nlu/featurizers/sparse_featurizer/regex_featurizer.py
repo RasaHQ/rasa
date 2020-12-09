@@ -306,10 +306,10 @@ class RegexFeaturizer(SparseFeaturizer):
         """
         file_name = meta.get("file")
 
-        patterns_file_name = Path(model_dir) / file_name + ".patterns.pkl"
+        patterns_file_name = Path(model_dir) / (file_name + ".patterns.pkl")
 
-        vocabulary_stats_file_name = (
-            Path(model_dir) / file_name + ".vocabulary_stats.pkl"
+        vocabulary_stats_file_name = Path(model_dir) / (
+            file_name + ".vocabulary_stats.pkl"
         )
 
         known_patterns = None

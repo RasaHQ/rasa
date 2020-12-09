@@ -217,13 +217,16 @@ class TEDPolicy(Policy):
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority, **kwargs)
+        super().__init__(
+            featurizer, priority, should_finetune=should_finetune, **kwargs
+        )
         if isinstance(featurizer, FullDialogueTrackerFeaturizer):
             self.is_full_dialogue_featurizer_used = True
         else:
@@ -441,7 +444,11 @@ class TEDPolicy(Policy):
 
     @classmethod
     def load(
-        cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any
+        cls,
+        path: Union[Text, Path],
+        should_finetune: bool = False,
+        epoch_override: int = defaults[EPOCHS],
+        **kwargs: Any,
     ) -> "TEDPolicy":
         """Loads a policy from the storage.
 
@@ -482,9 +489,7 @@ class TEDPolicy(Policy):
         )
         meta = train_utils.update_similarity_type(meta)
 
-        meta["should_finetune"] = should_finetune
-        if "epoch_override" in kwargs:
-            meta[EPOCHS] = kwargs["epoch_override"]
+        meta[EPOCHS] = epoch_override
 
         model = TED.load(
             str(tf_model_file),
@@ -500,14 +505,15 @@ class TEDPolicy(Policy):
 
         if not should_finetune:
             # build the graph for prediction
+
+            features_to_select = STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
             predict_data_example = RasaModelData(
                 label_key=LABEL_KEY,
                 label_sub_key=LABEL_SUB_KEY,
                 data={
                     feature_name: features
                     for feature_name, features in model_data_example.items()
-                    if feature_name
-                    in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
+                    if feature_name in features_to_select
                 },
             )
             model.build_for_predict(predict_data_example)
@@ -517,6 +523,7 @@ class TEDPolicy(Policy):
             priority=priority,
             model=model,
             zero_state_features=zero_state_features,
+            should_finetune=should_finetune,
             **meta,
         )
 
