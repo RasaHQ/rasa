@@ -1258,15 +1258,21 @@ class DIET(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
-        self._prepare_sequence_layers(
-            self.text_name, self.data_signature[self.text_name]
+        # self._prepare_sequence_layers(
+        #     self.text_name, self.data_signature[self.text_name]
+        # )
+        self._tf_layers[f"{self.text_name}_sequence_layer"] = layers.RasaSequenceLayer(
+            self.text_name, self.data_signature[self.text_name], self.config
         )
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
-            self._prepare_input_layers(
-                self.label_name, self.label_signature[self.label_name]
+            # self._prepare_input_layers(
+            #     self.label_name, self.label_signature[self.label_name]
+            # )
+            self._tf_layers[f"{self.label_name}_input_layer"] = layers.RasaInputLayer(
+                self.label_name, self.label_signature[self.label_name], self.config
             )
             self._prepare_ffnn_layer(
                 self.label_name,
@@ -1401,21 +1407,16 @@ class DIET(TransformerRasaModel):
         )
         mask_text = self._compute_mask(sequence_lengths)
 
-        (
-            text_transformed,
-            text_in,
-            text_seq_ids,
-            lm_mask_bool_text,
-        ) = self._create_sequence(
-            tf_batch_data[TEXT][SEQUENCE],
-            tf_batch_data[TEXT][SENTENCE],
-            mask_sequence_text,
-            mask_text,
-            self.text_name,
-            # sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
-            # dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+        (text_transformed, text_in, text_seq_ids, lm_mask_bool_text,) = self._tf_layers[
+            f"{self.text_name}_sequence_layer"
+        ](
+            sequence_features=tf_batch_data[TEXT][SEQUENCE],
+            sentence_features=tf_batch_data[TEXT][SENTENCE],
+            mask_sequence=mask_sequence_text,
+            mask=mask_text,
+            name=self.text_name,
+            training=self._training,
             masked_lm_loss=self.config[MASKED_LM],
-            # sequence_ids=True,
         )
 
         losses = []
@@ -1554,12 +1555,13 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[TEXT][SEQUENCE],
-            tf_batch_data[TEXT][SENTENCE],
-            mask_sequence_text,
-            mask,
-            self.text_name,
+        text_transformed, _, _, _ = self._tf_layers[f"{self.text_name}_sequence_layer"](
+            sequence_features=tf_batch_data[TEXT][SEQUENCE],
+            sentence_features=tf_batch_data[TEXT][SENTENCE],
+            mask_sequence=mask_sequence_text,
+            mask=mask,
+            name=self.text_name,
+            training=self._training,
         )
 
         predictions: Dict[Text, tf.Tensor] = {}

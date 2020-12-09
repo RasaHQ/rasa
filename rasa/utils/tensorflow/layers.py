@@ -214,13 +214,7 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
 from rasa.utils.tensorflow.model_data import FeatureSignature
 
 from rasa.utils.tensorflow.constants import (
-    # TENSORBOARD_LOG_LEVEL,
-    # RANDOM_SEED,
-    # TENSORBOARD_LOG_DIR,
-    # CHECKPOINT_MODEL,
-    # EMBEDDING_DIMENSION,
     REGULARIZATION_CONSTANT,
-    # SIMILARITY_TYPE,
     WEIGHT_SPARSITY,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
@@ -229,12 +223,6 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    # NUM_NEG,
-    # LOSS_TYPE,
-    # MAX_POS_SIM,
-    # MAX_NEG_SIM,
-    # USE_MAX_NEG_SIM,
-    # NEGATIVE_MARGIN_SCALE,
     HIDDEN_LAYERS_SIZES,
     DROP_RATE,
     SPARSE_INPUT_DROPOUT,
@@ -242,7 +230,6 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
-    # SCALE_LOSS,
 )
 from rasa.shared.nlu.constants import TEXT
 
@@ -435,7 +422,6 @@ class RasaInputLayer(tf.keras.layers.Layer):
         self.do_seq_sent_concat = all(
             [feature_type in data_signature for feature_type in [SEQUENCE, SENTENCE]]
         )
-        # if self.do_seq_sent_concat:
         seq_sent_data_signatures = {}
         for feature_type in [SEQUENCE, SENTENCE]:
             if feature_type in data_signature:
@@ -445,8 +431,6 @@ class RasaInputLayer(tf.keras.layers.Layer):
                     units=self.concat_sparse_dense[feature_type].output_units,
                     number_of_dimensions=signature_existing.number_of_dimensions,
                 )
-                # signature.is_sparse = False
-                # signature.units = self.concat_sparse_dense[feature_type].output_units
                 seq_sent_data_signatures[feature_type] = signature_new
             else:
                 seq_sent_data_signatures[feature_type] = None
@@ -468,15 +452,6 @@ class RasaInputLayer(tf.keras.layers.Layer):
             concat_layers_kwargs=concat_layers_kwargs,
             layer_name_suffix=name,
         )
-        # else:
-        #     if SEQUENCE in data_signature:
-        #         self.concat_seq_sent = (
-        #             lambda seq_features, sent_features, text_mask: seq_features
-        #         )
-        #     else:
-        #         self.concat_seq_sent = (
-        #             lambda seq_features, sent_features, text_mask: sent_features
-        #         )
 
         self.output_units = self.concat_seq_sent.output_units
 
@@ -486,8 +461,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask_sequence: tf.Tensor = None,
         mask_text: tf.Tensor = None,
-        training: bool = True
-        # name: Text
+        training: bool = True,
     ) -> tf.Tensor:
         sequence_x = self.concat_sparse_dense[SEQUENCE](sequence_features, training)
         if sequence_x is not None and mask_sequence is not None:
@@ -499,6 +473,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
 
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.core.constants import DIALOGUE
+
 
 # does:
 # 1. input_layer
@@ -571,7 +546,6 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 name=f"{name}_encoder",
             )
         else:
-            # create lambda so that it can be used later without the check
             self.transformer = lambda x, mask, training: x
 
         # TODO: should this simply use NUM_TRANSFORMER_LAYERS?
@@ -614,10 +588,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         mask: tf.Tensor,
         name: Text,
         training: bool,
-        # sparse_dropout: bool = False,
-        # dense_dropout: bool = False,
         masked_lm_loss: bool = False,
-        # sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
 
         inputs = self.input_layer(
