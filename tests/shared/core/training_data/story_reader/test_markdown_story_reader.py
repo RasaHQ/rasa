@@ -418,3 +418,15 @@ def test_invalid_end_to_end_format(line: Text):
     with pytest.raises(ValueError):
         # noinspection PyProtectedMember
         _ = reader.parse_e2e_message(line)
+
+
+def test_markdown_deprecation():
+    with pytest.warns(FutureWarning):
+        MarkdownStoryReader()
+
+
+def test_skip_markdown_deprecation():
+    with pytest.warns(None) as warnings:
+        MarkdownStoryReader(ignore_deprecation_warning=True)
+
+    assert not warnings
