@@ -36,98 +36,9 @@ resource-intensive tests only when certain files have been changed or when some
 other indicator is present. For example, if your code is hosted on Github,
 you can make a test run only if the pull request has a certain label (e.g. “NLU testing required”).
 
-### Validating Data and Stories
+### Cross Validation Tests
 
-Data validation verifies that no mistakes or major inconsistencies appear in your domain, NLU 
-data, or story data. To validate your data, have your CI run this command:
-
-```bash
-rasa data validate
-```
-
-If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the 
-smallest of those values as
-
-```bash
-rasa data validate --max-history <max_history>
-```
-
-If data validation results in errors, training a model can also fail or yield bad performance, so it's
-always good to run this check before training a model. By including the
-`--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
-
-:::note
-Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
-However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
-:::
-
-To read more about the validator and all of the available options, see [the documentation for 
-`rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
-
-### Training a Model
-
-You can train a model with the following command:
-
-```bash
-rasa train
-```
-
-Training a model verifies that your NLU pipeline and policy configurations are
-valid and trainable, and provides a model to use for testing your assistant.
-If the model passes the CI tests, then you can also [upload the trained model](./setting-up-ci-cd.mdx#deploying-your-rasa-model)
-to your server as part of the continuous deployment process.
-
-
-### Testing Your Assistant
-
-Testing your trained model on [test stories](./testing-your-assistant.mdx#writing-test-stories) is the best way to have confidence in how your assistant
-will act in certain situations. Written in a modified story
-format, test stories allow you to provide entire conversations and test that, given certain
-user input, your model will behave in the expected manner. This is especially
-important as you start introducing more complicated stories from user
-conversations.
-
-The command to run test stories is:
-
-```bash
-rasa test --fail-on-prediction-errors
-```
-By default, the command will run tests on stories from any files with names starting with `test_`. You can also provide
-a specific test stories file or directory with the `--stories` argument.
-
-The `--fail-on-prediction-errors` flag ensures the test will fail if any test
-story fails.
-
-End-to-end conversation testing is only as thorough and accurate as the test
-cases you include, so you should continue to grow your set of test stories
-as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
-to be representative of the true distribution of real conversations.
-Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
-
-:::note
-Running test stories does **not** execute your action code. You will need to
-[test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a separate step.
-:::
-
-### Comparing NLU Performance
-
-If you've made significant changes to your NLU training data (e.g.
-splitting an intent into two intents or adding a lot of training examples), you should run a
-[full NLU evaluation](./testing-your-assistant.mdx#evaluating-an-nlu-model). You'll want to compare
-the performance of the NLU model without your changes to an NLU model with your
-changes.
-
-You can do this by running NLU testing in cross-validation mode:
-
-```bash
-rasa test nlu --cross-validation
-```
-
-You could also train a model on a training set and testing it on a test set. If you use the train-test
-set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#rasa-data-split) using `rasa data split` as part of this CI step, as
-opposed to using a static NLU test set, which can easily become outdated.
-
-Because this test doesn't result in a pass/fail exit code, it's best to make
+Because the NLU cross-validation test doesn't result in a pass/fail exit code, it's best to make
 the results visible so that you can interpret them.
 For example, [this GitHub Actions Workflow](https://gist.github.com/amn41/de555c93913a01fbd56df2e2d211862c)
 includes commenting on a PR with a results table that shows which intents are confused with others.
@@ -135,13 +46,6 @@ includes commenting on a PR with a results table that shows which intents are co
 Since NLU comparison can be a fairly resource intensive test, you may choose to run this test
 only when certain conditions are met. Conditions might include the presence of a manual label (e.g. “NLU
 testing required”), changes to NLU data, or changes to the NLU pipeline.
-
-### Testing Action Code
-
-The approach used to test your action code will depend on how it is
-implemented. For example, if you connect to external APIs, you should write integration tests to ensure
-that those APIs respond as expected to common inputs. However you test your action code, you should
-include these tests in your CI pipeline so that they run each time you make changes.
 
 ## Continuous Deployment (CD)
 
