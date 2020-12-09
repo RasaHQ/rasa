@@ -48,9 +48,9 @@ class MarkdownStoryReader(StoryReader):
 
         if not ignore_deprecation_warning:
             rasa.shared.utils.io.raise_deprecation_warning(
-                "Markdown Training data is deprecated and will be removed in Rasa Open "
-                "Source 3.0.0. Please convert your current training data to the "
-                "YAML training data format.",
+                "Stories in Markdown format are deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown stories to the "
+                "new YAML format.",
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 

@@ -53,9 +53,9 @@ class MarkdownReader(TrainingDataReader):
 
         if not ignore_deprecation_warning:
             rasa.shared.utils.io.raise_deprecation_warning(
-                "Markdown Training data is deprecated and will be removed in Rasa Open "
-                "Source 3.0.0. Please convert your current training data to the "
-                "YAML training data format.",
+                "NLU data in Markdown format is deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown NLU data to the "
+                "new YAML training data format.",
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 
@@ -194,9 +194,9 @@ class MarkdownWriter(TrainingDataWriter):
     def __init__(self, ignore_deprecation_warning: bool = False,) -> None:
         if not ignore_deprecation_warning:
             rasa.shared.utils.io.raise_deprecation_warning(
-                "Markdown Training data is deprecated and will be removed in Rasa Open "
-                "Source 3.0.0. Please convert your current training data to the "
-                "YAML training data format.",
+                "NLU data in Markdown format is deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown NLU data to the "
+                "new YAML training data format.",
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 

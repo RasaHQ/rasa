@@ -20,7 +20,7 @@ DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/tracker-stores"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/components"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
 DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
-    f"{DOCS_URL_MIGRATION_GUIDE}#training-data-files"
+    f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
 )
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
