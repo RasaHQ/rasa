@@ -523,7 +523,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
                         "UnexpectedError",
                         f"An unexpected error occurred. Error: {e}",
                     )
-                # If an error happens, we sent the error payload to the `callback_url`
+                # If an error happens, we send the error payload to the `callback_url`
                 payload = dict(json=e.error_info)
                 logger.debug(
                     "Error happened when processing request asynchronously. "
