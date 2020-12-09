@@ -71,6 +71,22 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      run: poetry config virtualenvs.in-project true
+
+    - name: Load Poetry Cached Libraries ⬇
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v1
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-3.7
+
+    - name: Install Dependencies (Linux) 📦
+      if: needs.changes.outputs.backend == 'true'
+      run: make install
+
     - name: Run Bandit 🔪
       if: needs.changes.outputs.backend == 'true'
       run: make lint-security

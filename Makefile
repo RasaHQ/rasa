@@ -86,7 +86,6 @@ endif
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
 lint-security:
-	poetry run pip install bandit\>=1.6.2,\<2.0
 	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
 types:
