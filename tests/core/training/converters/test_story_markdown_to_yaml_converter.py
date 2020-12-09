@@ -51,9 +51,12 @@ async def test_stories_are_converted(tmpdir: Path):
     with open(training_data_file, "w") as f:
         f.write(simple_story_md)
 
-    await StoryMarkdownToYamlConverter().convert_and_write(
-        training_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await StoryMarkdownToYamlConverter().convert_and_write(
+            training_data_file, converted_data_folder
+        )
+
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
@@ -95,9 +98,12 @@ async def test_test_stories(tmpdir: Path):
     with open(test_data_file, "w") as f:
         f.write(simple_story_md)
 
-    await StoryMarkdownToYamlConverter().convert_and_write(
-        test_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await StoryMarkdownToYamlConverter().convert_and_write(
+            test_data_file, converted_data_folder
+        )
+
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
