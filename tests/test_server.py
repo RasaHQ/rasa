@@ -489,7 +489,11 @@ async def test_train_core_success_with(
 {Path(default_stories_file).read_text()}
     """
 
-    _, response = await rasa_app.post("/model/train", json=payload)
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=payload,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
     assert response.status == HTTPStatus.OK
 
     # save model to temporary file
