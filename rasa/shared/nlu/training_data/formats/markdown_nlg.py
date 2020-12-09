@@ -31,7 +31,7 @@ class NLGMarkdownReader(MarkdownReader):
         super().__init__(ignore_deprecation_warning=ignore_deprecation_warning)
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
-        """Read markdown string and create TrainingData object"""
+        """Read markdown string and create TrainingData object."""
         lines = s.splitlines()
         self.responses = self.process_lines(lines)
         return TrainingData(responses=self.responses)
@@ -103,9 +103,10 @@ class NLGMarkdownReader(MarkdownReader):
 
 
 class NLGMarkdownWriter(MarkdownWriter):
+    """Converts retrieval intent data to Markdown."""
+
     def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms the NlG part of TrainingData object into a markdown string."""
-
         md = ""
         for intent, utterances in training_data.responses.items():
             md += "## \n"

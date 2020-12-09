@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class MarkdownStoryReader(StoryReader):
-    """Class that reads the core training data in a Markdown format"""
+    """Class that reads the core training data in a Markdown format."""
 
     def __init__(
         self,
@@ -56,7 +56,6 @@ class MarkdownStoryReader(StoryReader):
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
-
         try:
             with open(
                 filename, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING

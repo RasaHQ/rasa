@@ -60,7 +60,7 @@ class MarkdownReader(TrainingDataReader):
             )
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
-        """Read markdown string and create TrainingData object"""
+        """Read markdown string and create TrainingData object."""
         s = self._strip_comments(s)
         for line in s.splitlines():
             line = decode_string(line.strip())
@@ -191,7 +191,15 @@ class MarkdownReader(TrainingDataReader):
 
 
 class MarkdownWriter(TrainingDataWriter):
+    """Converts NLU data to Markdown."""
+
     def __init__(self, ignore_deprecation_warning: bool = False,) -> None:
+        """Creates writer.
+
+        Args:
+            ignore_deprecation_warning: `True` if deprecation warning for Markdown
+                format should be suppressed.
+        """
         if not ignore_deprecation_warning:
             rasa.shared.utils.io.raise_deprecation_warning(
                 "NLU data in Markdown format is deprecated and will be removed in Rasa "
@@ -202,7 +210,6 @@ class MarkdownWriter(TrainingDataWriter):
 
     def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms a TrainingData object into a markdown string."""
-
         md = ""
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)
