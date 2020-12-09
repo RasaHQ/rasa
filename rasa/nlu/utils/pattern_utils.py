@@ -2,11 +2,11 @@ import re
 from typing import Dict, List, Text, Union, Optional
 
 import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 
 def _convert_lookup_tables_to_regex(
-    training_data: TrainingData, pattern_names: Optional[List[Text]] = None
+    training_data: TrainingDataFull, pattern_names: Optional[List[Text]] = None
 ) -> List[Dict[Text, Text]]:
     """Convert the lookup tables from the training data to regex patterns.
 
@@ -82,7 +82,7 @@ def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
 
 
 def _collect_regex_features(
-    training_data: TrainingData, pattern_names: Optional[List[Text]] = None
+    training_data: TrainingDataFull, pattern_names: Optional[List[Text]] = None
 ) -> List[Dict[Text, Text]]:
     """Get regex features from training data.
 
@@ -105,7 +105,7 @@ def _collect_regex_features(
 
 
 def extract_patterns(
-    training_data: TrainingData,
+    training_data: TrainingDataFull,
     use_lookup_tables: bool = True,
     use_regexes: bool = True,
     patter_names: Optional[List[Text]] = None,

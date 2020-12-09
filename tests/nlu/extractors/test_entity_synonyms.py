@@ -1,6 +1,6 @@
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 
@@ -51,7 +51,7 @@ def test_unintentional_synonyms_capitalized(
     ]
 
     ner_syn.train(
-        TrainingData(training_examples=examples), pretrained_embeddings_spacy_config
+        TrainingDataFull(training_examples=examples), pretrained_embeddings_spacy_config
     )
 
     assert ner_syn.synonyms.get("mexican") is None

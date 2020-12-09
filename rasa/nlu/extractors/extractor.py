@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
@@ -385,7 +385,7 @@ class EntityExtractor(Component):
         return entity
 
     @staticmethod
-    def check_correct_entity_annotations(training_data: TrainingData) -> None:
+    def check_correct_entity_annotations(training_data: TrainingDataFull) -> None:
         """Check if entities are correctly annotated in the training data.
 
         If the start and end values of an entity do not match any start and end values

@@ -3,7 +3,7 @@ from collections import defaultdict, Counter
 from typing import List, Tuple, Text, Optional, Dict, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     TOKENS_NAMES,
@@ -115,7 +115,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
 
 
 def build_tag_id_dict(
-    training_data: TrainingData, tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+    training_data: TrainingDataFull, tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
@@ -151,7 +151,7 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: TrainingData) -> None:
+def apply_bilou_schema(training_data: TrainingDataFull) -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:

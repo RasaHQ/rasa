@@ -15,7 +15,7 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
@@ -194,7 +194,7 @@ def test_lm_featurizer_shape_values(
     messages = []
     for text in texts:
         messages.append(Message.build(text=text))
-    td = TrainingData(messages)
+    td = TrainingDataFull(messages)
 
     lm_featurizer.train(td)
 
@@ -338,7 +338,7 @@ def test_log_longer_sequence(
     text = " ".join(["hi"] * sequence_length)
     tokenizer = WhitespaceTokenizer()
     message = Message.build(text=text)
-    td = TrainingData([message])
+    td = TrainingDataFull([message])
     tokenizer.train(td)
     caplog.set_level(logging.DEBUG)
     featurizer.process(message)
@@ -708,7 +708,7 @@ def test_lm_featurizer_number_of_sub_tokens(text, expected_number_of_sub_tokens)
 
     message = Message.build(text=text)
 
-    td = TrainingData([message])
+    td = TrainingDataFull([message])
     whitespace_tokenizer.train(td)
     lm_featurizer.train(td)
 

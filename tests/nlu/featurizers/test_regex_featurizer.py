@@ -3,7 +3,7 @@ from typing import Text, List, Any
 import numpy as np
 import pytest
 
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -133,7 +133,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
     ftr = RegexFeaturizer()
-    training_data = TrainingData()
+    training_data = TrainingDataFull()
     training_data.lookup_tables = lookups
     ftr.train(training_data)
 
@@ -200,10 +200,10 @@ def test_regex_featurizer_train():
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingData([message]))
+    WhitespaceTokenizer().train(TrainingDataFull([message]))
 
     featurizer.train(
-        TrainingData([message], regex_features=patterns), RasaNLUModelConfig()
+        TrainingDataFull([message], regex_features=patterns), RasaNLUModelConfig()
     )
 
     expected = np.array([0, 1, 0])

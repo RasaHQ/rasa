@@ -51,7 +51,7 @@ from rasa.shared.nlu.constants import (
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter, Trainer, TrainingData
+from rasa.nlu.model import Interpreter, Trainer, TrainingDataFull
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
@@ -144,8 +144,8 @@ def remove_empty_response_examples(
 
 
 def drop_intents_below_freq(
-    training_data: TrainingData, cutoff: int = 5
-) -> TrainingData:
+    training_data: TrainingDataFull, cutoff: int = 5
+) -> TrainingDataFull:
     """Remove intent groups with less than cutoff instances.
 
     Args:
@@ -163,7 +163,7 @@ def drop_intents_below_freq(
         if training_data.number_of_examples_per_intent[ex.get(INTENT)] >= cutoff
     ]
 
-    return TrainingData(
+    return TrainingDataFull(
         keep_examples,
         training_data.entity_synonyms,
         training_data.regex_features,
@@ -1266,7 +1266,7 @@ def align_all_entity_predictions(
 
 
 def get_eval_data(
-    interpreter: Interpreter, test_data: TrainingData
+    interpreter: Interpreter, test_data: TrainingDataFull
 ) -> Tuple[
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
@@ -1533,8 +1533,8 @@ def run_evaluation(
 
 
 def generate_folds(
-    n: int, training_data: TrainingData
-) -> Iterator[Tuple[TrainingData, TrainingData]]:
+    n: int, training_data: TrainingDataFull
+) -> Iterator[Tuple[TrainingDataFull, TrainingDataFull]]:
     """Generates n cross validation folds for given training data."""
 
     from sklearn.model_selection import StratifiedKFold
@@ -1550,13 +1550,13 @@ def generate_folds(
         train = [x[i] for i in train_index]
         test = [x[i] for i in test_index]
         yield (
-            TrainingData(
+            TrainingDataFull(
                 training_examples=train,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
                 responses=training_data.responses,
             ),
-            TrainingData(
+            TrainingDataFull(
                 training_examples=test,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
@@ -1570,7 +1570,7 @@ def combine_result(
     entity_metrics: EntityMetrics,
     response_selection_metrics: ResponseSelectionMetrics,
     interpreter: Interpreter,
-    data: TrainingData,
+    data: TrainingDataFull,
     intent_results: Optional[List[IntentEvaluationResult]] = None,
     entity_results: Optional[List[EntityEvaluationResult]] = None,
     response_selection_results: Optional[
@@ -1636,7 +1636,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
 
 
 def cross_validate(
-    data: TrainingData,
+    data: TrainingDataFull,
     n_folds: int,
     nlu_config: Union[RasaNLUModelConfig, Text],
     output: Optional[Text] = None,
@@ -1764,7 +1764,7 @@ def _targets_predictions_from(
 
 
 def compute_metrics(
-    interpreter: Interpreter, training_data: TrainingData
+    interpreter: Interpreter, training_data: TrainingDataFull
 ) -> Tuple[
     IntentMetrics,
     EntityMetrics,
@@ -1822,7 +1822,7 @@ def compute_metrics(
 
 def compare_nlu(
     configs: List[Text],
-    data: TrainingData,
+    data: TrainingDataFull,
     exclusion_percentages: List[int],
     f_score_results: Dict[Text, Any],
     model_names: List[Text],

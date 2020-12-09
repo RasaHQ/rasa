@@ -16,7 +16,7 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class Validator:
     """A class used to verify usage of intents and utterances."""
 
     def __init__(
-        self, domain: Domain, intents: TrainingData, story_graph: StoryGraph
+        self, domain: Domain, intents: TrainingDataFull, story_graph: StoryGraph
     ) -> None:
         """Initializes the Validator object. """
 

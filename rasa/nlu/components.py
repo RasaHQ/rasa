@@ -7,7 +7,7 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
@@ -221,7 +221,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
 
 
 def validate_required_components_from_data(
-    pipeline: List["Component"], data: TrainingData
+    pipeline: List["Component"], data: TrainingDataFull
 ) -> None:
     """Validates that all components are present in the pipeline based on data.
 
@@ -552,7 +552,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def prepare_partial_training(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -585,7 +585,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

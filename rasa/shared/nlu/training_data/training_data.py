@@ -37,7 +37,13 @@ logger = logging.getLogger(__name__)
 TF_RECORD_KEY_SEPARATOR = "#"
 
 
-class TrainingData:
+class TrainingDataAny:
+    def __init__(
+        self,
+        training_examples: Optional[List[Message]] = None,
+
+
+class TrainingDataFull(TrainingDataAny):
     """Holds loaded intent and entity training data."""
 
     # Validation will ensure and warn if these lower limits are not met
@@ -83,7 +89,7 @@ class TrainingData:
 
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
-    def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
+    def merge(self, *others: Optional["TrainingDataFull"]) -> "TrainingDataFull":
         """Return merged instance of this data with other training data.
 
         Args:
@@ -115,23 +121,23 @@ class TrainingData:
             entity_synonyms.update(o.entity_synonyms)
             responses.update(o.responses)
 
-        return TrainingData(
+        return TrainingDataFull(
             training_examples, entity_synonyms, regex_features, lookup_tables, responses
         )
 
     def filter_training_examples(
         self, condition: Callable[[Message], bool]
-    ) -> "TrainingData":
+    ) -> "TrainingDataFull":
         """Filter training examples.
 
         Args:
             condition: A function that will be applied to filter training examples.
 
         Returns:
-            TrainingData: A TrainingData with filtered training examples.
+            TrainingDataFull: A TrainingData with filtered training examples.
         """
 
-        return TrainingData(
+        return TrainingDataFull(
             list(filter(condition, self.training_examples)),
             self.entity_synonyms,
             self.regex_features,
@@ -319,7 +325,7 @@ class TrainingData:
         # only dump responses. at some point it might make sense to remove the
         # differentiation between dumping NLU and dumping responses. but we
         # can't do that until after we remove markdown support.
-        return RasaYAMLWriter().dumps(TrainingData(responses=self.responses))
+        return RasaYAMLWriter().dumps(TrainingDataFull(responses=self.responses))
 
     def nlu_as_markdown(self) -> Text:
         """Generates the markdown representation of the NLU part of TrainingData."""
@@ -465,7 +471,7 @@ class TrainingData:
 
     def train_test_split(
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
-    ) -> Tuple["TrainingData", "TrainingData"]:
+    ) -> Tuple["TrainingDataFull", "TrainingDataFull"]:
         """Split into a training and test dataset,
         preserving the fraction of examples per intent."""
 
@@ -476,7 +482,7 @@ class TrainingData:
         test_responses = self._needed_responses_for_examples(test)
         train_responses = self._needed_responses_for_examples(train)
 
-        data_train = TrainingData(
+        data_train = TrainingDataFull(
             train,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
@@ -484,7 +490,7 @@ class TrainingData:
             responses=train_responses,
         )
 
-        data_test = TrainingData(
+        data_test = TrainingDataFull(
             test,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
@@ -708,7 +714,7 @@ class TrainingData:
             )
 
             # update the data to chunk in next iteration
-            data_to_chunk = TrainingData(
+            data_to_chunk = TrainingDataFull(
                 leftover_examples,
                 responses=data_to_chunk._needed_responses_for_examples(
                     leftover_examples
@@ -732,7 +738,7 @@ class TrainingData:
         return all_chunks
 
 
-class TrainingDataChunk(TrainingData):
+class TrainingDataChunk(TrainingDataFull):
     """Holds a portion of the complete TrainingData.
 
     It can only hold training_examples and responses.

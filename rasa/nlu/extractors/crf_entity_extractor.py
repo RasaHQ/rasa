@@ -15,7 +15,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
@@ -175,7 +175,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -204,7 +204,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._train_model(dataset)
 
-    def _update_crf_order(self, training_data: TrainingData):
+    def _update_crf_order(self, training_data: TrainingDataFull):
         """Train only CRFs we actually have training data for."""
         _crf_order = []
 

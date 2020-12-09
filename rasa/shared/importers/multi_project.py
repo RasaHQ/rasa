@@ -8,7 +8,7 @@ import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers import utils
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.utils.common import mark_as_experimental_feature
 
@@ -196,5 +196,5 @@ class MultiProjectImporter(TrainingDataImporter):
     async def get_config(self) -> Dict:
         return self.config
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
         return utils.training_data_from_paths(self._nlu_paths, language)

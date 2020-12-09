@@ -852,7 +852,7 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
 
 def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> None:
     """Write the nlu data of the conversation_id to the file paths."""
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
     msgs = _collect_messages(events)
     msgs = _filter_messages(msgs)
@@ -865,9 +865,9 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
             f"An exception occurred while trying to load the NLU data. {str(e)}"
         )
         # No previous file exists, use empty training data as replacement.
-        previous_examples = TrainingData()
+        previous_examples = TrainingDataFull()
 
-    nlu_data = previous_examples.merge(TrainingData(msgs))
+    nlu_data = previous_examples.merge(TrainingDataFull(msgs))
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
