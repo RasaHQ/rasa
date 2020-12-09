@@ -21,6 +21,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DOCS_URL_MIGRATION_GUIDE,
+    DEFAULT_CONFIG_PATH,
 )
 import rasa.shared.data
 from rasa.shared.core.constants import (
@@ -212,6 +213,12 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Number of turns taken into account for story structure validation.",
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to the configuration file where the pipeline is specified.",
+    )
 
 
 def split_nlu_data(args: argparse.Namespace) -> None:
@@ -241,8 +248,13 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         args: Commandline arguments
         stories_only: If `True`, only the story structure is validated.
     """
+
+    config = rasa.cli.utils.get_validated_path(
+        args.config, "config", DEFAULT_CONFIG_PATH
+    )
+
     file_importer = RasaFileImporter(
-        domain_path=args.domain, training_data_paths=args.data
+        domain_path=args.domain, training_data_paths=args.data, config_file=config,
     )
 
     validator = rasa.utils.common.run_in_loop(Validator.from_importer(file_importer))
