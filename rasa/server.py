@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import logging
 import multiprocessing
 import os
@@ -541,7 +542,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
     return decorated_function
 
 
-def heavy_computation(f: Callable[..., Coroutine]) -> Callable:
+def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
     """Decorator which runs request on a separate thread.
 
     Some requests (e.g. training or cross-validation) are computional intense requests.
@@ -572,8 +573,8 @@ def heavy_computation(f: Callable[..., Coroutine]) -> Callable:
             finally:
                 thread_loop.close()
 
-        # Run decorated function in thread (`None` will use the `ThreadPoolExecutor`)
-        return await request.app.loop.run_in_executor(None, run)
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            return await request.app.loop.run_in_executor(pool, run)
 
     return decorated_function
 
@@ -985,7 +986,7 @@ def create_app(
     @app.post("/model/train")
     @requires_auth(app, auth_token)
     @async_if_callback_url
-    @heavy_computation
+    @run_in_thread
     @inject_temp_dir
     async def train(request: Request, temporary_directory: Path) -> HTTPResponse:
         validate_request_body(
@@ -1073,7 +1074,7 @@ def create_app(
     @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
     @async_if_callback_url
-    @heavy_computation
+    @run_in_thread
     @inject_temp_dir
     async def evaluate_intents(
         request: Request, temporary_directory: Path
