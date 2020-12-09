@@ -148,7 +148,7 @@ test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	poetry config --list
 	poetry run rasa --help
-	# OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
