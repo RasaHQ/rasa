@@ -63,7 +63,7 @@ IntentEvaluationResult = namedtuple(
 
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
-    "intent_target response_key response_target response_prediction_full_intent response_prediction message confidence",
+    "response_key response_prediction_full_intent message confidence",
 )
 
 EntityEvaluationResult = namedtuple(
@@ -236,10 +236,10 @@ def remove_empty_response_examples(
     for r in response_results:
         # substitute None values with empty string
         # to enable sklearn evaluation
-        if r.response_prediction is None:
-            r = r._replace(response_prediction="")
+        if r.response_prediction_full_intent is None:
+            r = r._replace(response_prediction_full_intent="")
 
-        if r.response_target != "" and r.response_target is not None:
+        if r.response_key != "" and r.response_key is not None:
             filtered.append(r)
 
     return filtered
@@ -410,9 +410,8 @@ def evaluate_response_selections(
     predictions = [
         {
             "text": res.message,
-            "intent_target": res.intent_target,
-            "response_target": res.response_target,
-            "response_predicted": res.response_prediction,
+            "response_key": res.response_key,
+            "response_predicted": res.response_prediction_full_intent,
             "confidence": res.confidence,
         }
         for res in response_selection_results
@@ -1055,21 +1054,12 @@ def get_eval_data(
                 response_prediction_key, {}
             ).get("full_retrieval_intent", {})
 
-            if isinstance(response_prediction_full_intent, str):
-                response_prediction_full_intent = response_prediction_full_intent.split(
-                    "/"
-                )[1]
-
-            response_target = example.get("response", "")
-            response_key = example.get(RESPONSE_KEY_ATTRIBUTE, "")
+            response_key = example.get_combined_intent_response_key()
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
-                    intent_target,
                     response_key,
-                    response_target,
                     response_prediction_full_intent,
-                    response_prediction.get("name"),
                     result.get("text", {}),
                     response_prediction.get("confidence"),
                 )
@@ -1499,7 +1489,9 @@ def compute_metrics(
     response_selection_metrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
-            response_selection_results, "response_target", "response_prediction"
+            response_selection_results,
+            "response_key",
+            "response_prediction_full_intent",
         )
 
     return (
