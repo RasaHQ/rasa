@@ -1085,28 +1085,29 @@ def create_app(
             "evaluate your model.",
         )
 
+        cross_validation_folds = request.args.get("cross_validation_folds")
         is_yaml_payload = request.headers.get("Content-type") == YAML_CONTENT_TYPE
-        config_file = None
+        test_coroutine = None
+
         if is_yaml_payload:
             payload = _training_payload_from_yaml(request, temporary_directory)
             config_file = payload.get("config")
             test_data = payload.get("training_files")
+
+            if cross_validation_folds:
+                test_coroutine = _cross_validate(
+                    test_data, config_file, int(cross_validation_folds)
+                )
         else:
             test_data = _test_data_file_from_payload(request, temporary_directory)
+            if cross_validation_folds:
+                raise ErrorResponse(
+                    HTTPStatus.BAD_REQUEST,
+                    "TestingError",
+                    "Cross-validation is only supported for YAML data.",
+                )
 
-        cross_validation_folds = request.args.get("cross_validation_folds")
-
-        if cross_validation_folds and is_yaml_payload:
-            test_coroutine = _cross_validate(
-                test_data, config_file, int(cross_validation_folds)
-            )
-        elif cross_validation_folds:
-            raise ErrorResponse(
-                HTTPStatus.BAD_REQUEST,
-                "TestingError",
-                "Cross-validation is only supported for YAML data.",
-            )
-        else:
+        if not cross_validation_folds:
             test_coroutine = _evaluate_model_using_test_set(
                 request.args.get("model"), test_data
             )
