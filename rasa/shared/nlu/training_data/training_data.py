@@ -79,6 +79,14 @@ class TrainingData:
 
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
+    def label_fingerprint(self) -> Text:
+        """Fingerprint the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        return rasa.shared.utils.io.deep_container_fingerprint(self.intents)
+
     def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
         """Return merged instance of this data with other training data.
 
