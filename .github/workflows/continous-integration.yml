@@ -262,9 +262,7 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        poetry config --list
-        poetry run rasa --help
-        #make test
+        make test
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
