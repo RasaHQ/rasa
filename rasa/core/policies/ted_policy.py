@@ -440,7 +440,9 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "TEDPolicy":
+    def load(
+        cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any
+    ) -> "TEDPolicy":
         """Loads a policy from the storage.
 
         **Needs to load its featurizer**
@@ -480,7 +482,7 @@ class TEDPolicy(Policy):
         )
         meta = train_utils.update_similarity_type(meta)
 
-        meta["should_finetune"] = kwargs.get("should_finetune", False)
+        meta["should_finetune"] = should_finetune
         if "epoch_override" in kwargs:
             meta[EPOCHS] = kwargs["epoch_override"]
 
@@ -493,10 +495,10 @@ class TEDPolicy(Policy):
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
             label_data=label_data,
-            finetune_mode=meta["should_finetune"],
+            finetune_mode=should_finetune,
         )
 
-        if not meta["should_finetune"]:
+        if not should_finetune:
             # build the graph for prediction
             predict_data_example = RasaModelData(
                 label_key=LABEL_KEY,
