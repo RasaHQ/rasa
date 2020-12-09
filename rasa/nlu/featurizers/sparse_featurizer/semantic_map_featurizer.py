@@ -11,6 +11,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.features import Features
+from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.nlu.utils.semantic_map_utils import (
     SemanticMap,
@@ -94,7 +95,7 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                     f"Cannot find semantic map file '{self.semantic_map_filename}'"
                 )
             self.semantic_map = SemanticMap(self.semantic_map_filename)
-        elif self.component_config["semantic_map_data"]:
+        elif "semantic_map_data" in self.component_config:
             self.semantic_map = SemanticMap(
                 data=self.component_config["semantic_map_data"]
             )
@@ -102,6 +103,29 @@ class SemanticMapFeaturizer(SparseFeaturizer):
             self.semantic_map = None
 
         self._attributes = DENSE_FEATURIZABLE_ATTRIBUTES
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return (
+            self.semantic_map
+            and (
+                self.semantic_map == other.semantic_map
+                and self.pooling == other.pooling
+                and self.lowercase == other.lowercase
+            )
+        ) or (
+            not self.semantic_map
+            and self.pooling == other.pooling
+            and self.lowercase == other.lowercase
+            and self._size_for_training == other._size_for_training
+            and self._epochs == other._epochs
+            and self._use_intents == other._use_intents
+            and self._normalize == other._normalize
+            and self._max_density == other._max_density
+            and self._executable == other._executable
+            and self.semantic_map_filename == other.semantic_map_filename
+        )
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
@@ -139,26 +163,8 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         if not os.path.exists(featurizer_file):
             return cls(meta)
 
-        data = io_utils.json_unpickle(featurizer_file)
-        return cls({**meta, **{"semantic_map_data": data}})
-
-    # def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-    #     """Persist this component to disk for future loading.
-
-    #     Args:
-    #         file_name: The file name of the model.
-    #         model_dir: The directory to store the model to.
-
-    #     Returns:
-    #         An optional dictionary with any information about the stored model.
-    #     """
-    #     tracker_file = pathlib.Path(path) / filename
-    #     rasa.shared.utils.io.create_directory_for_file(tracker_file)
-
-    #     # noinspection PyTypeChecker
-    #     rasa.shared.utils.io.write_text_file(str(jsonpickle.encode(self)), tracker_file)
-
-    #     return tracker_file
+        data = rasa.utils.io.json_unpickle(featurizer_file)
+        return cls({**meta, **data})
 
     def train(self, training_data: TrainingData, *args: Any, **kwargs: Any,) -> None:
         """Converts tokens to features for training."""
@@ -198,7 +204,6 @@ class SemanticMapFeaturizer(SparseFeaturizer):
                     lowercase=self.lowercase,
                     normalize=self._normalize,
                 )
-                print(fps)
                 semantic_map_filename = os.path.join(temp_directory, "smap.json")
                 with open(semantic_map_filename, "w") as file:
                     json.dump(

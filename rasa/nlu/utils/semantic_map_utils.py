@@ -159,6 +159,19 @@ class SemanticMap:
             )
         )
 
+    def __eq__(self, other: Any) -> bool:
+        return (
+            self.width == other.width
+            and self.height == other.height
+            and self.local_topology == other.local_topology
+            and self.global_topology == other.global_topology
+            and self.vocabulary == other.vocabulary
+            and all(
+                self._embeddings.get(token) == other._embeddings.get(token)
+                for token in self.vocabulary
+            )
+        )
+
     @property
     def num_cells(self):
         return self.height * self.width
@@ -273,7 +286,8 @@ def write_nlu_data_to_binary_file(
             snippets.add(snippet)
 
     with open(f"{dir_name}/smap.vocab.txt", "w") as file:
-        file.writelines({v + "\n" for v in tag_vocab})
+        if use_intents:
+            file.writelines({v + "\n" for v in tag_vocab})
         file.writelines({v + "\n" for v in vocab})
     print(f"{len(tag_vocab)} tags")
     print(f"{len(vocab)} words")
@@ -350,6 +364,8 @@ class SemanticMapCreator:
         else:
             raise FileNotFoundError(f"File {codebook_file_name} not found")
 
+        print(len(self.vocabulary))
+        print(self.codebook.shape)
         assert len(self.vocabulary) == self.codebook.shape[2]
 
     def _load_codebook(self, filename: Text) -> None:

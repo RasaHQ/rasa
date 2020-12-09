@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import scipy.sparse
 from typing import Text
+import pathlib
 
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -19,7 +20,7 @@ from rasa.nlu.featurizers.sparse_featurizer.semantic_map_featurizer import (
 
 
 @pytest.mark.timeout(100)
-def test_semantic_map_featurizer():
+def test_semantic_map_featurizer_vocab():
     featurizer = SemanticMapFeaturizer(
         {"width": 2, "height": 2, "epochs": 2, "lowercase": False}
     )
@@ -53,6 +54,28 @@ def test_semantic_map_featurizer():
     }
 
     assert featurizer.semantic_map.vocabulary == expected_vocab
+
+
+def test_semantic_map_featurizer_persist_and_load(tmp_path: pathlib.Path):
+    featurizer = SemanticMapFeaturizer(
+        {"width": 2, "height": 2, "epochs": 2, "lowercase": False}
+    )
+    tokenizer = WhitespaceTokenizer()
+
+    training_messages = [
+        Message(data={TEXT: "Hello, there", INTENT: "greet"}),
+        Message(data={TEXT: "hi, how are you?", INTENT: "greet"}),
+        Message(data={TEXT: "bye bye", INTENT: "goodbye"}),
+        Message(data={TEXT: "Auf Wiedersehen! Bis demnächst!", INTENT: "goodbye"}),
+    ]
+
+    training_data = TrainingData(training_messages)
+    tokenizer.train(training_data)
+    featurizer.train(training_data)
+    meta = featurizer.persist("smap", tmp_path)
+    loaded_featurizer = SemanticMapFeaturizer.load(meta=meta, model_dir=tmp_path)
+
+    assert featurizer == loaded_featurizer
 
 
 # @pytest.mark.parametrize(
