@@ -38,9 +38,11 @@ async def test_nlu_intents_are_converted(tmp_path: Path):
 
     training_data_file.write_text(simple_nlu_md)
 
-    await NLUMarkdownToYamlConverter().convert_and_write(
-        training_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await NLUMarkdownToYamlConverter().convert_and_write(
+            training_data_file, converted_data_folder
+        )
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
@@ -80,9 +82,11 @@ async def test_nlu_lookup_tables_are_converted(tmp_path: Path):
 
     training_data_file.write_text(simple_nlu_md)
 
-    await NLUMarkdownToYamlConverter().convert_and_write(
-        training_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await NLUMarkdownToYamlConverter().convert_and_write(
+            training_data_file, converted_data_folder
+        )
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
