@@ -274,8 +274,9 @@ def _find_conflicting_states(
         trackers, domain, max_history, tokenizing_function
     ):
         hashed_state = element.sliced_states_hash
-        if element.event.as_story_string() not in state_action_mapping[hashed_state]:
-            state_action_mapping[hashed_state] += [element.event.as_story_string()]
+        current_hash = hash(element.event)
+        if current_hash not in state_action_mapping[hashed_state]:
+            state_action_mapping[hashed_state] += [current_hash]
 
     # Keep only conflicting `state_action_mapping`s
     return {
@@ -319,8 +320,7 @@ def _build_conflicts_from_states(
                 conflicts[hashed_state] = StoryConflict(element.sliced_states)
 
             conflicts[hashed_state].add_conflicting_action(
-                action=element.event.as_story_string(),
-                story_name=element.tracker.sender_id,
+                action=str(element.event), story_name=element.tracker.sender_id,
             )
 
     # Return list of conflicts that arise from unpredictable actions
