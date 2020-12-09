@@ -124,7 +124,7 @@ class HashableNDArray:
 
         self.__tight = tight
         self.__wrapped = np.array(wrapped) if tight else wrapped
-        self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)
+        self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)  # nosec
 
     def __eq__(self, other) -> bool:
         return np.all(self.__wrapped == other.__wrapped)
@@ -266,7 +266,7 @@ def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
 
 def get_file_hash(path: Text) -> Text:
     """Calculate the md5 hash of a file."""
-    return md5(file_as_bytes(path)).hexdigest()
+    return md5(file_as_bytes(path)).hexdigest()  # nosec
 
 
 async def download_file_from_url(url: Text) -> Text:
