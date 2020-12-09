@@ -118,6 +118,14 @@ Only new training examples can be added.
 
 3. The model to be finetuned is trained with `MINIMUM_COMPATIBLE_VERSION` of the currently installed rasa version.
 
+Checkout the docs for [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) and
+[`RegexFeaturizer`](./components.mdx#regexfeaturizer) to understand how to configure them appropriately for incremental training.
+
+:::note
+Finetuned models are expected to be on-par with performance of models trained from scratch. However,
+make sure to train your pipelines from scratch frequently to avoid running out of additional
+vocabulary slots for the models.
+:::
 
 ## rasa interactive
 
