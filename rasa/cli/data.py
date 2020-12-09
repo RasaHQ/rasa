@@ -250,7 +250,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
     """
 
     config = rasa.cli.utils.get_validated_path(
-        args.config, "config", DEFAULT_CONFIG_PATH
+        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
     )
 
     file_importer = RasaFileImporter(
