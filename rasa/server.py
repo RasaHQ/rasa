@@ -864,7 +864,9 @@ def create_app(
                 filename = os.path.basename(training_result.model)
 
                 return await response.file(
-                    training_result.model, filename=filename, headers={"filename": filename}
+                    training_result.model,
+                    filename=filename,
+                    headers={"filename": filename},
                 )
             else:
                 raise ErrorResponse(
