@@ -13,7 +13,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
+from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME, INTENT
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
@@ -483,6 +483,7 @@ class E2EImporter(TrainingDataImporter):
         training_datasets += await asyncio.gather(
             self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
+            self._additional_training_data_from_domain(),
         )
 
         return reduce(
@@ -513,6 +514,23 @@ class E2EImporter(TrainingDataImporter):
             f"from the story training data."
         )
         return TrainingData(additional_messages_from_stories)
+
+    async def _additional_training_data_from_domain(self) -> TrainingData:
+        domain = await self.get_domain()
+
+        additional_messages_from_domain = [
+            Message(data={ACTION_NAME: action_name})
+            for action_name in domain.action_names
+        ] + [
+            Message(data={INTENT: intent})
+            for intent in domain.intents
+            if intent not in rasa.shared.core.constants.DEFAULT_INTENTS
+        ]
+        logger.debug(
+            f"Added {len(additional_messages_from_domain)} training data examples "
+            f"from domain."
+        )
+        return TrainingData(additional_messages_from_domain)
 
 
 def _unique_events_from_stories(
