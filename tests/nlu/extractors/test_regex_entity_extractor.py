@@ -110,6 +110,96 @@ def test_process(
 
 
 @pytest.mark.parametrize(
+    "text, lookup, expected_entities",
+    [
+        (
+            "北京和上海都是大城市。",
+            [{"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],}],
+            [
+                {
+                    "entity": "city",
+                    "value": "北京",
+                    "start": 0,
+                    "end": 2,
+                    "extractor": "RegexEntityExtractor",
+                },
+                {
+                    "entity": "city",
+                    "value": "上海",
+                    "start": 3,
+                    "end": 5,
+                    "extractor": "RegexEntityExtractor",
+                },
+            ],
+        ),
+        (
+            "小明正要去北京拜访老李。",
+            [
+                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
+            ],
+            [
+                {
+                    "entity": "city",
+                    "value": "北京",
+                    "start": 5,
+                    "end": 7,
+                    "extractor": "RegexEntityExtractor",
+                },
+                {
+                    "entity": "person",
+                    "value": "小明",
+                    "start": 0,
+                    "end": 2,
+                    "extractor": "RegexEntityExtractor",
+                },
+            ],
+        ),
+        (
+            "Rasa 真好用。",
+            [
+                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
+            ],
+            [],
+        ),
+    ],
+)
+def test_process_without_use_word_boundaries(
+    text: Text,
+    lookup: List[Dict[Text, List[Text]]],
+    expected_entities: List[Dict[Text, Any]],
+):
+    message = Message(data={TEXT: text})
+
+    training_data = TrainingData()
+    training_data.lookup_tables = lookup
+    training_data.training_examples = [
+        Message(
+            data={
+                TEXT: "Hi Max!",
+                INTENT: "greet",
+                ENTITIES: [{"entity": "person", "value": "Max"}],
+            }
+        ),
+        Message(
+            data={
+                TEXT: "I live in Berlin",
+                INTENT: "inform",
+                ENTITIES: [{"entity": "city", "value": "Berlin"}],
+            }
+        ),
+    ]
+
+    entity_extractor = RegexEntityExtractor({"use_word_boundaries": False})
+    entity_extractor.train(training_data)
+    entity_extractor.process(message)
+
+    entities = message.get(ENTITIES)
+    assert entities == expected_entities
+
+
+@pytest.mark.parametrize(
     "text, case_sensitive, lookup, expected_entities",
     [
         (
