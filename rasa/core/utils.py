@@ -127,9 +127,11 @@ class HashableNDArray:
         self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)  # nosec
 
     def __eq__(self, other) -> bool:
+        """Performs equality of the underlying array."""
         return np.all(self.__wrapped == other.__wrapped)
 
     def __hash__(self) -> int:
+        """Return the hash of the array."""
         return self.__hash
 
     def unwrap(self) -> np.ndarray:
