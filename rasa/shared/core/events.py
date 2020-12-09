@@ -22,6 +22,7 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
     ENTITY_LABEL_SEPARATOR,
     ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
 )
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (
@@ -631,6 +632,24 @@ class DefinePrevUserUtteredFeaturization(Event):
         d.update({USE_TEXT_FOR_FEATURIZATION: self.use_text_for_featurization})
         return d
 
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state.
+
+        Args:
+            tracker: The current conversation state.
+        """
+        if tracker.latest_action_name != ACTION_LISTEN_NAME:
+            # featurization belong only to the last user message
+            # a user message is always followed by action listen
+            return
+
+        # update previous user message's featurization based on this event
+        if tracker.latest_message.use_text_for_featurization is None:
+            # only update it if it was not defined
+            tracker.latest_message.use_text_for_featurization = (
+                self.use_text_for_featurization
+            )
+
 
 # noinspection PyProtectedMember
 class DefinePrevUserUtteredEntities(Event):
@@ -673,7 +692,7 @@ class DefinePrevUserUtteredEntities(Event):
         Returns:
             None, as this event should not appear inside the story.
         """
-        return None
+        return
 
     @classmethod
     def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredEntities":
@@ -692,6 +711,21 @@ class DefinePrevUserUtteredEntities(Event):
         d = super().as_dict()
         d.update({ENTITIES: self.entities})
         return d
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state.
+
+        Args:
+            tracker: The current conversation state.
+        """
+        if tracker.latest_action_name != ACTION_LISTEN_NAME:
+            # entities belong only to the last user message
+            # a user message is always followed by action listen
+            return
+
+        for entity in self.entities:
+            if entity not in tracker.latest_message.entities:
+                tracker.latest_message.entities.append(entity)
 
 
 # noinspection PyProtectedMember

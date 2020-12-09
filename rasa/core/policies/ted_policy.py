@@ -602,11 +602,11 @@ class TEDPolicy(Policy):
         if tracker.latest_action_name != ACTION_LISTEN_NAME:
             # entities belong to the last user message
             # a user message is always followed by action listen
-            return None
+            return
 
         if not self.config[ENTITY_RECOGNITION]:
             # entity recognition is not turned on, no entities can be predicted
-            return None
+            return
 
         (
             predicted_tags,
@@ -617,7 +617,7 @@ class TEDPolicy(Policy):
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
             # no entities detected
-            return None
+            return
 
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
