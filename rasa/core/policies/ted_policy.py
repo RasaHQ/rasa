@@ -607,7 +607,7 @@ class TEDPolicy(Policy):
     ) -> Optional[List[Event]]:
         if tracker.latest_action_name != ACTION_LISTEN_NAME:
             # entities belong to the last user message
-            # a user message is always followed by action listen
+            # a user message always comes after action listen
             return None
 
         if not self.config[ENTITY_RECOGNITION]:
