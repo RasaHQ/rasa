@@ -230,7 +230,7 @@ jobs:
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ matrix.os }}
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
