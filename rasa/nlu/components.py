@@ -393,8 +393,8 @@ class Component(metaclass=ComponentMetaclass):
         """Access the class's property name from an instance.
 
         Component class name is used when integrating it in a
-        pipeline. E.g. ``[ComponentA, ComponentB]``
-        will be a proper pipeline definition where ``ComponentA``
+        pipeline. E.g. `[ComponentA, ComponentB]`
+        will be a proper pipeline definition where `ComponentA`
         is the name of the first component of the pipeline.
         """
         return type(self).name
