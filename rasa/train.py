@@ -80,7 +80,7 @@ def train(
             domain=domain,
             config=config,
             training_files=training_files,
-            output_path=output,
+            output=output,
             dry_run=dry_run,
             force_training=force_training,
             fixed_model_name=fixed_model_name,
@@ -96,7 +96,7 @@ async def train_async(
     domain: Union[Domain, Text],
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
-    output_path: Text = DEFAULT_MODELS_PATH,
+    output: Text = DEFAULT_MODELS_PATH,
     dry_run: bool = False,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
@@ -134,14 +134,14 @@ async def train_async(
 
         if domain.is_empty():
             nlu_model = await handle_domain_if_not_exists(
-                file_importer, output_path, fixed_model_name
+                file_importer, output, fixed_model_name
             )
             return TrainingResult(model=nlu_model)
 
         return await _train_async_internal(
             file_importer,
             train_path,
-            output_path,
+            output,
             dry_run,
             force_training,
             fixed_model_name,
