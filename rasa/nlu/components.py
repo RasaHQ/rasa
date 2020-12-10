@@ -401,7 +401,7 @@ class Component(metaclass=ComponentMetaclass):
 
     @property
     def unique_name(self) -> Text:
-        """Get a unique name for the component in the pipeline.
+        """Gets a unique name for the component in the pipeline.
 
         The unique name can be used to distinguish components in
         a pipeline, e.g. when the pipeline contains multiple
