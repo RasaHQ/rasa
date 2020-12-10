@@ -76,6 +76,28 @@ If the delay is set to `None`, the slot will keep its value forever.
 
 Returns a slots class by its type name.
 
+## FloatSlot Objects
+
+```python
+class FloatSlot(Slot)
+```
+
+#### persistence\_info
+
+```python
+ | persistence_info() -> Dict[Text, Any]
+```
+
+Returns relevant information to persist this slot.
+
+## BooleanSlot Objects
+
+```python
+class BooleanSlot(Slot)
+```
+
+A slot storing a truth value.
+
 #### bool\_from\_any
 
 ```python
