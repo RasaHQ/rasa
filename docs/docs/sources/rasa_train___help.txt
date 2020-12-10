@@ -1,5 +1,5 @@
 usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
-                  [-c CONFIG] [-d DOMAIN] [--out OUT]
+                  [-c CONFIG] [-d DOMAIN] [--out OUT] [--dry-run]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
@@ -26,6 +26,16 @@ optional arguments:
                         be read and merged together. (default: domain.yml)
   --out OUT             Directory where your models should be stored.
                         (default: models)
+  --dry-run             If enabled, no actual training will be performed.
+                        Instead, it will be determined whether a model should
+                        be re-trained and this information will be printed as
+                        the output. The return code is a 4-bit bitmask that
+                        can also be used to determine what exactly needs to be
+                        retrained: - 1 means Core needs to be retrained - 2
+                        means NLU needs to be retrained - 4 means responses in
+                        the domain should be updated - 8 means the training
+                        was forced (--force argument is specified) (default:
+                        False)
   --augmentation AUGMENTATION
                         How much data augmentation to use during training.
                         (default: 50)

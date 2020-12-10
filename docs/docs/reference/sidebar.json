@@ -260,6 +260,7 @@
             {
               "items": [
                 "reference/rasa/cli/arguments/run",
+                "reference/rasa/cli/arguments/train",
                 "reference/rasa/cli/arguments/default_arguments"
               ],
               "label": "rasa.cli.arguments",

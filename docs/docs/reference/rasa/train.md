@@ -3,10 +3,48 @@ sidebar_label: train
 title: rasa.train
 ---
 
+## TrainingResult Objects
+
+```python
+class TrainingResult(NamedTuple)
+```
+
+Holds information about the results of training.
+
+#### train
+
+```python
+train(domain: Text, config: Text, training_files: Union[Text, List[Text]], output: Text = DEFAULT_MODELS_PATH, dry_run: bool = False, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None, loop: Optional[asyncio.AbstractEventLoop] = None) -> TrainingResult
+```
+
+Runs Rasa Core and NLU training in `async` loop.
+
+**Arguments**:
+
+- `domain` - Path to the domain file.
+- `config` - Path to the config for Core and NLU.
+- `training_files` - Paths to the training data for Core and NLU.
+- `output` - Output path.
+- `dry_run` - If `True` then no training will be done, and the information about
+  whether the training needs to be done will be printed.
+- `force_training` - If `True` retrain model even if data has not changed.
+- `fixed_model_name` - Name of model to be stored.
+- `persist_nlu_training_data` - `True` if the NLU training data should be persisted
+  with the model.
+- `core_additional_arguments` - Additional training parameters for core training.
+- `nlu_additional_arguments` - Additional training parameters forwarded to training
+  method of each NLU component.
+- `loop` - The event loop which will be used to run `async` functions.
+  
+
+**Returns**:
+
+  An instance of `TrainingResult`.
+
 #### train\_async
 
 ```python
-async train_async(domain: Union[Domain, Text], config: Text, training_files: Optional[Union[Text, List[Text]]], output: Text = DEFAULT_MODELS_PATH, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None) -> Optional[Text]
+async train_async(domain: Union[Domain, Text], config: Text, training_files: Optional[Union[Text, List[Text]]], output: Text = DEFAULT_MODELS_PATH, dry_run: bool = False, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None) -> TrainingResult
 ```
 
 Trains a Rasa model (Core and NLU).
@@ -17,6 +55,8 @@ Trains a Rasa model (Core and NLU).
 - `config` - Path to the config for Core and NLU.
 - `training_files` - Paths to the training data for Core and NLU.
 - `output_path` - Output path.
+- `dry_run` - If `True` then no training will be done, and the information about
+  whether the training needs to be done will be printed.
 - `force_training` - If `True` retrain model even if data has not changed.
 - `fixed_model_name` - Name of model to be stored.
 - `persist_nlu_training_data` - `True` if the NLU training data should be persisted
@@ -28,7 +68,25 @@ Trains a Rasa model (Core and NLU).
 
 **Returns**:
 
-  Path of the trained model archive.
+  An instance of `TrainingResult`.
+
+#### dry\_run\_result
+
+```python
+dry_run_result(fingerprint_comparison: FingerprintComparisonResult) -> Tuple[int, List[Text]]
+```
+
+Returns a dry run result.
+
+**Arguments**:
+
+- `fingerprint_comparison` - A result of fingerprint comparison operation.
+  
+
+**Returns**:
+
+  A tuple where the first element is the result code and the second
+  is the list of human-readable texts that need to be printed to the end user.
 
 #### train\_core\_async
 
