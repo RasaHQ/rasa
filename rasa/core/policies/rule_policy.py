@@ -876,7 +876,6 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
-        # user text input is ground truth, so try to predict using it first
         (
             rules_action_name_from_text,
             self._prediction_source,
