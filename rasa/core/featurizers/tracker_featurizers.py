@@ -135,7 +135,7 @@ class TrackerFeaturizer:
             A tuple of list of states, list of actions and list of entity data.
         """
         raise NotImplementedError(
-            "Featurizer must have the capacity to encode trackers to feature vectors"
+            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
         )
 
     def training_states_and_actions(
