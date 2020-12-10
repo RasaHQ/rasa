@@ -772,8 +772,8 @@ class RulePolicy(MemoizationPolicy):
         Args:
             tracker: The current conversation tracker.
             domain: The domain of the current model.
-            use_text_for_last_user_input: The boolean controlling
-                whether to use intent or text.
+            use_text_for_last_user_input: `True` if text of last user message
+                should be used for the prediction. `False` if intent should be used.
 
         Returns:
             A tuple of the predicted action name or text (or `None` if no matching rule
