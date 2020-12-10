@@ -380,7 +380,7 @@ stories:
 
 Each step can be one of the following:
 
-  - A [user message](#user-messages), represented by **intent**, **entities** or **user**.
+  - A [user message](#user-messages), represented by **intent** and **entities** or **user**.
   - An [or statement](#or-statement), which includes two or more user messages under it.
   - A bot [action](#actions), represented by **action** or **bot**.
   - A [form](#forms).
@@ -452,7 +452,7 @@ stories:
 
 In addition, you can add entity tags that will be extracted by the end-to-end policy.
 The syntax for entity tags is the same as in
-[the entities in the NLU training data](./training-data-format.mdx#entities)
+[the NLU training data](./training-data-format.mdx#entities)
 For example, the following stories contains the user utterance
 `I want to check my credit balance`. By using the syntax from the NLU training data `[credit](account_type)`, we mark `credit` as an entity of type `account_type`.
 
@@ -503,6 +503,8 @@ However, the functionality might be changed or removed in the future.
 If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
 
 :::
+
+A story with only bot utterance might look like this:
 
 ```yaml-rasa {5}
 stories:
