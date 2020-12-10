@@ -55,7 +55,7 @@ def add_subparser(
     )
     train_nlu_parser.set_defaults(func=train_nlu)
 
-    train_parser.set_defaults(func=train, can_exit=True)
+    train_parser.set_defaults(func=lambda args: train(args, can_exit=True))
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
