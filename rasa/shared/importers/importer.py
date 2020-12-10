@@ -285,6 +285,14 @@ class CombinedDataImporter(TrainingDataImporter):
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        """Gets NLU data from NLU training files and domain.
+
+        Args:
+            language: Language of training data
+
+        Returns:
+            Loaded training data from all sources
+        """
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
         nlu_data = await asyncio.gather(
             *nlu_data, self._additional_training_data_from_domain(),

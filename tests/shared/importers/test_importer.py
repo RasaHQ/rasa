@@ -236,59 +236,28 @@ async def test_import_nlu_training_data_from_e2e_stories(
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
 
 
-async def test_import_nlu_training_data_from_domain(
-    default_importer: TrainingDataImporter,
-):
-    # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
-    assert isinstance(default_importer, E2EImporter)
-    importer_without_e2e = default_importer.importer
+async def test_import_nlu_training_data_from_domain(project: Text,):
+    domain_path = "data/test_domains/default.yml"
+    config_path = Path(project) / DEFAULT_CONFIG_PATH
 
-    stories = StoryGraph(
-        [
-            StoryStep(
-                events=[
-                    SlotSet("some slot", "doesn't matter"),
-                    UserUttered(intent={"name": "greet_from_stories"}),
-                    ActionExecuted("utter_greet_from_stories"),
-                ]
-            ),
-            StoryStep(
-                events=[
-                    UserUttered("how are you doing?"),
-                    ActionExecuted(action_text="Hi Joey."),
-                ]
-            ),
-        ]
+    default_importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, []
     )
 
-    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
-        return stories
-
-    # Patch to return our test stories
-    importer_without_e2e.get_stories = mocked_stories
-
-    # The wrapping `E2EImporter` simply forwards these method calls
-    assert (await importer_without_e2e.get_stories()).as_story_string() == (
-        await default_importer.get_stories()
-    ).as_story_string()
-    assert (await importer_without_e2e.get_config()) == (
-        await default_importer.get_config()
-    )
-
-    # Check additional NLU training data from stories was added
+    # Check additional NLU training data from domain
     nlu_data = await default_importer.get_nlu_data()
 
-    # The `E2EImporter` adds NLU training data based on our training stories
-    assert len(nlu_data.training_examples) > len(
-        (await importer_without_e2e.get_nlu_data()).training_examples
-    )
-
-    # Check if the NLU training data was added correctly from the story training data
+    # Check if the NLU training data was added correctly from the domain
     expected_additional_messages = [
-        Message(data={INTENT: "greet_from_stories"}),
-        Message(data={ACTION_NAME: "utter_greet_from_stories"}),
-        Message(data={TEXT: "how are you doing?"}),
-        Message(data={ACTION_TEXT: "Hi Joey."}),
+        Message(data={INTENT: "greet"}),
+        Message(data={ACTION_NAME: "utter_greet"}),
+        Message(data={INTENT: "default"}),
+        Message(data={ACTION_NAME: "utter_default"}),
+        Message(data={INTENT: "goodbye"}),
+        Message(data={ACTION_NAME: "utter_goodbye"}),
+    ] + [
+        Message(data={ACTION_NAME: action})
+        for action in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     ]
 
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
