@@ -139,8 +139,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # ## Architecture of the used neural network
         # Hidden layer sizes for layers before the embedding layers for user message
         # and labels.
-        # The number of hidden layers is equal to the length of the corresponding
-        # list.
+        # The number of hidden layers is equal to the length of the corresponding list.
         HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []},
         # Whether to share the hidden layer weights between user message and labels.
         SHARE_HIDDEN_LAYERS: False,
