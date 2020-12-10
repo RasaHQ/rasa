@@ -459,12 +459,6 @@ class DialogueStateTracker:
                 self._undo_till_previous_loop_execution(
                     event.action_name, applied_events
                 )
-            elif isinstance(event, UserUttered):
-                # supports back compatibility - use intents by default
-                if event.use_text_for_featurization is None:
-                    event.use_text_for_featurization = False
-
-                applied_events.append(event)
             else:
                 applied_events.append(event)
 

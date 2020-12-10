@@ -930,10 +930,13 @@ class Domain:
 
         # filter entities based on intent config
         # sub_state will be transformed to frozenset therefore we need to
-        # convert the list to the tuple
+        # convert the set to the tuple
         # sub_state is transformed to frozenset because we will later hash it
         # for deduplication
-        entities = tuple(self._get_featurized_entities(latest_message))
+        entities = tuple(
+            self._get_featurized_entities(latest_message)
+            & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+        )
         if entities:
             sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
         else:
