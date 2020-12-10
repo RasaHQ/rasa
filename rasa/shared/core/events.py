@@ -655,11 +655,9 @@ class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
             return
 
         # update previous user message's featurization based on this event
-        if tracker.latest_message.use_text_for_featurization is None:
-            # only update it if it was not defined
-            tracker.latest_message.use_text_for_featurization = (
-                self.use_text_for_featurization
-            )
+        tracker.latest_message.use_text_for_featurization = (
+            self.use_text_for_featurization
+        )
 
 
 # noinspection PyProtectedMember
