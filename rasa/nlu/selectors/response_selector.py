@@ -7,7 +7,7 @@ import tensorflow as tf
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
+import rasa.utils.tensorflow.numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
@@ -437,7 +437,8 @@ class ResponseSelector(DIETClassifier):
 
         if out and DIAGNOSTIC_DATA in out:
             message.add_diagnostic_data(
-                self.unique_name, values_to_numpy(out.get(DIAGNOSTIC_DATA))
+                self.unique_name,
+                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
             )
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:

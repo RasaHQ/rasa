@@ -53,17 +53,20 @@ class Message:
             self.features.append(features)
 
     def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
-        """Add diagnostic data from the component with name `origin`."""
+        """Adds diagnostic data from the `origin` component.
+        
+        Args:
+            origin: Name of the component that created the data.
+            data: The diagnostic data.
+        """
         if origin in self.get(DIAGNOSTIC_DATA, {}):
             rasa.shared.utils.io.raise_warning(
                 f"Please make sure every pipeline component has a distinct name. "
                 f"The name '{self.name}' appears at least twice and diagnostic "
                 f"data will be overwritten."
             )
-        if DIAGNOSTIC_DATA in self.data:
-            self.data[DIAGNOSTIC_DATA][origin] = data
-        else:
-            self.data[DIAGNOSTIC_DATA] = {origin: data}
+        self.data.setdefault(DIAGNOSTIC_DATA, {})
+        self.data[DIAGNOSTIC_DATA][origin] = data
 
     def set(self, prop: Text, info: Any, add_to_output: bool = False) -> None:
         """Sets the message's property to the given value.

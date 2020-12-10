@@ -442,7 +442,8 @@ class PolicyPrediction:
             and self.events == other.events
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
-            # We do not compare `diagnostic_data`
+            # We do not compare `diagnostic_data`, because it has no effect on the
+            # action prediction.
         )
 
     @property

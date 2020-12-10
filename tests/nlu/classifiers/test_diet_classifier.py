@@ -273,7 +273,7 @@ async def test_margin_loss_is_not_normalized(
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmpdir),
         data="data/test/many_intents.md",
         component_builder=component_builder,
     )
@@ -466,7 +466,7 @@ async def test_process_gives_diagnostic_data(
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/test/many_intents.md",
         component_builder=component_builder,
     )

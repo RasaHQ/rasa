@@ -268,7 +268,7 @@ async def test_process_gives_diagnostic_data(
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/test_selectors",
         component_builder=component_builder,
     )

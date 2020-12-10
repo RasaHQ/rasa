@@ -25,7 +25,7 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
-from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
+import rasa.utils.tensorflow.numpy
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -911,7 +911,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if out and DIAGNOSTIC_DATA in out:
             message.add_diagnostic_data(
-                self.unique_name, values_to_numpy(out.get(DIAGNOSTIC_DATA))
+                self.unique_name,
+                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
             )
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
