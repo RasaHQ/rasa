@@ -513,7 +513,7 @@ class TEDPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         # the first example in a batch either does not contain user input
-        # or uses intent or text if e2e only
+        # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self.featurizer.create_state_features(
             [tracker], domain, interpreter, use_text_for_last_user_input=self.only_e2e
         )
