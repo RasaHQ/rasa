@@ -79,6 +79,22 @@ tight
     Optional. If True, a copy of the input ndaray is created.
     Defaults to False.
 
+#### \_\_eq\_\_
+
+```python
+ | __eq__(other) -> bool
+```
+
+Performs equality of the underlying array.
+
+#### \_\_hash\_\_
+
+```python
+ | __hash__() -> int
+```
+
+Return the hash of the array.
+
 #### unwrap
 
 ```python

@@ -142,6 +142,25 @@ get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text
 
 Calculate the md5 hash for a text.
 
+#### json\_to\_string
+
+```python
+json_to_string(obj: Any, **kwargs: Any) -> Text
+```
+
+Dumps a JSON-serializable object to string.
+
+**Arguments**:
+
+- `obj` - JSON-serializable object.
+- `kwargs` - serialization options. Defaults to 2 space indentation
+  and disable escaping of non-ASCII characters.
+  
+
+**Returns**:
+
+  The objects serialized to JSON, as a string.
+
 #### fix\_yaml\_loader
 
 ```python
