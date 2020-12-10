@@ -2,7 +2,6 @@
 
 JOBS ?= 1
 
-# dummy change
 help:
 	@echo "make"
 	@echo "    clean"
@@ -52,7 +51,7 @@ clean:
 	rm -rf docs/.docusaurus
 
 install:
-	poetry run python -m pip install -U pip
+	poetry run pip install --upgrade pip setuptools
 	poetry install
 
 install-mitie:
