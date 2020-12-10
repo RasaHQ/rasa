@@ -184,30 +184,32 @@ def _replace_deprecated_option(
 
 
 def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """
+    """Update the config according to changed config params.
+
     If old model configuration parameters are present in the provided config, replace
     them with the new parameters and log a warning.
+
     Args:
         config: model configuration
 
     Returns: updated model configuration
     """
-
     # note: call _replace_deprecated_option() here when there are options to deprecate
 
     return config
 
 
 def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """
+    """Update the core config according to changed config params.
+
     If old model configuration parameters are present in the provided config, replace
     them with the new parameters and log a warning.
+
     Args:
         config: model configuration
 
     Returns: updated model configuration
     """
-
     # note: call _replace_deprecated_option() here when there are options to deprecate
 
     config = _replace_deprecated_option(
