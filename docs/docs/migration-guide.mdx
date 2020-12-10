@@ -10,6 +10,24 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.1 to Rasa 2.2
+
+### General
+
+Some of the model options for `TEDPolicy` got renamed.
+Please update your configuration files using the following mapping:
+
+|      Old model option       |                  New model option                      |
+|-----------------------------|--------------------------------------------------------|
+|transformer_size             |dictionary “transformer_size” with keys                 |
+|                             |“text”, “action_text”, “label_action_text”, “dialogue”  |
+|number_of_transformer_layers |dictionary “number_of_transformer_layers” with keys     |
+|                             |“text”, “action_text”, “label_action_text”, “dialogue”  |
+|dense_dimension              |dictionary “dense_dimension” with keys                  |
+|                             |“text”, “action_text”, “label_action_text”, “intent”,   |
+|                             |“action_name”, “label_action_name”, “entities”, “slots”,|
+|                             |“active_loop”                                           |
+
 ## Rasa 2.0 to Rasa 2.1
 
 ### Deprecations
