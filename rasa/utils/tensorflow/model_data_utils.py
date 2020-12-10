@@ -250,7 +250,8 @@ def convert_to_data_format(
 
     attribute_data = {}
 
-    # During prediction we need to iterate over the zero features attributes to
+    # During prediction we need to iterate over the fake features attributes to
+
     # have all keys in the resulting model data
     if training:
         attributes = list(attribute_to_features.keys())
