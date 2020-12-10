@@ -211,10 +211,10 @@ def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     # note: call _replace_deprecated_option() here when there are options to deprecate
 
     config = _replace_deprecated_option(
-        TRANSFORMER_SIZE, f"{DIALOGUE}_{TRANSFORMER_SIZE}", config
+        TRANSFORMER_SIZE, [TRANSFORMER_SIZE, DIALOGUE], config
     )
     config = _replace_deprecated_option(
-        NUM_TRANSFORMER_LAYERS, f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}", config
+        NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
     )
     config = _replace_deprecated_option(
         DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config

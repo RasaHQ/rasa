@@ -143,9 +143,6 @@ class TEDPolicy(Policy):
     # please make sure to update the docs when changing a default parameter
     defaults = {
         # ## Architecture of the used neural network
-        # Hidden layer sizes for layers before the dialogue and label embedding layers.
-        # The number of hidden layers is equal to the length of the corresponding
-        # list.
         # Hidden layer sizes for layers before the embedding layers for user message
         # and labels.
         # The number of hidden layers is equal to the length of the corresponding
@@ -164,14 +161,20 @@ class TEDPolicy(Policy):
         },
         CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128, f"{LABEL}_{ACTION_TEXT}": 128},
         ENCODING_DIMENSION: 50,
-        # Number of units in sequence transformer
-        f"{SEQUENCE}_{TRANSFORMER_SIZE}": 128,
-        # Number of sequence transformer layers
-        f"{SEQUENCE}_{NUM_TRANSFORMER_LAYERS}": 1,
-        # Number of units in dialogue transformer
-        f"{DIALOGUE}_{TRANSFORMER_SIZE}": 128,
-        # Number of dialogue transformer layers
-        f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}": 1,
+        # Number of units in transformer encoders
+        TRANSFORMER_SIZE: {
+            TEXT: 128,
+            ACTION_TEXT: 128,
+            f"{LABEL}_{ACTION_TEXT}": 128,
+            DIALOGUE: 128,
+        },
+        # Number of layers in transformer encoders
+        NUM_TRANSFORMER_LAYERS: {
+            TEXT: 1,
+            ACTION_TEXT: 1,
+            f"{LABEL}_{ACTION_TEXT}": 1,
+            DIALOGUE: 1,
+        },
         # Number of attention heads in transformer
         NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
@@ -512,7 +515,7 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        # Construct two examples in the batch to be fed to the model - 
+        # Construct two examples in the batch to be fed to the model -
         # One by featurizing last user text and second an optional one(see conditions below).
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
@@ -856,19 +859,19 @@ class TED(TransformerRasaModel):
         for name in self.data_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name, prefix=SEQUENCE)
+                self._prepare_sequence_layers(name)
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name, prefix=SEQUENCE)
+                self._prepare_sequence_layers(name)
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
             DIALOGUE,
-            self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"],
-            self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"],
+            self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE],
+            self.config[TRANSFORMER_SIZE][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[DROP_RATE_ATTENTION],
         )
@@ -1097,8 +1100,8 @@ class TED(TransformerRasaModel):
             # if the input features are fake, we don't process them further,
             # but we need to calculate correct last dim (units) so that tf could infer
             # the last shape of the tensors
-            if self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
-                text_transformer_units = self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]
+            if self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE] > 0:
+                text_transformer_units = self.config[TRANSFORMER_SIZE][DIALOGUE]
             elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
                 text_transformer_units = self.config[HIDDEN_LAYERS_SIZES][TEXT][-1]
             else:

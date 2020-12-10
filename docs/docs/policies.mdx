@@ -195,133 +195,143 @@ However, additional parameters exist that can be adapted.
 <details><summary>More configurable parameters</summary>
 
 ```
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| Parameter                             | Default Value         | Description                                                  |
-+=======================================+=======================+==============================================================+
-| hidden_layers_sizes                   | text: []              | Hidden layer sizes for layers before the embedding layers    |
-|                                       | action_text: []       | for user messages and bot messages in previous actions       |
-|                                       | label_action_text: [] | and labels. The number of hidden layers is                   |
-|                                       |                       | equal to the length of the corresponding list.               |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| dense_dimension                       | text: 128             | Dense dimension for sparse features to use if no dense       |
-|                                       | label: 20             | features are present.                                        |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| concat_dimension                      | text: 128             | Concat dimension for sequence and sentence features.         |
-|                                       | label: 20             |                                                              |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| encoding_dimension                    | 50                    | Dimension size of embedding vectors                          |
-|                                       |                       | before the dialogue transformer encoder.                     |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| sequence_transformer_size             | 128                   | Number of units in the sequence transformer encoder.         |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| sequence_number_of_transformer_layers | 1                     | Number of sequence transformer encoder layers.               |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| dialogue_transformer_size             | 128                   | Number of units in the dialogue transformer encoder.         |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| dialogue_number_of_transformer_layers | 1                     | Number of the dialogue transformer encoder layers.           |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| number_of_attention_heads             | 4                     | Number of attention heads in transformers.                   |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| use_key_relative_attention            | False                 | If 'True' use key relative embeddings in attention.          |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| use_value_relative_attention          | False                 | If 'True' use value relative embeddings in attention.        |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| max_relative_position                 | None                  | Maximum position for relative embeddings.                    |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| batch_size                            | [64, 256]             | Initial and final value for batch sizes.                     |
-|                                       |                       | Batch size will be linearly increased for each epoch.        |
-|                                       |                       | If constant `batch_size` is required, pass an int, e.g. `8`. |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| batch_strategy                        | "balanced"            | Strategy used when creating batches.                         |
-|                                       |                       | Can be either 'sequence' or 'balanced'.                      |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| epochs                                | 1                     | Number of epochs to train.                                   |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| random_seed                           | None                  | Set random seed to any 'int' to get reproducible results.    |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| embedding_dimension                   | 20                    | Dimension size of embedding vectors.                         |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| number_of_negative_examples           | 20                    | The number of incorrect labels. The algorithm will minimize  |
-|                                       |                       | their similarity to the user input during training.          |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| similarity_type                       | "auto"                | Type of similarity measure to use, either 'auto' or 'cosine' |
-|                                       |                       | or 'inner'.                                                  |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| loss_type                             | "softmax"             | The type of the loss function, either 'softmax' or 'margin'. |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| ranking_length                        | 10                    | Number of top actions to normalize scores for loss type      |
-|                                       |                       | 'softmax'. Set to 0 to turn off normalization.               |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| maximum_positive_similarity           | 0.8                   | Indicates how similar the algorithm should try to make       |
-|                                       |                       | embedding vectors for correct labels.                        |
-|                                       |                       | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| maximum_negative_similarity           | -0.2                  | Maximum negative similarity for incorrect labels.            |
-|                                       |                       | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| use_maximum_negative_similarity       | True                  | If 'True' the algorithm only minimizes maximum similarity    |
-|                                       |                       | over incorrect intent labels, used only if 'loss_type' is    |
-|                                       |                       | set to 'margin'.                                             |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| scale_loss                            | True                  | Scale loss inverse proportionally to confidence of correct   |
-|                                       |                       | prediction.                                                  |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| regularization_constant               | 0.001                 | The scale of regularization.                                 |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| negative_margin_scale                 | 0.8                   | The scale of how important it is to minimize the maximum     |
-|                                       |                       | similarity between embeddings of different labels.           |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| drop_rate_dialogue                    | 0.1                   | Dropout rate for embedding layers of dialogue features.      |
-|                                       |                       | Value should be between 0 and 1.                             |
-|                                       |                       | The higher the value the higher the regularization effect.   |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| drop_rate_label                       | 0.0                   | Dropout rate for embedding layers of label features.         |
-|                                       |                       | Value should be between 0 and 1.                             |
-|                                       |                       | The higher the value the higher the regularization effect.   |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| drop_rate_attention                   | 0.0                   | Dropout rate for attention. Value should be between 0 and 1. |
-|                                       |                       | The higher the value the higher the regularization effect.   |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| weight_sparsity                       | 0.8                   | Sparsity of the weights in dense layers.                     |
-|                                       |                       | Value should be between 0 and 1.                             |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| use_sparse_input_dropout              | True                  | If 'True' apply dropout to sparse input tensors.             |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| use_dense_input_dropout               | True                  | If 'True' apply dropout to dense input tensors.              |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| evaluate_every_number_of_epochs       | 20                    | How often to calculate validation accuracy.                  |
-|                                       |                       | Set to '-1' to evaluate just once at the end of training.    |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| evaluate_on_number_of_examples        | 0                     | How many examples to use for hold out validation set.        |
-|                                       |                       | Large values may hurt performance, e.g. model accuracy.      |
-|                                       |                       | Keep at 0 if your data set contains a lot of unique examples |
-|                                       |                       | of dialogue turns.                                           |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| tensorboard_log_directory             | None                  | If you want to use tensorboard to visualize training         |
-|                                       |                       | metrics, set this option to a valid output directory. You    |
-|                                       |                       | can view the training metrics after training in tensorboard  |
-|                                       |                       | via 'tensorboard --logdir <path-to-given-directory>'.        |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| tensorboard_log_level                 | "epoch"               | Define when training metrics for tensorboard should be       |
-|                                       |                       | logged. Either after every epoch ('epoch') or for every      |
-|                                       |                       | training step ('minibatch').                                 |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| checkpoint_model                      | False                 | Save the best performing model during training. Models are   |
-|                                       |                       | stored to the location specified by `--out`. Only the one    |
-|                                       |                       | best model will be saved.                                    |
-|                                       |                       | Requires `evaluate_on_number_of_examples > 0` and            |
-|                                       |                       | `evaluate_every_number_of_epochs > 0`                        |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| e2e_confidence_threshold              | 0.5                   | The threshold that ensures that end-to-end is picked only if |
-|                                       |                       | the policy is confident enough.                              |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| featurizers                           | []                    | List of featurizer names (alias names). Only features        |
-|                                       |                       | coming from the listed names are used. If list is empty      |
-|                                       |                       | all available features are used.                             |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
-| entity_recognition                    | True                  | If 'True' entity recognition is trained and entities are     |
-|                                       |                       | extracted.                                                   |
-+---------------------------------------+-----------------------+--------------------------------------------------------------+
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| Parameter                             | Default Value          | Description                                                  |
++=======================================+========================+==============================================================+
+| hidden_layers_sizes                   | text: []               | Hidden layer sizes for layers before the embedding layers    |
+|                                       | action_text: []        | for user messages and bot messages in previous actions       |
+|                                       | label_action_text: []  | and labels. The number of hidden layers is                   |
+|                                       |                        | equal to the length of the corresponding list.               |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| dense_dimension                       | text: 128              | Dense dimension for sparse features to use.                  |
+|                                       | action_text: 128       |                                                              |
+|                                       | label_action_text: 128 |                                                              |
+|                                       | intent: 20             |                                                              |
+|                                       | action_name: 20        |                                                              |
+|                                       | label_action_name: 20  |                                                              |
+|                                       | entities: 20           |                                                              |
+|                                       | slots: 20              |                                                              |
+|                                       | active_loop: 20        |                                                              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| concat_dimension                      | text: 128              | Concat dimension for sequence and sentence features.         |
+|                                       | action_text: 128       |                                                              |
+|                                       | label_action_text: 128 |                                                              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| encoding_dimension                    | 50                     | Dimension size of embedding vectors                          |
+|                                       |                        | before the dialogue transformer encoder.                     |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| transformer_size                      | text: 128              | Number of units in user text sequence transformer encoder.   |
+|                                       | action_text: 128       | Number of units in bot text sequence transformer encoder.    |
+|                                       | label_action_text: 128 | Number of units in bot text sequence transformer encoder.    |
+|                                       | dialogue: 128          | Number of units in dialogue transformer encoder.             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| number_of_transformer_layers          | text: 1                | Number of layers in user text sequence transformer encoder.  |
+|                                       | action_text: 1         | Number of layers in bot text sequence transformer encoder.   |
+|                                       | label_action_text: 1   | Number of layers in bot text sequence transformer encoder.   |
+|                                       | dialogue: 1            | Number of layers in dialogue transformer encoder.            |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| number_of_attention_heads             | 4                      | Number of attention heads in transformers.                   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_key_relative_attention            | False                  | If 'True' use key relative embeddings in attention.          |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_value_relative_attention          | False                  | If 'True' use value relative embeddings in attention.        |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| max_relative_position                 | None                   | Maximum position for relative embeddings.                    |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| batch_size                            | [64, 256]              | Initial and final value for batch sizes.                     |
+|                                       |                        | Batch size will be linearly increased for each epoch.        |
+|                                       |                        | If constant `batch_size` is required, pass an int, e.g. `8`. |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| batch_strategy                        | "balanced"             | Strategy used when creating batches.                         |
+|                                       |                        | Can be either 'sequence' or 'balanced'.                      |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| epochs                                | 1                      | Number of epochs to train.                                   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| random_seed                           | None                   | Set random seed to any 'int' to get reproducible results.    |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| embedding_dimension                   | 20                     | Dimension size of embedding vectors.                         |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| number_of_negative_examples           | 20                     | The number of incorrect labels. The algorithm will minimize  |
+|                                       |                        | their similarity to the user input during training.          |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| similarity_type                       | "auto"                 | Type of similarity measure to use, either 'auto' or 'cosine' |
+|                                       |                        | or 'inner'.                                                  |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| loss_type                             | "softmax"              | The type of the loss function, either 'softmax' or 'margin'. |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| ranking_length                        | 10                     | Number of top actions to normalize scores for loss type      |
+|                                       |                        | 'softmax'. Set to 0 to turn off normalization.               |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| maximum_positive_similarity           | 0.8                    | Indicates how similar the algorithm should try to make       |
+|                                       |                        | embedding vectors for correct labels.                        |
+|                                       |                        | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| maximum_negative_similarity           | -0.2                   | Maximum negative similarity for incorrect labels.            |
+|                                       |                        | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_maximum_negative_similarity       | True                   | If 'True' the algorithm only minimizes maximum similarity    |
+|                                       |                        | over incorrect intent labels, used only if 'loss_type' is    |
+|                                       |                        | set to 'margin'.                                             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| scale_loss                            | True                   | Scale loss inverse proportionally to confidence of correct   |
+|                                       |                        | prediction.                                                  |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| regularization_constant               | 0.001                  | The scale of regularization.                                 |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| negative_margin_scale                 | 0.8                    | The scale of how important it is to minimize the maximum     |
+|                                       |                        | similarity between embeddings of different labels.           |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| drop_rate_dialogue                    | 0.1                    | Dropout rate for embedding layers of dialogue features.      |
+|                                       |                        | Value should be between 0 and 1.                             |
+|                                       |                        | The higher the value the higher the regularization effect.   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| drop_rate_label                       | 0.0                    | Dropout rate for embedding layers of label features.         |
+|                                       |                        | Value should be between 0 and 1.                             |
+|                                       |                        | The higher the value the higher the regularization effect.   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| drop_rate_attention                   | 0.0                    | Dropout rate for attention. Value should be between 0 and 1. |
+|                                       |                        | The higher the value the higher the regularization effect.   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| weight_sparsity                       | 0.8                    | Sparsity of the weights in dense layers.                     |
+|                                       |                        | Value should be between 0 and 1.                             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_sparse_input_dropout              | True                   | If 'True' apply dropout to sparse input tensors.             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_dense_input_dropout               | True                   | If 'True' apply dropout to dense input tensors.              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| evaluate_every_number_of_epochs       | 20                     | How often to calculate validation accuracy.                  |
+|                                       |                        | Set to '-1' to evaluate just once at the end of training.    |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| evaluate_on_number_of_examples        | 0                      | How many examples to use for hold out validation set.        |
+|                                       |                        | Large values may hurt performance, e.g. model accuracy.      |
+|                                       |                        | Keep at 0 if your data set contains a lot of unique examples |
+|                                       |                        | of dialogue turns.                                           |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| tensorboard_log_directory             | None                   | If you want to use tensorboard to visualize training         |
+|                                       |                        | metrics, set this option to a valid output directory. You    |
+|                                       |                        | can view the training metrics after training in tensorboard  |
+|                                       |                        | via 'tensorboard --logdir <path-to-given-directory>'.        |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| tensorboard_log_level                 | "epoch"                | Define when training metrics for tensorboard should be       |
+|                                       |                        | logged. Either after every epoch ('epoch') or for every      |
+|                                       |                        | training step ('minibatch').                                 |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| checkpoint_model                      | False                  | Save the best performing model during training. Models are   |
+|                                       |                        | stored to the location specified by `--out`. Only the one    |
+|                                       |                        | best model will be saved.                                    |
+|                                       |                        | Requires `evaluate_on_number_of_examples > 0` and            |
+|                                       |                        | `evaluate_every_number_of_epochs > 0`                        |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| e2e_confidence_threshold              | 0.5                    | The threshold that ensures that end-to-end is picked only if |
+|                                       |                        | the policy is confident enough.                              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| featurizers                           | []                     | List of featurizer names (alias names). Only features        |
+|                                       |                        | coming from the listed names are used. If list is empty      |
+|                                       |                        | all available features are used.                             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| entity_recognition                    | True                   | If 'True' entity recognition is trained and entities are     |
+|                                       |                        | extracted.                                                   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
 ```
 
 :::note
