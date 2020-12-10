@@ -7,9 +7,8 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import LANGUAGE_MODEL_DOCS
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from tests.nlu.conftest import skip_on_CI
 
 
 @pytest.mark.parametrize(
@@ -297,7 +296,6 @@ def test_attention_mask(
         ),
     ],
 )
-@skip_on_CI
 def test_hf_transformers_shape_values(
     model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
 ):

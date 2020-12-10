@@ -1,19 +1,27 @@
-from typing import Text
-
 import pytest
-import os
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-from tests.nlu.utilities import write_file_config
+from rasa.nlu.utils.hugging_face.registry import (
+    model_tokenizer_dict,
+    model_class_dict,
+    model_weights_defaults,
+)
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
-skip_on_CI = pytest.mark.skipif(
-    bool(os.environ.get("CI")),
-    reason="Downloading model crashes github action workers",
-)
+
+@pytest.fixture(scope="session", autouse=True)
+def download_and_cache_models():
+    for model_name in model_class_dict:
+        model_weights = model_weights_defaults[model_name]
+        model_tokenizer_dict[model_name].from_pretrained(
+            model_weights, output_loading_info=True, resume_download=True
+        )
+        model_class_dict[model_name].from_pretrained(
+            model_weights, output_loading_info=True, resume_download=True
+        )
 
 
 @pytest.fixture(scope="session")

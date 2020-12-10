@@ -20,7 +20,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.constants import TEXT, INTENT
-from tests.nlu.conftest import skip_on_CI
 
 
 @pytest.mark.parametrize(
@@ -184,7 +183,6 @@ from tests.nlu.conftest import skip_on_CI
         ),
     ],
 )
-@skip_on_CI
 def test_lm_featurizer_shape_values(
     model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
 ):
@@ -326,8 +324,6 @@ def test_input_padding(
         (256, "bert", "bert-base-uncased", False),
     ],
 )
-@pytest.mark.skip_on_windows
-@skip_on_CI
 def test_log_longer_sequence(
     sequence_length: int,
     model_name: Text,
@@ -462,8 +458,6 @@ def test_attention_mask(
         ),
     ],
 )
-@skip_on_CI
-@pytest.mark.skip_on_windows
 def test_lm_featurizer_edge_cases(
     model_name: Text,
     model_weights: Text,
@@ -503,7 +497,6 @@ def test_lm_featurizer_edge_cases(
         ("roberta", "sentence embeddings", [2, 3]),
     ],
 )
-@skip_on_CI
 def test_lm_featurizer_number_of_sub_tokens(
     model_name, text, expected_number_of_sub_tokens
 ):
@@ -548,7 +541,6 @@ def test_log_deprecation_warning_with_old_config(text: str, caplog: LogCaptureFi
     assert "deprecated component HFTransformersNLP" in caplog.text
 
 
-@skip_on_CI
 def test_preserve_sentence_and_sequence_features_old_config():
     attribute = "text"
     message = Message.build("hi there")
