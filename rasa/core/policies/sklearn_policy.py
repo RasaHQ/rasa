@@ -170,7 +170,7 @@ class SklearnPolicy(Policy):
             (Shape of features of one attribute)
 
         Args:
-            attribute_data: all features in the attribute stored in a np.array
+            attribute_data: all features in the attribute stored in a FeatureArray
 
         Returns:
             2D np.ndarray with features for an attribute with

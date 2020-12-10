@@ -165,6 +165,9 @@ class Policy:
               all training trackers
             - the label ids (e.g. action ids) for every dialogue turn in all training
               trackers
+            - A dictionary of entity type (ENTITY_TAGS) to a list of features
+              containing entity tag ids for text user inputs otherwise empty dict
+              for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter
