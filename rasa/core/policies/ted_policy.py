@@ -376,12 +376,16 @@ class TEDPolicy(Policy):
         """Combine all model related data into RasaModelData.
 
         Args:
-            tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-                ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
-                turns in all training trackers
+            tracker_state_features: a dictionary of attributes
+                (INTENT, TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, ACTIVE_LOOP)
+                to a list of features for all dialogue turns in all training trackers
             label_ids: the label ids (e.g. action ids) for every dialogue turn in all
                 training trackers
-            encoded_all_labels: a list of dictionaries containing attribute features for labels ids
+            entity_tags: a dictionary of entity type (ENTITY_TAGS) to a list of features
+                containing entity tag ids for text user inputs otherwise empty dict
+                for all dialogue turns in all training trackers
+            encoded_all_labels: a list of dictionaries containing attribute features
+                for label ids
 
         Returns:
             RasaModelData
@@ -508,8 +512,10 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        # the first example in a batch either does not contain user input
-        # or uses intent or text if e2e only
+        # Construct two examples in the batch to be fed to the model - 
+        # One by featurizing last user text and second an optional one(see conditions below).
+        # the first example in the constructed batch either does not contain user input
+        # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self.featurizer.create_state_features(
             [tracker], domain, interpreter, use_text_for_last_user_input=self.only_e2e
         )
@@ -603,7 +609,7 @@ class TEDPolicy(Policy):
         if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
             # entities belong only to the last user message
             # and only if user text was used for prediction,
-            # a user message is always followed by the action listen
+            # a user message always comes after action listen
             return
 
         if not self.config[ENTITY_RECOGNITION]:

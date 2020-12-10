@@ -772,8 +772,8 @@ class RulePolicy(MemoizationPolicy):
         Args:
             tracker: The current conversation tracker.
             domain: The domain of the current model.
-            use_text_for_last_user_input: The boolean controlling
-                whether to use intent or text.
+            use_text_for_last_user_input: `True` if text of last user message
+                should be used for the prediction. `False` if intent should be used.
 
         Returns:
             A tuple of the predicted action name or text (or `None` if no matching rule
@@ -784,7 +784,9 @@ class RulePolicy(MemoizationPolicy):
             use_text_for_last_user_input
             and not tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
-            # make text prediction only after user utterance
+            # make text prediction only directly after user utterance
+            # because we've otherwise already decided whether to use
+            # the text or the intent
             return None, None, False
 
         tracker_as_states = self.featurizer.prediction_states(
@@ -874,7 +876,6 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
-        # user text input is ground truth, so try to predict using it first
         (
             rules_action_name_from_text,
             self._prediction_source,

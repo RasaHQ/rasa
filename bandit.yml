@@ -1,0 +1,4 @@
+# B322: checks for `input()` which is unsafe in Python 2, but safe in Python 3.
+# B104: checks for binding 0.0.0.0 interface, which should be fine for containers.
+# B301: checks for pickle usage, which is a necessary evil.
+skips: ['B322', 'B104', 'B301']
