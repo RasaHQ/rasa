@@ -376,12 +376,16 @@ class TEDPolicy(Policy):
         """Combine all model related data into RasaModelData.
 
         Args:
-            tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-                ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
-                turns in all training trackers
+            tracker_state_features: a dictionary of attributes
+                (INTENT, TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, ACTIVE_LOOP)
+                to a list of features for all dialogue turns in all training trackers
             label_ids: the label ids (e.g. action ids) for every dialogue turn in all
                 training trackers
-            encoded_all_labels: a list of dictionaries containing attribute features for labels ids
+            entity_tags: a dictionary of entity type (ENTITY_TAGS) to a list of features
+                containing entity tag ids for text user inputs otherwise empty dict
+                for all dialogue turns in all training trackers
+            encoded_all_labels: a list of dictionaries containing attribute features
+                for label ids
 
         Returns:
             RasaModelData

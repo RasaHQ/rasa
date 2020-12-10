@@ -289,7 +289,7 @@ class SingleStateFeaturizer:
         #  Should we support BILOU tagging?
 
         if TEXT not in entity_data or len(self.entity_tag_id_mapping) < 2:
-            # we cannot build a classifier if there are less than 2 class
+            # we cannot build a classifier if there are less than 2 classes
             return {}
 
         parsed_text = interpreter.featurize_message(Message({TEXT: entity_data[TEXT]}))

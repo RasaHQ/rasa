@@ -178,8 +178,11 @@ class TrackerFeaturizer:
             - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
               ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
               turns in all training trackers
-            - the label ids (e.g. action ids) for every dialuge turn in all training
+            - the label ids (e.g. action ids) for every dialogue turn in all training
               trackers
+            - A dictionary of entity type (ENTITY_TAGS) to a list of features
+              containing entity tag ids for text user inputs otherwise empty dict
+              for all dialogue turns in all training trackers
         """
         if self.state_featurizer is None:
             raise ValueError(
