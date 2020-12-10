@@ -512,8 +512,9 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        # Construct two examples in the batch to be fed to the model - 
-        # One by featurizing last user text and second an optional one(see conditions below).
+        # construct two examples in the batch to be fed to the model -
+        # one by featurizing last user text
+        # and second - an optional one (see conditions below),
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self.featurizer.create_state_features(
