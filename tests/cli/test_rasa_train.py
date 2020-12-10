@@ -235,12 +235,8 @@ def test_train_dry_run_failure(
 
     assert not any([s for s in output.outlines if "No training required." in s])
     assert (
-        (
-            output.ret & CODE_CORE_NEEDS_TO_BE_RETRAINED
-            == CODE_CORE_NEEDS_TO_BE_RETRAINED
-        )
-        and (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
-    )
+        output.ret & CODE_CORE_NEEDS_TO_BE_RETRAINED == CODE_CORE_NEEDS_TO_BE_RETRAINED
+    ) and (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
 
 
 def test_train_dry_run_force(
