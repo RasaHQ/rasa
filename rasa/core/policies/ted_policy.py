@@ -526,7 +526,7 @@ class TEDPolicy(Policy):
 
     def _pick_confidence(
         self, confidences: np.ndarray, similarities: np.ndarray
-    ) -> Tuple[np.ndarray, bool]:
+    ) -> Tuple[int, bool]:
         # the confidences and similarities have shape (batch-size x number of actions)
         # batch-size can only be 1 or 2;
         # in the case batch-size==2, the first example contain user intent as features,
@@ -545,12 +545,12 @@ class TEDPolicy(Policy):
                 # TODO maybe compare confidences is better
                 and np.max(similarities[1]) > np.max(similarities[0])
             ):
-                return confidences[1], True
+                return 1, True
 
-            return confidences[0], False
+            return 0, False
 
         # by default the first example in a batch is the one to use for prediction
-        return confidences[0], self.only_e2e
+        return 0, self.only_e2e
 
     def predict_action_probabilities(
         self,
@@ -578,13 +578,16 @@ class TEDPolicy(Policy):
         similarities = output["similarities"].numpy()[:, -1, :]
         confidences = output["action_scores"].numpy()[:, -1, :]
         # take correct prediction from batch
-        confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
+        prediction_index, is_e2e_prediction = self._pick_confidence(
+            confidences, similarities
+        )
+        confidence = confidences[prediction_index]
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
         optional_events = self._create_optional_event_for_entities(
-            output, interpreter, tracker
+            output, prediction_index, is_e2e_prediction, interpreter, tracker
         )
 
         return self._prediction(
@@ -596,12 +599,15 @@ class TEDPolicy(Policy):
     def _create_optional_event_for_entities(
         self,
         prediction_output: Dict[Text, tf.Tensor],
+        prediction_index: int,
+        is_e2e_prediction: bool,
         interpreter: NaturalLanguageInterpreter,
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
-        if tracker.latest_action_name != ACTION_LISTEN_NAME:
-            # entities belong to the last user message
-            # a user message is always followed by action listen
+        if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
+            # entities belong only to the last user message
+            # and only if user text was used for prediction,
+            # a user message is always followed by the action listen
             return
 
         if not self.config[ENTITY_RECOGNITION]:
@@ -612,7 +618,7 @@ class TEDPolicy(Policy):
             predicted_tags,
             confidence_values,
         ) = rasa.utils.train_utils.entity_label_to_tags(
-            prediction_output, self._entity_tag_specs
+            prediction_output, self._entity_tag_specs, prediction_index=prediction_index
         )
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
