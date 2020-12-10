@@ -36,16 +36,35 @@ resource-intensive tests only when certain files have been changed or when some
 other indicator is present. For example, if your code is hosted on Github,
 you can make a test run only if the pull request has a certain label (e.g. “NLU testing required”).
 
-### Cross Validation Tests
+### CI Pipeline Overview
 
-Because the NLU cross-validation test doesn't result in a pass/fail exit code, it's best to make
-the results visible so that you can interpret them.
-For example, [this GitHub Actions Workflow](https://gist.github.com/amn41/de555c93913a01fbd56df2e2d211862c)
-includes commenting on a PR with a results table that shows which intents are confused with others.
+There are different approaches to applying a CI pipeline depending on the number of changes. 
+All follow a mix of training the new model, testing to compare to older versions, 
+and setting up an easy CD pipeline to upload the new model.
 
-Since NLU comparison can be a fairly resource intensive test, you may choose to run this test
-only when certain conditions are met. Conditions might include the presence of a manual label (e.g. “NLU
-testing required”), changes to NLU data, or changes to the NLU pipeline.
+The first step after saving new training data is to kick off the pipeline. (Is it usually kicked off 
+manually or triggered by an event like saving a new file?) 
+(need different pipelines / options based on how big the changes are - also should we lay out how 
+small or big of changes warrant which tests?) Typically this is done by xyz
+
+Next, you need to pick what level of tests to run based on the amount of data changed. The various types 
+are laid out in [Testing Your Assistant](https://rasa.com/docs/rasa/testing-your-assistant), but a good 
+rule of thumb is to always run your test stories to ensure no bugs were introduced. Larger changes 
+may need a full NLU test with cross validation to look out for confusion between intents.
+
+After testing and posting your results for your team to see, have a person or team of reviewers 
+to check the test results with your developer. An easy process to help this is to have your CI 
+pipeline automatically create a pull request with the test results in a comment. That way, the 
+reviewer can see the changes along with the improved results. 
+
+Once the reviewer merges you can then initiate your CD pipeline to add the new model 
+to another environment.
+
+### GitHub Actions CI Pipeline
+intro and link to new github action repo
+example of how to run the action
+sample output
+next steps tying to CD
 
 ## Continuous Deployment (CD)
 
