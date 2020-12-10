@@ -72,7 +72,8 @@ def convert_training_examples(
 def _get_tag_ids(
     example: Message, tag_spec: "EntityTagSpec", bilou_tagging: bool
 ) -> "Features":
-    """Creates a feature array containing the tag ids of the given example."""
+    """Creates a feature array containing the entity tag ids of the given example."""
+
     from rasa.nlu.test import determine_token_labels
     from rasa.nlu.utils.bilou_utils import bilou_tags_to_ids
     from rasa.shared.nlu.training_data.features import Features
