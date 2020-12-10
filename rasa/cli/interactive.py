@@ -89,6 +89,7 @@ def interactive(args: argparse.Namespace) -> None:
 def _set_not_required_args(args: argparse.Namespace) -> None:
     args.fixed_model_name = None
     args.store_uncompressed = False
+    args.dry_run = False
 
 
 def perform_interactive_learning(
