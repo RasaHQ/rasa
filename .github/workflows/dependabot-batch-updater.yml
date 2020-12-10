@@ -1,4 +1,4 @@
-name: Check if dependencies can be updated
+name: Check if dependencies can be updated and create a pull request with updated ones.
 on:
   schedule:
     # Run once a week at 5:00
