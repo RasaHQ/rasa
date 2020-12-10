@@ -370,7 +370,7 @@ def _get_fingerprint_of_config_without_epochs(
     copied_config = copy.deepcopy(config)
 
     for key in ["pipeline", "policies"]:
-        if key in copied_config and copied_config[key]:
+        if copied_config.get(key):
             for p in copied_config[key]:
                 if "epochs" in p:
                     del p["epochs"]
