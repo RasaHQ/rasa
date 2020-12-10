@@ -784,7 +784,9 @@ class RulePolicy(MemoizationPolicy):
             use_text_for_last_user_input
             and not tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
-            # make text prediction only after user utterance
+            # make text prediction only directly after user utterance
+            # because we've otherwise already decided whether to use
+            # the text or the intent
             return None, None, False
 
         tracker_as_states = self.featurizer.prediction_states(
