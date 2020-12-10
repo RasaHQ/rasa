@@ -66,7 +66,7 @@ class Message:
             self.data[DIAGNOSTIC_DATA] = {origin: data}
 
     def set(self, prop: Text, info: Any, add_to_output: bool = False) -> None:
-        """Set property `prop` to `info`.
+        """Sets the message's property to the given value.
 
         Args:
             prop: Name of the property to be set.
