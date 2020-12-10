@@ -239,7 +239,7 @@ class TrackerFeaturizer:
         Args:
             trackers: The trackers to transform
             domain: The domain
-            use_text_for_last_user_input: boolean
+            use_text_for_last_user_input: Indicates whether to use text or intent label for featurizing last user input.
 
         Returns:
             A list of states.
