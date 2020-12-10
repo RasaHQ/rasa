@@ -148,6 +148,7 @@ class TEDPolicy(Policy):
         # The number of hidden layers is equal to the length of the corresponding
         # list.
         HIDDEN_LAYERS_SIZES: {TEXT: [], ACTION_TEXT: [], f"{LABEL}_{ACTION_TEXT}": []},
+        # Dense dimension to use for sparse features.
         DENSE_DIMENSION: {
             TEXT: 128,
             ACTION_TEXT: 128,
@@ -159,7 +160,9 @@ class TEDPolicy(Policy):
             SLOTS: 20,
             ACTIVE_LOOP: 20,
         },
+        # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128, f"{LABEL}_{ACTION_TEXT}": 128},
+        # Dimension size of embedding vectors before the dialogue transformer encoder.
         ENCODING_DIMENSION: 50,
         # Number of units in transformer encoders
         TRANSFORMER_SIZE: {

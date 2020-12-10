@@ -174,7 +174,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
-        # Default dense dimension to use if no dense features are present.
+        # Dense dimension to use for sparse features.
         DENSE_DIMENSION: {TEXT: 128, LABEL: 20},
         # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 128, LABEL: 20},
