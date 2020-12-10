@@ -315,6 +315,26 @@ url = "https://pypi.rasa.com/simple"
 reference = "rasa-pypi"
 
 [[package]]
+name = "bandit"
+version = "1.6.3"
+description = "Security oriented static analyser for python code."
+category = "dev"
+optional = false
+python-versions = ">=3.5"
+
+[package.dependencies]
+colorama = {version = ">=0.3.9", markers = "platform_system == \"Windows\""}
+GitPython = ">=1.0.1"
+PyYAML = ">=5.3.1"
+six = ">=1.10.0"
+stevedore = ">=1.20.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
+[[package]]
 name = "black"
 version = "19.10b0"
 description = "The uncompromising code formatter."
@@ -370,14 +390,14 @@ reference = "rasa-pypi"
 
 [[package]]
 name = "boto3"
-version = "1.16.32"
+version = "1.16.33"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-botocore = ">=1.19.32,<1.20.0"
+botocore = ">=1.19.33,<1.20.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -388,7 +408,7 @@ reference = "rasa-pypi"
 
 [[package]]
 name = "botocore"
-version = "1.19.32"
+version = "1.19.33"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -552,7 +572,7 @@ reference = "rasa-pypi"
 
 [[package]]
 name = "coloredlogs"
-version = "14.0"
+version = "14.2"
 description = "Colored terminal output for Python's logging module"
 category = "main"
 optional = false
@@ -637,7 +657,7 @@ reference = "rasa-pypi"
 
 [[package]]
 name = "cryptography"
-version = "3.3"
+version = "3.3.1"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
 category = "main"
 optional = false
@@ -982,6 +1002,22 @@ url = "https://pypi.rasa.com/simple"
 reference = "rasa-pypi"
 
 [[package]]
+name = "gitdb"
+version = "4.0.5"
+description = "Git Object Database"
+category = "dev"
+optional = false
+python-versions = ">=3.4"
+
+[package.dependencies]
+smmap = ">=3.0.1,<4"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
+[[package]]
 name = "github3.py"
 version = "1.3.0"
 description = "Python wrapper for the GitHub API(http://developer.github.com/v3)"
@@ -998,6 +1034,22 @@ uritemplate = ">=3.0.0"
 [package.extras]
 sni = ["pyopenssl", "ndg-httpsclient", "pyasn1"]
 test = ["betamax (>=0.8.0)", "pytest (>2.3.5)", "betamax-matchers (>=0.1.0)", "unittest2 (==0.5.1)", "mock"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
+[[package]]
+name = "gitpython"
+version = "3.1.11"
+description = "Python Git Library"
+category = "dev"
+optional = false
+python-versions = ">=3.4"
+
+[package.dependencies]
+gitdb = ">=4.0.1,<5"
 
 [package.source]
 type = "legacy"
@@ -1333,7 +1385,7 @@ reference = "rasa-pypi"
 
 [[package]]
 name = "humanfriendly"
-version = "9.0"
+version = "9.1"
 description = "Human friendly output for text interfaces using Python"
 category = "main"
 optional = false
@@ -1797,7 +1849,7 @@ reference = "rasa-pypi"
 
 [[package]]
 name = "mock"
-version = "4.0.2"
+version = "4.0.3"
 description = "Rolling backport of unittest.mock for all Pythons"
 category = "dev"
 optional = false
@@ -1806,7 +1858,7 @@ python-versions = ">=3.6"
 [package.extras]
 build = ["twine", "wheel", "blurb"]
 docs = ["sphinx"]
-test = ["pytest", "pytest-cov"]
+test = ["pytest (<5.4)", "pytest-cov"]
 
 [package.source]
 type = "legacy"
@@ -2317,6 +2369,19 @@ description = "File system general utilities"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
+[[package]]
+name = "pbr"
+version = "5.5.1"
+description = "Python Build Reasonableness"
+category = "dev"
+optional = false
+python-versions = ">=2.6"
 
 [package.source]
 type = "legacy"
@@ -3487,6 +3552,19 @@ url = "https://pypi.rasa.com/simple"
 reference = "rasa-pypi"
 
 [[package]]
+name = "smmap"
+version = "3.0.4"
+description = "A pure Python implementation of a sliding window memory map manager"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
+[[package]]
 name = "sniffio"
 version = "1.2.0"
 description = "Sniff out which async library your code is running under"
@@ -3599,6 +3677,23 @@ description = "Modern high-performance serialization utilities for Python"
 category = "main"
 optional = true
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
+reference = "rasa-pypi"
+
+[[package]]
+name = "stevedore"
+version = "3.3.0"
+description = "Manage dynamic plugins for Python applications"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+importlib-metadata = {version = ">=1.7.0", markers = "python_version < \"3.8\""}
+pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 
 [package.source]
 type = "legacy"
@@ -4290,7 +4385,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "88b425b0efe7f7ed1f3fa123aa46527156dccfdff696df97a1748a292c5553fc"
+content-hash = "fb934bbdd535eaa22c031212716ae5b1ba073ddbcfdfca21f1a23e04178e9e1d"
 
 [metadata.files]
 absl-py = [
@@ -4377,6 +4472,10 @@ azure-storage-blob = [
     {file = "azure-storage-blob-12.5.0.zip", hash = "sha256:1469a5a0410296fb5ff96c326618d939c9cb0c0ea45eb931c89c98fa742d8daa"},
     {file = "azure_storage_blob-12.5.0-py2.py3-none-any.whl", hash = "sha256:6f2de5b60f16141731b7561c218a8455053bcdb9b3775a0e5364fb2b041bcf1e"},
 ]
+bandit = [
+    {file = "bandit-1.6.3-py2.py3-none-any.whl", hash = "sha256:2ff3fe35fe3212c0be5fc9c4899bd0108e2b5239c5ff62fb174639e4660fe958"},
+    {file = "bandit-1.6.3.tar.gz", hash = "sha256:d02dfe250f4aa2d166c127ad81d192579e2bfcdb8501717c0e2005e35a6bcf60"},
+]
 black = [
     {file = "black-19.10b0-py36-none-any.whl", hash = "sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b"},
     {file = "black-19.10b0.tar.gz", hash = "sha256:c2edb73a08e9e0e6f65a0e6af18b059b8b1cdd5bef997d7a0b181df93dc81539"},
@@ -4404,12 +4503,11 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.16.32-py2.py3-none-any.whl", hash = "sha256:2f4b4e3a78efd3979a26f2c4c9e3e7ce359c3244450f8eb9628138e4f0d523b3"},
-    {file = "boto3-1.16.32.tar.gz", hash = "sha256:21a482c23cedf06eab040a5ca770d7b9e9d00c5bcd1dd3ef22c1fdce4371de27"},
+    {file = "boto3-1.16.33.tar.gz", hash = "sha256:0aba88dadc9ae5d103c6d8de7ac88df67b3b0198da82346993b0c52b7477a5dd"},
 ]
 botocore = [
-    {file = "botocore-1.19.32-py2.py3-none-any.whl", hash = "sha256:74c7351b99d8f4bf9d8d9c66da8766c861254865d4c049e7107c39ac6b65e4bf"},
-    {file = "botocore-1.19.32.tar.gz", hash = "sha256:6631e4bb9f2fc1bede6e6ee538255e0af944d4f71e1530c2e39d03b64baa0bf1"},
+    {file = "botocore-1.19.33-py2.py3-none-any.whl", hash = "sha256:0f5f316ae1b089da3efac85524345954fa54e6e682ed60579f8c95c0d5aee3c4"},
+    {file = "botocore-1.19.33.tar.gz", hash = "sha256:3c741da411e117a08545877790e01b94c804cfb85b1981e40378cb8594af5406"},
 ]
 cachetools = [
     {file = "cachetools-4.1.1-py3-none-any.whl", hash = "sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98"},
@@ -4445,11 +4543,13 @@ cffi = [
     {file = "cffi-1.14.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:a7711edca4dcef1a75257b50a2fbfe92a65187c47dab5a0f1b9b332c5919a3fb"},
     {file = "cffi-1.14.4-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:00e28066507bfc3fe865a31f325c8391a1ac2916219340f87dfad602c3e48e5d"},
     {file = "cffi-1.14.4-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:798caa2a2384b1cbe8a2a139d80734c9db54f9cc155c99d7cc92441a23871c03"},
+    {file = "cffi-1.14.4-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:a5ed8c05548b54b998b9498753fb9cadbfd92ee88e884641377d8a8b291bcc01"},
     {file = "cffi-1.14.4-cp37-cp37m-win32.whl", hash = "sha256:00a1ba5e2e95684448de9b89888ccd02c98d512064b4cb987d48f4b40aa0421e"},
     {file = "cffi-1.14.4-cp37-cp37m-win_amd64.whl", hash = "sha256:9cc46bc107224ff5b6d04369e7c595acb700c3613ad7bcf2e2012f62ece80c35"},
     {file = "cffi-1.14.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:df5169c4396adc04f9b0a05f13c074df878b6052430e03f50e68adf3a57aa28d"},
     {file = "cffi-1.14.4-cp38-cp38-manylinux1_i686.whl", hash = "sha256:9ffb888f19d54a4d4dfd4b3f29bc2c16aa4972f1c2ab9c4ab09b8ab8685b9c2b"},
     {file = "cffi-1.14.4-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:8d6603078baf4e11edc4168a514c5ce5b3ba6e3e9c374298cb88437957960a53"},
+    {file = "cffi-1.14.4-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:d5ff0621c88ce83a28a10d2ce719b2ee85635e85c515f12bac99a95306da4b2e"},
     {file = "cffi-1.14.4-cp38-cp38-win32.whl", hash = "sha256:b4e248d1087abf9f4c10f3c398896c87ce82a9856494a7155823eb45a892395d"},
     {file = "cffi-1.14.4-cp38-cp38-win_amd64.whl", hash = "sha256:ec80dc47f54e6e9a78181ce05feb71a0353854cc26999db963695f950b5fb375"},
     {file = "cffi-1.14.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:840793c68105fe031f34d6a086eaea153a0cd5c491cde82a74b420edd0a2b909"},
@@ -4483,8 +4583,8 @@ colorclass = [
     {file = "colorclass-2.2.0.tar.gz", hash = "sha256:b05c2a348dfc1aff2d502527d78a5b7b7e2f85da94a96c5081210d8e9ee8e18b"},
 ]
 coloredlogs = [
-    {file = "coloredlogs-14.0-py2.py3-none-any.whl", hash = "sha256:346f58aad6afd48444c2468618623638dadab76e4e70d5e10822676f2d32226a"},
-    {file = "coloredlogs-14.0.tar.gz", hash = "sha256:a1fab193d2053aa6c0a97608c4342d031f1f93a3d1218432c59322441d31a505"},
+    {file = "coloredlogs-14.2-py2.py3-none-any.whl", hash = "sha256:4d31b0c9df42d09b24eedcecbbef39c1778c931e1b6f8a275895589d64d22c82"},
+    {file = "coloredlogs-14.2.tar.gz", hash = "sha256:ac35144b5c39699318fdea8afdf3ca3308f274759af56a479e6d657b1850e246"},
 ]
 colorhash = [
     {file = "colorhash-1.0.3-py3-none-any.whl", hash = "sha256:7a1f459e96ed62cab441ce8bb7668bc1912c0cbc989e2b43fae4161396917044"},
@@ -4534,20 +4634,20 @@ coveralls = [
     {file = "coveralls-2.2.0.tar.gz", hash = "sha256:b990ba1f7bc4288e63340be0433698c1efe8217f78c689d254c2540af3d38617"},
 ]
 cryptography = [
-    {file = "cryptography-3.3-cp27-cp27m-macosx_10_10_x86_64.whl", hash = "sha256:41892759f13c7dfc329573cabd3a513f1e7b5d309ca55c931ffefc3b2f304899"},
-    {file = "cryptography-3.3-cp27-cp27m-manylinux1_x86_64.whl", hash = "sha256:4935d0603b118dc036c477917e5e8a020f7309bc11c363a4d572407dcbd53c80"},
-    {file = "cryptography-3.3-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:2c28e69e8c2620869425420e466b224d351d5dc242d3e3293062cffa7fcdd276"},
-    {file = "cryptography-3.3-cp27-cp27m-win32.whl", hash = "sha256:ee0084f6d62f083316b08111b122dc4fbe16e534059b92b5ddc3d73dc52dd39c"},
-    {file = "cryptography-3.3-cp27-cp27m-win_amd64.whl", hash = "sha256:f43d6e72e3cdf983b5e5e65938c0519ce4eeb42b6af766f714b1414ae7b9f8ef"},
-    {file = "cryptography-3.3-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:651eff09297e4518287f711b4e28523567cbde7beaa794d06d0b35ac9adc1172"},
-    {file = "cryptography-3.3-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:1366e6fff96bb1d320e3ef3c531b0428cb780c517b6059ffe8820e2a30bf5858"},
-    {file = "cryptography-3.3-cp36-abi3-macosx_10_10_x86_64.whl", hash = "sha256:66f41aa7642f97d35976750a2c0a6d5915733ba6c9ca7a0f327e56f037c1236e"},
-    {file = "cryptography-3.3-cp36-abi3-manylinux1_x86_64.whl", hash = "sha256:9518da854136181407d946b971dd27a0e941d5d07f87f87a44c598b3da7a77d2"},
-    {file = "cryptography-3.3-cp36-abi3-manylinux2010_x86_64.whl", hash = "sha256:ad8dc319f876273b474a59797344d5986beaaaf18f7cc0ab9255155da057d979"},
-    {file = "cryptography-3.3-cp36-abi3-manylinux2014_aarch64.whl", hash = "sha256:55574bd84ff551fd6f7617e5eeda0b2d129f84788340ab57904f0c7f13f8f149"},
-    {file = "cryptography-3.3-cp36-abi3-win32.whl", hash = "sha256:f95ca692fafea80f1815bbfecf57c6833c0b21432d17026a077341debee76e79"},
-    {file = "cryptography-3.3-cp36-abi3-win_amd64.whl", hash = "sha256:402273e7f78e01f5c42452acef56bd52fa73fa0f312e4160db7ad29bbc90335d"},
-    {file = "cryptography-3.3.tar.gz", hash = "sha256:d9f1e520f2ee08c5a88e1ae0b31159bdb13da40a486bea3e9f7d338564850ea6"},
+    {file = "cryptography-3.3.1-cp27-cp27m-macosx_10_10_x86_64.whl", hash = "sha256:c366df0401d1ec4e548bebe8f91d55ebcc0ec3137900d214dd7aac8427ef3030"},
+    {file = "cryptography-3.3.1-cp27-cp27m-manylinux1_x86_64.whl", hash = "sha256:9f6b0492d111b43de5f70052e24c1f0951cb9e6022188ebcb1cc3a3d301469b0"},
+    {file = "cryptography-3.3.1-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:a69bd3c68b98298f490e84519b954335154917eaab52cf582fa2c5c7efc6e812"},
+    {file = "cryptography-3.3.1-cp27-cp27m-win32.whl", hash = "sha256:84ef7a0c10c24a7773163f917f1cb6b4444597efd505a8aed0a22e8c4780f27e"},
+    {file = "cryptography-3.3.1-cp27-cp27m-win_amd64.whl", hash = "sha256:594a1db4511bc4d960571536abe21b4e5c3003e8750ab8365fafce71c5d86901"},
+    {file = "cryptography-3.3.1-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:0003a52a123602e1acee177dc90dd201f9bb1e73f24a070db7d36c588e8f5c7d"},
+    {file = "cryptography-3.3.1-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:83d9d2dfec70364a74f4e7c70ad04d3ca2e6a08b703606993407bf46b97868c5"},
+    {file = "cryptography-3.3.1-cp36-abi3-macosx_10_10_x86_64.whl", hash = "sha256:dc42f645f8f3a489c3dd416730a514e7a91a59510ddaadc09d04224c098d3302"},
+    {file = "cryptography-3.3.1-cp36-abi3-manylinux1_x86_64.whl", hash = "sha256:788a3c9942df5e4371c199d10383f44a105d67d401fb4304178020142f020244"},
+    {file = "cryptography-3.3.1-cp36-abi3-manylinux2010_x86_64.whl", hash = "sha256:69e836c9e5ff4373ce6d3ab311c1a2eed274793083858d3cd4c7d12ce20d5f9c"},
+    {file = "cryptography-3.3.1-cp36-abi3-manylinux2014_aarch64.whl", hash = "sha256:9e21301f7a1e7c03dbea73e8602905a4ebba641547a462b26dd03451e5769e7c"},
+    {file = "cryptography-3.3.1-cp36-abi3-win32.whl", hash = "sha256:b4890d5fb9b7a23e3bf8abf5a8a7da8e228f1e97dc96b30b95685df840b6914a"},
+    {file = "cryptography-3.3.1-cp36-abi3-win_amd64.whl", hash = "sha256:0e85aaae861d0485eb5a79d33226dd6248d2a9f133b81532c8f5aae37de10ff7"},
+    {file = "cryptography-3.3.1.tar.gz", hash = "sha256:7e177e4bea2de937a584b13645cab32f25e3d96fc0bc4a4cf99c27dc77682be6"},
 ]
 cycler = [
     {file = "cycler-0.10.0-py2.py3-none-any.whl", hash = "sha256:1d8a5ae1ff6c5cf9b93e8811e581232ad8920aeec647c37316ceac982b08cb2d"},
@@ -4652,9 +4752,17 @@ gast = [
     {file = "gast-0.3.3-py2.py3-none-any.whl", hash = "sha256:8f46f5be57ae6889a4e16e2ca113b1703ef17f2b0abceb83793eaba9e1351a45"},
     {file = "gast-0.3.3.tar.gz", hash = "sha256:b881ef288a49aa81440d2c5eb8aeefd4c2bb8993d5f50edae7413a85bfdb3b57"},
 ]
+gitdb = [
+    {file = "gitdb-4.0.5-py3-none-any.whl", hash = "sha256:91f36bfb1ab7949b3b40e23736db18231bf7593edada2ba5c3a174a7b23657ac"},
+    {file = "gitdb-4.0.5.tar.gz", hash = "sha256:c9e1f2d0db7ddb9a704c2a0217be31214e91a4fe1dea1efad19ae42ba0c285c9"},
+]
 "github3.py" = [
     {file = "github3.py-1.3.0-py2.py3-none-any.whl", hash = "sha256:50833b5da35546b8cced0e8d7ff4c50a9afc2c8e46cc4d07dc4b66d26467c708"},
     {file = "github3.py-1.3.0.tar.gz", hash = "sha256:15a115c18f7bfcf934dfef7ab103844eb9f620c586bad65967708926da47cbda"},
+]
+gitpython = [
+    {file = "GitPython-3.1.11-py3-none-any.whl", hash = "sha256:6eea89b655917b500437e9668e4a12eabdcf00229a0df1762aabd692ef9b746b"},
+    {file = "GitPython-3.1.11.tar.gz", hash = "sha256:befa4d101f91bad1b632df4308ec64555db684c360bd7d2130b4807d49ce86b8"},
 ]
 google-api-core = [
     {file = "google-api-core-1.23.0.tar.gz", hash = "sha256:1bb3c485c38eacded8d685b1759968f6cf47dd9432922d34edb90359eaa391e2"},
@@ -4827,8 +4935,8 @@ httpx = [
     {file = "httpx-0.11.1.tar.gz", hash = "sha256:7d2bfb726eeed717953d15dddb22da9c2fcf48a4d70ba1456aa0a7faeda33cf7"},
 ]
 humanfriendly = [
-    {file = "humanfriendly-9.0-py2.py3-none-any.whl", hash = "sha256:3c9ab8d28e88e6cc998e41963357736dafd555ee5bb666b50e42f6ce28dd3e3d"},
-    {file = "humanfriendly-9.0.tar.gz", hash = "sha256:175ffa628aa76da2c17369a5da5856084562cc66dfe7f82ae93ca3ef175277a6"},
+    {file = "humanfriendly-9.1-py2.py3-none-any.whl", hash = "sha256:d5c731705114b9ad673754f3317d9fa4c23212f36b29bdc4272a892eafc9bc72"},
+    {file = "humanfriendly-9.1.tar.gz", hash = "sha256:066562956639ab21ff2676d1fda0b5987e985c534fc76700a19bd54bcb81121d"},
 ]
 hyperframe = [
     {file = "hyperframe-5.2.0-py2.py3-none-any.whl", hash = "sha256:5187962cb16dcc078f23cb5a4b110098d546c3f41ff2d4038a9896893bbd0b40"},
@@ -5032,8 +5140,8 @@ mccabe = [
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
 ]
 mock = [
-    {file = "mock-4.0.2-py3-none-any.whl", hash = "sha256:3f9b2c0196c60d21838f307f5825a7b86b678cedc58ab9e50a8988187b4d81e0"},
-    {file = "mock-4.0.2.tar.gz", hash = "sha256:dd33eb70232b6118298d516bbcecd26704689c386594f0f3c4f13867b2c56f72"},
+    {file = "mock-4.0.3-py3-none-any.whl", hash = "sha256:122fcb64ee37cfad5b3f48d7a7d51875d7031aaf3d8be7c42e2bee25044eee62"},
+    {file = "mock-4.0.3.tar.gz", hash = "sha256:7d3fbbde18228f4ff2f1f119a45cdffa458b4c0dee32eb4d2bb2f82554bac7bc"},
 ]
 mongomock = [
     {file = "mongomock-3.21.0-py2.py3-none-any.whl", hash = "sha256:0a5d273c46c8bebf1241146d9f4fa3c95f6f0bdddae4e1d8be922340918b972b"},
@@ -5205,6 +5313,10 @@ pathspec = [
 ]
 pathtools = [
     {file = "pathtools-0.1.2.tar.gz", hash = "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"},
+]
+pbr = [
+    {file = "pbr-5.5.1-py2.py3-none-any.whl", hash = "sha256:b236cde0ac9a6aedd5e3c34517b423cd4fd97ef723849da6b0d2231142d89c00"},
+    {file = "pbr-5.5.1.tar.gz", hash = "sha256:5fad80b613c402d5b7df7bd84812548b2a61e9977387a80a5fc5c396492b13c9"},
 ]
 pep440-version-utils = [
     {file = "pep440-version-utils-0.3.0.tar.gz", hash = "sha256:ceb8c8da63b54cc555946d91829f72fe323f8d635b22fa54ef0a9800c37f50df"},
@@ -5775,6 +5887,10 @@ slackclient = [
     {file = "slackclient-2.9.3-py2.py3-none-any.whl", hash = "sha256:2d68d668c02f4038299897e5c4723ab85dd40a3548354924b24f333a435856f8"},
     {file = "slackclient-2.9.3.tar.gz", hash = "sha256:07ec8fa76f6aa64852210ae235ff9e637ba78124e06c0b07a7eeea4abb955965"},
 ]
+smmap = [
+    {file = "smmap-3.0.4-py2.py3-none-any.whl", hash = "sha256:54c44c197c819d5ef1991799a7e30b662d1e520f2ac75c9efbeb54a742214cf4"},
+    {file = "smmap-3.0.4.tar.gz", hash = "sha256:9c98bbd1f9786d22f14b3d4126894d56befb835ec90cef151af566c7e19b5d24"},
+]
 sniffio = [
     {file = "sniffio-1.2.0-py3-none-any.whl", hash = "sha256:471b71698eac1c2112a40ce2752bb2f4a4814c22a54a3eed3676bc0f5ca9f663"},
     {file = "sniffio-1.2.0.tar.gz", hash = "sha256:c4666eecec1d3f50960c6bdf61ab7bc350648da6c126e3cf6898d8cd4ddcd3de"},
@@ -5853,6 +5969,10 @@ srsly = [
     {file = "srsly-1.0.5-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:4c43a1f28e555891a1e65650adea2c5d0f0fe4b3d63821de65c8357f32c3a11c"},
     {file = "srsly-1.0.5-cp39-cp39-win_amd64.whl", hash = "sha256:334f29435099e644a8047b63d60b8386a98b5f7b4739f7efc86b46ca0200aa0e"},
     {file = "srsly-1.0.5.tar.gz", hash = "sha256:d3dd796372367c71946d0cd6f734e49db3d99dd13a57bdac937d9eb62689fc9e"},
+]
+stevedore = [
+    {file = "stevedore-3.3.0-py3-none-any.whl", hash = "sha256:50d7b78fbaf0d04cd62411188fa7eedcb03eb7f4c4b37005615ceebe582aa82a"},
+    {file = "stevedore-3.3.0.tar.gz", hash = "sha256:3a5bbd0652bf552748871eaa73a4a8dc2899786bc497a2aa1fcb4dcdb0debeee"},
 ]
 tabulate = [
     {file = "tabulate-0.8.7-py3-none-any.whl", hash = "sha256:ac64cb76d53b1231d364babcd72abbb16855adac7de6665122f97b593f1eb2ba"},
