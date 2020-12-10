@@ -440,10 +440,18 @@ class TrainingData:
         # emit warnings for intents with only a few training samples
         for intent, count in self.number_of_examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
-                rasa.shared.utils.io.raise_warning(
-                    f"Intent '{intent}' has only {count} training examples! "
-                    f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
+                # These examples could be coming from training data of core.
+                # In that case the warning should be skipped because they
+                # will not be passed for training of ML components inside
+                # NLU like DIETClassifier/ResponseSelector
+                examples_for_intent = self.filter_training_examples(
+                    lambda x: x.get(INTENT) == intent and not x.is_core_message()
                 )
+                if len(examples_for_intent.training_examples):
+                    rasa.shared.utils.io.raise_warning(
+                        f"Intent '{intent}' has only {count} training examples! "
+                        f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
+                    )
 
         # emit warnings for entities with only a few training samples
         for entity, count in self.number_of_examples_per_entity.items():

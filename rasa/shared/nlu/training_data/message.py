@@ -319,7 +319,7 @@ class Message:
     def is_core_message(self) -> bool:
         """Checks whether the message is a core message or not.
 
-        E.g. a core message is created from a story, not from the NLU data.
+        E.g. a core message is created from a story or domain, not from the NLU data.
 
         Returns:
             True, if message is a core message, false otherwise.

@@ -286,11 +286,37 @@ class CombinedDataImporter(TrainingDataImporter):
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
-        nlu_data = await asyncio.gather(*nlu_data)
+        nlu_data = await asyncio.gather(
+            *nlu_data, self._additional_training_data_from_domain(),
+        )
 
         return reduce(
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
+
+    async def _additional_training_data_from_domain(self) -> TrainingData:
+        domain = await self.get_domain()
+
+        # These messages help to build the complete vocabulary
+        # of labels(intents, action_names) inside NLU components.
+        # The reason why these could be missed otherwise is that
+        # every label defined in the domain is not guaranteed to
+        # appear in NLU training data or Core training data
+        # and hence can be problematic for incremental training
+        # if not taken into account.
+        additional_messages_from_domain = [
+            Message(data={ACTION_NAME: action_name})
+            for action_name in domain.action_names
+        ] + [
+            Message(data={INTENT: intent})
+            for intent in domain.intents
+            if intent not in rasa.shared.core.constants.DEFAULT_INTENTS
+        ]
+        logger.debug(
+            f"Added {len(additional_messages_from_domain)} training data examples "
+            f"from domain."
+        )
+        return TrainingData(additional_messages_from_domain)
 
 
 class RetrievalModelsDataImporter(TrainingDataImporter):
@@ -483,7 +509,6 @@ class E2EImporter(TrainingDataImporter):
         training_datasets += await asyncio.gather(
             self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
-            self._additional_training_data_from_domain(),
         )
 
         return reduce(
@@ -514,23 +539,6 @@ class E2EImporter(TrainingDataImporter):
             f"from the story training data."
         )
         return TrainingData(additional_messages_from_stories)
-
-    async def _additional_training_data_from_domain(self) -> TrainingData:
-        domain = await self.get_domain()
-
-        additional_messages_from_domain = [
-            Message(data={ACTION_NAME: action_name})
-            for action_name in domain.action_names
-        ] + [
-            Message(data={INTENT: intent})
-            for intent in domain.intents
-            if intent not in rasa.shared.core.constants.DEFAULT_INTENTS
-        ]
-        logger.debug(
-            f"Added {len(additional_messages_from_domain)} training data examples "
-            f"from domain."
-        )
-        return TrainingData(additional_messages_from_domain)
 
 
 def _unique_events_from_stories(
