@@ -2,7 +2,6 @@
 
 JOBS ?= 1
 
-# dummy change
 help:
 	@echo "make"
 	@echo "    clean"
