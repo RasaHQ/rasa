@@ -54,6 +54,27 @@ def train(
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[TrainingResult]:
+    """Runs Rasa Core and NLU training in `async` loop.
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config for Core and NLU.
+        training_files: Paths to the training data for Core and NLU.
+        output: Output path.
+        dry_run: If `True` then no training will be done, and the information about
+            whether the training needs to be done will be printed.
+        force_training: If `True` retrain model even if data has not changed.
+        fixed_model_name: Name of model to be stored.
+        persist_nlu_training_data: `True` if the NLU training data should be persisted
+            with the model.
+        core_additional_arguments: Additional training parameters for core training.
+        nlu_additional_arguments: Additional training parameters forwarded to training
+            method of each NLU component.
+        loop: The event loop which will be used to run `async` functions.
+
+    Returns:
+        An instance of `TrainingResult` or `None` if training was not successful.
+    """
     return rasa.utils.common.run_in_loop(
         train_async(
             domain=domain,
@@ -103,7 +124,6 @@ async def train_async(
     Returns:
         An instance of `TrainingResult`.
     """
-
     file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
@@ -211,7 +231,6 @@ async def _train_async_internal(
     Returns:
         An instance of `TrainingResult`.
     """
-
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )

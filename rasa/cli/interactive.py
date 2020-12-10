@@ -95,6 +95,13 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
 def perform_interactive_learning(
     args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter
 ) -> None:
+    """Performs interactive learning.
+
+    Args:
+        args: Namespace arguments.
+        zipped_model: Path to zipped model.
+        file_importer: File importer which provides the training data and model config.
+    """
     from rasa.core.train import do_interactive_learning
 
     args.model = zipped_model

@@ -129,6 +129,11 @@ def add_dry_run_param(
 def add_augmentation_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
+    """Adds `--augmentation` argument to a specified `parser`.
+
+    Args:
+        parser: An instance of `ArgumentParser` or `_ActionsContainer`.
+    """
     parser.add_argument(
         "--augmentation",
         type=int,

@@ -62,6 +62,14 @@ def add_subparser(
 
 
 def train(args: argparse.Namespace) -> Optional[Text]:
+    """Trains a model.
+
+    Args:
+        args: Namespace arguments.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     import rasa
 
     domain = rasa.cli.utils.get_validated_path(
@@ -98,6 +106,15 @@ def train(args: argparse.Namespace) -> Optional[Text]:
 def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
+    """Trains a Core model.
+
+    Args:
+        args: Namespace arguments.
+        train_path: Directory where models should be stored.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     from rasa.train import train_core
 
     output = train_path or args.out
@@ -138,6 +155,15 @@ def train_core(
 def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
+    """Trains an NLU model.
+
+    Args:
+        args: Namespace arguments.
+        train_path: Directory where models should be stored.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     from rasa.train import train_nlu
 
     output = train_path or args.out
