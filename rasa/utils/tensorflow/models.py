@@ -834,12 +834,22 @@ class TransformerRasaModel(RasaModel):
                 prefix="concat_layer",
             )
 
-    def _prepare_sequence_layers(self, name: Text) -> None:
+    def _prepare_sequence_layers(
+        self, name: Text, prefix: Optional[Text] = None
+    ) -> None:
         self._prepare_input_layers(name)
+
+        if prefix:
+            size_key = f"{prefix}_{TRANSFORMER_SIZE}"
+            num_layers_key = f"{prefix}_{NUM_TRANSFORMER_LAYERS}"
+        else:
+            size_key = TRANSFORMER_SIZE
+            num_layers_key = NUM_TRANSFORMER_LAYERS
+
         self._prepare_transformer_layer(
             name,
-            self.config[NUM_TRANSFORMER_LAYERS],
-            self.config[TRANSFORMER_SIZE],
+            self.config[num_layers_key],
+            self.config[size_key],
             self.config[DROP_RATE],
             self.config[DROP_RATE_ATTENTION],
         )

@@ -18,23 +18,23 @@ Here's an example of a dialogue in the Rasa story format:
 stories:
 - story: collect restaurant booking info  # name of the story - just for debugging
   steps:
-  - intent: greet                         # user message with no entities
-  - action: utter_ask_howcanhelp
-  - intent: inform                        # user message with no entities
+  - intent: greet                          # user message with no entities
+  - action: utter_ask_howcanhelp           # action that the bot should execute
+  - intent: inform                         # user message with entities
     entities:
     - location: "rome"
     - price: "cheap"
-  - action: utter_on_it                  # action that the bot should execute
+  - bot: On it                             # actual text that bot can output
   - action: utter_ask_cuisine
-  - intent: inform
-    entities:
-    - cuisine: "spanish"
+  - user: I would like [spanish](cuisine). # actual text that user input
   - action: utter_ask_num_people
 ```
 
 ### User Messages
 
-While writing stories, you do not have to deal with the specific contents of
+While writing stories, you have two options.
+
+1) You do not have to deal with the specific contents of
 the messages that the users send. Instead, you can take advantage of the output
 from the NLU pipeline, which lets you use just the combination of an intent and
 entities to refer to all the possible messages the users can send to mean the
@@ -45,6 +45,19 @@ to predict the next action based on a *combination* of both the intent and
 entities (you can, however, change this behavior using the
 [use_entities](./domain.mdx#ignoring-entities-for-certain-intents) attribute).
 
+2) You do not have to deal with the specific
+intents of the messages that are extracted by the NLU pipeline. Instead, you can simply put
+the text of the user message.
+We call it end-to-end training because actual text is used for predictions.
+
+:::caution
+This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+
+:::
+
 ### Actions
 
 All actions executed by the bot, including [responses](./responses.mdx) are listed
@@ -54,6 +67,15 @@ You can use a response from your domain as an action by listing it as one
 in a story. Similarly, you can indicate that a story should call a custom action by including
 the name of the custom action from the `actions` list in your domain.
 
+You can also put bot utterance directly in the stories.
+
+:::caution
+This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+
+:::
 
 ### Events
 

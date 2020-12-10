@@ -20,7 +20,10 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     INNER,
     COSINE,
+    TRANSFORMER_SIZE,
+    NUM_TRANSFORMER_LAYERS,
 )
+from rasa.core.constants import DIALOGUE
 
 if TYPE_CHECKING:
     from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
@@ -188,6 +191,28 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     """
 
     # note: call _replace_deprecated_option() here when there are options to deprecate
+
+    return config
+
+
+def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """
+    If old model configuration parameters are present in the provided config, replace
+    them with the new parameters and log a warning.
+    Args:
+        config: model configuration
+
+    Returns: updated model configuration
+    """
+
+    # note: call _replace_deprecated_option() here when there are options to deprecate
+
+    config = _replace_deprecated_option(
+        TRANSFORMER_SIZE, f"{DIALOGUE}_{TRANSFORMER_SIZE}", config
+    )
+    config = _replace_deprecated_option(
+        NUM_TRANSFORMER_LAYERS, f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}", config
+    )
 
     return config
 

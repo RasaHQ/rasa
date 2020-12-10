@@ -165,9 +165,9 @@ class TEDPolicy(Policy):
         CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128, f"{LABEL}_{ACTION_TEXT}": 128},
         ENCODING_DIMENSION: 50,
         # Number of units in sequence transformer
-        TRANSFORMER_SIZE: 128,
+        f"{SEQUENCE}_{TRANSFORMER_SIZE}": 128,
         # Number of sequence transformer layers
-        NUM_TRANSFORMER_LAYERS: 1,
+        f"{SEQUENCE}_{NUM_TRANSFORMER_LAYERS}": 1,
         # Number of units in dialogue transformer
         f"{DIALOGUE}_{TRANSFORMER_SIZE}": 128,
         # Number of dialogue transformer layers
@@ -233,7 +233,7 @@ class TEDPolicy(Policy):
         # Dropout rate for embedding layers of label, e.g. action, features.
         DROP_RATE_LABEL: 0.0,
         # Dropout rate for attention.
-        DROP_RATE_ATTENTION: 0,
+        DROP_RATE_ATTENTION: 0.0,
         # Sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
         # If 'True' apply dropout to sparse input tensors
@@ -312,7 +312,7 @@ class TEDPolicy(Policy):
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
 
-        self.config = train_utils.check_deprecated_options(self.config)
+        self.config = train_utils.check_core_deprecated_options(self.config)
 
         self.config = train_utils.update_similarity_type(self.config)
         self.config = train_utils.update_evaluation_parameters(self.config)
@@ -850,13 +850,13 @@ class TED(TransformerRasaModel):
         for name in self.data_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name)
+                self._prepare_sequence_layers(name, prefix=SEQUENCE)
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name)
+                self._prepare_sequence_layers(name, prefix=SEQUENCE)
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
