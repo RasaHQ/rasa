@@ -84,7 +84,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Load Yarn Cached Packages ⬇
@@ -145,7 +145,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Install Dependencies 📦
