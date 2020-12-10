@@ -239,14 +239,6 @@ def test_train_dry_run_failure(
             output.ret & CODE_CORE_NEEDS_TO_BE_RETRAINED
             == CODE_CORE_NEEDS_TO_BE_RETRAINED
         )
-        and (
-            output.ret & CODE_NLU_NEEDS_TO_BE_RETRAINED
-            == CODE_NLU_NEEDS_TO_BE_RETRAINED
-        )
-        and (
-            output.ret & CODE_NLG_NEEDS_TO_BE_RETRAINED
-            == CODE_NLG_NEEDS_TO_BE_RETRAINED
-        )
         and (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
     )
 
