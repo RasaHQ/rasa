@@ -22,7 +22,10 @@ from rasa.utils.tensorflow.constants import (
     COSINE,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
+    DENSE_DIMENSION,
 )
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT, ENTITIES
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.core.constants import DIALOGUE
 
 if TYPE_CHECKING:
@@ -213,7 +216,21 @@ def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     config = _replace_deprecated_option(
         NUM_TRANSFORMER_LAYERS, f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}", config
     )
-
+    config = _replace_deprecated_option(
+        DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config
+    )
+    config = _replace_deprecated_option(
+        DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
+    )
+    config = _replace_deprecated_option(
+        DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config
+    )
+    config = _replace_deprecated_option(
+        DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config
+    )
+    config = _replace_deprecated_option(
+        DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
+    )
     return config
 
 

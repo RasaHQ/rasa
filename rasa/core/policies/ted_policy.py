@@ -101,7 +101,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
 )
-from rasa.shared.core.events import UserUttered, DefinePrevUserUtteredEntities, Event
+from rasa.shared.core.events import DefinePrevUserUtteredEntities, Event
 from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
