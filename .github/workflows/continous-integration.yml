@@ -52,6 +52,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
@@ -118,6 +119,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
@@ -192,6 +194,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
@@ -290,6 +293,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docker == 'true'
       uses: actions/checkout@v2
 
     - name: Free disk space
