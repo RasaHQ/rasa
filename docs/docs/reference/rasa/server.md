@@ -148,6 +148,67 @@ add_root_route(app: Sanic)
 
 Add &#x27;/&#x27; route to return hello.
 
+#### async\_if\_callback\_url
+
+```python
+async_if_callback_url(f: Callable[..., Coroutine]) -> Callable
+```
+
+Decorator to enable async request handling.
+
+If the incoming HTTP request specified a `callback_url` query parameter, the request
+will return immediately with a 204 while the actual request response will
+be sent to the `callback_url`. If an error happens, the error payload will also
+be sent to the `callback_url`.
+
+**Arguments**:
+
+- `f` - The request handler function which should be decorated.
+  
+
+**Returns**:
+
+  The decorated function.
+
+#### run\_in\_thread
+
+```python
+run_in_thread(f: Callable[..., Coroutine]) -> Callable
+```
+
+Decorator which runs request on a separate thread.
+
+Some requests (e.g. training or cross-validation) are computional intense requests.
+This means that they will block the event loop and hence the processing of other
+requests. This decorator can be used to process these requests on a separate thread
+to avoid blocking the processing of incoming requests.
+
+**Arguments**:
+
+- `f` - The request handler function which should be decorated.
+  
+
+**Returns**:
+
+  The decorated function.
+
+#### inject\_temp\_dir
+
+```python
+inject_temp_dir(f: Callable[..., Coroutine]) -> Callable
+```
+
+Decorator to inject a temporary directory before a request and clean up after.
+
+**Arguments**:
+
+- `f` - The request handler function which should be decorated.
+  
+
+**Returns**:
+
+  The decorated function.
+
 #### create\_app
 
 ```python

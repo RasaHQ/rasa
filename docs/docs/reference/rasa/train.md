@@ -6,7 +6,7 @@ title: rasa.train
 #### train\_async
 
 ```python
-async train_async(domain: Union[Domain, Text], config: Text, training_files: Optional[Union[Text, List[Text]]], output_path: Text = DEFAULT_MODELS_PATH, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None) -> Optional[Text]
+async train_async(domain: Union[Domain, Text], config: Text, training_files: Optional[Union[Text, List[Text]]], output: Text = DEFAULT_MODELS_PATH, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None) -> Optional[Text]
 ```
 
 Trains a Rasa model (Core and NLU).
