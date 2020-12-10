@@ -524,7 +524,7 @@ class TEDPolicy(Policy):
             )
         return tracker_state_features
 
-    def _pick_confidence(
+    def _pick_prediction_index(
         self, confidences: np.ndarray, similarities: np.ndarray
     ) -> Tuple[int, bool]:
         # the confidences and similarities have shape (batch-size x number of actions)
@@ -578,7 +578,7 @@ class TEDPolicy(Policy):
         similarities = output["similarities"].numpy()[:, -1, :]
         confidences = output["action_scores"].numpy()[:, -1, :]
         # take correct prediction from batch
-        prediction_index, is_e2e_prediction = self._pick_confidence(
+        prediction_index, is_e2e_prediction = self._pick_prediction_index(
             confidences, similarities
         )
         confidence = confidences[prediction_index]
