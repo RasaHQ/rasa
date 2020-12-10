@@ -370,6 +370,13 @@ def test_train_nlu_autoconfig(
         ),
         (
             rasa.model.FingerprintComparisonResult(
+                core=True, nlu=True, nlg=True, force_training=True
+            ),
+            0b1000,
+            1,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
                 core=False, nlu=False, nlg=True, force_training=False
             ),
             0b0100,

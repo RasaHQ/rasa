@@ -53,7 +53,7 @@ def train(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
-) -> Optional[TrainingResult]:
+) -> TrainingResult:
     """Runs Rasa Core and NLU training in `async` loop.
 
     Args:
@@ -73,7 +73,7 @@ def train(
         loop: The event loop which will be used to run `async` functions.
 
     Returns:
-        An instance of `TrainingResult` or `None` if training was not successful.
+        An instance of `TrainingResult`.
     """
     return rasa.utils.common.run_in_loop(
         train_async(
@@ -103,7 +103,7 @@ async def train_async(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-) -> Optional[TrainingResult]:
+) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
     Args:
@@ -133,9 +133,10 @@ async def train_async(
         domain = await file_importer.get_domain()
 
         if domain.is_empty():
-            return await handle_domain_if_not_exists(
+            nlu_model = await handle_domain_if_not_exists(
                 file_importer, output_path, fixed_model_name
             )
+            return TrainingResult(model=nlu_model)
 
         return await _train_async_internal(
             file_importer,
@@ -179,21 +180,22 @@ def dry_run_result(
     code = 0
     texts = []
 
+    if fingerprint_comparison.force_training:
+        code = CODE_FORCED_TRAINING
+        texts.append("The training was forced.")
+        return code, texts
+
     if fingerprint_comparison.core:
         code += CODE_CORE_NEEDS_TO_BE_RETRAINED
         texts.append("Core model should be retrained.")
 
-    if fingerprint_comparison.core:
+    if fingerprint_comparison.nlu:
         code += CODE_NLU_NEEDS_TO_BE_RETRAINED
         texts.append("NLU model should be retrained.")
 
     if fingerprint_comparison.nlg:
         code += CODE_NLG_NEEDS_TO_BE_RETRAINED
         texts.append("Responses in the domain should be updated.")
-
-    if fingerprint_comparison.force_training:
-        code += CODE_FORCED_TRAINING
-        texts.append("The training was forced.")
 
     if code == 0:
         texts.append("No training required.")
@@ -211,7 +213,7 @@ async def _train_async_internal(
     persist_nlu_training_data: bool,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-) -> Optional[TrainingResult]:
+) -> TrainingResult:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
     Args:
@@ -253,7 +255,7 @@ async def _train_async_internal(
             "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
-        return
+        return TrainingResult()
 
     if stories.is_empty():
         print_warning("No stories present. Just a Rasa NLU model will be trained.")

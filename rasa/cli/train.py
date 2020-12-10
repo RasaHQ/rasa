@@ -55,17 +55,19 @@ def add_subparser(
     )
     train_nlu_parser.set_defaults(func=train_nlu)
 
-    train_parser.set_defaults(func=train)
+    train_parser.set_defaults(func=train, can_exit=True)
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
-def train(args: argparse.Namespace) -> Optional[Text]:
+def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
     """Trains a model.
 
     Args:
         args: Namespace arguments.
+        can_exit: If `True`, the operation can send `sys.exit` in the case
+            training was not successful.
 
     Returns:
         Path to a trained model or `None` if training was not successful.
@@ -97,7 +99,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
     )
-    if training_result.code != 0:
+    if training_result.code != 0 and can_exit:
         sys.exit(training_result.code)
 
     return training_result.model

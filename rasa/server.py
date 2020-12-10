@@ -890,7 +890,7 @@ def create_app(
                 None, functools.partial(train_model, **training_payload)
             )
 
-            if training_result and training_result.model:
+            if training_result.model:
                 filename = os.path.basename(training_result.model)
 
                 return await response.file(

@@ -169,7 +169,7 @@ def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
             output_path = str(tmpdir_factory.mktemp("models"))
 
         result = await train_async(*args, output_path=output_path, **kwargs)
-        return result.model if result else None
+        return result.model
 
     return _train
 
