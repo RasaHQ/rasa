@@ -232,7 +232,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
