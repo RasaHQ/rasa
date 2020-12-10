@@ -736,7 +736,7 @@ class TransformerRasaModel(RasaModel):
         drop_rate_attention: float,
         prefix: Text = "transformer",
     ):
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+        if num_layers > 0:
             self._tf_layers[f"{prefix}.{name}"] = TransformerEncoder(
                 num_layers,
                 units,
@@ -1042,7 +1042,12 @@ class TransformerRasaModel(RasaModel):
             transformer_inputs, 1 - mask, self._training
         )
 
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+        if isinstance(self.config[NUM_TRANSFORMER_LAYERS], int):
+            num_layers = self.config[NUM_TRANSFORMER_LAYERS]
+        else:
+            num_layers = self.config[NUM_TRANSFORMER_LAYERS][name]
+
+        if num_layers > 0:
             # apply activation
             outputs = tfa.activations.gelu(outputs)
 

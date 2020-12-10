@@ -1,4 +1,3 @@
-import copy
 import logging
 from pathlib import Path
 from collections import defaultdict
@@ -40,7 +39,7 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.utils import train_utils
+import rasa.utils.train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -314,13 +313,12 @@ class TEDPolicy(Policy):
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        self.config = copy.deepcopy(self.defaults)
-        self.config.update(kwargs)
-
-        self.config = train_utils.check_core_deprecated_options(self.config)
-
-        self.config = train_utils.update_similarity_type(self.config)
-        self.config = train_utils.update_evaluation_parameters(self.config)
+        new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
+        self.config = rasa.utils.train_utils.override_defaults(
+            self.defaults, new_config
+        )
+        self.config = rasa.utils.train_utils.update_similarity_type(self.config)
+        self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
     def _create_entity_tag_specs(self) -> List[EntityTagSpec]:
         """Create entity tag specifications with their respective tag id mappings."""
@@ -592,7 +590,9 @@ class TEDPolicy(Policy):
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
-            confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
+            confidence = rasa.utils.train_utils.normalize(
+                confidence, self.config[RANKING_LENGTH]
+            )
 
         optional_events = self._create_optional_event_for_entities(
             output, interpreter, tracker
@@ -1102,8 +1102,8 @@ class TED(TransformerRasaModel):
             # if the input features are fake, we don't process them further,
             # but we need to calculate correct last dim (units) so that tf could infer
             # the last shape of the tensors
-            if self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE] > 0:
-                text_transformer_units = self.config[TRANSFORMER_SIZE][DIALOGUE]
+            if self.config[NUM_TRANSFORMER_LAYERS][TEXT] > 0:
+                text_transformer_units = self.config[TRANSFORMER_SIZE][TEXT]
             elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
                 text_transformer_units = self.config[HIDDEN_LAYERS_SIZES][TEXT][-1]
             else:
@@ -1437,8 +1437,8 @@ class TED(TransformerRasaModel):
 
         # broadcast the dialogue transformer output sequence-length-times to get the
         # same shape as the text sequence transformer output
-        dialogue_transformer_output = tf.broadcast_to(
-            dialogue_transformer_output, tf.shape(text_transformer_output)
+        dialogue_transformer_output = tf.tile(
+            dialogue_transformer_output, (1, tf.shape(text_transformer_output)[1], 1)
         )
 
         # concat the output of the dialogue transformer to the output of the text

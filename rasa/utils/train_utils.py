@@ -1,5 +1,5 @@
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
-
+import copy
 import numpy as np
 
 import rasa.shared.utils.common
@@ -7,7 +7,6 @@ import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
-from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
@@ -30,6 +29,7 @@ from rasa.core.constants import DIALOGUE
 
 if TYPE_CHECKING:
     from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+    from rasa.nlu.tokenizers.tokenizer import Token
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -67,7 +67,7 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
 
 def align_token_features(
-    list_of_tokens: List[List[Token]],
+    list_of_tokens: List[List["Token"]],
     in_token_features: np.ndarray,
     shape: Optional[Tuple] = None,
 ) -> np.ndarray:
@@ -161,26 +161,24 @@ def _replace_deprecated_option(
     config: Dict[Text, Any],
     warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 ) -> Dict[Text, Any]:
-    if old_option in config:
-        if isinstance(new_option, str):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"Option '{old_option}' got renamed to '{new_option}'. "
-                f"Please update your configuration file.",
-                warn_until_version=warn_until_version,
-            )
-            config[new_option] = config[old_option]
-        else:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"Option '{old_option}' got renamed to "
-                f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
-                f"Please update your configuration file.",
-                warn_until_version=warn_until_version,
-            )
-            option_dict = config.get(new_option[0], {})
-            option_dict[new_option[1]] = config[old_option]
-            config[new_option[0]] = option_dict
+    if old_option not in config:
+        return {}
 
-    return config
+    if isinstance(new_option, str):
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"Option '{old_option}' got renamed to '{new_option}'. "
+            f"Please update your configuration file.",
+            warn_until_version=warn_until_version,
+        )
+        return {new_option: config[old_option]}
+    else:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"Option '{old_option}' got renamed to "
+            f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
+            f"Please update your configuration file.",
+            warn_until_version=warn_until_version,
+        )
+        return {new_option[0]: {new_option[1]: config[old_option]}}
 
 
 def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -212,27 +210,34 @@ def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     """
     # note: call _replace_deprecated_option() here when there are options to deprecate
 
-    config = _replace_deprecated_option(
+    new_config = _replace_deprecated_option(
         TRANSFORMER_SIZE, [TRANSFORMER_SIZE, DIALOGUE], config
     )
-    config = _replace_deprecated_option(
-        NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
+    new_config.update(
+        _replace_deprecated_option(
+            NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
+        )
     )
-    config = _replace_deprecated_option(
-        DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config
+    new_config.update(
+        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config)
     )
-    config = _replace_deprecated_option(
-        DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
+    new_config.update(
+        _replace_deprecated_option(
+            DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
+        )
     )
-    config = _replace_deprecated_option(
-        DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config
+    new_config.update(
+        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config)
     )
-    config = _replace_deprecated_option(
-        DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config
+    new_config.update(
+        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config)
     )
-    config = _replace_deprecated_option(
-        DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
+    new_config.update(
+        _replace_deprecated_option(
+            DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
+        )
     )
+    config.update(new_config)
     return config
 
 
@@ -277,3 +282,21 @@ def entity_label_to_tags(
         confidence_values[tag_spec.tag_name] = confidences
 
     return predicted_tags, confidence_values
+
+
+def override_defaults(
+    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
+) -> Dict[Text, Any]:
+    if defaults:
+        cfg = copy.deepcopy(defaults)
+    else:
+        cfg = {}
+
+    if custom:
+        for key in custom.keys():
+            if isinstance(cfg.get(key), dict):
+                cfg[key].update(custom[key])
+            else:
+                cfg[key] = custom[key]
+
+    return cfg
