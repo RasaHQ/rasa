@@ -441,13 +441,15 @@ class UserUttered(Event):
                 f"{entity[ENTITY_ATTRIBUTE_VALUE]} "
                 f"(Type: {entity[ENTITY_ATTRIBUTE_TYPE]}, "
                 f"Role: {entity.get(ENTITY_ATTRIBUTE_ROLE)}, "
-                f"Group: {entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+                f"Group: {entity.get(ENTITY_ATTRIBUTE_GROUP)})"
                 for entity in self.entities
             ]
             entities = f", entities: {', '.join(entities)}"
 
         return (
-            f"UserUttered(text: {self.text}, intent: {self.intent_name}" f"{entities}))"
+            f"UserUttered(text: {self.text}, intent: {self.intent_name}"
+            f"{entities}"
+            f", use_text_for_featurization: {self.use_text_for_featurization})"
         )
 
     @staticmethod
@@ -584,7 +586,20 @@ class UserUttered(Event):
 
 
 # noinspection PyProtectedMember
-class DefinePrevUserUtteredFeaturization(Event):
+class DefinePrevUserUttered(Event):
+    """Defines the family of events that are used to update previous user utterance."""
+
+    def as_story_string(self) -> None:
+        """Returns the event as story string.
+
+        Returns:
+            None, as this event should not appear inside the story.
+        """
+        return
+
+
+# noinspection PyProtectedMember
+class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
     """Stores information whether action was predicted based on text or intent."""
 
     type_name = "user_featurization"
@@ -613,10 +628,6 @@ class DefinePrevUserUtteredFeaturization(Event):
     def __hash__(self) -> int:
         """Returns unique hash for event."""
         return hash(self.use_text_for_featurization)
-
-    def as_story_string(self) -> None:
-        """Skips representing the event in stories."""
-        return None
 
     @classmethod
     def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredFeaturization":
@@ -652,7 +663,7 @@ class DefinePrevUserUtteredFeaturization(Event):
 
 
 # noinspection PyProtectedMember
-class DefinePrevUserUtteredEntities(Event):
+class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
     """Event that is used to set entities on a previous user uttered event."""
 
     type_name = "user_entities"
@@ -685,14 +696,6 @@ class DefinePrevUserUtteredEntities(Event):
     def __eq__(self, other) -> bool:
         """Compares this event with another event."""
         return isinstance(other, DefinePrevUserUtteredEntities)
-
-    def as_story_string(self) -> None:
-        """Returns the event as story string.
-
-        Returns:
-            None, as this event should not appear inside the story.
-        """
-        return
 
     @classmethod
     def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredEntities":

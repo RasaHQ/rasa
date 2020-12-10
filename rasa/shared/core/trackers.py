@@ -57,8 +57,7 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
-    DefinePrevUserUtteredFeaturization,
-    DefinePrevUserUtteredEntities,
+    DefinePrevUserUttered,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -459,7 +458,7 @@ class DialogueStateTracker:
                 self._undo_till_previous_loop_execution(
                     event.action_name, applied_events
                 )
-            else:
+            elif not isinstance(event, DefinePrevUserUttered):
                 applied_events.append(event)
 
         return applied_events

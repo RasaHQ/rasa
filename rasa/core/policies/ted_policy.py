@@ -524,9 +524,9 @@ class TEDPolicy(Policy):
             )
         return tracker_state_features
 
-    def _pick_prediction_index(
+    def _pick_confidence(
         self, confidences: np.ndarray, similarities: np.ndarray
-    ) -> Tuple[int, bool]:
+    ) -> Tuple[np.ndarray, bool]:
         # the confidences and similarities have shape (batch-size x number of actions)
         # batch-size can only be 1 or 2;
         # in the case batch-size==2, the first example contain user intent as features,
@@ -545,12 +545,12 @@ class TEDPolicy(Policy):
                 # TODO maybe compare confidences is better
                 and np.max(similarities[1]) > np.max(similarities[0])
             ):
-                return 1, True
+                return confidences[1], True
 
-            return 0, False
+            return confidences[0], False
 
         # by default the first example in a batch is the one to use for prediction
-        return 0, self.only_e2e
+        return confidences[0], self.only_e2e
 
     def predict_action_probabilities(
         self,
@@ -578,16 +578,13 @@ class TEDPolicy(Policy):
         similarities = output["similarities"].numpy()[:, -1, :]
         confidences = output["action_scores"].numpy()[:, -1, :]
         # take correct prediction from batch
-        prediction_index, is_e2e_prediction = self._pick_prediction_index(
-            confidences, similarities
-        )
-        confidence = confidences[prediction_index]
+        confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
         optional_events = self._create_optional_event_for_entities(
-            output, prediction_index, is_e2e_prediction, interpreter, tracker
+            output, is_e2e_prediction, interpreter, tracker
         )
 
         return self._prediction(
@@ -599,7 +596,6 @@ class TEDPolicy(Policy):
     def _create_optional_event_for_entities(
         self,
         prediction_output: Dict[Text, tf.Tensor],
-        prediction_index: int,
         is_e2e_prediction: bool,
         interpreter: NaturalLanguageInterpreter,
         tracker: DialogueStateTracker,
@@ -614,11 +610,16 @@ class TEDPolicy(Policy):
             # entity recognition is not turned on, no entities can be predicted
             return
 
+        # The batch dimension of entity prediction is not the same as batch size,
+        # rather it is the number of last (if max history featurizer else all)
+        # text inputs in the batch
+        # therefore, in order to pick entities from the latest user message
+        # we need to pick entities from the last batch dimension of entity prediction
         (
             predicted_tags,
             confidence_values,
         ) = rasa.utils.train_utils.entity_label_to_tags(
-            prediction_output, self._entity_tag_specs, prediction_index=prediction_index
+            prediction_output, self._entity_tag_specs, prediction_index=-1
         )
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
