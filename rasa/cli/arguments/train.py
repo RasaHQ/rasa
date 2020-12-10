@@ -105,7 +105,7 @@ def add_compare_params(
 def add_dry_run_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ) -> None:
-    """Add `--dry-run` argument to a specified `parser`.
+    """Adds `--dry-run` argument to a specified `parser`.
 
     Args:
         parser: An instance of `ArgumentParser` or `_ActionsContainer`.
@@ -114,15 +114,15 @@ def add_dry_run_param(
         "--dry-run",
         default=False,
         action="store_true",
-        help="If enabled, not actual training will be performed. Instead, "
+        help="If enabled, no actual training will be performed. Instead, "
         "it will be determined whether a model should be re-trained "
         "and this information will be printed as the output. The return "
         "code is a 4-bit bitmask that can also be used to determine what exactly needs "
         "to be retrained:\n"
-        "- 0b0001 means Core needs to be retrained\n"
-        "- 0b0010 means NLU needs to be retrained\n"
-        "- 0b0100 means responses in the domain should be updated\n"
-        "- 0b1000 means the training was forced (--force argument is specified)",
+        "- 1 means Core needs to be retrained\n"
+        "- 2 means NLU needs to be retrained\n"
+        "- 4 means responses in the domain should be updated\n"
+        "- 8 means the training was forced (--force argument is specified)",
     )
 
 

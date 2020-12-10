@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 from contextlib import ExitStack
-from typing import Text, Tuple, Optional, List, Union, Dict
+from typing import Text, NamedTuple, Tuple, Optional, List, Union, Dict
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -34,17 +34,11 @@ CODE_NLG_NEEDS_TO_BE_RETRAINED = 0b0100
 CODE_FORCED_TRAINING = 0b1000
 
 
-class TrainingResult:
+class TrainingResult(NamedTuple):
     """Holds information about the results of training."""
 
-    def __init__(self, code: Optional[int] = 0, model: Optional[Text] = None) -> None:
-        """Creates an instance of `TrainingResult`.
-
-        Args:
-            code: Training result code. 0 if the training was successful.
-            model: Path to a trained model."""
-        self.code = code
-        self.model = model
+    model: Optional[Text] = None
+    code: int = 0
 
 
 def train(

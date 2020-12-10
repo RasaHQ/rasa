@@ -23,6 +23,7 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
+    LATEST_TRAINING_DATA_FORMAT_VERSION
 )
 
 
@@ -207,9 +208,8 @@ def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult
     assert len(files) == 1
 
     output = run_in_simple_project_with_model("train", "--dry-run")
-    printed_output = set(output.outlines)
 
-    assert [s for s in printed_output if "No training required." in s]
+    assert [s for s in output.outlines if "No training required." in s]
     assert output.ret == 0
 
 
@@ -219,7 +219,7 @@ def test_train_dry_run_failure(
     temp_dir = os.getcwd()
 
     domain = (
-        "version: '2.0'\n"
+        "version: '" + LATEST_TRAINING_DATA_FORMAT_VERSION + "'\n"
         "session_config:\n"
         "  session_expiration_time: 60\n"
         "  carry_over_slots_to_new_session: true\n"
@@ -232,9 +232,8 @@ def test_train_dry_run_failure(
         f.write(domain)
 
     output = run_in_simple_project_with_model("train", "--dry-run")
-    printed_output = set(output.outlines)
 
-    assert not any([s for s in printed_output if "No training required." in s])
+    assert not any([s for s in output.outlines if "No training required." in s])
     assert (
         (
             output.ret & CODE_CORE_NEEDS_TO_BE_RETRAINED
@@ -262,9 +261,8 @@ def test_train_dry_run_force(
     assert len(files) == 1
 
     output = run_in_simple_project_with_model("train", "--dry-run", "--force")
-    printed_output = set(output.outlines)
 
-    assert [s for s in printed_output if "The training was forced." in s]
+    assert [s for s in output.outlines if "The training was forced." in s]
     assert output.ret == CODE_FORCED_TRAINING
 
 

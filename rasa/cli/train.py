@@ -16,7 +16,6 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
-from rasa.train import TrainingResult
 import rasa.utils.common
 
 

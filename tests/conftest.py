@@ -164,11 +164,12 @@ def default_config() -> List[Policy]:
 def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
     async def _train(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
-    ) -> Optional[TrainingResult]:
+    ) -> Optional[Text]:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 
-        return await train_async(*args, output_path=output_path, **kwargs)
+        result = await train_async(*args, output_path=output_path, **kwargs)
+        return result.model if result else None
 
     return _train
 
