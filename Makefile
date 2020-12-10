@@ -19,6 +19,8 @@ help:
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
 	@echo "        Check for type errors using mypy."
+	@echo "    static-checks"
+	@echo "        Run all python static checks."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -84,6 +86,9 @@ endif
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
+lint-security:
+	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
+
 types:
 	# FIXME: working our way towards removing these
 	# see https://github.com/RasaHQ/rasa/pull/6470
@@ -107,6 +112,8 @@ types:
 	--disable-error-code dict-item \
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
+
+static-checks: lint lint-security types
 
 prepare-spacy:
 	poetry install -E spacy
