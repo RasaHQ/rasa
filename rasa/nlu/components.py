@@ -626,7 +626,7 @@ class Component(metaclass=ComponentMetaclass):
         return None
 
     def __getstate__(self) -> Any:
-        """Get a copy of picklable parts of the component."""
+        """Gets a copy of picklable parts of the component."""
         d = self.__dict__.copy()
         # these properties should not be pickled
         if "partial_processing_context" in d:
