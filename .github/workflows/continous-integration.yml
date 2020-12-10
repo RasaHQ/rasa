@@ -228,7 +228,7 @@ jobs:
         poetry config virtualenvs.in-project true
 
     - name: Load Poetry Cached Libraries ⬇
-      if: needs.changes.outputs.backend == 'true'
+      if: needs.changes.outputs.backend == 'true' && matrix.os != 'windows-latest'
       uses: actions/cache@v1
       with:
         path: .venv
