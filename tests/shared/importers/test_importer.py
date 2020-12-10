@@ -236,7 +236,7 @@ async def test_import_nlu_training_data_from_e2e_stories(
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
 
 
-async def test_import_nlu_training_data_from_domain(project: Text,):
+async def test_import_nlu_training_data_from_domain(project: Text):
     domain_path = "data/test_domains/default.yml"
     config_path = Path(project) / DEFAULT_CONFIG_PATH
 
