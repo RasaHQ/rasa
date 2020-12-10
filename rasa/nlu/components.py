@@ -390,7 +390,7 @@ class Component(metaclass=ComponentMetaclass):
 
     @property
     def name(self) -> Text:
-        """Access the class's property name from an instance.
+        """Name of the component to be used in the model configuration.
 
         Component class name is used when integrating it in a
         pipeline. E.g. `[ComponentA, ComponentB]`
