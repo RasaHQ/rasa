@@ -213,33 +213,38 @@ def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     new_config = _replace_deprecated_option(
         TRANSFORMER_SIZE, [TRANSFORMER_SIZE, DIALOGUE], config
     )
-    new_config.update(
+    new_config = override_defaults(
+        new_config,
         _replace_deprecated_option(
             NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
-        )
+        ),
     )
-    new_config.update(
-        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config)
+
+    new_config = override_defaults(
+        new_config,
+        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config),
     )
-    new_config[DENSE_DIMENSION].update(
+    new_config = override_defaults(
+        new_config,
         _replace_deprecated_option(
             DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
-        )[DENSE_DIMENSION]
+        ),
     )
-    new_config[DENSE_DIMENSION].update(
+    new_config = override_defaults(
+        new_config,
         _replace_deprecated_option(
             DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config
-        )[DENSE_DIMENSION]
+        ),
     )
-    new_config[DENSE_DIMENSION].update(
-        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config)[
-            DENSE_DIMENSION
-        ]
+    new_config = override_defaults(
+        new_config,
+        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config),
     )
-    new_config[DENSE_DIMENSION].update(
+    new_config = override_defaults(
+        new_config,
         _replace_deprecated_option(
             DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
-        )[DENSE_DIMENSION]
+        ),
     )
     config.update(new_config)
     return config
