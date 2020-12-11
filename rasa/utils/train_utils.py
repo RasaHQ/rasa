@@ -171,14 +171,14 @@ def _replace_deprecated_option(
             warn_until_version=warn_until_version,
         )
         return {new_option: config[old_option]}
-    else:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"Option '{old_option}' got renamed to "
-            f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
-            f"Please update your configuration file.",
-            warn_until_version=warn_until_version,
-        )
-        return {new_option[0]: {new_option[1]: config[old_option]}}
+
+    rasa.shared.utils.io.raise_deprecation_warning(
+        f"Option '{old_option}' got renamed to "
+        f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
+        f"Please update your configuration file.",
+        warn_until_version=warn_until_version,
+    )
+    return {new_option[0]: {new_option[1]: config[old_option]}}
 
 
 def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
