@@ -566,7 +566,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             attribute_vocabulary = self.vectorizers[attribute].vocabulary_
             first_empty_index = self._get_starting_empty_index(attribute_vocabulary)
             logger.info(
-                f"{first_empty_index - 1} vocabulary slots "
+                f"{first_empty_index} vocabulary slots "
                 f"consumed out of {len(attribute_vocabulary)} "
                 f"slots configured for {attribute} attribute."
             )

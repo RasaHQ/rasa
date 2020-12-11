@@ -509,7 +509,7 @@ async def _core_model_for_finetuning(
         old_fingerprint = model.fingerprint_from_path(unpacked)
         if not model.can_finetune(old_fingerprint, new_fingerprint, core=True):
             rasa.shared.utils.cli.print_error_and_exit(
-                "NLU model can not be finetuned."
+                "Core model can not be finetuned."
             )
 
         config = await file_importer.get_config()
@@ -655,7 +655,7 @@ async def _train_nlu_with_validated_data(
                 model_to_finetune,
                 file_importer,
                 finetuning_epoch_fraction,
-                also_train_core=train_path is not None,
+                called_from_combined_training=train_path is not None,
             )
             if not model_to_finetune:
                 rasa.shared.utils.cli.print_error_and_exit(
@@ -701,7 +701,7 @@ async def _nlu_model_for_finetuning(
     model_to_finetune: Text,
     file_importer: TrainingDataImporter,
     finetuning_epoch_fraction: float = 1.0,
-    also_train_core: bool = False,
+    called_from_combined_training: bool = False,
 ) -> Optional[Interpreter]:
 
     path_to_archive = model.get_model_for_finetuning(model_to_finetune)
@@ -716,7 +716,10 @@ async def _nlu_model_for_finetuning(
         new_fingerprint = await model.model_fingerprint(file_importer)
         old_fingerprint = model.fingerprint_from_path(unpacked)
         if not model.can_finetune(
-            old_fingerprint, new_fingerprint, nlu=True, core=also_train_core
+            old_fingerprint,
+            new_fingerprint,
+            nlu=True,
+            core=called_from_combined_training,
         ):
             rasa.shared.utils.cli.print_error_and_exit(
                 "NLU model can not be finetuned."
