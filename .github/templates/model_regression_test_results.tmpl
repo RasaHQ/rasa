@@ -37,7 +37,7 @@ Render Markdown with results.
 {{- $results_master := (datasource "results_master") -}}
 {{ range $dataset, $config := (datasource "data")}}
 {{- $dataset_master := (index $results_master $dataset) -}}
-Dataset: `{{$dataset}}`, Dataset repository branch: `{{ $dataset.branch }}`
+Dataset: `{{$dataset}}`, Dataset repository branch: `{{ $dataset.dataset_repository_branch }}`
 
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
 |---------------|-----------------|-----------------|-------------------|
