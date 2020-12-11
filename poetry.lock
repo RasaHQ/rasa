@@ -1942,6 +1942,22 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.7.1"
 
 [[package]]
+category = "main"
+description = "Python Telegram bot api."
+name = "pytelegrambotapi"
+optional = false
+python-versions = "*"
+version = "3.7.3"
+
+[package.dependencies]
+requests = "*"
+six = "*"
+
+[package.extras]
+json = ["ujson"]
+redis = ["redis (>=3.4.1)"]
+
+[[package]]
 category = "dev"
 description = "pytest: simple powerful testing with Python"
 name = "pytest"
@@ -4475,6 +4491,9 @@ pysocks = [
     {file = "PySocks-1.7.1-py27-none-any.whl", hash = "sha256:08e69f092cc6dbe92a0fdd16eeb9b9ffbc13cadfe5ca4c7bd92ffb078b293299"},
     {file = "PySocks-1.7.1-py3-none-any.whl", hash = "sha256:2725bd0a9925919b9b51739eea5f9e2bae91e83288108a9ad338b2e3a4435ee5"},
     {file = "PySocks-1.7.1.tar.gz", hash = "sha256:3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0"},
+]
+pytelegrambotapi = [
+    {file = "pyTelegramBotAPI-3.7.3.tar.gz", hash = "sha256:ce42d84442ff2ce4918de6550cf377253f61e28e4fac2634495683d12df66d00"},
 ]
 pytest = [
     {file = "pytest-5.4.3-py3-none-any.whl", hash = "sha256:5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1"},
