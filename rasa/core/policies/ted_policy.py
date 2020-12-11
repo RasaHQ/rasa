@@ -757,7 +757,7 @@ class TEDPolicy(Policy):
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
         )
-        meta = train_utils.update_similarity_type(meta)
+        meta = rasa.utils.train_utils.update_similarity_type(meta)
 
         model = TED.load(
             str(tf_model_file),
