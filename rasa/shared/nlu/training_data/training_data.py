@@ -90,7 +90,7 @@ class TrainingData:
             "entities": sorted(self.entities),
             "entity_groups": sorted(self.entity_groups),
             "entity_roles": sorted(self.entity_roles),
-            "actions": sorted(self.actions),
+            "actions": sorted(self.action_names),
         }
         return rasa.shared.utils.io.deep_container_fingerprint(labels)
 
@@ -197,8 +197,8 @@ class TrainingData:
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
     @lazy_property
-    def actions(self) -> Set[Text]:
-        """Returns the set of actions in the training data."""
+    def action_names(self) -> Set[Text]:
+        """Returns the set of action names in the training data."""
         return {ex.get(ACTION_NAME) for ex in self.training_examples} - {None}
 
     @lazy_property
