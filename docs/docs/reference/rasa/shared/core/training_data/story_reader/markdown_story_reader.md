@@ -9,7 +9,15 @@ title: rasa.shared.core.training_data.story_reader.markdown_story_reader
 class MarkdownStoryReader(StoryReader)
 ```
 
-Class that reads the core training data in a Markdown format
+Class that reads the core training data in a Markdown format.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(domain: Optional[Domain] = None, template_vars: Optional[Dict] = None, use_e2e: bool = False, source_name: Optional[Text] = None, is_used_for_training: bool = True, ignore_deprecation_warning: bool = False) -> None
+```
+
+Creates reader. See parent class docstring for more information.
 
 #### read\_from\_file
 

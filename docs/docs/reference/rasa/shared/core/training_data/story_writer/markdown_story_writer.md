@@ -34,7 +34,7 @@ Writes Story steps into a target file/stream.
 
 ```python
  | @staticmethod
- | dumps(story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> Text
+ | dumps(story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False, ignore_deprecation_warning: bool = False) -> Text
 ```
 
 Turns Story steps into a markdown string.
@@ -47,9 +47,11 @@ Turns Story steps into a markdown string.
   the existing story file.
 - `is_test_story` - Identifies if the stories should be exported in test stories
   format.
+- `ignore_deprecation_warning` - `True` if printing the deprecation warning
+  should be suppressed.
   
 
 **Returns**:
 
-  String with story steps in the markdown format.
+  Story steps in the markdown format.
 
