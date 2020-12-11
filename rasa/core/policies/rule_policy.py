@@ -912,12 +912,9 @@ class RulePolicy(MemoizationPolicy):
 
         # predict rules from text first
         if rules_action_name_from_text:
-            policy_events = (
-                [LoopInterrupted(True)] if returning_from_unhappy_path_from_text else []
-            )
-            return self._prediction(
+            return self._prediction_with_unhappy_path(
                 self._prediction_result(rules_action_name_from_text, tracker, domain),
-                events=policy_events,
+                returning_from_unhappy_path=returning_from_unhappy_path_from_text,
                 is_end_to_end_prediction=True,
             )
 
@@ -929,20 +926,36 @@ class RulePolicy(MemoizationPolicy):
         ) = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=False
         )
-        # returning_from_unhappy_path is a negative condition, so `or` should be applied
-        returning_from_unhappy_path = (
-            returning_from_unhappy_path_from_text
-            or returning_from_unhappy_path_from_intent
-        )
-        policy_events = [LoopInterrupted(True)] if returning_from_unhappy_path else []
         if rules_action_name_from_intent:
-            return self._prediction(
-                self._prediction_result(rules_action_name_from_intent, tracker, domain),
-                events=policy_events,
-                is_end_to_end_prediction=False,
+            probabilities = self._prediction_result(
+                rules_action_name_from_intent, tracker, domain
             )
+        else:
+            probabilities = self._default_predictions(domain)
 
-        return self._prediction(self._default_predictions(domain), events=policy_events)
+        return self._prediction_with_unhappy_path(
+            probabilities,
+            returning_from_unhappy_path=(
+                # returning_from_unhappy_path is a negative condition,
+                # so `or` should be applied
+                returning_from_unhappy_path_from_text
+                or returning_from_unhappy_path_from_intent
+            ),
+            is_end_to_end_prediction=False,
+        )
+
+    def _prediction_with_unhappy_path(
+        self,
+        probabilities: List[float],
+        returning_from_unhappy_path: bool,
+        is_end_to_end_prediction: bool,
+    ) -> "PolicyPrediction":
+        events = [LoopInterrupted(True)] if returning_from_unhappy_path else []
+        return self._prediction(
+            probabilities,
+            events=events,
+            is_end_to_end_prediction=is_end_to_end_prediction,
+        )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)
