@@ -366,6 +366,8 @@ class SlackInput(InputChannel):
             output_channel = None
             thread_id = None
 
+        import asyncio
+
         try:
             user_msg = UserMessage(
                 text,
@@ -375,8 +377,8 @@ class SlackInput(InputChannel):
                 metadata=metadata,
             )
 
-            await on_new_message(user_msg)
-        except Exception as e:
+            asyncio.get_event_loop().create_task(on_new_message(user_msg))
+        except (Exception, asyncio.CancelledError) as e:
             logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)
 
