@@ -950,10 +950,9 @@ class RulePolicy(MemoizationPolicy):
         returning_from_unhappy_path: bool,
         is_end_to_end_prediction: bool,
     ) -> "PolicyPrediction":
-        events = [LoopInterrupted(True)] if returning_from_unhappy_path else []
         return self._prediction(
             probabilities,
-            events=events,
+            events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
             is_end_to_end_prediction=is_end_to_end_prediction,
         )
 
