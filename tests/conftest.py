@@ -31,7 +31,7 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import TrainingResult, train_async
+from rasa.train import TrainingResult, train_async, _train_nlu_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -101,6 +101,15 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
+async def trained_nlu_moodbot_path(trained_nlu_async: Callable) -> Text:
+    return await trained_nlu_async(
+        domain="examples/moodbot/domain.yml",
+        config="examples/moodbot/config.yml",
+        nlu_data="examples/moodbot/data/nlu.yml",
+    )
+
+
+@pytest.fixture(scope="session")
 async def unpacked_trained_moodbot_path(
     trained_moodbot_path: Text,
 ) -> TempDirectoryPath:
@@ -163,8 +172,13 @@ def end_to_end_story_file() -> Text:
 
 
 @pytest.fixture(scope="session")
-def default_config() -> List[Policy]:
-    return config.load(DEFAULT_CONFIG_PATH)
+def default_config_path() -> Text:
+    return DEFAULT_CONFIG_PATH
+
+
+@pytest.fixture(scope="session")
+def default_config(default_config_path) -> List[Policy]:
+    return config.load(default_config_path)
 
 
 @pytest.fixture(scope="session")
@@ -179,6 +193,19 @@ def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
         return result.model
 
     return _train
+
+
+@pytest.fixture(scope="session")
+def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
+    async def _train_nlu(
+        *args: Any, output_path: Optional[Text] = None, **kwargs: Any
+    ) -> Optional[Text]:
+        if output_path is None:
+            output_path = str(tmpdir_factory.mktemp("models"))
+
+        return await _train_nlu_async(*args, output=output_path, **kwargs)
+
+    return _train_nlu
 
 
 @pytest.fixture(scope="session")

@@ -37,9 +37,8 @@ from rasa.model import (
     FINGERPRINT_CONFIG_CORE_KEY,
     FINGERPRINT_CONFIG_NLU_KEY,
     SECTION_CORE,
-    SECTION_FINE_TUNE,
     SECTION_NLU,
-    can_fine_tune,
+    can_finetune,
     create_package_rasa,
     get_latest_model,
     get_model,
@@ -51,7 +50,6 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
-from tests.conftest import AsyncMock
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING
 
 
@@ -188,28 +186,6 @@ def test_nlu_fingerprint_changed(fingerprint2: Fingerprint, changed: bool):
     fingerprint1 = _fingerprint()
     assert (
         did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_NLU)
-        is changed
-    )
-
-
-@pytest.mark.parametrize(
-    "fingerprint2, changed",
-    [
-        (_fingerprint(config_without_epochs=["other"]), True),
-        (_fingerprint(domain=["other"]), True),
-        (_fingerprint(config=["other"]), False),
-        (_fingerprint(rasa_version="100"), False),
-        (_fingerprint(config_core=["other"]), False),
-        (_fingerprint(config_nlu=["other"]), False),
-        (_fingerprint(nlu=["other"]), False),
-        (_fingerprint(nlg=["other"]), False),
-        (_fingerprint(stories=["other"]), False),
-    ],
-)
-def test_fine_tune_fingerprint_changed(fingerprint2: Fingerprint, changed: bool):
-    fingerprint1 = _fingerprint()
-    assert (
-        did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_FINE_TUNE)
         is changed
     )
 
@@ -563,7 +539,7 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     "min_compatible_version, old_model_version, can_tune",
     [("2.1.0", "2.1.0", True), ("2.0.0", "2.1.0", True), ("2.1.0", "2.0.0", False),],
 )
-async def test_can_fine_tune_min_version(
+async def test_can_finetune_min_version(
     project: Text,
     monkeypatch: MonkeyPatch,
     old_model_version: Text,
@@ -579,4 +555,19 @@ async def test_can_fine_tune_min_version(
     old_fingerprint = await model_fingerprint(importer)
     new_fingerprint = await model_fingerprint(importer)
 
-    assert can_fine_tune(old_fingerprint, new_fingerprint) == can_tune
+    assert can_finetune(old_fingerprint, new_fingerprint) == can_tune
+
+
+@pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
+async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
+    project: Text, tmp_path: Path, empty_key: Text,
+):
+    config = {
+        "language": "en",
+        "pipeline": [{"name": "WhitespaceTokenizer"},],
+        "policies": [{"name": "MemoizationPolicy"},],
+    }
+
+    config[empty_key] = None
+
+    model._get_fingerprint_of_config_without_epochs(config)
