@@ -56,6 +56,16 @@ def component_config_from_pipeline(
     pipeline: List[Dict[Text, Any]],
     defaults: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
+    """Get config of the component with the given index in the pipeline.
+
+    Args:
+        index: index the component in the pipeline
+        pipeline: a list of component configs in the NLU pipeline
+        defaults: default config of the component
+
+    Returns:
+        config of the component
+    """
     try:
         c = pipeline[index]
         return rasa.utils.train_utils.override_defaults(defaults, c)
@@ -70,9 +80,13 @@ def component_config_from_pipeline(
 
 
 class RasaNLUModelConfig:
+    """A class that stores NLU model configuration parameters."""
+
     def __init__(self, configuration_values: Optional[Dict[Text, Any]] = None) -> None:
-        """Create a model configuration, optionally overriding
-        defaults with a dictionary ``configuration_values``.
+        """Create a model configuration.
+
+        Args:
+            configuration_values: optional dictionary to override defaults.
         """
         if not configuration_values:
             configuration_values = {}
