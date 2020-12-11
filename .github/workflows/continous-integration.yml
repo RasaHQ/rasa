@@ -52,6 +52,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
@@ -83,7 +84,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Load Yarn Cached Packages ⬇
@@ -118,6 +119,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
@@ -143,7 +145,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Install Dependencies 📦
@@ -192,6 +194,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
@@ -225,12 +228,11 @@ jobs:
         poetry config virtualenvs.in-project true
 
     - name: Load Poetry Cached Libraries ⬇
-      if: needs.changes.outputs.backend == 'true'
+      if: needs.changes.outputs.backend == 'true' && matrix.os != 'windows-latest'
       uses: actions/cache@v1
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -290,6 +292,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docker == 'true'
       uses: actions/checkout@v2
 
     - name: Free disk space
