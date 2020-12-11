@@ -8,6 +8,7 @@ from _pytest.pytester import RunResult
 
 import rasa
 from rasa.cli import interactive, train
+from rasa.train import TrainingResult
 from tests.conftest import DEFAULT_NLU_DATA
 
 
@@ -60,7 +61,7 @@ def test_pass_arguments_to_rasa_train(
     interactive._set_not_required_args(args)
 
     # Mock actual training
-    mock = Mock()
+    mock = Mock(return_value=TrainingResult(code=0))
     monkeypatch.setattr(rasa, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw

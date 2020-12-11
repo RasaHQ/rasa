@@ -16,7 +16,6 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
-
 import rasa.utils.common
 
 
@@ -56,13 +55,23 @@ def add_subparser(
     )
     train_nlu_parser.set_defaults(func=train_nlu)
 
-    train_parser.set_defaults(func=train)
+    train_parser.set_defaults(func=lambda args: train(args, can_exit=True))
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
-def train(args: argparse.Namespace) -> Optional[Text]:
+def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
+    """Trains a model.
+
+    Args:
+        args: Namespace arguments.
+        can_exit: If `True`, the operation can send `sys.exit` in the case
+            training was not successful.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     import rasa
 
     domain = rasa.cli.utils.get_validated_path(
@@ -78,22 +87,36 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    return rasa.train(
+    training_result = rasa.train(
         domain=domain,
         config=config,
         training_files=training_files,
         output=args.out,
+        dry_run=args.dry_run,
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
     )
+    if training_result.code != 0 and can_exit:
+        sys.exit(training_result.code)
+
+    return training_result.model
 
 
 def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
+    """Trains a Core model.
+
+    Args:
+        args: Namespace arguments.
+        train_path: Directory where models should be stored.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     from rasa.train import train_core
 
     output = train_path or args.out
@@ -134,6 +157,15 @@ def train_core(
 def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
+    """Trains an NLU model.
+
+    Args:
+        args: Namespace arguments.
+        train_path: Directory where models should be stored.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     from rasa.train import train_nlu
 
     output = train_path or args.out
