@@ -8,7 +8,7 @@ from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B
 import tempfile
 import typing
 from pathlib import Path
-from typing import Text, Tuple, Union, Optional, List, Dict, NamedTuple
+from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -24,7 +24,6 @@ from rasa.shared.constants import (
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
 
-from rasa.core.utils import get_dict_hash
 from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
 
@@ -149,6 +148,12 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
             )
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
+
+    try:
+        model_relative_path = os.path.relpath(model_path)
+    except ValueError:
+        model_relative_path = model_path
+    logger.info(f"Loading model {model_relative_path}...")
 
     return unpack_model(model_path)
 
@@ -313,25 +318,27 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     domain.templates = []
 
     return {
-        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(config, exclude_keys=CONFIG_KEYS),
-        FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
+        FINGERPRINT_CONFIG_KEY: _get_fingerprint_of_config(
+            config, exclude_keys=CONFIG_KEYS
+        ),
+        FINGERPRINT_CONFIG_CORE_KEY: _get_fingerprint_of_config(
             config, include_keys=CONFIG_KEYS_CORE
         ),
-        FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
+        FINGERPRINT_CONFIG_NLU_KEY: _get_fingerprint_of_config(
             config, include_keys=CONFIG_KEYS_NLU
         ),
-        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain),
-        FINGERPRINT_NLG_KEY: get_dict_hash(responses),
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain.fingerprint(),
+        FINGERPRINT_NLG_KEY: rasa.shared.utils.io.deep_container_fingerprint(responses),
         FINGERPRINT_PROJECT: project_fingerprint(),
-        FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
-        FINGERPRINT_STORIES_KEY: hash(stories),
+        FINGERPRINT_NLU_DATA_KEY: nlu_data.fingerprint(),
+        FINGERPRINT_STORIES_KEY: stories.fingerprint(),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
-        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,  # pytype: disable=module-attr
+        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
     }
 
 
-def _get_hash_of_config(
-    config: Optional[Dict],
+def _get_fingerprint_of_config(
+    config: Optional[Dict[Text, Any]],
     include_keys: Optional[List[Text]] = None,
     exclude_keys: Optional[List[Text]] = None,
 ) -> Text:
@@ -342,7 +349,7 @@ def _get_hash_of_config(
 
     sub_config = {k: config[k] for k in keys if k in config}
 
-    return get_dict_hash(sub_config)
+    return rasa.shared.utils.io.deep_container_fingerprint(sub_config)
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
@@ -409,7 +416,10 @@ def move_model(source: Text, target: Text) -> bool:
 
 
 def should_retrain(
-    new_fingerprint: Fingerprint, old_model: Text, train_path: Text
+    new_fingerprint: Fingerprint,
+    old_model: Text,
+    train_path: Text,
+    force_training: bool = False,
 ) -> FingerprintComparisonResult:
     """Check which components of a model should be retrained.
 
@@ -417,6 +427,7 @@ def should_retrain(
         new_fingerprint: The fingerprint of the new model to be trained.
         old_model: Path to the old zipped model file.
         train_path: Path to the directory in which the new model will be trained.
+        force_training: Indicates if the model needs to be retrained even if the data has not changed.
 
     Returns:
         A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa NLU needs
@@ -442,6 +453,7 @@ def should_retrain(
             nlg=did_section_fingerprint_change(
                 last_fingerprint, new_fingerprint, SECTION_NLG
             ),
+            force_training=force_training,
         )
 
         core_merge_failed = False

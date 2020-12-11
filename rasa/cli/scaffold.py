@@ -65,7 +65,8 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
         output = os.path.join(path, create_output_path())
 
-        args.model = rasa.train(domain, config, training_files, output)
+        training_result = rasa.train(domain, config, training_files, output)
+        args.model = training_result.model
 
         print_run_or_instructions(args)
 
@@ -151,10 +152,19 @@ def _ask_create_path(path: Text) -> None:
     should_create = questionary.confirm(
         f"Path '{path}' does not exist 🧐. Create path?"
     ).ask()
+
     if should_create:
-        os.makedirs(path)
+        try:
+            os.makedirs(path)
+        except (PermissionError, OSError, FileExistsError) as e:
+            print_error_and_exit(
+                f"Failed to create project path at '{path}'. " f"Error: {e}"
+            )
     else:
-        print_success("Ok. You can continue setting up by running " "'rasa init' 🙋🏽‍♀️")
+        print_success(
+            "Ok, will exit for now. You can continue setting up by "
+            "running 'rasa init' again 🙋🏽‍♀️"
+        )
         sys.exit(0)
 
 
@@ -195,11 +205,17 @@ def run(args: argparse.Namespace) -> None:
             questionary.text(
                 "Please enter a path where the project will be "
                 "created [default: current directory]",
-                default=".",
             )
-            .skip_if(args.no_prompt, default=".")
+            .skip_if(args.no_prompt, default="")
             .ask()
         )
+        # set the default directory. we can't use the `default` property
+        # in questionary as we want to avoid showing the "." in the prompt as the
+        # initial value. users tend to overlook it and it leads to invalid
+        # paths like: ".C:\mydir".
+        # Can't use `if not path` either, as `None` will be handled differently (abort)
+        if path == "":
+            path = "."
 
     if args.no_prompt and not os.path.isdir(path):
         print_error_and_exit(f"Project init path '{path}' not found.")

@@ -14,8 +14,12 @@ help:
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
 	@echo "        Lint code with flake8, and check if black formatter should be applied."
+	@echo "    lint-docstrings"
+	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
-	@echo "        Check for type errors using pytype."
+	@echo "        Check for type errors using mypy."
+	@echo "    static-checks"
+	@echo "        Run all python static checks."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -24,6 +28,10 @@ help:
 	@echo "        Install system requirements for running tests on Windows."
 	@echo "    prepare-tests-files"
 	@echo "        Download all additional project files needed to run tests."
+	@echo "    prepare-spacy"
+	@echo "        Download all additional resources needed to use spacy as part of Rasa."
+	@echo "    prepare-mitie"
+	@echo "        Download all additional resources needed to use mitie as part of Rasa."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
@@ -37,7 +45,7 @@ clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f  {} +
 	rm -rf build/
-	rm -rf .pytype/
+	rm -rf .mypy_cache/
 	rm -rf dist/
 	rm -rf docs/build
 	rm -rf docs/.docusaurus
@@ -59,19 +67,74 @@ formatter:
 	poetry run black rasa tests
 
 lint:
-	poetry run flake8 rasa tests
+     # Ignore docstring errors when running on the entire project
+	poetry run flake8 rasa tests --extend-ignore D
 	poetry run black --check rasa tests
+	make lint-docstrings
+
+# Compare against `master` if no branch was provided
+BRANCH ?= master
+lint-docstrings:
+# Lint docstrings only against the the diff to avoid too many errors.
+# Check only production code. Ignore other flake errors which are captured by `lint`
+# Diff of committed changes (shows only changes introduced by your branch
+ifneq ($(strip $(BRANCH)),)
+	git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff
+endif
+
+	# Diff of uncommitted changes for running locally
+	git diff HEAD -- rasa | poetry run flake8 --select D --diff
+
+lint-security:
+	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
 types:
-	poetry run pytype --keep-going rasa -j 16
+	# FIXME: working our way towards removing these
+	# see https://github.com/RasaHQ/rasa/pull/6470
+	# the list below is sorted by the number of errors for each error code, in decreasing order
+	poetry run mypy rasa --disable-error-code arg-type \
+	--disable-error-code assignment \
+	--disable-error-code var-annotated \
+	--disable-error-code return-value \
+	--disable-error-code union-attr \
+	--disable-error-code override \
+	--disable-error-code operator \
+	--disable-error-code attr-defined \
+	--disable-error-code index \
+	--disable-error-code misc \
+	--disable-error-code return \
+	--disable-error-code call-arg \
+	--disable-error-code type-var \
+	--disable-error-code list-item \
+	--disable-error-code has-type \
+	--disable-error-code valid-type \
+	--disable-error-code dict-item \
+	--disable-error-code no-redef \
+	--disable-error-code func-returns-value
 
-prepare-tests-files:
+static-checks: lint lint-security types
+
+prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
 	poetry run python -m spacy link en_core_web_md en --force
 	poetry run python -m spacy link de_core_news_sm de --force
-	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
+prepare-mitie:
+	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+ifeq ($(OS),Windows_NT)
+	7z x data/MITIE-models-v0.2.tar.bz2 -bb3
+	7z x MITIE-models-v0.2.tar -bb3
+	cp MITIE-models/english/total_word_feature_extractor.dat data/
+	rm -r MITIE-models
+	rm MITIE-models-v0.2.tar
+else
+	tar -xvjf data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C data/ MITIE-models/english/total_word_feature_extractor.dat
+endif
+	rm data/MITIE*.bz2
+
+prepare-tests-files: prepare-spacy prepare-mitie
 
 prepare-wget-macos:
 	brew install wget || true

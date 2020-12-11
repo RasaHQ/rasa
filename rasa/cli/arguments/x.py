@@ -12,6 +12,7 @@ def set_x_arguments(parser: argparse.ArgumentParser):
         parser, default=DEFAULT_DATA_PATH, data_type="stories and Rasa NLU "
     )
     default_arguments.add_config_param(parser)
+    default_arguments.add_domain_param(parser)
 
     parser.add_argument(
         "--no-prompt",

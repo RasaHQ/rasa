@@ -7,7 +7,8 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -39,18 +40,30 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
     return failed_imports
 
 
-def validate_requirements(component_names: List[Text]) -> None:
+def validate_requirements(component_names: List[Optional[Text]]) -> None:
     """Validates that all required importable python packages are installed.
+
+    Raises:
+        InvalidConfigException: If one of the component names is `None`, likely
+            indicates that a custom implementation is missing this property
+            or that there is an invalid configuration file that we did not
+            catch earlier.
 
     Args:
         component_names: The list of component names.
     """
-
     from rasa.nlu import registry
 
     # Validate that all required packages are installed
     failed_imports = {}
     for component_name in component_names:
+        if component_name is None:
+            raise InvalidConfigException(
+                "Your pipeline configuration contains a component that is missing "
+                "a name. Please double check your configuration or if this is a "
+                "custom component make sure to implement the name property for "
+                "the component."
+            )
         component_class = registry.get_component_class(component_name)
         unavailable_packages = find_unavailable_packages(
             component_class.required_packages()
@@ -78,15 +91,37 @@ def validate_requirements(component_names: List[Text]) -> None:
         )
 
 
+def validate_component_keys(
+    component: "Component", component_config: Dict[Text, Any]
+) -> None:
+    """Validates that all keys for a component are valid.
+
+    Args:
+        component: The component class
+        component_config: The user-provided config for the component in the pipeline
+    """
+    component_name = component_config.get("name")
+    allowed_keys = set(component.defaults.keys())
+    provided_keys = set(component_config.keys())
+    provided_keys.discard("name")
+    list_separator = "\n- "
+    for key in provided_keys:
+        if key not in allowed_keys:
+            rasa.shared.utils.io.raise_warning(
+                f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
+                f"Valid options for `{component_name}` are:\n- "
+                f"{list_separator.join(allowed_keys)}"
+            )
+
+
 def validate_empty_pipeline(pipeline: List["Component"]) -> None:
     """Ensures the pipeline is not empty.
 
     Args:
         pipeline: the list of the :class:`rasa.nlu.components.Component`.
     """
-
     if len(pipeline) == 0:
-        raise InvalidConfigError(
+        raise InvalidConfigException(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
             "the configuration using the 'pipeline' key."
@@ -108,7 +143,7 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
             tokenizer_names.append(component.name)
 
     if len(tokenizer_names) > 1:
-        raise InvalidConfigError(
+        raise InvalidConfigException(
             f"The pipeline configuration contains more than one tokenizer, "
             f"which is not possible at this time. You can only use one tokenizer. "
             f"The pipeline contains the following tokenizers: {tokenizer_names}. "
@@ -151,7 +186,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
         missing_components_str = ", ".join(f"'{c}'" for c in missing_components)
 
         if missing_components:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"The pipeline configuration contains errors. The component "
                 f"'{component.name}' requires {missing_components_str} to be "
                 f"placed before it in the pipeline. Please "
@@ -407,7 +442,9 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = override_defaults(self.defaults, component_config)
+        self.component_config = rasa.nlu.config.override_defaults(
+            self.defaults, component_config
+        )
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
@@ -782,7 +819,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception(
+            raise RasaException(
                 f"Failed to load component from file '{component_meta.get('file')}'. "
                 f"Error: {e}"
             )
@@ -815,7 +852,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception(
+            raise RasaException(
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )

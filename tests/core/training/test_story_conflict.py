@@ -10,6 +10,7 @@ from rasa.shared.core.generator import TrainingDataGenerator, TrackerWithCachedS
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH_WITH_SLOTS
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
 
 
 async def _setup_trackers_for_testing(
@@ -53,6 +54,18 @@ async def test_find_conflicts_in_short_history():
     # With `max_history = 4` the conflict should disappear
     conflicts = find_story_conflicts(trackers, domain, 4)
     assert len(conflicts) == 0
+
+
+async def test_check_conflict_description():
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_1.md"
+    )
+
+    # `max_history = 3` is too small, so a conflict must arise
+    conflicts = find_story_conflicts(trackers, domain, 3)
+    assert len(conflicts) == 1
+
+    assert str(conflicts[0]).startswith("Story structure conflict after intent 'greet'")
 
 
 async def test_find_conflicts_checkpoints():
@@ -132,26 +145,29 @@ async def test_has_prior_events():
     sliced_states = [
         None,
         {},
-        {"intent_greet": 1.0, "prev_action_listen": 1.0},
-        {"prev_utter_greet": 1.0, "intent_greet": 1.0},
+        {
+            PREVIOUS_ACTION: {"action_name": ACTION_LISTEN_NAME},
+            USER: {"intent": "greet"},
+        },
+        {PREVIOUS_ACTION: {"action_name": "utter_greet"}, USER: {"intent": "greet"}},
     ]
     conflict = StoryConflict(sliced_states)
     assert conflict.conflict_has_prior_events
 
 
 async def test_get_previous_event():
-    assert _get_previous_event({"prev_utter_greet": 1.0, "intent_greet": 1.0}) == (
-        "action",
-        "utter_greet",
-    )
-    assert _get_previous_event({"intent_greet": 1.0, "prev_utter_greet": 1.0}) == (
-        "action",
-        "utter_greet",
-    )
-    assert _get_previous_event({"intent_greet": 1.0, "prev_action_listen": 1.0}) == (
-        "intent",
-        "greet",
-    )
+    assert _get_previous_event(
+        {PREVIOUS_ACTION: {"action_name": "utter_greet"}, USER: {"intent": "greet"}}
+    ) == ("action", "utter_greet",)
+    assert _get_previous_event(
+        {PREVIOUS_ACTION: {"action_text": "this is a test"}, USER: {"intent": "greet"}}
+    ) == ("bot utterance", "this is a test",)
+    assert _get_previous_event(
+        {
+            PREVIOUS_ACTION: {"action_name": ACTION_LISTEN_NAME},
+            USER: {"intent": "greet"},
+        }
+    ) == ("intent", "greet",)
 
 
 async def test_has_no_prior_events():
