@@ -10,7 +10,8 @@ abstract: Stories are a type of training data used to train your assistant's dia
 
 A story is a representation of a conversation between a user and an AI assistant,
 converted into a specific format where user inputs are expressed as intents
-(and entities when necessary), while the assistant's responses and actions are expressed as action names.
+(and entities when necessary), or as user textual inputs directly,
+while the assistant's responses and actions are expressed as action names or text outputs.
 
 Here's an example of a dialogue in the Rasa story format:
 
@@ -29,6 +30,9 @@ stories:
   - user: I would like [spanish](cuisine). # actual text that user input
   - action: utter_ask_num_people
 ```
+
+See the [training data format](./training-data-format.mdx#stories)
+for detailed description of how to write stories.
 
 ### User Messages
 
@@ -60,17 +64,19 @@ If you have feedback (positive or negative) please share it with us on the [Rasa
 
 ### Actions
 
-All actions executed by the bot, including [responses](./responses.mdx) are listed
+While writing stories, you have two options to represent bot actions.
+
+1) All actions executed by the bot, including [responses](./responses.mdx) are listed
 in stories under the `action` key.
 
 You can use a response from your domain as an action by listing it as one
 in a story. Similarly, you can indicate that a story should call a custom action by including
 the name of the custom action from the `actions` list in your domain.
 
-You can also put bot utterance directly in the stories.
+2) You can put bot textual utterances directly in the stories under `bot` key.
 
-:::caution
-This feature is experimental.
+:::caution experimental feature
+End-to-end training is an experimental feature.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
 If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
