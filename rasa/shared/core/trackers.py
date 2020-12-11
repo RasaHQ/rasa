@@ -458,7 +458,7 @@ class DialogueStateTracker:
                 self._undo_till_previous_loop_execution(
                     event.action_name, applied_events
                 )
-            elif not isinstance(event, DefinePrevUserUttered):
+            else:
                 applied_events.append(event)
 
         return applied_events
