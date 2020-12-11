@@ -27,8 +27,8 @@
 ##  - dataset: ["Hermit"]
 ##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)", "BERT + DIET(seq) + ResponseSelector(t2t)"]
 #
-## Example: Define branch to check-out for a dataset repository. Default branch is 'master'
-## branch: "test-branch"
+## Example: Define a branch name to check-out for a dataset repository. Default branch is 'master'
+## dataset_branch: "test-branch"
 ## include:
 ##  - dataset: ["Carbon Bot", "Sara"]
 ##    config: ["all"]
