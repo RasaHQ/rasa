@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
 TAG_ID_ORIGIN = "tag_id_origin"
 
 
-def convert_training_examples(
+def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
@@ -100,12 +100,15 @@ def _surface_attributes(
 ) -> Dict[Text, List[List[List["Features"]]]]:
     """Restructure the input.
 
-    "features_for_examples" can, for example, be a dictionary of attributes (INTENT,
+    "features" can, for example, be a dictionary of attributes (INTENT,
     TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
     all dialogue turns in all training trackers.
     For NLU training it would just be a dictionary of attributes (either INTENT or
     RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
     examples.
+
+    The incoming "features" contain a dictionary as inner most value. This method
+    surfaces this dictionary, so that it becomes the outer most value.
 
     Args:
         features: a dictionary of attributes to a list of features for all
@@ -131,7 +134,7 @@ def _surface_attributes(
             for attribute in attributes:
                 features = attribute_to_features.get(attribute)
                 if featurizers:
-                    featurizers = _filter_features(features, featurizers)
+                    features = _filter_features(features, featurizers)
 
                 # if attribute is not present in the example, populate it with None
                 intermediate_features[attribute].append(features)
@@ -142,7 +145,9 @@ def _surface_attributes(
     return output
 
 
-def _filter_features(features: Optional[List["Features"]], featurizers: List[Text]):
+def _filter_features(
+    features: Optional[List["Features"]], featurizers: List[Text]
+) -> Optional[List["Features"]]:
     """Filter the given features.
 
     Return only those features that are coming from one of the given featurizers.
@@ -219,12 +224,16 @@ def convert_to_data_format(
 ) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
     """Converts the input into "Data" format.
 
-    "features_for_examples" can, for example, be a dictionary of attributes (INTENT,
+    "features" can, for example, be a dictionary of attributes (INTENT,
     TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
     all dialogue turns in all training trackers.
     For NLU training it would just be a dictionary of attributes (either INTENT or
     RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
     examples.
+
+    The "Data" format corresponds to Dict[Text, Dict[Text, List[FeatureArray]]]. It's
+    a dictionary of attributes (e.g. TEXT) to a dictionary of secondary attributes
+    (e.g. SEQUENCE or SENTENCE) to the list of actual features.
 
     Args:
         features: a dictionary of attributes to a list of features for all
@@ -268,7 +277,7 @@ def convert_to_data_format(
     empty_features = [[None] * dialogue_length] * num_examples
 
     for attribute in attributes:
-        attribute_data[attribute] = _features_for_attribute(
+        attribute_data[attribute] = _feature_arrays_for_attribute(
             attribute,
             empty_features,
             attribute_to_features,
@@ -283,7 +292,7 @@ def convert_to_data_format(
     return attribute_data, fake_features
 
 
-def _features_for_attribute(
+def _feature_arrays_for_attribute(
     attribute: Text,
     empty_features: List[Any],
     attribute_to_features: Dict[Text, List[List[List["Features"]]]],
