@@ -4,10 +4,10 @@ The template reads an issue/a PR comment and transforms a YAML code block into J
 
 */ -}}
 {{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
-{{- $branch := "master" -}}
+{{- $dataset_branch := "master" -}}
 {{- /* if a branch name for dataset repository is not defined use the master branch */ -}}
-{{- if has $config "branch" -}}
-{{- $branch = $config.branch -}}
+{{- if has $config "dataset_branch" -}}
+{{- $dataset_branch = $config.dataset_branch -}}
 {{- end -}}
 {"include":[
 {{- $inc := coll.Slice -}}
@@ -24,10 +24,10 @@ The template reads an issue/a PR comment and transforms a YAML code block into J
 {{- /* use all available configurations if value is equal to all */ -}}
 {{- if eq $value_config "all" -}}
 {{- range $config_name, $config_file := (datasource "mapping").configurations -}}
-{{ $inc = (coll.Append (dict "branch" $branch "dataset" $value_dataset "config" $config_name | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name | toJSON) $inc) -}}
 {{- end -}}
 {{- else -}}
-{{ $inc = (coll.Append (dict "branch" $branch "dataset" $value_dataset "config" $value_config | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $value_config | toJSON) $inc) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
