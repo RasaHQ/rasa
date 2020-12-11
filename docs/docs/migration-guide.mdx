@@ -10,6 +10,20 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.1 to Rasa 2.2
+
+### Deprecations
+
+Training and test data in Markdown format is now deprecated. This includes:
+- reading and writing of story files in Markdown format
+- reading and writing of NLU data in Markdown format
+- reading and writing of retrieval intent data in Markdown format
+
+Support for Markdown data will be removed entirely in Rasa Open Source 3.0.0.
+
+Please convert your existing Markdown data by using the commands
+described [here](./migration-guide.mdx#training-data-files).
+
 ## Rasa 2.0 to Rasa 2.1
 
 ### Deprecations
@@ -52,7 +66,7 @@ in the [forum](https://forum.rasa.com/t/rasa-open-source-2-0-is-out-now-internal
 ### Training data files
 
 As of version 2.0, the new default training data format is yaml. Markdown is still supported,
-but this will be deprecated in a future release.
+but this will be deprecated in Rasa Open Source 3.0.0.
 
 You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
 files in the Markdown format to the new YAML format using following commands:
