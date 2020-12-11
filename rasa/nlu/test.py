@@ -74,7 +74,7 @@ IntentEvaluationResult = namedtuple(
 
 IntentReport = namedtuple(
     "IntentReport",
-    ["report", "precision", "f1", "accuracy", "confustion_matrix", "labels"],
+    ["report", "precision", "f1", "accuracy", "confusion_matrix", "labels"],
 )
 
 ResponseSelectionEvaluationResult = namedtuple(
@@ -571,7 +571,7 @@ def create_intent_report(
     intent_results: List[IntentEvaluationResult],
     add_confused_labels_to_report: bool,
     metrics_as_dict: bool,
-) -> Dict:  # pragma: no cover
+) -> IntentReport:  # pragma: no cover
     """Creates summary statistics for intents.
 
     Only considers those examples with a set intent. Others are filtered out.
@@ -579,12 +579,10 @@ def create_intent_report(
 
     Args:
         intent_results: intent evaluation results
-        output_directory: directory to store files to
-        successes: if True correct predictions are written to disk
-        errors: if True incorrect predictions are written to disk
-        disable_plotting: if True no plots are created
+        add_confused_labels_to_report: add confused label information to the intent_report
+        metrics_as_dict: whether the evaluation metrics should be returned as Dict
 
-    Returns: dictionary with evaluation results
+    Returns: IntentReport namedtuple with evaluation results
     """
     import sklearn.metrics
     import sklearn.utils.multiclass

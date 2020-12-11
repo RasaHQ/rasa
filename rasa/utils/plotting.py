@@ -227,7 +227,7 @@ def plot_intent_augmentation_summary(
         list(map(lambda d: d[f"{metric}_change"], augmentation_summary.values()))
     )
 
-    plt.figure()
+    plt.figure(figsize=(10, 6))
     plt.ylabel(f"Performance Change ({metric})", fontsize=16)
     plt.xlabel("Intent", fontsize=16)
     perf_bar = plt.bar(ind, performance)

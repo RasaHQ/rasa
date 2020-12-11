@@ -328,7 +328,7 @@ def _build_random_augmentation_pool(
 
 def _build_augmentation_training_sets(
     nlu_training_data: TrainingData,
-    training_data_pool: Dict[Text, List],
+    training_data_pool: Dict[Text, Set],
     random_expansion: Dict[Text, List],
     max_vocab_expansion: Dict[Text, List],
     pooled_intents: Set,
@@ -359,20 +359,56 @@ def _build_augmentation_training_sets(
     )
 
 
+def _get_intents_with_performance_changes(
+    classification_report: Dict[Text, Dict[Text, float]],
+    intent_report_diverse: Dict[Text, float],
+    intent_report_random: Dict[Text, float],
+    all_intents: List[Text],
+    significant_figures: int = 3,
+) -> Set[Text]:
+    changed_intents = set()
+    for intent_key in all_intents:
+        for metric in ["precision", "recall", "f1-score"]:
+            rounded_original = round(
+                classification_report[intent_key][metric], significant_figures
+            )
+            rounded_diverse = round(
+                intent_report_diverse[intent_key][metric], significant_figures
+            )
+            rounded_random = round(
+                intent_report_random[intent_key][metric], significant_figures
+            )
+            if (
+                rounded_original != rounded_diverse
+                or rounded_original != rounded_random
+            ):
+                changed_intents.add(intent_key)
+
+    return changed_intents
+
+
 def _create_augmentation_summaries(
     pooled_intents: Set,
     classification_report: Dict[Text, Dict[Text, float]],
     intent_report_diverse: Dict[Text, float],
     intent_report_random: Dict[Text, float],
+    all_intents: List[Text],
 ) -> Tuple[
     Dict[Text, Dict[Text, float]],
     Dict[Text, float],
     Dict[Text, Dict[Text, float]],
     Dict[Text, float],
 ]:
+
+    changed_intents = _get_intents_with_performance_changes(
+        classification_report, intent_report_diverse, intent_report_random, all_intents
+    )
+
     intent_summary_diverse = collections.defaultdict(dict)
     intent_summary_random = collections.defaultdict(dict)
-    for intent in pooled_intents | {"micro avg", "macro avg", "weighted avg"}:
+    for intent in (
+        pooled_intents | changed_intents | {"micro avg", "macro avg", "weighted avg"}
+    ):
         if intent not in classification_report.keys():
             continue
 
@@ -630,6 +666,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         classification_report,
         intent_report_diverse.report,
         intent_report_random.report,
+        nlu_training_data.intents,
     )
 
     intent_summary_diverse = report_tuple[0]
