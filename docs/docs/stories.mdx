@@ -19,15 +19,17 @@ Here's an example of a dialogue in the Rasa story format:
 stories:
 - story: collect restaurant booking info  # name of the story - just for debugging
   steps:
-  - intent: greet                          # user message with no entities
-  - action: utter_ask_howcanhelp           # action that the bot should execute
-  - intent: inform                         # user message with entities
+  - intent: greet                         # user message with no entities
+  - action: utter_ask_howcanhelp
+  - intent: inform                        # user message with no entities
     entities:
     - location: "rome"
     - price: "cheap"
-  - bot: On it                             # actual text that bot can output
+  - action: utter_on_it                  # action that the bot should execute
   - action: utter_ask_cuisine
-  - user: I would like [spanish](cuisine). # actual text that user input
+  - intent: inform
+    entities:
+    - cuisine: "spanish"
   - action: utter_ask_num_people
 ```
 
