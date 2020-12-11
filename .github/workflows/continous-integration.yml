@@ -61,7 +61,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -76,6 +76,10 @@ jobs:
       run: |
         sudo apt-get -y install libpq-dev
         make install-full
+
+        # 1.10.x doesn't support `pydocstyle` tests yet. Due to caching it's
+        # possible that the necessary libraries is installed anyway
+        poetry run pip uninstall -y flake8-docstrings || true
 
     - name: Lint Code 🎎
       run: make lint
@@ -130,7 +134,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -232,7 +236,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 

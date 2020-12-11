@@ -222,7 +222,7 @@ class HFTransformersNLP(Component):
             token_ids_out += split_token_ids
 
             tokens_out += train_utils.align_tokens(
-                split_token_strings, token.end, token.start
+                split_token_strings, token.end, token.start, self.tokenizer.unk_token
             )
 
         return tokens_out, token_ids_out

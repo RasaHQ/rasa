@@ -80,7 +80,10 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
 
 def align_tokens(
-    tokens_in: List[Text], token_end: int, token_start: int
+    tokens_in: List[Text],
+    token_end: int,
+    token_start: int,
+    unk_token: Optional[Text] = None,
 ) -> List[Token]:
     """Align sub-tokens of Language model with tokens return by the WhitespaceTokenizer.
 
@@ -95,22 +98,31 @@ def align_tokens(
     current_token_offset = token_start
 
     for index, string in enumerate(tokens_in):
+        # There is absolute no guarantee that the length of OOV token is always 1.
+        # But some documents (e.g.
+        # https://mccormickml.com/2019/05/14/BERT-word-embeddings-tutorial/#22-tokenization)
+        # show that it very likely to be 1 in most case.
+        # It seems that OOV tokens in most languages (except for Chinese) are emoji characters.
+        # Chinese language has lots of characters, some rare characters may become OOV.
+        # This is not a perfect solution, but in practice it can solve most issues related to OOV
+        string_len = len(string) if unk_token is None or string != unk_token else 1
+
         if index == 0:
             if index == len(tokens_in) - 1:
                 s_token_end = token_end
             else:
-                s_token_end = current_token_offset + len(string)
+                s_token_end = current_token_offset + string_len
             tokens_out.append(Token(string, token_start, end=s_token_end))
         elif index == len(tokens_in) - 1:
             tokens_out.append(Token(string, current_token_offset, end=token_end))
         else:
             tokens_out.append(
                 Token(
-                    string, current_token_offset, end=current_token_offset + len(string)
+                    string, current_token_offset, end=current_token_offset + string_len
                 )
             )
 
-        current_token_offset += len(string)
+        current_token_offset += string_len
 
     return tokens_out
 

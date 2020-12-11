@@ -17,6 +17,46 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.18] - 2020-11-26
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#7340 <https://github.com/rasahq/rasa/issues/7340>`_: Fixed an issues with the DynamoDB TrackerStore creating a new table entry/object for each TrackerStore update. The column `session_date` has been deprecated and should be removed manually in existing DynamoDB tables.
+
+
+[1.10.17] - 2020-11-12
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#7219 <https://github.com/rasahq/rasa/issues/7219>`_: Prevent the message handling process in ``PikaEventBroker`` from being terminated.
+
+
+[1.10.16] - 2020-10-15
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6703 <https://github.com/rasahq/rasa/issues/6703>`_: Update Pika event broker to be a separate process and make it use a
+  ``multiprocessing.Queue`` to send and process messages. This change should help 
+  avoid situations when events stop being sent after a while.
+
+
+[1.10.15] - 2020-10-09
+^^^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#6900 <https://github.com/rasahq/rasa/issues/6900>`_: Debug logs from ``matplotlib`` libraries are now hidden by default and are configurable with the ``LOG_LEVEL_LIBRARIES`` environment variable.
+
+Bugfixes
+--------
+- `#3597 <https://github.com/rasahq/rasa/issues/3597>`_: Fixed issue where temporary model directories were not removed after pulling from a model server. If the model pulled from the server was invalid, this could lead to large amounts of local storage usage.
+- `#6755 <https://github.com/rasahq/rasa/issues/6755>`_: Treat the length of OOV token as 1 to fix token align issue when OOV occurred.
+- `#6899 <https://github.com/rasahq/rasa/issues/6899>`_: Fixed ``MappingPolicy`` not predicting ``action_listen`` after the mapped action while running ``rasa test``.
+
+
 [1.10.14] - 2020-09-23
 ^^^^^^^^^^^^^^^^^^^^^^
 

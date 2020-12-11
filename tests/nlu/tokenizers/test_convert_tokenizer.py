@@ -5,6 +5,10 @@ from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 
 
+# TODO
+#   skip tests as the ConveRT model is not publicly available anymore (see https://github.com/RasaHQ/rasa/issues/6806)
+
+
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
     [
@@ -24,6 +28,7 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
         ),
     ],
 )
+@pytest.mark.skip
 def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
     tk = ConveRTTokenizer()
 
@@ -41,6 +46,7 @@ def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
+@pytest.mark.skip
 def test_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 

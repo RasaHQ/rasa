@@ -1,14 +1,14 @@
 import json
 import logging
 import os
+import sys
 import time
 import typing
-from collections import deque
+import threading
+import multiprocessing
 from contextlib import contextmanager
-from threading import Thread
 from typing import (
     Callable,
-    Deque,
     Dict,
     Optional,
     Text,
@@ -93,6 +93,49 @@ def _pika_log_level(temporary_log_level: int) -> Generator[None, None, None]:
     yield
 
     pika_logger.setLevel(old_log_level)
+
+
+def create_rabbitmq_ssl_options(
+    rabbitmq_host: Optional[Text] = None,
+) -> Optional["pika.SSLOptions"]:
+    """Create RabbitMQ SSL options.
+
+    Requires the following environment variables to be set:
+
+        RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
+        RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
+        RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
+        RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
+
+    Details on how to enable RabbitMQ TLS support can be found here:
+    https://www.rabbitmq.com/ssl.html#enabling-tls
+
+    Args:
+        rabbitmq_host: RabbitMQ hostname
+
+    Returns:
+        Pika SSL context of type `pika.SSLOptions` if
+        the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
+        environment variables are valid paths, else `None`.
+    """
+    client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
+    client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
+
+    if client_certificate_path and client_key_path:
+        import pika
+        import rasa.server
+
+        logger.debug(f"Configuring SSL context for RabbitMQ host '{rabbitmq_host}'.")
+
+        ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE")
+        key_password = os.environ.get("RABBITMQ_SSL_KEY_PASSWORD")
+
+        ssl_context = rasa.server.create_ssl_context(
+            client_certificate_path, client_key_path, ca_file_path, key_password
+        )
+        return pika.SSLOptions(ssl_context, rabbitmq_host)
+    else:
+        return None
 
 
 def _get_pika_parameters(
@@ -252,87 +295,62 @@ def close_pika_connection(connection: "Connection") -> None:
         logger.exception("Failed to close Pika connection with host.")
 
 
-class PikaEventBroker(EventBroker):
-    """Pika-based event broker for publishing messages to RabbitMQ."""
+MessageHeaders = Optional[Dict[Text, Text]]
+Message = Tuple[Text, MessageHeaders]
+
+
+class PikaMessageProcessor:
+    """A class that holds all the Pika connection details and processes Pika messages."""
 
     def __init__(
         self,
-        host: Text,
-        username: Text,
-        password: Text,
-        port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = None,
-        should_keep_unpublished_messages: bool = True,
-        raise_on_failure: bool = False,
-        log_level: Union[Text, int] = os.environ.get(
-            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-        ),
+        parameters: "Parameters",
+        queues: Union[List[Text], Tuple[Text], Text, None],
         **kwargs: Any,
-    ):
-        """Initialise RabbitMQ event broker.
+    ) -> None:
+        """Initialise Pika connector.
 
         Args:
-            host: Pika host.
-            username: Username for authentication with Pika host.
-            password: Password for authentication with Pika host.
-            port: port of the Pika host.
-            queues: Pika queues to declare and publish to.
-            should_keep_unpublished_messages: Whether or not the event broker should
-                maintain a queue of unpublished messages to be published later in
-                case of errors.
-            raise_on_failure: Whether to raise an exception if publishing fails. If
-                `False`, keep retrying.
-            log_level: Logging level.
+            parameters: Pika connection parameters
+            queues: Pika queues to declare and publish to
         """
-        logging.getLogger("pika").setLevel(log_level)
+        self.parameters: "Parameters" = parameters
+        self.queues: List[Text] = self._get_queues_from_args(queues, kwargs)
 
-        self.host = host
-        self.username = username
-        self.password = password
-        self.port = port
-        self.channel: Optional["Channel"] = None
-        self.queues = self._get_queues_from_args(queues, kwargs)
-        self.should_keep_unpublished_messages = should_keep_unpublished_messages
-        self.raise_on_failure = raise_on_failure
-
-        # List to store unpublished messages which hopefully will be published later
-        self._unpublished_messages: Deque[Text] = deque()
-        self._run_pika()
+        self._connection: Optional["SelectConnection"] = None
+        self._channel: Optional["Channel"] = None
+        self._process_queue: Optional["multiprocessing.Queue"] = None
+        self._closing = False
 
     def __del__(self) -> None:
-        if self.channel:
-            close_pika_channel(self.channel)
-            close_pika_connection(self.channel.connection)
+        if self._channel:
+            logger.warning("Closing connection...")
+            close_pika_channel(self._channel)
+            close_pika_connection(self._channel.connection)
+
+        if self.is_connected:
+            self._connection.close()
 
     def close(self) -> None:
-        """Close the pika channel and connection."""
+        """Close the Pika connection."""
         self.__del__()
-
-    @property
-    def rasa_environment(self) -> Optional[Text]:
-        """Get value of the `RASA_ENVIRONMENT` environment variable."""
-        return os.environ.get("RASA_ENVIRONMENT")
 
     @staticmethod
     def _get_queues_from_args(
         queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any
     ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
-
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
         publish to is `queues` (as of Rasa Open Source version 1.8.2). This function
         ensures backwards compatibility with the old `queue` argument. This method
         can be removed in the future, and `self.queues` should just receive the value of
         the `queues` kwarg in the constructor.
-
         Args:
             queues_arg: Value of the supplied `queues` argument.
             kwargs: Additional kwargs supplied to the `PikaEventBroker` constructor.
                 If `queues_arg` is not supplied, the `queue` kwarg will be used instead.
-
         Returns:
             Queues this event broker publishes to.
-
         Raises:
             `ValueError` if no valid `queue` or `queues` argument was found.
         """
@@ -347,7 +365,7 @@ class PikaEventBroker(EventBroker):
             )
 
         if queues_arg and isinstance(queues_arg, (list, tuple)):
-            return queues_arg
+            return list(queues_arg)
 
         if queues_arg and isinstance(queues_arg, str):
             logger.debug(
@@ -372,6 +390,249 @@ class PikaEventBroker(EventBroker):
 
         return [DEFAULT_QUEUE_NAME]
 
+    @staticmethod
+    def _get_message_properties(headers: MessageHeaders = None) -> "BasicProperties":
+        """Create RabbitMQ message `BasicProperties`.
+
+        The `app_id` property is set to the value of `RASA_ENVIRONMENT` env variable
+        if present, and the message delivery mode is set to 2 (persistent).
+        In addition, the `headers` property is set if supplied.
+
+        Args:
+            headers: Message headers to add to the message properties of the
+                published message (key-value dictionary). The headers can be retrieved
+                in the consumer from the `headers` attribute of the message's
+                `BasicProperties`.
+
+        Returns:
+            `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
+            as the properties' `app_id` value, `delivery_mode=2` and `headers` as the
+            properties' headers.
+        """
+        from pika.spec import BasicProperties
+
+        # make message persistent
+        kwargs = {"delivery_mode": 2}
+
+        env = os.environ.get("RASA_ENVIRONMENT")
+        if env:
+            kwargs["app_id"] = env
+
+        if headers:
+            kwargs["headers"] = headers
+
+        return BasicProperties(**kwargs)
+
+    @property
+    def is_connected(self) -> bool:
+        """Indicates if Pika is connected and the channel is initialized.
+
+        Returns:
+            A boolean value indicating if the connection is established.
+        """
+        return self._connection and self._channel
+
+    def is_ready(
+        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
+    ) -> bool:
+        """Spin until the connector is ready to process messages.
+
+        It typically takes 50 ms or so for the pika channel to open. We'll wait up
+        to 10 seconds just in case.
+
+        Args:
+            attempts: Number of retries.
+            wait_time_between_attempts_in_seconds: Wait time between retries.
+
+        Returns:
+            `True` if the channel is available, `False` otherwise.
+        """
+        while attempts:
+            if self.is_connected:
+                return True
+            time.sleep(wait_time_between_attempts_in_seconds)
+            attempts -= 1
+
+        return False
+
+    def _connect(self) -> None:
+        """Establish a connection to Pika."""
+        self._connection = initialise_pika_select_connection(
+            self.parameters, self._on_open_connection, self._on_open_connection_error
+        )
+        self._run_pika_io_loop_in_thread()
+
+    def _on_open_connection(self, connection: "SelectConnection") -> None:
+        logger.debug(
+            f"RabbitMQ connection to '{self.parameters.host}' was established."
+        )
+        connection.add_on_close_callback(self._on_connection_closed)
+        connection.channel(on_open_callback=self._on_channel_open)
+
+    def _on_open_connection_error(self, _, error: Text) -> None:
+        logger.warning(
+            f"Connecting to '{self.parameters.host}' failed with error '{error}'. Trying again."
+        )
+
+    def _on_connection_closed(self, _, reason: Any):
+        self._channel = None
+        if self._closing:
+            logger.warning("Connection closing")
+            # noinspection PyUnresolvedReferences
+            self._connection.ioloop.stop()
+        else:
+            logger.warning(f"Connection closed, reopening in 5 seconds: {reason}")
+            # noinspection PyUnresolvedReferences
+            self._connection.ioloop.call_later(5, self._reconnect)
+
+    def _reconnect(self):
+        # noinspection PyUnresolvedReferences
+        self._connection.ioloop.stop()
+
+        if not self._closing:
+            self._connect()
+
+    def _on_channel_open(self, channel: "Channel") -> None:
+        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
+
+        channel.add_on_close_callback(self._on_channel_closed)
+
+        # declare exchange of type 'fanout' in order to publish to multiple queues
+        # (https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
+        channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
+
+        for queue in self.queues:
+            channel.queue_declare(queue=queue, durable=True)
+            channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
+
+        self._channel = channel
+
+    def _on_channel_closed(self, channel: "Channel", reason: Any):
+        logger.warning(f"Channel {channel} was closed: {reason}")
+        self._connection.close()
+
+    def _publish(self, message: Message) -> None:
+        body, headers = message
+
+        self._channel.basic_publish(
+            exchange=RABBITMQ_EXCHANGE,
+            routing_key="",
+            body=body.encode(DEFAULT_ENCODING),
+            properties=self._get_message_properties(headers),
+        )
+
+    def _process_messages(self) -> None:
+        """Start to process messages."""
+        logger.debug("Start processing messages...")
+
+        assert self.is_ready()
+
+        try:
+            while True:
+                message = self._process_queue.get()
+                self._publish(message)
+                logger.debug(
+                    f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+                    f"'{self.parameters.host}':\n{message[0]}"
+                )
+        except EOFError:
+            # Will most likely happen when shutting down Rasa X.
+            logger.debug(
+                "Pika message queue of worker was closed. Stopping to listen for more "
+                "messages on this worker."
+            )
+
+    def _run_pika_io_loop_in_thread(self) -> None:
+        thread = threading.Thread(target=self._run_pika_io_loop)
+        thread.start()
+
+    def _run_pika_io_loop(self) -> None:
+        # noinspection PyUnresolvedReferences
+        self._connection.ioloop.start()
+
+    def run(self, queue: "multiprocessing.Queue") -> None:
+        """Run the message processor by connecting to RabbitMQ and then
+        starting the IOLoop to block and allow the SelectConnection to operate.
+
+        This function is blocking and indefinite thus it
+        should be started in a separate process.
+        """
+        self._process_queue = queue
+        self._connect()
+        self._process_messages()
+
+
+class PikaEventBroker(EventBroker):
+    """Pika-based event broker for publishing messages to RabbitMQ."""
+
+    NUMBER_OF_MP_WORKERS = 1
+    MP_CONTEXT = None
+
+    if sys.platform == "darwin" and sys.version_info < (3, 8):
+        # On macOS, Python 3.8 has switched the default start method to "spawn". To
+        # quote the documentation: "The fork start method should be considered
+        # unsafe as it can lead to crashes of the subprocess". Apply this fix when
+        # running on macOS on Python <= 3.7.x as well.
+
+        # See:
+        # https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
+        MP_CONTEXT = "spawn"
+
+    def __init__(
+        self,
+        host: Text,
+        username: Text,
+        password: Text,
+        port: Union[int, Text] = 5672,
+        queues: Union[List[Text], Tuple[Text], Text, None] = None,
+        should_keep_unpublished_messages: bool = True,
+        raise_on_failure: bool = False,
+        log_level: Union[Text, int] = os.environ.get(
+            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+        ),
+        **kwargs: Any,
+    ) -> None:
+        """Initialise RabbitMQ event broker.
+
+        Args:
+            host: Pika host.
+            username: Username for authentication with Pika host.
+            password: Password for authentication with Pika host.
+            port: port of the Pika host.
+            queues: Pika queues to declare and publish to.
+            should_keep_unpublished_messages: Whether or not the event broker should
+                maintain a queue of unpublished messages to be published later in
+                case of errors.
+            raise_on_failure: Whether to raise an exception if publishing fails. If
+                `False`, keep retrying.
+            log_level: Logging level.
+        """
+        logging.getLogger("pika").setLevel(log_level)
+
+        self.host = host
+        self.username = username
+        self.password = password
+        self.port = port
+        self.queues = queues
+        self.process: Optional[multiprocessing.Process] = None
+        self.should_keep_unpublished_messages = should_keep_unpublished_messages
+        self.raise_on_failure = raise_on_failure
+        self.pika_message_processor: Optional[PikaMessageProcessor] = None
+        self.process_queue: multiprocessing.Queue = self._get_mp_context().Queue()
+
+        self._connect()
+
+    def __del__(self) -> None:
+        if self.pika_message_processor:
+            self.pika_message_processor.close()
+
+        if self.process and self.process.is_alive():
+            self.process.terminate()
+
+    def close(self) -> None:
+        """Close the Pika connector."""
+        self.__del__()
+
     @classmethod
     def from_endpoint_config(
         cls, broker_config: Optional["EndpointConfig"]
@@ -389,72 +650,43 @@ class PikaEventBroker(EventBroker):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def _run_pika(self) -> None:
+    def _connect(self) -> None:
         parameters = _get_pika_parameters(
             self.host, self.username, self.password, self.port
         )
-        self._pika_connection = initialise_pika_select_connection(
-            parameters, self._on_open_connection, self._on_open_connection_error
+
+        self.pika_message_processor = PikaMessageProcessor(
+            parameters, queues=self.queues
         )
-        # Run Pika io loop in extra thread so it's not blocking
-        self._run_pika_io_loop_in_thread()
+        self.process = self._start_pika_process()
 
-    def _on_open_connection(self, connection: "SelectConnection") -> None:
-        logger.debug(f"RabbitMQ connection to '{self.host}' was established.")
-        connection.channel(on_open_callback=self._on_channel_open)
+    def _get_mp_context(self) -> multiprocessing.context.BaseContext:
+        return multiprocessing.get_context(self.MP_CONTEXT)
 
-    def _on_open_connection_error(self, _, error: Text) -> None:
-        logger.warning(
-            f"Connecting to '{self.host}' failed with error '{error}'. Trying again."
-        )
-
-    def _on_channel_open(self, channel: "Channel") -> None:
-        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
-
-        # declare exchange of type 'fanout' in order to publish to multiple queues
-        # (https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
-        channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
-
-        for queue in self.queues:
-            channel.queue_declare(queue=queue, durable=True)
-            channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
-
-        self.channel = channel
-
-        while self._unpublished_messages:
-            # Send unpublished messages
-            message = self._unpublished_messages.popleft()
-            self._publish(message)
-            logger.debug(
-                f"Published message from queue of unpublished messages. "
-                f"Remaining unpublished messages: {len(self._unpublished_messages)}."
+    def _start_pika_process(self) -> Optional[multiprocessing.Process]:
+        if self.pika_message_processor:
+            process = multiprocessing.Process(
+                target=self.pika_message_processor.run, args=(self.process_queue,)
             )
+            process.start()
+            return process
 
-    def _run_pika_io_loop_in_thread(self) -> None:
-        thread = Thread(target=self._run_pika_io_loop, daemon=True)
-        thread.start()
-
-    def _run_pika_io_loop(self) -> None:
-        # noinspection PyUnresolvedReferences
-        self._pika_connection.ioloop.start()
+        return None
 
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
     ) -> bool:
-        """Spin until the pika channel is open.
-
-        It typically takes 50 ms or so for the pika channel to open. We'll wait up
-        to 10 seconds just in case.
+        """Spin until Pika is ready to process messages.
 
         Args:
             attempts: Number of retries.
             wait_time_between_attempts_in_seconds: Wait time between retries.
 
         Returns:
-            `True` if the channel is available, `False` otherwise.
+            `True` if the process is alive, `False` otherwise.
         """
         while attempts:
-            if self.channel:
+            if self.process and self.process.is_alive():
                 return True
             time.sleep(wait_time_between_attempts_in_seconds)
             attempts -= 1
@@ -478,132 +710,12 @@ class PikaEventBroker(EventBroker):
                 dictionary). The headers can be retrieved in the consumer from the
                 `headers` attribute of the message's `BasicProperties`.
         """
+        if not self.process or not self.process.is_alive():
+            logger.error("Event broker process has died. Reconnecting...")
+            self._connect()
+
         body = json.dumps(event)
-
-        while retries:
-            try:
-                self._publish(body, headers)
-                return
-            except Exception as e:
-                logger.error(
-                    f"Could not open Pika channel at host '{self.host}'. "
-                    f"Failed with error: {e}"
-                )
-                self.channel = None
-                if self.raise_on_failure:
-                    raise e
-
-            retries -= 1
-            time.sleep(retry_delay_in_seconds)
-
-        logger.error(f"Failed to publish Pika event on host '{self.host}':\n{body}")
-
-    def _get_message_properties(
-        self, headers: Optional[Dict[Text, Text]] = None
-    ) -> "BasicProperties":
-        """Create RabbitMQ message `BasicProperties`.
-
-        The `app_id` property is set to the value of `self.rasa_environment` if
-        present, and the message delivery mode is set to 2 (persistent). In
-        addition, the `headers` property is set if supplied.
-
-        Args:
-            headers: Message headers to add to the message properties of the
-            published message (key-value dictionary). The headers can be retrieved in
-            the consumer from the `headers` attribute of the message's
-            `BasicProperties`.
-
-        Returns:
-            `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
-            as the properties' `app_id` value, `delivery_mode`=2 and `headers` as the
-            properties' headers.
-        """
-        from pika.spec import BasicProperties
-
-        # make message persistent
-        kwargs = {"delivery_mode": 2}
-
-        if self.rasa_environment:
-            kwargs["app_id"] = self.rasa_environment
-
-        if headers:
-            kwargs["headers"] = headers
-
-        return BasicProperties(**kwargs)
-
-    def _basic_publish(
-        self, body: Text, headers: Optional[Dict[Text, Text]] = None
-    ) -> None:
-        self.channel.basic_publish(
-            exchange=RABBITMQ_EXCHANGE,
-            routing_key="",
-            body=body.encode(DEFAULT_ENCODING),
-            properties=self._get_message_properties(headers),
-        )
-
-        logger.debug(
-            f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-            f"'{self.host}':\n{body}"
-        )
-
-    def _publish(self, body: Text, headers: Optional[Dict[Text, Text]] = None) -> None:
-        if self._pika_connection.is_closed:
-            # Try to reset connection
-            self._run_pika()
-            self._basic_publish(body, headers)
-        elif not self.channel and self.should_keep_unpublished_messages:
-            logger.warning(
-                f"RabbitMQ channel has not been assigned. Adding message to "
-                f"list of unpublished messages and trying to publish them "
-                f"later. Current number of unpublished messages is "
-                f"{len(self._unpublished_messages)}."
-            )
-            self._unpublished_messages.append(body)
-        else:
-            self._basic_publish(body, headers)
-
-
-def create_rabbitmq_ssl_options(
-    rabbitmq_host: Optional[Text] = None,
-) -> Optional["pika.SSLOptions"]:
-    """Create RabbitMQ SSL options.
-
-    Requires the following environment variables to be set:
-
-        RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
-        RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
-        RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
-        RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
-
-    Details on how to enable RabbitMQ TLS support can be found here:
-    https://www.rabbitmq.com/ssl.html#enabling-tls
-
-    Args:
-        rabbitmq_host: RabbitMQ hostname
-
-    Returns:
-        Pika SSL context of type `pika.SSLOptions` if
-        the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
-        environment variables are valid paths, else `None`.
-    """
-    client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
-    client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
-
-    if client_certificate_path and client_key_path:
-        import pika
-        import rasa.server
-
-        logger.debug(f"Configuring SSL context for RabbitMQ host '{rabbitmq_host}'.")
-
-        ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE")
-        key_password = os.environ.get("RABBITMQ_SSL_KEY_PASSWORD")
-
-        ssl_context = rasa.server.create_ssl_context(
-            client_certificate_path, client_key_path, ca_file_path, key_password
-        )
-        return pika.SSLOptions(ssl_context, rabbitmq_host)
-    else:
-        return None
+        self.process_queue.put((body, headers))
 
 
 class PikaProducer(PikaEventBroker):
