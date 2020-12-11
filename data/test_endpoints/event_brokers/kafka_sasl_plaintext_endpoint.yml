@@ -1,7 +1,7 @@
 event_broker:
+  type: kafka
+  security_protocol: SASL_PLAINTEXT
+  topic: topic
   url: localhost
   sasl_username: username
   sasl_password: password
-  topic: topic
-  security_protocol: SASL_PLAINTEXT
-  type: kafka

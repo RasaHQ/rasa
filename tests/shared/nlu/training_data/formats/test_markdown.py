@@ -229,3 +229,27 @@ def test_dump_entities(entity: Dict[Text, Any], expected_output: Text):
     training_data_object = RasaReader().read_from_json(training_data_json)
     md_dump = MarkdownWriter().dumps(training_data_object)
     assert md_dump.splitlines()[1] == expected_output
+
+
+def test_markdown_reading_deprecation():
+    with pytest.warns(FutureWarning):
+        MarkdownReader()
+
+
+def test_skip_markdown_reading_deprecation():
+    with pytest.warns(None) as warnings:
+        MarkdownReader(ignore_deprecation_warning=True)
+
+    assert not warnings
+
+
+def test_markdown_writing_deprecation():
+    with pytest.warns(FutureWarning):
+        MarkdownWriter()
+
+
+def test_skip_markdown_writing_deprecation():
+    with pytest.warns(None) as warnings:
+        MarkdownWriter(ignore_deprecation_warning=True)
+
+    assert not warnings
