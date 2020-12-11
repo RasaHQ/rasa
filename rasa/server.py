@@ -1007,13 +1007,15 @@ def create_app(
             from rasa.train import train_async
 
             # pass `None` to run in default executor
-            model_path = await train_async(**training_payload)
+            training_result = await train_async(**training_payload)
 
-            if model_path:
-                filename = os.path.basename(model_path)
+            if training_result.model:
+                filename = os.path.basename(training_result.model)
 
                 return await response.file(
-                    model_path, filename=filename, headers={"filename": filename}
+                    training_result.model,
+                    filename=filename,
+                    headers={"filename": filename},
                 )
             else:
                 raise ErrorResponse(

@@ -57,8 +57,7 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
-    DefinePrevUserUtteredFeaturization,
-    DefinePrevUserUtteredEntities,
+    DefinePrevUserUttered,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -434,8 +433,6 @@ class DialogueStateTracker:
             for event in self.events
             if isinstance(event, ActiveLoop) and event.name
         ]
-        # we'll need to slice events, so convert the deque into a list
-        events_as_list = list(self.events)
 
         applied_events = []
 
@@ -461,45 +458,10 @@ class DialogueStateTracker:
                 self._undo_till_previous_loop_execution(
                     event.action_name, applied_events
                 )
-            elif isinstance(event, UserUttered):
-                # update event's featurization based on the future event
-                use_text_for_featurization = self._define_user_featurization(
-                    events_as_list[i + 1 :]
-                )
-                if event.use_text_for_featurization is None:
-                    event.use_text_for_featurization = use_text_for_featurization
-                # update event's entities based on the future event
-                entities = self._define_user_entities(events_as_list[i + 1 :])
-                if entities is not None:
-                    for entity in entities:
-                        if entity not in event.entities:
-                            event.entities.append(entity)
-
-                applied_events.append(event)
             else:
                 applied_events.append(event)
 
         return applied_events
-
-    @staticmethod
-    def _define_user_featurization(future_events: List[Event]) -> bool:
-        for future_event in future_events:
-            if isinstance(future_event, ActionExecuted):
-                # use intent by default
-                return False
-            elif isinstance(future_event, DefinePrevUserUtteredFeaturization):
-                return future_event.use_text_for_featurization
-
-    @staticmethod
-    def _define_user_entities(
-        future_events: List[Event],
-    ) -> Optional[List[Dict[Text, Any]]]:
-        for future_event in future_events:
-            if isinstance(future_event, ActionExecuted):
-                # the search should happen only within one dialogue turn
-                return None
-            if isinstance(future_event, DefinePrevUserUtteredEntities):
-                return future_event.entities
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:

@@ -515,8 +515,9 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        # Construct two examples in the batch to be fed to the model -
-        # One by featurizing last user text and second an optional one(see conditions below).
+        # construct two examples in the batch to be fed to the model -
+        # one by featurizing last user text
+        # and second - an optional one (see conditions below),
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self.featurizer.create_state_features(
@@ -595,7 +596,7 @@ class TEDPolicy(Policy):
             )
 
         optional_events = self._create_optional_event_for_entities(
-            output, interpreter, tracker
+            output, is_e2e_prediction, interpreter, tracker
         )
 
         return self._prediction(
@@ -607,28 +608,35 @@ class TEDPolicy(Policy):
     def _create_optional_event_for_entities(
         self,
         prediction_output: Dict[Text, tf.Tensor],
+        is_e2e_prediction: bool,
         interpreter: NaturalLanguageInterpreter,
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
-        if tracker.latest_action_name != ACTION_LISTEN_NAME:
-            # entities belong to the last user message
+        if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
+            # entities belong only to the last user message
+            # and only if user text was used for prediction,
             # a user message always comes after action listen
-            return None
+            return
 
         if not self.config[ENTITY_RECOGNITION]:
             # entity recognition is not turned on, no entities can be predicted
-            return None
+            return
 
+        # The batch dimension of entity prediction is not the same as batch size,
+        # rather it is the number of last (if max history featurizer else all)
+        # text inputs in the batch
+        # therefore, in order to pick entities from the latest user message
+        # we need to pick entities from the last batch dimension of entity prediction
         (
             predicted_tags,
             confidence_values,
         ) = rasa.utils.train_utils.entity_label_to_tags(
-            prediction_output, self._entity_tag_specs
+            prediction_output, self._entity_tag_specs, prediction_index=-1
         )
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
             # no entities detected
-            return None
+            return
 
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
