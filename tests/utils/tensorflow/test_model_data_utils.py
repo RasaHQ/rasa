@@ -217,7 +217,7 @@ def test_convert_training_examples(
             3,
         )
     ]
-    output = model_data_utils.convert_training_examples(
+    output = model_data_utils.featurize_training_examples(
         [message], attributes=attributes, entity_tag_specs=entity_tag_spec
     )
 

@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
 TAG_ID_ORIGIN = "tag_id_origin"
 
 
-def convert_training_examples(
+def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
@@ -219,12 +219,16 @@ def convert_to_data_format(
 ) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
     """Converts the input into "Data" format.
 
-    "features_for_examples" can, for example, be a dictionary of attributes (INTENT,
+    "features" can, for example, be a dictionary of attributes (INTENT,
     TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
     all dialogue turns in all training trackers.
     For NLU training it would just be a dictionary of attributes (either INTENT or
     RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
     examples.
+
+    The "Data" format corresponds to Dict[Text, Dict[Text, List[FeatureArray]]]. It's
+    a dictionary of attributes (e.g. TEXT) to a dictionary of secondary attributes
+    (e.g. SEQUENCE or SENTENCE) to the list of actual features.
 
     Args:
         features: a dictionary of attributes to a list of features for all
