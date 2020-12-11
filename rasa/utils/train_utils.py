@@ -291,16 +291,27 @@ def entity_label_to_tags(
 def override_defaults(
     defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
 ) -> Dict[Text, Any]:
+    """Override default config with the given config.
+
+    We cannot use `dict.update` method because configs contain nested dicts.
+
+    Args:
+        defaults: default config
+        custom: user config containing new parameters
+
+    Returns:
+        updated config
+    """
     if defaults:
-        cfg = copy.deepcopy(defaults)
+        config = copy.deepcopy(defaults)
     else:
-        cfg = {}
+        config = {}
 
     if custom:
         for key in custom.keys():
-            if isinstance(cfg.get(key), dict):
-                cfg[key].update(custom[key])
+            if isinstance(config.get(key), dict):
+                config[key].update(custom[key])
             else:
-                cfg[key] = custom[key]
+                config[key] = custom[key]
 
-    return cfg
+    return config
