@@ -206,9 +206,8 @@ class TrackerFeaturizer:
 
         return tracker_state_features, label_ids, entity_tags
 
-    @staticmethod
     def _choose_last_user_input(
-        trackers_as_states: List[List[State]], use_text_for_last_user_input: bool
+        self, trackers_as_states: List[List[State]], use_text_for_last_user_input: bool
     ) -> None:
         for states in trackers_as_states:
             last_state = states[-1]
@@ -227,6 +226,9 @@ class TrackerFeaturizer:
                 # remove text features to only use intent
                 if last_state.get(USER, {}).get(TEXT):
                     del last_state[USER][TEXT]
+
+        # make sure that all dialogue steps are either intent or text based
+        self._remove_user_text_if_intent(trackers_as_states)
 
     def prediction_states(
         self,
