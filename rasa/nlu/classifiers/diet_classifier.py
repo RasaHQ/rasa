@@ -676,6 +676,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         # make sure all keys are in the same order during training and prediction
+        # as we rely on the order of key and sub-key when constructing the actual
+        # tensors from the model data
         model_data.sort()
 
         return model_data
