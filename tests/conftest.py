@@ -3,6 +3,7 @@ import copy
 import os
 import random
 
+import mock
 import pytest
 import sys
 import uuid

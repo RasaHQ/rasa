@@ -5,6 +5,7 @@ import time
 import shutil
 from pathlib import Path
 from typing import Text, Optional, Any
+from unittest import mock
 from unittest.mock import Mock
 
 import pytest
@@ -570,7 +571,8 @@ async def test_can_finetune_min_version(
     old_fingerprint = await model_fingerprint(importer)
     new_fingerprint = await model_fingerprint(importer)
 
-    assert can_finetune(old_fingerprint, new_fingerprint) == can_tune
+    with mock.patch("rasa.model.MINIMUM_COMPATIBLE_VERSION", min_compatible_version):
+        assert can_finetune(old_fingerprint, new_fingerprint) == can_tune
 
 
 @pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
