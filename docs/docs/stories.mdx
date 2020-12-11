@@ -40,50 +40,50 @@ for detailed description of how to write stories.
 
 While writing stories, you have two options to represent user input.
 
-1) You do not have to deal with the specific contents of
-the messages that the users send. Instead, you can take advantage of the output
-from the NLU pipeline, which lets you use just the combination of an intent and
-entities to refer to all the possible messages the users can send to mean the
-same thing.
+1. You do not have to deal with the specific contents of
+   the messages that the users send. Instead, you can take advantage of the output
+   from the NLU pipeline, which lets you use just the combination of an intent and
+   entities to refer to all the possible messages the users can send to mean the
+   same thing.
 
-It is important to include the entities here as well because the policies learn
-to predict the next action based on a *combination* of both the intent and
-entities (you can, however, change this behavior using the
-[use_entities](./domain.mdx#ignoring-entities-for-certain-intents) attribute).
+   It is important to include the entities here as well because the policies learn
+   to predict the next action based on a *combination* of both the intent and
+   entities (you can, however, change this behavior using the
+   [use_entities](./domain.mdx#ignoring-entities-for-certain-intents) attribute).
 
-2) You do not have to deal with the specific
-intents of the messages that are extracted by the NLU pipeline. Instead, you can simply put
-the text of the user message.
-We call it end-to-end training because actual text is used for predictions.
+2. You do not have to deal with the specific
+   intents of the messages that are extracted by the NLU pipeline. Instead, you can simply put
+   the text of the user message.
+   We call it end-to-end training because actual text is used for predictions.
 
-:::caution experimental feature
-End-to-end training is an experimental feature.
-We introduce experimental features to get feedback from our community, so we encourage you to try it out!
-However, the functionality might be changed or removed in the future.
-If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+   :::caution experimental feature
+   End-to-end training is an experimental feature.
+   We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+   However, the functionality might be changed or removed in the future.
+   If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
 
-:::
+  :::
 
 ### Actions
 
 While writing stories, you have two options to represent bot actions.
 
-1) All actions executed by the bot, including [responses](./responses.mdx) are listed
-in stories under the `action` key.
+1. All actions executed by the bot, including [responses](./responses.mdx) are listed
+   in stories under the `action` key.
 
-You can use a response from your domain as an action by listing it as one
-in a story. Similarly, you can indicate that a story should call a custom action by including
-the name of the custom action from the `actions` list in your domain.
+   You can use a response from your domain as an action by listing it as one
+   in a story. Similarly, you can indicate that a story should call a custom action by including
+   the name of the custom action from the `actions` list in your domain.
 
-2) You can put bot textual utterances directly in the stories under `bot` key.
+2. You can put bot textual utterances directly in the stories under `bot` key.
 
-:::caution experimental feature
-End-to-end training is an experimental feature.
-We introduce experimental features to get feedback from our community, so we encourage you to try it out!
-However, the functionality might be changed or removed in the future.
-If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+   :::caution experimental feature
+   End-to-end training is an experimental feature.
+   We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+   However, the functionality might be changed or removed in the future.
+   If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
 
-:::
+  :::
 
 ### Events
 
