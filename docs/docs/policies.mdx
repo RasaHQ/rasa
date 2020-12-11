@@ -142,45 +142,20 @@ If you want to fine-tune your model, start by modifying the following parameters
     max_history: 8
   ```
 
-* `hidden_layers_sizes`:
-  This parameter allows you to define the number of feed forward layers and their output
-  dimensions for dialogues and intents (it defaults to: `dialogue: [], label: []`).
-  Every entry in the list corresponds to a feed forward layer.
-  For example, if you use the following configuration:
-
-  ```yaml-rasa title="config.yml"
-  policies:
-  - name: TEDPolicy
-    hidden_layers_sizes:
-      dialogue: [256, 128]
-  ```
-
-  Rasa Open Source will add two feed forward layers in front of the transformer.
-  The vectors of the input tokens (coming from the dialogue) will be passed on to those
-  layers. The first layer will have an output dimension of 256 and the second layer will have an output
-  dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
-  added.
-  Make sure to use only positive integer values. Usually, numbers of power of two are used.
-  Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
-  value before.
-
-* `sequence_number_of_transformer_layers`:
-  This parameter sets the number of sequence transformer encoder layers to use (default: `1`).
+* `number_of_transformer_layers`:
+  This parameter sets the number of sequence transformer encoder layers to use for
+  sequential transformer encoders for user, action and action label texts and for
+  dialogue transformer encoder.
+  (defaults: `text: 1, action_text: 1, label_action_text: 1, dialogue: 1`).
   The number of sequence transformer encoder layers corresponds
   to the transformer blocks to use for the model.
 
-* `sequence_transformer_size`:
-  This parameter sets the number of units in the sequence transformer encoder (default: `128`).
-  The vectors coming out of the sequence transformer encoders will have the given `sequence_transformer_size`.
-
-* `dialogue_number_of_transformer_layers`:
-  This parameter sets the number of the dialogue transformer encoder layers to use (default: `1`).
-  The number of the dialogue transformer encoder layers corresponds
-  to the transformer blocks to use for the model.
-
-* `dialogue_transformer_size`:
-  This parameter sets the number of units in the dialogue transformer encoder (default: `128`).
-  The vectors coming out of the dialogue transformer encoders will have the given `dialogue_transformer_size`.
+* `transformer_size`:
+  This parameter sets the number of units in the sequence transformer encoder layers to use for
+  sequential transformer encoders for user, action and action label texts and for
+  dialogue transformer encoder.
+  (defaults: `text: 128, action_text: 128, label_action_text: 128, dialogue: 128`).
+  The vectors coming out of the transformer encoders will have the given `transformer_size`.
 
 * `weight_sparsity`:
   This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
