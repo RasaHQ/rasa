@@ -244,7 +244,7 @@ def convert_to_data_format(
         featurizers: the featurizers to consider
 
     Returns:
-        Input in "Data" format and zero features
+        Input in "Data" format and fake features
     """
     training = False
     if not fake_features:
@@ -268,18 +268,18 @@ def convert_to_data_format(
         attributes = list(fake_features.keys())
 
     # In case an attribute is not present during prediction, replace it with
-    # None values that will then be replaced by zero features
+    # None values that will then be replaced by fake features
     dialogue_length = 1
     num_examples = 1
     for _features in attribute_to_features.values():
         num_examples = max(num_examples, len(_features))
         dialogue_length = max(dialogue_length, len(_features[0]))
-    empty_features = [[None] * dialogue_length] * num_examples
+    absent_features = [[None] * dialogue_length] * num_examples
 
     for attribute in attributes:
         attribute_data[attribute] = _feature_arrays_for_attribute(
             attribute,
-            empty_features,
+            absent_features,
             attribute_to_features,
             training,
             fake_features,
@@ -294,7 +294,7 @@ def convert_to_data_format(
 
 def _feature_arrays_for_attribute(
     attribute: Text,
-    empty_features: List[Any],
+    absent_features: List[Any],
     attribute_to_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     fake_features: Dict[Text, List["Features"]],
@@ -303,8 +303,9 @@ def _feature_arrays_for_attribute(
     """Create the features for the given attribute from the all examples features.
 
     Args:
-        attribute: the attribute
-        empty_features: empty features
+        attribute: the attribute of Message to be featurized
+        absent_features: list of Nones, used as features if `attribute_to_features`
+            does not contain the `attribute`
         attribute_to_features: features for every example
         training: boolean indicating whether we are currently in training or not
         fake_features: zero features
@@ -317,7 +318,7 @@ def _feature_arrays_for_attribute(
     features = (
         attribute_to_features[attribute]
         if attribute in attribute_to_features
-        else empty_features
+        else absent_features
     )
 
     # in case some features for a specific attribute are
