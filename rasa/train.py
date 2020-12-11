@@ -605,6 +605,10 @@ async def _core_model_for_finetuning(
     if not path_to_archive:
         return None
 
+    rasa.shared.utils.cli.print_info(
+        f"Loading Core model from {path_to_archive} for finetuning...",
+    )
+
     with model.unpack_model(path_to_archive) as unpacked:
         new_fingerprint = await model.model_fingerprint(file_importer)
         old_fingerprint = model.fingerprint_from_path(unpacked)
@@ -809,6 +813,9 @@ async def _nlu_model_for_finetuning(
     if not path_to_archive:
         return None
 
+    rasa.shared.utils.cli.print_info(
+        f"Loading NLU model from {path_to_archive} for finetuning...",
+    )
     with model.unpack_model(path_to_archive) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
         new_fingerprint = await model.model_fingerprint(file_importer)

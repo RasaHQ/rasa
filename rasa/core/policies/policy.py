@@ -113,11 +113,13 @@ class Policy:
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
         """Constructs a new Policy object."""
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
+        self.finetune_mode = should_finetune
 
     @property
     def featurizer(self):

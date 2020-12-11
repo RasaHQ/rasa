@@ -348,6 +348,21 @@ async def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
     )
 
 
+@pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
+async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
+    project: Text, tmp_path: Path, empty_key: Text,
+):
+    config = {
+        "language": "en",
+        "pipeline": [{"name": "WhitespaceTokenizer"},],
+        "policies": [{"name": "MemoizationPolicy"},],
+    }
+
+    config[empty_key] = None
+
+    model._get_fingerprint_of_config_without_epochs(config)
+
+
 async def test_fingerprinting_additional_action(project: Text):
     importer = _project_files(project)
 

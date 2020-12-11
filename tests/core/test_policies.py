@@ -32,7 +32,12 @@ from rasa.shared.core.constants import (
     USER,
 )
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, ConversationPaused, Event
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ConversationPaused,
+    Event,
+    UserUttered,
+)
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
@@ -138,11 +143,20 @@ class PolicyTestCollection:
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
+    @pytest.mark.parametrize("should_finetune", [False, True])
     async def test_persist_and_load(
-        self, trained_policy: Policy, default_domain: Domain, tmp_path: Path
+        self,
+        trained_policy: Policy,
+        default_domain: Domain,
+        tmp_path: Path,
+        should_finetune: bool,
     ):
         trained_policy.persist(str(tmp_path))
-        loaded = trained_policy.__class__.load(str(tmp_path))
+        loaded = trained_policy.__class__.load(
+            str(tmp_path), should_finetune=should_finetune
+        )
+        assert loaded.finetune_mode == should_finetune
+
         trackers = await train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
@@ -336,6 +350,24 @@ class TestSklearnPolicy(PolicyTestCollection):
         )
         # does not raise
         policy.train(trackers, domain=default_domain, interpreter=RegexInterpreter())
+
+    def test_finetune_after_load(
+        self,
+        trained_policy: SklearnPolicy,
+        trackers: List[TrackerWithCachedStates],
+        default_domain: Domain,
+        tmp_path: Path,
+    ):
+
+        trained_policy.persist(tmp_path)
+
+        loaded_policy = SklearnPolicy.load(tmp_path, should_finetune=True)
+
+        assert loaded_policy.finetune_mode
+
+        loaded_policy.train(trackers, default_domain, RegexInterpreter())
+
+        assert loaded_policy.model
 
 
 class TestTEDPolicy(PolicyTestCollection):
@@ -721,6 +753,44 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         recalled = trained_policy.recall(states, tracker, default_domain)
         assert recalled is not None
+
+    async def test_finetune_after_load(
+        self, trained_policy: MemoizationPolicy, default_domain: Domain, tmp_path: Path
+    ):
+
+        trained_policy.persist(tmp_path)
+
+        loaded_policy = MemoizationPolicy.load(tmp_path, should_finetune=True)
+
+        assert loaded_policy.finetune_mode
+
+        new_story = TrackerWithCachedStates.from_events(
+            "channel",
+            domain=default_domain,
+            slots=default_domain.slots,
+            evts=[
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": "why"}),
+                ActionExecuted("utter_channel"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+        )
+        original_train_data = await train_trackers(
+            default_domain, augmentation_factor=20
+        )
+        loaded_policy.train(
+            original_train_data + [new_story], default_domain, RegexInterpreter()
+        )
+
+        # Get the hash of the tracker state of new story
+        new_story_states, _ = loaded_policy.featurizer.training_states_and_actions(
+            [new_story], default_domain
+        )
+
+        # Feature keys for each new state should be present in the lookup
+        for states in new_story_states:
+            state_key = loaded_policy._create_feature_key(states)
+            assert state_key in loaded_policy.lookup
 
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):

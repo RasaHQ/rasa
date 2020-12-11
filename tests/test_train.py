@@ -383,7 +383,7 @@ def test_model_finetuning(
         output=output,
         force_training=True,
         model_to_finetune=trained_rasa_model,
-        finetuning_epoch_fraction=1,
+        finetuning_epoch_fraction=0.1,
     )
 
     mocked_core_training.assert_called_once()
@@ -418,7 +418,7 @@ def test_model_finetuning_core(
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
     old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
-    old_config["policies"][0]["epochs"] = 20
+    old_config["policies"][0]["epochs"] = 10
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
@@ -437,7 +437,7 @@ def test_model_finetuning_core(
         str(new_stories_path),
         output=output,
         model_to_finetune=trained_moodbot_path,
-        finetuning_epoch_fraction=0.5,
+        finetuning_epoch_fraction=0.2,
     )
 
     mocked_core_training.assert_called_once()
@@ -446,8 +446,8 @@ def test_model_finetuning_core(
     assert isinstance(model_to_finetune, Agent)
 
     ted = model_to_finetune.policy_ensemble.policies[0]
-    assert ted.config[EPOCHS] == 10
-    assert ted.config["should_finetune"] is True
+    assert ted.config[EPOCHS] == 2
+    assert ted.finetune_mode
 
 
 def test_model_finetuning_core_with_default_epochs(
@@ -583,7 +583,7 @@ def test_model_finetuning_nlu(
         domain="examples/moodbot/domain.yml",
         output=output,
         model_to_finetune=trained_nlu_moodbot_path,
-        finetuning_epoch_fraction=0.5,
+        finetuning_epoch_fraction=0.2,
     )
 
     assert mock_interpreter_create.call_args[1]["should_finetune"]
@@ -598,7 +598,7 @@ def test_model_finetuning_nlu(
 
     new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
     assert new_diet_metadata["name"] == "DIETClassifier"
-    assert new_diet_metadata[EPOCHS] == 5
+    assert new_diet_metadata[EPOCHS] == 2
 
 
 def test_model_finetuning_nlu_new_label(
@@ -731,7 +731,7 @@ def test_model_finetuning_nlu_with_default_epochs(
         "examples/moodbot/data/nlu.yml",
         output=output,
         model_to_finetune=trained_nlu_moodbot_path,
-        finetuning_epoch_fraction=0.5,
+        finetuning_epoch_fraction=0.1,
     )
 
     mocked_nlu_training.assert_called_once()
@@ -739,7 +739,7 @@ def test_model_finetuning_nlu_with_default_epochs(
     model_to_finetune = nlu_train_kwargs["model_to_finetune"]
     new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
     assert new_diet_metadata["name"] == "DIETClassifier"
-    assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.5
+    assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.1
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
