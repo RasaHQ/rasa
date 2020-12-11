@@ -8,6 +8,12 @@ The template reads an issue/a PR comment and transforms a YAML code block into J
 {{- $inc := coll.Slice -}}
 {{- $dataset := coll.Slice -}}
 {{- range $pair := $config.include -}}
+{{- /* if a branch name for dataset repository is not defined use the master branch */ -}}
+{{- if has $pair "branch" -}}
+{{- $branch := $pair.branch -}}
+{{- else -}}
+{{- $branch := "master" -}}
+{{- end -}}
 {{- /* use all available datasets if value is equal to all */ -}}
 {{- if eq (index $pair.dataset 0) "all" -}}
 {{ $dataset = (coll.Keys (datasource "mapping").datasets) }}
@@ -19,10 +25,10 @@ The template reads an issue/a PR comment and transforms a YAML code block into J
 {{- /* use all available configurations if value is equal to all */ -}}
 {{- if eq $value_config "all" -}}
 {{- range $config_name, $config_file := (datasource "mapping").configurations -}}
-{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $config_name | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $config_name "branch" $branch | toJSON) $inc) -}}
 {{- end -}}
 {{- else -}}
-{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $value_config | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $value_config "branch" $branch | toJSON) $inc) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

@@ -195,6 +195,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+          ref: ${{ matrix.branch }}
 
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
@@ -335,6 +336,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+          ref: ${{ matrix.branch }}
 
       - name: Download gomplate
         run: |-
