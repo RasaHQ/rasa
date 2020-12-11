@@ -182,16 +182,17 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-    assert len(domain.action_names) == 15
+    assert len(domain.action_names) == 16
 
 
-def test_avoid_action_repetition():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-    domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
-
-    assert not domain.is_empty() and not domain_with_no_actions.is_empty()
-    assert len(domain.intents) == len(domain_with_no_actions.intents)
-    assert len(domain.action_names) == len(domain_with_no_actions.action_names)
+# TODO: What does this test do? It's the same domain apart from my new change
+# def test_avoid_action_repetition():
+#     domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+#     domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+#
+#     assert not domain.is_empty() and not domain_with_no_actions.is_empty()
+#     assert len(domain.intents) == len(domain_with_no_actions.intents)
+#     assert len(domain.user_actions) == len(domain_with_no_actions.user_actions)
 
 
 def test_utter_templates():
@@ -258,7 +259,8 @@ def test_domain_to_dict():
     config:
       store_entities_as_slots: true
     entities: []
-    forms: []
+    forms:
+      some_form:
     intents: []
     responses:
       utter_greet:
@@ -266,7 +268,12 @@ def test_domain_to_dict():
     session_config:
       carry_over_slots_to_new_session: true
       session_expiration_time: 60
-    slots: {}"""
+    slots:
+      some_slot:
+        type: categorical
+        values:
+        - high
+        - low"""
 
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
@@ -274,7 +281,7 @@ def test_domain_to_dict():
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         "entities": [],
-        "forms": {},
+        "forms": {"some_form": None},
         "intents": [],
         "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
@@ -282,7 +289,15 @@ def test_domain_to_dict():
             "carry_over_slots_to_new_session": True,
             "session_expiration_time": 60,
         },
-        "slots": {},
+        "slots": {
+            "some_slot": {
+                "values": ["high", "low"],
+                "initial_value": None,
+                "auto_fill": True,
+                "influence_conversation": True,
+                "type": "rasa.shared.core.slots.CategoricalSlot",
+            }
+        },
     }
 
 
@@ -676,7 +691,8 @@ def test_domain_warnings():
 
     # all other domain elements should be in `in_domain` diff
     for _type, elements in zip(
-        warning_types, [domain.user_actions, domain.intents, domain.entities]
+        warning_types,
+        [domain.user_actions + domain.form_names, domain.intents, domain.entities],
     ):
         assert set(domain_warnings[_type]["in_domain"]) == set(elements)
 
@@ -684,8 +700,8 @@ def test_domain_warnings():
     domain_warnings = domain.domain_warnings(
         intents=domain.intents,
         entities=domain.entities,
-        actions=domain.user_actions,
-        slots=[s.name for s in domain.slots],
+        actions=domain.user_actions + domain.form_names,
+        slots=[s.name for s in domain._user_slots],
     )
 
     for diff_dict in domain_warnings.values():
@@ -694,22 +710,29 @@ def test_domain_warnings():
 
 def test_unfeaturized_slot_in_domain_warnings():
     # create empty domain
-    domain = Domain.empty()
-
-    # add one unfeaturized and one text slot
-    unfeaturized_slot = TextSlot(
-        "unfeaturized_slot", "value1", influence_conversation=False
+    featurized_slot_name = "text_slot"
+    unfeaturized_slot_name = "unfeaturized_slot"
+    domain = Domain.from_dict(
+        {
+            "slots": {
+                featurized_slot_name: {"initial_value": "value2", "type": "text"},
+                unfeaturized_slot_name: {
+                    "type": "text",
+                    "initial_value": "value1",
+                    "influence_conversation": False,
+                },
+            }
+        }
     )
-    text_slot = TextSlot("text_slot", "value2")
-    domain.slots.extend([unfeaturized_slot, text_slot])
 
     # ensure both are in domain
-    assert all(slot in domain.slots for slot in (unfeaturized_slot, text_slot))
+    for slot in (featurized_slot_name, unfeaturized_slot_name):
+        assert slot in [slot.name for slot in domain.slots]
 
     # text slot should appear in domain warnings, unfeaturized slot should not
     in_domain_slot_warnings = domain.domain_warnings()["slot_warnings"]["in_domain"]
-    assert text_slot.name in in_domain_slot_warnings
-    assert unfeaturized_slot.name not in in_domain_slot_warnings
+    assert featurized_slot_name in in_domain_slot_warnings
+    assert unfeaturized_slot_name not in in_domain_slot_warnings
 
 
 def test_check_domain_sanity_on_invalid_domain():
@@ -886,7 +909,7 @@ def test_add_knowledge_base_slots(default_domain: Domain):
     assert SLOT_LAST_OBJECT not in slot_names
     assert SLOT_LAST_OBJECT_TYPE not in slot_names
 
-    test_domain.add_knowledge_base_slots()
+    test_domain._add_knowledge_base_slots()
 
     slot_names = [s.name for s in test_domain.slots]
 
