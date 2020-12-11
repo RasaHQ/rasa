@@ -448,7 +448,10 @@ def move_model(source: Text, target: Text) -> bool:
 
 
 def should_retrain(
-    new_fingerprint: Fingerprint, old_model: Text, train_path: Text
+    new_fingerprint: Fingerprint,
+    old_model: Text,
+    train_path: Text,
+    force_training: bool = False,
 ) -> FingerprintComparisonResult:
     """Check which components of a model should be retrained.
 
@@ -456,6 +459,7 @@ def should_retrain(
         new_fingerprint: The fingerprint of the new model to be trained.
         old_model: Path to the old zipped model file.
         train_path: Path to the directory in which the new model will be trained.
+        force_training: Indicates if the model needs to be retrained even if the data has not changed.
 
     Returns:
         A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa NLU needs
@@ -481,6 +485,7 @@ def should_retrain(
             nlg=did_section_fingerprint_change(
                 last_fingerprint, new_fingerprint, SECTION_NLG
             ),
+            force_training=force_training,
         )
 
         core_merge_failed = False
