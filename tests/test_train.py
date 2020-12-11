@@ -8,9 +8,9 @@ from pathlib import Path, PosixPath
 from typing import Any, Text, Dict
 from unittest.mock import Mock
 
-from _pytest.logging import LogCaptureFixture
 import pytest
 from _pytest.capture import CaptureFixture
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
