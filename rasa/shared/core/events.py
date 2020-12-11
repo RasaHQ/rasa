@@ -1439,7 +1439,7 @@ class ActionExecuted(Event):
 
     def __str__(self) -> Text:
         """Returns event as human readable string."""
-        return f"ActionExecuted({self.action_name or self.action_text})"
+        return self.action_name or self.action_text
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
