@@ -2,13 +2,13 @@ import asyncio
 import os
 import tempfile
 from contextlib import ExitStack
-from typing import Any, Text, Optional, List, Union, Dict, TYPE_CHECKING
+from typing import Any, Text, Optional, List, Union, Dict
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model, telemetry
-from rasa.model import FingerprintComparisonResult
+from rasa.model import Fingerprint, FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 import rasa.utils.common
@@ -446,14 +446,14 @@ async def _train_core_with_validated_data(
         )
 
         if model_to_finetune:
-            model_to_finetune = _core_model_for_finetuning(
+            model_to_finetune = await _core_model_for_finetuning(
                 model_to_finetune,
-                new_config=config,
+                file_importer=file_importer,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
 
             if not model_to_finetune:
-                rasa.shared.utils.cli.print_warning(
+                rasa.shared.utils.cli.print_error_and_exit(
                     f"No Core model for finetuning found. Please make sure to either "
                     f"specify a path to a previous model or to have a finetunable "
                     f"model within the directory '{output}'."
@@ -491,9 +491,9 @@ async def _train_core_with_validated_data(
         return _train_path
 
 
-def _core_model_for_finetuning(
+async def _core_model_for_finetuning(
     model_to_finetune: Text,
-    new_config: Optional[Dict] = None,
+    file_importer: TrainingDataImporter,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Agent]:
     path_to_archive = model.get_model_for_finetuning(model_to_finetune)
@@ -501,9 +501,17 @@ def _core_model_for_finetuning(
         return None
 
     with model.unpack_model(path_to_archive) as unpacked:
+        new_fingerprint = await model.model_fingerprint(file_importer)
+        old_fingerprint = model.fingerprint_from_path(unpacked)
+        if not model.can_finetune(old_fingerprint, new_fingerprint, core=True):
+            rasa.shared.utils.cli.print_error_and_exit(
+                "Core model can not be finetuned."
+            )
+
+        config = await file_importer.get_config()
         agent = Agent.load(
             unpacked,
-            new_config=new_config,
+            new_config=config,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
         # Agent might be empty if no underlying Core model was found.
@@ -639,12 +647,14 @@ async def _train_nlu_with_validated_data(
         )
 
         if model_to_finetune:
-            model_to_finetune = _nlu_model_for_finetuning(
-                model_to_finetune, config, finetuning_epoch_fraction
+            model_to_finetune = await _nlu_model_for_finetuning(
+                model_to_finetune,
+                file_importer,
+                finetuning_epoch_fraction,
+                called_from_combined_training=train_path is not None,
             )
-
             if not model_to_finetune:
-                rasa.shared.utils.cli.print_warning(
+                rasa.shared.utils.cli.print_error_and_exit(
                     f"No NLU model for finetuning found. Please make sure to either "
                     f"specify a path to a previous model or to have a finetunable "
                     f"model within the directory '{output}'."
@@ -683,20 +693,37 @@ async def _train_nlu_with_validated_data(
         return _train_path
 
 
-def _nlu_model_for_finetuning(
+async def _nlu_model_for_finetuning(
     model_to_finetune: Text,
-    new_config: Dict[Text, Any],
+    file_importer: TrainingDataImporter,
     finetuning_epoch_fraction: float = 1.0,
+    called_from_combined_training: bool = False,
 ) -> Optional[Interpreter]:
+
     path_to_archive = model.get_model_for_finetuning(model_to_finetune)
     if not path_to_archive:
         return None
 
     with model.unpack_model(path_to_archive) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
+        new_fingerprint = await model.model_fingerprint(file_importer)
+        old_fingerprint = model.fingerprint_from_path(unpacked)
+        if not model.can_finetune(
+            old_fingerprint,
+            new_fingerprint,
+            nlu=True,
+            core=called_from_combined_training,
+        ):
+            rasa.shared.utils.cli.print_error_and_exit(
+                "NLU model can not be finetuned."
+            )
 
-        return Interpreter.load(
+        config = await file_importer.get_config()
+        model_to_finetune = Interpreter.load(
             old_nlu,
-            new_config=new_config,
+            new_config=config,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
+        if not model_to_finetune:
+            return None
+    return model_to_finetune

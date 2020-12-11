@@ -50,6 +50,7 @@ FINGERPRINT_NLG_KEY = "nlg"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
+FINGERPRINT_NLU_LABELS_KEY = "nlu_labels"
 FINGERPRINT_PROJECT = "project"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
@@ -81,14 +82,6 @@ SECTION_NLU = Section(
     ],
 )
 SECTION_NLG = Section(name="NLG templates", relevant_keys=[FINGERPRINT_NLG_KEY])
-
-SECTION_FINE_TUNE = Section(
-    name="Fine-tune",
-    relevant_keys=[
-        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
-        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
-    ],
-)
 
 
 class FingerprintComparisonResult:
@@ -346,6 +339,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_NLG_KEY: rasa.shared.utils.io.deep_container_fingerprint(responses),
         FINGERPRINT_PROJECT: project_fingerprint(),
         FINGERPRINT_NLU_DATA_KEY: nlu_data.fingerprint(),
+        FINGERPRINT_NLU_LABELS_KEY: nlu_data.label_fingerprint(),
         FINGERPRINT_STORIES_KEY: stories.fingerprint(),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
@@ -376,7 +370,7 @@ def _get_fingerprint_of_config_without_epochs(
     copied_config = copy.deepcopy(config)
 
     for key in ["pipeline", "policies"]:
-        if key in copied_config:
+        if copied_config.get(key):
             for p in copied_config[key]:
                 if "epochs" in p:
                     del p["epochs"]
@@ -500,18 +494,35 @@ def should_retrain(
         return fingerprint_comparison
 
 
-def can_fine_tune(last_fingerprint: Fingerprint, new_fingerprint: Fingerprint) -> bool:
+def can_finetune(
+    last_fingerprint: Fingerprint,
+    new_fingerprint: Fingerprint,
+    core: bool = False,
+    nlu: bool = False,
+) -> bool:
     """Checks if components of a model can be finetuned with incremental training.
 
     Args:
         last_fingerprint: The fingerprint of the old model to potentially be fine-tuned.
         new_fingerprint: The fingerprint of the new model.
+        core: Check sections for finetuning a core model.
+        nlu: Check sections for finetuning an nlu model.
 
     Returns:
-        `True` if the old model can be fine-tuned, `False` otherwise.
+        `True` if the old model can be finetuned, `False` otherwise.
     """
+    section_keys = [
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
+    ]
+    if core:
+        section_keys.append(FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY)
+    if nlu:
+        section_keys.append(FINGERPRINT_NLU_LABELS_KEY)
+
     fingerprint_changed = did_section_fingerprint_change(
-        last_fingerprint, new_fingerprint, SECTION_FINE_TUNE
+        last_fingerprint,
+        new_fingerprint,
+        Section(name="finetune", relevant_keys=section_keys),
     )
 
     old_model_above_min_version = version.parse(
@@ -562,7 +573,6 @@ async def update_model_with_new_domain(
         importer: Importer which provides the new domain.
         unpacked_model_path: Path to the unpacked model.
     """
-
     model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
     domain = await importer.get_domain()
 
