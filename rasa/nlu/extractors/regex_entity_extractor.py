@@ -33,6 +33,8 @@ class RegexEntityExtractor(EntityExtractor):
         "use_lookup_tables": True,
         # use regexes to extract entities
         "use_regexes": True,
+        # use match word boundaries for lookup table
+        "use_word_boundaries": True,
     }
 
     def __init__(
@@ -40,6 +42,7 @@ class RegexEntityExtractor(EntityExtractor):
         component_config: Optional[Dict[Text, Any]] = None,
         patterns: Optional[List[Dict[Text, Text]]] = None,
     ):
+        """Extracts entities using the lookup tables and/or regexes defined in the training data."""
         super(RegexEntityExtractor, self).__init__(component_config)
 
         self.case_sensitive = self.component_config["case_sensitive"]
@@ -56,6 +59,7 @@ class RegexEntityExtractor(EntityExtractor):
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
             use_only_entities=True,
+            use_word_boundaries=self.component_config["use_word_boundaries"],
         )
 
         if not self.patterns:
