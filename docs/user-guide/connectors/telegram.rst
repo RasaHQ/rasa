@@ -45,11 +45,14 @@ you need to supply a ``credentials.yml`` with the following content:
      verify: "your_bot"
      webhook_url: "https://your_url.com/webhooks/telegram/webhook"
 
-In addition to standard ``text:`` utterances, this channel also supports the following components from the `Telegram API <https://core.telegram.org/bots/api/#message>`_
+Supported Response Attachments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- button
+In addition to standard ``text:`` responses, this channel also supports the following components from the `Telegram API <https://core.telegram.org/bots/api/#message>`_:
+
+- ``button`` arguments:
   - button_type: inline | vertical | reply
-- custom payloads:
+- ``custom`` arguments: 
   - photo
   - audio
   - document
@@ -59,8 +62,8 @@ In addition to standard ``text:`` utterances, this channel also supports the fol
   - animation
   - voice
   - media
-  - latitude, longitude
-  - latitude, longitude, "title, address
+  - latitude, longitude (location)
+  - latitude, longitude, title, address (venue)
   - phone_number
   - game_short_name
   - action
