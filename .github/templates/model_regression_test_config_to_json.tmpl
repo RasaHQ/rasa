@@ -4,16 +4,15 @@ The template reads an issue/a PR comment and transforms a YAML code block into J
 
 */ -}}
 {{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
+{{- $branch := "master" -}}
+{{- /* if a branch name for dataset repository is not defined use the master branch */ -}}
+{{- if has $config "branch" -}}
+{{- $branch = $config.branch -}}
+{{- end -}}
 {"include":[
 {{- $inc := coll.Slice -}}
 {{- $dataset := coll.Slice -}}
 {{- range $pair := $config.include -}}
-{{- /* if a branch name for dataset repository is not defined use the master branch */ -}}
-{{- if has $pair "branch" -}}
-{{- $branch := $pair.branch -}}
-{{- else -}}
-{{- $branch := "master" -}}
-{{- end -}}
 {{- /* use all available datasets if value is equal to all */ -}}
 {{- if eq (index $pair.dataset 0) "all" -}}
 {{ $dataset = (coll.Keys (datasource "mapping").datasets) }}

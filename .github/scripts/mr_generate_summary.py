@@ -6,6 +6,7 @@ import os
 SUMMARY_FILE = os.environ["SUMMARY_FILE"]
 CONFIG = os.environ["CONFIG"]
 DATASET = os.environ["DATASET_NAME"]
+DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 task_mapping = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
@@ -16,7 +17,11 @@ task_mapping = {
 
 def generate_json(file, task, data):
     if not DATASET in data:
-        data = {DATASET: {CONFIG: {}}, **data}
+        data = {
+            DATASET: {
+                CONFIG: {},
+                "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
+                },**data}
     elif not CONFIG in data[DATASET]:
         data[DATASET] = {CONFIG: {}, **data[DATASET]}
 
