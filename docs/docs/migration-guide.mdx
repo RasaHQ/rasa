@@ -10,6 +10,15 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.1 to Rasa 2.2
+
+### Policies
+
+[Policies](./policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
+Policies without `**kwargs` will be supported until Rasa version `3.0.0`.
+However when using [incremental training](./command-line-interface.mdx#incremental-training)
+`**kwargs` **must** be included.
+
 ## Rasa 2.0 to Rasa 2.1
 
 ### Deprecations
