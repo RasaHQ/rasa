@@ -112,7 +112,12 @@ To be able to fine tune a model, the following conditions must be met:
 configuration used to train the model which is being finetuned.
 The only parameter that you can change is `epochs` for the individual machine learning components and policies.
 
-2. The set of labels(intents, actions, entities and slots) for which the base model is trained should be exactly the same as the ones present in the training data used for finetuning. This means that you cannot add new intent, action, entity or slot labels to your training data during incremental training. You can still add new training examples for each of the existing labels. If you have added new labels to the training data, the pipeline needs to be trained from scratch.
+2. The set of labels(intents, actions, entities and slots) for which the base model is trained
+should be exactly the same as the ones present in the training data used for finetuning. This
+means that you cannot add new intent, action, entity or slot labels to your training data
+during incremental training. You can still add new training examples for each of the existing
+labels. If you have added/removed labels in the training data, the pipeline needs to be trained
+from scratch.
 
 3. The model to be finetuned is trained with `MINIMUM_COMPATIBLE_VERSION` of the currently installed rasa version.
 

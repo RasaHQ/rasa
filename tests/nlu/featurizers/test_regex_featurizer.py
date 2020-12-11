@@ -427,7 +427,9 @@ def test_lookup_with_and_without_boundaries(
     use_word_boundaries: bool,
     spacy_nlp: Any,
 ):
-    ftr = RegexFeaturizer({"use_word_boundaries": use_word_boundaries})
+    ftr = RegexFeaturizer(
+        {"use_word_boundaries": use_word_boundaries, "number_additional_patterns": 0}
+    )
     training_data = TrainingData()
 
     # we use lookups because the "use_word_boundaries" flag is only used when
