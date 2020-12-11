@@ -17,15 +17,12 @@ task_mapping = {
 
 def generate_json(file, task, data):
     if not DATASET in data:
-        data = {
-            DATASET: {
-                CONFIG: {},
-                "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
-                },**data}
+        data = {DATASET: {CONFIG: {}}, **data}
     elif not CONFIG in data[DATASET]:
         data[DATASET] = {CONFIG: {}, **data[DATASET]}
 
     data[DATASET][CONFIG] = {
+        "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
         "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
