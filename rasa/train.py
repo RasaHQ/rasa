@@ -10,6 +10,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model, telemetry
 from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
+import rasa.shared.utils.common
 from rasa.nlu.model import Interpreter
 import rasa.utils.common
 from rasa.utils.common import TempDirectoryPath
@@ -156,6 +157,9 @@ async def _train_async_internal(
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
+
+    if nlu_data.has_e2e_examples():
+        rasa.shared.utils.common.mark_as_experimental_feature("end-to-end training")
 
     if stories.is_empty() and nlu_data.contains_no_pure_nlu_data():
         print_error(

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import secrets
 import sys
 import tempfile
@@ -7,6 +8,7 @@ from pathlib import Path, PosixPath
 from typing import Any, Text, Dict
 from unittest.mock import Mock
 
+from _pytest.logging import LogCaptureFixture
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
@@ -384,6 +386,34 @@ def new_model_path_in_same_dir(old_model_path) -> str:
 
 
 class TestE2e:
+    def test_e2e_gives_experimental_warning(
+        self,
+        monkeypatch: MonkeyPatch,
+        trained_e2e_model: Text,
+        default_domain_path,
+        default_stack_config,
+        default_e2e_stories_file,
+        default_nlu_data,
+        caplog: LogCaptureFixture,
+    ):
+        mock_nlu_training(monkeypatch)
+        mock_core_training(monkeypatch)
+
+        with caplog.at_level(logging.WARNING):
+            train(
+                default_domain_path,
+                default_stack_config,
+                [default_e2e_stories_file, default_nlu_data],
+                output=new_model_path_in_same_dir(trained_e2e_model),
+            )
+
+        assert any(
+            [
+                "The end-to-end training is currently experimental" in record.message
+                for record in caplog.records
+            ]
+        )
+
     def test_models_not_retrained_if_no_new_data(
         self,
         monkeypatch: MonkeyPatch,
