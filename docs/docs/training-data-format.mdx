@@ -431,10 +431,22 @@ using the [`use_entities`](#entities) attribute).
 If you use `user:` key while writing stories, you do not have to deal with the specific
 intents of the messages that are extracted by the NLU pipeline. Instead, you can simply put
 the text of the user message.
-We call it end-to-end training because actual text is used for predictions.
 
-:::caution
-This feature is experimental.
+We call it end-to-end training because actual text is used for predictions.
+Only `RulePolicy` and `TEDPolicy` allow end-to-end training.
+For end-to-end inputs, intents classified in the NLU pipeline and extracted entities
+are ignored.
+- `RulePolicy` uses simple string matching during prediction. Namely,
+  rules based on user text will only match if the user
+  text strings inside your rules and input during prediction are identical.
+
+- `TEDPolicy` passes user text through additional Neural Network to create
+  hidden representation of the text. In order to obtain robust performance you
+  need to create sufficient number of stories that have different user texts
+  during this dialogue turn.
+
+:::caution experimental feature
+End-to-end training is an experimental feature.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
 If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
@@ -496,8 +508,12 @@ stories:
 
 If you want to put bot utterance directly in the stories, use `bot:` key followed by
 the text that you want your bot to say.
+The only difference to creating `utter_` template is how `TEDPolicy` featurizes this
+utterance. In case of a template, `TEDPolicy` sees only the name of the template, while
+if you provide actual utterance using `bot:` key, `TEDPolicy` will featurize it as textual
+input depending on the NLU configuration.
 
-::: experimental feature
+::: caution experimental feature
 End-to-end training is an experimental feature.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
