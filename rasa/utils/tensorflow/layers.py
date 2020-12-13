@@ -639,7 +639,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             back_prop=False,
         )[1]
 
-    def _random_indices_with_scores(
+    def _random_indices_from_scores(
         self, batch_size: tf.Tensor, total_candidates: tf.Tensor, scores: tf.Tensor
     ) -> tf.Tensor:
         def rand_idxs(scores: tf.Tensor) -> tf.Tensor:
@@ -757,7 +757,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
         modulated_sims = tf.where(tf.squeeze(mask, -1), sims, neg_inf)
-        # tf.print(infinity_mask, infinity_mask.shape)
 
         return modulated_sims
 
@@ -783,7 +782,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         total_candidates = tf.shape(embeds_flat)[0]
         target_size = tf.shape(target_labels_flat)[0]
 
-        neg_ids = self._random_indices_with_scores(
+        neg_ids = self._random_indices_from_scores(
             target_size, total_candidates, scores=input_sims
         )
         # neg_ids = self._random_indices(target_size, total_candidates)
