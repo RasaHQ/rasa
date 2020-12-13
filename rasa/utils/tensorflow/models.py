@@ -361,9 +361,9 @@ class RasaModel(tf.keras.models.Model):
             batch_strategy=SEQUENCE,
             silent=True,  # don't confuse users with training output
             loading=True,  # don't use tensorboard when doing a dummy fit run
-            eager=False
-            if finetune_mode
-            else True,  # load in eager mode only for prediction phase
+            eager=(
+                False if finetune_mode else True
+            ),  # load in eager mode only for prediction phase
         )
         # load trained weights
         model.load_weights(model_file_name)

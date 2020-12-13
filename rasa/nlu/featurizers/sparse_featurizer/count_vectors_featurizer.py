@@ -153,13 +153,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self.additional_vocabulary_size = self.component_config[
             "additional_vocabulary_size"
         ]
-        if isinstance(self.additional_vocabulary_size, int):
-            # User defined a common value for all attributes
-            user_defined_additional_size = self.additional_vocabulary_size
-            self.additional_vocabulary_size = {
-                attribute: user_defined_additional_size
-                for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-            }
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Checks if trained vocabulary exists in attribute's count vectorizer."""
@@ -503,6 +496,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         for attribute in self._attributes:
             combined_cleaned_texts += attribute_texts[attribute]
 
+        # To train a shared vocabulary, we use TEXT as the
+        # attribute for which a combined vocabulary is built.
         if not self.finetune_mode:
             self.vectorizers = self._create_shared_vocab_vectorizers(
                 {

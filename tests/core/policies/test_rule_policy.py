@@ -698,6 +698,43 @@ async def test_rule_policy_finetune(
     )
 
 
+async def test_rule_policy_contradicting_rule_finetune(
+    tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
+):
+
+    trained_rule_policy.persist(tmp_path)
+
+    loaded_policy = RulePolicy.load(tmp_path, should_finetune=True)
+
+    assert loaded_policy.finetune_mode
+
+    new_rule = TrackerWithCachedStates.from_events(
+        "stop story",
+        domain=trained_rule_policy_domain,
+        slots=trained_rule_policy_domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "activate_q_form"}),
+            ActionExecuted("utter_stop"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    original_data = await training.load_data(
+        "examples/rules/data/rules.yml", trained_rule_policy_domain
+    )
+
+    with pytest.raises(InvalidRule) as execinfo:
+        loaded_policy.train(
+            original_data + [new_rule], trained_rule_policy_domain, RegexInterpreter()
+        )
+        assert all(
+            name in execinfo.value.message for name in {"utter_stop", "stop story"}
+        )
+
+
 def test_faq_rule():
     domain = Domain.from_yaml(
         f"""
