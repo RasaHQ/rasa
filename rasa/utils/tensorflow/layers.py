@@ -744,20 +744,22 @@ class DotProductLoss(tf.keras.layers.Layer):
         labels_expanded = tf.tile(
             tf.expand_dims(labels, 0), (tf.shape(labels)[0], 1, 1)
         )
-        same_labels = tf.not_equal(tf.expand_dims(labels, 1), labels_expanded)
-        return tf.cast(same_labels, dtype=tf.float32)
+        same_labels_mask = tf.not_equal(tf.expand_dims(labels, 1), labels_expanded)
+        return tf.cast(same_labels_mask, dtype=tf.bool)
 
     def _get_pairwise_cosine_sim(self, input_embeds, mask):
 
+        neg_inf = tf.constant(-1e9)
+
         normalized = tf.nn.l2_normalize(input_embeds, 1)
-        sims = tf.clip_by_value(
-            tf.reduce_sum(
-                tf.expand_dims(normalized, 0) * tf.expand_dims(normalized, 1), axis=-1
-            ),
-            0.0,
-            1.0,
+        sims = tf.reduce_sum(
+            tf.expand_dims(normalized, 0) * tf.expand_dims(normalized, 1), axis=-1
         )
-        return sims * tf.squeeze(mask, -1)
+
+        modulated_sims = tf.where(tf.squeeze(mask, -1), sims, neg_inf)
+        # tf.print(infinity_mask, infinity_mask.shape)
+
+        return modulated_sims
 
     def _get_input_negs(
         self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor
