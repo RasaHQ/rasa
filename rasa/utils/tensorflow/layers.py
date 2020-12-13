@@ -639,6 +639,54 @@ class DotProductLoss(tf.keras.layers.Layer):
             back_prop=False,
         )[1]
 
+    def _random_indices_with_scores(
+        self, batch_size: tf.Tensor, total_candidates: tf.Tensor, scores: tf.Tensor
+    ) -> tf.Tensor:
+        def rand_idxs(scores: tf.Tensor) -> tf.Tensor:
+            """Create random tensor of indices"""
+
+            # tf.print("sampling", scores, scores.shape)
+            return tf.expand_dims(
+                tf.argsort(scores, direction="DESCENDING")[: self.num_neg], 0
+            )
+
+        def cond(idx: tf.Tensor, out: tf.Tensor, scores: tf.Tensor) -> tf.Tensor:
+            """Condition for while loop"""
+            return idx < batch_size
+
+        def body(idx: tf.Tensor, out: tf.Tensor, scores: tf.Tensor) -> List[tf.Tensor]:
+            """Body of the while loop"""
+            return [
+                # increment counter
+                idx + 1,
+                # add random indices
+                tf.concat([out, rand_idxs(scores[idx])], 0),
+                # scores as it is
+                scores,
+            ]
+
+        # first tensor already created
+        idx1 = tf.constant(1)
+        # create first random array of indices
+        out1 = rand_idxs(scores[idx1 - 1])  # (1, num_neg)
+        # tf.print("out1", out1)
+
+        final_index, random_indices, scores = tf.while_loop(
+            cond,
+            body,
+            loop_vars=[idx1, out1, scores],
+            shape_invariants=[
+                idx1.shape,
+                tf.TensorShape([None, self.num_neg]),
+                scores.shape,
+            ],
+            parallel_iterations=self.parallel_iterations,
+            back_prop=False,
+        )
+        # tf.print("while", final_index, random_indices, scores)
+
+        return random_indices
+
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
         """Sample negative examples for given indices"""
@@ -691,6 +739,72 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return neg_embeds, bad_negs
 
+    def _get_same_label_mask(self, labels):
+
+        labels_expanded = tf.tile(
+            tf.expand_dims(labels, 0), (tf.shape(labels)[0], 1, 1)
+        )
+        same_labels = tf.not_equal(tf.expand_dims(labels, 1), labels_expanded)
+        return tf.cast(same_labels, dtype=tf.float32)
+
+    def _get_pairwise_cosine_sim(self, input_embeds, mask):
+
+        normalized = tf.nn.l2_normalize(input_embeds, 1)
+        sims = tf.clip_by_value(
+            tf.reduce_sum(
+                tf.expand_dims(normalized, 0) * tf.expand_dims(normalized, 1), axis=-1
+            ),
+            0.0,
+            1.0,
+        )
+        return sims * tf.squeeze(mask, -1)
+
+    def _get_input_negs(
+        self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Get negative examples from given tensor."""
+
+        embeds_flat = self._make_flat(embeds)
+        labels_flat = self._make_flat(labels)
+        target_labels_flat = self._make_flat(target_labels)
+
+        # sims = self.sim(embeds_flat, embeds_flat)
+        # tf.print(embeds_flat, embeds_flat.shape)
+        # tf.print(labels_flat, labels_flat.shape)
+
+        same_label_mask = self._get_same_label_mask(labels_flat)
+        # tf.print(same_label_mask, same_label_mask.shape)
+
+        input_sims = self._get_pairwise_cosine_sim(embeds_flat, same_label_mask)
+        # tf.print(input_sims, tf.shape(input_sims))
+
+        total_candidates = tf.shape(embeds_flat)[0]
+        target_size = tf.shape(target_labels_flat)[0]
+
+        neg_ids = self._random_indices_with_scores(
+            target_size, total_candidates, scores=input_sims
+        )
+        # neg_ids = self._random_indices(target_size, total_candidates)
+
+        # tf.print(neg_ids, tf.shape(neg_ids))
+
+        neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
+        bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
+
+        # check if inputs have sequence dimension
+        if len(target_labels.shape) == 3:
+            # tensors were flattened for sampling, reshape back
+            # add sequence dimension if it was present in the inputs
+            target_shape = tf.shape(target_labels)
+            neg_embeds = tf.reshape(
+                neg_embeds, (target_shape[0], target_shape[1], -1, embeds.shape[-1])
+            )
+            bad_negs = tf.reshape(bad_negs, (target_shape[0], target_shape[1], -1))
+
+        # tf.print("=================")
+
+        return neg_embeds, bad_negs
+
     def _sample_negatives(
         self,
         inputs_embed: tf.Tensor,
@@ -705,7 +819,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         pos_labels_embed = tf.expand_dims(labels_embed, axis=-2)
 
         # sample negative inputs
-        neg_inputs_embed, inputs_bad_negs = self._get_negs(inputs_embed, labels, labels)
+        neg_inputs_embed, inputs_bad_negs = self._get_input_negs(
+            inputs_embed, labels, labels
+        )
         # sample negative labels
         neg_labels_embed, labels_bad_negs = self._get_negs(
             all_labels_embed, all_labels, labels
