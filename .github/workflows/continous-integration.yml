@@ -206,7 +206,7 @@ jobs:
     - name: Read Poetry Version 🔢
       if: needs.changes.outputs.backend == 'true'
       run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        echo "POETRY_VERSION=1.0.9" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -225,7 +225,6 @@ jobs:
       # the project itself, which also makes it easier for us to determine the correct directory
       # that needs to be cached.
       run: |
-        pip3 install virtualenv==20.0.35
         poetry config virtualenvs.in-project true
 
     - name: Load Poetry Cached Libraries ⬇
@@ -251,14 +250,12 @@ jobs:
       # More information: https://github.com/actions/cache/issues/120
       run: |
         cat .venv/pyvenv.cfg
-        rm -r .venv
         $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
         if (Test-Path $spacy_data_dir) {
           Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
           Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $spacy_data_dir -Type Directory
         }
-        pip3 install virtualenv==20.0.35
         poetry run python --version
         cat .venv/pyvenv.cfg
         poetry env info
