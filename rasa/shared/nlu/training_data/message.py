@@ -115,14 +115,15 @@ class Message:
         example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
-        """
-        Build a Message from `UserUttered` data.
+        """Build a Message from `UserUttered` data.
+
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
             intent_metadata: optional metadata for the intent
             example_metadata: optional metadata for the intent example
+
         Returns:
             Message
         """
@@ -183,12 +184,14 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all sparse features for the given attribute that are coming from the
-        given list of featurizers.
+        """Get all sparse features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Sparse features.
         """
@@ -207,12 +210,14 @@ class Message:
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all dense features for the given attribute that are coming from the given
-        list of featurizers.
+        """Get all dense features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Dense features.
         """
@@ -231,6 +236,17 @@ class Message:
     def get_all_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> List["Features"]:
+        """Get all features for the attribute given the list of featurizers.
+
+        If no featurizers are provided, all available features will be considered.
+
+        Args:
+            attribute: message attribute
+            featurizers: names of featurizers to consider
+
+        Returns:
+            features.
+        """
         sparse_features = self.get_sparse_features(attribute, featurizers)
         dense_features = self.get_dense_features(attribute, featurizers)
 
@@ -239,12 +255,14 @@ class Message:
     def features_present(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> bool:
-        """Check if there are any features present for the given attribute and
-        featurizers.
+        """Check if there are any features present for the attribute and featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             ``True``, if features are present, ``False`` otherwise
         """

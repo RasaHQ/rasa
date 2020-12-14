@@ -124,7 +124,8 @@ class RasaModel(tf.keras.models.Model):
         if self.tensorboard_log_dir is not None:
             if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
                 raise ValueError(
-                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
+                    f"Provided '{TENSORBOARD_LOG_LEVEL}' "
+                    f"('{self.tensorboard_log_level}') "
                     f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
                 )
             self.tensorboard_log_on_epochs = self.tensorboard_log_level == "epoch"
@@ -142,7 +143,10 @@ class RasaModel(tf.keras.models.Model):
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
-            self.model_summary_file = f"{self.tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
+            self.model_summary_file = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}"
+                f"/model_summary.txt"
+            )
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -191,8 +195,7 @@ class RasaModel(tf.keras.models.Model):
         loading: bool = False,
         eager: bool = True,
     ) -> None:
-        """Fit model data"""
-
+        """Fit model data."""
         # don't setup tensorboard writers when training during loading
         if not loading:
             self._set_up_tensorboard_writer()
@@ -274,7 +277,8 @@ class RasaModel(tf.keras.models.Model):
 
         if self.checkpoint_model:
             logger.info(
-                f"The model of epoch {self.best_model_epoch} (out of {epochs} in total) will be stored!"
+                f"The model of epoch {self.best_model_epoch} "
+                f"(out of {epochs} in total) will be stored!"
             )
         if self.model_summary_file is not None:
             self._write_model_summary()
@@ -286,8 +290,7 @@ class RasaModel(tf.keras.models.Model):
     def train_on_batch(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> None:
-        """Train on batch"""
-
+        """Train on batch."""
         # calculate supervision and regularization losses separately
         with tf.GradientTape(persistent=True) as tape:
             prediction_loss = self.batch_loss(batch_in)
@@ -390,8 +393,7 @@ class RasaModel(tf.keras.models.Model):
     def _total_batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
-        """Calculate total loss"""
-
+        """Calculate total loss."""
         prediction_loss = self.batch_loss(batch_in)
         regularization_loss = tf.math.add_n(self.losses)
         total_loss = prediction_loss + regularization_loss
@@ -408,7 +410,7 @@ class RasaModel(tf.keras.models.Model):
         offset: int,
         writer: Optional["ResourceSummaryWriter"] = None,
     ) -> int:
-        """Run on batches"""
+        """Run on batches."""
         self.reset_metrics()
 
         step = offset
@@ -431,8 +433,7 @@ class RasaModel(tf.keras.models.Model):
         eager: bool,
         phase: Text,
     ) -> Callable:
-        """Convert functions to tensorflow functions"""
-
+        """Convert functions to tensorflow functions."""
         if eager:
             return call_model_function
 
@@ -451,7 +452,7 @@ class RasaModel(tf.keras.models.Model):
     def _get_tf_train_functions(
         self, eager: bool, model_data: RasaModelData, batch_strategy: Text
     ) -> Tuple[Callable, Callable]:
-        """Create train tensorflow functions"""
+        """Create train tensorflow functions."""
 
         def train_dataset_function(_batch_size: int) -> tf.data.Dataset:
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
@@ -467,8 +468,7 @@ class RasaModel(tf.keras.models.Model):
     def _get_tf_evaluation_functions(
         self, eager: bool, evaluation_model_data: Optional[RasaModelData]
     ) -> Tuple[Optional[Callable], Optional[Callable]]:
-        """Create evaluation tensorflow functions"""
-
+        """Create evaluation tensorflow functions."""
         if evaluation_model_data is None:
             return None, None
 
@@ -556,7 +556,6 @@ class RasaModel(tf.keras.models.Model):
         data, shape before, this methods converts them into sparse tensors. Dense data
         is kept.
         """
-
         batch_data = defaultdict(lambda: defaultdict(list))
 
         idx = 0
@@ -596,7 +595,6 @@ class RasaModel(tf.keras.models.Model):
 
         The idea comes from https://arxiv.org/abs/1711.00489.
         """
-
         if not isinstance(batch_size, list):
             return int(batch_size)
 

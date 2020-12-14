@@ -18,6 +18,8 @@ help:
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
 	@echo "        Check for type errors using mypy."
+	@echo "    static-checks"
+	@echo "        Run all python static checks."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -26,6 +28,10 @@ help:
 	@echo "        Install system requirements for running tests on Windows."
 	@echo "    prepare-tests-files"
 	@echo "        Download all additional project files needed to run tests."
+	@echo "    prepare-spacy"
+	@echo "        Download all additional resources needed to use spacy as part of Rasa."
+	@echo "    prepare-mitie"
+	@echo "        Download all additional resources needed to use mitie as part of Rasa."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
@@ -79,6 +85,9 @@ endif
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
+lint-security:
+	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
+
 types:
 	# FIXME: working our way towards removing these
 	# see https://github.com/RasaHQ/rasa/pull/6470
@@ -103,13 +112,29 @@ types:
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 
-prepare-tests-files:
+static-checks: lint lint-security types
+
+prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
 	poetry run python -m spacy link en_core_web_md en --force
 	poetry run python -m spacy link de_core_news_sm de --force
-	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
+prepare-mitie:
+	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+ifeq ($(OS),Windows_NT)
+	7z x data/MITIE-models-v0.2.tar.bz2 -bb3
+	7z x MITIE-models-v0.2.tar -bb3
+	cp MITIE-models/english/total_word_feature_extractor.dat data/
+	rm -r MITIE-models
+	rm MITIE-models-v0.2.tar
+else
+	tar -xvjf data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C data/ MITIE-models/english/total_word_feature_extractor.dat
+endif
+	rm data/MITIE*.bz2
+
+prepare-tests-files: prepare-spacy prepare-mitie
 
 prepare-wget-macos:
 	brew install wget || true

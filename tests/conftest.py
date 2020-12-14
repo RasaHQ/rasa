@@ -33,13 +33,14 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import train_async
+from rasa.train import TrainingResult, train_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_E2E_STORIES_FILE,
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
+    DOMAIN_WITH_CATEGORICAL_SLOT,
     END_TO_END_STORY_FILE,
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
@@ -132,6 +133,11 @@ def default_domain_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def domain_with_categorical_slot_path() -> Text:
+    return DOMAIN_WITH_CATEGORICAL_SLOT
+
+
+@pytest.fixture(scope="session")
 def default_domain() -> Domain:
     return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
@@ -184,7 +190,8 @@ def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 
-        return await train_async(*args, output_path=output_path, **kwargs)
+        result = await train_async(*args, output=output_path, **kwargs)
+        return result.model
 
     return _train
 

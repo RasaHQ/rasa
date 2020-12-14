@@ -52,6 +52,7 @@ KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
 KEY_E2E_ACTIONS = "e2e_actions"
+KEY_RESPONSES_TEXT = "text"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
@@ -286,8 +287,8 @@ class Domain:
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
-        # Sort the slots so that the order of the slot states is consistent
-        for slot_name in sorted(slot_dict):
+        # Don't sort the slots, see https://github.com/RasaHQ/rasa-x/issues/3900
+        for slot_name in slot_dict:
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
 
@@ -508,7 +509,7 @@ class Domain:
 
         Args:
             intents: Intent labels.
-            entities: The name of the entities which might be present in user messages.
+            entities: The names of entities which might be present in user messages.
             slots: Slots to store information during the conversation.
             templates: Bot responses. If an action with the same name is executed, it
                 will send the matching response to the user.
@@ -517,7 +518,7 @@ class Domain:
             action_texts: End-to-End bot utterances from end-to-end stories.
             store_entities_as_slots: If `True` Rasa will automatically create `SlotSet`
                 events for entities if there are slots with the same name as the entity.
-            session_config: Configuration for conversation sessions. Conversation are
+            session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
         """
         self.entities, self.roles, self.groups = self.collect_entity_properties(
@@ -669,6 +670,11 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def action_names(self) -> List[Text]:
         """Returns action names or texts."""
+        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
+        # notify developers about the deprecation (e.g. developers who are using the
+        # Python API or writing custom policies). End users can't change anything
+        # about this warning except making their developers change any custom code
+        # which calls this.
         rasa.shared.utils.io.raise_warning(
             f"{Domain.__name__}.{Domain.action_names.__name__} "
             f"is deprecated and will be removed version 3.0.0.",
@@ -707,6 +713,12 @@ class Domain:
         These templates have a `/` symbol in their name. Use that to filter them from the rest.
         """
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
+
+    def setup_slots(self) -> None:
+        """Sets up the default slots and slot values for the domain."""
+        self.add_requested_slot()
+        self.add_knowledge_base_slots()
+        self.add_categorical_slot_default_value()
 
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
@@ -769,7 +781,7 @@ class Domain:
             self.raise_action_not_found_exception(action_name)
 
     def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:
-        """Raises exception if action name or text not part of the domain.
+        """Raises exception if action name or text not part of the domain or stories.
 
         Args:
             action_name_or_text: Name of an action or its text in case it's an
@@ -798,6 +810,11 @@ class Domain:
         """
         import numpy as np
 
+        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
+        # notify developers about the deprecation (e.g. developers who are using the
+        # Python API or writing custom policies). End users can't change anything
+        # about this warning except making their developers change any custom code
+        # which calls this.
         rasa.shared.utils.io.raise_warning(
             f"'{Domain.__name__}.{Domain.random_template_for.__class__}' "
             f"is deprecated and will be removed version 3.0.0.",
@@ -930,10 +947,13 @@ class Domain:
 
         # filter entities based on intent config
         # sub_state will be transformed to frozenset therefore we need to
-        # convert the list to the tuple
+        # convert the set to the tuple
         # sub_state is transformed to frozenset because we will later hash it
         # for deduplication
-        entities = tuple(self._get_featurized_entities(latest_message))
+        entities = tuple(
+            self._get_featurized_entities(latest_message)
+            & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+        )
         if entities:
             sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
         else:
@@ -1098,6 +1118,33 @@ class Domain:
             KEY_E2E_ACTIONS: self.action_texts,
         }
 
+    @staticmethod
+    def get_responses_with_multilines(
+        responses: Dict[Text, List[Dict[Text, Any]]]
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Returns `responses` with preserved multilines in the `text` key.
+
+        Args:
+            responses: Original `responses`.
+
+        Returns:
+            `responses` with preserved multilines in the `text` key.
+        """
+        from ruamel.yaml.scalarstring import LiteralScalarString
+
+        final_responses = responses.copy()
+        for response_name, examples in final_responses.items():
+            for i, example in enumerate(examples):
+                response_text = example.get(KEY_RESPONSES_TEXT, "")
+                if not response_text or "\n" not in response_text:
+                    continue
+                # Has new lines, use `LiteralScalarString`
+                final_responses[response_name][i][
+                    KEY_RESPONSES_TEXT
+                ] = LiteralScalarString(response_text)
+
+        return final_responses
+
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
 
@@ -1241,6 +1288,10 @@ class Domain:
             domain_data.update(self.cleaned_domain())
         else:
             domain_data.update(self.as_dict())
+        if domain_data.get(KEY_RESPONSES, {}):
+            domain_data[KEY_RESPONSES] = self.get_responses_with_multilines(
+                domain_data[KEY_RESPONSES]
+            )
 
         return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
             domain_data, should_preserve_key_order=True

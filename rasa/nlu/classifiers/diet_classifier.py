@@ -630,7 +630,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_attribute: Optional[Text] = None,
         training: bool = True,
     ) -> RasaModelData:
-        """Prepare data for training and create a RasaModelData object"""
+        """Prepare data for training and create a RasaModelData object."""
         from rasa.utils.tensorflow import model_data_utils
 
         attributes_to_consider = [TEXT]
@@ -654,7 +654,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # no training data are present to train
             return RasaModelData()
 
-        features_for_examples = model_data_utils.convert_training_examples(
+        features_for_examples = model_data_utils.featurize_training_examples(
             training_data,
             attributes_to_consider,
             entity_tag_specs=self._entity_tag_specs,
@@ -676,6 +676,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         # make sure all keys are in the same order during training and prediction
+        # as we rely on the order of key and sub-key when constructing the actual
+        # tensors from the model data
         model_data.sort()
 
         return model_data
@@ -1530,6 +1532,7 @@ class DIET(TransformerRasaModel):
             self.entity_role_f1.update_state(f1)
 
     def prepare_for_predict(self) -> None:
+        """Prepares the model for prediction."""
         if self.config[INTENT_CLASSIFICATION]:
             _, self.all_labels_embed = self._create_all_labels()
 

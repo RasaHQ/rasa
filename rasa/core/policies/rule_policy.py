@@ -772,8 +772,8 @@ class RulePolicy(MemoizationPolicy):
         Args:
             tracker: The current conversation tracker.
             domain: The domain of the current model.
-            use_text_for_last_user_input: The boolean controlling
-                whether to use intent or text.
+            use_text_for_last_user_input: `True` if text of last user message
+                should be used for the prediction. `False` if intent should be used.
 
         Returns:
             A tuple of the predicted action name or text (or `None` if no matching rule
@@ -784,7 +784,9 @@ class RulePolicy(MemoizationPolicy):
             use_text_for_last_user_input
             and not tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
-            # make text prediction only after user utterance
+            # make text prediction only directly after user utterance
+            # because we've otherwise already decided whether to use
+            # the text or the intent
             return None, None, False
 
         tracker_as_states = self.featurizer.prediction_states(
@@ -874,7 +876,6 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
-        # user text input is ground truth, so try to predict using it first
         (
             rules_action_name_from_text,
             self._prediction_source,
@@ -911,12 +912,9 @@ class RulePolicy(MemoizationPolicy):
 
         # predict rules from text first
         if rules_action_name_from_text:
-            policy_events = (
-                [LoopInterrupted(True)] if returning_from_unhappy_path_from_text else []
-            )
-            return self._prediction(
+            return self._prediction_with_unhappy_path(
                 self._prediction_result(rules_action_name_from_text, tracker, domain),
-                events=policy_events,
+                returning_from_unhappy_path=returning_from_unhappy_path_from_text,
                 is_end_to_end_prediction=True,
             )
 
@@ -928,20 +926,35 @@ class RulePolicy(MemoizationPolicy):
         ) = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=False
         )
-        # returning_from_unhappy_path is a negative condition, so `or` should be applied
-        returning_from_unhappy_path = (
-            returning_from_unhappy_path_from_text
-            or returning_from_unhappy_path_from_intent
-        )
-        policy_events = [LoopInterrupted(True)] if returning_from_unhappy_path else []
         if rules_action_name_from_intent:
-            return self._prediction(
-                self._prediction_result(rules_action_name_from_intent, tracker, domain),
-                events=policy_events,
-                is_end_to_end_prediction=False,
+            probabilities = self._prediction_result(
+                rules_action_name_from_intent, tracker, domain
             )
+        else:
+            probabilities = self._default_predictions(domain)
 
-        return self._prediction(self._default_predictions(domain), events=policy_events)
+        return self._prediction_with_unhappy_path(
+            probabilities,
+            returning_from_unhappy_path=(
+                # returning_from_unhappy_path is a negative condition,
+                # so `or` should be applied
+                returning_from_unhappy_path_from_text
+                or returning_from_unhappy_path_from_intent
+            ),
+            is_end_to_end_prediction=False,
+        )
+
+    def _prediction_with_unhappy_path(
+        self,
+        probabilities: List[float],
+        returning_from_unhappy_path: bool,
+        is_end_to_end_prediction: bool,
+    ) -> "PolicyPrediction":
+        return self._prediction(
+            probabilities,
+            events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
+            is_end_to_end_prediction=is_end_to_end_prediction,
+        )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)

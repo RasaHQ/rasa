@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING, Tuple
+from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING
 
 import rasa.shared.utils.common
 import rasa.utils.io

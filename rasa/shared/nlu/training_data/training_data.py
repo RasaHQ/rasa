@@ -21,8 +21,6 @@ from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
     TEXT,
-    ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -175,14 +173,17 @@ class TrainingData:
 
     @lazy_property
     def intent_examples(self) -> List[Message]:
+        """Returns the list of examples that have intent."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
+        """Returns the list of examples that have response."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
+        """Returns the list of examples that have entities."""
         return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     @lazy_property
@@ -692,4 +693,14 @@ class TrainingData:
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    """Converts list to a string.
+
+    Args:
+        lst: the list to convert
+        delim: the delimiter that is used to separate list inputs
+        quote: the quote that is used to wrap list inputs
+
+    Returns:
+        the string
+    """
     return delim.join([quote + e + quote for e in lst])

@@ -3,8 +3,6 @@ from typing import Union, Text, Optional, List, Any, Tuple
 import numpy as np
 import scipy.sparse
 
-from rasa.shared.nlu.constants import VALID_FEATURE_TYPES
-
 
 class Features:
     """Stores the features produces by any featurizer."""

@@ -14,12 +14,7 @@ from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
 
 from rasa.shared.core.training_data.visualization import visualize_stories
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_E2E_STORIES_FILE,
-    DEFAULT_STACK_CONFIG,
-    DEFAULT_STORIES_FILE,
-)
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
 @pytest.mark.parametrize(
