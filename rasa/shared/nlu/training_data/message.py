@@ -54,7 +54,7 @@ class Message:
 
     def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
         """Adds diagnostic data from the `origin` component.
-        
+
         Args:
             origin: Name of the component that created the data.
             data: The diagnostic data.
