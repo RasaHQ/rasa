@@ -354,9 +354,6 @@ class Agent:
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
 
-        if self.domain is not None:
-            self.domain.setup_slots()
-
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
         )

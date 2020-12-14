@@ -24,6 +24,7 @@ from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
@@ -72,7 +73,7 @@ async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
 
     agent = Agent(
         "data/test_domains/default_with_slots.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3)],
+        policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
     )
 
     training_data = await agent.load_data(DEFAULT_STORIES_FILE)
