@@ -15,7 +15,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils.io import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +213,7 @@ def _get_tokenizer_from_nlu_config(
     for component in pipeline:
         if isinstance(component, Tokenizer):
             if tokenizer:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     "The pipeline contains more than one tokenizer. "
                     "Only the first tokenizer will be used for story validation.",
                 )
@@ -345,7 +345,7 @@ def _apply_tokenizer_to_states(tokenizer: Tokenizer, states: List[State]) -> Non
     """
     for state in states:
         if USER in state:
-            state[USER][TEXT] = "".join(
+            state[USER][TEXT] = " ".join(
                 token.text
                 for token in tokenizer.tokenize(
                     Message({TEXT: state[USER][TEXT]}), TEXT
