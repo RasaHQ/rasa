@@ -302,7 +302,7 @@ class RegexFeaturizer(SparseFeaturizer):
             model_metadata: Metadata for the trained pipeline.
             cached_component: Previously cached component(if any).
             should_finetune: Indicates whether to load the component for further finetuning.
-            **kwargs:
+            **kwargs: Any other arguments.
         """
         file_name = meta.get("file")
 
