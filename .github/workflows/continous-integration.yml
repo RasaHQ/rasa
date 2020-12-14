@@ -255,7 +255,10 @@ jobs:
           Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $spacy_data_dir -Type Directory
         }
+        poetry run python --version
+        cat .venv/pyvenv.cfg
         poetry env info
+        poetry run pip list
         #make install-full
         #make prepare-tests-windows
 
