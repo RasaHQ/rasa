@@ -669,6 +669,11 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def action_names(self) -> List[Text]:
         """Returns action names or texts."""
+        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
+        # notify developers about the deprecation (e.g. developers who are using the
+        # Python API or writing custom policies). End users can't change anything
+        # about this warning except making their developers change any custom code
+        # which calls this.
         rasa.shared.utils.io.raise_warning(
             f"{Domain.__name__}.{Domain.action_names.__name__} "
             f"is deprecated and will be removed version 3.0.0.",
@@ -798,6 +803,11 @@ class Domain:
         """
         import numpy as np
 
+        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
+        # notify developers about the deprecation (e.g. developers who are using the
+        # Python API or writing custom policies). End users can't change anything
+        # about this warning except making their developers change any custom code
+        # which calls this.
         rasa.shared.utils.io.raise_warning(
             f"'{Domain.__name__}.{Domain.random_template_for.__class__}' "
             f"is deprecated and will be removed version 3.0.0.",
