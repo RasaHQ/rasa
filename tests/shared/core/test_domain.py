@@ -21,6 +21,7 @@ from rasa.shared.core.constants import (
     SLOT_LAST_OBJECT_TYPE,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     ENTITY_LABEL_SEPARATOR,
+    DEFAULT_ACTION_NAMES,
 )
 from rasa.shared.core.domain import (
     InvalidDomain,
@@ -35,11 +36,7 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
-    DEFAULT_STORIES_FILE,
-)
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
 def test_slots_states_before_user_utterance(default_domain: Domain):
@@ -187,14 +184,19 @@ def test_domain_from_template():
     assert len(domain.action_names) == 16
 
 
-# TODO: What does this test do? It's the same domain apart from my new change
-# def test_avoid_action_repetition():
-#     domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-#     domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
-#
-#     assert not domain.is_empty() and not domain_with_no_actions.is_empty()
-#     assert len(domain.intents) == len(domain_with_no_actions.intents)
-#     assert len(domain.user_actions) == len(domain_with_no_actions.user_actions)
+def test_avoid_action_repetition(default_domain: Domain):
+    domain = Domain.from_yaml(
+        """
+actions:
+- utter_greet
+
+responses:
+    utter_greet:
+    - text: "hi"    
+    """
+    )
+
+    assert len(domain.action_names) == len(DEFAULT_ACTION_NAMES) + 1
 
 
 def test_utter_templates():
