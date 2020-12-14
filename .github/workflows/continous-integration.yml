@@ -270,7 +270,7 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        echo skip
+        exit 0
         #make test
 
     - name: Send Coverage Report 📊
