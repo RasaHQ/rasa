@@ -22,7 +22,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.shared.exceptions import InvalidParameterException, RasaException
+from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -353,9 +353,6 @@ class Agent:
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
-
-        if self.domain is not None:
-            self.domain.setup_slots()
 
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
