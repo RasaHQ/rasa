@@ -138,13 +138,13 @@ A `TrainingDataImporter` that combines multiple importers.
 Uses multiple `TrainingDataImporter` instances
 to load the data as if they were a single instance.
 
-## RetrievalModelsDataImporter Objects
+## ResponsesSyncImporter Objects
 
 ```python
-class RetrievalModelsDataImporter(TrainingDataImporter)
+class ResponsesSyncImporter(TrainingDataImporter)
 ```
 
-A `TrainingDataImporter` that sets up the data for training retrieval models.
+Importer that syncs `responses` between Domain and NLU training data.
 
 Synchronizes response templates between Domain and NLU
 and adds retrieval intent properties from the NLU training data

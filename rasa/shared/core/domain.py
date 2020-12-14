@@ -52,6 +52,7 @@ KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
 KEY_E2E_ACTIONS = "e2e_actions"
+KEY_RESPONSES_TEXT = "text"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
@@ -286,8 +287,8 @@ class Domain:
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
-        # Sort the slots so that the order of the slot states is consistent
-        for slot_name in sorted(slot_dict):
+        # Don't sort the slots, see https://github.com/RasaHQ/rasa-x/issues/3900
+        for slot_name in slot_dict:
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
 
@@ -683,6 +684,12 @@ class Domain:
         """
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
 
+    def setup_slots(self) -> None:
+        """Sets up the default slots and slot values for the domain."""
+        self.add_requested_slot()
+        self.add_knowledge_base_slots()
+        self.add_categorical_slot_default_value()
+
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
 
@@ -1051,6 +1058,33 @@ class Domain:
             KEY_E2E_ACTIONS: self.action_texts,
         }
 
+    @staticmethod
+    def get_responses_with_multilines(
+        responses: Dict[Text, List[Dict[Text, Any]]]
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Returns `responses` with preserved multilines in the `text` key.
+
+        Args:
+            responses: Original `responses`.
+
+        Returns:
+            `responses` with preserved multilines in the `text` key.
+        """
+        from ruamel.yaml.scalarstring import LiteralScalarString
+
+        final_responses = responses.copy()
+        for response_name, examples in final_responses.items():
+            for i, example in enumerate(examples):
+                response_text = example.get(KEY_RESPONSES_TEXT, "")
+                if not response_text or "\n" not in response_text:
+                    continue
+                # Has new lines, use `LiteralScalarString`
+                final_responses[response_name][i][
+                    KEY_RESPONSES_TEXT
+                ] = LiteralScalarString(response_text)
+
+        return final_responses
+
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
 
@@ -1194,6 +1228,10 @@ class Domain:
             domain_data.update(self.cleaned_domain())
         else:
             domain_data.update(self.as_dict())
+        if domain_data.get(KEY_RESPONSES, {}):
+            domain_data[KEY_RESPONSES] = self.get_responses_with_multilines(
+                domain_data[KEY_RESPONSES]
+            )
 
         return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
             domain_data, should_preserve_key_order=True

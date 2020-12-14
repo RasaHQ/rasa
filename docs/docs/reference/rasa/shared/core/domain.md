@@ -189,6 +189,14 @@ Check if the response template is for a retrieval intent.
 
 These templates have a `/` symbol in their name. Use that to filter them from the rest.
 
+#### setup\_slots
+
+```python
+ | setup_slots() -> None
+```
+
+Sets up the default slots and slot values for the domain.
+
 #### add\_categorical\_slot\_default\_value
 
 ```python
@@ -333,6 +341,24 @@ Compare the domain spec of the current and the loaded domain.
 
 Throws exception if the loaded domain specification is different
 to the current domain are different.
+
+#### get\_responses\_with\_multilines
+
+```python
+ | @staticmethod
+ | get_responses_with_multilines(responses: Dict[Text, List[Dict[Text, Any]]]) -> Dict[Text, List[Dict[Text, Any]]]
+```
+
+Returns `responses` with preserved multilines in the `text` key.
+
+**Arguments**:
+
+- `responses` - Original `responses`.
+  
+
+**Returns**:
+
+  `responses` with preserved multilines in the `text` key.
 
 #### cleaned\_domain
 
