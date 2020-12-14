@@ -87,6 +87,14 @@ The following arguments can be used to configure the training process:
 
 ### Incremental training
 
+:::caution
+This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+
+:::
+
 In order to improve the performance of an assistant, it's helpful to practice [CDD](./conversation-driven-development.mdx)
 and add new training examples based on how your users have talked to your assistant. You can use `rasa train --finetune`
 to initialize the pipeline with an already trained model and further finetune it on the
