@@ -40,6 +40,7 @@ from tests.core.conftest import (
     DEFAULT_E2E_STORIES_FILE,
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
+    DOMAIN_WITH_CATEGORICAL_SLOT,
     END_TO_END_STORY_FILE,
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
@@ -129,6 +130,11 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 def default_domain_path() -> Text:
     return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+
+@pytest.fixture(scope="session")
+def domain_with_categorical_slot_path() -> Text:
+    return DOMAIN_WITH_CATEGORICAL_SLOT
 
 
 @pytest.fixture(scope="session")

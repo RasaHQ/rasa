@@ -460,7 +460,7 @@ class TestE2e:
             default_stack_config,
             [new_stories_file, default_nlu_data],
             output=new_model_path_in_same_dir(trained_e2e_model),
-        )
+        ).model
         os.remove(new_model_path)
 
         mocked_core_training.assert_called_once()
@@ -490,7 +490,7 @@ class TestE2e:
             default_stack_config,
             [new_stories_file, default_nlu_data],
             output=new_model_path_in_same_dir(trained_e2e_model),
-        )
+        ).model
         os.remove(new_model_path)
 
         mocked_core_training.assert_called_once()
@@ -548,7 +548,7 @@ class TestE2e:
             default_stack_config,
             [default_e2e_stories_file, new_nlu_file],
             output=new_model_path_in_same_dir(trained_e2e_model),
-        )
+        ).model
         os.remove(new_model_path)
 
         mocked_core_training.assert_called_once()
@@ -578,7 +578,7 @@ class TestE2e:
             default_stack_config,
             [simple_stories_file, new_nlu_file],
             output=new_model_path_in_same_dir(trained_simple_rasa_model),
-        )
+        ).model
         os.remove(new_model_path)
 
         mocked_core_training.assert_not_called()
