@@ -1066,16 +1066,11 @@ class TED(TransformerRasaModel):
         dialogue_dim = tf.shape(attribute_mask)[1]
         if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
             units = self.config[ENCODING_DIMENSION]
+        elif attribute in STATE_LEVEL_FEATURES:
+            units = self._tf_layers[f"{attribute}_input_layer"].output_units
         else:
-            # TODO: deal with cases where there isn't the sequence layer,
-            # e.g. when attribute=entities
-            units = getattr(
-                self._tf_layers[
-                    f"{attribute}_sequence_layer"
-                ].input_layer.concat_sparse_dense[SENTENCE],
-                "output_units",
-                0,
-            )
+            # sequence features
+            units = self._tf_layers[f"{attribute}_sequence_layer"].output_units
 
         attribute_features = tf.zeros(
             (batch_dim, dialogue_dim, units), dtype=tf.float32
