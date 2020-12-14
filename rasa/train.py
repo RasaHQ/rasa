@@ -551,6 +551,9 @@ async def _train_core_with_validated_data(
         )
 
         if model_to_finetune:
+            rasa.shared.utils.common.mark_as_experimental_feature(
+                "Incremental Training feature"
+            )
             model_to_finetune = await _core_model_for_finetuning(
                 model_to_finetune,
                 file_importer=file_importer,
@@ -756,6 +759,10 @@ async def _train_nlu_with_validated_data(
         )
 
         if model_to_finetune:
+
+            rasa.shared.utils.common.mark_as_experimental_feature(
+                "Incremental Training feature"
+            )
             model_to_finetune = await _nlu_model_for_finetuning(
                 model_to_finetune,
                 file_importer,
