@@ -508,7 +508,7 @@ class Domain:
 
         Args:
             intents: Intent labels.
-            entities: The name of the entities which might be present in user messages.
+            entities: The names of entities which might be present in user messages.
             slots: Slots to store information during the conversation.
             templates: Bot responses. If an action with the same name is executed, it
                 will send the matching response to the user.
