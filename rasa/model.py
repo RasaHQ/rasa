@@ -320,7 +320,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     domain = copy.copy(domain)
     # don't include the response texts in the fingerprint.
     # Their fingerprint is separate.
-    domain.templates = []
+    domain.templates = {}
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_fingerprint_of_config(
@@ -580,7 +580,7 @@ async def update_model_with_new_domain(
     """
     model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
     domain = await importer.get_domain()
-
+    domain.setup_slots()
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
 
 

@@ -551,6 +551,31 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     assert actual.is_empty()
 
 
+async def test_update_with_new_domain_preserves_domain(
+    tmpdir: Path, domain_with_categorical_slot_path
+):
+    domain = Domain.load(domain_with_categorical_slot_path)
+    domain.setup_slots()
+
+    core_directory = tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME
+    core_directory.mkdir()
+
+    domain.persist(str(core_directory / DEFAULT_DOMAIN_PATH))
+    domain.persist_specification(core_directory)
+
+    mocked_importer = Mock()
+
+    async def get_domain() -> Domain:
+        return Domain.load(domain_with_categorical_slot_path)
+
+    mocked_importer.get_domain = get_domain
+
+    await model.update_model_with_new_domain(mocked_importer, tmpdir)
+
+    new_persisted = Domain.load(core_directory / DEFAULT_DOMAIN_PATH)
+    new_persisted.compare_with_specification(str(core_directory))
+
+
 @pytest.mark.parametrize(
     "min_compatible_version, old_model_version, can_tune",
     [("2.1.0", "2.1.0", True), ("2.0.0", "2.1.0", True), ("2.1.0", "2.0.0", False),],
