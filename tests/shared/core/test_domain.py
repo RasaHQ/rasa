@@ -65,7 +65,7 @@ async def test_create_train_data_no_history(default_domain: Domain):
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
     )
 
-    assert len(training_trackers) == 3
+    assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain
     )
@@ -96,7 +96,7 @@ async def test_create_train_data_with_history(default_domain: Domain):
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
     )
-    assert len(training_trackers) == 3
+    assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain
     )
@@ -115,6 +115,8 @@ async def test_create_train_data_with_history(default_domain: Domain):
         '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
