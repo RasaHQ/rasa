@@ -390,7 +390,7 @@ class Component(metaclass=ComponentMetaclass):
 
     @property
     def name(self) -> Text:
-        """Name of the component to be used in the model configuration.
+        """Returns the name of the component to be used in the model configuration.
 
         Component class name is used when integrating it in a
         pipeline. E.g. `[ComponentA, ComponentB]`
@@ -412,7 +412,7 @@ class Component(metaclass=ComponentMetaclass):
 
     @classmethod
     def required_components(cls) -> List[Type["Component"]]:
-        """Specify which components need to be present in the pipeline.
+        """Specifies which components need to be present in the pipeline.
 
         Which components are required by this component.
         Listed components should appear before the component itself in the pipeline.
@@ -464,7 +464,7 @@ class Component(metaclass=ComponentMetaclass):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        """Specify which python packages need to be installed.
+        """Specifies which python packages need to be installed.
 
         E.g. ``["spacy"]``. More specifically, these should be
         importable python package names e.g. `sklearn` and not package
@@ -487,7 +487,7 @@ class Component(metaclass=ComponentMetaclass):
         cached_component: Optional["Component"] = None,
         **kwargs: Any,
     ) -> "Component":
-        """Load this component from file.
+        """Loads this component from file.
 
         After a component has been trained, it will be persisted by
         calling `persist`. When the pipeline gets loaded again,
@@ -534,7 +534,7 @@ class Component(metaclass=ComponentMetaclass):
         return cls(component_config)
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
-        """Initialize this component for a new pipeline.
+        """Initializes this component for a new pipeline.
 
         This function will be called before the training
         is started and before the first message is processed using
@@ -557,7 +557,7 @@ class Component(metaclass=ComponentMetaclass):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component.
+        """Trains this component.
 
         This is the components chance to train itself provided
         with the training data. The component can rely on
@@ -569,15 +569,13 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            training_data:
-                The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+            training_data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
-
         """
         pass
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Process an incoming message.
+        """Processes an incoming message.
 
         This is the components chance to process an incoming
         message. The component can rely on
@@ -594,7 +592,7 @@ class Component(metaclass=ComponentMetaclass):
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this component to disk for future loading.
+        """Persists this component to disk for future loading.
 
         Args:
             file_name: The file name of the model.
