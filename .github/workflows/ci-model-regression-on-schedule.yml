@@ -206,6 +206,7 @@ jobs:
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           PR_URL: ""
+          DATASET_REPOSITORY_BRANCH: "master"
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
