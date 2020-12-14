@@ -93,7 +93,6 @@ from rasa.utils.tensorflow.constants import (
     SEQUENCE_LENGTH,
     DENSE_DIMENSION,
     CONCAT_DIMENSION,
-    E2E_CONFIDENCE_THRESHOLD,
     SPARSE_INPUT_DROPOUT,
     DENSE_INPUT_DROPOUT,
     MASKED_LM,
@@ -111,6 +110,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = IDS
 LENGTH = "length"
