@@ -255,6 +255,7 @@ jobs:
           Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $spacy_data_dir -Type Directory
         }
+        pip3 install virtualenv==20.0.35
         poetry run python --version
         cat .venv/pyvenv.cfg
         poetry env info
