@@ -353,6 +353,7 @@ def test_train_nlu_autoconfig(
     assert args[1] == autoconfig.TrainingType.NLU
 
 
+@pytest.mark.timeout(300)
 @pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning(
     tmp_path: Path,
@@ -395,6 +396,7 @@ def test_model_finetuning(
     assert isinstance(kwargs["model_to_finetune"], Interpreter)
 
 
+@pytest.mark.timeout(300)
 @pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning_core(
     tmp_path: Path,
@@ -542,6 +544,7 @@ def test_model_finetuning_new_domain_label_stops_all_training(
     mocked_nlu_training.assert_not_called()
 
 
+@pytest.mark.timeout(300)
 @pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning_nlu(
     tmp_path: Path,
@@ -710,6 +713,7 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
     mocked_nlu_training.assert_called()
 
 
+@pytest.mark.timeout(200)
 def test_model_finetuning_nlu_with_default_epochs(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
