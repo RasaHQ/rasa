@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import secrets
 import sys
 import tempfile
@@ -9,6 +10,7 @@ from unittest.mock import Mock
 
 import pytest
 from _pytest.capture import CaptureFixture
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
@@ -18,7 +20,7 @@ import rasa.shared.importers.autoconfig as autoconfig
 import rasa.shared.utils.io
 from rasa.core.interpreter import RasaNLUInterpreter
 
-from rasa.train import train_core, train_nlu, train
+from rasa.train import train_core, train_nlu, train, dry_run_result
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.core.test_model import _fingerprint
@@ -384,6 +386,34 @@ def new_model_path_in_same_dir(old_model_path) -> str:
 
 
 class TestE2e:
+    def test_e2e_gives_experimental_warning(
+        self,
+        monkeypatch: MonkeyPatch,
+        trained_e2e_model: Text,
+        default_domain_path,
+        default_stack_config,
+        default_e2e_stories_file,
+        default_nlu_data,
+        caplog: LogCaptureFixture,
+    ):
+        mock_nlu_training(monkeypatch)
+        mock_core_training(monkeypatch)
+
+        with caplog.at_level(logging.WARNING):
+            train(
+                default_domain_path,
+                default_stack_config,
+                [default_e2e_stories_file, default_nlu_data],
+                output=new_model_path_in_same_dir(trained_e2e_model),
+            )
+
+        assert any(
+            [
+                "The end-to-end training is currently experimental" in record.message
+                for record in caplog.records
+            ]
+        )
+
     def test_models_not_retrained_if_no_new_data(
         self,
         monkeypatch: MonkeyPatch,
@@ -583,3 +613,51 @@ class TestE2e:
             "Stories file contains e2e stories. "
             + "Please train using `rasa train` so that the NLU model is also trained."
         ) in captured.out
+
+
+@pytest.mark.parametrize(
+    "result, code, texts_count",
+    [
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=False, nlu=False, nlg=False, force_training=True
+            ),
+            0b1000,
+            1,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=True, nlu=True, nlg=True, force_training=True
+            ),
+            0b1000,
+            1,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=False, nlu=False, nlg=True, force_training=False
+            ),
+            0b0100,
+            1,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=True, nlu=True, nlg=True, force_training=False
+            ),
+            0b0111,
+            3,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=False, nlu=False, nlg=False, force_training=False
+            ),
+            0,
+            1,
+        ),
+    ],
+)
+def test_dry_run_result(
+    result: rasa.model.FingerprintComparisonResult, code: int, texts_count: int,
+):
+    result_code, texts = dry_run_result(result)
+    assert result_code == code
+    assert len(texts) == texts_count

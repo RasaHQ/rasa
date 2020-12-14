@@ -22,6 +22,7 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
     ENTITY_LABEL_SEPARATOR,
     ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
 )
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (
@@ -440,13 +441,15 @@ class UserUttered(Event):
                 f"{entity[ENTITY_ATTRIBUTE_VALUE]} "
                 f"(Type: {entity[ENTITY_ATTRIBUTE_TYPE]}, "
                 f"Role: {entity.get(ENTITY_ATTRIBUTE_ROLE)}, "
-                f"Group: {entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+                f"Group: {entity.get(ENTITY_ATTRIBUTE_GROUP)})"
                 for entity in self.entities
             ]
             entities = f", entities: {', '.join(entities)}"
 
         return (
-            f"UserUttered(text: {self.text}, intent: {self.intent_name}" f"{entities}))"
+            f"UserUttered(text: {self.text}, intent: {self.intent_name}"
+            f"{entities}"
+            f", use_text_for_featurization: {self.use_text_for_featurization})"
         )
 
     @staticmethod
@@ -583,7 +586,20 @@ class UserUttered(Event):
 
 
 # noinspection PyProtectedMember
-class DefinePrevUserUtteredFeaturization(Event):
+class DefinePrevUserUttered(Event):
+    """Defines the family of events that are used to update previous user utterance."""
+
+    def as_story_string(self) -> None:
+        """Returns the event as story string.
+
+        Returns:
+            None, as this event should not appear inside the story.
+        """
+        return
+
+
+# noinspection PyProtectedMember
+class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
     """Stores information whether action was predicted based on text or intent."""
 
     type_name = "user_featurization"
@@ -613,10 +629,6 @@ class DefinePrevUserUtteredFeaturization(Event):
         """Returns unique hash for event."""
         return hash(self.use_text_for_featurization)
 
-    def as_story_string(self) -> None:
-        """Skips representing the event in stories."""
-        return None
-
     @classmethod
     def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredFeaturization":
         return DefinePrevUserUtteredFeaturization(
@@ -631,9 +643,25 @@ class DefinePrevUserUtteredFeaturization(Event):
         d.update({USE_TEXT_FOR_FEATURIZATION: self.use_text_for_featurization})
         return d
 
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state.
+
+        Args:
+            tracker: The current conversation state.
+        """
+        if tracker.latest_action_name != ACTION_LISTEN_NAME:
+            # featurization belong only to the last user message
+            # a user message is always followed by action listen
+            return
+
+        # update previous user message's featurization based on this event
+        tracker.latest_message.use_text_for_featurization = (
+            self.use_text_for_featurization
+        )
+
 
 # noinspection PyProtectedMember
-class DefinePrevUserUtteredEntities(Event):
+class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
     """Event that is used to set entities on a previous user uttered event."""
 
     type_name = "user_entities"
@@ -667,14 +695,6 @@ class DefinePrevUserUtteredEntities(Event):
         """Compares this event with another event."""
         return isinstance(other, DefinePrevUserUtteredEntities)
 
-    def as_story_string(self) -> None:
-        """Returns the event as story string.
-
-        Returns:
-            None, as this event should not appear inside the story.
-        """
-        return None
-
     @classmethod
     def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredEntities":
         return DefinePrevUserUtteredEntities(
@@ -692,6 +712,21 @@ class DefinePrevUserUtteredEntities(Event):
         d = super().as_dict()
         d.update({ENTITIES: self.entities})
         return d
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state.
+
+        Args:
+            tracker: The current conversation state.
+        """
+        if tracker.latest_action_name != ACTION_LISTEN_NAME:
+            # entities belong only to the last user message
+            # a user message always comes after action listen
+            return
+
+        for entity in self.entities:
+            if entity not in tracker.latest_message.entities:
+                tracker.latest_message.entities.append(entity)
 
 
 # noinspection PyProtectedMember
