@@ -1417,16 +1417,19 @@ class TED(TransformerRasaModel):
         text_transformer_output: tf.Tensor,
         text_sequence_lengths: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        # The first dim of the output of the text sequence transformer is the same
+        # as number of "real" features for `text` at the last dialogue turns
+        # (let's call it `N`),
+        # which corresponds to the first dim of the tag ids tensor.
         # To calculate the loss for entities we need the output of the text
-        # sequence transformer (shape: real entity dim x
-        # sequence length x units), the output of the dialogue transformer
+        # sequence transformer (shape: N x sequence length x units),
+        # the output of the dialogue transformer
         # (shape: batch size x dialogue length x units) and the tag ids for the
-        # entities (shape: real entity dim x sequence length - 1 x units)
-        # The real entity dimension for the text sequence transformer
-        # and the tag ids matches.
+        # entities (shape: N x sequence length - 1 x units)
         # In order to process the tensors, they need to have the same shape.
         # Convert the output of the dialogue transformer to shape
-        # (real entity dim x 1 x units).
+        # (N x 1 x units).
+
         # Note: The CRF layer cannot handle 4D tensors. E.g. we cannot use the shape
         # batch size x dialogue length x sequence length x units
 
@@ -1436,7 +1439,7 @@ class TED(TransformerRasaModel):
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         if self.use_only_last_dialogue_turns:
-            # pick last vector if max history featurizer is used
+            # pick outputs that correspond to the last dialogue turns
             attribute_mask = tf.expand_dims(
                 self._last_token(attribute_mask, dialogue_lengths), axis=1
             )
@@ -1457,8 +1460,8 @@ class TED(TransformerRasaModel):
 
         # concat the output of the dialogue transformer to the output of the text
         # sequence transformer (adding context)
-        # resulting shape
-        # (real entity dim x sequence length x 2 units)
+        # resulting shape (N x sequence length x 2 units)
+        # N = number of "real" features for `text` at the last dialogue turns
         text_transformed = tf.concat(
             [text_transformer_output, dialogue_transformer_output], axis=-1
         )
