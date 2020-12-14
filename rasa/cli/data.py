@@ -213,12 +213,7 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Number of turns taken into account for story structure validation.",
     )
-    parser.add_argument(
-        "--config",
-        type=str,
-        default=None,
-        help="Path to the configuration file where the pipeline is specified.",
-    )
+    default_arguments.add_config_param(parser)
 
 
 def split_nlu_data(args: argparse.Namespace) -> None:
