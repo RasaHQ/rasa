@@ -244,7 +244,7 @@ jobs:
         make prepare-tests-ubuntu
 
     - name: Install Dependencies (Windows) 📦
-      if: needs.changes.outputs.backend == 'true'
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
       # Restoring cache doesn't work properly on Windows due to symlinks.
       # We create symlinks for spacy models, that's why we need to clean them up
       # before caching the dependencies directory.
