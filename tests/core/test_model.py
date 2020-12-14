@@ -44,7 +44,8 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING
+from rasa.train import train_core, train_core_async
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 
 def test_get_latest_model(trained_rasa_model: str):
@@ -347,6 +348,33 @@ def test_should_retrain(
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
+async def test_should_not_retrain_core(default_domain_path: Text, tmp_path: Path):
+    # Don't use `default_stories_file` as checkpoints currently break fingerprinting
+    story_file = tmp_path / "simple_story.yml"
+    story_file.write_text(
+        """
+stories:
+- story: test_story
+  steps:
+  - intent: greet
+  - action: utter_greet
+    """
+    )
+    trained_model = await train_core_async(
+        default_domain_path, DEFAULT_STACK_CONFIG, str(story_file), str(tmp_path)
+    )
+
+    importer = TrainingDataImporter.load_from_config(
+        DEFAULT_STACK_CONFIG, default_domain_path, training_data_paths=[str(story_file)]
+    )
+
+    new_fingerprint = await model.model_fingerprint(importer)
+
+    result = model.should_retrain(new_fingerprint, trained_model, tmp_path)
+
+    assert not result.should_retrain_core()
+
+
 def set_fingerprint(
     trained_rasa_model: Text, fingerprint: Fingerprint, tmp_path: Path
 ) -> Text:
@@ -418,3 +446,27 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
 
     assert actual.is_empty()
+
+
+async def test_update_with_new_domain_preserves_domain(
+    tmpdir: Path, domain_with_categorical_slot_path
+):
+    domain = Domain.load(domain_with_categorical_slot_path)
+
+    core_directory = tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME
+    core_directory.mkdir()
+
+    domain.persist(str(core_directory / DEFAULT_DOMAIN_PATH))
+    domain.persist_specification(core_directory)
+
+    mocked_importer = Mock()
+
+    async def get_domain() -> Domain:
+        return Domain.load(domain_with_categorical_slot_path)
+
+    mocked_importer.get_domain = get_domain
+
+    await model.update_model_with_new_domain(mocked_importer, tmpdir)
+
+    new_persisted = Domain.load(core_directory / DEFAULT_DOMAIN_PATH)
+    new_persisted.compare_with_specification(str(core_directory))

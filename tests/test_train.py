@@ -202,7 +202,7 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
 
 def test_train_nlu_no_nlu_file_error_message(
     capsys: CaptureFixture,
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
 ):

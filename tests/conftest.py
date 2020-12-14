@@ -21,6 +21,7 @@ from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
@@ -35,6 +36,7 @@ from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
+    DOMAIN_WITH_CATEGORICAL_SLOT,
     END_TO_END_STORY_FILE,
     INCORRECT_NLU_DATA,
 )
@@ -68,7 +70,7 @@ async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
 
     agent = Agent(
         "data/test_domains/default_with_slots.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3)],
+        policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
     )
 
     training_data = await agent.load_data(DEFAULT_STORIES_FILE)
@@ -123,6 +125,11 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 def default_domain_path() -> Text:
     return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+
+@pytest.fixture(scope="session")
+def domain_with_categorical_slot_path() -> Text:
+    return DOMAIN_WITH_CATEGORICAL_SLOT
 
 
 @pytest.fixture(scope="session")

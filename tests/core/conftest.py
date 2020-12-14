@@ -24,9 +24,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
-DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
-    "data/test_domains/default_with_slots_and_no_actions.yml"
-)
+DOMAIN_WITH_CATEGORICAL_SLOT = "data/test_domains/domain_with_categorical_slot.yml"
 
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
@@ -58,7 +56,6 @@ TEST_DIALOGUES = [
 
 EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",

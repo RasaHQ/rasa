@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
 import rasa.shared.data
+from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import YamlException
 from rasa.shared.utils import validation
 from ruamel.yaml import StringIO
@@ -409,7 +410,9 @@ class RasaYAMLWriter(TrainingDataWriter):
             result[KEY_NLU] = nlu_items
 
         if training_data.responses:
-            result[KEY_RESPONSES] = training_data.responses
+            result[KEY_RESPONSES] = Domain.get_responses_with_multilines(
+                training_data.responses
+            )
 
         return result
 
