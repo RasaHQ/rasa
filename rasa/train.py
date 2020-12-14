@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 from contextlib import ExitStack
-from typing import Text, Optional, List, Union, Dict
+from typing import Text, NamedTuple, Tuple, Optional, List, Union, Dict
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -20,6 +20,7 @@ from rasa.shared.utils.cli import (
     print_error,
     print_color,
 )
+import rasa.shared.exceptions
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
@@ -27,25 +28,60 @@ from rasa.shared.constants import (
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
 
+CODE_CORE_NEEDS_TO_BE_RETRAINED = 0b0001
+CODE_NLU_NEEDS_TO_BE_RETRAINED = 0b0010
+CODE_NLG_NEEDS_TO_BE_RETRAINED = 0b0100
+CODE_FORCED_TRAINING = 0b1000
+
+
+class TrainingResult(NamedTuple):
+    """Holds information about the results of training."""
+
+    model: Optional[Text] = None
+    code: int = 0
+
 
 def train(
     domain: Text,
     config: Text,
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
+    dry_run: bool = False,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
-) -> Optional[Text]:
+) -> TrainingResult:
+    """Runs Rasa Core and NLU training in `async` loop.
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config for Core and NLU.
+        training_files: Paths to the training data for Core and NLU.
+        output: Output path.
+        dry_run: If `True` then no training will be done, and the information about
+            whether the training needs to be done will be printed.
+        force_training: If `True` retrain model even if data has not changed.
+        fixed_model_name: Name of model to be stored.
+        persist_nlu_training_data: `True` if the NLU training data should be persisted
+            with the model.
+        core_additional_arguments: Additional training parameters for core training.
+        nlu_additional_arguments: Additional training parameters forwarded to training
+            method of each NLU component.
+        loop: The event loop which will be used to run `async` functions.
+
+    Returns:
+        An instance of `TrainingResult`.
+    """
     return rasa.utils.common.run_in_loop(
         train_async(
             domain=domain,
             config=config,
             training_files=training_files,
-            output_path=output,
+            output=output,
+            dry_run=dry_run,
             force_training=force_training,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
@@ -60,13 +96,14 @@ async def train_async(
     domain: Union[Domain, Text],
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
-    output_path: Text = DEFAULT_MODELS_PATH,
+    output: Text = DEFAULT_MODELS_PATH,
+    dry_run: bool = False,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-) -> Optional[Text]:
+) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
     Args:
@@ -74,18 +111,19 @@ async def train_async(
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
         output_path: Output path.
+        dry_run: If `True` then no training will be done, and the information about
+            whether the training needs to be done will be printed.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
-                                   with the model.
+            with the model.
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
-                                  method of each NLU component.
+            method of each NLU component.
 
     Returns:
-        Path of the trained model archive.
+        An instance of `TrainingResult`.
     """
-
     file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
@@ -95,14 +133,16 @@ async def train_async(
         domain = await file_importer.get_domain()
 
         if domain.is_empty():
-            return await handle_domain_if_not_exists(
-                file_importer, output_path, fixed_model_name
+            nlu_model = await handle_domain_if_not_exists(
+                file_importer, output, fixed_model_name
             )
+            return TrainingResult(model=nlu_model)
 
         return await _train_async_internal(
             file_importer,
             train_path,
-            output_path,
+            output,
+            dry_run,
             force_training,
             fixed_model_name,
             persist_nlu_training_data,
@@ -125,73 +165,118 @@ async def handle_domain_if_not_exists(
     return nlu_model_only
 
 
+def dry_run_result(
+    fingerprint_comparison: FingerprintComparisonResult,
+) -> Tuple[int, List[Text]]:
+    """Returns a dry run result.
+
+    Args:
+        fingerprint_comparison: A result of fingerprint comparison operation.
+
+    Returns:
+        A tuple where the first element is the result code and the second
+        is the list of human-readable texts that need to be printed to the end user.
+    """
+    code = 0
+    texts = []
+
+    if fingerprint_comparison.force_training:
+        code = CODE_FORCED_TRAINING
+        texts.append("The training was forced.")
+        return code, texts
+
+    if fingerprint_comparison.core:
+        code += CODE_CORE_NEEDS_TO_BE_RETRAINED
+        texts.append("Core model should be retrained.")
+
+    if fingerprint_comparison.nlu:
+        code += CODE_NLU_NEEDS_TO_BE_RETRAINED
+        texts.append("NLU model should be retrained.")
+
+    if fingerprint_comparison.nlg:
+        code += CODE_NLG_NEEDS_TO_BE_RETRAINED
+        texts.append("Responses in the domain should be updated.")
+
+    if code == 0:
+        texts.append("No training required.")
+
+    return code, texts
+
+
 async def _train_async_internal(
     file_importer: TrainingDataImporter,
     train_path: Text,
     output_path: Text,
+    dry_run: bool,
     force_training: bool,
     fixed_model_name: Optional[Text],
     persist_nlu_training_data: bool,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-) -> Optional[Text]:
+) -> TrainingResult:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
     Args:
         file_importer: `TrainingDataImporter` which supplies the training data.
         train_path: Directory in which to train the model.
         output_path: Output path.
+        dry_run: If `True` then no training will be done, and the information about
+            whether the training needs to be done will be printed.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
-                                   with the model.
+            with the model.
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
-                                  method of each NLU component.
+            method of each NLU component.
 
     Returns:
-        Path of the trained model archive.
+        An instance of `TrainingResult`.
     """
-
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
+
+    new_fingerprint = await model.model_fingerprint(file_importer)
+    old_model = model.get_latest_model(output_path)
+
+    fingerprint_comparison = model.should_retrain(
+        new_fingerprint, old_model, train_path, force_training
+    )
+
+    if dry_run:
+        code, texts = dry_run_result(fingerprint_comparison)
+        for text in texts:
+            print_warning(text) if code > 0 else print_success(text)
+        return TrainingResult(code=code)
 
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(
             "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
-        return
+        return TrainingResult()
 
     if stories.is_empty():
         print_warning("No stories present. Just a Rasa NLU model will be trained.")
-        return await _train_nlu_with_validated_data(
+        trained_model = await _train_nlu_with_validated_data(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
         )
+        return TrainingResult(model=trained_model)
 
     if nlu_data.can_train_nlu_model():
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
-        return await _train_core_with_validated_data(
+        trained_model = await _train_core_with_validated_data(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
         )
-
-    new_fingerprint = await model.model_fingerprint(file_importer)
-    old_model = model.get_latest_model(output_path)
-
-    if not force_training:
-        fingerprint_comparison = model.should_retrain(
-            new_fingerprint, old_model, train_path
-        )
-    else:
-        fingerprint_comparison = FingerprintComparisonResult(force_training=True)
+        return TrainingResult(model=trained_model)
 
     if fingerprint_comparison.is_training_required():
         async with telemetry.track_model_training(file_importer, model_type="rasa"):
@@ -206,19 +291,19 @@ async def _train_async_internal(
                 nlu_additional_arguments=nlu_additional_arguments,
                 old_model_zip_path=old_model,
             )
-
-        return model.package_model(
+        trained_model = model.package_model(
             fingerprint=new_fingerprint,
             output_directory=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
         )
+        return TrainingResult(model=trained_model)
 
     print_success(
         "Nothing changed. You can use the old model stored at '{}'."
         "".format(os.path.abspath(old_model))
     )
-    return old_model
+    return TrainingResult(model=old_model)
 
 
 async def _do_training(
