@@ -21,7 +21,6 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DOCS_URL_MIGRATION_GUIDE,
-    DEFAULT_CONFIG_PATH,
 )
 import rasa.shared.data
 from rasa.shared.core.constants import (
