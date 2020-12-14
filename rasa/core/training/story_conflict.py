@@ -197,26 +197,27 @@ def find_story_conflicts(
 def _get_tokenizer_from_nlu_config(
     nlu_config: Optional[RasaNLUModelConfig] = None,
 ) -> Optional[Tokenizer]:
-    """Extracts the `tokenize` function of the first Tokenizer in the pipeline.
+    """Extracts the first Tokenizer in the NLU pipeline.
 
     Args:
         nlu_config: NLU Config.
+
+    Returns:
+        The first Tokenizer in the NLU pipeline, if any.
     """
     if not nlu_config:
         return None
 
-    pipeline: List[Component] = Trainer(
-        nlu_config, skip_validation=True
-    ).pipeline  # ToDo: ComponentBuilder?
+    pipeline: List[Component] = Trainer(nlu_config, skip_validation=True).pipeline
     tokenizer: Optional[Tokenizer] = None
     for component in pipeline:
-        if isinstance(component, Tokenizer) and tokenizer:
-            raise_warning(
-                "The pipeline contains more than one tokenizer. "
-                "Only the first tokenizer will be used for story validation.",
-                category=UserWarning,
-            )
-        elif isinstance(component, Tokenizer):
+        if isinstance(component, Tokenizer):
+            if tokenizer:
+                raise_warning(
+                    "The pipeline contains more than one tokenizer. "
+                    "Only the first tokenizer will be used for story validation.",
+                    category=UserWarning,
+                )
             tokenizer = component
 
     return tokenizer

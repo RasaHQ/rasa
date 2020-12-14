@@ -96,6 +96,16 @@ class Features:
         """
         return (self.type, self.attribute, self.features, self.origin)
 
+    def __hash__(self) -> int:
+        """Returns the hash of the features.
+
+        Returns:
+            The hash, based on type, attribute, features, and origin properties.
+            This is likely to raise an error since numpy arrays and sparse matrices
+            have no native hash implementation.
+        """
+        return hash(self.__key__())
+
     def __eq__(self, other: Any) -> bool:
         """Tests whether two Features are the same.
 

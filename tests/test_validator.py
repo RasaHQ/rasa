@@ -108,7 +108,9 @@ async def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
-async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace(tmp_path):
+async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace(
+    tmp_path: Path,
+):
     story_file_name = tmp_path / "stories.yml"
     with open(story_file_name, "w") as file:
         file.write(
@@ -136,7 +138,7 @@ async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace(tm
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
-async def test_verify_correct_e2e_story_structure(tmp_path):
+async def test_verify_correct_e2e_story_structure(tmp_path: Path):
     story_file_name = tmp_path / "stories.yml"
     with open(story_file_name, "w") as file:
         file.write(
