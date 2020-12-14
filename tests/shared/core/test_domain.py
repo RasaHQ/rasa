@@ -7,7 +7,10 @@ import pytest
 
 from rasa.shared.exceptions import YamlSyntaxException
 import rasa.shared.utils.io
-from rasa.shared.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+from rasa.shared.constants import (
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
@@ -1142,3 +1145,103 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
 def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)
+
+
+def test_slot_order_is_preserved():
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+slots:
+  confirm:
+    type: bool
+    influence_conversation: false
+  previous_email:
+    type: text
+    influence_conversation: false
+  caller_id:
+    type: text
+    influence_conversation: false
+  email:
+    type: text
+    influence_conversation: false
+  incident_title:
+    type: text
+    influence_conversation: false
+  priority:
+    type: text
+    influence_conversation: false
+  problem_description:
+    type: text
+    influence_conversation: false
+  requested_slot:
+    type: text
+    influence_conversation: false
+  handoff_to:
+    type: text
+    influence_conversation: false
+"""
+
+    domain = Domain.from_yaml(test_yaml)
+    assert domain.as_yaml(clean_before_dump=True) == test_yaml
+
+
+def test_slot_order_is_preserved_when_merging():
+
+    slot_1 = """
+  b:
+    type: text
+    influence_conversation: false
+  a:
+    type: text
+    influence_conversation: false"""
+
+    test_yaml_1 = f"""
+slots:{slot_1}
+"""
+
+    slot_2 = """
+  d:
+    type: text
+    influence_conversation: false
+  c:
+    type: text
+    influence_conversation: false"""
+
+    test_yaml_2 = f"""
+slots:{slot_2}
+"""
+
+    test_yaml_merged = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+slots:{slot_2}{slot_1}
+"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain_merged = domain_1.merge(domain_2)
+
+    assert domain_merged.as_yaml(clean_before_dump=True) == test_yaml_merged
+
+
+def test_responses_text_multiline_is_preserved():
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+responses:
+  utter_confirm:
+  - text: |-
+      First line
+      Second line
+      Third line
+  - text: One more response
+  utter_cancel:
+  - text: First line
+  - text: Second line
+"""
+
+    domain = Domain.from_yaml(test_yaml)
+    assert domain.as_yaml(clean_before_dump=True) == test_yaml
