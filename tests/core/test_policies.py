@@ -407,14 +407,7 @@ class TestTEDPolicy(PolicyTestCollection):
             training_data, label_ids, entity_tags, all_labels
         )
         batch_size = 2
-        print(len(next(model_data._gen_batch(batch_size=batch_size))))
-        print()
-        for k, v in model_data.items():
-            print(k)
-            for _k, _v in v.items():
-                print("  ", _k)
-                for __v in _v:
-                    print("    ", __v.shape)
+
         # model data keys were sorted, so the order is alphabetical
         (
             batch_action_name_mask,
