@@ -298,6 +298,7 @@ class CategoricalSlot(Slot):
             )
 
     def persistence_info(self) -> Dict[Text, Any]:
+        """Returns serialized slot."""
         d = super().persistence_info()
         d["values"] = [
             value

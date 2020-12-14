@@ -739,9 +739,9 @@ class Domain:
         self._add_requested_slot()
 
     def _add_knowledge_base_slots(self) -> None:
-        """
-        Add slots for the knowledge base action to the list of slots, if the
-        default knowledge base action name is present.
+        """Add slots for the knowledge base action to slots.
+
+        Slots are only added if the default knowledge base action name is present.
 
         As soon as the knowledge base action is not experimental anymore, we should
         consider creating a new section in the domain file dedicated to knowledge
@@ -777,8 +777,7 @@ class Domain:
         self._add_knowledge_base_slots()
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
-        """Look up which action index corresponds to this action name."""
-
+        """Looks up which action index corresponds to this action name."""
         try:
             return self.action_names.index(action_name)
         except ValueError:
@@ -1078,6 +1077,7 @@ class Domain:
         return {slot.name: slot.persistence_info() for slot in self._user_slots}
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized domain."""
         return {
             "config": {"store_entities_as_slots": self.store_entities_as_slots},
             SESSION_CONFIG_KEY: {
