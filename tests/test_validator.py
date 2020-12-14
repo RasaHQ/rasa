@@ -3,6 +3,7 @@ import pytest
 import rasa.shared.utils.io
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.shared.importers.autoconfig import TrainingType
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
 from pathlib import Path
@@ -103,6 +104,7 @@ async def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
+        training_type=TrainingType.NLU,
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
@@ -133,6 +135,7 @@ async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace(
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
+        training_type=TrainingType.NLU,
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
