@@ -508,7 +508,7 @@ class Domain:
 
         Args:
             intents: Intent labels.
-            entities: The name of the entities which might be present in user messages.
+            entities: The names of entities which might be present in user messages.
             slots: Slots to store information during the conversation.
             templates: Bot responses. If an action with the same name is executed, it
                 will send the matching response to the user.
@@ -517,7 +517,7 @@ class Domain:
             action_texts: End-to-End bot utterances from end-to-end stories.
             store_entities_as_slots: If `True` Rasa will automatically create `SlotSet`
                 events for entities if there are slots with the same name as the entity.
-            session_config: Configuration for conversation sessions. Conversation are
+            session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
         """
         self.entities, self.roles, self.groups = self.collect_entity_properties(
@@ -769,7 +769,7 @@ class Domain:
             self.raise_action_not_found_exception(action_name)
 
     def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:
-        """Raises exception if action name or text not part of the domain.
+        """Raises exception if action name or text not part of the domain or stories.
 
         Args:
             action_name_or_text: Name of an action or its text in case it's an

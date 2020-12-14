@@ -280,6 +280,12 @@ class RasaModelData:
     """Data object used for all RasaModels.
 
     It contains all features needed to train the models.
+    'data' is a mapping of attribute name, e.g. TEXT, INTENT, etc., and feature name,
+    e.g. SENTENCE, SEQUENCE, etc., to a list of feature arrays representing the actual
+    features.
+    'label_key' and 'label_sub_key' point to the labels inside 'data'. For
+    example, if your intent labels are stored under INTENT -> IDS, 'label_key' would
+    be "INTENT" and 'label_sub_key' would be "IDS".
     """
 
     def __init__(

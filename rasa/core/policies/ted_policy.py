@@ -46,6 +46,7 @@ from rasa.utils.tensorflow.model_data import (
     RasaModelData,
     FeatureSignature,
     FeatureArray,
+    Data,
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.constants import (
@@ -118,6 +119,7 @@ SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
+PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
@@ -366,6 +368,24 @@ class TEDPolicy(Policy):
 
         return label_data, encoded_all_labels
 
+    def _create_data_for_entities(
+        self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
+    ) -> Optional[Data]:
+        if not self.config[ENTITY_RECOGNITION]:
+            return
+
+        # check that there are real entity tags
+        if entity_tags and any([any(turn_tags) for turn_tags in entity_tags]):
+            entity_tags_data, _ = convert_to_data_format(entity_tags)
+            return entity_tags_data
+
+        # there are no "real" entity tags
+        logger.debug(
+            f"Entity recognition cannot be performed, "
+            f"set '{ENTITY_RECOGNITION}' config parameter to 'False'."
+        )
+        self.config[ENTITY_RECOGNITION] = False
+
     def _create_model_data(
         self,
         tracker_state_features: List[List[Dict[Text, List["Features"]]]],
@@ -405,19 +425,10 @@ class TEDPolicy(Policy):
             attribute_data, self.fake_features = convert_to_data_format(
                 tracker_state_features, featurizers=self.config[FEATURIZERS]
             )
-            if self.config[ENTITY_RECOGNITION] and entity_tags is not None:
-                # check that there are real entity tags
-                if any([any(turn_tags) for turn_tags in entity_tags]):
-                    entity_tags_data, _ = convert_to_data_format(entity_tags)
-                    model_data.add_data(entity_tags_data)
-                else:
-                    # there are no "real" entity tags
-                    logger.debug(
-                        f"Entity recognition cannot be performed,"
-                        f"set {ENTITY_RECOGNITION} to False"
-                    )
-                    self.config[ENTITY_RECOGNITION] = False
 
+            entity_tags_data = self._create_data_for_entities(entity_tags)
+            if entity_tags_data is not None:
+                model_data.add_data(entity_tags_data)
         else:
             # method is called during prediction
             attribute_data, _ = convert_to_data_format(
@@ -775,7 +786,7 @@ class TEDPolicy(Policy):
                 for feature_name, features in model_data_example.items()
                 if feature_name
                 # we need to remove label features for prediction if they are present
-                in STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
+                in PREDICTION_FEATURES
             },
         )
         model.build_for_predict(predict_data_example)
@@ -815,8 +826,7 @@ class TED(TransformerRasaModel):
         self.predict_data_signature = {
             feature_name: features
             for feature_name, features in data_signature.items()
-            if feature_name
-            in STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
+            if feature_name in PREDICTION_FEATURES
         }
 
         self._entity_tag_specs = entity_tag_specs
@@ -902,7 +912,7 @@ class TED(TransformerRasaModel):
             signature: data signature
         """
         for feature_type in VALID_FEATURE_TYPES:
-            if name not in signature or feature_type not in signature[name]:
+            if feature_type not in signature[name]:
                 # features for feature type are not present
                 continue
 
@@ -1202,6 +1212,7 @@ class TED(TransformerRasaModel):
             mask_sequence_text = tf.squeeze(
                 self._compute_mask(sequence_lengths), axis=1
             )
+            # add 1 to sequence lengths to account for sentence features
             sequence_lengths += 1
             mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
@@ -1226,7 +1237,7 @@ class TED(TransformerRasaModel):
                     last_dialogue_turns_mask = self._create_last_dialogue_turns_mask(
                         tf_batch_data, attribute
                     )
-                    # pick last vector if max history featurizer is used
+                    # pick outputs that correspond to the last dialogue turns
                     text_transformer_output = tf.boolean_mask(
                         text_transformer_output, last_dialogue_turns_mask
                     )
@@ -1406,16 +1417,19 @@ class TED(TransformerRasaModel):
         text_transformer_output: tf.Tensor,
         text_sequence_lengths: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        # The first dim of the output of the text sequence transformer is the same
+        # as number of "real" features for `text` at the last dialogue turns
+        # (let's call it `N`),
+        # which corresponds to the first dim of the tag ids tensor.
         # To calculate the loss for entities we need the output of the text
-        # sequence transformer (shape: real entity dim x
-        # sequence length x units), the output of the dialogue transformer
+        # sequence transformer (shape: N x sequence length x units),
+        # the output of the dialogue transformer
         # (shape: batch size x dialogue length x units) and the tag ids for the
-        # entities (shape: real entity dim x sequence length - 1 x units)
-        # The real entity dimension for the text sequence transformer
-        # and the tag ids matches.
+        # entities (shape: N x sequence length - 1 x units)
         # In order to process the tensors, they need to have the same shape.
         # Convert the output of the dialogue transformer to shape
-        # (real entity dim x 1 x units).
+        # (N x 1 x units).
+
         # Note: The CRF layer cannot handle 4D tensors. E.g. we cannot use the shape
         # batch size x dialogue length x sequence length x units
 
@@ -1425,7 +1439,7 @@ class TED(TransformerRasaModel):
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         if self.use_only_last_dialogue_turns:
-            # pick last vector if max history featurizer is used
+            # pick outputs that correspond to the last dialogue turns
             attribute_mask = tf.expand_dims(
                 self._last_token(attribute_mask, dialogue_lengths), axis=1
             )
@@ -1446,8 +1460,8 @@ class TED(TransformerRasaModel):
 
         # concat the output of the dialogue transformer to the output of the text
         # sequence transformer (adding context)
-        # resulting shape
-        # (real entity dim x sequence length x 2 units)
+        # resulting shape (N x sequence length x 2 units)
+        # N = number of "real" features for `text` at the last dialogue turns
         text_transformed = tf.concat(
             [text_transformer_output, dialogue_transformer_output], axis=-1
         )
