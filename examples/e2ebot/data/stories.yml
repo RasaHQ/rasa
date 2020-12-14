@@ -26,7 +26,7 @@ stories:
   - intent: greet
   - action: utter_greet
   - intent: search_restaurant
-  - bot: "how about sushi?"
+  - action: utter_suggest_cuisine
   - user: "I can always go for sushi"
   - action: utter_search_restaurants
 
