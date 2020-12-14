@@ -14,8 +14,6 @@ import rasa.model
 import rasa.core
 import rasa.shared.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
-from rasa.shared.core.domain import Domain
-from rasa.shared.importers.importer import TrainingDataImporter
 
 from rasa.train import train_core, train_nlu, train
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
@@ -204,7 +202,7 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
 
 def test_train_nlu_no_nlu_file_error_message(
     capsys: CaptureFixture,
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
 ):
