@@ -751,10 +751,10 @@ def _check_policy_for_forms_available(
 
     if domain.form_names and not has_policy_for_forms:
         raise InvalidDomain(
-            "You have defined a form action, but haven't added the "
-            "FormPolicy to your policy ensemble. Either remove all "
-            "forms from your domain or exclude the FormPolicy from your "
-            "policy configuration."
+            "You have defined a form action, but have neither added the "
+            f"'{RulePolicy.__name__}' nor the '{FormPolicy.__name__}' (deprecated) to "
+            f"your policy ensemble. Either remove all forms from your domain or add "
+            f"the missing policy to your policy configuration."
         )
 
 

@@ -238,7 +238,7 @@ def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
             domain=Domain.from_dict({"forms": ["restaurant_form"]}),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "haven't added the FormPolicy" in str(execinfo.value)
+    assert "neither added the 'RulePolicy' nor the 'FormPolicy'" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(

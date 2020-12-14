@@ -106,6 +106,20 @@ bool_from_any(x: Any) -> bool
 
 Converts bool/float/int/str to bool or raises error
 
+## CategoricalSlot Objects
+
+```python
+class CategoricalSlot(Slot)
+```
+
+#### persistence\_info
+
+```python
+ | persistence_info() -> Dict[Text, Any]
+```
+
+Returns serialized slot.
+
 ## AnySlot Objects
 
 ```python

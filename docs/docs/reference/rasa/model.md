@@ -247,7 +247,7 @@ Move two model directories.
 #### should\_retrain
 
 ```python
-should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text, force_training: bool = False) -> FingerprintComparisonResult
+should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Union[Text, Path], force_training: bool = False) -> FingerprintComparisonResult
 ```
 
 Check which components of a model should be retrained.

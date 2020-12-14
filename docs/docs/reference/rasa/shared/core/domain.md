@@ -189,24 +189,13 @@ Check if the response template is for a retrieval intent.
 
 These templates have a `/` symbol in their name. Use that to filter them from the rest.
 
-#### setup\_slots
-
-```python
- | setup_slots() -> None
-```
-
-Sets up the default slots and slot values for the domain.
-
 #### add\_categorical\_slot\_default\_value
 
 ```python
  | add_categorical_slot_default_value() -> None
 ```
 
-Add a default value to all categorical slots.
-
-All unseen values found for the slot will be mapped to this default value
-for featurization.
+See `_add_categorical_slot_default_value` for docstring.
 
 #### add\_requested\_slot
 
@@ -214,10 +203,7 @@ for featurization.
  | add_requested_slot() -> None
 ```
 
-Add a slot called `requested_slot` to the list of slots.
-
-The value of this slot will hold the name of the slot which the user
-needs to fill in next (either explicitly or implicitly) as part of a form.
+See `_add_categorical_slot_default_value` for docstring.
 
 #### add\_knowledge\_base\_slots
 
@@ -225,12 +211,7 @@ needs to fill in next (either explicitly or implicitly) as part of a form.
  | add_knowledge_base_slots() -> None
 ```
 
-Add slots for the knowledge base action to the list of slots, if the
-default knowledge base action name is present.
-
-As soon as the knowledge base action is not experimental anymore, we should
-consider creating a new section in the domain file dedicated to knowledge
-base slots.
+See `_add_categorical_slot_default_value` for docstring.
 
 #### index\_for\_action
 
@@ -238,7 +219,7 @@ base slots.
  | index_for_action(action_name: Text) -> Optional[int]
 ```
 
-Look up which action index corresponds to this action name.
+Looks up which action index corresponds to this action name.
 
 #### slot\_states
 
@@ -341,6 +322,14 @@ Compare the domain spec of the current and the loaded domain.
 
 Throws exception if the loaded domain specification is different
 to the current domain are different.
+
+#### as\_dict
+
+```python
+ | as_dict() -> Dict[Text, Any]
+```
+
+Returns serialized domain.
 
 #### get\_responses\_with\_multilines
 
