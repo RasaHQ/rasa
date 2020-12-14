@@ -119,6 +119,7 @@ SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
+PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
@@ -785,7 +786,7 @@ class TEDPolicy(Policy):
                 for feature_name, features in model_data_example.items()
                 if feature_name
                 # we need to remove label features for prediction if they are present
-                in STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
+                in PREDICTION_FEATURES
             },
         )
         model.build_for_predict(predict_data_example)
@@ -825,8 +826,7 @@ class TED(TransformerRasaModel):
         self.predict_data_signature = {
             feature_name: features
             for feature_name, features in data_signature.items()
-            if feature_name
-            in STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
+            if feature_name in PREDICTION_FEATURES
         }
 
         self._entity_tag_specs = entity_tag_specs
