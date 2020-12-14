@@ -38,7 +38,11 @@ from rasa.core.channels import (
     CallbackInput,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
+from rasa.shared.core.constants import (
+    ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
+    REQUESTED_SLOT,
+)
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     Event,
@@ -854,7 +858,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     content = response.json()
     assert response.status == 200
     assert content["paused"] is False
-    assert content["slots"] == {"name": None}
+    assert content["slots"] == {"name": None, REQUESTED_SLOT: None}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
         {

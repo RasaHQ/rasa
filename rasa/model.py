@@ -416,7 +416,7 @@ def move_model(source: Text, target: Text) -> bool:
 
 
 def should_retrain(
-    new_fingerprint: Fingerprint, old_model: Text, train_path: Text
+    new_fingerprint: Fingerprint, old_model: Text, train_path: Union[Text, Path]
 ) -> FingerprintComparisonResult:
     """Check which components of a model should be retrained.
 
@@ -513,5 +513,4 @@ async def update_model_with_new_domain(
 
     model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
     domain = await importer.get_domain()
-    domain.setup_slots()
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
