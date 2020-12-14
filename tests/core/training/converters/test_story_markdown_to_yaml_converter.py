@@ -32,11 +32,11 @@ def test_converter_filters_correct_files(training_data_file: Text, should_filter
     )
 
 
-async def test_stories_are_converted(tmpdir: Path):
-    converted_data_folder = tmpdir / "converted_data"
+async def test_stories_are_converted(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
     os.mkdir(converted_data_folder)
 
-    training_data_folder = tmpdir / "data/core"
+    training_data_folder = tmp_path / "data/core"
     os.makedirs(training_data_folder, exist_ok=True)
     training_data_file = Path(training_data_folder / "stories.md")
 
@@ -51,9 +51,12 @@ async def test_stories_are_converted(tmpdir: Path):
     with open(training_data_file, "w") as f:
         f.write(simple_story_md)
 
-    await StoryMarkdownToYamlConverter().convert_and_write(
-        training_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await StoryMarkdownToYamlConverter().convert_and_write(
+            training_data_file, converted_data_folder
+        )
+
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
@@ -76,11 +79,11 @@ async def test_stories_are_converted(tmpdir: Path):
         )
 
 
-async def test_test_stories(tmpdir: Path):
-    converted_data_folder = tmpdir / "converted_data"
+async def test_test_stories(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
     os.mkdir(converted_data_folder)
 
-    test_data_folder = tmpdir / "tests"
+    test_data_folder = tmp_path / "tests"
     os.makedirs(test_data_folder, exist_ok=True)
     test_data_file = Path(test_data_folder / "test_stories.md")
 
@@ -95,9 +98,12 @@ async def test_test_stories(tmpdir: Path):
     with open(test_data_file, "w") as f:
         f.write(simple_story_md)
 
-    await StoryMarkdownToYamlConverter().convert_and_write(
-        test_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await StoryMarkdownToYamlConverter().convert_and_write(
+            test_data_file, converted_data_folder
+        )
+
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
@@ -118,11 +124,11 @@ async def test_test_stories(tmpdir: Path):
         )
 
 
-async def test_test_stories_conversion_response_key(tmpdir: Path):
-    converted_data_folder = tmpdir / "converted_data"
+async def test_test_stories_conversion_response_key(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
     os.mkdir(converted_data_folder)
 
-    test_data_folder = tmpdir / "tests"
+    test_data_folder = tmp_path / "tests"
     os.makedirs(test_data_folder, exist_ok=True)
     test_data_file = Path(test_data_folder / "test_stories.md")
 
@@ -155,11 +161,11 @@ async def test_test_stories_conversion_response_key(tmpdir: Path):
         )
 
 
-async def test_stories_conversion_response_key(tmpdir: Path):
-    converted_data_folder = tmpdir / "converted_data"
+async def test_stories_conversion_response_key(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
     os.mkdir(converted_data_folder)
 
-    training_data_folder = tmpdir / "data/core"
+    training_data_folder = tmp_path / "data/core"
     os.makedirs(training_data_folder, exist_ok=True)
     training_data_file = Path(training_data_folder / "stories.md")
 
