@@ -242,7 +242,7 @@ async def _train_async_internal(
     old_model = model.get_latest_model(output_path)
 
     fingerprint_comparison = model.should_retrain(
-        new_fingerprint, old_model, train_path, force_training
+        new_fingerprint, old_model, train_path, force_training=force_training
     )
 
     if dry_run:
