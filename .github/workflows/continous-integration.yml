@@ -237,6 +237,7 @@ jobs:
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
       run: |
+        exit 0
         sudo apt-get -y install libpq-dev
         make install-full | tee .output
         if grep 'The lock file is not up to date' .output; then exit 1; fi
