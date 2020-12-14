@@ -705,7 +705,7 @@ class Domain:
     def add_categorical_slot_default_value(self) -> None:
         """See `_add_categorical_slot_default_value` for docstring."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            f"{self.add_categorical_slot_default_value.__name__} is deprecated and "
+            f"'{self.add_categorical_slot_default_value.__name__}' is deprecated and "
             f"will be removed in Rasa Open Source 3.0.0. This method is now "
             f"automatically called when the Domain is created which makes a manual "
             f"call superfluous."
@@ -731,7 +731,7 @@ class Domain:
     def add_requested_slot(self) -> None:
         """See `_add_categorical_slot_default_value` for docstring."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            f"{self.add_requested_slot.__name__} is deprecated and "
+            f"'{self.add_requested_slot.__name__}' is deprecated and "
             f"will be removed in Rasa Open Source 3.0.0. This method is now "
             f"automatically called when the Domain is created which makes a manual "
             f"call superfluous."
@@ -769,7 +769,7 @@ class Domain:
     def add_knowledge_base_slots(self) -> None:
         """See `_add_categorical_slot_default_value` for docstring."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            f"{self.add_knowledge_base_slots.__name__} is deprecated and "
+            f"'{self.add_knowledge_base_slots.__name__}' is deprecated and "
             f"will be removed in Rasa Open Source 3.0.0. This method is now "
             f"automatically called when the Domain is created which makes a manual "
             f"call superfluous."
