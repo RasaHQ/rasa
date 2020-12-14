@@ -915,7 +915,7 @@ def test_add_knowledge_base_slots():
     test_domain = Domain.from_yaml(
         f"""
 actions:
-- {DEFAULT_KNOWLEDGE_BASE_ACTION}    
+- {DEFAULT_KNOWLEDGE_BASE_ACTION}
     """
     )
 
