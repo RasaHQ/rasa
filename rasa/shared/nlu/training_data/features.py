@@ -103,7 +103,7 @@ class Features:
             other: The other object.
 
         Returns:
-            True when the other object is a Feature and has the same
+            `True` when the other object is a `Feature` and has the same
             type, attribute, and feature tensors.
         """
         if not isinstance(other, Features):
