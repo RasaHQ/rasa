@@ -36,6 +36,7 @@ nlu:
     - I don't think so
     - don't like that
     - no way
+    - had better not
 
 - intent: search_restaurant
   examples: |
