@@ -192,7 +192,7 @@ This format is only used for testing and cannot be used for training.
 :::
 
 
-## End-to-end training
+## End-to-end Training
 
 :::caution experimental feature
 End-to-end training is an experimental feature.
@@ -242,5 +242,12 @@ if you provide actual utterance using `bot:` key,
 `TEDPolicy` will featurize it as textual input depending on the NLU configuration.
 Which can help in case of similar utterances in slightly different situations.
 But can also make things harder to learn.
+
+:::
+
+:::note increased train time
+End-to-end training requires significantly more parameters in `TEDPolicy`.
+Therefore, training an end-to-end model might require significant computational
+resources depending on how many end-to-end turns you have in your stories.
 
 :::
