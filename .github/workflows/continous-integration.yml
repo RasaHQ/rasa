@@ -255,9 +255,10 @@ jobs:
           Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $spacy_data_dir -Type Directory
         }
+        poetry env info
         poetry run python -m pip install virtualenv==20.0.33
-        make install-full
-        make prepare-tests-windows
+        #make install-full
+        #make prepare-tests-windows
 
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true'

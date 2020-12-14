@@ -51,6 +51,7 @@ clean:
 	rm -rf docs/.docusaurus
 
 install:
+	# dummy change
 	poetry run python -m pip install -U pip
 	poetry install
 
