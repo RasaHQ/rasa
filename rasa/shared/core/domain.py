@@ -517,7 +517,7 @@ class Domain:
             action_texts: End-to-End bot utterances from end-to-end stories.
             store_entities_as_slots: If `True` Rasa will automatically create `SlotSet`
                 events for entities if there are slots with the same name as the entity.
-            session_config: Configuration for conversation sessions. Conversation are
+            session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
         """
         self.entities, self.roles, self.groups = self.collect_entity_properties(
