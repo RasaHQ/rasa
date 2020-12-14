@@ -128,7 +128,7 @@ def test_surface_attributes():
             (turn[0].features == intent_features[INTENT][0].features).all()
             for dialogue in surfaced_features.get(INTENT)
             for turn in dialogue
-            if turn is not None
+            if turn
         ]
     )
     assert all(
@@ -136,7 +136,7 @@ def test_surface_attributes():
             (turn[0].features != action_name_features[ACTION_NAME][0].features).nnz == 0
             for dialogue in surfaced_features.get(ACTION_NAME)
             for turn in dialogue
-            if turn is not None
+            if turn
         ]
     )
 
