@@ -364,10 +364,10 @@ def test_model_finetuning(
     trained_rasa_model: Text,
     use_latest_model: bool,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
+    mocked_nlu_training = Mock(wraps=rasa.nlu.train)
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
 
-    mocked_core_training = AsyncMock()
+    mocked_core_training = Mock(wraps=rasa.core.train)
     monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
 
     (tmp_path / "models").mkdir()

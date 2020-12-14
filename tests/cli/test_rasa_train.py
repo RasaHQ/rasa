@@ -2,6 +2,7 @@ import os
 import tempfile
 from pathlib import Path
 
+from _pytest.capture import CaptureFixture
 import pytest
 from typing import Callable
 from _pytest.pytester import RunResult
@@ -55,6 +56,17 @@ def test_train(run_in_simple_project: Callable[..., RunResult]):
     assert not os.path.exists(
         os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
     )
+
+
+def test_train_finetune(
+    run_in_simple_project: Callable[..., RunResult], capsys: CaptureFixture
+):
+    run_in_simple_project(
+        "train", "--finetune",
+    )
+
+    output = capsys.readouterr().out
+    assert "No NLU model for finetuning found" in output
 
 
 def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult]):
