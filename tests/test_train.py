@@ -15,7 +15,7 @@ import rasa.core
 import rasa.shared.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
 
-from rasa.train import train_core, train_nlu, train
+from rasa.train import train_core, train_nlu, train, dry_run_result
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.core.test_model import _fingerprint
@@ -356,3 +356,51 @@ def test_train_nlu_autoconfig(
     mocked_get_configuration.assert_called_once()
     _, args, _ = mocked_get_configuration.mock_calls[0]
     assert args[1] == autoconfig.TrainingType.NLU
+
+
+@pytest.mark.parametrize(
+    "result, code, texts_count",
+    [
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=False, nlu=False, nlg=False, force_training=True
+            ),
+            0b1000,
+            1,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=True, nlu=True, nlg=True, force_training=True
+            ),
+            0b1000,
+            1,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=False, nlu=False, nlg=True, force_training=False
+            ),
+            0b0100,
+            1,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=True, nlu=True, nlg=True, force_training=False
+            ),
+            0b0111,
+            3,
+        ),
+        (
+            rasa.model.FingerprintComparisonResult(
+                core=False, nlu=False, nlg=False, force_training=False
+            ),
+            0,
+            1,
+        ),
+    ],
+)
+def test_dry_run_result(
+    result: rasa.model.FingerprintComparisonResult, code: int, texts_count: int,
+):
+    result_code, texts = dry_run_result(result)
+    assert result_code == code
+    assert len(texts) == texts_count

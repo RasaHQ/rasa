@@ -74,19 +74,14 @@ domain = Domain.load("examples/moodbot/domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
-    # skipcq:PYL-W0231
-    # can't call call super init since it would init a redis connection
     def __init__(self, _domain: Domain) -> None:
+        super().__init__(_domain)
+
+        # Patch the Redis connection in RedisTrackerStore using fakeredis
         self.red = fakeredis.FakeStrictRedis()
-        self.record_exp = None
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
-
-        # Defined in RedisTrackerStore but needs to be added for the MockRedisTrackerStore
-        self.prefix = "tracker:"
-
-        TrackerStore.__init__(self, _domain)
 
 
 def stores_to_be_tested():
