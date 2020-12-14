@@ -216,7 +216,6 @@ def _get_tokenizer_from_nlu_config(
                 raise_warning(
                     "The pipeline contains more than one tokenizer. "
                     "Only the first tokenizer will be used for story validation.",
-                    category=UserWarning,
                 )
             tokenizer = component
 
