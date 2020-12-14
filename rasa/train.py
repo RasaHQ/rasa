@@ -3,7 +3,6 @@ import os
 import tempfile
 from contextlib import ExitStack
 from typing import (
-    Any,
     Text,
     NamedTuple,
     Tuple,
@@ -11,24 +10,22 @@ from typing import (
     List,
     Union,
     Dict,
-    TYPE_CHECKING,
 )
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model, telemetry
-from rasa.model import Fingerprint, FingerprintComparisonResult
+from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 import rasa.utils.common
+import rasa.shared.utils.common
 from rasa.utils.common import TempDirectoryPath
 
 from rasa.shared.utils.cli import (
     print_success,
     print_warning,
-    print_error,
-    print_color,
 )
 import rasa.shared.exceptions
 import rasa.shared.utils.io
@@ -551,6 +548,9 @@ async def _train_core_with_validated_data(
         )
 
         if model_to_finetune:
+            rasa.shared.utils.common.mark_as_experimental_feature(
+                "Incremental Training feature"
+            )
             model_to_finetune = await _core_model_for_finetuning(
                 model_to_finetune,
                 file_importer=file_importer,
@@ -756,6 +756,9 @@ async def _train_nlu_with_validated_data(
         )
 
         if model_to_finetune:
+            rasa.shared.utils.common.mark_as_experimental_feature(
+                "Incremental Training feature"
+            )
             model_to_finetune = await _nlu_model_for_finetuning(
                 model_to_finetune,
                 file_importer,
