@@ -36,5 +36,3 @@ stories:
   - action: utter_suggest_cuisine
   - user: "I had that yesterday"
   - action: utter_suggest_cuisine
-
-
