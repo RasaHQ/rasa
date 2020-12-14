@@ -452,7 +452,6 @@ async def test_update_with_new_domain_preserves_domain(
     tmpdir: Path, domain_with_categorical_slot_path
 ):
     domain = Domain.load(domain_with_categorical_slot_path)
-    domain._add_default_slots()
 
     core_directory = tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME
     core_directory.mkdir()

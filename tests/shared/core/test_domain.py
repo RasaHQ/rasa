@@ -901,11 +901,8 @@ def test_clean_domain_for_file():
     assert cleaned == expected
 
 
-def test_add_knowledge_base_slots(default_domain: Domain):
-    # don't modify default domain as it is used in other tests
-    test_domain = copy.deepcopy(default_domain)
-
-    test_domain.action_names.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
+def test_not_add_knowledge_base_slots():
+    test_domain = Domain.empty()
 
     slot_names = [s.name for s in test_domain.slots]
 
@@ -913,7 +910,14 @@ def test_add_knowledge_base_slots(default_domain: Domain):
     assert SLOT_LAST_OBJECT not in slot_names
     assert SLOT_LAST_OBJECT_TYPE not in slot_names
 
-    test_domain._add_knowledge_base_slots()
+
+def test_add_knowledge_base_slots():
+    test_domain = Domain.from_yaml(
+        f"""
+actions:
+- {DEFAULT_KNOWLEDGE_BASE_ACTION}    
+    """
+    )
 
     slot_names = [s.name for s in test_domain.slots]
 
