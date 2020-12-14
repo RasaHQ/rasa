@@ -912,7 +912,7 @@ class TED(TransformerRasaModel):
             signature: data signature
         """
         for feature_type in VALID_FEATURE_TYPES:
-            if name not in signature or feature_type not in signature[name]:
+            if feature_type not in signature[name]:
                 # features for feature type are not present
                 continue
 
