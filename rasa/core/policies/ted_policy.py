@@ -1237,7 +1237,7 @@ class TED(TransformerRasaModel):
                     last_dialogue_turns_mask = self._create_last_dialogue_turns_mask(
                         tf_batch_data, attribute
                     )
-                    # pick last vector if max history featurizer is used
+                    # pick outputs that correspond to the last dialogue turns
                     text_transformer_output = tf.boolean_mask(
                         text_transformer_output, last_dialogue_turns_mask
                     )
