@@ -192,7 +192,7 @@ actions:
 
 responses:
     utter_greet:
-    - text: "hi"    
+    - text: "hi"
     """
     )
 
