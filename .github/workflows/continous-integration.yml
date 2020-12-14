@@ -260,6 +260,7 @@ jobs:
         cat .venv/pyvenv.cfg
         poetry env info
         poetry run pip list
+        poetry run python -m pip install -U pip
         #make install-full
         #make prepare-tests-windows
 
@@ -269,7 +270,8 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        make test
+        echo skip
+        #make test
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
