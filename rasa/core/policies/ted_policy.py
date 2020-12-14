@@ -46,6 +46,7 @@ from rasa.utils.tensorflow.model_data import (
     RasaModelData,
     FeatureSignature,
     FeatureArray,
+    Data,
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.constants import (
@@ -366,6 +367,24 @@ class TEDPolicy(Policy):
 
         return label_data, encoded_all_labels
 
+    def _create_data_for_entities(
+        self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
+    ) -> Optional[Data]:
+        if not self.config[ENTITY_RECOGNITION]:
+            return
+
+        # check that there are real entity tags
+        if entity_tags and any([any(turn_tags) for turn_tags in entity_tags]):
+            entity_tags_data, _ = convert_to_data_format(entity_tags)
+            return entity_tags_data
+
+        # there are no "real" entity tags
+        logger.debug(
+            f"Entity recognition cannot be performed, "
+            f"set '{ENTITY_RECOGNITION}' config parameter to 'False'."
+        )
+        self.config[ENTITY_RECOGNITION] = False
+
     def _create_model_data(
         self,
         tracker_state_features: List[List[Dict[Text, List["Features"]]]],
@@ -405,19 +424,10 @@ class TEDPolicy(Policy):
             attribute_data, self.fake_features = convert_to_data_format(
                 tracker_state_features, featurizers=self.config[FEATURIZERS]
             )
-            if self.config[ENTITY_RECOGNITION] and entity_tags is not None:
-                # check that there are real entity tags
-                if any([any(turn_tags) for turn_tags in entity_tags]):
-                    entity_tags_data, _ = convert_to_data_format(entity_tags)
-                    model_data.add_data(entity_tags_data)
-                else:
-                    # there are no "real" entity tags
-                    logger.debug(
-                        f"Entity recognition cannot be performed,"
-                        f"set {ENTITY_RECOGNITION} to False"
-                    )
-                    self.config[ENTITY_RECOGNITION] = False
 
+            entity_tags_data = self._create_data_for_entities(entity_tags)
+            if entity_tags_data is not None:
+                model_data.add_data(entity_tags_data)
         else:
             # method is called during prediction
             attribute_data, _ = convert_to_data_format(
