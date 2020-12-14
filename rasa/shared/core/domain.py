@@ -769,7 +769,7 @@ class Domain:
             self.raise_action_not_found_exception(action_name)
 
     def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:
-        """Raises exception if action name or text not part of the domain.
+        """Raises exception if action name or text not part of the domain or end-to-end stories.
 
         Args:
             action_name_or_text: Name of an action or its text in case it's an
