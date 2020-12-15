@@ -276,8 +276,7 @@ cause delays)
 2. Make sure the milestone is empty (everything has been either merged or moved to the next milestone)
 3. Once everything in the milestone is taken care of, post a small message on Slack communicating you are about to 
 start the release process (in case anything is missing).
-4. **You may now do the release by following the instructions outlined in the 
-[Rasa Open Source README](#steps-to-release-a-new-version) !**
+4. **You may now do the release by following the instructions that follow !**
 
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
@@ -287,12 +286,13 @@ Releasing a new version is quite simple, as the packages are build and distribut
 * minor release (second version part increases): 1.1.3 -> 1.2.0
 * major release (first version part increases): 1.2.0 -> 2.0.0
 
-*Release steps*:
+### Cutting a Major or Minor release
+
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for micro releases) 
-    - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
+    - If there is an updated `rasa-sdk` dependency, update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 3. Run `make release`
 4. Create a PR against master or the release branch (e.g. `1.2.x`)
@@ -320,7 +320,8 @@ to add.
 need your fixes to be on the `2.0.x` release branch). All micros must come from a `.x` branch!
 3. Once you're ready to release the Rasa Open Source micro, checkout the branch, run `make release` and follow the 
 steps + get the PR merged.
-4. Once the PR is in, pull the `.x` branch again and push the tag!
+4. Once the PR is in, pull the `.x` branch again.
+5. Create a tag for the new release (`git tag -a 2.1.1`) and push the tag (`git push origin 2.1.1`)!
 
 ## License
 Licensed under the Apache License, Version 2.0.
