@@ -26,9 +26,7 @@ class HFTransformersTokenizer(Tokenizer):
         self.cache_dir = self.component_config["cache_dir"]
 
         self.tokenizer = AutoTokenizer.from_pretrained(
-            self.model_weights,
-            cache_dir=self.cache_dir,
-            use_fast=True
+            self.model_weights, cache_dir=self.cache_dir, use_fast=True
         )
 
     @classmethod
@@ -38,13 +36,19 @@ class HFTransformersTokenizer(Tokenizer):
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
 
-        encoded_input = self.tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)
+        encoded_input = self.tokenizer(
+            text, return_offsets_mapping=True, add_special_tokens=False
+        )
 
-        tokens_text_in = self.tokenizer.convert_ids_to_tokens(encoded_input["input_ids"])
+        tokens_text_in = self.tokenizer.convert_ids_to_tokens(
+            encoded_input["input_ids"]
+        )
 
         tokens = []
 
-        for token_text, position in zip(tokens_text_in, encoded_input["offset_mapping"]):
+        for token_text, position in zip(
+            tokens_text_in, encoded_input["offset_mapping"]
+        ):
             token = Token(token_text, position[0], position[1])
             tokens.append(token)
 
