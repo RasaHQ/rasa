@@ -671,7 +671,16 @@ class TED(TransformerRasaModel):
     def _emebed_dialogue(
         self, dialogue_in: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]:
-        """Create dialogue level embedding and mask."""
+        """Creates dialogue level embedding and mask.
+
+        Args:
+            dialogue_in: The encoded dialogue.
+            sequence_lengths: Length of each dialogue.
+
+        Returns:
+            The dialogue embedding, the mask, and (for diagnostic purposes) 
+            also the attention weights.
+        """
         mask = self._compute_mask(sequence_lengths)
 
         dialogue_transformed, attention_weights = self._tf_layers[
