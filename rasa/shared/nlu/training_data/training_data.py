@@ -21,6 +21,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
     TEXT,
+    ACTION_NAME,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
