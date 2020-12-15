@@ -82,8 +82,9 @@ def template_nlg() -> TemplatedNaturalLanguageGenerator:
 
 
 @pytest.fixture(scope="module")
-def template_sender_tracker(default_domain: Domain):
-    return DialogueStateTracker("template-sender", default_domain.slots)
+def template_sender_tracker(default_domain_path: Text):
+    domain = Domain.load(default_domain_path)
+    return DialogueStateTracker("template-sender", domain.slots)
 
 
 def test_domain_action_instantiation():
