@@ -1,0 +1,967 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Brokers</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Lock Stores" href="../lock-stores/" />
+    <link rel="prev" title="Tracker Stores" href="../tracker-stores/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Event Brokers" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/api/event-brokers" />
+  
+    <meta name="description" content="Find out how open source chatbot framework Rasa allows
+you to stream events to a message broker." />
+    <meta itemprop="description" content="Find out how open source chatbot framework Rasa allows
+you to stream events to a message broker.">
+    <meta name="twitter:description" content="Find out how open source chatbot framework Rasa allows
+you to stream events to a message broker." />
+    <meta property="og:description" content="Find out how open source chatbot framework Rasa allows
+you to stream events to a message broker." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Event Brokers">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/api/event-brokers/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.19
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.19/api/event-brokers/">1.10.19</a>
+              <a href="../../../1.10.18/api/event-brokers/">1.10.18</a>
+              <a href="../../../1.10.17/api/event-brokers/">1.10.17</a>
+              <a href="../../../1.10.16/api/event-brokers/">1.10.16</a>
+              <a href="../../../1.10.15/api/event-brokers/">1.10.15</a>
+              <a href="../../../1.10.14/api/event-brokers/">1.10.14</a>
+              <a href="../../../1.10.13/api/event-brokers/">1.10.13</a>
+              <a href="../../../1.10.12/api/event-brokers/">1.10.12</a>
+              <a href="../../../1.10.11/api/event-brokers/">1.10.11</a>
+              <a href="../../../1.10.10/api/event-brokers/">1.10.10</a>
+              <a href="../../../1.10.9/api/event-brokers/">1.10.9</a>
+              <a href="../../../1.10.8/api/event-brokers/">1.10.8</a>
+              <a href="../../../1.10.7/api/event-brokers/">1.10.7</a>
+              <a href="../../../1.10.6/api/event-brokers/">1.10.6</a>
+              <a href="../../../1.10.5/api/event-brokers/">1.10.5</a>
+              <a href="../../../1.10.4/api/event-brokers/">1.10.4</a>
+              <a href="../../../1.10.3/api/event-brokers/">1.10.3</a>
+              <a href="../../../1.10.2/api/event-brokers/">1.10.2</a>
+              <a href="../../../1.10.1/api/event-brokers/">1.10.1</a>
+              <a href="../../../1.10.0/api/event-brokers/">1.10.0</a>
+              <a href="../../../1.9.7/api/event-brokers/">1.9.7</a>
+              <a href="../../../1.9.6/api/event-brokers/">1.9.6</a>
+              <a href="../../../1.9.5/api/event-brokers/">1.9.5</a>
+              <a href="../../../1.9.4/api/event-brokers/">1.9.4</a>
+              <a href="../../../1.9.3/api/event-brokers/">1.9.3</a>
+              <a href="../../../1.9.2/api/event-brokers/">1.9.2</a>
+              <a href="../../../1.9.1/api/event-brokers/">1.9.1</a>
+              <a href="../../../1.9.0/api/event-brokers/">1.9.0</a>
+              <a href="../../../1.8.3/api/event-brokers/">1.8.3</a>
+              <a href="../../../1.8.2/api/event-brokers/">1.8.2</a>
+              <a href="../../../1.8.1/api/event-brokers/">1.8.1</a>
+              <a href="../../../1.8.0/api/event-brokers/">1.8.0</a>
+              <a href="../../../1.7.4/api/event-brokers/">1.7.4</a>
+              <a href="../../../1.7.3/api/event-brokers/">1.7.3</a>
+              <a href="../../../1.7.2/api/event-brokers/">1.7.2</a>
+              <a href="../../../1.7.1/api/event-brokers/">1.7.1</a>
+              <a href="../../../1.7.0/api/event-brokers/">1.7.0</a>
+              <a href="../../../1.6.2/api/event-brokers/">1.6.2</a>
+              <a href="../../../1.5.3/api/event-brokers/">1.5.3</a>
+              <a href="../../../1.4.6/api/event-brokers/">1.4.6</a>
+              <a href="../../../1.3.10/api/event-brokers/">1.3.10</a>
+              <a href="../../../1.2.9/api/event-brokers/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="event-brokers">
+<span id="id1"></span><h1>Event Brokers<a class="headerlink" href="#event-brokers" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/event-brokers.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>An event broker allows you to connect your running assistant to other services that process the data coming
+in from conversations. For example, you could <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment/">connect your live assistant to
+Rasa X</a>
+to review and annotate conversations or forward messages to an external analytics
+service. The event broker publishes messages to a message streaming service,
+also known as a message broker, to forward Rasa <a class="reference internal" href="../events/#events"><span class="std std-ref">Events</span></a> from the Rasa server to other services.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#format" id="id4">Format</a></p></li>
+<li><p><a class="reference internal" href="#pika-event-broker" id="id5">Pika Event Broker</a></p></li>
+<li><p><a class="reference internal" href="#kafka-event-broker" id="id6">Kafka Event Broker</a></p></li>
+<li><p><a class="reference internal" href="#sql-event-broker" id="id7">SQL Event Broker</a></p></li>
+</ul>
+</div>
+<div class="section" id="format">
+<h2><a class="toc-backref" href="#id4">Format</a><a class="headerlink" href="#format" title="Permalink to this headline">¶</a></h2>
+<p>All events are streamed to the broker as serialized dictionaries every time
+the tracker updates its state. An example event emitted from the <code class="docutils literal notranslate"><span class="pre">default</span></code>
+tracker looks like this:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;sender_id&quot;</span><span class="p">:</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;timestamp&quot;</span><span class="p">:</span> <span class="mf">1528402837.617099</span><span class="p">,</span>
+    <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;bot&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;what your bot said&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="s2">&quot;some data about e.g. attachments&quot;</span>
+    <span class="s2">&quot;metadata&quot;</span> <span class="p">{</span>
+          <span class="nt">&quot;a key&quot;</span><span class="p">:</span> <span class="s2">&quot;a value&quot;</span><span class="p">,</span>
+     <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">event</span></code> field takes the event’s <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (for more on event
+types, check out the <a class="reference internal" href="../events/#events"><span class="std std-ref">Events</span></a> docs).</p>
+</div>
+<div class="section" id="pika-event-broker">
+<span id="event-brokers-pika"></span><h2><a class="toc-backref" href="#id5">Pika Event Broker</a><a class="headerlink" href="#pika-event-broker" title="Permalink to this headline">¶</a></h2>
+<p>The example implementation we’re going to show you here uses
+<a class="reference external" href="https://pika.readthedocs.io">Pika</a> , the Python client library for
+<a class="reference external" href="https://www.rabbitmq.com">RabbitMQ</a>.</p>
+<div class="contents local topic" id="id2">
+<ul class="simple">
+<li><p><a class="reference internal" href="#adding-a-pika-event-broker-using-the-endpoint-configuration" id="id8">Adding a Pika Event Broker Using the Endpoint Configuration</a></p></li>
+<li><p><a class="reference internal" href="#adding-a-pika-event-broker-in-python" id="id9">Adding a Pika Event Broker in Python</a></p></li>
+<li><p><a class="reference internal" href="#implementing-a-pika-event-consumer" id="id10">Implementing a Pika Event Consumer</a></p></li>
+</ul>
+</div>
+<div class="section" id="adding-a-pika-event-broker-using-the-endpoint-configuration">
+<h3><a class="toc-backref" href="#id8">Adding a Pika Event Broker Using the Endpoint Configuration</a><a class="headerlink" href="#adding-a-pika-event-broker-using-the-endpoint-configuration" title="Permalink to this headline">¶</a></h3>
+<p>You can instruct Rasa to stream all events to your Pika event broker by adding an <code class="docutils literal notranslate"><span class="pre">event_broker</span></code> section to your
+<code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">event_broker</span><span class="p">:</span>
+  <span class="nb">type</span><span class="p">:</span> <span class="n">pika</span>
+  <span class="n">url</span><span class="p">:</span> <span class="n">localhost</span>
+  <span class="n">username</span><span class="p">:</span> <span class="n">username</span>
+  <span class="n">password</span><span class="p">:</span> <span class="n">password</span>
+  <span class="n">queues</span><span class="p">:</span>
+    <span class="o">-</span> <span class="n">queue</span><span class="o">-</span><span class="mi">1</span>
+<span class="c1">#   you may supply more than one queue to publish to</span>
+<span class="c1">#   - queue-2</span>
+<span class="c1">#   - queue-3</span>
+</pre></div>
+</div>
+<p>Rasa will automatically start streaming events when you restart the Rasa server.</p>
+</div>
+<div class="section" id="adding-a-pika-event-broker-in-python">
+<h3><a class="toc-backref" href="#id9">Adding a Pika Event Broker in Python</a><a class="headerlink" href="#adding-a-pika-event-broker-in-python" title="Permalink to this headline">¶</a></h3>
+<p>Here is how you add it using Python code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.brokers.pika</span> <span class="kn">import</span> <span class="n">PikaEventBroker</span>
+<span class="kn">from</span> <span class="nn">rasa.core.tracker_store</span> <span class="kn">import</span> <span class="n">InMemoryTrackerStore</span>
+
+<span class="n">pika_broker</span> <span class="o">=</span> <span class="n">PikaEventBroker</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+                              <span class="s1">&#39;username&#39;</span><span class="p">,</span>
+                              <span class="s1">&#39;password&#39;</span><span class="p">,</span>
+                              <span class="n">queues</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">])</span>
+
+<span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">event_broker</span><span class="o">=</span><span class="n">pika_broker</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="implementing-a-pika-event-consumer">
+<h3><a class="toc-backref" href="#id10">Implementing a Pika Event Consumer</a><a class="headerlink" href="#implementing-a-pika-event-consumer" title="Permalink to this headline">¶</a></h3>
+<p>You need to have a RabbitMQ server running, as well as another application
+that consumes the events. This consumer to needs to implement Pika’s
+<code class="docutils literal notranslate"><span class="pre">start_consuming()</span></code> method with a <code class="docutils literal notranslate"><span class="pre">callback</span></code> action. Here’s a simple
+example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pika</span>
+
+
+<span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">body</span><span class="p">):</span>
+        <span class="c1"># Do something useful with your incoming message body here, e.g.</span>
+        <span class="c1"># saving it to a database</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Received event </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">body</span><span class="p">)))</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="c1"># RabbitMQ credentials with username and password</span>
+    <span class="n">credentials</span> <span class="o">=</span> <span class="n">pika</span><span class="o">.</span><span class="n">PlainCredentials</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="s1">&#39;password&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Pika connection to the RabbitMQ host - typically &#39;rabbit&#39; in a</span>
+    <span class="c1"># docker environment, or &#39;localhost&#39; in a local environment</span>
+    <span class="n">connection</span> <span class="o">=</span> <span class="n">pika</span><span class="o">.</span><span class="n">BlockingConnection</span><span class="p">(</span>
+        <span class="n">pika</span><span class="o">.</span><span class="n">ConnectionParameters</span><span class="p">(</span><span class="s1">&#39;rabbit&#39;</span><span class="p">,</span> <span class="n">credentials</span><span class="o">=</span><span class="n">credentials</span><span class="p">))</span>
+
+    <span class="c1"># start consumption of channel</span>
+    <span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">channel</span><span class="p">()</span>
+    <span class="n">channel</span><span class="o">.</span><span class="n">basic_consume</span><span class="p">(</span><span class="n">_callback</span><span class="p">,</span>
+                          <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">,</span>
+                          <span class="n">no_ack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">channel</span><span class="o">.</span><span class="n">start_consuming</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="kafka-event-broker">
+<h2><a class="toc-backref" href="#id6">Kafka Event Broker</a><a class="headerlink" href="#kafka-event-broker" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker for your
+events. In this example we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a> library, a Kafka client written in Python.</p>
+<div class="contents local topic" id="id3">
+<ul class="simple">
+<li><p><a class="reference internal" href="#adding-a-kafka-event-broker-using-the-endpoint-configuration" id="id11">Adding a Kafka Event Broker Using the Endpoint Configuration</a></p></li>
+<li><p><a class="reference internal" href="#adding-a-kafka-broker-in-python" id="id12">Adding a Kafka Broker in Python</a></p></li>
+<li><p><a class="reference internal" href="#authentication-and-authorization" id="id13">Authentication and Authorization</a></p></li>
+<li><p><a class="reference internal" href="#implementing-a-kafka-event-consumer" id="id14">Implementing a Kafka Event Consumer</a></p></li>
+</ul>
+</div>
+<div class="section" id="adding-a-kafka-event-broker-using-the-endpoint-configuration">
+<h3><a class="toc-backref" href="#id11">Adding a Kafka Event Broker Using the Endpoint Configuration</a><a class="headerlink" href="#adding-a-kafka-event-broker-using-the-endpoint-configuration" title="Permalink to this headline">¶</a></h3>
+<p>You can instruct Rasa to stream all events to your Kafka event broker by adding an <code class="docutils literal notranslate"><span class="pre">event_broker</span></code> section to your
+<code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>.</p>
+<p>Using <code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code> protocol the endpoints file must have the following entries:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">event_broker</span><span class="p">:</span>
+  <span class="n">url</span><span class="p">:</span> <span class="n">localhost</span>
+  <span class="n">sasl_username</span><span class="p">:</span> <span class="n">username</span>
+  <span class="n">sasl_password</span><span class="p">:</span> <span class="n">password</span>
+  <span class="n">topic</span><span class="p">:</span> <span class="n">topic</span>
+  <span class="n">security_protocol</span><span class="p">:</span> <span class="n">SASL_PLAINTEXT</span>
+  <span class="nb">type</span><span class="p">:</span> <span class="n">kafka</span>
+</pre></div>
+</div>
+<p>If using SSL protocol, the endpoints file should look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">event_broker</span><span class="p">:</span>
+  <span class="n">url</span><span class="p">:</span> <span class="n">localhost</span>
+  <span class="n">topic</span><span class="p">:</span> <span class="n">topic</span>
+  <span class="n">security_protocol</span><span class="p">:</span> <span class="n">SSL</span>
+  <span class="n">ssl_cafile</span><span class="p">:</span> <span class="n">CARoot</span><span class="o">.</span><span class="n">pem</span>
+  <span class="n">ssl_certfile</span><span class="p">:</span> <span class="n">certificate</span><span class="o">.</span><span class="n">pem</span>
+  <span class="n">ssl_keyfile</span><span class="p">:</span> <span class="n">key</span><span class="o">.</span><span class="n">pem</span>
+  <span class="n">ssl_check_hostname</span><span class="p">:</span> <span class="kc">True</span>
+  <span class="nb">type</span><span class="p">:</span> <span class="n">kafka</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="adding-a-kafka-broker-in-python">
+<h3><a class="toc-backref" href="#id12">Adding a Kafka Broker in Python</a><a class="headerlink" href="#adding-a-kafka-broker-in-python" title="Permalink to this headline">¶</a></h3>
+<p>The code below shows an example on how to instantiate a Kafka producer in you script.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.brokers.kafka</span> <span class="kn">import</span> <span class="n">KafkaEventBroker</span>
+<span class="kn">from</span> <span class="nn">rasa.core.tracker_store</span> <span class="kn">import</span> <span class="n">InMemoryTrackerStore</span>
+
+<span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost:9092&#39;</span><span class="p">,</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">)</span>
+
+<span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">event_broker</span><span class="o">=</span><span class="n">kafka_broker</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The host variable can be either a list of brokers addresses or a single one.
+If only one broker address is available, the client will connect to it and
+request the cluster Metadata.
+Therefore, the remain brokers in the cluster can be discovered
+automatically through the data served by the first connected broker.</p>
+<p>To pass more than one broker address as argument, they must be passed in a
+list of strings. e.g.:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;kafka_broker_1:9092&#39;</span><span class="p">,</span>
+                                      <span class="s1">&#39;kafka_broker_2:2030&#39;</span><span class="p">,</span>
+                                      <span class="s1">&#39;kafka_broker_3:9092&#39;</span><span class="p">],</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="authentication-and-authorization">
+<h3><a class="toc-backref" href="#id13">Authentication and Authorization</a><a class="headerlink" href="#authentication-and-authorization" title="Permalink to this headline">¶</a></h3>
+<p>Rasa’s Kafka producer accepts two types of security protocols - <code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code> and <code class="docutils literal notranslate"><span class="pre">SSL</span></code>.</p>
+<p>For development environment, or if the brokers servers and clients are located
+into the same machine, you can use simple authentication with <code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code>.
+By using this protocol, the credentials and messages exchanged between the clients and servers
+will be sent in plaintext. Thus, this is not the most secure approach, but since it’s simple
+to configure, it is useful for simple cluster configurations.
+<code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code> protocol requires the setup of the <code class="docutils literal notranslate"><span class="pre">username</span></code> and <code class="docutils literal notranslate"><span class="pre">password</span></code>
+previously configured in the broker server.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;kafka_broker:9092&#39;</span><span class="p">,</span>
+                                <span class="n">sasl_plain_username</span><span class="o">=</span><span class="s1">&#39;kafka_username&#39;</span><span class="p">,</span>
+                                <span class="n">sasl_plain_password</span><span class="o">=</span><span class="s1">&#39;kafka_password&#39;</span><span class="p">,</span>
+                                <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SASL_PLAINTEXT&#39;</span><span class="p">,</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If the clients or the brokers in the kafka cluster are located in different
+machines, it’s important to use ssl protocol to assure encryption of data and client
+authentication. After generating valid certificates for the brokers and the
+clients, the path to the certificate and key generated for the producer must
+be provided as arguments, as well as the CA’s root certificate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;kafka_broker:9092&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_cafile</span><span class="o">=</span><span class="s1">&#39;CARoot.pem&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_certfile</span><span class="o">=</span><span class="s1">&#39;certificate.pem&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_keyfile</span><span class="o">=</span><span class="s1">&#39;key.pem&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If the <code class="docutils literal notranslate"><span class="pre">ssl_check_hostname</span></code> parameter is enabled, the clients will verify
+if the broker’s hostname matches the certificate. It’s used on client’s connections
+and inter-broker connections to prevent man-in-the-middle attacks.</p>
+</div>
+<div class="section" id="implementing-a-kafka-event-consumer">
+<h3><a class="toc-backref" href="#id14">Implementing a Kafka Event Consumer</a><a class="headerlink" href="#implementing-a-kafka-event-consumer" title="Permalink to this headline">¶</a></h3>
+<p>The parameters used to create a Kafka consumer are the same used on the producer creation,
+according to the security protocol being used. The following implementation shows an example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">kafka</span> <span class="kn">import</span> <span class="n">KafkaConsumer</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">loads</span>
+
+<span class="n">consumer</span> <span class="o">=</span> <span class="n">KafkaConsumer</span><span class="p">(</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">,</span>
+                          <span class="n">bootstrap_servers</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;localhost:29093&#39;</span><span class="p">],</span>
+                          <span class="n">value_deserializer</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)),</span>
+                          <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
+                          <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">ssl_cafile</span><span class="o">=</span><span class="s1">&#39;CARoot.pem&#39;</span><span class="p">,</span>
+                          <span class="n">ssl_certfile</span><span class="o">=</span><span class="s1">&#39;certificate.pem&#39;</span><span class="p">,</span>
+                          <span class="n">ssl_keyfile</span><span class="o">=</span><span class="s1">&#39;key.pem&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">consumer</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="sql-event-broker">
+<h2><a class="toc-backref" href="#id7">SQL Event Broker</a><a class="headerlink" href="#sql-event-broker" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to use an SQL database as an event broker. Connections to databases are established using
+<a class="reference external" href="https://www.sqlalchemy.org/">SQLAlchemy</a>, a Python library which can interact with many
+different types of SQL databases, such as <a class="reference external" href="https://sqlite.org/index.html">SQLite</a>,
+<a class="reference external" href="https://www.postgresql.org/">PostgreSQL</a> and more. The default Rasa installation allows connections to SQLite
+and PostgreSQL databases, to see other options, please see the
+<a class="reference external" href="https://docs.sqlalchemy.org/en/13/dialects/index.html">SQLAlchemy documentation on SQL dialects</a>.</p>
+<div class="section" id="adding-a-sql-event-broker-using-the-endpoint-configuration">
+<h3>Adding a SQL Event Broker Using the Endpoint Configuration<a class="headerlink" href="#adding-a-sql-event-broker-using-the-endpoint-configuration" title="Permalink to this headline">¶</a></h3>
+<p>To instruct Rasa to save all events to your SQL event broker, add an <code class="docutils literal notranslate"><span class="pre">event_broker</span></code> section to your
+<code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>. For example, a valid SQLite configuration
+could look like the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">event_broker</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+  <span class="nt">dialect</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sqlite</span>
+  <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">events.db</span>
+</pre></div>
+</div>
+<p>PostgreSQL databases can be used as well:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">event_broker</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+  <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
+  <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5432</span>
+  <span class="nt">dialect</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+  <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myuser</span>
+  <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypassword</span>
+  <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mydatabase</span>
+</pre></div>
+</div>
+<p>With this configuration applied, Rasa will create a table called <code class="docutils literal notranslate"><span class="pre">events</span></code> on the database,
+where all events will be added.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>

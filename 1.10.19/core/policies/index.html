@@ -1,0 +1,1416 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policies</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Slots" href="../slots/" />
+    <link rel="prev" title="Reminders and External Events" href="../reminders-and-external-events/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Policies" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/core/policies" />
+  
+    <meta name="description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer contexts or unseen utterances which
+require generalization." />
+    <meta itemprop="description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer contexts or unseen utterances which
+require generalization.">
+    <meta name="twitter:description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer contexts or unseen utterances which
+require generalization." />
+    <meta property="og:description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer contexts or unseen utterances which
+require generalization." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Policies">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/core/policies/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.19
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.19/core/policies/">1.10.19</a>
+              <a href="../../../1.10.18/core/policies/">1.10.18</a>
+              <a href="../../../1.10.17/core/policies/">1.10.17</a>
+              <a href="../../../1.10.16/core/policies/">1.10.16</a>
+              <a href="../../../1.10.15/core/policies/">1.10.15</a>
+              <a href="../../../1.10.14/core/policies/">1.10.14</a>
+              <a href="../../../1.10.13/core/policies/">1.10.13</a>
+              <a href="../../../1.10.12/core/policies/">1.10.12</a>
+              <a href="../../../1.10.11/core/policies/">1.10.11</a>
+              <a href="../../../1.10.10/core/policies/">1.10.10</a>
+              <a href="../../../1.10.9/core/policies/">1.10.9</a>
+              <a href="../../../1.10.8/core/policies/">1.10.8</a>
+              <a href="../../../1.10.7/core/policies/">1.10.7</a>
+              <a href="../../../1.10.6/core/policies/">1.10.6</a>
+              <a href="../../../1.10.5/core/policies/">1.10.5</a>
+              <a href="../../../1.10.4/core/policies/">1.10.4</a>
+              <a href="../../../1.10.3/core/policies/">1.10.3</a>
+              <a href="../../../1.10.2/core/policies/">1.10.2</a>
+              <a href="../../../1.10.1/core/policies/">1.10.1</a>
+              <a href="../../../1.10.0/core/policies/">1.10.0</a>
+              <a href="../../../1.9.7/core/policies/">1.9.7</a>
+              <a href="../../../1.9.6/core/policies/">1.9.6</a>
+              <a href="../../../1.9.5/core/policies/">1.9.5</a>
+              <a href="../../../1.9.4/core/policies/">1.9.4</a>
+              <a href="../../../1.9.3/core/policies/">1.9.3</a>
+              <a href="../../../1.9.2/core/policies/">1.9.2</a>
+              <a href="../../../1.9.1/core/policies/">1.9.1</a>
+              <a href="../../../1.9.0/core/policies/">1.9.0</a>
+              <a href="../../../1.8.3/core/policies/">1.8.3</a>
+              <a href="../../../1.8.2/core/policies/">1.8.2</a>
+              <a href="../../../1.8.1/core/policies/">1.8.1</a>
+              <a href="../../../1.8.0/core/policies/">1.8.0</a>
+              <a href="../../../1.7.4/core/policies/">1.7.4</a>
+              <a href="../../../1.7.3/core/policies/">1.7.3</a>
+              <a href="../../../1.7.2/core/policies/">1.7.2</a>
+              <a href="../../../1.7.1/core/policies/">1.7.1</a>
+              <a href="../../../1.7.0/core/policies/">1.7.0</a>
+              <a href="../../../1.6.2/core/policies/">1.6.2</a>
+              <a href="../../../1.5.3/core/policies/">1.5.3</a>
+              <a href="../../../1.4.6/core/policies/">1.4.6</a>
+              <a href="../../../1.3.10/core/policies/">1.3.10</a>
+              <a href="../../../1.2.9/core/policies/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="policies">
+<span id="id1"></span><h1>Policies<a class="headerlink" href="#policies" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/policies.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#configuring-policies" id="id8">Configuring Policies</a></p>
+<ul>
+<li><p><a class="reference internal" href="#max-history" id="id9">Max History</a></p></li>
+<li><p><a class="reference internal" href="#data-augmentation" id="id10">Data Augmentation</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#action-selection" id="id11">Action Selection</a></p></li>
+<li><p><a class="reference internal" href="#keras-policy" id="id12">Keras Policy</a></p></li>
+<li><p><a class="reference internal" href="#embedding-policy" id="id13">Embedding Policy</a></p></li>
+<li><p><a class="reference internal" href="#ted-policy" id="id14">TED Policy</a></p></li>
+<li><p><a class="reference internal" href="#mapping-policy" id="id15">Mapping Policy</a></p></li>
+<li><p><a class="reference internal" href="#memoization-policy" id="id16">Memoization Policy</a></p></li>
+<li><p><a class="reference internal" href="#augmented-memoization-policy" id="id17">Augmented Memoization Policy</a></p></li>
+<li><p><a class="reference internal" href="#fallback-policy" id="id18">Fallback Policy</a></p></li>
+<li><p><a class="reference internal" href="#two-stage-fallback-policy" id="id19">Two-Stage Fallback Policy</a></p></li>
+<li><p><a class="reference internal" href="#form-policy" id="id20">Form Policy</a></p></li>
+</ul>
+</div>
+<div class="section" id="configuring-policies">
+<span id="policy-file"></span><h2><a class="toc-backref" href="#id8">Configuring Policies</a><a class="headerlink" href="#configuring-policies" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.core.policies.Policy</span></code> class decides which action to take
+at every step in the conversation.</p>
+<p>There are different policies to choose from, and you can include
+multiple policies in a single <a class="reference internal" href="../../api/agent/#rasa.core.agent.Agent" title="rasa.core.agent.Agent"><code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.core.agent.Agent</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Per default a maximum of 10 next actions can be predicted
+by the agent after every user message. To update this value
+you can set the environment variable <code class="docutils literal notranslate"><span class="pre">MAX_NUMBER_OF_PREDICTIONS</span></code>
+to the desired number of maximum predictions.</p>
+</div>
+<p>Your project’s <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> file takes a <code class="docutils literal notranslate"><span class="pre">policies</span></code> key
+which you can use to customize the policies your assistant uses.
+In the example below, the last two lines show how to use a custom
+policy class and pass arguments to it.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;KerasPolicy&quot;</span>
+    <span class="nt">featurizer</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MaxHistoryTrackerFeaturizer</span>
+      <span class="nt">max_history</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+      <span class="nt">state_featurizer</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">BinarySingleStateFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MemoizationPolicy&quot;</span>
+    <span class="nt">max_history</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
+    <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.4</span>
+    <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">fallback_action_name</span><span class="p">:</span> <span class="s">&quot;my_fallback_action&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;path.to.your.policy.class&quot;</span>
+    <span class="nt">arg1</span><span class="p">:</span> <span class="s">&quot;...&quot;</span>
+</pre></div>
+</div>
+<div class="section" id="max-history">
+<h3><a class="toc-backref" href="#id9">Max History</a><a class="headerlink" href="#max-history" title="Permalink to this headline">¶</a></h3>
+<p>One important hyperparameter for Rasa Core policies is the <code class="docutils literal notranslate"><span class="pre">max_history</span></code>.
+This controls how much dialogue history the model looks at to decide which
+action to take next.</p>
+<p>You can set the <code class="docutils literal notranslate"><span class="pre">max_history</span></code> by passing it to your policy’s <code class="docutils literal notranslate"><span class="pre">Featurizer</span></code>
+in the policy configuration yaml file.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only the <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code> uses a max history,
+whereas the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code> always looks at
+the full conversation history. See <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details.</p>
+</div>
+<p>As an example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent which
+describes off-topic user messages. If your bot sees this intent multiple
+times in a row, you might want to tell the user what you <cite>can</cite> help them
+with. So your story might look like this:</p>
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="vm">* out_of_scope</span>
+<span class="vm">   </span>- utter_default
+<span class="vm">* out_of_scope</span>
+<span class="vm">   </span>- utter_default
+<span class="vm">* out_of_scope</span>
+<span class="vm">   </span>- utter_help_message
+</pre></div>
+</div>
+<p>For Rasa Core to learn this pattern, the <code class="docutils literal notranslate"><span class="pre">max_history</span></code>
+has to be <cite>at least</cite> 4.</p>
+<p>If you increase your <code class="docutils literal notranslate"><span class="pre">max_history</span></code>, your model will become bigger and
+training will take longer. If you have some information that should
+affect the dialogue very far into the future, you should store it as a
+slot. Slot information is always available for every featurizer.</p>
+</div>
+<div class="section" id="data-augmentation">
+<h3><a class="toc-backref" href="#id10">Data Augmentation</a><a class="headerlink" href="#data-augmentation" title="Permalink to this headline">¶</a></h3>
+<p>When you train a model, by default Rasa Core will create
+longer stories by randomly gluing together
+the ones in your stories files.
+This is because if you have stories like:</p>
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="gh"># thanks</span>
+<span class="vm">* thankyou</span>
+<span class="vm">   </span>- utter_youarewelcome
+
+<span class="gh"># bye</span>
+<span class="vm">* goodbye</span>
+<span class="vm">   </span>- utter_goodbye
+</pre></div>
+</div>
+<p>You actually want to teach your policy to <strong>ignore</strong> the dialogue history
+when it isn’t relevant and just respond with the same action no matter
+what happened before.</p>
+<p>You can alter this behavior with the <code class="docutils literal notranslate"><span class="pre">--augmentation</span></code> flag.
+Which allows you to set the <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code> determines how many augmented stories are
+subsampled during training. The augmented stories are subsampled before training
+since their number can quickly become very large, and we want to limit it.
+The number of sampled stories is <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code> x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--augmentation</span> <span class="pre">0</span></code> disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code>) and will automatically
+ignore all augmented stories.</p>
+</div>
+</div>
+<div class="section" id="action-selection">
+<h2><a class="toc-backref" href="#id11">Action Selection</a><a class="headerlink" href="#action-selection" title="Permalink to this headline">¶</a></h2>
+<p>At every turn, each policy defined in your configuration will
+predict a next action with a certain confidence level. For more information
+about how each policy makes its decision, read into the policy’s description below.
+The bot’s next action is then decided by the policy that predicts with the highest confidence.</p>
+<p>In the case that two policies predict with equal confidence (for example, the Memoization
+and Mapping Policies always predict with confidence of either 0 or 1), the priority of the
+policies is considered. Rasa policies have default priorities that are set to ensure the
+expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">5. <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code></div>
+<div class="line">4. <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code></div>
+<div class="line">3. <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code></div>
+<div class="line">2. <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code></div>
+<div class="line">1. <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">SklearnPolicy</span></code></div>
+</div>
+</div></blockquote>
+<p>This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
+above the <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>, the bot will still fall back. In general, it is not recommended to have more
+than one policy per priority level, and some policies on the same priority level, such as the two
+fallback policies, strictly cannot be used in tandem.</p>
+<p>If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
+If your policy is a machine learning policy, it should most likely have priority 1, the same as the Rasa machine
+learning policies.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>All policy priorities are configurable via the <code class="docutils literal notranslate"><span class="pre">priority:</span></code> parameter in the configuration,
+but we <strong>do not recommend</strong> changing them outside of specific cases such as custom policies.
+Doing so can lead to unexpected and undesired bot behavior.</p>
+</div>
+</div>
+<div class="section" id="keras-policy">
+<span id="id2"></span><h2><a class="toc-backref" href="#id12">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> uses a neural network implemented in
+<a class="reference external" href="http://keras.io">Keras</a> to select the next action.
+The default architecture is based on an LSTM, but you can override the
+<code class="docutils literal notranslate"><span class="pre">KerasPolicy.model_architecture</span></code> method to implement your own architecture.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">model_architecture</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">output_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Sequential</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build a keras model and return a compiled model.&quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">tensorflow.keras.models</span> <span class="kn">import</span> <span class="n">Sequential</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.keras.layers</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="n">Masking</span><span class="p">,</span>
+        <span class="n">LSTM</span><span class="p">,</span>
+        <span class="n">Dense</span><span class="p">,</span>
+        <span class="n">TimeDistributed</span><span class="p">,</span>
+        <span class="n">Activation</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Build Model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Sequential</span><span class="p">()</span>
+
+    <span class="c1"># the shape of the y vector of the labels,</span>
+    <span class="c1"># determines which output from rnn will be used</span>
+    <span class="c1"># to calculate the loss</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># y is (num examples, num features) so</span>
+        <span class="c1"># only the last output from the rnn is used to</span>
+        <span class="c1"># calculate the loss</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Masking</span><span class="p">(</span><span class="n">mask_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="n">input_shape</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">LSTM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">output_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># y is (num examples, max_dialogue_len, num features) so</span>
+        <span class="c1"># all the outputs from the rnn are used to</span>
+        <span class="c1"># calculate the loss, therefore a sequence is returned and</span>
+        <span class="c1"># time distributed layer is used</span>
+
+        <span class="c1"># the first value in input_shape is max dialogue_len,</span>
+        <span class="c1"># it is set to None, to allow dynamic_rnn creation</span>
+        <span class="c1"># during prediction</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Masking</span><span class="p">(</span><span class="n">mask_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">LSTM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">return_sequences</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TimeDistributed</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">output_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot construct the model because&quot;</span>
+            <span class="s2">&quot;length of output_shape = </span><span class="si">{}</span><span class="s2"> &quot;</span>
+            <span class="s2">&quot;should be 1 or 2.&quot;</span>
+            <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">))</span>
+        <span class="p">)</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Activation</span><span class="p">(</span><span class="s2">&quot;softmax&quot;</span><span class="p">))</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;categorical_crossentropy&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;rmsprop&quot;</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">common_utils</span><span class="o">.</span><span class="n">obtain_verbosity</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+<p>and the training is run here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">training_trackers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DialogueStateTracker</span><span class="p">],</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">featurize_for_training</span><span class="p">(</span><span class="n">training_trackers</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="c1"># noinspection PyPep8Naming</span>
+    <span class="n">shuffled_X</span><span class="p">,</span> <span class="n">shuffled_y</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">shuffled_X_y</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_architecture</span><span class="p">(</span>
+            <span class="n">shuffled_X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">shuffled_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Fitting model with </span><span class="si">{</span><span class="n">training_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">()</span><span class="si">}</span><span class="s2"> total samples and a &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;validation split of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">validation_split</span><span class="si">}</span><span class="s2">.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># filter out kwargs that cannot be passed to fit</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_valid_params</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
+    <span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">shuffled_X</span><span class="p">,</span>
+        <span class="n">shuffled_y</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">common_utils</span><span class="o">.</span><span class="n">obtain_verbosity</span><span class="p">(),</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Done fitting Keras Policy model.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can implement the model of your choice by overriding these methods,
+or initialize <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> with pre-defined <code class="docutils literal notranslate"><span class="pre">keras</span> <span class="pre">model</span></code>.</p>
+<p>In order to get reproducible training results for the same inputs you can
+set the <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> attribute of the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to any integer.</p>
+</div>
+<div class="section" id="embedding-policy">
+<span id="id3"></span><h2><a class="toc-backref" href="#id13">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> was renamed to <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>. Please use <a class="reference internal" href="#ted-policy"><span class="std std-ref">TED Policy</span></a> instead of <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>
+in your policy configuration. The functionality of the policy stayed the same.</p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="ted-policy">
+<span id="id4"></span><h2><a class="toc-backref" href="#id14">TED Policy</a><a class="headerlink" href="#ted-policy" title="Permalink to this headline">¶</a></h2>
+<p>The Transformer Embedding Dialogue (TED) Policy is described in
+<a class="reference external" href="https://arxiv.org/abs/1910.00486">our paper</a>.</p>
+<p>This policy has a pre-defined architecture, which comprises the
+following steps:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
+step into an input vector to pre-transformer embedding layer;</p></li>
+<li><p>feed it to transformer;</p></li>
+<li><p>apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;</p></li>
+<li><p>apply a dense layer to create embeddings for system actions for each time step;</p></li>
+<li><p>calculate the similarity between the dialogue embedding and embedded system actions.
+This step is based on the <a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a> idea.</p></li>
+</ul>
+</div></blockquote>
+<p>It is recommended to use <code class="docutils literal notranslate"><span class="pre">state_featurizer=LabelTokenizerSingleStateFeaturizer(...)</span></code>
+(see <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details).</p>
+<p><strong>Configuration:</strong></p>
+<blockquote>
+<div><p>Configuration parameters can be passed as parameters to the <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> within the configuration file.
+If you want to adapt your model, start by modifying the following parameters:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
+This parameter sets the number of times the algorithm will see the training data (default: <code class="docutils literal notranslate"><span class="pre">1</span></code>).
+One <code class="docutils literal notranslate"><span class="pre">epoch</span></code> is equals to one forward pass and one backward pass of all the training examples.
+Sometimes the model needs more epochs to properly learn.
+Sometimes more epochs don’t influence the performance.
+The lower the number of epochs the faster the model is trained.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
+This parameter allows you to define the number of feed forward layers and their output
+dimensions for dialogues and intents (default: <code class="docutils literal notranslate"><span class="pre">dialogue:</span> <span class="pre">[],</span> <span class="pre">label:</span> <span class="pre">[]</span></code>).
+Every entry in the list corresponds to a feed forward layer.
+For example, if you set <code class="docutils literal notranslate"><span class="pre">dialogue:</span> <span class="pre">[256,</span> <span class="pre">128]</span></code>, we will add two feed forward layers in front of
+the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those
+layers. The first layer will have an output dimension of 256 and the second layer will have an output
+dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
+added.
+Make sure to use only positive integer values. Usually, numbers of power of two are used.
+Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+value before.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
+This parameter sets the number of transformer layers to use (default: <code class="docutils literal notranslate"><span class="pre">1</span></code>).
+The number of transformer layers corresponds to the transformer blocks to use for the model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>:
+This parameter sets the number of units in the transformer (default: <code class="docutils literal notranslate"><span class="pre">128</span></code>).
+The vectors coming out of the transformers will have the given <code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
+This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+in the model (default: <code class="docutils literal notranslate"><span class="pre">0.8</span></code>). The value should be between 0 and 1. If you set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>
+to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code> to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+to learn.</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Pass an appropriate number, for example 50,  of <code class="docutils literal notranslate"><span class="pre">epochs</span></code> to the <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>, otherwise the policy will
+be trained only for <code class="docutils literal notranslate"><span class="pre">1</span></code> epoch.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for this policy is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use the
+<code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code>. We recommend to set <code class="docutils literal notranslate"><span class="pre">max_history</span></code> to some finite value in order to
+use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code> for <strong>faster training</strong>. See <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for
+details. We recommend to increase <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> for <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[32,</span> <span class="pre">64]</span></code>)</p>
+</div>
+<div class="toggle docutils container">
+<div class="header docutils container">
+<div class="block docutils container">
+<p>The above configuration parameters are the ones you should configure to fit your model to your data.
+However, additional parameters exist that can be adapted.</p>
+</div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>+---------------------------------+------------------+--------------------------------------------------------------+
+| Parameter                       | Default Value    | Description                                                  |
++=================================+==================+==============================================================+
+| hidden_layers_sizes             | dialogue: []     | Hidden layer sizes for layers before the embedding layers    |
+|                                 | label: []        | for dialogue and labels. The number of hidden layers is      |
+|                                 |                  | equal to the length of the corresponding.                    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| transformer_size                | 128              | Number of units in transformer.                              |
++---------------------------------+------------------+--------------------------------------------------------------+
+| number_of_transformer_layers    | 1                | Number of transformer layers.                                |
++---------------------------------+------------------+--------------------------------------------------------------+
+| number_of_attention_heads       | 4                | Number of attention heads in transformer.                    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_key_relative_attention      | False            | If &#39;True&#39; use key relative embeddings in attention.          |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_value_relative_attention    | False            | If &#39;True&#39; use value relative embeddings in attention.        |
++---------------------------------+------------------+--------------------------------------------------------------+
+| max_relative_position           | None             | Maximum position for relative embeddings.                    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| batch_size                      | [8, 32]          | Initial and final value for batch sizes.                     |
+|                                 |                  | Batch size will be linearly increased for each epoch.        |
++---------------------------------+------------------+--------------------------------------------------------------+
+| batch_strategy                  | &quot;balanced&quot;       | Strategy used when creating batches.                         |
+|                                 |                  | Can be either &#39;sequence&#39; or &#39;balanced&#39;.                      |
++---------------------------------+------------------+--------------------------------------------------------------+
+| epochs                          | 1                | Number of epochs to train.                                   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| random_seed                     | None             | Set random seed to any &#39;int&#39; to get reproducible results.    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
++---------------------------------+------------------+--------------------------------------------------------------+
+| number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
+|                                 |                  | their similarity to the user input during training.          |
++---------------------------------+------------------+--------------------------------------------------------------+
+| similarity_type                 | &quot;auto&quot;           | Type of similarity measure to use, either &#39;auto&#39; or &#39;cosine&#39; |
+|                                 |                  | or &#39;inner&#39;.                                                  |
++---------------------------------+------------------+--------------------------------------------------------------+
+| loss_type                       | &quot;softmax&quot;        | The type of the loss function, either &#39;softmax&#39; or &#39;margin&#39;. |
++---------------------------------+------------------+--------------------------------------------------------------+
+| ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
+|                                 |                  | &#39;softmax&#39;. Set to 0 to turn off normalization.               |
++---------------------------------+------------------+--------------------------------------------------------------+
+| maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
+|                                 |                  | embedding vectors for correct labels.                        |
+|                                 |                  | Should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39; similarity type.      |
++---------------------------------+------------------+--------------------------------------------------------------+
+| maximum_negative_similarity     | -0.2             | Maximum negative similarity for incorrect labels.            |
+|                                 |                  | Should be -1.0 &lt; ... &lt; 1.0 for &#39;cosine&#39; similarity type.     |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_maximum_negative_similarity | True             | If &#39;True&#39; the algorithm only minimizes maximum similarity    |
+|                                 |                  | over incorrect intent labels, used only if &#39;loss_type&#39; is    |
+|                                 |                  | set to &#39;margin&#39;.                                             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+|                                 |                  | prediction.                                                  |
++---------------------------------+------------------+--------------------------------------------------------------+
+| regularization_constant         | 0.001            | The scale of regularization.                                 |
++---------------------------------+------------------+--------------------------------------------------------------+
+| negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
+|                                 |                  | similarity between embeddings of different labels.           |
++---------------------------------+------------------+--------------------------------------------------------------+
+| drop_rate_dialogue              | 0.1              | Dropout rate for embedding layers of dialogue features.      |
+|                                 |                  | Value should be between 0 and 1.                             |
+|                                 |                  | The higher the value the higher the regularization effect.   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| drop_rate_label                 | 0.0              | Dropout rate for embedding layers of label features.         |
+|                                 |                  | Value should be between 0 and 1.                             |
+|                                 |                  | The higher the value the higher the regularization effect.   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
+|                                 |                  | The higher the value the higher the regularization effect.   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+|                                 |                  | Value should be between 0 and 1.                             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
+|                                 |                  | Set to &#39;-1&#39; to evaluate just once at the end of training.    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
+|                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
++---------------------------------+------------------+--------------------------------------------------------------+
+| tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
+|                                 |                  | metrics, set this option to a valid output directory. You    |
+|                                 |                  | can view the training metrics after training in tensorboard  |
+|                                 |                  | via &#39;tensorboard --logdir &lt;path-to-given-directory&gt;&#39;.        |
++---------------------------------+------------------+--------------------------------------------------------------+
+| tensorboard_log_level           | &quot;epoch&quot;          | Define when training metrics for tensorboard should be       |
+|                                 |                  | logged. Either after every epoch (&#39;epoch&#39;) or for every      |
+|                                 |                  | training step (&#39;minibatch&#39;).                                 |
++---------------------------------+------------------+--------------------------------------------------------------+
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">evaluate_on_number_of_examples</span></code> is non zero, random examples will be picked by stratified split and
+used as <strong>hold out</strong> validation set, so they will be excluded from training data.
+We suggest to set it to zero if data set contains a lot of unique examples of dialogue turns.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
+be between <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is an option to use linearly increasing batch size. The idea comes from
+<a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>. In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g.
+<code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[8,</span> <span class="pre">32]</span></code> (default behavior). If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>,
+e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">8</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
+starspace algorithm in the case <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">maximum_positive_similarity</span></code> and
+<code class="docutils literal notranslate"><span class="pre">use_maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">False</span></code>. See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a>
+for details.</p>
+</div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="mapping-policy">
+<span id="id5"></span><h2><a class="toc-backref" href="#id15">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions. The
+mappings are assigned by giving an intent the property <code class="docutils literal notranslate"><span class="pre">triggers</span></code>, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
+ <span class="p p-Indicator">-</span> <span class="nt">ask_is_bot</span><span class="p">:</span>
+     <span class="nt">triggers</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">action_is_bot</span>
+</pre></div>
+</div>
+<p>An intent can only be mapped to at most one action. The bot will run
+the mapped action once it receives a message of the triggering intent. Afterwards,
+it will listen for the next message. With the next
+user message, normal prediction will resume.</p>
+<p>If you do not want your intent-action mapping to affect the dialogue
+history, the mapped action must return a <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code>
+event. This will delete the user’s latest message, along with any events that
+happened after it, from the dialogue history. This means you should not
+include the intent-action interaction in your stories.</p>
+<p>For example, if a user asks “Are you a bot?” off-topic in the middle of the
+flow, you probably want to answer without that interaction affecting the next
+action prediction. A triggered custom action can do anything, but here’s a
+simple example that dispatches a bot utterance and then reverts the interaction:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionIsBot</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+<span class="sd">&quot;&quot;&quot;Revertible mapped action for utter_is_bot&quot;&quot;&quot;</span>
+
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;action_is_bot&quot;</span>
+
+<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s2">&quot;utter_is_bot&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">UserUtteranceReverted</span><span class="p">()]</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you use the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> to predict bot utterance actions directly (e.g.
+<code class="docutils literal notranslate"><span class="pre">triggers:</span> <span class="pre">utter_{}</span></code>), these interactions must go in your stories, as in this
+case there is no <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> and the
+intent and the mapped response action will appear in the dialogue history.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The MappingPolicy is also responsible for executing the default actions <code class="docutils literal notranslate"><span class="pre">action_back</span></code>
+and <code class="docutils literal notranslate"><span class="pre">action_restart</span></code> in response to <code class="docutils literal notranslate"><span class="pre">/back</span></code> and <code class="docutils literal notranslate"><span class="pre">/restart</span></code>. If it is not included
+in your policy example these intents will not work.</p>
+</div>
+</div>
+<div class="section" id="memoization-policy">
+<h2><a class="toc-backref" href="#id16">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> just memorizes the conversations in your
+training data. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
+if this exact conversation exists in the training data, otherwise it
+predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
+</div>
+<div class="section" id="augmented-memoization-policy">
+<h2><a class="toc-backref" href="#id17">Augmented Memoization Policy</a><a class="headerlink" href="#augmented-memoization-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code> remembers examples from training
+stories for up to <code class="docutils literal notranslate"><span class="pre">max_history</span></code> turns, just like the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code>.
+Additionally, it has a forgetting mechanism that will forget a certain amount
+of steps in the conversation history and try to find a match in your stories
+with the reduced history. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
+if a match is found, otherwise it predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have dialogues where some slots that are set during
+prediction time might not be set in training stories (e.g. in training
+stories starting with a reminder not all previous slots are set),
+make sure to add the relevant stories without slots to your training
+data as well.</p>
+</div>
+</div>
+<div class="section" id="fallback-policy">
+<span id="id6"></span><h2><a class="toc-backref" href="#id18">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if at least one of the following occurs:</p>
+<ol class="arabic simple">
+<li><p>The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.</p></li>
+<li><p>The highest ranked intent differs in confidence with the second highest
+ranked intent by less than <code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>.</p></li>
+<li><p>None of the dialogue policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p></li>
+</ol>
+<p><strong>Configuration:</strong></p>
+<blockquote>
+<div><p>The thresholds and fallback action can be adjusted in the policy configuration
+file as parameters of the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
+    <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">ambiguity_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
+    <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">fallback_action_name</span><span class="p">:</span> <span class="s">&#39;action_default_fallback&#39;</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 38%" />
+<col style="width: 62%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></p></td>
+<td><p>Min confidence needed to accept an NLU
+prediction</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></p></td>
+<td><p>Min amount by which the confidence of the
+top intent must exceed that of the second
+highest ranked intent.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></p></td>
+<td><p>Min confidence needed to accept an action
+prediction from Rasa Core</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fallback_action_name</span></code></p></td>
+<td><p>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+to be called if the confidence of intent
+or action is below the respective threshold</p></td>
+</tr>
+</tbody>
+</table>
+<p>You can also configure the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> in your python code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.policies.fallback</span> <span class="kn">import</span> <span class="n">FallbackPolicy</span>
+<span class="kn">from</span> <span class="nn">rasa.core.policies.keras_policy</span> <span class="kn">import</span> <span class="n">KerasPolicy</span>
+<span class="kn">from</span> <span class="nn">rasa.core.agent</span> <span class="kn">import</span> <span class="n">Agent</span>
+
+<span class="n">fallback</span> <span class="o">=</span> <span class="n">FallbackPolicy</span><span class="p">(</span><span class="n">fallback_action_name</span><span class="o">=</span><span class="s2">&quot;action_default_fallback&quot;</span><span class="p">,</span>
+                          <span class="n">core_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+                          <span class="n">nlu_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+                          <span class="n">ambiguity_threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span><span class="s2">&quot;domain.yml&quot;</span><span class="p">,</span> <span class="n">policies</span><span class="o">=</span><span class="p">[</span><span class="n">KerasPolicy</span><span class="p">(),</span> <span class="n">fallback</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can include either the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> or the
+<code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> in your configuration, but not both.</p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="two-stage-fallback-policy">
+<h2><a class="toc-backref" href="#id19">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
+by trying to disambiguate the user input.</p>
+<ul>
+<li><p>If an NLU prediction has a low confidence score or is not significantly higher
+than the second highest ranked prediction, the user is asked to affirm
+the classification of the intent.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If they affirm, the story continues as if the intent was classified
+with high confidence from the beginning.</p></li>
+<li><p>If they deny, the user is asked to rephrase their message.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Rephrasing</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the classification of the rephrased intent was confident, the story
+continues as if the user had this intent from the beginning.</p></li>
+<li><p>If the rephrased intent was not classified with high confidence, the user
+is asked to affirm the classified intent.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Second affirmation</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the user affirms the intent, the story continues as if the user had
+this intent from the beginning.</p></li>
+<li><p>If the user denies, the original intent is classified as the specified
+<code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code>, and an ultimate fallback action
+is triggered (e.g. a handoff to a human).</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p><strong>Configuration:</strong></p>
+<blockquote>
+<div><p>To use the <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code>, include the following in your
+policy configuration.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TwoStageFallbackPolicy</span>
+    <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">ambiguity_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
+    <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">fallback_core_action_name</span><span class="p">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
+    <span class="nt">fallback_nlu_action_name</span><span class="p">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
+    <span class="nt">deny_suggestion_intent_name</span><span class="p">:</span> <span class="s">&quot;out_of_scope&quot;</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 58%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></p></td>
+<td><p>Min confidence needed to accept an NLU
+prediction</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></p></td>
+<td><p>Min amount by which the confidence of the
+top intent must exceed that of the second
+highest ranked intent.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></p></td>
+<td><p>Min confidence needed to accept an action
+prediction from Rasa Core</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></p></td>
+<td><p>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+to be called if the confidence of Rasa
+Core action prediction is below the
+<code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>. This action is
+to propose the recognized intents</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></p></td>
+<td><p>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+to be called if the confidence of Rasa
+NLU intent classification is below the
+<code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>. This action is called
+when the user denies the second time</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></p></td>
+<td><p>The name of the intent which is used to
+detect that the user denies the suggested
+intents</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can include either the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> or the
+<code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> in your configuration, but not both.</p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="form-policy">
+<span id="id7"></span><h2><a class="toc-backref" href="#id20">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is an extension of the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> which
+handles the filling of forms. Once a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> is called, the
+<code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> will continually predict the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> until all required
+slots in the form are filled. For more information, see <a class="reference internal" href="../forms/#forms"><span class="std std-ref">Forms</span></a>.</p>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>
