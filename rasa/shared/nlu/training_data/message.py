@@ -245,7 +245,7 @@ class Message:
             featurizers: names of featurizers to consider
 
         Returns:
-            features.
+            Features.
         """
         sparse_features = self.get_sparse_features(attribute, featurizers)
         dense_features = self.get_dense_features(attribute, featurizers)
