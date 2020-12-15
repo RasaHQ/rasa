@@ -209,43 +209,55 @@ def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
     # note: call _replace_deprecated_option() here when there are options to deprecate
+    new_config = {}
+    if isinstance(config.get(TRANSFORMER_SIZE), int):
+        new_config = override_defaults(
+            new_config,
+            _replace_deprecated_option(
+                TRANSFORMER_SIZE, [TRANSFORMER_SIZE, DIALOGUE], config
+            ),
+        )
 
-    new_config = _replace_deprecated_option(
-        TRANSFORMER_SIZE, [TRANSFORMER_SIZE, DIALOGUE], config
-    )
-    new_config = override_defaults(
-        new_config,
-        _replace_deprecated_option(
-            NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
-        ),
-    )
+    if isinstance(config.get(NUM_TRANSFORMER_LAYERS), int):
+        new_config = override_defaults(
+            new_config,
+            _replace_deprecated_option(
+                NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
+            ),
+        )
 
-    new_config = override_defaults(
-        new_config,
-        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config),
-    )
-    new_config = override_defaults(
-        new_config,
-        _replace_deprecated_option(
-            DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
-        ),
-    )
-    new_config = override_defaults(
-        new_config,
-        _replace_deprecated_option(
-            DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config
-        ),
-    )
-    new_config = override_defaults(
-        new_config,
-        _replace_deprecated_option(DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config),
-    )
-    new_config = override_defaults(
-        new_config,
-        _replace_deprecated_option(
-            DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
-        ),
-    )
+    if isinstance(config.get(DENSE_DIMENSION), int):
+        new_config = override_defaults(
+            new_config,
+            _replace_deprecated_option(
+                DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config
+            ),
+        )
+        new_config = override_defaults(
+            new_config,
+            _replace_deprecated_option(
+                DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
+            ),
+        )
+        new_config = override_defaults(
+            new_config,
+            _replace_deprecated_option(
+                DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config
+            ),
+        )
+        new_config = override_defaults(
+            new_config,
+            _replace_deprecated_option(
+                DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config
+            ),
+        )
+        new_config = override_defaults(
+            new_config,
+            _replace_deprecated_option(
+                DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
+            ),
+        )
+
     config.update(new_config)
     return config
 
