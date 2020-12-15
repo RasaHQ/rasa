@@ -1486,13 +1486,14 @@ def run_evaluation(
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
 
     breakpoint()
-    print(data_path)
     # test_data = rasa.shared.nlu.training_data.loading.load_data(
     #     data_path, interpreter.model_metadata.language
     # )
-    test_data = TrainingDataImporter.load_from_config(
+    test_data_importer = TrainingDataImporter.load_from_config(
         config_path="config.yml", training_data_paths=[data_path]
     )
+    breakpoint()
+    test_data = test_data_importer.get_nlu_data()
     breakpoint()
     result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
