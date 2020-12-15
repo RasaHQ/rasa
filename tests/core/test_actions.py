@@ -1,3 +1,4 @@
+import textwrap
 from typing import List, Text
 
 import pytest
@@ -11,7 +12,6 @@ from rasa.core.actions.action import (
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
     ActionExecutionRejection,
-    ActionListen,
     ActionRestart,
     ActionUtterTemplate,
     ActionRetrieveResponse,
@@ -702,13 +702,15 @@ async def test_action_default_ask_rephrase(
 def test_get_form_action(slot_mapping: Text):
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
-        f"""
+        textwrap.dedent(
+            f"""
     actions:
     - my_action
     forms:
       {form_action_name}:
         {slot_mapping}
     """
+        )
     )
 
     actual = action.action_for_name_or_text(form_action_name, domain, None)
@@ -719,12 +721,14 @@ def test_get_form_action_with_rasa_open_source_1_forms():
     form_action_name = "my_business_logic"
     with pytest.warns(FutureWarning):
         domain = Domain.from_yaml(
-            f"""
+            textwrap.dedent(
+                f"""
         actions:
         - my_action
         forms:
         - {form_action_name}
         """
+            )
         )
 
     actual = action.action_for_name_or_text(form_action_name, domain, None)
@@ -734,13 +738,15 @@ def test_get_form_action_with_rasa_open_source_1_forms():
 def test_overridden_form_action():
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
-        f"""
+        textwrap.dedent(
+            f"""
     actions:
     - my_action
     - {form_action_name}
     forms:
         {form_action_name}:
     """
+        )
     )
 
     actual = action.action_for_name_or_text(form_action_name, domain, None)
@@ -750,10 +756,12 @@ def test_overridden_form_action():
 def test_get_form_action_if_not_in_forms():
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
-        """
+        textwrap.dedent(
+            """
     actions:
     - my_action
     """
+        )
     )
 
     with pytest.raises(ActionNotFoundException):
@@ -765,13 +773,15 @@ def test_get_form_action_if_not_in_forms():
 )
 def test_get_end_to_end_utterance_action(end_to_end_utterance: Text):
     domain = Domain.from_yaml(
-        f"""
+        textwrap.dedent(
+            f"""
     actions:
     - my_action
     {KEY_E2E_ACTIONS}:
     - {end_to_end_utterance}
     - Bye Bye
 """
+        )
     )
 
     actual = action.action_for_name_or_text(end_to_end_utterance, domain, None)
@@ -784,13 +794,15 @@ async def test_run_end_to_end_utterance_action():
     end_to_end_utterance = "Hi"
 
     domain = Domain.from_yaml(
-        f"""
+        textwrap.dedent(
+            f"""
     actions:
     - my_action
     {KEY_E2E_ACTIONS}:
     - {end_to_end_utterance}
     - Bye Bye
 """
+        )
     )
 
     e2e_action = action.action_for_name_or_text("Hi", domain, None)
