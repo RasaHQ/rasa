@@ -29,6 +29,34 @@ Please update your configuration files using the following mapping:
 |                             |`action_name`, `label_action_name`, `entities`, `slots`,|
 |                             |`active_loop`                                           |
 
+For example:
+
+```yaml-rasa title="config.yml"
+policies:
+  - name: TEDPolicy
+    transformer_size:
+      text: 128
+      action_text: 128
+      label_action_text: 128
+      dialogue: 128
+    number_of_transformer_layers:
+      text: 1
+      action_text: 1
+      label_action_text: 1
+      dialogue: 1
+    dense_dimension:
+      text: 128
+      action_text: 128
+      label_action_text: 128
+      intent: 20
+      action_name: 20
+      label_action_name: 20
+      entities: 20
+      slots: 20
+      active_loop: 20
+```
+
+
 ### Deprecations
 
 #### Markdown Data
