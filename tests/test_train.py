@@ -519,7 +519,8 @@ class TestE2e:
         mocked_core_training.assert_called_once()
         mocked_nlu_training.assert_called_once()
 
-    def make_tmp_model_dir(self, tmp_path):
+    @staticmethod
+    def make_tmp_model_dir(tmp_path: Path) -> Text:
         (tmp_path / "models").mkdir()
         output = str(tmp_path / "models")
         return output
