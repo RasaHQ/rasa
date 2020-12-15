@@ -261,7 +261,7 @@ class Message:
 
         Args:
             attribute: Message attribute.
-            featurizers: names of featurizers to consider
+            featurizers: Names of featurizers to consider.
 
         Returns:
             ``True``, if features are present, ``False`` otherwise
