@@ -39,6 +39,7 @@ from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
+from rasa.nlu.tokenizers.hf_transformers_tokenizer import HFTransformersTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
@@ -69,6 +70,7 @@ component_classes = [
     ConveRTTokenizer,
     JiebaTokenizer,
     LanguageModelTokenizer,
+    HFTransformersTokenizer,
     # extractors
     SpacyEntityExtractor,
     MitieEntityExtractor,
