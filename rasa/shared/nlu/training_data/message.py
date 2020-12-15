@@ -115,7 +115,7 @@ class Message:
         example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
-        """Build a Message from `UserUttered` data.
+        """Builds a Message from `UserUttered` data.
 
         Args:
             text: text of a user's utterance
