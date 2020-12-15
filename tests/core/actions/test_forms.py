@@ -1096,7 +1096,7 @@ async def test_ask_for_slot_if_not_utter_ask(monkeypatch: MonkeyPatch):
     )
 
     form = FormAction("my_form", endpoint_config)
-    await form._ask_for_slot(
+    events = await form._ask_for_slot(
         Domain.empty(),
         None,
         None,
@@ -1104,4 +1104,5 @@ async def test_ask_for_slot_if_not_utter_ask(monkeypatch: MonkeyPatch):
         DialogueStateTracker.from_events("dasd", []),
     )
 
+    assert not events
     action_from_name.assert_not_called()
