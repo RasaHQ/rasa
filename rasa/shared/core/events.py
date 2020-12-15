@@ -193,7 +193,6 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
     ]
 
 
-# noinspection PyProtectedMember
 class Event:
     """Events describe everything that occurs in
     a conversation and tell the :class:`rasa.shared.core.trackers.DialogueStateTracker`
@@ -334,7 +333,6 @@ class EventWithoutExtraAttributes(Event, ABC):
         return True
 
 
-# noinspection PyProtectedMember
 class UserUttered(Event):
     """The user has said something to the bot.
 
@@ -595,7 +593,6 @@ class UserUttered(Event):
         )
 
 
-# noinspection PyProtectedMember
 class DefinePrevUserUttered(Event, ABC):
     """Defines the family of events that are used to update previous user utterance."""
 
@@ -608,7 +605,6 @@ class DefinePrevUserUttered(Event, ABC):
         return
 
 
-# noinspection PyProtectedMember
 class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
     """Stores information whether action was predicted based on text or intent."""
 
@@ -677,7 +673,6 @@ class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
         return self.use_text_for_featurization == other.use_text_for_featurization
 
 
-# noinspection PyProtectedMember
 class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
     """Event that is used to set entities on a previous user uttered event."""
 
@@ -746,7 +741,6 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
                 tracker.latest_message.entities.append(entity)
 
 
-# noinspection PyProtectedMember
 class BotUttered(Event):
     """The bot has said something to the user.
 
@@ -851,7 +845,6 @@ class BotUttered(Event):
             raise ValueError(f"Failed to parse bot uttered event. {e}")
 
 
-# noinspection PyProtectedMember
 class SlotSet(Event):
     """The user has specified their preference for the value of a `slot`.
 
@@ -938,7 +931,6 @@ class SlotSet(Event):
         tracker._set_slot(self.key, self.value)
 
 
-# noinspection PyProtectedMember
 class Restarted(EventWithoutExtraAttributes):
     """Conversation should start over & history wiped.
 
@@ -963,7 +955,6 @@ class Restarted(EventWithoutExtraAttributes):
         tracker.trigger_followup_action(ACTION_SESSION_START_NAME)
 
 
-# noinspection PyProtectedMember
 class UserUtteranceReverted(EventWithoutExtraAttributes):
     """Bot reverts everything until before the most recent user message.
 
@@ -988,7 +979,6 @@ class UserUtteranceReverted(EventWithoutExtraAttributes):
         tracker.replay_events()
 
 
-# noinspection PyProtectedMember
 class AllSlotsReset(EventWithoutExtraAttributes):
     """All Slots are reset to their initial values.
 
@@ -1012,7 +1002,6 @@ class AllSlotsReset(EventWithoutExtraAttributes):
         tracker._reset_slots()
 
 
-# noinspection PyProtectedMember
 class ReminderScheduled(Event):
     """Schedules the asynchronous triggering of a user intent
     (with entities if needed) at a given time."""
@@ -1122,7 +1111,6 @@ class ReminderScheduled(Event):
         ]
 
 
-# noinspection PyProtectedMember
 class ReminderCancelled(Event):
     """Cancel certain jobs."""
 
@@ -1226,7 +1214,6 @@ class ReminderCancelled(Event):
         ]
 
 
-# noinspection PyProtectedMember
 class ActionReverted(EventWithoutExtraAttributes):
     """Bot undoes its last action.
 
@@ -1253,7 +1240,6 @@ class ActionReverted(EventWithoutExtraAttributes):
         tracker.replay_events()
 
 
-# noinspection PyProtectedMember
 class StoryExported(Event):
     """Story should get dumped to a file."""
 
@@ -1306,7 +1292,6 @@ class StoryExported(Event):
         return self.path == other.path
 
 
-# noinspection PyProtectedMember
 class FollowupAction(Event):
     """Enqueue a followup action."""
 
@@ -1370,7 +1355,6 @@ class FollowupAction(Event):
         tracker.trigger_followup_action(self.action_name)
 
 
-# noinspection PyProtectedMember
 class ConversationPaused(EventWithoutExtraAttributes):
     """Ignore messages from the user to let a human take over.
 
@@ -1393,7 +1377,6 @@ class ConversationPaused(EventWithoutExtraAttributes):
         tracker._paused = True
 
 
-# noinspection PyProtectedMember
 class ConversationResumed(EventWithoutExtraAttributes):
     """Bot takes over conversation.
 
@@ -1416,7 +1399,6 @@ class ConversationResumed(EventWithoutExtraAttributes):
         tracker._paused = False
 
 
-# noinspection PyProtectedMember
 class ActionExecuted(Event):
     """An operation describes an action taken + its result.
 
