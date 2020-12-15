@@ -234,7 +234,8 @@ In case of an `utter_` action, `TEDPolicy` sees only the name of the action, whi
 if you provide actual utterance using `bot` key,
 `TEDPolicy` will featurize it as textual input depending on the NLU configuration.
 This can help in case of similar utterances in slightly different situations.
-However, this can also make things harder to learn because ....
+However, this can also make things harder to learn because the fact that different
+utterances have similar texts make it easier for `TEDPolicy` to confuse these utterances.
 
 End-to-end training requires significantly more parameters in `TEDPolicy`.
 Therefore, training an end-to-end model might require significant computational
