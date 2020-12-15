@@ -640,6 +640,7 @@ async def test_tracker_dump_e2e_story(default_agent: Agent):
         "* greet: /greet",
         "    - utter_greet",
         "* goodbye: /goodbye",
+        "    - utter_goodbye",
     ]
 
 

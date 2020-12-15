@@ -98,6 +98,8 @@ def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
         persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
+        model_to_finetune=_model_for_finetuning(args),
+        finetuning_epoch_fraction=args.epoch_fraction,
     )
     if training_result.code != 0 and can_exit:
         sys.exit(training_result.code)
@@ -105,14 +107,22 @@ def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
     return training_result.model
 
 
+def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
+    if args.finetune == train_arguments.USE_LATEST_MODEL_FOR_FINE_TUNING:
+        # We use this constant to signal that the user specified `--finetune` but
+        # didn't provide a path to a model. In this case we try to load the latest
+        # model from the output directory (that's usually models/).
+        return args.out
+
+
 def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
-    """Trains a Core model.
+    """Trains a Rasa Core model only.
 
     Args:
-        args: Namespace arguments.
-        train_path: Directory where models should be stored.
+        args: Command-line arguments to configure training.
+        train_path: Path where trained model but not unzipped model should be stored.
 
     Returns:
         Path to a trained model or `None` if training was not successful.
@@ -145,6 +155,8 @@ def train_core(
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
             additional_arguments=additional_arguments,
+            model_to_finetune=_model_for_finetuning(args),
+            finetuning_epoch_fraction=args.epoch_fraction,
         )
     else:
         from rasa.core.train import do_compare_training
@@ -189,6 +201,8 @@ def train_nlu(
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),
         domain=args.domain,
+        model_to_finetune=_model_for_finetuning(args),
+        finetuning_epoch_fraction=args.epoch_fraction,
     )
 
 

@@ -3,3 +3,4 @@ policies:
   random_seed: 42
   validation_split: 0
   max_history: 5
+- name: RulePolicy
