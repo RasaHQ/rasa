@@ -52,6 +52,23 @@ or both ML-based data and rule data, they need to override this method.
 
   The data type supported by this policy (ML-based training data).
 
+#### \_\_init\_\_
+
+```python
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, should_finetune: bool = False, **kwargs: Any, ,) -> None
+```
+
+Constructs a new Policy object.
+
+#### featurizer
+
+```python
+ | @property
+ | featurizer()
+```
+
+Returns the policy&#x27;s featurizer.
+
 #### featurize\_for\_training
 
 ```python
@@ -130,7 +147,7 @@ Persists the policy to storage.
 
 ```python
  | @classmethod
- | load(cls, path: Union[Text, Path]) -> "Policy"
+ | load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy"
 ```
 
 Loads a policy from path.

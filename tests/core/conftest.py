@@ -69,8 +69,8 @@ class CustomSlot(Slot):
 
 # noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
-    def __init__(self, example_arg):
-        super(ExamplePolicy, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(ExamplePolicy, self).__init__(*args, **kwargs)
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
@@ -185,13 +185,6 @@ def tracker_with_six_scheduled_reminders(
     default_processor.tracker_store.save(tracker)
 
     return tracker
-
-
-@pytest.fixture(scope="session")
-def moodbot_metadata(unpacked_trained_moodbot_path: Text) -> PolicyEnsemble:
-    return PolicyEnsemble.load_metadata(
-        os.path.join(unpacked_trained_moodbot_path, "core")
-    )
 
 
 @pytest.fixture

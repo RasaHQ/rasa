@@ -23,6 +23,18 @@ Fingerprint the training data.
 
   hex string as a fingerprint of the training data.
 
+#### label\_fingerprint
+
+```python
+ | label_fingerprint() -> Text
+```
+
+Fingerprints the labels in the training data.
+
+**Returns**:
+
+  hex string as a fingerprint of the training data labels.
+
 #### merge
 
 ```python
@@ -91,6 +103,15 @@ duplicate examples.
 
 Returns the set of intents in the training data.
 
+#### action\_names
+
+```python
+ | @lazy_property
+ | action_names() -> Set[Text]
+```
+
+Returns the set of action names in the training data.
+
 #### retrieval\_intents
 
 ```python
@@ -98,7 +119,7 @@ Returns the set of intents in the training data.
  | retrieval_intents() -> Set[Text]
 ```
 
-Returns the total number of response types in the training data
+Returns the total number of response types in the training data.
 
 #### number\_of\_examples\_per\_intent
 

@@ -27,7 +27,7 @@ getting the next action, and handling a channel.
 
 ```python
  | @classmethod
- | load(cls, model_path: Union[Text, Path], interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, path_to_model_archive: Optional[Text] = None) -> "Agent"
+ | load(cls, model_path: Union[Text, Path], interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, path_to_model_archive: Optional[Text] = None, new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "Agent"
 ```
 
 Load a persisted model from the passed path.

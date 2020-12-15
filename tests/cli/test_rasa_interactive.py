@@ -20,7 +20,9 @@ def test_interactive_help(run: Callable[..., RunResult]):
                         [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
-                        [--debug-plots] [--force] [--persist-nlu-data]
+                        [--debug-plots] [--finetune [FINETUNE]]
+                        [--epoch-fraction EPOCH_FRACTION] [--force]
+                        [--persist-nlu-data]
                         {core} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
@@ -38,7 +40,8 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
                              [--conversation-id CONVERSATION_ID]
                              [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                              [--out OUT] [--augmentation AUGMENTATION]
-                             [--debug-plots] [-p PORT]
+                             [--debug-plots] [--finetune [FINETUNE]]
+                             [--epoch-fraction EPOCH_FRACTION] [-p PORT]
                              [model-as-positional-argument]"""
 
     lines = help_text.split("\n")

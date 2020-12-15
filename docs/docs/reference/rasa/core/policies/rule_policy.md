@@ -35,7 +35,7 @@ The type of data supported by this policy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = RULE_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True, restrict_rules: bool = True, check_for_contradictions: bool = True) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = RULE_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True, restrict_rules: bool = True, check_for_contradictions: bool = True, **kwargs: Any, ,) -> None
 ```
 
 Create a `RulePolicy` object.
@@ -54,6 +54,10 @@ Create a `RulePolicy` object.
   if no rule matched.
 - `enable_fallback_prediction` - If `True` `core_fallback_action_name` is
   predicted in case no rule matched.
+- `restrict_rules` - If `True` rules are restricted to contain a maximum of 1
+  user message. This is used to avoid that users build a state machine
+  using the rules.
+- `check_for_contradictions` - Check for contradictions.
 
 #### predict\_action\_probabilities
 

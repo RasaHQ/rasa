@@ -28,7 +28,7 @@ following steps:
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, **kwargs: Any, ,) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, should_finetune: bool = False, **kwargs: Any, ,) -> None
 ```
 
 Declare instance variables with default values.
@@ -63,9 +63,10 @@ Persists the policy to a storage.
 
 ```python
  | @classmethod
- | load(cls, path: Union[Text, Path]) -> "TEDPolicy"
+ | load(cls, path: Union[Text, Path], should_finetune: bool = False, epoch_override: int = defaults[EPOCHS], **kwargs: Any, ,) -> "TEDPolicy"
 ```
 
 Loads a policy from the storage.
+
 **Needs to load its featurizer**
 

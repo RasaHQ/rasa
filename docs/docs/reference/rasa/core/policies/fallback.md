@@ -18,13 +18,14 @@ prediction.
 #### \_\_init\_\_
 
 ```python
- | __init__(priority: int = FALLBACK_POLICY_PRIORITY, nlu_threshold: float = DEFAULT_NLU_FALLBACK_THRESHOLD, ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD, core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME) -> None
+ | __init__(priority: int = FALLBACK_POLICY_PRIORITY, nlu_threshold: float = DEFAULT_NLU_FALLBACK_THRESHOLD, ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD, core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, **kwargs: Any, ,) -> None
 ```
 
 Create a new Fallback policy.
 
 **Arguments**:
 
+- `priority` - Fallback policy priority.
 - `core_threshold` - if NLU confidence threshold is met,
   predict fallback action with confidence `core_threshold`.
   If this is the highest confidence in the ensemble,

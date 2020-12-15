@@ -30,10 +30,10 @@ Persists the policy to storage.
 
 ```python
  | @classmethod
- | load(cls, path: Union[Text, Path]) -> "PolicyEnsemble"
+ | load(cls, path: Union[Text, Path], new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "PolicyEnsemble"
 ```
 
-Loads policy and domain specification from storage
+Loads policy and domain specification from disk.
 
 ## SimplePolicyEnsemble Objects
 

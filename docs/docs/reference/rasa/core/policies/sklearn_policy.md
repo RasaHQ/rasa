@@ -23,6 +23,8 @@ Create a new sklearn policy.
 
 - `featurizer` - Featurizer used to convert the training data into
   vector format.
+- `priority` - Policy priority
+- `max_history` - Maximum history of the dialogs.
 - `model` - The sklearn model or model pipeline.
 - `param_grid` - If *param_grid* is not None and *cv* is given,
   a grid search on the given *param_grid* is performed
@@ -43,4 +45,13 @@ Create a new sklearn policy.
 ```
 
 Persists the policy properties (see parent class for more information).
+
+#### load
+
+```python
+ | @classmethod
+ | load(cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any) -> Policy
+```
+
+See the docstring for `Policy.load`.
 

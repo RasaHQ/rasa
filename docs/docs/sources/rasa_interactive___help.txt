@@ -3,7 +3,9 @@ usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-p PORT] [-m MODEL]
                         [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
-                        [--debug-plots] [--force] [--persist-nlu-data]
+                        [--debug-plots] [--finetune [FINETUNE]]
+                        [--epoch-fraction EPOCH_FRACTION] [--force]
+                        [--persist-nlu-data]
                         {core} ... [model-as-positional-argument]
 
 positional arguments:
@@ -35,7 +37,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: f3cec6aea1cf422db21e583860d0c939)
+                        generated. (default: cb944466c20749cebe603c29cfa84684)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -66,7 +68,16 @@ Train Arguments:
                         their connections between story blocks in a file
                         called `story_blocks_connections.html`. (default:
                         False)
+  --finetune [FINETUNE]
+                        Fine-tune a previously trained model. If no model path
+                        is provided, Rasa Open Source will try to finetune the
+                        latest trained model from the model directory
+                        specified via '--out'. (default: None)
+  --epoch-fraction EPOCH_FRACTION
+                        Fraction of epochs which are currently specified in
+                        the model configuration which should be used when
+                        finetuning a model. (default: 1.0)
   --force               Force a model training even if the data has not
                         changed. (default: False)
-  --persist-nlu-data    Persist the nlu training data in the saved model.
+  --persist-nlu-data    Persist the NLU training data in the saved model.
                         (default: False)

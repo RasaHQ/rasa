@@ -9,14 +9,15 @@ title: rasa.model
 class Section(NamedTuple)
 ```
 
-Defines relevant fingerprint sections which are used to decide whether a model
-should be retrained.
+Specifies which fingerprint keys decide whether this sub-model is retrained.
 
 ## FingerprintComparisonResult Objects
 
 ```python
 class FingerprintComparisonResult()
 ```
+
+Container for the results of a fingerprint comparison.
 
 #### \_\_init\_\_
 
@@ -265,6 +266,26 @@ Check which components of a model should be retrained.
   A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa NLU needs
   to be retrained or not.
 
+#### can\_finetune
+
+```python
+can_finetune(last_fingerprint: Fingerprint, new_fingerprint: Fingerprint, core: bool = False, nlu: bool = False) -> bool
+```
+
+Checks if components of a model can be finetuned with incremental training.
+
+**Arguments**:
+
+- `last_fingerprint` - The fingerprint of the old model to potentially be fine-tuned.
+- `new_fingerprint` - The fingerprint of the new model.
+- `core` - Check sections for finetuning a core model.
+- `nlu` - Check sections for finetuning an nlu model.
+  
+
+**Returns**:
+
+  `True` if the old model can be finetuned, `False` otherwise.
+
 #### package\_model
 
 ```python
@@ -295,4 +316,22 @@ Overwrites the domain of an unpacked model with a new domain.
 
 - `importer` - Importer which provides the new domain.
 - `unpacked_model_path` - Path to the unpacked model.
+
+#### get\_model\_for\_finetuning
+
+```python
+get_model_for_finetuning(previous_model_file: Optional[Union[Path, Text]]) -> Optional[Text]
+```
+
+Gets validated path for model to finetune.
+
+**Arguments**:
+
+- `previous_model_file` - Path to model file which should be used for finetuning or
+  a directory in case the latest trained model should be used.
+  
+
+**Returns**:
+
+  Path to model archive. `None` if there is no model.
 

@@ -41,12 +41,12 @@ Trains a model.
 train_core(args: argparse.Namespace, train_path: Optional[Text] = None) -> Optional[Text]
 ```
 
-Trains a Core model.
+Trains a Rasa Core model only.
 
 **Arguments**:
 
-- `args` - Namespace arguments.
-- `train_path` - Directory where models should be stored.
+- `args` - Command-line arguments to configure training.
+- `train_path` - Path where trained model but not unzipped model should be stored.
   
 
 **Returns**:

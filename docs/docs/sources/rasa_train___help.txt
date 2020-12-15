@@ -3,7 +3,8 @@ usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
-                  [--force]
+                  [--force] [--finetune [FINETUNE]]
+                  [--epoch-fraction EPOCH_FRACTION]
                   {core,nlu} ...
 
 positional arguments:
@@ -49,10 +50,19 @@ optional arguments:
   --fixed-model-name FIXED_MODEL_NAME
                         If set, the name of the model file/directory will be
                         set to the given name. (default: None)
-  --persist-nlu-data    Persist the nlu training data in the saved model.
+  --persist-nlu-data    Persist the NLU training data in the saved model.
                         (default: False)
   --force               Force a model training even if the data has not
                         changed. (default: False)
+  --finetune [FINETUNE]
+                        Fine-tune a previously trained model. If no model path
+                        is provided, Rasa Open Source will try to finetune the
+                        latest trained model from the model directory
+                        specified via '--out'. (default: None)
+  --epoch-fraction EPOCH_FRACTION
+                        Fraction of epochs which are currently specified in
+                        the model configuration which should be used when
+                        finetuning a model. (default: 1.0)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
