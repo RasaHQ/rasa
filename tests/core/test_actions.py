@@ -11,7 +11,6 @@ from rasa.core.actions.action import (
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
     ActionExecutionRejection,
-    ActionListen,
     ActionRestart,
     ActionUtterTemplate,
     ActionRetrieveResponse,
@@ -55,6 +54,7 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
+    REQUESTED_SLOT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -159,7 +159,7 @@ async def test_remote_action_runs(
                 "paused": False,
                 "latest_event_time": None,
                 FOLLOWUP_ACTION: "action_listen",
-                "slots": {"name": None},
+                "slots": {"name": None, REQUESTED_SLOT: None},
                 "events": [],
                 "latest_input_channel": None,
             },
@@ -214,7 +214,7 @@ async def test_remote_action_logs_events(
                 "paused": False,
                 FOLLOWUP_ACTION: ACTION_LISTEN_NAME,
                 "latest_event_time": None,
-                "slots": {"name": None},
+                "slots": {"name": None, REQUESTED_SLOT: None},
                 "events": [],
                 "latest_input_channel": None,
             },

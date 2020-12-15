@@ -101,7 +101,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
 )
-from rasa.shared.core.events import UserUttered, DefinePrevUserUtteredEntities, Event
+from rasa.shared.core.events import DefinePrevUserUtteredEntities, Event
 from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
@@ -284,13 +284,16 @@ class TEDPolicy(Policy):
         model: Optional[RasaModel] = None,
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(
+            featurizer, priority, should_finetune=should_finetune, **kwargs
+        )
         if isinstance(featurizer, FullDialogueTrackerFeaturizer):
             self.is_full_dialogue_featurizer_used = True
         else:
@@ -500,13 +503,17 @@ class TEDPolicy(Policy):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
-        self.model = TED(
-            model_data.get_signature(),
-            self.config,
-            isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
-            self._label_data,
-            self._entity_tag_specs,
-        )
+        if not self.finetune_mode:
+            # This means the model wasn't loaded from a
+            # previously trained model and hence needs
+            # to be instantiated.
+            self.model = TED(
+                model_data.get_signature(),
+                self.config,
+                isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
+                self._label_data,
+                self._entity_tag_specs,
+            )
 
         self.model.fit(
             model_data,
@@ -709,7 +716,13 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
+    def load(
+        cls,
+        path: Union[Text, Path],
+        should_finetune: bool = False,
+        epoch_override: int = defaults[EPOCHS],
+        **kwargs: Any,
+    ) -> "TEDPolicy":
         """Loads a policy from the storage.
 
         **Needs to load its featurizer**
@@ -765,6 +778,8 @@ class TEDPolicy(Policy):
         )
         meta = train_utils.update_similarity_type(meta)
 
+        meta[EPOCHS] = epoch_override
+
         model = TED.load(
             str(tf_model_file),
             model_data_example,
@@ -775,21 +790,23 @@ class TEDPolicy(Policy):
             use_only_last_dialogue_turns=True,
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
+            finetune_mode=should_finetune,
         )
 
-        # build the graph for prediction
-        predict_data_example = RasaModelData(
-            label_key=LABEL_KEY,
-            label_sub_key=LABEL_SUB_KEY,
-            data={
-                feature_name: features
-                for feature_name, features in model_data_example.items()
-                if feature_name
-                # we need to remove label features for prediction if they are present
-                in PREDICTION_FEATURES
-            },
-        )
-        model.build_for_predict(predict_data_example)
+        if not should_finetune:
+            # build the graph for prediction
+            predict_data_example = RasaModelData(
+                label_key=LABEL_KEY,
+                label_sub_key=LABEL_SUB_KEY,
+                data={
+                    feature_name: features
+                    for feature_name, features in model_data_example.items()
+                    if feature_name
+                    # we need to remove label features for prediction if they are present
+                    in PREDICTION_FEATURES
+                },
+            )
+            model.build_for_predict(predict_data_example)
 
         return cls(
             featurizer=featurizer,
@@ -797,6 +814,7 @@ class TEDPolicy(Policy):
             model=model,
             fake_features=fake_features,
             entity_tag_specs=entity_tag_specs,
+            should_finetune=should_finetune,
             **meta,
         )
 
