@@ -447,13 +447,9 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
 
 @pytest.mark.parametrize(
-    "utterance_name, expected",
-    [
-        ("utter_ask_my_form_num_people", "utter_ask_my_form_num_people"),
-        ("utter_ask_num_people", "utter_ask_num_people"),
-    ],
+    "utterance_name", ["utter_ask_my_form_num_people", "utter_ask_num_people"],
 )
-def test_name_of_utterance(utterance_name: Text, expected: Optional[Text]):
+def test_name_of_utterance(utterance_name: Text):
     form_name = "my_form"
     slot_name = "num_people"
 
