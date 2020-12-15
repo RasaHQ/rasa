@@ -22,7 +22,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.shared.exceptions import InvalidParameterException, RasaException
+from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -354,9 +354,6 @@ class Agent:
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
 
-        if self.domain is not None:
-            self.domain.setup_slots()
-
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
         )
@@ -409,6 +406,8 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         path_to_model_archive: Optional[Text] = None,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         try:
@@ -439,7 +438,15 @@ class Agent:
 
         if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
 
             # ensures the domain hasn't changed between test and train
             domain.compare_with_specification(core_model)

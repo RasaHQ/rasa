@@ -55,6 +55,7 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
+    REQUESTED_SLOT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -82,8 +83,9 @@ def template_nlg() -> TemplatedNaturalLanguageGenerator:
 
 
 @pytest.fixture(scope="module")
-def template_sender_tracker(default_domain: Domain):
-    return DialogueStateTracker("template-sender", default_domain.slots)
+def template_sender_tracker(default_domain_path: Text):
+    domain = Domain.load(default_domain_path)
+    return DialogueStateTracker("template-sender", domain.slots)
 
 
 def test_domain_action_instantiation():
@@ -159,7 +161,7 @@ async def test_remote_action_runs(
                 "paused": False,
                 "latest_event_time": None,
                 FOLLOWUP_ACTION: "action_listen",
-                "slots": {"name": None},
+                "slots": {"name": None, REQUESTED_SLOT: None},
                 "events": [],
                 "latest_input_channel": None,
             },
@@ -214,7 +216,7 @@ async def test_remote_action_logs_events(
                 "paused": False,
                 FOLLOWUP_ACTION: ACTION_LISTEN_NAME,
                 "latest_event_time": None,
-                "slots": {"name": None},
+                "slots": {"name": None, REQUESTED_SLOT: None},
                 "events": [],
                 "latest_input_channel": None,
             },
