@@ -1,5 +1,5 @@
 from typing import Dict, Text, List, Optional, Any
-from unittest.mock import Mock, ANY
+from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -10,7 +10,7 @@ from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
@@ -1069,7 +1069,10 @@ def test_extract_other_slots_with_entity(
     ],
 )
 async def test_ask_for_slot(
-    domain: Dict, expected_action: Text, monkeypatch: MonkeyPatch
+    domain: Dict,
+    expected_action: Text,
+    monkeypatch: MonkeyPatch,
+    default_nlg: TemplatedNaturalLanguageGenerator,
 ):
     slot_name = "sun"
 
@@ -1082,13 +1085,19 @@ async def test_ask_for_slot(
     form = FormAction("my_form", endpoint_config)
     domain = Domain.from_dict(domain)
     await form._ask_for_slot(
-        domain, None, None, slot_name, DialogueStateTracker.from_events("dasd", [])
+        domain,
+        default_nlg,
+        CollectingOutputChannel(),
+        slot_name,
+        DialogueStateTracker.from_events("dasd", []),
     )
 
     action_from_name.assert_called_once_with(expected_action, domain, endpoint_config)
 
 
-async def test_ask_for_slot_if_not_utter_ask(monkeypatch: MonkeyPatch):
+async def test_ask_for_slot_if_not_utter_ask(
+    monkeypatch: MonkeyPatch, default_nlg: TemplatedNaturalLanguageGenerator
+):
     action_from_name = Mock(return_value=action.ActionListen())
     endpoint_config = Mock()
     monkeypatch.setattr(
@@ -1098,8 +1107,8 @@ async def test_ask_for_slot_if_not_utter_ask(monkeypatch: MonkeyPatch):
     form = FormAction("my_form", endpoint_config)
     events = await form._ask_for_slot(
         Domain.empty(),
-        None,
-        None,
+        default_nlg,
+        CollectingOutputChannel(),
         "some slot",
         DialogueStateTracker.from_events("dasd", []),
     )
