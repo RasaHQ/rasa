@@ -304,8 +304,15 @@ class CategoricalSlot(Slot):
             )
 
     def persistence_info(self) -> Dict[Text, Any]:
+        """Returns serialized slot."""
         d = super().persistence_info()
-        d["values"] = self.values
+        d["values"] = [
+            value
+            for value in self.values
+            # Don't add default slot when persisting it.
+            # We'll re-add it on the fly when creating the domain.
+            if value != rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+        ]
         return d
 
     def _as_feature(self) -> List[float]:
