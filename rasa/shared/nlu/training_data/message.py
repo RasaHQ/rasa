@@ -236,7 +236,7 @@ class Message:
     def get_all_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> List["Features"]:
-        """Get all features for the attribute given the list of featurizers.
+        """Gets all features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
