@@ -72,9 +72,9 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     )
 
     assert state_features is not None
-    assert len(state_features) > 0
+    assert len(state_features) == 1
     assert labels is not None
-    assert len(labels) > 0
+    assert len(labels) == 1
     # moodbot doesn't contain e2e entities
     assert not any([any(turn_tags) for turn_tags in entity_tags])
 
@@ -91,8 +91,8 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(moodbot_domain: 
     )
 
     assert state_features is not None
-    assert len(state_features) > 0
+    assert len(state_features) == 7
     assert labels is not None
-    assert len(labels) > 0
+    assert len(labels) == 7
     # moodbot doesn't contain e2e entities
     assert not any([any(turn_tags) for turn_tags in entity_tags])

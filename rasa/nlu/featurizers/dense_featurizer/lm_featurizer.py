@@ -347,6 +347,12 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             # use lm specific tokenizer to further tokenize the text
             split_token_ids, split_token_strings = self._lm_tokenize(token.text)
 
+            if not split_token_ids:
+                # fix the situation that `token.text` only contains whitespace or other special characters,
+                # which cause `split_token_ids` and `split_token_strings` be empty,
+                # finally cause `self._lm_specific_token_cleanup()` to raise an exception
+                continue
+
             (split_token_ids, split_token_strings) = self._lm_specific_token_cleanup(
                 split_token_ids, split_token_strings
             )

@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
 TAG_ID_ORIGIN = "tag_id_origin"
 
 
-def convert_training_examples(
+def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
@@ -73,7 +73,6 @@ def _get_tag_ids(
     example: Message, tag_spec: "EntityTagSpec", bilou_tagging: bool
 ) -> "Features":
     """Creates a feature array containing the entity tag ids of the given example."""
-
     from rasa.nlu.test import determine_token_labels
     from rasa.nlu.utils.bilou_utils import bilou_tags_to_ids
     from rasa.shared.nlu.training_data.features import Features
@@ -100,12 +99,15 @@ def _surface_attributes(
 ) -> Dict[Text, List[List[List["Features"]]]]:
     """Restructure the input.
 
-    "features_for_examples" can, for example, be a dictionary of attributes (INTENT,
+    "features" can, for example, be a dictionary of attributes (INTENT,
     TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
     all dialogue turns in all training trackers.
     For NLU training it would just be a dictionary of attributes (either INTENT or
     RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
     examples.
+
+    The incoming "features" contain a dictionary as inner most value. This method
+    surfaces this dictionary, so that it becomes the outer most value.
 
     Args:
         features: a dictionary of attributes to a list of features for all
@@ -131,7 +133,7 @@ def _surface_attributes(
             for attribute in attributes:
                 features = attribute_to_features.get(attribute)
                 if featurizers:
-                    featurizers = _filter_features(features, featurizers)
+                    features = _filter_features(features, featurizers)
 
                 # if attribute is not present in the example, populate it with None
                 intermediate_features[attribute].append(features)
@@ -142,7 +144,9 @@ def _surface_attributes(
     return output
 
 
-def _filter_features(features: Optional[List["Features"]], featurizers: List[Text]):
+def _filter_features(
+    features: Optional[List["Features"]], featurizers: List[Text]
+) -> Optional[List["Features"]]:
     """Filter the given features.
 
     Return only those features that are coming from one of the given featurizers.
@@ -219,12 +223,16 @@ def convert_to_data_format(
 ) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
     """Converts the input into "Data" format.
 
-    "features_for_examples" can, for example, be a dictionary of attributes (INTENT,
+    "features" can, for example, be a dictionary of attributes (INTENT,
     TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
     all dialogue turns in all training trackers.
     For NLU training it would just be a dictionary of attributes (either INTENT or
     RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
     examples.
+
+    The "Data" format corresponds to Dict[Text, Dict[Text, List[FeatureArray]]]. It's
+    a dictionary of attributes (e.g. TEXT) to a dictionary of secondary attributes
+    (e.g. SEQUENCE or SENTENCE) to the list of actual features.
 
     Args:
         features: a dictionary of attributes to a list of features for all
@@ -235,7 +243,7 @@ def convert_to_data_format(
         featurizers: the featurizers to consider
 
     Returns:
-        Input in "Data" format and zero features
+        Input in "Data" format and fake features
     """
     training = False
     if not fake_features:
@@ -259,18 +267,18 @@ def convert_to_data_format(
         attributes = list(fake_features.keys())
 
     # In case an attribute is not present during prediction, replace it with
-    # None values that will then be replaced by zero features
+    # None values that will then be replaced by fake features
     dialogue_length = 1
     num_examples = 1
     for _features in attribute_to_features.values():
         num_examples = max(num_examples, len(_features))
         dialogue_length = max(dialogue_length, len(_features[0]))
-    empty_features = [[None] * dialogue_length] * num_examples
+    absent_features = [[None] * dialogue_length] * num_examples
 
     for attribute in attributes:
-        attribute_data[attribute] = _features_for_attribute(
+        attribute_data[attribute] = _feature_arrays_for_attribute(
             attribute,
-            empty_features,
+            absent_features,
             attribute_to_features,
             training,
             fake_features,
@@ -283,9 +291,9 @@ def convert_to_data_format(
     return attribute_data, fake_features
 
 
-def _features_for_attribute(
+def _feature_arrays_for_attribute(
     attribute: Text,
-    empty_features: List[Any],
+    absent_features: List[Any],
     attribute_to_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     fake_features: Dict[Text, List["Features"]],
@@ -294,8 +302,9 @@ def _features_for_attribute(
     """Create the features for the given attribute from the all examples features.
 
     Args:
-        attribute: the attribute
-        empty_features: empty features
+        attribute: the attribute of Message to be featurized
+        absent_features: list of Nones, used as features if `attribute_to_features`
+            does not contain the `attribute`
         attribute_to_features: features for every example
         training: boolean indicating whether we are currently in training or not
         fake_features: zero features
@@ -308,7 +317,7 @@ def _features_for_attribute(
     features = (
         attribute_to_features[attribute]
         if attribute in attribute_to_features
-        else empty_features
+        else absent_features
     )
 
     # in case some features for a specific attribute are

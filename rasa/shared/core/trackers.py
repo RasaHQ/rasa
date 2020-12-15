@@ -436,7 +436,7 @@ class DialogueStateTracker:
 
         applied_events = []
 
-        for i, event in enumerate(self.events):
+        for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):

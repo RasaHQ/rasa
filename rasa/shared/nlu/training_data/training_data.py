@@ -22,7 +22,6 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -78,6 +77,21 @@ class TrainingData:
         }
 
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
+
+    def label_fingerprint(self) -> Text:
+        """Fingerprints the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        labels = {
+            "intents": sorted(self.intents),
+            "entities": sorted(self.entities),
+            "entity_groups": sorted(self.entity_groups),
+            "entity_roles": sorted(self.entity_roles),
+            "actions": sorted(self.action_names),
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(labels)
 
     def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
         """Return merged instance of this data with other training data.
@@ -194,8 +208,13 @@ class TrainingData:
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
     @lazy_property
+    def action_names(self) -> Set[Text]:
+        """Returns the set of action names in the training data."""
+        return {ex.get(ACTION_NAME) for ex in self.training_examples} - {None}
+
+    @lazy_property
     def retrieval_intents(self) -> Set[Text]:
-        """Returns the total number of response types in the training data"""
+        """Returns the total number of response types in the training data."""
         return {
             ex.get(INTENT)
             for ex in self.training_examples
@@ -698,11 +717,11 @@ def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
     """Converts list to a string.
 
     Args:
-        lst: the list to convert
-        delim: the delimiter that is used to separate list inputs
-        quote: the quote that is used to wrap list inputs
+        lst: The list to convert.
+        delim: The delimiter that is used to separate list inputs.
+        quote: The quote that is used to wrap list inputs.
 
     Returns:
-        the string
+        The string.
     """
     return delim.join([quote + e + quote for e in lst])

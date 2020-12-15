@@ -13,6 +13,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
+    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -29,7 +30,6 @@ from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.structures import StoryStep
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -527,7 +527,7 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_bot_message(self, step: Dict[Text, Any]) -> None:
         bot_message = step.get(KEY_BOT_END_TO_END_MESSAGE, "")
-        self._add_event("", {"action_text": bot_message})
+        self._add_event("", {ACTION_TEXT: bot_message})
 
     def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
         self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})
