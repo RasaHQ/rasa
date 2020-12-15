@@ -4,7 +4,7 @@ import secrets
 import sys
 import tempfile
 import os
-from pathlib import Path, PosixPath
+from pathlib import Path
 from typing import Any, Text, Dict
 from unittest.mock import Mock
 
