@@ -697,7 +697,7 @@ def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
 
     Args:
         lst: the list to convert
-        delim: the delimiter that is used to separate list inputs
+        delim: The delimiter that is used to separate list inputs.
         quote: the quote that is used to wrap list inputs
 
     Returns:
