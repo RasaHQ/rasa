@@ -470,18 +470,10 @@ def test_response_evaluation_report(tmpdir_factory):
 
     response_results = [
         ResponseSelectionEvaluationResult(
-            "chitchat",
-            "It's sunny in Berlin",
-            "It's sunny in Berlin",
-            "What's the weather",
-            0.65432,
+            "weather/ask_weather", "weather/ask_weather", "What's the weather", 0.65432,
         ),
         ResponseSelectionEvaluationResult(
-            "chitchat",
-            "My name is Mr.bot",
-            "My name is Mr.bot",
-            "What's your name?",
-            0.98765,
+            "faq/ask_name", "faq/ask_name", "What's your name?", 0.98765,
         ),
     ]
 
@@ -499,14 +491,13 @@ def test_response_evaluation_report(tmpdir_factory):
 
     prediction = {
         "text": "What's your name?",
-        "intent_target": "chitchat",
-        "response_target": "My name is Mr.bot",
-        "response_predicted": "My name is Mr.bot",
+        "response_key": "faq/ask_name",
+        "response_predicted": "faq/ask_name",
         "confidence": 0.98765,
     }
 
     assert len(report.keys()) == 5
-    assert report["My name is Mr.bot"] == name_query_results
+    assert report["faq/ask_name"] == name_query_results
     assert result["predictions"][1] == prediction
 
 
@@ -590,23 +581,16 @@ def test_empty_intent_removal():
 
 def test_empty_response_removal():
     response_results = [
+        ResponseSelectionEvaluationResult(None, None, "What's the weather", 0.65432,),
         ResponseSelectionEvaluationResult(
-            "chitchat", None, "It's sunny in Berlin", "What's the weather", 0.65432
-        ),
-        ResponseSelectionEvaluationResult(
-            "chitchat",
-            "My name is Mr.bot",
-            "My name is Mr.bot",
-            "What's your name?",
-            0.98765,
+            "faq/ask_name", "faq/ask_name", "What's your name?", 0.98765,
         ),
     ]
     response_results = remove_empty_response_examples(response_results)
 
     assert len(response_results) == 1
-    assert response_results[0].intent_target == "chitchat"
-    assert response_results[0].response_target == "My name is Mr.bot"
-    assert response_results[0].response_prediction == "My name is Mr.bot"
+    assert response_results[0].response_key == "faq/ask_name"
+    assert response_results[0].response_prediction_full_intent == "faq/ask_name"
     assert response_results[0].confidence == 0.98765
     assert response_results[0].message == "What's your name?"
 
