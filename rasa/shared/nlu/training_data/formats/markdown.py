@@ -5,7 +5,10 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Text, Optional, Tuple, Dict, Union
 
-from rasa.shared.constants import LEGACY_DOCS_BASE_URL
+from rasa.shared.constants import (
+    LEGACY_DOCS_BASE_URL,
+    DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+)
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -38,7 +41,8 @@ logger = logging.getLogger(__name__)
 class MarkdownReader(TrainingDataReader):
     """Reads markdown training data and creates a TrainingData object."""
 
-    def __init__(self) -> None:
+    def __init__(self, ignore_deprecation_warning: bool = False,) -> None:
+        """Creates reader. See parent class docstring for more information."""
         super().__init__()
         self.current_title = None
         self.current_section = None
@@ -47,8 +51,16 @@ class MarkdownReader(TrainingDataReader):
         self.regex_features = []
         self.lookup_tables = []
 
+        if not ignore_deprecation_warning:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "NLU data in Markdown format is deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown NLU data to the "
+                "new YAML training data format.",
+                docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+            )
+
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
-        """Read markdown string and create TrainingData object"""
+        """Read markdown string and create TrainingData object."""
         s = self._strip_comments(s)
         for line in s.splitlines():
             line = decode_string(line.strip())
@@ -179,9 +191,25 @@ class MarkdownReader(TrainingDataReader):
 
 
 class MarkdownWriter(TrainingDataWriter):
+    """Converts NLU data to Markdown."""
+
+    def __init__(self, ignore_deprecation_warning: bool = False,) -> None:
+        """Creates writer.
+
+        Args:
+            ignore_deprecation_warning: `True` if deprecation warning for Markdown
+                format should be suppressed.
+        """
+        if not ignore_deprecation_warning:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "NLU data in Markdown format is deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown NLU data to the "
+                "new YAML training data format.",
+                docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+            )
+
     def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms a TrainingData object into a markdown string."""
-
         md = ""
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)

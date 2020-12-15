@@ -52,6 +52,7 @@ KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
 KEY_E2E_ACTIONS = "e2e_actions"
+KEY_RESPONSES_TEXT = "text"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
@@ -286,8 +287,8 @@ class Domain:
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
-        # Sort the slots so that the order of the slot states is consistent
-        for slot_name in sorted(slot_dict):
+        # Don't sort the slots, see https://github.com/RasaHQ/rasa-x/issues/3900
+        for slot_name in slot_dict:
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
 
@@ -520,7 +521,6 @@ class Domain:
         )
         action_names += overridden_form_actions
 
-        self.slots = slots
         self.templates = templates
         self.action_texts = action_texts or []
         self.session_config = session_config
@@ -540,6 +540,10 @@ class Domain:
             ]
             + self.action_texts
         )
+
+        self._user_slots = copy.copy(slots)
+        self.slots = slots
+        self._add_default_slots()
 
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
@@ -683,7 +687,13 @@ class Domain:
         """
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
 
-    def add_categorical_slot_default_value(self) -> None:
+    def _add_default_slots(self) -> None:
+        """Sets up the default slots and slot values for the domain."""
+        self._add_requested_slot()
+        self._add_knowledge_base_slots()
+        self._add_categorical_slot_default_value()
+
+    def _add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
 
         All unseen values found for the slot will be mapped to this default value
@@ -692,7 +702,17 @@ class Domain:
         for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
 
-    def add_requested_slot(self) -> None:
+    def add_categorical_slot_default_value(self) -> None:
+        """See `_add_categorical_slot_default_value` for docstring."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{self.add_categorical_slot_default_value.__name__}' is deprecated and "
+            f"will be removed in Rasa Open Source 3.0.0. This method is now "
+            f"automatically called when the Domain is created which makes a manual "
+            f"call superfluous."
+        )
+        self._add_categorical_slot_default_value()
+
+    def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
 
         The value of this slot will hold the name of the slot which the user
@@ -708,10 +728,20 @@ class Domain:
                 )
             )
 
-    def add_knowledge_base_slots(self) -> None:
-        """
-        Add slots for the knowledge base action to the list of slots, if the
-        default knowledge base action name is present.
+    def add_requested_slot(self) -> None:
+        """See `_add_categorical_slot_default_value` for docstring."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{self.add_requested_slot.__name__}' is deprecated and "
+            f"will be removed in Rasa Open Source 3.0.0. This method is now "
+            f"automatically called when the Domain is created which makes a manual "
+            f"call superfluous."
+        )
+        self._add_requested_slot()
+
+    def _add_knowledge_base_slots(self) -> None:
+        """Add slots for the knowledge base action to slots.
+
+        Slots are only added if the default knowledge base action name is present.
 
         As soon as the knowledge base action is not experimental anymore, we should
         consider creating a new section in the domain file dedicated to knowledge
@@ -736,9 +766,18 @@ class Domain:
                 if s not in slot_names:
                     self.slots.append(TextSlot(s, influence_conversation=False))
 
-    def index_for_action(self, action_name: Text) -> Optional[int]:
-        """Look up which action index corresponds to this action name."""
+    def add_knowledge_base_slots(self) -> None:
+        """See `_add_categorical_slot_default_value` for docstring."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{self.add_knowledge_base_slots.__name__}' is deprecated and "
+            f"will be removed in Rasa Open Source 3.0.0. This method is now "
+            f"automatically called when the Domain is created which makes a manual "
+            f"call superfluous."
+        )
+        self._add_knowledge_base_slots()
 
+    def index_for_action(self, action_name: Text) -> Optional[int]:
+        """Looks up which action index corresponds to this action name."""
         try:
             return self.action_names.index(action_name)
         except ValueError:
@@ -1033,9 +1072,12 @@ class Domain:
             return True
 
     def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
-        return {slot.name: slot.persistence_info() for slot in self.slots}
+        # Only persist slots defined by the user. We add the default slots on the
+        # fly when loading the domain.
+        return {slot.name: slot.persistence_info() for slot in self._user_slots}
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized domain."""
         return {
             "config": {"store_entities_as_slots": self.store_entities_as_slots},
             SESSION_CONFIG_KEY: {
@@ -1050,6 +1092,33 @@ class Domain:
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.action_texts,
         }
+
+    @staticmethod
+    def get_responses_with_multilines(
+        responses: Dict[Text, List[Dict[Text, Any]]]
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Returns `responses` with preserved multilines in the `text` key.
+
+        Args:
+            responses: Original `responses`.
+
+        Returns:
+            `responses` with preserved multilines in the `text` key.
+        """
+        from ruamel.yaml.scalarstring import LiteralScalarString
+
+        final_responses = responses.copy()
+        for response_name, examples in final_responses.items():
+            for i, example in enumerate(examples):
+                response_text = example.get(KEY_RESPONSES_TEXT, "")
+                if not response_text or "\n" not in response_text:
+                    continue
+                # Has new lines, use `LiteralScalarString`
+                final_responses[response_name][i][
+                    KEY_RESPONSES_TEXT
+                ] = LiteralScalarString(response_text)
+
+        return final_responses
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
@@ -1194,6 +1263,10 @@ class Domain:
             domain_data.update(self.cleaned_domain())
         else:
             domain_data.update(self.as_dict())
+        if domain_data.get(KEY_RESPONSES, {}):
+            domain_data[KEY_RESPONSES] = self.get_responses_with_multilines(
+                domain_data[KEY_RESPONSES]
+            )
 
         return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
             domain_data, should_preserve_key_order=True
@@ -1214,7 +1287,7 @@ class Domain:
         Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self.slots if s.influence_conversation]
+        return [s.name for s in self._user_slots if s.influence_conversation]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
