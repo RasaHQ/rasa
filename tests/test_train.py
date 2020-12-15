@@ -444,12 +444,12 @@ class TestE2e:
         default_stack_config: Text,
         default_e2e_stories_file: Text,
         default_nlu_data: Text,
+        tmp_path: Path,
     ):
         stories_yaml = rasa.shared.utils.io.read_yaml_file(default_e2e_stories_file)
         stories_yaml["stories"][1]["steps"].append({"user": "new message!"})
 
-        new_stories_file = tempfile.NamedTemporaryFile(mode="w", suffix=".yml").name
-
+        new_stories_file = tmp_path / "new_stories.yml"
         rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
 
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -474,12 +474,12 @@ class TestE2e:
         default_stack_config: Text,
         default_e2e_stories_file: Text,
         default_nlu_data: Text,
+        tmp_path: Path,
     ):
         stories_yaml = rasa.shared.utils.io.read_yaml_file(default_e2e_stories_file)
         stories_yaml["stories"][1]["steps"].append({"user": "Yes"})
 
-        new_stories_file = tempfile.NamedTemporaryFile(mode="w", suffix=".yml").name
-
+        new_stories_file = new_stories_file = tmp_path / "new_stories.yml"
         rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
 
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -532,12 +532,12 @@ class TestE2e:
         default_stack_config: Text,
         default_e2e_stories_file: Text,
         default_nlu_data: Text,
+        tmp_path: Path,
     ):
         nlu_yaml = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
 
-        new_nlu_file = tempfile.NamedTemporaryFile(mode="w", suffix=".yml").name
-
+        new_nlu_file = tmp_path / "new_nlu.yml"
         rasa.shared.utils.io.write_yaml(nlu_yaml, new_nlu_file)
 
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -562,12 +562,12 @@ class TestE2e:
         default_stack_config: Text,
         simple_stories_file: Text,
         default_nlu_data: Text,
+        tmp_path: Path,
     ):
         nlu_yaml = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
 
-        new_nlu_file = tempfile.NamedTemporaryFile(mode="w", suffix=".yml").name
-
+        new_nlu_file = tmp_path / "new_nlu.yml"
         rasa.shared.utils.io.write_yaml(nlu_yaml, new_nlu_file)
 
         mocked_nlu_training = mock_nlu_training(monkeypatch)

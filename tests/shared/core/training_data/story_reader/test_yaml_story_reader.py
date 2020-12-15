@@ -583,4 +583,8 @@ def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
-    assert len(steps[0].events) == 3
+    events = steps[0].events
+    assert len(events) == 3
+    assert events[0].text == "Hi"
+    assert events[1].action_text == "Hello?"
+    assert events[2].text == "Well..."
