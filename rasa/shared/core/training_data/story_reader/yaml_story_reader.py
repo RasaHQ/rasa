@@ -527,7 +527,7 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_bot_message(self, step: Dict[Text, Any]) -> None:
         bot_message = step.get(KEY_BOT_END_TO_END_MESSAGE, "")
-        self._add_event("", {"action_text": bot_message})
+        self._add_event("", {ACTION_TEXT: bot_message})
 
     def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
         self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})
