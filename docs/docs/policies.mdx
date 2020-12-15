@@ -87,10 +87,13 @@ The Transformer Embedding Dialogue (TED) Policy is described in
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
-1. Concatenate user input (user intent and entities) or user text processed through a user sequence transformer encoder,
-   previous system actions or bot utterances processed through a bot sequence transformer encoder,
-   slots and active forms for each time
-   step into an input vector to pre dialogue transformer embedding layer.
+1. Concatenate features for
+   - user input (user intent and entities) or user text processed through a user sequence transformer encoder,
+   - previous system actions or bot utterances processed through a bot sequence transformer encoder,
+   - slots and active forms
+
+   for each time step into an input vector to the embedding layer that precedes the 
+   dialogue transformer.
 
 2. Feed the embedding of the input vector into the dialogue transformer encoder.
 
