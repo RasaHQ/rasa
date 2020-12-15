@@ -374,7 +374,7 @@ def component_builder():
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp(component_builder, blank_config):
+def spacy_nlp(component_builder: ComponentBuilder, blank_config: RasaNLUModelConfig):
     spacy_nlp_config = {"name": "SpacyNLP"}
     return component_builder.create_component(spacy_nlp_config, blank_config).nlp
 
