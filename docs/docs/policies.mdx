@@ -104,7 +104,7 @@ following steps:
 5. Calculate the similarity between the dialogue embedding and embedded system actions.
    This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
-6. Concatenate the token output of the user sequence transformer encoder
+6. Concatenate the token-level output of the user sequence transformer encoder
    with the output of the dialogue transformer encoder for each time step.
 
 7. Apply CRF algorithm to predict contextual entities for each user text input.
