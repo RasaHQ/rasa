@@ -16,6 +16,8 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
+
+from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common
@@ -34,6 +36,7 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.utils.tensorflow.constants import EPOCHS
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -110,12 +113,17 @@ class Policy:
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
+        should_finetune: bool = False,
+        **kwargs: Any,
     ) -> None:
+        """Constructs a new Policy object."""
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
+        self.finetune_mode = should_finetune
 
     @property
     def featurizer(self):
+        """Returns the policy's featurizer."""
         return self.__featurizer
 
     @staticmethod
@@ -274,7 +282,7 @@ class Policy:
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "Policy":
+    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
         """Loads a policy from path.
 
         Args:
@@ -291,6 +299,25 @@ class Policy:
             if (Path(path) / FEATURIZER_FILE).is_file():
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
+
+            data.update(kwargs)
+
+            constructor_args = rasa.shared.utils.common.arguments_of(cls)
+            if "kwargs" not in constructor_args:
+                if set(data.keys()).issubset(set(constructor_args)):
+                    rasa.shared.utils.io.raise_deprecation_warning(
+                        f"`{cls.__name__}.__init__` does not accept `**kwargs` "
+                        f"This is required for contextual information e.g. the flag "
+                        f"`should_finetune`.",
+                        warn_until_version="3.0.0",
+                    )
+                else:
+                    raise UnsupportedDialogueModelError(
+                        f"`{cls.__name__}.__init__` does not accept `**kwargs`. "
+                        f"Attempting to pass {data} to the policy. "
+                        f"This argument should be added to all policies by "
+                        f"Rasa Open Source 3.0.0."
+                    )
 
             return cls(**data)
 

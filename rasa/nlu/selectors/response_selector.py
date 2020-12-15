@@ -242,6 +242,7 @@ class ResponseSelector(DIETClassifier):
         model: Optional[RasaModel] = None,
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
+        finetune_mode: bool = False,
     ) -> None:
 
         component_config = component_config or {}
@@ -258,7 +259,11 @@ class ResponseSelector(DIETClassifier):
         self.use_text_as_label = False
 
         super().__init__(
-            component_config, index_label_id_mapping, entity_tag_specs, model
+            component_config,
+            index_label_id_mapping,
+            entity_tag_specs,
+            model,
+            finetune_mode=finetune_mode,
         )
 
     @property
@@ -465,6 +470,7 @@ class ResponseSelector(DIETClassifier):
         label_data: RasaModelData,
         entity_tag_specs: List[EntityTagSpec],
         meta: Dict[Text, Any],
+        finetune_mode: bool = False,
     ) -> "RasaModel":
 
         return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
@@ -474,6 +480,7 @@ class ResponseSelector(DIETClassifier):
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             config=copy.deepcopy(meta),
+            finetune_mode=finetune_mode,
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
