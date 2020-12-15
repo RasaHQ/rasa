@@ -151,7 +151,7 @@ def _default_domain() -> Domain:
     return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def default_domain(_default_domain: Domain) -> Domain:
     return copy.deepcopy(_default_domain)
 
