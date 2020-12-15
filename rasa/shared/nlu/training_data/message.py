@@ -255,7 +255,7 @@ class Message:
     def features_present(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> bool:
-        """Check if there are any features present for the attribute and featurizers.
+        """Checks if there are any features present for the attribute and featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
