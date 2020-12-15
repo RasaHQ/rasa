@@ -716,15 +716,15 @@ by the [TED Policy](./policies.mdx#ted-policy).
 The syntax for entity tags is the same as in
 [the NLU training data](./training-data-format.mdx#entities).
 For example, the following story contains the user utterance
-`I want to check my credit balance`. By using the syntax from the NLU training data
-`[credit](account_type)`, you can mark `credit` as an entity of type `account_type`.
+` I can always go for sushi`. By using the syntax from the NLU training data
+`[sushi](cuisine)`, you can mark `sushi` as an entity of type `cuisine`.
 
 ```yaml-rasa {4}
 stories:
 - story: story with entities
   steps:
-  - user: I want to check my [credit](account_type) balance
-  - action: action_credit_account_balance
+  - user: I can always go for [sushi](cuisine)
+  - action: utter_suggest_cuisine
 ```
 
 
@@ -733,22 +733,33 @@ by using the `bot` key followed by the text that you want your bot to say.
 
 A story with only a bot utterance might look like this:
 
-```yaml-rasa {5}
+```yaml-rasa {7}
 stories:
 - story: story with an end-to-end response
   steps:
   - intent: greet
-  - bot: Hello
+    entities:
+      name: Ivan
+  - bot: Hello, Ivan!
 ```
 
 You can also have full end-to-end story:
 
-```yaml-rasa {4-5}
+```yaml-rasa
 stories:
 - story: full end-to-end story
   steps:
-  - user: Hello
-  - bot: Hello
+  - intent: greet
+    entities:
+      name: Ivan
+  - bot: Hello, Ivan!
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: I can always go for [sushi](cuisine)
+  - bot: Personally, I prefer pizza, but sure let's search sushi restaurants
+  - action: utter_suggest_cuisine
+  - intent: Have a beautiful day!
+  - action: utter_goodbye
 ```
 
 Rasa end-to-end training is fully integrated with standard Rasa approach.
