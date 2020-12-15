@@ -211,12 +211,9 @@ You can mix training data in the end-to-end format with labeled training data wh
 and other steps defined directly by user or bot utterances.
 
 We call it end-to-end training because policies can consume and predict actual text.
-
-:::note nlu is ignored during e2e
 For end-to-end user inputs, intents classified by the NLU pipeline
 and extracted entities are ignored.
 
-:::
 
 Only [Rule Policy](./policies.mdx#rule-policy)
 and [TED Policy](./policies.mdx#ted-policy) allow end-to-end training.
@@ -230,21 +227,15 @@ and [TED Policy](./policies.mdx#ted-policy) allow end-to-end training.
   need to provide enough training stories to capture a variety of user texts for any 
   end-to-end dialogue turn.
 
-:::note next utterance selection
 Rasa policies are trained for next utterance selection.
 The only difference to creating `utter_` response is how `TEDPolicy` featurizes
 bot utterances.
 In case of an `utter_` action, `TEDPolicy` sees only the name of the action, while
-if you provide actual utterance using `bot:` key,
+if you provide actual utterance using `bot` key,
 `TEDPolicy` will featurize it as textual input depending on the NLU configuration.
 This can help in case of similar utterances in slightly different situations.
 But can also make things harder to learn.
 
-:::
-
-:::note increased train time
 End-to-end training requires significantly more parameters in `TEDPolicy`.
 Therefore, training an end-to-end model might require significant computational
 resources depending on how many end-to-end turns you have in your stories.
-
-:::
