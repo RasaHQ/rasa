@@ -184,7 +184,7 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all sparse features for the attribute given the list of featurizers.
+        """Gets all sparse features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
