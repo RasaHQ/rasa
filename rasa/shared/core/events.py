@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from abc import ABC
 
 import jsonpickle
 import time
@@ -314,14 +315,23 @@ class Event:
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-
-        return True
+        # Every class should implement this
+        raise NotImplementedError()
 
     def __str__(self) -> Text:
         """Returns text representation of event."""
         return f"{self.__class__.__name__}()"
+
+
+class EventWithoutExtraAttributes(Event, ABC):
+    """Class to deduplicate common behavior for events without additional attributes."""
+
+    def __eq__(self, other: Any) -> bool:
+        """Returns text representation of event."""
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return True
 
 
 # noinspection PyProtectedMember
@@ -586,7 +596,7 @@ class UserUttered(Event):
 
 
 # noinspection PyProtectedMember
-class DefinePrevUserUttered(Event):
+class DefinePrevUserUttered(Event, ABC):
     """Defines the family of events that are used to update previous user utterance."""
 
     def as_story_string(self) -> None:
@@ -658,6 +668,13 @@ class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
         tracker.latest_message.use_text_for_featurization = (
             self.use_text_for_featurization
         )
+
+    def __eq__(self, other) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, DefinePrevUserUtteredFeaturization):
+            return NotImplemented
+
+        return self.use_text_for_featurization == other.use_text_for_featurization
 
 
 # noinspection PyProtectedMember
@@ -922,7 +939,7 @@ class SlotSet(Event):
 
 
 # noinspection PyProtectedMember
-class Restarted(Event):
+class Restarted(EventWithoutExtraAttributes):
     """Conversation should start over & history wiped.
 
     Instead of deleting all events, this event can be used to reset the
@@ -947,7 +964,7 @@ class Restarted(Event):
 
 
 # noinspection PyProtectedMember
-class UserUtteranceReverted(Event):
+class UserUtteranceReverted(EventWithoutExtraAttributes):
     """Bot reverts everything until before the most recent user message.
 
     The bot will revert all events after the latest `UserUttered`, this
@@ -972,7 +989,7 @@ class UserUtteranceReverted(Event):
 
 
 # noinspection PyProtectedMember
-class AllSlotsReset(Event):
+class AllSlotsReset(EventWithoutExtraAttributes):
     """All Slots are reset to their initial values.
 
     If you want to keep the dialogue history and only want to reset the
@@ -1210,7 +1227,7 @@ class ReminderCancelled(Event):
 
 
 # noinspection PyProtectedMember
-class ActionReverted(Event):
+class ActionReverted(EventWithoutExtraAttributes):
     """Bot undoes its last action.
 
     The bot reverts everything until before the most recent action.
@@ -1281,6 +1298,13 @@ class StoryExported(Event):
         if self.path:
             tracker.export_stories_to_file(self.path)
 
+    def __eq__(self, other) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, StoryExported):
+            return NotImplemented
+
+        return self.path == other.path
+
 
 # noinspection PyProtectedMember
 class FollowupAction(Event):
@@ -1347,7 +1371,7 @@ class FollowupAction(Event):
 
 
 # noinspection PyProtectedMember
-class ConversationPaused(Event):
+class ConversationPaused(EventWithoutExtraAttributes):
     """Ignore messages from the user to let a human take over.
 
     As a side effect the `Tracker`'s `paused` attribute will
@@ -1370,7 +1394,7 @@ class ConversationPaused(Event):
 
 
 # noinspection PyProtectedMember
-class ConversationResumed(Event):
+class ConversationResumed(EventWithoutExtraAttributes):
     """Bot takes over conversation.
 
     Inverse of `PauseConversation`. As a side effect the `Tracker`'s
@@ -1847,7 +1871,7 @@ class ActionExecutionRejected(Event):
         tracker.reject_action(self.action_name)
 
 
-class SessionStarted(Event):
+class SessionStarted(EventWithoutExtraAttributes):
     """Mark the beginning of a new conversation session."""
 
     type_name = "session_started"
