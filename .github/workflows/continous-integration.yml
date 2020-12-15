@@ -206,7 +206,7 @@ jobs:
     - name: Read Poetry Version 🔢
       if: needs.changes.outputs.backend == 'true'
       run: |
-        echo "POETRY_VERSION=1.0.9" >> $GITHUB_ENV
+        echo "POETRY_VERSION=1.1.4" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -232,7 +232,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -250,20 +250,22 @@ jobs:
       # before caching the dependencies directory.
       # More information: https://github.com/actions/cache/issues/120
       run: |
-        cat .venv/pyvenv.cfg
         $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
         if (Test-Path $spacy_data_dir) {
           Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
           Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $spacy_data_dir -Type Directory
         }
+        if (-Not (Test-Path ".venv")) {
+          python -m venv create .venv
+        }
+
         poetry run python --version
         cat .venv/pyvenv.cfg
-        poetry env info
-        poetry run pip list
-        poetry run python -m pip install -U pip
-        #make install-full
-        #make prepare-tests-windows
+
+
+        make install-full
+        make prepare-tests-windows
 
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true'
@@ -279,7 +281,9 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
-      run: poetry run coveralls
+      run: |
+        exit 0
+        poetry run coveralls
 
   docker:
     name: Build Docker
