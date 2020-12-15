@@ -233,7 +233,7 @@ and [TED Policy](./policies.mdx#ted-policy) allow end-to-end training.
 Rasa policies are trained for next utterance selection.
 The only difference to creating `utter_` response is how `TEDPolicy` featurizes
 bot utterances.
-In case of a template, `TEDPolicy` sees only the name of the template, while
+In case of an `utter_` action, `TEDPolicy` sees only the name of the action, while
 if you provide actual utterance using `bot:` key,
 `TEDPolicy` will featurize it as textual input depending on the NLU configuration.
 This can help in case of similar utterances in slightly different situations.
