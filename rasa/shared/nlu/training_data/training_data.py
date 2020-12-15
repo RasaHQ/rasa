@@ -79,6 +79,21 @@ class TrainingData:
 
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
+    def label_fingerprint(self) -> Text:
+        """Fingerprints the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        labels = {
+            "intents": sorted(self.intents),
+            "entities": sorted(self.entities),
+            "entity_groups": sorted(self.entity_groups),
+            "entity_roles": sorted(self.entity_roles),
+            "actions": sorted(self.action_names),
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(labels)
+
     def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
         """Return merged instance of this data with other training data.
 
@@ -182,8 +197,13 @@ class TrainingData:
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
     @lazy_property
+    def action_names(self) -> Set[Text]:
+        """Returns the set of action names in the training data."""
+        return {ex.get(ACTION_NAME) for ex in self.training_examples} - {None}
+
+    @lazy_property
     def retrieval_intents(self) -> Set[Text]:
-        """Returns the total number of response types in the training data"""
+        """Returns the total number of response types in the training data."""
         return {
             ex.get(INTENT)
             for ex in self.training_examples

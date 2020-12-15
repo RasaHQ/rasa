@@ -24,6 +24,13 @@ Support for Markdown data will be removed entirely in Rasa Open Source 3.0.0.
 Please convert your existing Markdown data by using the commands
 described [here](./migration-guide.mdx#training-data-files).
 
+### Policies
+
+[Policies](./policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
+Policies without `**kwargs` will be supported until Rasa version `3.0.0`.
+However when using [incremental training](./command-line-interface.mdx#incremental-training)
+`**kwargs` **must** be included.
+
 ## Rasa 2.0 to Rasa 2.1
 
 ### Deprecations

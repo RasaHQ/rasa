@@ -35,12 +35,17 @@ class FormPolicy(MemoizationPolicy):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> None:
 
         # max history is set to 2 in order to capture
         # previous meaningful action before action listen
         super().__init__(
-            featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
+            featurizer=featurizer,
+            priority=priority,
+            max_history=2,
+            lookup=lookup,
+            **kwargs,
         )
 
         rasa.shared.utils.io.raise_deprecation_warning(
