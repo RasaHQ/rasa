@@ -206,9 +206,8 @@ Instead, you can put the texts of the user and/or bot messages directly in the s
 See the [training data format](./training-data-format.mdx#end-to-end-training-stories)
 for detailed description of how to write end-to-end stories.
 
-Rasa end-to-end training is fully integrated with standard Rasa approach.
-It means that you can have mixed stories with some steps defined by actions
-and other steps defined by user or bot utterance directly.
+You can mix training data in end-to-end format with labeled training data which has `intent`s and `action`s specified. This means stories can have steps defined by actions
+and other steps defined by user or bot utterances directly.
 
 We call it end-to-end training because actual text is fed into policies.
 
