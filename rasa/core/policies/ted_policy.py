@@ -697,7 +697,7 @@ class TED(TransformerRasaModel):
             sequence_lengths: Length of each dialogue.
 
         Returns:
-            The dialogue embedding, the mask, and (for diagnostic purposes) 
+            The dialogue embedding, the mask, and (for diagnostic purposes)
             also the attention weights.
         """
         mask = self._compute_mask(sequence_lengths)
