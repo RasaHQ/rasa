@@ -265,10 +265,20 @@ def get_list_fingerprint(
 
 def get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash for a text."""
-    return md5(text.encode(encoding)).hexdigest()
+    return md5(text.encode(encoding)).hexdigest()  # nosec
 
 
 def json_to_string(obj: Any, **kwargs: Any) -> Text:
+    """Dumps a JSON-serializable object to string.
+
+    Args:
+        obj: JSON-serializable object.
+        kwargs: serialization options. Defaults to 2 space indentation
+                and disable escaping of non-ASCII characters.
+
+    Returns:
+        The objects serialized to JSON, as a string.
+    """
     indent = kwargs.pop("indent", 2)
     ensure_ascii = kwargs.pop("ensure_ascii", False)
     return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)

@@ -1,13 +1,16 @@
 import asyncio
+import copy
 import os
 import random
+
+import mock
 import pytest
 import sys
 import uuid
 
 from sanic.request import Request
 
-from typing import Iterator, Callable
+from typing import Iterator, Callable, Generator
 
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
@@ -21,6 +24,7 @@ from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
@@ -29,12 +33,13 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import train_async
+from rasa.train import TrainingResult, train_async, _train_nlu_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
+    DOMAIN_WITH_CATEGORICAL_SLOT,
     END_TO_END_STORY_FILE,
     INCORRECT_NLU_DATA,
 )
@@ -68,7 +73,7 @@ async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
 
     agent = Agent(
         "data/test_domains/default_with_slots.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3)],
+        policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
     )
 
     training_data = await agent.load_data(DEFAULT_STORIES_FILE)
@@ -90,11 +95,20 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(trained_async) -> Text:
+async def trained_moodbot_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",
         training_files="examples/moodbot/data/",
+    )
+
+
+@pytest.fixture(scope="session")
+async def trained_nlu_moodbot_path(trained_nlu_async: Callable) -> Text:
+    return await trained_nlu_async(
+        domain="examples/moodbot/domain.yml",
+        config="examples/moodbot/config.yml",
+        nlu_data="examples/moodbot/data/nlu.yml",
     )
 
 
@@ -126,8 +140,18 @@ def default_domain_path() -> Text:
 
 
 @pytest.fixture(scope="session")
-def default_domain() -> Domain:
+def domain_with_categorical_slot_path() -> Text:
+    return DOMAIN_WITH_CATEGORICAL_SLOT
+
+
+@pytest.fixture(scope="session")
+def _default_domain() -> Domain:
     return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+
+
+@pytest.fixture()
+def default_domain(_default_domain: Domain) -> Domain:
+    return copy.deepcopy(_default_domain)
 
 
 @pytest.fixture(scope="session")
@@ -156,8 +180,13 @@ def end_to_end_story_file() -> Text:
 
 
 @pytest.fixture(scope="session")
-def default_config() -> List[Policy]:
-    return config.load(DEFAULT_CONFIG_PATH)
+def default_config_path() -> Text:
+    return DEFAULT_CONFIG_PATH
+
+
+@pytest.fixture(scope="session")
+def default_config(default_config_path) -> List[Policy]:
+    return config.load(default_config_path)
 
 
 @pytest.fixture(scope="session")
@@ -168,9 +197,23 @@ def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 
-        return await train_async(*args, output_path=output_path, **kwargs)
+        result = await train_async(*args, output=output_path, **kwargs)
+        return result.model
 
     return _train
+
+
+@pytest.fixture(scope="session")
+def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
+    async def _train_nlu(
+        *args: Any, output_path: Optional[Text] = None, **kwargs: Any
+    ) -> Optional[Text]:
+        if output_path is None:
+            output_path = str(tmpdir_factory.mktemp("models"))
+
+        return await _train_nlu_async(*args, output=output_path, **kwargs)
+
+    return _train_nlu
 
 
 @pytest.fixture(scope="session")
@@ -187,6 +230,14 @@ async def trained_rasa_model(
     )
 
     return trained_stack_model_path
+
+
+@pytest.fixture(scope="session")
+async def unpacked_trained_rasa_model(
+    trained_rasa_model: Text,
+) -> Generator[Text, None, None]:
+    with get_model(trained_rasa_model) as path:
+        yield path
 
 
 @pytest.fixture(scope="session")
@@ -309,3 +360,10 @@ class MockExporter(Exporter):
         endpoints_path: Text = "",
     ) -> None:
         super().__init__(tracker_store, event_broker, endpoints_path)
+
+
+class AsyncMock(Mock):
+    """Helper class to mock async functions and methods."""
+
+    async def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return super().__call__(*args, **kwargs)

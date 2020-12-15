@@ -16,6 +16,41 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.1.3] - 2020-12-04
+                       
+
+### Improvements
+- [#7426](https://github.com/rasahq/rasa/issues/7426): Removed `multidict` from the project dependencies. `multidict` continues to be a second
+  order dependency of Rasa Open Source but will be determined by the dependencies which
+  use it instead of by Rasa Open Source directly.
+
+  This resolves issues like the following:
+
+  ```bash
+  sanic 20.9.1 has requirement multidict==5.0.0, but you'll have multidict 4.6.0 which is incompatible.
+  ```
+
+### Bugfixes
+- [#7316](https://github.com/rasahq/rasa/issues/7316): `SingleStateFeaturizer` checks whether it was trained with `RegexInterpreter` as
+  nlu interpreter. If that is the case, `RegexInterpreter` is used during prediction.
+- [#7390](https://github.com/rasahq/rasa/issues/7390): Make sure the `responses` are synced between NLU training data and the Domain even if there're no retrieval intents in the NLU training data.
+- [#7417](https://github.com/rasahq/rasa/issues/7417): Categorical slots will have a default value set when just updating nlg data in the domain.
+
+  Previously this resulted in `InvalidDomain` being thrown.
+- [#7418](https://github.com/rasahq/rasa/issues/7418): - Preserve `domain` slot ordering while dumping it back to the file.
+  - Preserve multiline `text` examples of `responses` defined in `domain` and `NLU` training data.
+
+
+## [2.1.2] - 2020-11-27
+                       
+
+### Bugfixes
+- [#7235](https://github.com/rasahq/rasa/issues/7235): Slots that use `initial_value` won't cause rule contradiction errors when `conversation_start: true` is used. Previously, two rules that differed only in their use of `conversation_start` would be flagged as contradicting when a slot used `initial_value`.
+
+  In checking for incomplete rules, an action will be required to have set _only_ those slots that the same action has set in another rule. Previously, an action was expected to have set also slots which, despite being present after this action in another rule, were not actually set by this action.
+- [#7345](https://github.com/rasahq/rasa/issues/7345): Fixed Rasa Open Source not being able to fetch models from certain URLs.
+
+
 ## [2.1.1] - 2020-11-23
                        
 
@@ -76,7 +111,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   Support for `RABBITMQ_SSL_KEY_PASSWORD` was removed entirely.
 
   The method [`Event Broker.close`](event-brokers.mdx) was changed to be asynchronous.
-  Support for synchronous implementations will be removed in Rasa Open Source 2.2.0.
+  Support for synchronous implementations will be removed in Rasa Open Source 3.0.0.
   To adapt your implementation add the `async` keyword:
 
   ```python
