@@ -363,7 +363,7 @@ def test_train_nlu_autoconfig(
     assert args[1] == autoconfig.TrainingType.NLU
 
 
-def mock_async(monkeypatch: MonkeyPatch, target: Any, name: Text):
+def mock_async(monkeypatch: MonkeyPatch, target: Any, name: Text) -> Mock:
     mock = Mock()
 
     async def mock_async_func(*args: Any, **kwargs: Any) -> None:
@@ -373,15 +373,15 @@ def mock_async(monkeypatch: MonkeyPatch, target: Any, name: Text):
     return mock
 
 
-def mock_core_training(monkeypatch: MonkeyPatch):
+def mock_core_training(monkeypatch: MonkeyPatch) -> Mock:
     return mock_async(monkeypatch, rasa.core, rasa.core.train.__name__)
 
 
-def mock_nlu_training(monkeypatch: MonkeyPatch):
+def mock_nlu_training(monkeypatch: MonkeyPatch) -> Mock:
     return mock_async(monkeypatch, rasa.nlu, rasa.nlu.train.__name__)
 
 
-def new_model_path_in_same_dir(old_model_path: Text) -> str:
+def new_model_path_in_same_dir(old_model_path: Text) -> Text:
     return str(Path(old_model_path).parent / (secrets.token_hex(8) + ".tar.gz"))
 
 
