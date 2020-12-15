@@ -380,7 +380,9 @@ class UserUttered(Event):
 
         self.parse_data = {
             "intent": self.intent,
-            "entities": self.entities,
+            # Copy entities so that changes to `self.entities` don't affect
+            # `self.parse_data` and hence don't get persisted
+            "entities": self.entities.copy(),
             "text": self.text,
             "message_id": self.message_id,
             "metadata": self.metadata,

@@ -36,6 +36,8 @@ from rasa.shared.core.events import (
     LegacyForm,
     LegacyFormValidation,
     LoopInterrupted,
+    DefinePrevUserUtteredFeaturization,
+    DefinePrevUserUtteredEntities,
 )
 from rasa.shared.core.slots import (
     FloatSlot,
@@ -1221,3 +1223,34 @@ def test_trackers_for_conversation_sessions(
     subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
 
     assert len(subtrackers) == n_subtrackers
+
+
+def test_policy_predictions_dont_change_persistence():
+    original_user_message = UserUttered("hi", intent={"name": "greet"})
+    tracker = DialogueStateTracker.from_events(
+        "Vova",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hi", intent={"name": "greet"}),
+            DefinePrevUserUtteredFeaturization(True),
+            DefinePrevUserUtteredEntities(
+                entities=[{"entity": "entity1", "value": "value1"}]
+            ),
+        ],
+    )
+
+    user_message: UserUttered = list(tracker.events)[1]
+    # The entities from the policy predictions are accessible
+    assert user_message.entities
+
+    actual_serialized = user_message.as_dict()
+
+    # Assert entities predicted by policies are not persisted
+    assert not actual_serialized["parse_data"]["entities"]
+
+    expected_serialized = original_user_message.as_dict()
+    # don't compare timestamps
+    expected_serialized.pop("timestamp")
+    actual_serialized.pop("timestamp")
+
+    assert actual_serialized == expected_serialized
