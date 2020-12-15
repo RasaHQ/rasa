@@ -610,7 +610,7 @@ class TestE2e:
         captured = capsys.readouterr()
         assert (
             "Stories file contains e2e stories. "
-            + "Please train using `rasa train` so that the NLU model is also trained."
+            "Please train using `rasa train` so that the NLU model is also trained."
         ) in captured.out
 
 
