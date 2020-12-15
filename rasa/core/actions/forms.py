@@ -455,7 +455,9 @@ class FormAction(LoopAction):
         )
 
         some_slots_were_validated = any(
-            isinstance(event, SlotSet) for event in validation_events
+            isinstance(event, SlotSet)
+            for event in validation_events
+            if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
         user_rejected_manually = any(
             isinstance(event, ActionExecutionRejected) for event in validation_events
