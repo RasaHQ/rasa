@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class HFTransformersTokenizer(Tokenizer):
+    """HuaggingFace's Transformers based tokenizer."""
+
     defaults = {
         # Pre-Trained weights to be loaded(string)
         "model_weights": "bert-base-cased",
@@ -16,8 +18,7 @@ class HFTransformersTokenizer(Tokenizer):
         "cache_dir": None,
     }
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
-        """HuaggingFace's Transformers based tokenizer."""
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:  # noqa: D107
         from transformers import AutoTokenizer
 
         super().__init__(component_config)
@@ -30,10 +31,10 @@ class HFTransformersTokenizer(Tokenizer):
         )
 
     @classmethod
-    def required_packages(cls) -> List[Text]:
+    def required_packages(cls) -> List[Text]:  # noqa: D102
         return ["transformers"]
 
-    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:  # noqa: D102
         text = message.get(attribute)
 
         encoded_input = self.tokenizer(
