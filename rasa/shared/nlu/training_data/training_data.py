@@ -701,6 +701,6 @@ def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
         quote: The quote that is used to wrap list inputs.
 
     Returns:
-        the string
+        The string.
     """
     return delim.join([quote + e + quote for e in lst])
