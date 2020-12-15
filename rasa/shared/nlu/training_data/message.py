@@ -264,7 +264,7 @@ class Message:
             featurizers: Names of featurizers to consider.
 
         Returns:
-            ``True``, if features are present, ``False`` otherwise
+            ``True``, if features are present, ``False`` otherwise.
         """
         if featurizers is None:
             featurizers = []
