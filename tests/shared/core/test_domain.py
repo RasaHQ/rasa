@@ -182,11 +182,7 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-<<<<<<< HEAD
-    assert len(domain.action_names_or_texts) == 15
-=======
-    assert len(domain.action_names) == 16
->>>>>>> master
+    assert len(domain.action_names_or_texts) == 16
 
 
 def test_avoid_action_repetition(default_domain: Domain):
@@ -201,15 +197,7 @@ responses:
     """
     )
 
-<<<<<<< HEAD
-    assert not domain.is_empty() and not domain_with_no_actions.is_empty()
-    assert len(domain.intents) == len(domain_with_no_actions.intents)
-    assert len(domain.action_names_or_texts) == len(
-        domain_with_no_actions.action_names_or_texts
-    )
-=======
-    assert len(domain.action_names) == len(DEFAULT_ACTION_NAMES) + 1
->>>>>>> master
+    assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
 def test_utter_templates():
@@ -285,12 +273,9 @@ def test_domain_to_dict():
     session_config:
       carry_over_slots_to_new_session: true
       session_expiration_time: 60
-<<<<<<< HEAD
     {KEY_E2E_ACTIONS}:
     - Hello, dear user
     - what's up
-    slots: {{}}"""
-=======
     slots:
       some_slot:
         type: categorical
@@ -298,7 +283,6 @@ def test_domain_to_dict():
         - high
         - low"""
 
->>>>>>> master
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
     assert domain_as_dict == {
@@ -313,10 +297,6 @@ def test_domain_to_dict():
             "carry_over_slots_to_new_session": True,
             "session_expiration_time": 60,
         },
-<<<<<<< HEAD
-        "slots": {},
-        KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
-=======
         "slots": {
             "some_slot": {
                 "values": ["high", "low"],
@@ -326,7 +306,7 @@ def test_domain_to_dict():
                 "type": "rasa.shared.core.slots.CategoricalSlot",
             }
         },
->>>>>>> master
+        KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
     }
 
 
@@ -932,16 +912,8 @@ def test_clean_domain_for_file():
     assert cleaned == expected
 
 
-<<<<<<< HEAD
-def test_add_knowledge_base_slots(default_domain: Domain):
-    # don't modify default domain as it is used in other tests
-    test_domain = copy.deepcopy(default_domain)
-
-    test_domain.action_names_or_texts.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
-=======
 def test_not_add_knowledge_base_slots():
     test_domain = Domain.empty()
->>>>>>> master
 
     slot_names = [s.name for s in test_domain.slots]
 
