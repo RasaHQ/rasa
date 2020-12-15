@@ -504,7 +504,6 @@ class TestE2e:
         default_e2e_stories_file: Text,
         tmp_path: Path,
     ):
-
         mocked_nlu_training = mock_nlu_training(monkeypatch)
         mocked_core_training = mock_core_training(monkeypatch)
 
