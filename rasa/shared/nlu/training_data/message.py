@@ -260,7 +260,7 @@ class Message:
         If no featurizers are provided, all available features will be considered.
 
         Args:
-            attribute: message attribute
+            attribute: Message attribute.
             featurizers: names of featurizers to consider
 
         Returns:
