@@ -1,30 +1,38 @@
 version: "2.0"
 
 stories:
-- story: happy path (intent to action)
+- story: accepts suggestion
   steps:
   - intent: greet
   - action: utter_greet
-  - intent: mood_great
-  - action: utter_happy
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - intent: affirm
+  - action: utter_search_restaurants
 
-- story: sad path (text to text)
+- story: accepts 3rd suggestion
   steps:
-  - user: "[Hello](bla)"
-  - bot: "Welcome to moodbot. How are you feeling today?"
-  - user: "Horrible"
-  - bot: "Oh no! Here is a kitten photo. Did it help?"
-  - user: "Yes"
-  - bot: "Perfect"
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - intent: deny
+  - action: utter_suggest_cuisine
+  - intent: deny
+  - action: utter_suggest_cuisine
+  - intent: affirm
+  - action: utter_search_restaurants
 
-- story: sad path 2 (mixed)
+- story: accepts suggestion, indirectly
   steps:
   - intent: greet
   - action: utter_greet
-  - user: "I'm not happy"
-  - action: utter_cheer_up
-  - action: utter_did_that_help
-  - user: "Not at all"
-  - bot: "Goodbye!"
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: "I can always go for sushi"
+  - action: utter_search_restaurants
 
-
+- story: rejects suggestion, indirectly
+  steps:
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: "I had that yesterday"
+  - action: utter_suggest_cuisine
