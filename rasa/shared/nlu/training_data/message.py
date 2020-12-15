@@ -210,7 +210,7 @@ class Message:
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all dense features for the attribute given the list of featurizers.
+        """Gets all dense features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
