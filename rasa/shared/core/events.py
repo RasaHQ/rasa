@@ -818,7 +818,6 @@ class BotUttered(Event, SkipEventInMDStoryMixin):
 
     def message(self) -> Dict[Text, Any]:
         """Return the complete message as a dictionary."""
-
         m = self.data.copy()
         m["text"] = self.text
         m["timestamp"] = self.timestamp
