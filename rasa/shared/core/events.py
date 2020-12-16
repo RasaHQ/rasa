@@ -1,6 +1,8 @@
+import abc
 import json
 import logging
 import re
+from abc import ABC
 
 import jsonpickle
 import time
@@ -192,11 +194,13 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
     ]
 
 
-# noinspection PyProtectedMember
-class Event:
-    """Events describe everything that occurs in
-    a conversation and tell the :class:`rasa.shared.core.trackers.DialogueStateTracker`
-    how to update its state."""
+class Event(ABC):
+    """Describes events in conversation and how the affect the conversation state.
+
+    Immutable representation of everything which happened during a conversation of the
+    user with the assistant. Tells the `rasa.shared.core.trackers.DialogueStateTracker`
+    how to update its state as the events occur.
+    """
 
     type_name = "event"
 
@@ -225,6 +229,7 @@ class Event:
         # True at the same time
         return not (self == other)
 
+    @abc.abstractmethod
     def as_story_string(self) -> Optional[Text]:
         raise NotImplementedError
 
@@ -312,6 +317,20 @@ class Event:
         """
         pass
 
+    @abc.abstractmethod
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        # Every class should implement this
+        raise NotImplementedError()
+
+    def __str__(self) -> Text:
+        """Returns text representation of event."""
+        return f"{self.__class__.__name__}()"
+
+
+class AlwaysEqualEventMixin(Event, ABC):
+    """Class to deduplicate common behavior for events without additional attributes."""
+
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, self.__class__):
@@ -319,16 +338,12 @@ class Event:
 
         return True
 
-    def __str__(self) -> Text:
-        """Returns text representation of event."""
-        return f"{self.__class__.__name__}()"
 
-
-# noinspection PyProtectedMember
 class UserUttered(Event):
     """The user has said something to the bot.
 
-    As a side effect a new ``Turn`` will be created in the ``Tracker``."""
+    As a side effect a new `Turn` will be created in the `Tracker`.
+    """
 
     type_name = "user"
 
@@ -585,8 +600,7 @@ class UserUttered(Event):
         )
 
 
-# noinspection PyProtectedMember
-class DefinePrevUserUttered(Event):
+class DefinePrevUserUttered(Event, ABC):
     """Defines the family of events that are used to update previous user utterance."""
 
     def as_story_string(self) -> None:
@@ -598,7 +612,6 @@ class DefinePrevUserUttered(Event):
         return
 
 
-# noinspection PyProtectedMember
 class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
     """Stores information whether action was predicted based on text or intent."""
 
@@ -659,8 +672,14 @@ class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
             self.use_text_for_featurization
         )
 
+    def __eq__(self, other) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, DefinePrevUserUtteredFeaturization):
+            return NotImplemented
 
-# noinspection PyProtectedMember
+        return self.use_text_for_featurization == other.use_text_for_featurization
+
+
 class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
     """Event that is used to set entities on a previous user uttered event."""
 
@@ -729,7 +748,6 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
                 tracker.latest_message.entities.append(entity)
 
 
-# noinspection PyProtectedMember
 class BotUttered(Event):
     """The bot has said something to the user.
 
@@ -834,7 +852,6 @@ class BotUttered(Event):
             raise ValueError(f"Failed to parse bot uttered event. {e}")
 
 
-# noinspection PyProtectedMember
 class SlotSet(Event):
     """The user has specified their preference for the value of a `slot`.
 
@@ -921,8 +938,7 @@ class SlotSet(Event):
         tracker._set_slot(self.key, self.value)
 
 
-# noinspection PyProtectedMember
-class Restarted(Event):
+class Restarted(AlwaysEqualEventMixin):
     """Conversation should start over & history wiped.
 
     Instead of deleting all events, this event can be used to reset the
@@ -946,8 +962,7 @@ class Restarted(Event):
         tracker.trigger_followup_action(ACTION_SESSION_START_NAME)
 
 
-# noinspection PyProtectedMember
-class UserUtteranceReverted(Event):
+class UserUtteranceReverted(AlwaysEqualEventMixin):
     """Bot reverts everything until before the most recent user message.
 
     The bot will revert all events after the latest `UserUttered`, this
@@ -971,8 +986,7 @@ class UserUtteranceReverted(Event):
         tracker.replay_events()
 
 
-# noinspection PyProtectedMember
-class AllSlotsReset(Event):
+class AllSlotsReset(AlwaysEqualEventMixin):
     """All Slots are reset to their initial values.
 
     If you want to keep the dialogue history and only want to reset the
@@ -995,10 +1009,11 @@ class AllSlotsReset(Event):
         tracker._reset_slots()
 
 
-# noinspection PyProtectedMember
 class ReminderScheduled(Event):
-    """Schedules the asynchronous triggering of a user intent
-    (with entities if needed) at a given time."""
+    """Schedules the asynchronous triggering of a user intent at a given time.
+
+    The triggered intent can include entities if needed.
+    """
 
     type_name = "reminder"
 
@@ -1105,7 +1120,6 @@ class ReminderScheduled(Event):
         ]
 
 
-# noinspection PyProtectedMember
 class ReminderCancelled(Event):
     """Cancel certain jobs."""
 
@@ -1209,8 +1223,7 @@ class ReminderCancelled(Event):
         ]
 
 
-# noinspection PyProtectedMember
-class ActionReverted(Event):
+class ActionReverted(AlwaysEqualEventMixin):
     """Bot undoes its last action.
 
     The bot reverts everything until before the most recent action.
@@ -1236,7 +1249,6 @@ class ActionReverted(Event):
         tracker.replay_events()
 
 
-# noinspection PyProtectedMember
 class StoryExported(Event):
     """Story should get dumped to a file."""
 
@@ -1281,8 +1293,14 @@ class StoryExported(Event):
         if self.path:
             tracker.export_stories_to_file(self.path)
 
+    def __eq__(self, other) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, StoryExported):
+            return NotImplemented
 
-# noinspection PyProtectedMember
+        return self.path == other.path
+
+
 class FollowupAction(Event):
     """Enqueue a followup action."""
 
@@ -1346,8 +1364,7 @@ class FollowupAction(Event):
         tracker.trigger_followup_action(self.action_name)
 
 
-# noinspection PyProtectedMember
-class ConversationPaused(Event):
+class ConversationPaused(AlwaysEqualEventMixin):
     """Ignore messages from the user to let a human take over.
 
     As a side effect the `Tracker`'s `paused` attribute will
@@ -1369,8 +1386,7 @@ class ConversationPaused(Event):
         tracker._paused = True
 
 
-# noinspection PyProtectedMember
-class ConversationResumed(Event):
+class ConversationResumed(AlwaysEqualEventMixin):
     """Bot takes over conversation.
 
     Inverse of `PauseConversation`. As a side effect the `Tracker`'s
@@ -1392,7 +1408,6 @@ class ConversationResumed(Event):
         tracker._paused = False
 
 
-# noinspection PyProtectedMember
 class ActionExecuted(Event):
     """An operation describes an action taken + its result.
 
@@ -1847,7 +1862,7 @@ class ActionExecutionRejected(Event):
         tracker.reject_action(self.action_name)
 
 
-class SessionStarted(Event):
+class SessionStarted(AlwaysEqualEventMixin):
     """Mark the beginning of a new conversation session."""
 
     type_name = "session_started"
