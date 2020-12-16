@@ -31,8 +31,6 @@ from rasa.nlu.test import (
 )
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
     DOCS_URL_MIGRATION_GUIDE,
 )
 import rasa.shared.data
@@ -276,20 +274,25 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 
 
 def _create_paraphrase_pool(
-    paraphrases: TrainingData, pooled_intents: Set
+    paraphrases: TrainingData, pooled_intents: Set, paraphrase_quality_threshold: float
 ) -> Dict[Text, List]:
     paraphrase_pool = collections.defaultdict(list)
     for p in paraphrases.intent_examples:
         if p.data["intent"] in pooled_intents:
-            paraphrase_pool[p.data["intent"]].append(
-                (p, set(p.data["text"].lower().split()))
-            )
+            paraphrases_for_example = p.data["metadata"]["example"]["paraphrases"].split("\n")
+            paraphrase_scores = p.data["metadata"]["example"]["scores"].split("\n")
+
+            for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
+                if paraphrase == "" or float(score) < paraphrase_quality_threshold: continue
+
+                paraphrase_pool[p.data["intent"]].append((p, set(paraphrase.lower().split()), paraphrase))
+
     return paraphrase_pool
 
 
 def _create_training_data_pool(
     nlu_training_data: TrainingData, pooled_intents: Set
-) -> Tuple[Dict[Text, Set], Dict[Text, List]]:
+) -> Tuple[Dict[Text, List], Dict[Text, Set]]:
     training_data_pool = collections.defaultdict(list)
     training_data_vocab_per_intent = collections.defaultdict(set)
     for m in nlu_training_data.intent_examples:
@@ -306,9 +309,9 @@ def _build_diverse_augmentation_pool(
 ) -> Dict[Text, List]:
     max_vocab_expansion = collections.defaultdict(list)
     for intent in paraphrase_pool.keys():
-        for p, vocab in paraphrase_pool[intent]:
+        for p, vocab, paraphrase in paraphrase_pool[intent]:
             num_new_words = len(vocab - training_data_vocab_per_intent[intent])
-            max_vocab_expansion[intent].append((num_new_words, p, vocab))
+            max_vocab_expansion[intent].append((num_new_words, p, paraphrase))
         max_vocab_expansion[intent] = sorted(
             max_vocab_expansion[intent], key=operator.itemgetter(0), reverse=True
         )
@@ -361,10 +364,9 @@ def _build_augmentation_training_sets(
 
 def _get_intents_with_performance_changes(
     classification_report: Dict[Text, Dict[Text, float]],
-    intent_report_diverse: Dict[Text, float],
-    intent_report_random: Dict[Text, float],
+    intent_report: Dict[Text, float],
     all_intents: List[Text],
-    significant_figures: int = 3,
+    significant_figures: int = 2,
 ) -> Set[Text]:
     changed_intents = set()
     for intent_key in all_intents:
@@ -372,40 +374,26 @@ def _get_intents_with_performance_changes(
             rounded_original = round(
                 classification_report[intent_key][metric], significant_figures
             )
-            rounded_diverse = round(
-                intent_report_diverse[intent_key][metric], significant_figures
+            rounded_augmented = round(
+                intent_report[intent_key][metric], significant_figures
             )
-            rounded_random = round(
-                intent_report_random[intent_key][metric], significant_figures
-            )
-            if (
-                rounded_original != rounded_diverse
-                or rounded_original != rounded_random
-            ):
+            if (rounded_original != rounded_augmented):
                 changed_intents.add(intent_key)
 
     return changed_intents
 
 
-def _create_augmentation_summaries(
+def _create_augmentation_summary(
     pooled_intents: Set,
+    changed_intents: Set,
     classification_report: Dict[Text, Dict[Text, float]],
-    intent_report_diverse: Dict[Text, float],
-    intent_report_random: Dict[Text, float],
-    all_intents: List[Text],
+    intent_report: Dict[Text, float]
 ) -> Tuple[
-    Dict[Text, Dict[Text, float]],
-    Dict[Text, float],
     Dict[Text, Dict[Text, float]],
     Dict[Text, float],
 ]:
 
-    changed_intents = _get_intents_with_performance_changes(
-        classification_report, intent_report_diverse, intent_report_random, all_intents
-    )
-
-    intent_summary_diverse = collections.defaultdict(dict)
-    intent_summary_random = collections.defaultdict(dict)
+    intent_summary = collections.defaultdict(dict)
     for intent in (
         pooled_intents | changed_intents | {"micro avg", "macro avg", "weighted avg"}
     ):
@@ -413,64 +401,41 @@ def _create_augmentation_summaries(
             continue
 
         intent_results_original = classification_report[intent]
-        intent_results_diverse = intent_report_diverse[intent]
-        intent_results_random = intent_report_random[intent]
+        intent_results = intent_report[intent]
 
         # Record performance changes for augmentation based on the diversity criterion
         precision_change = (
-            intent_results_diverse["precision"] - intent_results_original["precision"]
+            intent_results["precision"] - intent_results_original["precision"]
         )
         recall_change = (
-            intent_results_diverse["recall"] - intent_results_original["recall"]
+            intent_results["recall"] - intent_results_original["recall"]
         )
         f1_change = (
-            intent_results_diverse["f1-score"] - intent_results_original["f1-score"]
+            intent_results["f1-score"] - intent_results_original["f1-score"]
         )
 
-        intent_results_diverse["precision_change"] = intent_summary_diverse[intent][
+        intent_results["precision_change"] = intent_summary[intent][
             "precision_change"
         ] = precision_change
-        intent_results_diverse["recall_change"] = intent_summary_diverse[intent][
+        intent_results["recall_change"] = intent_summary[intent][
             "recall_change"
         ] = recall_change
-        intent_results_diverse["f1-score_change"] = intent_summary_diverse[intent][
+        intent_results["f1-score_change"] = intent_summary[intent][
             "f1-score_change"
         ] = f1_change
-        intent_report_diverse[intent] = intent_results_diverse
-
-        # Record performance changes for random sampling
-        precision_change = (
-            intent_results_random["precision"] - intent_results_original["precision"]
-        )
-        recall_change = (
-            intent_results_random["recall"] - intent_results_original["recall"]
-        )
-        f1_change = (
-            intent_results_random["f1-score"] - intent_results_original["f1-score"]
-        )
-
-        intent_results_random["precision_change"] = intent_summary_random[intent][
-            "precision_change"
-        ] = precision_change
-        intent_results_random["recall_change"] = intent_summary_random[intent][
-            "recall_change"
-        ] = recall_change
-        intent_results_random["f1-score_change"] = intent_summary_random[intent][
-            "f1-score_change"
-        ] = f1_change
-        intent_report_random[intent] = intent_results_random
+        intent_report[intent] = intent_results
 
     return (
-        intent_summary_diverse,
-        intent_report_diverse,
-        intent_summary_random,
-        intent_report_random,
+        intent_summary,
+        intent_report
     )
 
 
 def _plot_summary_reports(
     intent_summary_diverse: Dict[Text, Dict[Text, float]],
     intent_summary_random: Dict[Text, Dict[Text, float]],
+    changed_intents_diverse: Set[Text],
+    changed_intents_random: Set[Text],
     output_directory_diverse: Text,
     output_directory_random: Text,
 ):
@@ -481,6 +446,7 @@ def _plot_summary_reports(
         )
         rasa.utils.plotting.plot_intent_augmentation_summary(
             augmentation_summary=intent_summary_diverse,
+            changed_intents=changed_intents_diverse,
             metric=metric,
             output_file=output_file_diverse,
         )
@@ -490,6 +456,7 @@ def _plot_summary_reports(
         )
         rasa.utils.plotting.plot_intent_augmentation_summary(
             augmentation_summary=intent_summary_random,
+            changed_intents=changed_intents_random,
             metric=metric,
             output_file=output_file_random,
         )
@@ -566,7 +533,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
     )
 
     # Retrieve paraphrase pool and training data pool
-    paraphrase_pool = _create_paraphrase_pool(paraphrases, pooled_intents)
+    paraphrase_pool = _create_paraphrase_pool(paraphrases, pooled_intents, args.paraphrase_score_threshold)
     training_data_pool, training_data_vocab_per_intent = _create_training_data_pool(
         nlu_training_data, pooled_intents
     )
@@ -660,43 +627,53 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         intent_errors_random,
     )
 
-    # Create and update result reports and store to file
-    report_tuple = _create_augmentation_summaries(
+    # Retrieve intents for which performance has changed
+    changed_intents_diverse = _get_intents_with_performance_changes(
+        classification_report, intent_report_diverse.report, nlu_training_data.intents
+    ) - pooled_intents
+
+    changed_intents_random = _get_intents_with_performance_changes(
+        classification_report, intent_report_random.report, nlu_training_data.intents
+    ) - pooled_intents
+
+    # Create and update result reports
+    report_tuple = _create_augmentation_summary(
         pooled_intents,
+        changed_intents_diverse,
         classification_report,
-        intent_report_diverse.report,
-        intent_report_random.report,
-        nlu_training_data.intents,
+        intent_report_diverse.report
     )
 
     intent_summary_diverse = report_tuple[0]
     intent_report_diverse.report.update(report_tuple[1])
-    intent_summary_random = report_tuple[2]
-    intent_report_random.report.update(report_tuple[3])
 
+    report_tuple = _create_augmentation_summary(
+        pooled_intents,
+        changed_intents_random,
+        classification_report,
+        intent_report_random.report
+    )
+    intent_summary_random = report_tuple[0]
+    intent_report_random.report.update(report_tuple[1])
+
+    # Store reports to file
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output_directory_diverse, "intent_report.json"),
         intent_report_diverse.report,
     )
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory_diverse, "intent_report_changes_summary.json"),
-        intent_summary_diverse,
-    )
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output_directory_random, "intent_report.json"),
         intent_report_random.report,
-    )
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory_random, "intent_report_changes_summary.json"),
-        intent_summary_random,
     )
 
     # Plot the summary reports
     _plot_summary_reports(
         intent_summary_diverse,
         intent_summary_random,
+        changed_intents_diverse,
+        changed_intents_random,
         output_directory_diverse,
-        output_directory_random,
+        output_directory_random
     )
 
     telemetry.track_data_suggest()
