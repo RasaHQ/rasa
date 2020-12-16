@@ -271,7 +271,7 @@ def test_nlg_fill_template_attachment(attach_slot_name, attach_slot_value):
 
 
 @pytest.mark.parametrize(
-    "button_slot_name, button_slot_value", [("button_1", "button_1")]
+    "button_slot_name, button_slot_value", [("button_1", "button_1_value")]
 )
 def test_nlg_fill_template_button(button_slot_name, button_slot_value):
     template = {
@@ -298,14 +298,14 @@ def test_nlg_fill_template_button(button_slot_name, button_slot_value):
 
 
 @pytest.mark.parametrize(
-    "button_slot_name, button_slot_value", [("button_1", "button_1")]
+    "button_slot_name, button_slot_value", [("button_1", "button_1_value")]
 )
-def test_nlg_fill_template_button_unquoted(caplog, button_slot_name, button_slot_value):
+def test_nlg_fill_template_button_unquoted(button_slot_name, button_slot_value, caplog):
     import logging
     template = {
         "buttons": [
             {
-                "payload": f'/choose{{"some_slot": "{button_slot_name}"}}',
+                "payload": f'/choose{{"some_slot":"{{{button_slot_name}}}"}}',
                 "title": f"{{{button_slot_name}}}",
             }
         ]
@@ -317,10 +317,54 @@ def test_nlg_fill_template_button_unquoted(caplog, button_slot_name, button_slot
     result = t._fill_template(
         template=template, filled_slots={button_slot_name: button_slot_value}
     )
-    #print(f"error: {error}")
-    #print(f"result: {result}")
-    #print(f" payload: {result['buttons'][0]['payload']}, temp_buttons: {template['buttons'][0]['payload']}")
-    #print(f"caplog.text: {caplog.text}")
+    #assert result["buttons"][0]["payload"] == template["buttons"][0]['payload']
+    assert "Failed to fill utterance template" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "button_slot_name, button_slot_value", [("button_1", "button_1_value")]
+)
+def test_nlg_fill_template_button_unquoted_noslot(button_slot_name, button_slot_value, caplog):
+    import logging
+    template = {
+        "buttons": [
+            {
+                "payload": f'/choose{{"some_slot":"literal"}}',
+                "title": f"literal",
+            }
+        ]
+    }
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    #with pytest.raises(Exception):
+    #print(f"calling with template: {template}")
+    caplog.set_level(logging.ERROR)
+    result = t._fill_template(
+        template=template, filled_slots={button_slot_name: button_slot_value}
+    )
+    #assert result["buttons"][0]["payload"] == template["buttons"][0]['payload']
+    assert "Failed to fill utterance template" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "button_slot_name, button_slot_value", [("button_1", "button_1_value")]
+)
+def test_nlg_fill_template_button_noslot(button_slot_name, button_slot_value, caplog):
+    import logging
+    template = {
+        "buttons": [
+            {
+                "payload": f'/choose{{{{"some_slot":"literal"}}}}',
+                "title": f"literal",
+            }
+        ]
+    }
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    #with pytest.raises(Exception):
+    #print(f"calling with template: {template}")
+    caplog.set_level(logging.ERROR)
+    result = t._fill_template(
+        template=template, filled_slots={button_slot_name: button_slot_value}
+    )
     #assert result["buttons"][0]["payload"] == template["buttons"][0]['payload']
     assert "Failed to fill utterance template" not in caplog.text
 

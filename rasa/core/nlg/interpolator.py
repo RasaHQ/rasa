@@ -24,7 +24,7 @@ def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
     """
 
     try:
-        text = re.sub(r"{([^\n{}:]+?)}", r"{0[\1]}", template)
+        text = re.sub(r"{([^\n{}]+?)}", r"{0[\1]}", template)
         text = text.format(values)
         if "0[" in text:
             # regex replaced tag but format did not replace
@@ -36,6 +36,8 @@ def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
 
         return text
     except KeyError as e:
+        if e.args[0][0] == '"' or e.args[0][0] == "'":
+            return text
         logger.exception(
             f"Failed to fill utterance template '{template}'. "
             f"Tried to replace '{e.args[0]}' but could not find "
