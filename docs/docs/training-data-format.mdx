@@ -401,13 +401,14 @@ messages the users can send with the same meaning.
 
 User messages follow the format:
 
-```yaml-rasa
+```yaml-rasa {4-6}
 stories:
 - story: user message structure
   steps:
     - intent: intent_name  # Required
       entities:  # Optional
       - entity_name: entity_value
+    - action: action_name
 ```
 
 For example, to represent the sentence
@@ -709,6 +710,7 @@ stories:
 - story: user message structure
   steps:
     - user: the actual text of the user message
+    - action: action_name
 ```
 
 In addition, you can add entity tags that can be extracted
