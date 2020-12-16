@@ -325,7 +325,7 @@ class Event(ABC):
         return f"{self.__class__.__name__}()"
 
 
-class EventWithoutExtraAttributes(Event, ABC):
+class AlwaysEqualEventMixin(Event, ABC):
     """Class to deduplicate common behavior for events without additional attributes."""
 
     def __eq__(self, other: Any) -> bool:
@@ -935,7 +935,7 @@ class SlotSet(Event):
         tracker._set_slot(self.key, self.value)
 
 
-class Restarted(EventWithoutExtraAttributes):
+class Restarted(AlwaysEqualEventMixin):
     """Conversation should start over & history wiped.
 
     Instead of deleting all events, this event can be used to reset the
@@ -959,7 +959,7 @@ class Restarted(EventWithoutExtraAttributes):
         tracker.trigger_followup_action(ACTION_SESSION_START_NAME)
 
 
-class UserUtteranceReverted(EventWithoutExtraAttributes):
+class UserUtteranceReverted(AlwaysEqualEventMixin):
     """Bot reverts everything until before the most recent user message.
 
     The bot will revert all events after the latest `UserUttered`, this
@@ -983,7 +983,7 @@ class UserUtteranceReverted(EventWithoutExtraAttributes):
         tracker.replay_events()
 
 
-class AllSlotsReset(EventWithoutExtraAttributes):
+class AllSlotsReset(AlwaysEqualEventMixin):
     """All Slots are reset to their initial values.
 
     If you want to keep the dialogue history and only want to reset the
@@ -1220,7 +1220,7 @@ class ReminderCancelled(Event):
         ]
 
 
-class ActionReverted(EventWithoutExtraAttributes):
+class ActionReverted(AlwaysEqualEventMixin):
     """Bot undoes its last action.
 
     The bot reverts everything until before the most recent action.
@@ -1361,7 +1361,7 @@ class FollowupAction(Event):
         tracker.trigger_followup_action(self.action_name)
 
 
-class ConversationPaused(EventWithoutExtraAttributes):
+class ConversationPaused(AlwaysEqualEventMixin):
     """Ignore messages from the user to let a human take over.
 
     As a side effect the `Tracker`'s `paused` attribute will
@@ -1383,7 +1383,7 @@ class ConversationPaused(EventWithoutExtraAttributes):
         tracker._paused = True
 
 
-class ConversationResumed(EventWithoutExtraAttributes):
+class ConversationResumed(AlwaysEqualEventMixin):
     """Bot takes over conversation.
 
     Inverse of `PauseConversation`. As a side effect the `Tracker`'s
@@ -1859,7 +1859,7 @@ class ActionExecutionRejected(Event):
         tracker.reject_action(self.action_name)
 
 
-class SessionStarted(EventWithoutExtraAttributes):
+class SessionStarted(AlwaysEqualEventMixin):
     """Mark the beginning of a new conversation session."""
 
     type_name = "session_started"
