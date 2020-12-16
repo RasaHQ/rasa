@@ -1052,9 +1052,11 @@ def get_eval_data(
 
             response_prediction_full_intent = selector_properties.get(
                 response_prediction_key, {}
-            ).get("full_retrieval_intent", {})
+            ).get("full_retrieval_intent", None)
 
-            response_key = example.get_combined_intent_response_key()
+            response_key = None
+            if example.get(RESPONSE_KEY_ATTRIBUTE) is not None:
+                response_key = example.get_combined_intent_response_key()
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
