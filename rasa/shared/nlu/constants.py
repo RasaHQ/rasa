@@ -28,6 +28,7 @@ PRETRAINED_EXTRACTORS = {
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 ENTITIES = "entities"
+ENTITY_TAGS = "entity_tags"
 ENTITY_ATTRIBUTE_TYPE = "entity"
 ENTITY_ATTRIBUTE_GROUP = "group"
 ENTITY_ATTRIBUTE_ROLE = "role"

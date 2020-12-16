@@ -163,7 +163,7 @@ class RulePolicy(MemoizationPolicy):
 
         if (
             domain is None
-            or rule_policy._fallback_action_name not in domain.action_names
+            or rule_policy._fallback_action_name not in domain.action_names_or_texts
         ):
             raise InvalidDomain(
                 f"The fallback action '{rule_policy._fallback_action_name}' which was "
@@ -420,7 +420,9 @@ class RulePolicy(MemoizationPolicy):
             probabilities != self._default_predictions(domain)
             or tracker.is_rule_tracker
         ):
-            predicted_action_name = domain.action_names[np.argmax(probabilities)]
+            predicted_action_name = domain.action_names_or_texts[
+                np.argmax(probabilities)
+            ]
 
         return predicted_action_name
 
@@ -769,23 +771,39 @@ class RulePolicy(MemoizationPolicy):
             return ACTION_LISTEN_NAME
 
     def _find_action_from_rules(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        use_text_for_last_user_input: bool,
     ) -> Tuple[Optional[Text], Optional[Text], bool]:
         """Predicts the next action based on the memoized rules.
 
         Args:
             tracker: The current conversation tracker.
             domain: The domain of the current model.
+            use_text_for_last_user_input: `True` if text of last user message
+                should be used for the prediction. `False` if intent should be used.
 
         Returns:
-            A tuple of the predicted action name (or `None` if no matching rule was
-            found), a description of the matching rule, and `True` if a loop action
+            A tuple of the predicted action name or text (or `None` if no matching rule
+            was found), a description of the matching rule, and `True` if a loop action
             was predicted after the loop has been in an unhappy path before.
         """
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
-        states = tracker_as_states[0]
-        current_states = self.format_tracker_states(states)
+        if (
+            use_text_for_last_user_input
+            and not tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # make text prediction only directly after user utterance
+            # because we've otherwise already decided whether to use
+            # the text or the intent
+            return None, None, False
 
+        tracker_as_states = self.featurizer.prediction_states(
+            [tracker], domain, use_text_for_last_user_input
+        )
+        states = tracker_as_states[0]
+
+        current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
@@ -867,43 +885,85 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
-        result = self._default_predictions(domain)
+        (
+            rules_action_name_from_text,
+            self._prediction_source,
+            returning_from_unhappy_path_from_text,
+        ) = self._find_action_from_rules(
+            tracker, domain, use_text_for_last_user_input=True
+        )
 
         # Rasa Open Source default actions overrule anything. If users want to achieve
         # the same, they need to write a rule or make sure that their loop rejects
         # accordingly.
         default_action_name = self._find_action_from_default_actions(tracker)
-        if default_action_name:
+
+        # text has priority over intents including default,
+        # however loop happy path has priority over rules prediction
+        if default_action_name and not rules_action_name_from_text:
             self._prediction_source = DEFAULT_RULES
             return self._prediction(
                 self._prediction_result(default_action_name, tracker, domain)
             )
 
-        # A loop has priority over any other rule.
+        # A loop has priority over any other rule except defaults.
         # The rules or any other prediction will be applied only if a loop was rejected.
         # If we are in a loop, and the loop didn't run previously or rejected, we can
         # simply force predict the loop.
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
             self._prediction_source = LOOP_RULES
+            # this prediction doesn't use user input
+            # and happy user input anyhow should be ignored during featurization
             return self._prediction(
                 self._prediction_result(loop_happy_path_action_name, tracker, domain)
             )
 
+        # predict rules from text first
+        if rules_action_name_from_text:
+            return self._prediction_with_unhappy_path(
+                self._prediction_result(rules_action_name_from_text, tracker, domain),
+                returning_from_unhappy_path=returning_from_unhappy_path_from_text,
+                is_end_to_end_prediction=True,
+            )
+
         (
-            rules_action_name,
-            source,
-            returning_from_unhappy_path,
-        ) = self._find_action_from_rules(tracker, domain)
-        # we want to remember the source even if rules didn't predict any action
-        self._prediction_source = source
+            rules_action_name_from_intent,
+            # we want to remember the source even if rules didn't predict any action
+            self._prediction_source,
+            returning_from_unhappy_path_from_intent,
+        ) = self._find_action_from_rules(
+            tracker, domain, use_text_for_last_user_input=False
+        )
+        if rules_action_name_from_intent:
+            probabilities = self._prediction_result(
+                rules_action_name_from_intent, tracker, domain
+            )
+        else:
+            probabilities = self._default_predictions(domain)
 
-        policy_events = [LoopInterrupted(True)] if returning_from_unhappy_path else []
+        return self._prediction_with_unhappy_path(
+            probabilities,
+            returning_from_unhappy_path=(
+                # returning_from_unhappy_path is a negative condition,
+                # so `or` should be applied
+                returning_from_unhappy_path_from_text
+                or returning_from_unhappy_path_from_intent
+            ),
+            is_end_to_end_prediction=False,
+        )
 
-        if rules_action_name:
-            result = self._prediction_result(rules_action_name, tracker, domain)
-
-        return self._prediction(result, events=policy_events)
+    def _prediction_with_unhappy_path(
+        self,
+        probabilities: List[float],
+        returning_from_unhappy_path: bool,
+        is_end_to_end_prediction: bool,
+    ) -> "PolicyPrediction":
+        return self._prediction(
+            probabilities,
+            events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
+            is_end_to_end_prediction=is_end_to_end_prediction,
+        )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)
