@@ -59,7 +59,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     DefinePrevUserUttered,
-    DefinePrevUserUtteredEntities,
+    EntitiesAdded,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -624,7 +624,7 @@ class DialogueStateTracker:
         self.events.append(event)
         event.apply_to(self)
 
-        if domain and isinstance(event, (UserUttered, DefinePrevUserUtteredEntities)):
+        if domain and isinstance(event, (UserUttered, EntitiesAdded)):
             if isinstance(event, UserUttered):
                 # Rather get entities from `parse_data` as
                 # `DefinePrevUserUtteredEntities` might have already affected the

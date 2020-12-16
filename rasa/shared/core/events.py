@@ -663,10 +663,10 @@ class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
 
 
 # noinspection PyProtectedMember
-class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
-    """Event that is used to set entities on a previous user uttered event."""
+class EntitiesAdded(DefinePrevUserUttered):
+    """Event that is used to add extracted entities to the tracker state."""
 
-    type_name = "user_entities"
+    type_name = "entities"
 
     def __init__(
         self,
@@ -674,10 +674,11 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
-        """Initializes a DefinePrevUserUtteredEntities event.
+        """Initializes event.
 
         Args:
-            entities: the entities of a previous user uttered event
+            entities: Entities extracted from previous user message. This can either
+                be done by NLU components or end-to-end policy predictions.
             timestamp: the timestamp
             metadata: some optional metadata
         """
@@ -687,7 +688,7 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
     def __str__(self) -> Text:
         """Returns the string representation of the event."""
         entity_str = [e[ENTITY_ATTRIBUTE_TYPE] for e in self.entities]
-        return f"DefinePrevUserUtteredEntities({entity_str})"
+        return f"{self.__class__.__name__}({entity_str})"
 
     def __hash__(self) -> int:
         """Returns the hash value of the event."""
@@ -695,11 +696,11 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
 
     def __eq__(self, other) -> bool:
         """Compares this event with another event."""
-        return isinstance(other, DefinePrevUserUtteredEntities)
+        return isinstance(other, EntitiesAdded)
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredEntities":
-        return DefinePrevUserUtteredEntities(
+    def _from_parameters(cls, parameters) -> "EntitiesAdded":
+        return EntitiesAdded(
             parameters.get(ENTITIES),
             parameters.get("timestamp"),
             parameters.get("metadata"),

@@ -39,7 +39,7 @@ from rasa.shared.core.events import (
     LegacyFormValidation,
     LoopInterrupted,
     DefinePrevUserUtteredFeaturization,
-    DefinePrevUserUtteredEntities,
+    EntitiesAdded,
 )
 from rasa.shared.core.slots import (
     FloatSlot,
@@ -1235,9 +1235,7 @@ def test_policy_predictions_dont_change_persistence():
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("hi", intent={"name": "greet"}),
             DefinePrevUserUtteredFeaturization(True),
-            DefinePrevUserUtteredEntities(
-                entities=[{"entity": "entity1", "value": "value1"}]
-            ),
+            EntitiesAdded(entities=[{"entity": "entity1", "value": "value1"}]),
         ],
     )
 
@@ -1275,7 +1273,7 @@ def test_policy_prediction_reflected_in_tracker_state():
                 metadata={"some": "data"},
             ),
             DefinePrevUserUtteredFeaturization(True),
-            DefinePrevUserUtteredEntities(entities=entities_predicted_by_policy),
+            EntitiesAdded(entities=entities_predicted_by_policy),
         ],
     )
 
@@ -1336,7 +1334,7 @@ def test_autofill_slots_for_policy_entities():
                 entities=[{"entity": nlu_entity, "value": nlu_entity_value}],
             ),
             DefinePrevUserUtteredFeaturization(True),
-            DefinePrevUserUtteredEntities(
+            EntitiesAdded(
                 entities=[
                     {"entity": policy_entity, "value": policy_entity_value},
                     {"entity": nlu_entity, "value": nlu_entity_value},
@@ -1365,7 +1363,7 @@ def test_autofill_slots_for_policy_entities():
         # SlotSet event added for entity predicted by NLU
         SlotSet(nlu_entity, nlu_entity_value),
         DefinePrevUserUtteredFeaturization(True),
-        DefinePrevUserUtteredEntities(
+        EntitiesAdded(
             entities=[
                 {"entity": policy_entity, "value": policy_entity_value},
                 {"entity": nlu_entity, "value": nlu_entity_value},
