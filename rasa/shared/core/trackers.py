@@ -624,12 +624,13 @@ class DialogueStateTracker:
         event.apply_to(self)
 
         if domain and isinstance(event, (UserUttered, DefinePrevUserUtteredEntities)):
-            entities = event.entities
             if isinstance(event, UserUttered):
                 # Rather get entities from `parse_data` as
                 # `DefinePrevUserUtteredEntities` might have already affected the
                 # `UserUttered.entities` attribute
                 entities = event.parse_data["entities"]
+            else:
+                entities = event.entities
 
             for e in domain.slots_for_entities(entities):
                 self.update(e)
