@@ -194,9 +194,12 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
 
 
 class Event:
-    """Events describe everything that occurs in
-    a conversation and tell the :class:`rasa.shared.core.trackers.DialogueStateTracker`
-    how to update its state."""
+    """Describes events in conversation and how the affect the conversation state.
+
+    Immutable representation of everything which happened during a conversation of the
+    user with the assistant. Tells the `rasa.shared.core.trackers.DialogueStateTracker`
+    how to update its state as the events occur.
+    """
 
     type_name = "event"
 
@@ -336,7 +339,8 @@ class EventWithoutExtraAttributes(Event, ABC):
 class UserUttered(Event):
     """The user has said something to the bot.
 
-    As a side effect a new ``Turn`` will be created in the ``Tracker``."""
+    As a side effect a new `Turn` will be created in the `Tracker`.
+    """
 
     type_name = "user"
 
@@ -1003,8 +1007,10 @@ class AllSlotsReset(EventWithoutExtraAttributes):
 
 
 class ReminderScheduled(Event):
-    """Schedules the asynchronous triggering of a user intent
-    (with entities if needed) at a given time."""
+    """Schedules the asynchronous triggering of a user intent at a given time.
+
+    The triggered intent can include entities if needed.
+    """
 
     type_name = "reminder"
 
