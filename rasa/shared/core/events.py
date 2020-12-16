@@ -757,7 +757,7 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
                 tracker.latest_message.entities.append(entity)
 
 
-class BotUttered(Event, SkipEventInMDStoryMixin):
+class BotUttered(SkipEventInMDStoryMixin):
     """The bot has said something to the user.
 
     This class is not used in the story training as it is contained in the
@@ -1540,7 +1540,7 @@ class ActionExecuted(Event):
         tracker.clear_followup_action()
 
 
-class AgentUttered(Event, SkipEventInMDStoryMixin):
+class AgentUttered(SkipEventInMDStoryMixin):
     """The agent has said something to the user.
 
     This class is not used in the story training as it is contained in the
@@ -1681,7 +1681,7 @@ class LegacyForm(ActiveLoop):
         return d
 
 
-class LoopInterrupted(Event, SkipEventInMDStoryMixin):
+class LoopInterrupted(SkipEventInMDStoryMixin):
     """Event added by FormPolicy and RulePolicy.
 
     Notifies form action whether or not to validate the user input.
@@ -1781,7 +1781,7 @@ class LegacyFormValidation(LoopInterrupted):
         return d
 
 
-class ActionExecutionRejected(Event, SkipEventInMDStoryMixin):
+class ActionExecutionRejected(SkipEventInMDStoryMixin):
     """Notify Core that the execution of the action has been rejected."""
 
     type_name = "action_execution_rejected"
