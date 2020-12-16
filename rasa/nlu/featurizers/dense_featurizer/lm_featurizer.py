@@ -8,6 +8,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component, UnsupportedLanguageError
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.model import Metadata
+import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -222,7 +223,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         return (
             f"{cls.name}-{component_meta.get('model_name')}-"
-            f"{rasa.core.utils.get_dict_hash(weights)}"
+            f"{rasa.shared.utils.io.deep_container_fingerprint(weights)}"
         )
 
     @classmethod
@@ -345,6 +346,12 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         for token in tokens_in:
             # use lm specific tokenizer to further tokenize the text
             split_token_ids, split_token_strings = self._lm_tokenize(token.text)
+
+            if not split_token_ids:
+                # fix the situation that `token.text` only contains whitespace or other special characters,
+                # which cause `split_token_ids` and `split_token_strings` be empty,
+                # finally cause `self._lm_specific_token_cleanup()` to raise an exception
+                continue
 
             (split_token_ids, split_token_strings) = self._lm_specific_token_cleanup(
                 split_token_ids, split_token_strings

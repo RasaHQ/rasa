@@ -88,6 +88,10 @@
         "num_regexes": {
           "type": "integer",
           "description": "Total number of regexes defined."
+        },
+        "is_finetuning": {
+          "type": "boolean",
+          "description": "True if a model is trained by finetuning an existing model."
         }
       },
       "additionalProperties": false,
