@@ -1,24 +1,30 @@
-import asyncio
 import sys
 import tempfile
 import os
 from pathlib import Path
-from typing import Text, Dict
-from unittest.mock import Mock
+from typing import Text, Dict, Any
+from unittest.mock import Mock, create_autospec
 
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.model
 import rasa.core
+import rasa.nlu
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.shared.importers.autoconfig as autoconfig
+import rasa.shared.utils.io
+from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train, dry_run_result
-from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
+from rasa.utils.tensorflow.constants import EPOCHS
+from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA, AsyncMock
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
-from tests.core.test_model import _fingerprint
+from tests.test_model import _fingerprint
 
 
 @pytest.mark.parametrize(
@@ -148,7 +154,7 @@ def test_train_nlu_temp_files(
 
 def test_train_nlu_wrong_format_error_message(
     capsys: CaptureFixture,
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
     incorrect_nlu_data: Text,
@@ -202,7 +208,7 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
 
 def test_train_nlu_no_nlu_file_error_message(
     capsys: CaptureFixture,
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
 ):
@@ -217,24 +223,21 @@ def test_train_nlu_no_nlu_file_error_message(
     assert "No NLU data given" in captured.out
 
 
-@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_trained_interpreter_passed_to_core_training(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
+    monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_rasa_model: Text
 ):
     # Skip actual NLU training and return trained interpreter path from fixture
-    _train_nlu_with_validated_data = Mock(return_value=unpacked_trained_moodbot_path)
-
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     monkeypatch.setattr(
         sys.modules["rasa.train"],
         "_train_nlu_with_validated_data",
-        asyncio.coroutine(_train_nlu_with_validated_data),
+        AsyncMock(return_value=unpacked_trained_rasa_model),
     )
 
     # Mock the actual Core training
-    _train_core = Mock()
-    monkeypatch.setattr(rasa.core, "train", asyncio.coroutine(_train_core))
+    _train_core = AsyncMock()
+    monkeypatch.setattr(rasa.core, "train", _train_core)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -248,9 +251,8 @@ def test_trained_interpreter_passed_to_core_training(
     assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
 
 
-@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_interpreter_of_old_model_passed_to_core_training(
-    monkeypatch: MonkeyPatch, tmp_path: Path, trained_moodbot_path: Text
+    monkeypatch: MonkeyPatch, tmp_path: Path, trained_rasa_model: Text
 ):
     # NLU isn't retrained
     monkeypatch.setattr(
@@ -261,12 +263,12 @@ def test_interpreter_of_old_model_passed_to_core_training(
 
     # An old model with an interpreter exists
     monkeypatch.setattr(
-        rasa.model, rasa.model.get_latest_model.__name__, lambda _: trained_moodbot_path
+        rasa.model, rasa.model.get_latest_model.__name__, lambda _: trained_rasa_model
     )
 
     # Mock the actual Core training
-    _train_core = Mock()
-    monkeypatch.setattr(rasa.core, "train", asyncio.coroutine(_train_core))
+    _train_core = AsyncMock()
+    monkeypatch.setattr(rasa.core, "train", _train_core)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -293,7 +295,7 @@ def test_interpreter_from_previous_model_returns_none_for_none():
 
 
 def test_train_core_autoconfig(
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stories_file: Text,
@@ -306,11 +308,8 @@ def test_train_core_autoconfig(
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     # skip actual core training
-    _train_core_with_validated_data = Mock()
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_core_with_validated_data",
-        asyncio.coroutine(_train_core_with_validated_data),
+        sys.modules["rasa.train"], "_train_core_with_validated_data", AsyncMock()
     )
 
     # do training
@@ -327,7 +326,7 @@ def test_train_core_autoconfig(
 
 
 def test_train_nlu_autoconfig(
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
     default_nlu_data: Text,
@@ -338,12 +337,8 @@ def test_train_nlu_autoconfig(
     mocked_get_configuration = Mock()
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
-    # skip actual NLU training
-    _train_nlu_with_validated_data = Mock()
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        asyncio.coroutine(_train_nlu_with_validated_data),
+        sys.modules["rasa.train"], "_train_nlu_with_validated_data", AsyncMock()
     )
 
     # do training
@@ -356,6 +351,499 @@ def test_train_nlu_autoconfig(
     mocked_get_configuration.assert_called_once()
     _, args, _ = mocked_get_configuration.mock_calls[0]
     assert args[1] == autoconfig.TrainingType.NLU
+
+
+@pytest.mark.timeout(300)
+@pytest.mark.parametrize("use_latest_model", [True, False])
+def test_model_finetuning(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+    default_nlu_data: Text,
+    trained_rasa_model: Text,
+    use_latest_model: bool,
+):
+    mocked_nlu_training = Mock(wraps=rasa.nlu.train)
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    mocked_core_training = Mock(wraps=rasa.core.train)
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_rasa_model = str(Path(trained_rasa_model).parent)
+
+    train(
+        default_domain_path,
+        default_stack_config,
+        [default_stories_file, default_nlu_data],
+        output=output,
+        force_training=True,
+        model_to_finetune=trained_rasa_model,
+        finetuning_epoch_fraction=0.1,
+    )
+
+    mocked_core_training.assert_called_once()
+    _, kwargs = mocked_core_training.call_args
+    assert isinstance(kwargs["model_to_finetune"], Agent)
+
+    mocked_nlu_training.assert_called_once()
+    _, kwargs = mocked_nlu_training.call_args
+    assert isinstance(kwargs["model_to_finetune"], Interpreter)
+
+
+@pytest.mark.timeout(300)
+@pytest.mark.parametrize("use_latest_model", [True, False])
+def test_model_finetuning_core(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    trained_moodbot_path: Text,
+    use_latest_model: bool,
+):
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+
+    mock_agent_load = Mock(wraps=Agent.load)
+    monkeypatch.setattr(Agent, "load", mock_agent_load)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_moodbot_path = str(Path(trained_moodbot_path).parent)
+
+    # Typically models will be fine-tuned with a smaller number of epochs than training
+    # from scratch.
+    # Fine-tuning will use the number of epochs in the new config.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config["policies"][0]["epochs"] = 10
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+
+    old_stories = rasa.shared.utils.io.read_yaml_file(
+        "examples/moodbot/data/stories.yml"
+    )
+    old_stories["stories"].append(
+        {"story": "new story", "steps": [{"intent": "greet"}]}
+    )
+    new_stories_path = tmp_path / "new_stories.yml"
+    rasa.shared.utils.io.write_yaml(old_stories, new_stories_path)
+
+    train_core(
+        "examples/moodbot/domain.yml",
+        str(new_config_path),
+        str(new_stories_path),
+        output=output,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=0.2,
+    )
+
+    mocked_core_training.assert_called_once()
+    _, kwargs = mocked_core_training.call_args
+    model_to_finetune = kwargs["model_to_finetune"]
+    assert isinstance(model_to_finetune, Agent)
+
+    ted = model_to_finetune.policy_ensemble.policies[0]
+    assert ted.config[EPOCHS] == 2
+    assert ted.finetune_mode
+
+
+def test_model_finetuning_core_with_default_epochs(
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
+):
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    # Providing a new config with no epochs will mean the default amount are used
+    # and then scaled by `finetuning_epoch_fraction`.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    del old_config["policies"][0]["epochs"]
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+
+    train_core(
+        "examples/moodbot/domain.yml",
+        str(new_config_path),
+        "examples/moodbot/data/stories.yml",
+        output=output,
+        model_to_finetune=trained_moodbot_path,
+        finetuning_epoch_fraction=2,
+    )
+
+    mocked_core_training.assert_called_once()
+    _, kwargs = mocked_core_training.call_args
+    model_to_finetune = kwargs["model_to_finetune"]
+
+    ted = model_to_finetune.policy_ensemble.policies[0]
+    assert ted.config[EPOCHS] == TEDPolicy.defaults[EPOCHS] * 2
+
+
+def test_model_finetuning_core_new_domain_label(
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
+):
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    # Simulate addition to training data
+    old_domain = rasa.shared.utils.io.read_yaml_file("examples/moodbot/domain.yml")
+    old_domain["intents"].append("a_new_one")
+    new_domain_path = tmp_path / "new_domain.yml"
+    rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
+
+    with pytest.raises(SystemExit):
+        train_core(
+            domain=str(new_domain_path),
+            config="examples/moodbot/config.yml",
+            stories="examples/moodbot/data/stories.yml",
+            output=output,
+            model_to_finetune=trained_moodbot_path,
+        )
+
+    mocked_core_training.assert_not_called()
+
+
+def test_model_finetuning_new_domain_label_stops_all_training(
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
+):
+    mocked_core_training = AsyncMock()
+    mocked_nlu_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    old_domain = rasa.shared.utils.io.read_yaml_file("examples/moodbot/domain.yml")
+    old_domain["intents"].append("a_new_one")
+    new_domain_path = tmp_path / "new_domain.yml"
+    rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
+
+    with pytest.raises(SystemExit):
+        train(
+            domain=str(new_domain_path),
+            config="examples/moodbot/config.yml",
+            training_files=[
+                "examples/moodbot/data/stories.yml",
+                "examples/moodbot/data/nlu.yml",
+            ],
+            output=output,
+            model_to_finetune=trained_moodbot_path,
+        )
+
+    mocked_core_training.assert_not_called()
+    mocked_nlu_training.assert_not_called()
+
+
+@pytest.mark.timeout(300)
+@pytest.mark.parametrize("use_latest_model", [True, False])
+def test_model_finetuning_nlu(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    trained_nlu_moodbot_path: Text,
+    use_latest_model: bool,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    mock_interpreter_create = Mock(wraps=Interpreter.create)
+    monkeypatch.setattr(Interpreter, "create", mock_interpreter_create)
+
+    mock_DIET_load = Mock(wraps=DIETClassifier.load)
+    monkeypatch.setattr(DIETClassifier, "load", mock_DIET_load)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_nlu_moodbot_path = str(Path(trained_nlu_moodbot_path).parent)
+
+    # Typically models will be fine-tuned with a smaller number of epochs than training
+    # from scratch.
+    # Fine-tuning will use the number of epochs in the new config.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config["pipeline"][-1][EPOCHS] = 10
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+
+    old_nlu = rasa.shared.utils.io.read_yaml_file("examples/moodbot/data/nlu.yml")
+    old_nlu["nlu"][-1]["examples"] = "-something else"
+    new_nlu_path = tmp_path / "new_nlu.yml"
+    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+
+    train_nlu(
+        str(new_config_path),
+        str(new_nlu_path),
+        domain="examples/moodbot/domain.yml",
+        output=output,
+        model_to_finetune=trained_nlu_moodbot_path,
+        finetuning_epoch_fraction=0.2,
+    )
+
+    assert mock_interpreter_create.call_args[1]["should_finetune"]
+
+    mocked_nlu_training.assert_called_once()
+    _, nlu_train_kwargs = mocked_nlu_training.call_args
+    model_to_finetune = nlu_train_kwargs["model_to_finetune"]
+    assert isinstance(model_to_finetune, Interpreter)
+
+    _, diet_kwargs = mock_DIET_load.call_args
+    assert diet_kwargs["should_finetune"] is True
+
+    new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
+    assert new_diet_metadata["name"] == "DIETClassifier"
+    assert new_diet_metadata[EPOCHS] == 2
+
+
+def test_model_finetuning_nlu_new_label(
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    old_nlu = rasa.shared.utils.io.read_yaml_file("examples/moodbot/data/nlu.yml")
+    old_nlu["nlu"].append({"intent": "a_new_one", "examples": "-blah"})
+    new_nlu_path = tmp_path / "new_nlu.yml"
+    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+
+    with pytest.raises(SystemExit):
+        train_nlu(
+            "examples/moodbot/config.yml",
+            str(new_nlu_path),
+            domain="examples/moodbot/domain.yml",
+            output=output,
+            model_to_finetune=trained_nlu_moodbot_path,
+        )
+
+    mocked_nlu_training.assert_not_called()
+
+
+def test_model_finetuning_nlu_new_entity(
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    old_nlu = rasa.shared.utils.io.read_yaml_file("examples/moodbot/data/nlu.yml")
+    old_nlu["nlu"][-1]["examples"] = "-[blah](something)"
+    new_nlu_path = tmp_path / "new_nlu.yml"
+    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+
+    with pytest.raises(SystemExit):
+        train_nlu(
+            "examples/moodbot/config.yml",
+            str(new_nlu_path),
+            domain="examples/moodbot/domain.yml",
+            output=output,
+            model_to_finetune=trained_nlu_moodbot_path,
+        )
+
+    mocked_nlu_training.assert_not_called()
+
+
+def test_model_finetuning_nlu_new_label_already_in_domain(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    trained_rasa_model: Text,
+    default_nlu_data: Text,
+    default_config_path: Text,
+    default_domain_path: Text,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    old_nlu = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
+    # This intent exists in `default_domain_path` but not yet in the nlu data
+    old_nlu["nlu"].append({"intent": "why", "examples": "whyy??"})
+    new_nlu_path = tmp_path / "new_nlu.yml"
+    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+
+    with pytest.raises(SystemExit):
+        train_nlu(
+            default_config_path,
+            str(new_nlu_path),
+            domain=default_domain_path,
+            output=output,
+            model_to_finetune=trained_rasa_model,
+        )
+
+    mocked_nlu_training.assert_not_called()
+
+
+def test_model_finetuning_nlu_new_label_to_domain_only(
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    old_domain = rasa.shared.utils.io.read_yaml_file("examples/moodbot/domain.yml")
+    old_domain["intents"].append("a_new_one")
+    new_domain_path = tmp_path / "new_domain.yml"
+    rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
+
+    train_nlu(
+        "examples/moodbot/config.yml",
+        "examples/moodbot/data/nlu.yml",
+        domain=str(new_domain_path),
+        output=output,
+        model_to_finetune=trained_nlu_moodbot_path,
+    )
+
+    mocked_nlu_training.assert_called()
+
+
+@pytest.mark.timeout(200)
+def test_model_finetuning_nlu_with_default_epochs(
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    # Providing a new config with no epochs will mean the default amount are used
+    # and then scaled by `finetuning_epoch_fraction`.
+    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    del old_config["pipeline"][-1][EPOCHS]
+    new_config_path = tmp_path / "new_config.yml"
+    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+
+    train_nlu(
+        str(new_config_path),
+        "examples/moodbot/data/nlu.yml",
+        output=output,
+        model_to_finetune=trained_nlu_moodbot_path,
+        finetuning_epoch_fraction=0.1,
+    )
+
+    mocked_nlu_training.assert_called_once()
+    _, nlu_train_kwargs = mocked_nlu_training.call_args
+    model_to_finetune = nlu_train_kwargs["model_to_finetune"]
+    new_diet_metadata = model_to_finetune.model_metadata.metadata["pipeline"][-1]
+    assert new_diet_metadata["name"] == "DIETClassifier"
+    assert new_diet_metadata[EPOCHS] == DIETClassifier.defaults[EPOCHS] * 0.1
+
+
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
+def test_model_finetuning_with_invalid_model(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+    default_nlu_data: Text,
+    model_to_fine_tune: Text,
+    capsys: CaptureFixture,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    with pytest.raises(SystemExit):
+        train(
+            default_domain_path,
+            default_stack_config,
+            [default_stories_file, default_nlu_data],
+            output=output,
+            force_training=True,
+            model_to_finetune=model_to_fine_tune,
+            finetuning_epoch_fraction=1,
+        )
+
+    mocked_core_training.assert_not_called()
+    mocked_nlu_training.assert_not_called()
+
+    output = capsys.readouterr().out
+    assert "No NLU model for finetuning found" in output
+
+
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
+def test_model_finetuning_with_invalid_model_core(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+    model_to_fine_tune: Text,
+    capsys: CaptureFixture,
+):
+    mocked_core_training = AsyncMock()
+    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    with pytest.raises(SystemExit):
+        train_core(
+            default_domain_path,
+            default_stack_config,
+            default_stories_file,
+            output=output,
+            model_to_finetune=model_to_fine_tune,
+            finetuning_epoch_fraction=1,
+        )
+
+    mocked_core_training.assert_not_called()
+
+    assert "No Core model for finetuning found" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
+def test_model_finetuning_with_invalid_model_nlu(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stack_config: Text,
+    default_nlu_data: Text,
+    model_to_fine_tune: Text,
+    capsys: CaptureFixture,
+):
+    mocked_nlu_training = AsyncMock(return_value="")
+    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    with pytest.raises(SystemExit):
+        train_nlu(
+            default_stack_config,
+            default_nlu_data,
+            domain=default_domain_path,
+            output=output,
+            model_to_finetune=model_to_fine_tune,
+            finetuning_epoch_fraction=1,
+        )
+
+    mocked_nlu_training.assert_not_called()
+
+    assert "No NLU model for finetuning found" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(

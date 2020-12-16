@@ -308,9 +308,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
+        finetune_mode: bool = False,
     ) -> None:
         """Declare instance variables with default values."""
-
         if component_config is not None and EPOCHS not in component_config:
             rasa.shared.utils.io.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
@@ -332,6 +332,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
         self.split_entities_config = self.init_split_entities()
+
+        self.finetune_mode = finetune_mode
+
+        if not self.model and self.finetune_mode:
+            raise rasa.shared.exceptions.InvalidParameterException(
+                f"{self.__class__.__name__} was instantiated "
+                f"with `model=None` and `finetune_mode=True`. "
+                f"This is not a valid combination as the component "
+                f"needs an already instantiated and trained model "
+                f"to continue training in finetune mode."
+            )
 
     @property
     def label_key(self) -> Optional[Text]:
@@ -766,7 +777,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        self.model = self._instantiate_model_class(model_data)
+        if not self.finetune_mode:
+            # No pre-trained model to load from. Create a new instance of the model.
+            self.model = self._instantiate_model_class(model_data)
 
         self.model.fit(
             model_data,
@@ -956,10 +969,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
-
         if not model_dir or not meta.get("file"):
             logger.debug(
                 f"Failed to load model for '{cls.__name__}'. "
@@ -979,7 +992,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta = train_utils.update_similarity_type(meta)
 
         model = cls._load_model(
-            entity_tag_specs, label_data, meta, data_example, model_dir
+            entity_tag_specs,
+            label_data,
+            meta,
+            data_example,
+            model_dir,
+            finetune_mode=should_finetune,
         )
 
         return cls(
@@ -987,6 +1005,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             index_label_id_mapping=index_label_id_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
+            finetune_mode=should_finetune,
         )
 
     @classmethod
@@ -1039,6 +1058,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta: Dict[Text, Any],
         data_example: Dict[Text, Dict[Text, List[np.ndarray]]],
         model_dir: Text,
+        finetune_mode: bool = False,
     ) -> "RasaModel":
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
@@ -1051,20 +1071,27 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         model = cls._load_model_class(
-            tf_model_file, model_data_example, label_data, entity_tag_specs, meta
+            tf_model_file,
+            model_data_example,
+            label_data,
+            entity_tag_specs,
+            meta,
+            finetune_mode=finetune_mode,
         )
 
-        # build the graph for prediction
-        predict_data_example = RasaModelData(
-            label_key=label_key,
-            data={
-                feature_name: features
-                for feature_name, features in model_data_example.items()
-                if TEXT in feature_name
-            },
-        )
+        if not finetune_mode:
 
-        model.build_for_predict(predict_data_example)
+            # build the graph for prediction
+            predict_data_example = RasaModelData(
+                label_key=label_key,
+                data={
+                    feature_name: features
+                    for feature_name, features in model_data_example.items()
+                    if TEXT in feature_name
+                },
+            )
+
+            model.build_for_predict(predict_data_example)
 
         return model
 
@@ -1076,6 +1103,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data: RasaModelData,
         entity_tag_specs: List[EntityTagSpec],
         meta: Dict[Text, Any],
+        finetune_mode: bool,
     ) -> "RasaModel":
 
         return cls.model_class().load(
@@ -1085,6 +1113,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             config=copy.deepcopy(meta),
+            finetune_mode=finetune_mode,
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
