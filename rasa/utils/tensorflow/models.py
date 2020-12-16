@@ -858,14 +858,12 @@ class TransformerRasaModel(RasaModel):
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
 
-        if isinstance(self.config[TRANSFORMER_SIZE], int):
-            size = self.config[TRANSFORMER_SIZE]
-        else:
+        size = self.config[TRANSFORMER_SIZE]
+        if isinstance(self.config[TRANSFORMER_SIZE], list):
             size = self.config[TRANSFORMER_SIZE][name]
 
-        if isinstance(self.config[NUM_TRANSFORMER_LAYERS], int):
-            num_layers = self.config[NUM_TRANSFORMER_LAYERS]
-        else:
+        num_layers = self.config[NUM_TRANSFORMER_LAYERS]
+        if isinstance(self.config[NUM_TRANSFORMER_LAYERS], list):
             num_layers = self.config[NUM_TRANSFORMER_LAYERS][name]
 
         self._prepare_transformer_layer(
