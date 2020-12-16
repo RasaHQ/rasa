@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import textwrap
 import time
 from pathlib import Path
 import tempfile
@@ -1304,3 +1305,78 @@ def test_policy_prediction_reflected_in_tracker_state():
 
     # Make sure we didn't change the actual event
     assert tracker.latest_message.parse_data["entities"] == nlu_entities
+
+
+def test_autofill_slots_for_policy_entities():
+    policy_entity, policy_entity_value = "policy_entity", "end-to-end"
+    nlu_entity, nlu_entity_value = "nlu_entity", "nlu rocks"
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    entities:
+    - {nlu_entity}
+    - {policy_entity}
+
+    slots:
+        {nlu_entity}:
+            type: text
+        {policy_entity}:
+            type: text
+    """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "some sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "hi",
+                intent={"name": "greet"},
+                entities=[{"entity": nlu_entity, "value": nlu_entity_value}],
+            ),
+            DefinePrevUserUtteredFeaturization(True),
+            DefinePrevUserUtteredEntities(
+                entities=[
+                    {"entity": policy_entity, "value": policy_entity_value},
+                    {"entity": nlu_entity, "value": nlu_entity_value},
+                ]
+            ),
+        ],
+        domain=domain,
+        slots=domain.slots,
+    )
+
+    # Slots are correctly set
+    assert tracker.slots[nlu_entity].value == nlu_entity_value
+    assert tracker.slots[policy_entity].value == policy_entity_value
+
+    expected_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "hi",
+            intent={"name": "greet"},
+            entities=[
+                {"entity": nlu_entity, "value": nlu_entity_value},
+                # Added by `DefinePrevUserUtteredEntities`
+                {"entity": policy_entity, "value": policy_entity_value},
+            ],
+        ),
+        # SlotSet event added for entity predicted by NLU
+        SlotSet(nlu_entity, nlu_entity_value),
+        DefinePrevUserUtteredFeaturization(True),
+        DefinePrevUserUtteredEntities(
+            entities=[
+                {"entity": policy_entity, "value": policy_entity_value},
+                {"entity": nlu_entity, "value": nlu_entity_value},
+            ]
+        ),
+        # SlotSet event added for entity predicted by policies
+        # This event is somewhat duplicate. We don't deduplicate as this is a true
+        # reflection of the given events and it doesn't change the actual state.
+        SlotSet(nlu_entity, nlu_entity_value),
+        SlotSet(policy_entity, policy_entity_value),
+    ]
+
+    for actual, expected in zip(tracker.events, expected_events):
+        assert actual == expected

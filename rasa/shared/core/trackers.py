@@ -58,6 +58,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     DefinePrevUserUttered,
+    DefinePrevUserUtteredEntities,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -136,11 +137,26 @@ class DialogueStateTracker:
         slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
-    ):
+        domain: Optional[Domain] = None,
+    ) -> "DialogueStateTracker":
+        """Creates tracker from existing events.
+
+        Args:
+            sender_id: The ID of the conversation.
+            evts: Existing events which should be applied to the new tracker.
+            slots: Slots which can be set.
+            max_event_history: Maximum number of events which should be stored.
+            sender_source: File source of the messages.
+            domain: The current model domain.
+
+        Returns:
+            Instantiated tracker with its state updated according to the given
+            events.
+        """
         tracker = cls(sender_id, slots, max_event_history, sender_source)
 
         for e in evts:
-            tracker.update(e)
+            tracker.update(e, domain)
 
         return tracker
 
@@ -607,9 +623,15 @@ class DialogueStateTracker:
         self.events.append(event)
         event.apply_to(self)
 
-        if domain and isinstance(event, UserUttered):
-            # store all entities as slots
-            for e in domain.slots_for_entities(event.parse_data["entities"]):
+        if domain and isinstance(event, (UserUttered, DefinePrevUserUtteredEntities)):
+            entities = event.entities
+            if isinstance(event, UserUttered):
+                # Rather get entities from `parse_data` as
+                # `DefinePrevUserUtteredEntities` might have already affected the
+                # `UserUttered.entities` attribute
+                entities = event.parse_data["entities"]
+
+            for e in domain.slots_for_entities(entities):
                 self.update(e)
 
     def update_with_events(
