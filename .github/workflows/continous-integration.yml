@@ -81,7 +81,7 @@ jobs:
 
     - name: Load Poetry Cached Libraries ⬇
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: ~/.cache/pypoetry/virtualenvs
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}
@@ -89,7 +89,7 @@ jobs:
 
     - name: Load Yarn Cached Packages ⬇
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: docs/node_modules
         key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
@@ -142,7 +142,7 @@ jobs:
 
     - name: Load Poetry Cached Libraries ⬇
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: ~/.cache/pypoetry/virtualenvs
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}
@@ -206,7 +206,7 @@ jobs:
     - name: Read Poetry Version 🔢
       if: needs.changes.outputs.backend == 'true'
       run: |
-        echo "POETRY_VERSION=1.1.4" >> $GITHUB_ENV
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -215,29 +215,34 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      # Poetry on Windows cannot pick up the virtual environments directory properly,
-      # and it creates a new one every time the pipeline runs.
-      # We want to  allow Poetry to create a venv directory if it doesn't
-      # exist, but also pick it up if it's already there.
-      # This step solves this problem — it tells poetry to always use `.venv` directory inside
-      # the project itself, which also makes it easier for us to determine the correct directory
-      # that needs to be cached.
-      run: |
-        poetry config virtualenvs.in-project true
-
     - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv
 
+      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+      # The virtualenv simply doesn't work on Windows with our setup,
+      # that's why we use venv to create virtual environment
+    - name: Create virtual environment
+      if: steps.cache-poetry.outputs.cache-hit != 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      # Poetry on Windows cannot pick up the virtual environments directory properly,
+      # and it creates a new one every time the pipeline runs.
+      # This step solves this problem — it tells poetry to always use `.venv` directory inside
+      # the project itself, which also makes it easier for us to determine the correct directory
+      # that needs to be cached.
+      run: poetry config virtualenvs.in-project true
+
+
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
       run: |
-        exit 0
         sudo apt-get -y install libpq-dev
         make install-full | tee .output
         if grep 'The lock file is not up to date' .output; then exit 1; fi
@@ -256,14 +261,6 @@ jobs:
           Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $spacy_data_dir -Type Directory
         }
-        if (-Not (Test-Path ".venv")) {
-          python -m venv create .venv
-        }
-
-        poetry run python --version
-        cat .venv/pyvenv.cfg
-
-
         make install-full
         make prepare-tests-windows
 
@@ -273,17 +270,14 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        exit 0
-        #make test
+        make test
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
-      run: |
-        exit 0
-        poetry run coveralls
+      run: poetry run coveralls
 
   docker:
     name: Build Docker
