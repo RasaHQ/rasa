@@ -824,9 +824,12 @@ class DotProductLoss(tf.keras.layers.Layer):
             inputs_embed, labels, labels
         )
         # sample negative labels
-        neg_labels_embed, labels_bad_negs = self._get_negs(
-            all_labels_embed, all_labels, labels
+        neg_labels_embed, labels_bad_negs = self._get_input_negs(
+            labels_embed, labels, labels
         )
+        # neg_labels_embed, labels_bad_negs = self._get_negs(
+        #     all_labels_embed, all_labels, labels
+        # )
         return (
             pos_inputs_embed,
             pos_labels_embed,
