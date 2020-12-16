@@ -193,7 +193,7 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
     ]
 
 
-class Event:
+class Event(ABC):
     """Describes events in conversation and how the affect the conversation state.
 
     Immutable representation of everything which happened during a conversation of the
