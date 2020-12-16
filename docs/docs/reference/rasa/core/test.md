@@ -54,6 +54,16 @@ The model predicted the wrong action.
 Mostly used to mark wrong predictions and be able to
 dump them as stories.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(action_name_target: Text, action_text_target: Text, action_name_prediction: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None) -> None
+```
+
+Creates event for a successful event execution.
+
+See the docstring of the parent class `ActionExecuted` for more information.
+
 #### inline\_comment
 
 ```python
@@ -91,6 +101,14 @@ dump them as stories.
 ```
 
 A comment attached to this event. Used during dumping.
+
+#### as\_story\_string
+
+```python
+ | as_story_string(e2e: bool = True) -> Text
+```
+
+Returns text representation of event.
 
 #### emulate\_loop\_rejection
 

@@ -10,6 +10,7 @@ normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray
 ```
 
 Normalizes an array of positive numbers over the top `ranking_length` values.
+
 Other values will be set to 0.
 
 #### update\_similarity\_type
@@ -30,7 +31,7 @@ on the LOSS_TYPE.
 #### align\_token\_features
 
 ```python
-align_token_features(list_of_tokens: List[List[Token]], in_token_features: np.ndarray, shape: Optional[Tuple] = None) -> np.ndarray
+align_token_features(list_of_tokens: List[List["Token"]], in_token_features: np.ndarray, shape: Optional[Tuple] = None) -> np.ndarray
 ```
 
 Align token features to match tokens.
@@ -77,6 +78,8 @@ Load model from cache if possible, otherwise from TFHub
 check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
+Update the config according to changed config params.
+
 If old model configuration parameters are present in the provided config, replace
 them with the new parameters and log a warning.
 
@@ -85,4 +88,63 @@ them with the new parameters and log a warning.
 - `config` - model configuration
   
 - `Returns` - updated model configuration
+
+#### check\_core\_deprecated\_options
+
+```python
+check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Update the core config according to changed config params.
+
+If old model configuration parameters are present in the provided config, replace
+them with the new parameters and log a warning.
+
+**Arguments**:
+
+- `config` - model configuration
+  
+- `Returns` - updated model configuration
+
+#### entity\_label\_to\_tags
+
+```python
+entity_label_to_tags(model_predictions: Dict[Text, Any], entity_tag_specs: List["EntityTagSpec"], bilou_flag: bool = False, prediction_index: int = 0) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]
+```
+
+Convert the output predictions for entities to the actual entity tags.
+
+**Arguments**:
+
+- `model_predictions` - the output predictions using the entity tag indices
+- `entity_tag_specs` - the entity tag specifications
+- `bilou_flag` - if &#x27;True&#x27;, the BILOU tagging schema was used
+- `prediction_index` - the index in the batch of predictions
+  to use for entity extraction
+  
+
+**Returns**:
+
+  A map of entity tag type, e.g. entity, role, group, to actual entity tags and
+  confidences.
+
+#### override\_defaults
+
+```python
+override_defaults(defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]) -> Dict[Text, Any]
+```
+
+Override default config with the given config.
+
+We cannot use `dict.update` method because configs contain nested dicts.
+
+**Arguments**:
+
+- `defaults` - default config
+- `custom` - user config containing new parameters
+  
+
+**Returns**:
+
+  updated config
 

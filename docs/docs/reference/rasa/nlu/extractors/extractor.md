@@ -41,6 +41,7 @@ self.name (e.g. &#x27;CRFEntityExtractor&#x27;) are removed.
 #### convert\_predictions\_into\_entities
 
 ```python
+ | @staticmethod
  | convert_predictions_into_entities(text: Text, tokens: List[Token], tags: Dict[Text, List[Text]], split_entities_config: Dict[Text, bool] = None, confidences: Optional[Dict[Text, List[float]]] = None) -> List[Dict[Text, Any]]
 ```
 

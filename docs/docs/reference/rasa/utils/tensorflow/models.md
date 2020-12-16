@@ -25,13 +25,59 @@ Initialize the RasaModel.
 
 - `random_seed` - set the random seed to get reproducible results
 
+#### batch\_loss
+
+```python
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+```
+
+Calculates the loss for the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The loss of the given batch.
+
+#### prepare\_for\_predict
+
+```python
+ | prepare_for_predict() -> None
+```
+
+Prepares tf graph fpr prediction.
+
+This method should contain necessary tf calculations
+and set self variables that are used in `batch_predict`.
+For example, pre calculation of `self.all_labels_embed`.
+
+#### batch\_predict
+
+```python
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+```
+
+Predicts the output of the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The output to predict.
+
 #### fit
 
 ```python
  | fit(model_data: RasaModelData, epochs: int, batch_size: Union[List[int], int], evaluate_on_num_examples: int, evaluate_every_num_epochs: int, batch_strategy: Text, silent: bool = False, loading: bool = False, eager: bool = False) -> None
 ```
 
-Fit model data
+Fit model data.
 
 #### train\_on\_batch
 
@@ -39,7 +85,7 @@ Fit model data
  | train_on_batch(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> None
 ```
 
-Train on batch
+Train on batch.
 
 #### load
 
@@ -87,4 +133,44 @@ is kept.
 Linearly increase batch size with every epoch.
 
 The idea comes from https://arxiv.org/abs/1711.00489.
+
+## TransformerRasaModel Objects
+
+```python
+class TransformerRasaModel(RasaModel)
+```
+
+#### batch\_loss
+
+```python
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+```
+
+Calculates the loss for the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The loss of the given batch.
+
+#### batch\_predict
+
+```python
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+```
+
+Predicts the output of the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The output to predict.
 

@@ -34,28 +34,6 @@ Get an action based on its index in the list of available actions.
   The instantiated `Action` or `None` if no `Action` was found for the given
   index.
 
-#### action\_for\_name
-
-```python
-action_for_name(action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
-```
-
-Create an `Action` object based on the name of the `Action`.
-
-**Arguments**:
-
-- `action_name` - The name of the `Action`.
-- `domain` - The `Domain` of the current model. The domain contains the actions
-  provided by the user + the default actions.
-- `action_endpoint` - Can be used to run `custom_actions`
-  (e.g. using the `rasa-sdk`).
-  
-
-**Returns**:
-
-  The instantiated `Action` or `None` if no `Action` was found for the given
-  index.
-
 #### is\_retrieval\_action
 
 ```python
@@ -78,19 +56,24 @@ the corresponding retrieval intent name.
   `True` if the resolved intent name is present in the list of retrieval
   intents, `False` otherwise.
 
-#### action\_from\_name
+#### action\_for\_name\_or\_text
 
 ```python
-action_from_name(name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
+action_for_name_or_text(action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
 ```
 
-Retrieves an action by its name.
+Retrieves an action by its name or by its text in case it&#x27;s an end-to-end action.
 
 **Arguments**:
 
-- `name` - The name of the action.
+- `action_name_or_text` - The name of the action.
 - `domain` - The current model domain.
 - `action_endpoint` - The endpoint to execute custom actions.
+  
+
+**Raises**:
+
+- `ActionNotFoundException` - If action not in current domain.
   
 
 **Returns**:
@@ -145,6 +128,31 @@ Execute the side effects of this action.
 
 - `List[Event]` - A list of :class:`rasa.core.events.Event` instances
 
+#### \_\_str\_\_
+
+```python
+ | __str__() -> Text
+```
+
+Returns text representation of form.
+
+#### event\_for\_successful\_execution
+
+```python
+ | event_for_successful_execution(prediction: PolicyPrediction) -> ActionExecuted
+```
+
+Event which should be logged for the successful execution of this action.
+
+**Arguments**:
+
+- `prediction` - Prediction which led to the execution of this event.
+  
+
+**Returns**:
+
+  Event which should be logged onto the tracker.
+
 ## ActionUtterTemplate Objects
 
 ```python
@@ -156,6 +164,20 @@ An action which only effect is to utter a template when it is run.
 Both, name and utter template, need to be specified using
 the `name` method.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, silent_fail: Optional[bool] = False) -> None
+```
+
+Creates action.
+
+**Arguments**:
+
+- `name` - Name of the action.
+- `silent_fail` - `True` if the action should fail silently in case no response
+  was defined for this action.
+
 #### run
 
 ```python
@@ -164,6 +186,67 @@ the `name` method.
 
 Simple run implementation uttering a (hopefully defined) template.
 
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action name.
+
+## ActionEndToEndResponse Objects
+
+```python
+class ActionEndToEndResponse(Action)
+```
+
+Action to utter end-to-end responses to the user.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(action_text: Text) -> None
+```
+
+Creates action.
+
+**Arguments**:
+
+- `action_text` - Text of end-to-end bot response.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action name.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action (see parent class for full docstring).
+
+#### event\_for\_successful\_execution
+
+```python
+ | event_for_successful_execution(prediction: PolicyPrediction) -> ActionExecuted
+```
+
+Event which should be logged for the successful execution of this action.
+
+**Arguments**:
+
+- `prediction` - Prediction which led to the execution of this event.
+  
+
+**Returns**:
+
+  Event which should be logged onto the tracker.
+
 ## ActionRetrieveResponse Objects
 
 ```python
@@ -171,6 +254,14 @@ class ActionRetrieveResponse(ActionUtterTemplate)
 ```
 
 An action which queries the Response Selector for the appropriate response.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, silent_fail: Optional[bool] = False) -> None
+```
+
+Creates action. See docstring of parent class.
 
 #### intent\_name\_from\_action
 
@@ -197,6 +288,14 @@ Resolve the action name from the name of the intent.
 ```
 
 Query the appropriate response and create a bot utterance with that.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action name.
 
 ## ActionBack Objects
 

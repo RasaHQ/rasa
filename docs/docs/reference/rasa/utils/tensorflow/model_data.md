@@ -3,13 +3,140 @@ sidebar_label: model_data
 title: rasa.utils.tensorflow.model_data
 ---
 
+## FeatureArray Objects
+
+```python
+class FeatureArray(np.ndarray)
+```
+
+Stores any kind of features ready to be used by a RasaModel.
+
+Next to the input numpy array of features, it also received the number of dimensions of the features.
+As our features can have 1 to 4 dimensions we might have different number of numpy arrays stacked.
+The number of dimensions helps us to figure out how to handle this particular feature array.
+Also, it is automatically determined whether the feature array is sparse or not and the number of units
+is determined as well.
+
+Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
+
+#### \_\_new\_\_
+
+```python
+ | __new__(cls, input_array: np.ndarray, number_of_dimensions: int) -> "FeatureArray"
+```
+
+Create and return a new object.  See help(type) for accurate signature.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(input_array: Any, number_of_dimensions: int, **kwargs)
+```
+
+Initialize. FeatureArray.
+
+Needed in order to avoid &#x27;Invalid keyword argument number_of_dimensions
+to function FeatureArray.__init__ &#x27;
+
+**Arguments**:
+
+- `input_array` - the array that contains features
+- `number_of_dimensions` - number of dimensions in input_array
+
+#### \_\_array\_finalize\_\_
+
+```python
+ | __array_finalize__(obj: Any) -> None
+```
+
+This method is called whenever the system internally allocates a new array from obj.
+
+**Arguments**:
+
+- `obj` - A subclass (subtype) of ndarray.
+
+#### \_\_array\_ufunc\_\_
+
+```python
+ | __array_ufunc__(ufunc: Any, method: Text, *inputs, **kwargs) -> Any
+```
+
+Overwrite this method as we are subclassing numpy array.
+
+**Arguments**:
+
+- `ufunc` - The ufunc object that was called.
+- `method` - A string indicating which Ufunc method was called
+  (one of &quot;__call__&quot;, &quot;reduce&quot;, &quot;reduceat&quot;, &quot;accumulate&quot;, &quot;outer&quot;,
+  &quot;inner&quot;).
+- `*inputs` - A tuple of the input arguments to the ufunc.
+- `**kwargs` - Any additional arguments
+  
+
+**Returns**:
+
+  The result of the operation.
+
+#### \_\_reduce\_\_
+
+```python
+ | __reduce__() -> Tuple[Any, Any, Any]
+```
+
+Needed in order to pickle this object.
+
+**Returns**:
+
+  A tuple.
+
+#### \_\_setstate\_\_
+
+```python
+ | __setstate__(state, **kwargs) -> None
+```
+
+Sets the state.
+
+**Arguments**:
+
+- `state` - The state argument must be a sequence that contains the following
+  elements version, shape, dtype, isFortan, rawdata.
+- `**kwargs` - Any additional parameter
+
+#### get\_shape\_type\_info
+
+```python
+ | get_shape_type_info() -> Tuple[
+ |         List[
+ |             Union[
+ |                 int,
+ |                 Tuple[None],
+ |                 Tuple[None, int],
+ |                 Tuple[None, None, int],
+ |                 Tuple[None, None, None, int],
+ |             ]
+ |         ],
+ |         List[int],
+ |     ]
+```
+
+Returns shapes and types needed to convert this feature array into tensors.
+
+**Returns**:
+
+  A list of shape tuples.
+  A list of type tuples.
+
 ## FeatureSignature Objects
 
 ```python
 class FeatureSignature(NamedTuple)
 ```
 
-Stores the shape and the type (sparse vs dense) of features.
+Signature of feature arrays.
+
+Stores the number of units, the type (sparse vs dense), and the number of
+dimensions of features.
 
 ## RasaModelData Objects
 
@@ -20,6 +147,12 @@ class RasaModelData()
 Data object used for all RasaModels.
 
 It contains all features needed to train the models.
+&#x27;data&#x27; is a mapping of attribute name, e.g. TEXT, INTENT, etc., and feature name,
+e.g. SENTENCE, SEQUENCE, etc., to a list of feature arrays representing the actual
+features.
+&#x27;label_key&#x27; and &#x27;label_sub_key&#x27; point to the labels inside &#x27;data&#x27;. For
+example, if your intent labels are stored under INTENT -&gt; IDS, &#x27;label_key&#x27; would
+be &quot;INTENT&quot; and &#x27;label_sub_key&#x27; would be &quot;IDS&quot;.
 
 #### \_\_init\_\_
 
@@ -38,7 +171,7 @@ Initializes the RasaModelData object.
 #### get
 
 ```python
- | get(key: Text, sub_key: Optional[Text] = None) -> Union[Dict[Text, List[np.ndarray]], List[np.ndarray]]
+ | get(key: Text, sub_key: Optional[Text] = None) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]
 ```
 
 Get the data under the given keys.
@@ -68,7 +201,7 @@ Return the items of the data attribute.
 #### values
 
 ```python
- | values() -> ValuesView[Dict[Text, List[np.ndarray]]]
+ | values() -> Any
 ```
 
 Return the values of the data attribute.
@@ -94,6 +227,14 @@ Return the keys of the data attribute.
 
   The keys of the data.
 
+#### sort
+
+```python
+ | sort()
+```
+
+Sorts data according to its keys.
+
 #### first\_data\_example
 
 ```python
@@ -105,6 +246,24 @@ Return the data with just one feature example per key, sub-key.
 **Returns**:
 
   The simplified data.
+
+#### does\_feature\_exist
+
+```python
+ | does_feature_exist(key: Text, sub_key: Optional[Text] = None) -> bool
+```
+
+Check if feature key (and sub-key) is present and features are available.
+
+**Arguments**:
+
+- `key` - The key.
+- `sub_key` - The optional sub-key.
+  
+
+**Returns**:
+
+  False, if no features for the given keys exists, True otherwise.
 
 #### does\_feature\_not\_exist
 
@@ -151,13 +310,13 @@ Obtain number of examples in data.
 
   The number of examples in data.
 
-#### feature\_dimension
+#### number\_of\_units
 
 ```python
- | feature_dimension(key: Text, sub_key: Text) -> int
+ | number_of_units(key: Text, sub_key: Text) -> int
 ```
 
-Get the feature dimension of the given key.
+Get the number of units of the given key.
 
 **Arguments**:
 
@@ -167,7 +326,7 @@ Get the feature dimension of the given key.
 
 **Returns**:
 
-  The feature dimension.
+  The number of units.
 
 #### add\_data
 
@@ -182,10 +341,25 @@ Add incoming data to data.
 - `data` - The data to add.
 - `key_prefix` - Optional key prefix to use in front of the key value.
 
+#### update\_key
+
+```python
+ | update_key(from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text) -> None
+```
+
+Copies the features under the given keys to the new keys and deletes the old keys.
+
+**Arguments**:
+
+- `from_key` - current feature key
+- `from_sub_key` - current feature sub-key
+- `to_key` - new key for feature
+- `to_sub_key` - new sub-key for feature
+
 #### add\_features
 
 ```python
- | add_features(key: Text, sub_key: Text, features: Optional[List[np.ndarray]]) -> None
+ | add_features(key: Text, sub_key: Text, features: Optional[List[FeatureArray]]) -> None
 ```
 
 Add list of features to data under specified key.
@@ -204,7 +378,7 @@ Should update number of examples.
  | add_lengths(key: Text, sub_key: Text, from_key: Text, from_sub_key: Text) -> None
 ```
 
-Adds np.array of lengths of sequences to data under given key.
+Adds a feature array of lengths of sequences to data under given key.
 
 **Arguments**:
 
@@ -234,7 +408,7 @@ Create random hold out test set using stratified split.
 #### get\_signature
 
 ```python
- | get_signature() -> Dict[Text, Dict[Text, List[FeatureSignature]]]
+ | get_signature(data: Optional[Data] = None) -> Dict[Text, Dict[Text, List[FeatureSignature]]]
 ```
 
 Get signature of RasaModelData.

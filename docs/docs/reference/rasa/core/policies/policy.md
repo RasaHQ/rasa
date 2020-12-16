@@ -72,7 +72,11 @@ Returns the policy&#x27;s featurizer.
 #### featurize\_for\_training
 
 ```python
- | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]
+ | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[
+ |         List[List[Dict[Text, List["Features"]]]],
+ |         np.ndarray,
+ |         List[List[Dict[Text, List["Features"]]]],
+ |     ]
 ```
 
 Transform training trackers into a vector representation.
@@ -95,6 +99,9 @@ into a float vector which can be used by a ML model.
   all training trackers
   - the label ids (e.g. action ids) for every dialogue turn in all training
   trackers
+  - A dictionary of entity type (ENTITY_TAGS) to a list of features
+  containing entity tag ids for text user inputs otherwise empty dict
+  for all dialogue turns in all training trackers
 
 #### train
 

@@ -48,7 +48,7 @@ Calculate a string fingerprint for the message.
  | build(cls, text: Text, intent: Optional[Text] = None, entities: Optional[List[Dict[Text, Any]]] = None, intent_metadata: Optional[Any] = None, example_metadata: Optional[Any] = None, **kwargs: Any, ,) -> "Message"
 ```
 
-Build a Message from `UserUttered` data.
+Builds a Message from `UserUttered` data.
 
 **Arguments**:
 
@@ -57,6 +57,7 @@ Build a Message from `UserUttered` data.
 - `entities` - entities in the user&#x27;s utterance
 - `intent_metadata` - optional metadata for the intent
 - `example_metadata` - optional metadata for the intent example
+  
 
 **Returns**:
 
@@ -84,14 +85,15 @@ Get intent as it appears in training data
  | get_sparse_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
 ```
 
-Get all sparse features for the given attribute that are coming from the
-given list of featurizers.
+Gets all sparse features for the attribute given the list of featurizers.
+
 If no featurizers are provided, all available features will be considered.
 
 **Arguments**:
 
 - `attribute` - message attribute
 - `featurizers` - names of featurizers to consider
+  
 
 **Returns**:
 
@@ -103,18 +105,39 @@ If no featurizers are provided, all available features will be considered.
  | get_dense_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
 ```
 
-Get all dense features for the given attribute that are coming from the given
-list of featurizers.
+Gets all dense features for the attribute given the list of featurizers.
+
 If no featurizers are provided, all available features will be considered.
 
 **Arguments**:
 
 - `attribute` - message attribute
 - `featurizers` - names of featurizers to consider
+  
 
 **Returns**:
 
   Dense features.
+
+#### get\_all\_features
+
+```python
+ | get_all_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> List["Features"]
+```
+
+Gets all features for the attribute given the list of featurizers.
+
+If no featurizers are provided, all available features will be considered.
+
+**Arguments**:
+
+- `attribute` - message attribute
+- `featurizers` - names of featurizers to consider
+  
+
+**Returns**:
+
+  Features.
 
 #### features\_present
 
@@ -122,30 +145,44 @@ If no featurizers are provided, all available features will be considered.
  | features_present(attribute: Text, featurizers: Optional[List[Text]] = None) -> bool
 ```
 
-Check if there are any features present for the given attribute and
-featurizers.
+Checks if there are any features present for the attribute and featurizers.
+
 If no featurizers are provided, all available features will be considered.
 
 **Arguments**:
 
-- `attribute` - message attribute
-- `featurizers` - names of featurizers to consider
+- `attribute` - Message attribute.
+- `featurizers` - Names of featurizers to consider.
+  
 
 **Returns**:
 
-  ``True``, if features are present, ``False`` otherwise
+  ``True``, if features are present, ``False`` otherwise.
 
-#### is\_core\_message
+#### is\_core\_or\_domain\_message
 
 ```python
- | is_core_message() -> bool
+ | is_core_or_domain_message() -> bool
 ```
 
-Checks whether the message is a core message or not.
+Checks whether the message is a core message or from the domain.
 
-E.g. a core message is created from a story, not from the NLU data.
+E.g. a core message is created from a story or a domain action,
+not from the NLU data.
 
 **Returns**:
 
-  True, if message is a core message, false otherwise.
+  True, if message is a core or domain message, false otherwise.
+
+#### is\_e2e\_message
+
+```python
+ | is_e2e_message() -> bool
+```
+
+Checks whether the message came from an e2e story.
+
+**Returns**:
+
+  `True`, if message is a from an e2e story, `False` otherwise.
 

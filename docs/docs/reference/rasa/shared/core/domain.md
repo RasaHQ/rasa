@@ -101,6 +101,29 @@ Get intent properties for a domain from what is provided by a domain file.
 
   The intent properties to be stored in the domain.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], templates: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
+```
+
+Creates a `Domain`.
+
+**Arguments**:
+
+- `intents` - Intent labels.
+- `entities` - The names of entities which might be present in user messages.
+- `slots` - Slots to store information during the conversation.
+- `templates` - Bot responses. If an action with the same name is executed, it
+  will send the matching response to the user.
+- `action_names` - Names of custom actions.
+- `forms` - Form names and their slot mappings.
+- `action_texts` - End-to-End bot utterances from end-to-end stories.
+- `store_entities_as_slots` - If `True` Rasa will automatically create `SlotSet`
+  events for entities if there are slots with the same name as the entity.
+- `session_config` - Configuration for conversation sessions. Conversations are
+  restarted at the end of a session.
+
 #### \_\_deepcopy\_\_
 
 ```python
@@ -151,11 +174,20 @@ Returns a unique hash for the domain which is stable across python runs.
 
 Returns combination of user actions and forms.
 
+#### action\_names
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | action_names() -> List[Text]
+```
+
+Returns action names or texts.
+
 #### num\_actions
 
 ```python
  | @rasa.shared.utils.common.lazy_property
- | num_actions()
+ | num_actions() -> int
 ```
 
 Returns the number of available actions.
@@ -220,6 +252,42 @@ See `_add_categorical_slot_default_value` for docstring.
 ```
 
 Looks up which action index corresponds to this action name.
+
+#### raise\_action\_not\_found\_exception
+
+```python
+ | raise_action_not_found_exception(action_name_or_text: Text) -> NoReturn
+```
+
+Raises exception if action name or text not part of the domain or stories.
+
+**Arguments**:
+
+- `action_name_or_text` - Name of an action or its text in case it&#x27;s an
+  end-to-end bot utterance.
+  
+
+**Raises**:
+
+- `ActionNotFoundException` - If `action_name_or_text` are not part of this
+  domain.
+
+#### random\_template\_for
+
+```python
+ | random_template_for(utter_action: Text) -> Optional[Dict[Text, Any]]
+```
+
+Returns a random response for an action name.
+
+**Arguments**:
+
+- `utter_action` - The name of the utter action.
+  
+
+**Returns**:
+
+  A response for an utter action.
 
 #### slot\_states
 
@@ -329,7 +397,7 @@ to the current domain are different.
  | as_dict() -> Dict[Text, Any]
 ```
 
-Returns serialized domain.
+Return serialized `Domain`.
 
 #### get\_responses\_with\_multilines
 

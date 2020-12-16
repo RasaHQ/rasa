@@ -6,7 +6,7 @@ title: rasa.shared.importers.autoconfig
 #### get\_configuration
 
 ```python
-get_configuration(config_file_path: Text, training_type: Optional[TrainingType] = TrainingType.BOTH) -> Dict[Text, Any]
+get_configuration(config_file_path: Optional[Text], training_type: Optional[TrainingType] = TrainingType.BOTH) -> Dict[Text, Any]
 ```
 
 Determine configuration from a configuration file.

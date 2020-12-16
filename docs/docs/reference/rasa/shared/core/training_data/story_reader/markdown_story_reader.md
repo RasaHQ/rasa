@@ -30,7 +30,6 @@ Given a md file reads the contained stories.
 #### parse\_e2e\_message
 
 ```python
- | @staticmethod
  | parse_e2e_message(line: Text, is_used_for_training: bool = True) -> Message
 ```
 

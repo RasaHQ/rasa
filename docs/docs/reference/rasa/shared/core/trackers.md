@@ -45,6 +45,30 @@ Create a tracker from dump.
 The dump should be an array of dumped events. When restoring
 the tracker, these events will be replayed to recreate the state.
 
+#### from\_events
+
+```python
+ | @classmethod
+ | from_events(cls, sender_id: Text, evts: List[Event], slots: Optional[Iterable[Slot]] = None, max_event_history: Optional[int] = None, sender_source: Optional[Text] = None, domain: Optional[Domain] = None) -> "DialogueStateTracker"
+```
+
+Creates tracker from existing events.
+
+**Arguments**:
+
+- `sender_id` - The ID of the conversation.
+- `evts` - Existing events which should be applied to the new tracker.
+- `slots` - Slots which can be set.
+- `max_event_history` - Maximum number of events which should be stored.
+- `sender_source` - File source of the messages.
+- `domain` - The current model domain.
+  
+
+**Returns**:
+
+  Instantiated tracker with its state updated according to the given
+  events.
+
 #### \_\_init\_\_
 
 ```python
@@ -63,7 +87,25 @@ information we captured while processing messages of the dialogue.
  | current_state(event_verbosity: EventVerbosity = EventVerbosity.NONE) -> Dict[Text, Any]
 ```
 
-Return the current tracker state as an object.
+Returns the current tracker state as an object.
+
+#### freeze\_current\_state
+
+```python
+ | @staticmethod
+ | freeze_current_state(state: State) -> FrozenState
+```
+
+Convert State dict into a hashable format FrozenState.
+
+**Arguments**:
+
+- `state` - The state which should be converted
+  
+
+**Returns**:
+
+  hashable form of the state of type `FrozenState`
 
 #### past\_states
 
@@ -85,7 +127,7 @@ Generate the past states of this tracker based on the history.
 #### change\_loop\_to
 
 ```python
- | change_loop_to(loop_name: Text) -> None
+ | change_loop_to(loop_name: Optional[Text]) -> None
 ```
 
 Set the currently active loop.
@@ -120,8 +162,13 @@ Notify active loop that it was rejected
  | set_latest_action(action: Dict[Text, Text]) -> None
 ```
 
-Set latest action name
-and reset form validation and rejection parameters
+Sets latest action name or text.
+
+Resets loop validation and rejection parameters.
+
+**Arguments**:
+
+- `action` - Serialized action event.
 
 #### current\_slot\_values
 

@@ -34,7 +34,7 @@ Remove the BILOU prefix from the given tag.
 #### bilou\_tags\_to\_ids
 
 ```python
-bilou_tags_to_ids(message: Message, tag_id_dict: Dict[Text, int], tag_name: Text = ENTITY_ATTRIBUTE_TYPE) -> List[int]
+bilou_tags_to_ids(message: "Message", tag_id_dict: Dict[Text, int], tag_name: Text = ENTITY_ATTRIBUTE_TYPE) -> List[int]
 ```
 
 Maps the entity tags of the message to the ids of the provided dict.
@@ -84,7 +84,7 @@ Removes the BILOU prefixes from the given list of tags.
 #### build\_tag\_id\_dict
 
 ```python
-build_tag_id_dict(training_data: TrainingData, tag_name: Text = ENTITY_ATTRIBUTE_TYPE) -> Optional[Dict[Text, int]]
+build_tag_id_dict(training_data: "TrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE) -> Optional[Dict[Text, int]]
 ```
 
 Create a mapping of unique tags to ids.
@@ -99,7 +99,7 @@ Create a mapping of unique tags to ids.
 #### apply\_bilou\_schema
 
 ```python
-apply_bilou_schema(training_data: TrainingData) -> None
+apply_bilou_schema(training_data: "TrainingData") -> None
 ```
 
 Get a list of BILOU entity tags and set them on the given messages.
@@ -111,7 +111,7 @@ Get a list of BILOU entity tags and set them on the given messages.
 #### map\_message\_entities
 
 ```python
-map_message_entities(message: Message, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE) -> List[Tuple[int, int, Text]]
+map_message_entities(message: "Message", attribute_key: Text = ENTITY_ATTRIBUTE_TYPE) -> List[Tuple[int, int, Text]]
 ```
 
 Maps the entities of the given message to their start, end, and tag values.
@@ -126,7 +126,7 @@ Maps the entities of the given message to their start, end, and tag values.
 #### bilou\_tags\_from\_offsets
 
 ```python
-bilou_tags_from_offsets(tokens: List[Token], entities: List[Tuple[int, int, Text]]) -> List[Text]
+bilou_tags_from_offsets(tokens: List["Token"], entities: List[Tuple[int, int, Text]]) -> List[Text]
 ```
 
 Creates BILOU tags for the given tokens and entities.

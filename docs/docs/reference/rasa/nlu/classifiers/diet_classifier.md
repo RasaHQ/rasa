@@ -99,3 +99,51 @@ Return the metadata necessary to load the model again.
 
 Loads the trained model from the provided directory.
 
+## DIET Objects
+
+```python
+class DIET(TransformerRasaModel)
+```
+
+#### batch\_loss
+
+```python
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+```
+
+Calculates the loss for the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The loss of the given batch.
+
+#### prepare\_for\_predict
+
+```python
+ | prepare_for_predict() -> None
+```
+
+Prepares the model for prediction.
+
+#### batch\_predict
+
+```python
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+```
+
+Predicts the output of the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The output to predict.
+

@@ -28,7 +28,7 @@ following steps:
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, should_finetune: bool = False, **kwargs: Any, ,) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, fake_features: Optional[Dict[Text, List["Features"]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, should_finetune: bool = False, **kwargs: Any, ,) -> None
 ```
 
 Declare instance variables with default values.
@@ -69,4 +69,68 @@ Persists the policy to a storage.
 Loads a policy from the storage.
 
 **Needs to load its featurizer**
+
+## TED Objects
+
+```python
+class TED(TransformerRasaModel)
+```
+
+#### \_\_init\_\_
+
+```python
+ | __init__(data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]], config: Dict[Text, Any], use_only_last_dialogue_turns: bool, label_data: RasaModelData, entity_tag_specs: Optional[List[EntityTagSpec]]) -> None
+```
+
+Intializes the TED model.
+
+**Arguments**:
+
+- `data_signature` - the data signature of the input data
+- `config` - the model configuration
+- `use_only_last_dialogue_turns` - if &#x27;True&#x27; only the last dialogue turn will be used
+- `label_data` - the label data
+- `entity_tag_specs` - the entity tag specifications
+
+#### batch\_loss
+
+```python
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+```
+
+Calculates the loss for the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The loss of the given batch.
+
+#### prepare\_for\_predict
+
+```python
+ | prepare_for_predict() -> None
+```
+
+Prepares the model for prediction.
+
+#### batch\_predict
+
+```python
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+```
+
+Predicts the output of the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The output to predict.
 

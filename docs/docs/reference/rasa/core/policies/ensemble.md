@@ -80,8 +80,7 @@ Triggers fallback if `action_listen` is predicted after a user utterance.
 
 **Returns**:
 
-- `best_probabilities` - the list of probabilities for the next actions
-- `best_policy_name` - the name of the picked policy
+  The best policy prediction.
 
 ## InvalidPolicyConfig Objects
 

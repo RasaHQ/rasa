@@ -61,6 +61,7 @@ Converts a sequence of story steps into yaml format.
 **Arguments**:
 
 - `story_steps` - Original story steps to be converted to the YAML.
+- `is_test_story` - `True` if the story is an end-to-end conversation test story.
 
 #### process\_story\_step
 
