@@ -3,7 +3,7 @@ import itertools
 import os
 
 import numpy as np
-from typing import Dict, List, Text, Optional, Union, Any
+from typing import Dict, List, Set, Text, Optional, Union, Any
 import matplotlib
 
 import rasa.shared.utils.io
@@ -200,27 +200,21 @@ def plot_curve(
 
 
 def plot_intent_augmentation_summary(
-    augmentation_summary: Dict[Text, Dict[Text, float]], metric: Text, output_file: Text
+    augmentation_summary: Dict[Text, Dict[Text, float]], changed_intents: Set[Text], metric: Text, output_file: Text
 ) -> None:
     """Plot the gain/loss curve per intent.
 
     Args:
         augmentation_summary: Performance summary dictionary.
+        changed_intents: Intents that have not been augmented, but where performance changed.
         metric: Metric to plot, must be one of "precision", "recall", or "f1-score".
         output_file: Output file for plot.
     """
     import matplotlib.pyplot as plt
 
+    totals_keys = {"weighted avg", "micro avg", "macro avg"}
     intents = list(augmentation_summary.keys())
     num_intents = len(intents)
-
-    # Fiddle out total keys (weighted avg, macro avg, micro avg)
-    totals_idx = []
-    for totals_key in ["weighted avg", "micro avg", "macro avg"]:
-        try:
-            totals_idx.append(intents.index(totals_key))
-        except ValueError:
-            continue
 
     ind = np.arange(num_intents)
     performance = np.array(
@@ -231,13 +225,27 @@ def plot_intent_augmentation_summary(
     plt.ylabel(f"Performance Change ({metric})", fontsize=16)
     plt.xlabel("Intent", fontsize=16)
     perf_bar = plt.bar(ind, performance)
-    for idx in totals_idx:
-        perf_bar[idx].set_color("lightgreen")
+
+    for idx in range(num_intents):
+        if intents[idx] in totals_keys:
+            perf_bar[idx].set_color("lightgreen")
+            perf_bar[idx].set_label("total")
+        elif intents[idx] in changed_intents:
+            perf_bar[idx].set_color("lightcoral")
+            perf_bar[idx].set_label("affected")
+        else:
+            perf_bar[idx].set_label("augmented")
+
     _autolabel(perf_bar)
     plt.xlim((-1, num_intents))
-    plt.ylim((-1.2, 1.2))
+    plt.ylim((np.min(performance) - 0.2, np.max(performance) + 0.2))
     plt.grid(True)
     plt.xticks(ind, intents, rotation=90, fontsize=14)
+
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.legend(by_label.values(), by_label.keys())
+
     plt.savefig(output_file, bbox_inches="tight")
 
 
