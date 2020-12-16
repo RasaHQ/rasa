@@ -345,6 +345,18 @@ class AlwaysEqualEventMixin(Event, ABC):
         return True
 
 
+class SkipEventInMDStoryMixin(Event, ABC):
+    """Skips the visualization of an event in Markdown stories."""
+
+    def as_story_string(self) -> None:
+        """Returns the event as story string.
+
+        Returns:
+            None, as this event should not appear inside the story.
+        """
+        return
+
+
 class UserUttered(Event):
     """The user has said something to the bot.
 
@@ -400,9 +412,11 @@ class UserUttered(Event):
             self.use_text_for_featurization = False
 
         self.parse_data = {
-            "intent": self.intent,
-            "entities": self.entities,
-            "text": self.text,
+            INTENT: self.intent,
+            # Copy entities so that changes to `self.entities` don't affect
+            # `self.parse_data` and hence don't get persisted
+            ENTITIES: self.entities.copy(),
+            TEXT: self.text,
             "message_id": self.message_id,
             "metadata": self.metadata,
         }
@@ -421,8 +435,8 @@ class UserUttered(Event):
     ):
         return UserUttered(
             text,
-            parse_data.get("intent"),
-            parse_data.get("entities", []),
+            parse_data.get(INTENT),
+            parse_data.get(ENTITIES, []),
             parse_data,
             timestamp,
             input_channel,
@@ -606,19 +620,7 @@ class UserUttered(Event):
         )
 
 
-class DefinePrevUserUttered(Event, ABC):
-    """Defines the family of events that are used to update previous user utterance."""
-
-    def as_story_string(self) -> None:
-        """Returns the event as story string.
-
-        Returns:
-            None, as this event should not appear inside the story.
-        """
-        return
-
-
-class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
+class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
     """Stores information whether action was predicted based on text or intent."""
 
     type_name = "user_featurization"
@@ -686,10 +688,10 @@ class DefinePrevUserUtteredFeaturization(DefinePrevUserUttered):
         return self.use_text_for_featurization == other.use_text_for_featurization
 
 
-class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
-    """Event that is used to set entities on a previous user uttered event."""
+class EntitiesAdded(SkipEventInMDStoryMixin):
+    """Event that is used to add extracted entities to the tracker state."""
 
-    type_name = "user_entities"
+    type_name = "entities"
 
     def __init__(
         self,
@@ -697,10 +699,11 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
-        """Initializes a DefinePrevUserUtteredEntities event.
+        """Initializes event.
 
         Args:
-            entities: the entities of a previous user uttered event
+            entities: Entities extracted from previous user message. This can either
+                be done by NLU components or end-to-end policy predictions.
             timestamp: the timestamp
             metadata: some optional metadata
         """
@@ -710,7 +713,7 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
     def __str__(self) -> Text:
         """Returns the string representation of the event."""
         entity_str = [e[ENTITY_ATTRIBUTE_TYPE] for e in self.entities]
-        return f"DefinePrevUserUtteredEntities({entity_str})"
+        return f"{self.__class__.__name__}({entity_str})"
 
     def __hash__(self) -> int:
         """Returns the hash value of the event."""
@@ -718,11 +721,11 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
 
     def __eq__(self, other) -> bool:
         """Compares this event with another event."""
-        return isinstance(other, DefinePrevUserUtteredEntities)
+        return isinstance(other, EntitiesAdded)
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredEntities":
-        return DefinePrevUserUtteredEntities(
+    def _from_parameters(cls, parameters) -> "EntitiesAdded":
+        return EntitiesAdded(
             parameters.get(ENTITIES),
             parameters.get("timestamp"),
             parameters.get("metadata"),
@@ -754,7 +757,7 @@ class DefinePrevUserUtteredEntities(DefinePrevUserUttered):
                 tracker.latest_message.entities.append(entity)
 
 
-class BotUttered(Event):
+class BotUttered(Event, SkipEventInMDStoryMixin):
     """The bot has said something to the user.
 
     This class is not used in the story training as it is contained in the
@@ -812,10 +815,6 @@ class BotUttered(Event):
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
         tracker.latest_bot_utterance = self
-
-    def as_story_string(self) -> None:
-        """Skips representing the event in stories."""
-        return None
 
     def message(self) -> Dict[Text, Any]:
         """Return the complete message as a dictionary."""
@@ -1542,7 +1541,7 @@ class ActionExecuted(Event):
         tracker.clear_followup_action()
 
 
-class AgentUttered(Event):
+class AgentUttered(Event, SkipEventInMDStoryMixin):
     """The agent has said something to the user.
 
     This class is not used in the story training as it is contained in the
@@ -1582,10 +1581,6 @@ class AgentUttered(Event):
         return "AgentUttered(text: {}, data: {})".format(
             self.text, json.dumps(self.data)
         )
-
-    def as_story_string(self) -> None:
-        """Skips representing the event in stories."""
-        return None
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
@@ -1687,7 +1682,7 @@ class LegacyForm(ActiveLoop):
         return d
 
 
-class LoopInterrupted(Event):
+class LoopInterrupted(Event, SkipEventInMDStoryMixin):
     """Event added by FormPolicy and RulePolicy.
 
     Notifies form action whether or not to validate the user input.
@@ -1729,10 +1724,6 @@ class LoopInterrupted(Event):
             return NotImplemented
 
         return self.is_interrupted == other.is_interrupted
-
-    def as_story_string(self) -> None:
-        """Skips representing event in stories."""
-        return None
 
     @classmethod
     def _from_parameters(cls, parameters) -> "LoopInterrupted":
@@ -1791,7 +1782,7 @@ class LegacyFormValidation(LoopInterrupted):
         return d
 
 
-class ActionExecutionRejected(Event):
+class ActionExecutionRejected(Event, SkipEventInMDStoryMixin):
     """Notify Core that the execution of the action has been rejected."""
 
     type_name = "action_execution_rejected"
@@ -1846,10 +1837,6 @@ class ActionExecutionRejected(Event):
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )
-
-    def as_story_string(self) -> None:
-        """Skips representing this event in stories."""
-        return None
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""

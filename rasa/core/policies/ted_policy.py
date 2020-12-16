@@ -101,7 +101,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
 )
-from rasa.shared.core.events import DefinePrevUserUtteredEntities, Event
+from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
@@ -664,7 +664,7 @@ class TEDPolicy(Policy):
         for entity in entities:
             entity[EXTRACTOR] = "TEDPolicy"
 
-        return [DefinePrevUserUtteredEntities(entities)]
+        return [EntitiesAdded(entities)]
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
