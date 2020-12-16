@@ -859,12 +859,12 @@ class TransformerRasaModel(RasaModel):
         self._prepare_input_layers(name)
 
         size = self.config[TRANSFORMER_SIZE]
-        if isinstance(self.config[TRANSFORMER_SIZE], list):
-            size = self.config[TRANSFORMER_SIZE][name]
+        if isinstance(size, dict):
+            size = size[name]
 
         num_layers = self.config[NUM_TRANSFORMER_LAYERS]
-        if isinstance(self.config[NUM_TRANSFORMER_LAYERS], list):
-            num_layers = self.config[NUM_TRANSFORMER_LAYERS][name]
+        if isinstance(num_layers, dict):
+            num_layers = num_layers[name]
 
         self._prepare_transformer_layer(
             name,
