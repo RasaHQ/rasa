@@ -98,7 +98,14 @@ def set_suggest_arguments(parser: argparse.ArgumentParser):
         "--num-intents",
         type=int,
         default=5,
-        help="Number of intents for which to suggest paraphrases for.",
+        help="Number of intents per criterion for which to suggest paraphrases for.",
+    )
+
+    parser.add_argument(
+        "--paraphrase-score-threshold",
+        type=float,
+        default=0.8,
+        help="Quality score threshold for paraphrases, i.e. any paraphrase with a score < paraphrase-score-threshold will be discarded."
     )
 
     add_out_param(
