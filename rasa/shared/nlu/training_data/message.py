@@ -115,7 +115,7 @@ class Message:
         example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
-        """Build a Message from `UserUttered` data.
+        """Builds a Message from `UserUttered` data.
 
         Args:
             text: text of a user's utterance
@@ -184,7 +184,7 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all sparse features for the attribute given the list of featurizers.
+        """Gets all sparse features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
@@ -210,7 +210,7 @@ class Message:
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all dense features for the attribute given the list of featurizers.
+        """Gets all dense features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
@@ -236,7 +236,7 @@ class Message:
     def get_all_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> List["Features"]:
-        """Get all features for the attribute given the list of featurizers.
+        """Gets all features for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
@@ -245,7 +245,7 @@ class Message:
             featurizers: names of featurizers to consider
 
         Returns:
-            features.
+            Features.
         """
         sparse_features = self.get_sparse_features(attribute, featurizers)
         dense_features = self.get_dense_features(attribute, featurizers)
@@ -255,16 +255,16 @@ class Message:
     def features_present(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> bool:
-        """Check if there are any features present for the attribute and featurizers.
+        """Checks if there are any features present for the attribute and featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
         Args:
-            attribute: message attribute
-            featurizers: names of featurizers to consider
+            attribute: Message attribute.
+            featurizers: Names of featurizers to consider.
 
         Returns:
-            ``True``, if features are present, ``False`` otherwise
+            ``True``, if features are present, ``False`` otherwise.
         """
         if featurizers is None:
             featurizers = []

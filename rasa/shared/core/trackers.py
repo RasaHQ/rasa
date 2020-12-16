@@ -58,7 +58,6 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
-    DefinePrevUserUttered,
     EntitiesAdded,
 )
 from rasa.shared.core.domain import Domain, State

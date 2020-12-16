@@ -836,6 +836,29 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_word_boundaries": True
   ```
 
+  **Configuring for incremental training**
+
+  To ensure that `sparse_features` are of fixed size during
+  [incremental training](./command-line-interface.mdx#incremental-training), the
+  component should be configured to account for additional patterns that may be
+  added to the training data in future. To do so, configure the `number_additional_patterns`
+  parameter while training the base model from scratch:
+
+  ```yaml-rasa {3}
+  pipeline:
+  - name: RegexFeaturizer
+    number_additional_patterns: 10
+  ```
+
+  If not configured by the user, the component will use twice the number of
+  patterns currently present in the training data (including lookup tables and regex patterns)
+  as the default value for `number_additional_patterns`.
+  This number is kept at a minimum of 10 in order to avoid running out of additional
+  slots for new patterns too frequently during incremental training.
+  Once the component runs out of additional pattern slots, the new patterns are dropped
+  and not considered during featurization. At this point, it is advisable
+  to retrain a new model from scratch.
+
 
 ### CountVectorsFeaturizer
 
@@ -960,58 +983,91 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_shared_vocab": False
   ```
 
+  **Configuring for incremental training**
+
+  To ensure that `sparse_features` are of fixed size during
+  [incremental training](./command-line-interface.mdx#incremental-training), the
+  component should be configured to account for additional vocabulary tokens
+  that may be added as part of new training examples in the future.
+  To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
+
+  ```yaml-rasa {3-6}
+  pipeline:
+  - name: CountVectorsFeaturizer
+    additional_vocabulary_size:
+      text: 1000
+      response: 1000
+      action_text: 1000
+  ```
+
+  As in the above example, you can define additional vocabulary size for each of
+  `text` (user messages), `response` (bot responses used by `ResponseSelector`) and
+  `action_text` (bot responses not used by `ResponseSelector`). If you are building a shared
+  vocabulary (`use_shared_vocab=True`), you only need to define a value for the `text` attribute.
+  If any of the attribute is not configured by the user, the component takes half of the current
+  vocabulary size as the default value for the attribute's `additional_vocabulary_size`.
+  This number is kept at a minimum of 1000 in order to avoid running out of additional vocabulary
+  slots too frequently during incremental training. Once the component runs out of additional vocabulary slots,
+  the new vocabulary tokens are dropped and not considered during featurization. At this point,
+  it is advisable to retrain a new model from scratch.
+
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
 <details><summary>More configurable parameters</summary>
 
 ```
-+-------------------+-------------------------+--------------------------------------------------------------+
-| Parameter         | Default Value           | Description                                                  |
-+===================+=========================+==============================================================+
-| use_shared_vocab  | False                   | If set to 'True' a common vocabulary is used for labels      |
-|                   |                         | and user message.                                            |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| analyzer          | word                    | Whether the features should be made of word n-gram or        |
-|                   |                         | character n-grams. Option 'char_wb' creates character        |
-|                   |                         | n-grams only from text inside word boundaries;               |
-|                   |                         | n-grams at the edges of words are padded with space.         |
-|                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| strip_accents     | None                    | Remove accents during the pre-processing step.               |
-|                   |                         | Valid values: 'ascii', 'unicode', 'None'.                    |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| stop_words        | None                    | A list of stop words to use.                                 |
-|                   |                         | Valid values: 'english' (uses an internal list of            |
-|                   |                         | English stop words), a list of custom stop words, or         |
-|                   |                         | 'None'.                                                      |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| min_df            | 1                       | When building the vocabulary ignore terms that have a        |
-|                   |                         | document frequency strictly lower than the given threshold.  |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| max_df            | 1                       | When building the vocabulary ignore terms that have a        |
-|                   |                         | document frequency strictly higher than the given threshold  |
-|                   |                         | (corpus-specific stop words).                                |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| min_ngram         | 1                       | The lower boundary of the range of n-values for different    |
-|                   |                         | word n-grams or char n-grams to be extracted.                |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| max_ngram         | 1                       | The upper boundary of the range of n-values for different    |
-|                   |                         | word n-grams or char n-grams to be extracted.                |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| max_features      | None                    | If not 'None', build a vocabulary that only consider the top |
-|                   |                         | max_features ordered by term frequency across the corpus.    |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| lowercase         | True                    | Convert all characters to lowercase before tokenizing.       |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| OOV_token         | None                    | Keyword for unseen words.                                    |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| OOV_words         | []                      | List of words to be treated as 'OOV_token' during training.  |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| alias             | CountVectorFeaturizer   | Alias name of featurizer.                                    |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| use_lemma         | True                    | Use the lemma of words for featurization.                    |
-+-------------------+-------------------------+--------------------------------------------------------------+
++---------------------------+-------------------------+--------------------------------------------------------------+
+| Parameter                 | Default Value           | Description                                                  |
++===========================+=========================+==============================================================+
+| use_shared_vocab          | False                   | If set to 'True' a common vocabulary is used for labels      |
+|                           |                         | and user message.                                            |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| analyzer                  | word                    | Whether the features should be made of word n-gram or        |
+|                           |                         | character n-grams. Option 'char_wb' creates character        |
+|                           |                         | n-grams only from text inside word boundaries;               |
+|                           |                         | n-grams at the edges of words are padded with space.         |
+|                           |                         | Valid values: 'word', 'char', 'char_wb'.                     |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| strip_accents             | None                    | Remove accents during the pre-processing step.               |
+|                           |                         | Valid values: 'ascii', 'unicode', 'None'.                    |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| stop_words                | None                    | A list of stop words to use.                                 |
+|                           |                         | Valid values: 'english' (uses an internal list of            |
+|                           |                         | English stop words), a list of custom stop words, or         |
+|                           |                         | 'None'.                                                      |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| min_df                    | 1                       | When building the vocabulary ignore terms that have a        |
+|                           |                         | document frequency strictly lower than the given threshold.  |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| max_df                    | 1                       | When building the vocabulary ignore terms that have a        |
+|                           |                         | document frequency strictly higher than the given threshold  |
+|                           |                         | (corpus-specific stop words).                                |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| min_ngram                 | 1                       | The lower boundary of the range of n-values for different    |
+|                           |                         | word n-grams or char n-grams to be extracted.                |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| max_ngram                 | 1                       | The upper boundary of the range of n-values for different    |
+|                           |                         | word n-grams or char n-grams to be extracted.                |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| max_features              | None                    | If not 'None', build a vocabulary that only consider the top |
+|                           |                         | max_features ordered by term frequency across the corpus.    |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| lowercase                 | True                    | Convert all characters to lowercase before tokenizing.       |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| OOV_token                 | None                    | Keyword for unseen words.                                    |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| OOV_words                 | []                      | List of words to be treated as 'OOV_token' during training.  |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| alias                     | CountVectorFeaturizer   | Alias name of featurizer.                                    |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| use_lemma                 | True                    | Use the lemma of words for featurization.                    |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| additional_vocabulary_size| text: 1000              | Size of additional vocabulary to account for incremental     |
+|                           | response: 1000          | training while training a model from scratch                 |
+|                           | action_text: 1000       |                                                              |
++---------------------------+-------------------------+--------------------------------------------------------------+
 ```
 
 </details>

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from typing import List, Dict, Text, Any
 
 from rasa.nlu import train
 from rasa.nlu.components import ComponentBuilder
@@ -238,3 +239,46 @@ async def test_train_model_checkpointing(
     """
     all_files = list(best_model_file.rglob("*.*"))
     assert len(all_files) > 4
+
+
+async def _train_persist_load_with_different_settings(
+    pipeline: List[Dict[Text, Any]],
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    should_finetune: bool,
+):
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trainer, trained, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/examples/rasa/demo-rasa.md",
+        component_builder=component_builder,
+    )
+
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    loaded = Interpreter.load(
+        persisted_path,
+        component_builder,
+        new_config=_config if should_finetune else None,
+    )
+
+    assert loaded.pipeline
+    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+
+
+@pytest.mark.skip_on_windows
+async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "ResponseSelector", EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, True
+    )
