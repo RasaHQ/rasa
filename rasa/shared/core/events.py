@@ -639,8 +639,8 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
             timestamp: When the event was created.
             metadata: Additional event metadata.
         """
-        self.use_text_for_featurization = use_text_for_featurization
         super().__init__(timestamp, metadata)
+        self.use_text_for_featurization = use_text_for_featurization
 
     def __str__(self) -> Text:
         """Returns text representation of event."""
@@ -651,7 +651,9 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
         return hash(self.use_text_for_featurization)
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredFeaturization":
+    def _from_parameters(
+        cls, parameters: Dict[Text, Any]
+    ) -> "DefinePrevUserUtteredFeaturization":
         return DefinePrevUserUtteredFeaturization(
             parameters.get(USE_TEXT_FOR_FEATURIZATION),
             parameters.get("timestamp"),
@@ -707,8 +709,8 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
             timestamp: the timestamp
             metadata: some optional metadata
         """
-        self.entities = entities
         super().__init__(timestamp, metadata)
+        self.entities = entities
 
     def __str__(self) -> Text:
         """Returns the string representation of the event."""
@@ -717,14 +719,14 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
 
     def __hash__(self) -> int:
         """Returns the hash value of the event."""
-        return hash(self.entities)
+        return hash(json.dumps(self.entities))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares this event with another event."""
         return isinstance(other, EntitiesAdded)
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "EntitiesAdded":
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "EntitiesAdded":
         return EntitiesAdded(
             parameters.get(ENTITIES),
             parameters.get("timestamp"),
