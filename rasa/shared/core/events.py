@@ -329,7 +329,7 @@ class EventWithoutExtraAttributes(Event, ABC):
     """Class to deduplicate common behavior for events without additional attributes."""
 
     def __eq__(self, other: Any) -> bool:
-        """Returns text representation of event."""
+        """Compares object with other object."""
         if not isinstance(other, self.__class__):
             return NotImplemented
 
