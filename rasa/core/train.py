@@ -16,7 +16,7 @@ from rasa.utils.common import TempDirectoryPath
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
-
+    from rasa.core.agent import Agent
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +30,11 @@ async def train(
     policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: Optional[int] = None,
     additional_arguments: Optional[Dict] = None,
-):
-    from rasa.core.agent import Agent
+    model_to_finetune: Optional["Agent"] = None,
+) -> "Agent":
     from rasa.core import config, utils
     from rasa.core.utils import AvailableEndpoints
+    from rasa.core.agent import Agent
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -64,6 +65,8 @@ async def train(
     training_data = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
+    if model_to_finetune:
+        agent.policy_ensemble = model_to_finetune.policy_ensemble
     agent.train(training_data, **additional_arguments)
     agent.persist(output_path)
 

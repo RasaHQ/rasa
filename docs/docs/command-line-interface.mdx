@@ -85,6 +85,59 @@ The following arguments can be used to configure the training process:
 ```text [rasa train --help]
 ```
 
+### Incremental training
+
+:::caution
+This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+
+:::
+
+In order to improve the performance of an assistant, it's helpful to practice [CDD](./conversation-driven-development.mdx)
+and add new training examples based on how your users have talked to your assistant. You can use `rasa train --finetune`
+to initialize the pipeline with an already trained model and further finetune it on the
+new training dataset that includes the additional training examples. This will help reduce the
+training time of the new model.
+
+By default, the command picks up the latest model in the `models/` directory. If you have a specific model
+which you want to improve, you may specify the path to this by
+running `rasa train --finetune <path to model to finetune>`. Finetuning a model usually
+requires fewer epochs to train machine learning components like `DIETClassifier`, `ResponseSelector` and `TEDPolicy` compared to training from scratch.
+Either use a model configuration for finetuning
+which defines fewer epochs than before or use the flag
+`--epoch-fraction`. `--epoch-fraction` will use a fraction of the epochs specified for each machine learning component
+in the model configuration file. For example, if `DIETClassifier` is configured to use 100 epochs,
+specifying `--epoch-fraction 0.5` will only use 50 epochs for finetuning.
+
+You can also finetune an NLU-only or dialogue management-only model by using
+`rasa train nlu --finetune` and `rasa train core --finetune` respectively.
+
+To be able to fine tune a model, the following conditions must be met:
+
+1. The configuration supplied should be exactly the same as the
+configuration used to train the model which is being finetuned.
+The only parameter that you can change is `epochs` for the individual machine learning components and policies.
+
+2. The set of labels(intents, actions, entities and slots) for which the base model is trained
+should be exactly the same as the ones present in the training data used for finetuning. This
+means that you cannot add new intent, action, entity or slot labels to your training data
+during incremental training. You can still add new training examples for each of the existing
+labels. If you have added/removed labels in the training data, the pipeline needs to be trained
+from scratch.
+
+3. The model to be finetuned is trained with `MINIMUM_COMPATIBLE_VERSION` of the currently installed rasa version.
+
+Checkout the docs for [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) and
+[`RegexFeaturizer`](./components.mdx#regexfeaturizer) to understand how to configure them appropriately for incremental training.
+
+:::note
+Finetuned models are expected to be on-par with performance of models trained from scratch. However,
+make sure to train your pipelines from scratch frequently to avoid running out of additional
+vocabulary slots for the models.
+:::
+
 ## rasa interactive
 
 You can [use Rasa X in local mode](https://rasa.com/docs/rasa-x) to do interactive learning in a UI,

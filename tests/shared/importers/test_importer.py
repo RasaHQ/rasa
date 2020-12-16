@@ -19,7 +19,7 @@ from rasa.shared.importers.importer import (
     NluDataImporter,
     CoreDataImporter,
     E2EImporter,
-    RetrievalModelsDataImporter,
+    ResponsesSyncImporter,
 )
 from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
@@ -113,7 +113,7 @@ def test_load_from_dict(
     )
 
     assert isinstance(actual, E2EImporter)
-    assert isinstance(actual.importer, RetrievalModelsDataImporter)
+    assert isinstance(actual.importer, ResponsesSyncImporter)
 
     actual_importers = [i.__class__ for i in actual.importer._importer._importers]
     assert actual_importers == expected
@@ -128,7 +128,7 @@ def test_load_from_config(tmpdir: Path):
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
-    assert isinstance(importer.importer, RetrievalModelsDataImporter)
+    assert isinstance(importer.importer, ResponsesSyncImporter)
     assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
 
 
@@ -140,7 +140,7 @@ async def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
-    assert isinstance(actual._importer, RetrievalModelsDataImporter)
+    assert isinstance(actual._importer, ResponsesSyncImporter)
 
     stories = await actual.get_stories()
     assert stories.is_empty()
@@ -350,7 +350,7 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     nlu_importer = NluDataImporter(base_data_importer)
     core_importer = CoreDataImporter(base_data_importer)
 
-    importer = RetrievalModelsDataImporter(
+    importer = ResponsesSyncImporter(
         CombinedDataImporter([nlu_importer, core_importer])
     )
     domain = await importer.get_domain()
@@ -361,3 +361,25 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     assert domain.retrieval_intent_templates == nlu_data.responses
     assert domain.templates != nlu_data.responses
     assert "utter_chitchat" in domain.action_names
+
+
+async def test_nlu_data_domain_sync_responses(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/default.yml"
+    data_paths = ["data/test_nlg/test_responses.yml"]
+
+    base_data_importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_paths
+    )
+
+    nlu_importer = NluDataImporter(base_data_importer)
+    core_importer = CoreDataImporter(base_data_importer)
+
+    importer = ResponsesSyncImporter(
+        CombinedDataImporter([nlu_importer, core_importer])
+    )
+    with pytest.warns(None):
+        domain = await importer.get_domain()
+
+    # Responses were sync between "test_responses.yml" and the "domain.yml"
+    assert "utter_rasa" in domain.templates.keys()
