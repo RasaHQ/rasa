@@ -742,10 +742,10 @@ stories:
   - intent: greet
     entities:
       name: Ivan
-  - bot: Hello, Ivan!
+  - bot: Hello, a person with a name!
 ```
 
-You can also have a full end-to-end story:
+You can also have a mixed end-to-end story:
 
 ```yaml-rasa
 stories:
@@ -754,13 +754,13 @@ stories:
   - intent: greet
     entities:
       name: Ivan
-  - bot: Hello, Ivan!
+  - bot: Hello, a person with a name!
   - intent: search_restaurant
   - action: utter_suggest_cuisine
   - user: I can always go for [sushi](cuisine)
   - bot: Personally, I prefer pizza, but sure let's search sushi restaurants
   - action: utter_suggest_cuisine
-  - intent: Have a beautiful day!
+  - user: Have a beautiful day!
   - action: utter_goodbye
 ```
 
