@@ -1,3 +1,4 @@
+import json
 from typing import Any, Optional, Tuple, Text, Dict, Set, List
 
 import typing
@@ -86,10 +87,23 @@ class Message:
         if not isinstance(other, Message):
             return False
         else:
-            return ordered(other.data) == ordered(self.data)
+            return other.fingerprint() == self.fingerprint()
 
     def __hash__(self) -> int:
-        return hash(str(ordered(self.data)))
+        """Calculate a hash for the message.
+
+        Returns:
+            Hash of the message.
+        """
+        return int(self.fingerprint(), 16)
+
+    def fingerprint(self) -> Text:
+        """Calculate a string fingerprint for the message.
+
+        Returns:
+            Fingerprint of the message.
+        """
+        return rasa.shared.utils.io.deep_container_fingerprint(self.data)
 
     @classmethod
     def build(
@@ -101,14 +115,15 @@ class Message:
         example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
-        """
-        Build a Message from `UserUttered` data.
+        """Builds a Message from `UserUttered` data.
+
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
             intent_metadata: optional metadata for the intent
             example_metadata: optional metadata for the intent example
+
         Returns:
             Message
         """
@@ -169,12 +184,14 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all sparse features for the given attribute that are coming from the
-        given list of featurizers.
+        """Gets all sparse features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Sparse features.
         """
@@ -193,12 +210,14 @@ class Message:
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all dense features for the given attribute that are coming from the given
-        list of featurizers.
+        """Gets all dense features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Dense features.
         """
@@ -214,17 +233,38 @@ class Message:
 
         return sequence_features, sentence_features
 
-    def features_present(
+    def get_all_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
-    ) -> bool:
-        """Check if there are any features present for the given attribute and
-        featurizers.
+    ) -> List["Features"]:
+        """Gets all features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
-            ``True``, if features are present, ``False`` otherwise
+            Features.
+        """
+        sparse_features = self.get_sparse_features(attribute, featurizers)
+        dense_features = self.get_dense_features(attribute, featurizers)
+
+        return [f for f in sparse_features + dense_features if f is not None]
+
+    def features_present(
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ) -> bool:
+        """Checks if there are any features present for the attribute and featurizers.
+
+        If no featurizers are provided, all available features will be considered.
+
+        Args:
+            attribute: Message attribute.
+            featurizers: Names of featurizers to consider.
+
+        Returns:
+            ``True``, if features are present, ``False`` otherwise.
         """
         if featurizers is None:
             featurizers = []
@@ -302,13 +342,14 @@ class Message:
 
         return combined_features
 
-    def is_core_message(self) -> bool:
-        """Checks whether the message is a core message or not.
+    def is_core_or_domain_message(self) -> bool:
+        """Checks whether the message is a core message or from the domain.
 
-        E.g. a core message is created from a story, not from the NLU data.
+        E.g. a core message is created from a story or a domain action,
+        not from the NLU data.
 
         Returns:
-            True, if message is a core message, false otherwise.
+            True, if message is a core or domain message, false otherwise.
         """
         return bool(
             self.data.get(ACTION_NAME)
@@ -323,11 +364,13 @@ class Message:
             )
         )
 
+    def is_e2e_message(self) -> bool:
+        """Checks whether the message came from an e2e story.
 
-def ordered(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return sorted((k, ordered(v)) for k, v in obj.items())
-    if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj
+        Returns:
+            `True`, if message is a from an e2e story, `False` otherwise.
+        """
+        return bool(
+            (self.get(ACTION_TEXT) and not self.get(ACTION_NAME))
+            or (self.get(TEXT) and not self.get(INTENT))
+        )

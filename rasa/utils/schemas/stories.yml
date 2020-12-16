@@ -24,7 +24,6 @@ mapping:
             mapping: &intent_and_entities
               intent:
                 type: "str"
-                required: True
                 allowempty: False
               user:
                 type: "str"
@@ -50,6 +49,11 @@ mapping:
           - type: "map"
             mapping: &action
               action:
+                type: "str"
+                allowempty: False
+          - type: "map"
+            mapping:
+              bot:
                 type: "str"
                 allowempty: False
           - type: "map"
