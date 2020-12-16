@@ -7,6 +7,7 @@ import tempfile
 from typing import List, Text, Dict, Any, Type
 
 import fakeredis
+import freezegun
 import pytest
 
 import rasa.shared.utils.io
@@ -1254,3 +1255,52 @@ def test_policy_predictions_dont_change_persistence():
     actual_serialized.pop("timestamp")
 
     assert actual_serialized == expected_serialized
+
+
+@freezegun.freeze_time("2018-01-01")
+def test_policy_prediction_reflected_in_tracker_state():
+    entities_predicted_by_policy = [{"entity": "entity1", "value": "value1"}]
+    nlu_entities = [{"entity": "entityNLU", "value": "value100"}]
+
+    tracker = DialogueStateTracker.from_events(
+        "Tester",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "hi",
+                intent={"name": "greet"},
+                entities=nlu_entities.copy(),
+                message_id="unique",
+                metadata={"some": "data"},
+            ),
+            DefinePrevUserUtteredFeaturization(True),
+            DefinePrevUserUtteredEntities(entities=entities_predicted_by_policy),
+        ],
+    )
+
+    tracker_state = tracker.current_state()
+
+    expected_state = {
+        "sender_id": "Tester",
+        "slots": {},
+        "latest_message": {
+            "intent": {"name": "greet"},
+            "entities": nlu_entities + entities_predicted_by_policy,
+            "text": "hi",
+            "message_id": "unique",
+            "metadata": {"some": "data"},
+        },
+        "latest_event_time": 1514764800.0,
+        "followup_action": None,
+        "paused": False,
+        "events": None,
+        "latest_input_channel": None,
+        "active_loop": {},
+        "latest_action": {"action_name": "action_listen"},
+        "latest_action_name": "action_listen",
+    }
+
+    assert tracker_state == expected_state
+
+    # Make sure we didn't change the actual event
+    assert tracker.latest_message.parse_data["entities"] == nlu_entities

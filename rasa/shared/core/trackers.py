@@ -196,8 +196,7 @@ class DialogueStateTracker:
     def current_state(
         self, event_verbosity: EventVerbosity = EventVerbosity.NONE
     ) -> Dict[Text, Any]:
-        """Return the current tracker state as an object."""
-
+        """Returns the current tracker state as an object."""
         _events = self._events_for_verbosity(event_verbosity)
         if _events:
             _events = [e.as_dict() for e in _events]
@@ -208,7 +207,7 @@ class DialogueStateTracker:
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
-            "latest_message": self.latest_message.parse_data,
+            "latest_message": self._latest_message_data(),
             "latest_event_time": latest_event_time,
             FOLLOWUP_ACTION: self.followup_action,
             "paused": self.is_paused(),
@@ -230,6 +229,14 @@ class DialogueStateTracker:
             return self.applied_events()
 
         return None
+
+    def _latest_message_data(self) -> Dict[Text, Any]:
+        parse_data_with_nlu_state = self.latest_message.parse_data.copy()
+        # Combine entities predicted by NLU with entities predicted by policies so that
+        # users can access them together via `latest_message` (e.g. in custom actions)
+        parse_data_with_nlu_state["entities"] = self.latest_message.entities
+
+        return parse_data_with_nlu_state
 
     @staticmethod
     def freeze_current_state(state: State) -> FrozenState:
