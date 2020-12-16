@@ -1,4 +1,3 @@
-import copy
 import logging
 from pathlib import Path
 from collections import defaultdict
@@ -40,7 +39,7 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.utils import train_utils
+import rasa.utils.train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -145,14 +144,11 @@ class TEDPolicy(Policy):
     # please make sure to update the docs when changing a default parameter
     defaults = {
         # ## Architecture of the used neural network
-        # Hidden layer sizes for layers before the dialogue and label embedding layers.
-        # The number of hidden layers is equal to the length of the corresponding
-        # list.
         # Hidden layer sizes for layers before the embedding layers for user message
         # and labels.
-        # The number of hidden layers is equal to the length of the corresponding
-        # list.
+        # The number of hidden layers is equal to the length of the corresponding list.
         HIDDEN_LAYERS_SIZES: {TEXT: [], ACTION_TEXT: [], f"{LABEL}_{ACTION_TEXT}": []},
+        # Dense dimension to use for sparse features.
         DENSE_DIMENSION: {
             TEXT: 128,
             ACTION_TEXT: 128,
@@ -164,16 +160,24 @@ class TEDPolicy(Policy):
             SLOTS: 20,
             ACTIVE_LOOP: 20,
         },
+        # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128, f"{LABEL}_{ACTION_TEXT}": 128},
+        # Dimension size of embedding vectors before the dialogue transformer encoder.
         ENCODING_DIMENSION: 50,
-        # Number of units in sequence transformer
-        TRANSFORMER_SIZE: 128,
-        # Number of sequence transformer layers
-        NUM_TRANSFORMER_LAYERS: 1,
-        # Number of units in dialogue transformer
-        f"{DIALOGUE}_{TRANSFORMER_SIZE}": 128,
-        # Number of dialogue transformer layers
-        f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}": 1,
+        # Number of units in transformer encoders
+        TRANSFORMER_SIZE: {
+            TEXT: 128,
+            ACTION_TEXT: 128,
+            f"{LABEL}_{ACTION_TEXT}": 128,
+            DIALOGUE: 128,
+        },
+        # Number of layers in transformer encoders
+        NUM_TRANSFORMER_LAYERS: {
+            TEXT: 1,
+            ACTION_TEXT: 1,
+            f"{LABEL}_{ACTION_TEXT}": 1,
+            DIALOGUE: 1,
+        },
         # Number of attention heads in transformer
         NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
@@ -235,7 +239,7 @@ class TEDPolicy(Policy):
         # Dropout rate for embedding layers of label, e.g. action, features.
         DROP_RATE_LABEL: 0.0,
         # Dropout rate for attention.
-        DROP_RATE_ATTENTION: 0,
+        DROP_RATE_ATTENTION: 0.0,
         # Sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
         # If 'True' apply dropout to sparse input tensors
@@ -314,13 +318,12 @@ class TEDPolicy(Policy):
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        self.config = copy.deepcopy(self.defaults)
-        self.config.update(kwargs)
-
-        self.config = train_utils.check_deprecated_options(self.config)
-
-        self.config = train_utils.update_similarity_type(self.config)
-        self.config = train_utils.update_evaluation_parameters(self.config)
+        new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
+        self.config = rasa.utils.train_utils.override_defaults(
+            self.defaults, new_config
+        )
+        self.config = rasa.utils.train_utils.update_similarity_type(self.config)
+        self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
     def _create_entity_tag_specs(self) -> List[EntityTagSpec]:
         """Create entity tag specifications with their respective tag id mappings."""
@@ -606,7 +609,9 @@ class TEDPolicy(Policy):
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
-            confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
+            confidence = rasa.utils.train_utils.normalize(
+                confidence, self.config[RANKING_LENGTH]
+            )
 
         optional_events = self._create_optional_event_for_entities(
             output, is_e2e_prediction, interpreter, tracker
@@ -776,7 +781,7 @@ class TEDPolicy(Policy):
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
         )
-        meta = train_utils.update_similarity_type(meta)
+        meta = rasa.utils.train_utils.update_similarity_type(meta)
 
         meta[EPOCHS] = epoch_override
 
@@ -903,8 +908,8 @@ class TED(TransformerRasaModel):
 
         self._prepare_transformer_layer(
             DIALOGUE,
-            self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"],
-            self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"],
+            self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE],
+            self.config[TRANSFORMER_SIZE][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[DROP_RATE_ATTENTION],
         )
@@ -1133,8 +1138,8 @@ class TED(TransformerRasaModel):
             # if the input features are fake, we don't process them further,
             # but we need to calculate correct last dim (units) so that tf could infer
             # the last shape of the tensors
-            if self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
-                text_transformer_units = self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]
+            if self.config[NUM_TRANSFORMER_LAYERS][TEXT] > 0:
+                text_transformer_units = self.config[TRANSFORMER_SIZE][TEXT]
             elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
                 text_transformer_units = self.config[HIDDEN_LAYERS_SIZES][TEXT][-1]
             else:
@@ -1472,8 +1477,8 @@ class TED(TransformerRasaModel):
 
         # broadcast the dialogue transformer output sequence-length-times to get the
         # same shape as the text sequence transformer output
-        dialogue_transformer_output = tf.broadcast_to(
-            dialogue_transformer_output, tf.shape(text_transformer_output)
+        dialogue_transformer_output = tf.tile(
+            dialogue_transformer_output, (1, tf.shape(text_transformer_output)[1], 1)
         )
 
         # concat the output of the dialogue transformer to the output of the text
