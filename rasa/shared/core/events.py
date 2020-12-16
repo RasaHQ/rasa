@@ -233,11 +233,10 @@ class Event(ABC):
     def as_story_string(self) -> Optional[Text]:
         """Returns the event as story string.
 
-        Every class should implement this
-
         Returns:
             textual representation of the event or None.
         """
+        # Every class should implement this
         raise NotImplementedError
 
     @staticmethod
