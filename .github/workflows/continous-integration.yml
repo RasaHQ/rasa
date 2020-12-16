@@ -227,7 +227,7 @@ jobs:
       # The virtualenv simply doesn't work on Windows with our setup,
       # that's why we use venv to create virtual environment
     - name: Create virtual environment
-      if: steps.cache-poetry.outputs.cache-hit != 'true'
+      if: steps.cache-poetry.outputs.cache-hit != 'true' && needs.changes.outputs.backend == 'true'
       run: python -m venv create .venv
 
     - name: Set up virtual environment
