@@ -18,6 +18,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model, telemetry
 from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
+import rasa.shared.utils.common
 from rasa.nlu.model import Interpreter
 import rasa.utils.common
 import rasa.shared.utils.common
@@ -271,7 +272,7 @@ async def _train_async_internal(
     old_model = model.get_latest_model(output_path)
 
     fingerprint_comparison = model.should_retrain(
-        new_fingerprint, old_model, train_path, force_training
+        new_fingerprint, old_model, train_path, force_training=force_training
     )
 
     if dry_run:
@@ -280,7 +281,10 @@ async def _train_async_internal(
             print_warning(text) if code > 0 else print_success(text)
         return TrainingResult(code=code)
 
-    if stories.is_empty() and nlu_data.can_train_nlu_model():
+    if nlu_data.has_e2e_examples():
+        rasa.shared.utils.common.mark_as_experimental_feature("end-to-end training")
+
+    if stories.is_empty() and nlu_data.contains_no_pure_nlu_data():
         rasa.shared.utils.cli.print_error(
             "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
@@ -302,7 +306,8 @@ async def _train_async_internal(
         )
         return TrainingResult(model=trained_model)
 
-    if nlu_data.can_train_nlu_model():
+    # We will train nlu if there are any nlu example, including from e2e stories.
+    if nlu_data.contains_no_pure_nlu_data() and not nlu_data.has_e2e_examples():
         rasa.shared.utils.cli.print_warning(
             "No NLU data present. Just a Rasa Core model will be trained."
         )
@@ -314,7 +319,21 @@ async def _train_async_internal(
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
+
         return TrainingResult(model=trained_model)
+
+    new_fingerprint = await model.model_fingerprint(file_importer)
+    old_model = model.get_latest_model(output_path)
+
+    if not force_training:
+        fingerprint_comparison = model.should_retrain(
+            new_fingerprint,
+            old_model,
+            train_path,
+            has_e2e_examples=nlu_data.has_e2e_examples(),
+        )
+    else:
+        fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if fingerprint_comparison.is_training_required():
         async with telemetry.track_model_training(
@@ -491,7 +510,19 @@ async def train_core_async(
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
-    domain = await file_importer.get_domain()
+    stories, nlu_data, domain = await asyncio.gather(
+        file_importer.get_stories(),
+        file_importer.get_nlu_data(),
+        file_importer.get_domain(),
+    )
+
+    if nlu_data.has_e2e_examples():
+        rasa.shared.utils.cli.print_error(
+            "Stories file contains e2e stories. Please train using `rasa train` so that"
+            " the NLU model is also trained."
+        )
+        return None
+
     if domain.is_empty():
         rasa.shared.utils.cli.print_error(
             "Core training was skipped because no valid domain file was found. "
@@ -500,7 +531,7 @@ async def train_core_async(
         )
         return None
 
-    if not await file_importer.get_stories():
+    if not stories:
         rasa.shared.utils.cli.print_error(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."
@@ -707,7 +738,7 @@ async def _train_nlu_async(
     )
 
     training_data = await file_importer.get_nlu_data()
-    if training_data.can_train_nlu_model():
+    if training_data.contains_no_pure_nlu_data():
         rasa.shared.utils.cli.print_error(
             f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
             f"Please verify the data format. "

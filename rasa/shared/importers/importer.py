@@ -100,8 +100,7 @@ class TrainingDataImporter:
         importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths, TrainingType.CORE
         )
-
-        return CoreDataImporter(importer)
+        return importer
 
     @staticmethod
     def load_nlu_importer_from_config(
@@ -215,34 +214,9 @@ class NluDataImporter(TrainingDataImporter):
         return await self._importer.get_nlu_data(language)
 
 
-class CoreDataImporter(TrainingDataImporter):
-    """Importer that skips any NLU related file reading."""
-
-    def __init__(self, actual_importer: TrainingDataImporter):
-        self._importer = actual_importer
-
-    async def get_domain(self) -> Domain:
-        return await self._importer.get_domain()
-
-    async def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
-        return await self._importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
-        )
-
-    async def get_config(self) -> Dict:
-        return await self._importer.get_config()
-
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        return TrainingData()
-
-
 class CombinedDataImporter(TrainingDataImporter):
     """A `TrainingDataImporter` that combines multiple importers.
+
     Uses multiple `TrainingDataImporter` instances
     to load the data as if they were a single instance.
     """
@@ -459,7 +433,13 @@ class E2EImporter(TrainingDataImporter):
         additional_e2e_action_names = list(additional_e2e_action_names)
 
         return Domain(
-            [], [], [], {}, action_names=additional_e2e_action_names, forms={}
+            [],
+            [],
+            [],
+            {},
+            action_names=[],
+            forms={},
+            action_texts=additional_e2e_action_names,
         )
 
     async def get_stories(
@@ -469,6 +449,10 @@ class E2EImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
+        """Retrieves the stories that should be used for training.
+
+        See parent class for details.
+        """
         return await self.importer.get_stories(
             template_variables, use_e2e, exclusion_percentage
         )
