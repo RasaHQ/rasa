@@ -104,7 +104,7 @@ def test(
     test_nlu(model, nlu_data, output, additional_arguments)
 
 
-def test_core(
+async def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
@@ -121,6 +121,7 @@ def test_core(
         rasa.shared.utils.io.create_directory(output)
 
     try:
+        unpacked_model = rasa.model.get_model(model)
         unpacked_model = rasa.model.get_model(model)
     except ModelNotFound:
         rasa.shared.utils.cli.print_error(
@@ -151,10 +152,11 @@ def test_core(
         additional_arguments, test, ["stories", "agent"]
     )
 
-    rasa.utils.common.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
+    # rasa.utils.common.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
+    await test(stories, _agent, out_directory=output, **kwargs)
 
 
-def test_nlu(
+async def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
@@ -180,7 +182,9 @@ def test_nlu(
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
+        await run_evaluation(
+            nlu_data, nlu_model, output_directory=output_directory, **kwargs
+        )
     else:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "

@@ -113,7 +113,9 @@ def main() -> None:
             set_log_and_warnings_filters()
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
+            breakpoint()
             cmdline_arguments.func(cmdline_arguments)
+            breakpoint()
         elif hasattr(cmdline_arguments, "version"):
             print_version()
         else:

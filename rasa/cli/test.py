@@ -1,7 +1,8 @@
 import argparse
 import logging
 import os
-from typing import List
+import asyncio
+from typing import List, Optional
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -66,7 +67,7 @@ def add_subparser(
     test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
-def run_core_test(args: argparse.Namespace) -> None:
+async def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
@@ -100,7 +101,7 @@ def run_core_test(args: argparse.Namespace) -> None:
         if args.evaluate_model_directory:
             test_core_models_in_directory(args.model, stories, output)
         else:
-            test_core(
+            await test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
@@ -115,7 +116,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     )
 
 
-def run_nlu_test(args: argparse.Namespace) -> None:
+async def run_nlu_test(args: argparse.Namespace) -> None:
     """Run NLU tests."""
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
@@ -167,11 +168,30 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
-        test_nlu(model_path, nlu_data, output, vars(args))
+        await test_nlu(model_path, nlu_data, output, vars(args))
 
 
-def test(args: argparse.Namespace):
+# def test(args: argparse.Namespace):
+#     """Run end-to-end tests."""
+#     setattr(args, "e2e", True)
+#     breakpoint()
+#     run_core_test(args)
+#     breakpoint()
+#     run_nlu_test(args)
+#     breakpoint()
+
+
+async def test_async(args: argparse.Namespace):
     """Run end-to-end tests."""
     setattr(args, "e2e", True)
-    run_core_test(args)
-    run_nlu_test(args)
+    breakpoint()
+    await run_core_test(args)
+    breakpoint()
+    await run_nlu_test(args)
+    breakpoint()
+
+
+def test(
+    args: argparse.Namespace, loop: Optional[asyncio.AbstractEventLoop] = None,
+):
+    return rasa.utils.common.run_in_loop(test_async(args), loop,)

@@ -1456,7 +1456,7 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
     return pipeline
 
 
-def run_evaluation(
+async def run_evaluation(
     data_path: Text,
     model_path: Text,
     output_directory: Optional[Text] = None,
@@ -1489,11 +1489,11 @@ def run_evaluation(
     # test_data = rasa.shared.nlu.training_data.loading.load_data(
     #     data_path, interpreter.model_metadata.language
     # )
-    test_data_importer = TrainingDataImporter.load_from_config(
-        config_path="config.yml", training_data_paths=[data_path]
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[data_path]
     )
     breakpoint()
-    test_data = test_data_importer.get_nlu_data()
+    test_data = await test_data_importer.get_nlu_data()
     breakpoint()
     result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
@@ -1829,7 +1829,7 @@ def compute_metrics(
     )
 
 
-def compare_nlu(
+async def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
@@ -1918,7 +1918,7 @@ def compare_nlu(
                 model_path = os.path.join(get_model(model_path), "nlu")
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
-                result = run_evaluation(
+                result = await run_evaluation(
                     test_path, model_path, output_directory=output_path, errors=True
                 )
 
