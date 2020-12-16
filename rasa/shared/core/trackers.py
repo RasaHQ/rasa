@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ACTION_TEXT,
     ACTION_NAME,
+    ENTITIES,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -628,7 +629,7 @@ class DialogueStateTracker:
                 # Rather get entities from `parse_data` as
                 # `DefinePrevUserUtteredEntities` might have already affected the
                 # `UserUttered.entities` attribute
-                entities = event.parse_data["entities"]
+                entities = event.parse_data[ENTITIES]
             else:
                 entities = event.entities
 

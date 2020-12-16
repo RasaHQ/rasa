@@ -379,11 +379,11 @@ class UserUttered(Event):
             self.use_text_for_featurization = False
 
         self.parse_data = {
-            "intent": self.intent,
+            INTENT: self.intent,
             # Copy entities so that changes to `self.entities` don't affect
             # `self.parse_data` and hence don't get persisted
-            "entities": self.entities.copy(),
-            "text": self.text,
+            ENTITIES: self.entities.copy(),
+            TEXT: self.text,
             "message_id": self.message_id,
             "metadata": self.metadata,
         }
@@ -402,8 +402,8 @@ class UserUttered(Event):
     ):
         return UserUttered(
             text,
-            parse_data.get("intent"),
-            parse_data.get("entities", []),
+            parse_data.get(INTENT),
+            parse_data.get(ENTITIES, []),
             parse_data,
             timestamp,
             input_channel,
