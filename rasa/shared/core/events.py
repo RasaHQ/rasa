@@ -1,3 +1,4 @@
+import abc
 import json
 import logging
 import re
@@ -228,6 +229,7 @@ class Event(ABC):
         # True at the same time
         return not (self == other)
 
+    @abc.abstractmethod
     def as_story_string(self) -> Optional[Text]:
         raise NotImplementedError
 
@@ -315,6 +317,7 @@ class Event(ABC):
         """
         pass
 
+    @abc.abstractmethod
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         # Every class should implement this
