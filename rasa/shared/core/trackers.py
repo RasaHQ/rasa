@@ -627,7 +627,8 @@ class DialogueStateTracker:
             if isinstance(event, UserUttered):
                 # Rather get entities from `parse_data` as
                 # `DefinePrevUserUtteredEntities` might have already affected the
-                # `UserUttered.entities` attribute
+                # `UserUttered.entities` attribute (this might e.g. happen when the
+                # `InMemoryTrackerStore` is used).
                 entities = event.parse_data[ENTITIES]
             else:
                 entities = event.entities
