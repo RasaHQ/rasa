@@ -8,6 +8,7 @@ abstract: Even though developing a contextual assistant is different from develo
   Setting up a Continuous Integration (CI) and Continuous Deployment (CD)
   pipeline ensures that incremental updates to your bot are improving it, not harming it.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 ## Overview
 
@@ -38,33 +39,69 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### CI Pipeline Overview
 
-There are different approaches to applying a CI pipeline depending on the number of changes. 
-All follow a mix of training the new model, testing to compare to older versions, 
+There are different approaches to applying a CI pipeline depending on the number of changes.
+All follow a mix of training the new model, testing to compare to older versions,
 and setting up an easy CD pipeline to upload the new model.
 
-The first step after saving new training data is to kick off the pipeline. (Is it usually kicked off 
-manually or triggered by an event like saving a new file?) 
-(need different pipelines / options based on how big the changes are - also should we lay out how 
+The first step after saving new training data is to kick off the pipeline. (Is it usually kicked off
+manually or triggered by an event like saving a new file?)
+(need different pipelines / options based on how big the changes are - also should we lay out how
 small or big of changes warrant which tests?) Typically this is done by xyz
 
-Next, you need to pick what level of tests to run based on the amount of data changed. The various types 
-are laid out in [Testing Your Assistant](https://rasa.com/docs/rasa/testing-your-assistant), but a good 
-rule of thumb is to always run your test stories to ensure no bugs were introduced. Larger changes 
+Next, you need to pick what level of tests to run based on the amount of data changed. The various types
+are laid out in [Testing Your Assistant](https://rasa.com/docs/rasa/testing-your-assistant), but a good
+rule of thumb is to always run your test stories to ensure no bugs were introduced. Larger changes
 may need a full NLU test with cross validation to look out for confusion between intents.
 
-After testing and posting your results for your team to see, have a person or team of reviewers 
-to check the test results with your developer. An easy process to help this is to have your CI 
-pipeline automatically create a pull request with the test results in a comment. That way, the 
-reviewer can see the changes along with the improved results. 
+After testing and posting your results for your team to see, have a person or team of reviewers
+to check the test results with your developer. An easy process to help this is to have your CI
+pipeline automatically create a pull request with the test results in a comment. That way, the
+reviewer can see the changes along with the improved results.
 
-Once the reviewer merges you can then initiate your CD pipeline to add the new model 
+Once the reviewer merges you can then initiate your CD pipeline to add the new model
 to another environment.
 
 ### GitHub Actions CI Pipeline
-intro and link to new github action repo
-example of how to run the action
-sample output
-next steps tying to CD
+
+You can use the [Rasa Train-Test Github Action](https://github.com/RasaHQ/rasa-train-test-gha)
+in your CI pipeline to automatically perform data validation, training, and testing.
+
+An example CI pipeline using the Github Action is shown below:
+
+```yaml
+jobs:
+  training-testing:
+    name: Training and Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Rasa Train and Test GitHub Action
+        uses: RasaHQ/rasa-train-test-gha@main
+        with:
+          requirements_file: requirements.txt
+          test_type: all
+          cross_validation: true
+          publish_summary: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload model
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@master
+        with:
+          name: model
+          path: models
+```
+
+In this pipeline, the Rasa Train-Test Github Action is performing data validation, model training, and story testing
+in the first step and the model file is uploaded as an artifact in the second step.
+
+The complete list of configurable parameters for the Rasa Train-Test Github Action is available in the repository's
+[README](https://github.com/RasaHQ/rasa-train-test-gha#input-arguments).
+
+When `publish_summary` is set to `true`, this action will automatically publish the model's test results to the associated
+Pull Request as a comment:
+
+<img alt="image" src={useBaseUrl("/img/train-test-github-action.png")} />
+
 
 ## Continuous Deployment (CD)
 
@@ -98,6 +135,7 @@ automatically tag the model as `production`. You will first need to build and
 deploy your updated action server, so that the new model won't e.g. call
 actions that don't exist in the pre-update action server.
 :::
+
 
 ### Deploying Your Action Server
 
