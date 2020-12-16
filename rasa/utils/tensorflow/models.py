@@ -327,9 +327,28 @@ class RasaModel(tf.keras.models.Model):
 
     @classmethod
     def load(
-        cls, model_file_name: Text, model_data_example: RasaModelData, *args, **kwargs
+        cls,
+        model_file_name: Text,
+        model_data_example: RasaModelData,
+        finetune_mode: bool = False,
+        *args,
+        **kwargs,
     ) -> "RasaModel":
-        logger.debug("Loading the model ...")
+        """Loads a model from the given weights.
+
+        Args:
+            model_file_name: Path to file containing model weights.
+            model_data_example: Example data point to construct the model architecture.
+            finetune_mode: Indicates whether to load the model for further finetuning.
+            *args: Any other non key-worded arguments.
+            **kwargs: Any other key-worded arguments.
+
+        Returns:
+            Loaded model with weights appropriately set.
+        """
+        logger.debug(
+            f"Loading the model from {model_file_name} with finetune_mode={finetune_mode}..."
+        )
         # create empty model
         model = cls(*args, **kwargs)
         # need to train on 1 example to build weights of the correct size
@@ -341,8 +360,10 @@ class RasaModel(tf.keras.models.Model):
             evaluate_on_num_examples=0,
             batch_strategy=SEQUENCE,
             silent=True,  # don't confuse users with training output
-            loading=True,  # don't use tensorboard while loading
-            eager=True,  # no need to build tf graph, eager is faster here
+            loading=True,  # don't use tensorboard when doing a dummy fit run
+            eager=(
+                False if finetune_mode else True
+            ),  # load in eager mode only for prediction phase
         )
         # load trained weights
         model.load_weights(model_file_name)

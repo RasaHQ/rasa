@@ -166,18 +166,24 @@ class FloatSlot(Slot):
                 covered_range = abs(self.max_value - self.min_value)
             else:
                 covered_range = 1
-            return [(capped_value - self.min_value) / covered_range]
+            return [1.0, (capped_value - self.min_value) / covered_range]
         except (TypeError, ValueError):
-            return [0.0]
+            return [0.0, 0.0]
 
     def persistence_info(self) -> Dict[Text, Any]:
+        """Returns relevant information to persist this slot."""
         d = super().persistence_info()
         d["max_value"] = self.max_value
         d["min_value"] = self.min_value
         return d
 
+    def _feature_dimensionality(self) -> int:
+        return len(self.as_feature())
+
 
 class BooleanSlot(Slot):
+    """A slot storing a truth value."""
+
     type_name = "bool"
 
     def _as_feature(self) -> List[float]:
@@ -298,8 +304,15 @@ class CategoricalSlot(Slot):
             )
 
     def persistence_info(self) -> Dict[Text, Any]:
+        """Returns serialized slot."""
         d = super().persistence_info()
-        d["values"] = self.values
+        d["values"] = [
+            value
+            for value in self.values
+            # Don't add default slot when persisting it.
+            # We'll re-add it on the fly when creating the domain.
+            if value != rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+        ]
         return d
 
     def _as_feature(self) -> List[float]:
