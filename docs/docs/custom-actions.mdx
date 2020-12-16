@@ -9,7 +9,7 @@ For details on how to implement a custom action, see the [SDK documentation](htt
 Any custom action that you want to use in your stories should be added into the
 actions section of your [domain](./domain.mdx).
 
-Rasa will call an endpoint you specify when a custom action is predicted. 
+Rasa will send a request to the actions server when a custom action is predicted. 
 This endpoint should be a webserver that reacts to this call, runs the code, and 
 optionally returns information to modify the dialogue state.
 
