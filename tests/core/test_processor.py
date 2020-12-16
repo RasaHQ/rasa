@@ -191,14 +191,13 @@ async def test_reminder_scheduled(
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
 
-    assert t.events[-5] == UserUttered("test")
-    assert t.events[-4] == ActionExecuted("action_schedule_reminder")
-    assert isinstance(t.events[-3], ReminderScheduled)
-    assert t.events[-2] == UserUttered(
+    assert t.events[1] == UserUttered("test")
+    assert t.events[2] == ActionExecuted("action_schedule_reminder")
+    assert isinstance(t.events[3], ReminderScheduled)
+    assert t.events[4] == UserUttered(
         f"{EXTERNAL_MESSAGE_PREFIX}remind",
         intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
-    assert t.events[-1] == ActionExecuted("action_listen")
 
 
 async def test_trigger_external_latest_input_channel(

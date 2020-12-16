@@ -12,10 +12,13 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITIES,
+    INTENT,
+    ACTION_NAME,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
@@ -633,3 +636,25 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        Message({INTENT: "intent2"}),
+        Message({ENTITIES: [{"entity": "entity2"}]}),
+        Message({ENTITIES: [{"entity": "entity1", "group": "new_group"}]}),
+        Message({ENTITIES: [{"entity": "entity1", "role": "new_role"}]}),
+        Message({ACTION_NAME: "action_name2"}),
+    ],
+)
+def test_label_fingerprints(message: Message):
+    training_data1 = TrainingData(
+        [
+            Message({INTENT: "intent1"}),
+            Message({ENTITIES: [{"entity": "entity1"}]}),
+            Message({ACTION_NAME: "action_name1"}),
+        ]
+    )
+    training_data2 = training_data1.merge(TrainingData([message]))
+    assert training_data1.label_fingerprint() != training_data2.label_fingerprint()
