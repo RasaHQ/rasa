@@ -157,6 +157,7 @@ nlu:
     - Bank of America
 ```
 
+
 ### Training Examples
 
 Training examples are grouped by [intent](glossary.mdx#intent) and listed under the
@@ -326,6 +327,29 @@ nlu:
   examples: |
     - JPMC
     - Bank of America
+```
+
+We can also provide lookup values in an external text file as well. The supplied lookup table files must be in a newline-delimited format. For example, data/lookups/plates.txt may contain:
+```
+tacos
+beef
+mapo tofu
+burrito
+lettuce wrap
+```
+
+And can be loaded and used as shown here:
+
+```
+nlu:
+- lookup: plates
+  files: |
+    - data/lookups/plates.txt
+
+- intent: food_request
+  examples: |
+    - I'd like beef [tacos](plates) and a [burrito](plates)
+    - How about some [mapo tofu](plates)
 ```
 
 When you supply a lookup table in your training data, the contents of that table
