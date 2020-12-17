@@ -1,0 +1,1 @@
+All Rasa Open Source images are now using Python 3.8 instead of Python 3.7.
