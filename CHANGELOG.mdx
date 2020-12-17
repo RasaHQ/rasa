@@ -16,6 +16,23 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.2.1] - 2020-12-17
+                       
+
+### Bugfixes
+- [#7557](https://github.com/rasahq/rasa/issues/7557): Fixed a problem where a [form](forms.mdx) wouldn't reject when the 
+  `FormValidationAction` re-implemented `required_slots`.
+- [#7585](https://github.com/rasahq/rasa/issues/7585): Fixed an error when using the [SQLTrackerStore](tracker-stores.mdx#sqltrackerstore)
+  with a Postgres database and the parameter `login_db` specified.
+
+  The error was:
+
+  ```bash
+  psycopg2.errors.SyntaxError: syntax error at end of input
+  rasa-production_1  | LINE 1: SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?
+  ```
+
+
 ## [2.2.0] - 2020-12-16
                        
 
