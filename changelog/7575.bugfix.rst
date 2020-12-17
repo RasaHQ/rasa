@@ -1,1 +1,1 @@
-Fix scikit-learn crashing during response selector evaluation.
+Fix scikit-learn crashing during evaluation of `ResponseSelector` predictions.
