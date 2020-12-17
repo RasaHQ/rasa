@@ -1,0 +1,18 @@
+version: "2.0"
+
+rules:
+- rule: activate form
+  steps:
+  - user: find me a restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+
+- rule: Submit form
+  condition:
+  - active_loop: restaurant_form
+  steps:
+  - action: restaurant_form
+  - slot_was_set:
+    - requested_slot: null
+  - active_loop: null
+  - action: utter_thanks

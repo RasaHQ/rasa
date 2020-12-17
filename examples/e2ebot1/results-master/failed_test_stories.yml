@@ -1,0 +1,44 @@
+version: "2.0"
+stories:
+- story: accepts suggestion (/var/folders/2b/fjgk6cn52r9_1dhkcn1cpdmr0000gn/T/tmp64j5k5t5/0d96aaac09c84fb1983a3fdef08fc52f_test_stories.yml)
+  steps:
+  - intent: greet
+  - action: utter_greet  # predicted: action_default_fallback
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - intent: affirm
+  - action: utter_search_restaurants
+- story: accepts suggestion, indirectly (/var/folders/2b/fjgk6cn52r9_1dhkcn1cpdmr0000gn/T/tmp64j5k5t5/0d96aaac09c84fb1983a3fdef08fc52f_test_stories.yml)
+  steps:
+  - intent: greet
+  - action: utter_greet  # predicted: action_default_fallback
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: |-
+      I can always go for sushi
+  - action: utter_search_restaurants
+- story: rejects suggestion, indirectly (/var/folders/2b/fjgk6cn52r9_1dhkcn1cpdmr0000gn/T/tmp64j5k5t5/0d96aaac09c84fb1983a3fdef08fc52f_test_stories.yml)
+  steps:
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: |-
+      I had that yesterday
+  - action: utter_suggest_cuisine
+- story: interactive_story_1 (/var/folders/2b/fjgk6cn52r9_1dhkcn1cpdmr0000gn/T/tmp64j5k5t5/0d96aaac09c84fb1983a3fdef08fc52f_test_stories.yml)
+  steps:
+  - intent: search_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - slot_was_set:
+    - requested_slot: cuisine
+  - intent: inform
+    entities:
+    - cuisine: greek
+  - slot_was_set:
+    - cuisine: greek
+  - slot_was_set:
+    - cuisine: greek
+  - slot_was_set:
+    - requested_slot: null
+  - active_loop: null
+  - action: utter_thanks  # predicted: action_default_fallback
