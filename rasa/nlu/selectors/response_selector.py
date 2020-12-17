@@ -466,9 +466,18 @@ class ResponseSelector(DIETClassifier):
         finetune_mode: bool = False,
     ) -> "RasaModel":
 
+        predict_data_example = RasaModelData(
+            label_key=model_data_example.label_key,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if TEXT in feature_name
+            },
+        )
         return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
             tf_model_file,
             model_data_example,
+            predict_data_example,
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,

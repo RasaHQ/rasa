@@ -241,6 +241,7 @@ class RasaModel(TmpKerasModel):
         cls,
         model_file_name: Text,
         model_data_example: RasaModelData,
+        predict_data_example: Optional[RasaModelData] = None,
         finetune_mode: bool = False,
         *args,
         **kwargs,
@@ -250,6 +251,8 @@ class RasaModel(TmpKerasModel):
         Args:
             model_file_name: Path to file containing model weights.
             model_data_example: Example data point to construct the model architecture.
+            predict_data_example: Example data point to speed up prediction during
+              inference.
             finetune_mode: Indicates whether to load the model for further finetuning.
             *args: Any other non key-worded arguments.
             **kwargs: Any other key-worded arguments.
@@ -274,6 +277,14 @@ class RasaModel(TmpKerasModel):
             # prepare the model for prediction
             model.prepare_for_predict()
             model.prepared_for_prediction = True
+
+            # predict on one data example to speed up prediction during inference
+            # the first prediction always takes a bit longer
+            if predict_data_example:
+                predict_data_generator = RasaBatchDataGenerator(
+                    predict_data_example, batch_size=1
+                )
+                model.predict(predict_data_generator)
 
         logger.debug("Finished loading the model.")
         return model

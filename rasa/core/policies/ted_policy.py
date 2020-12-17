@@ -813,9 +813,22 @@ class TEDPolicy(Policy):
 
         meta[EPOCHS] = epoch_override
 
+        predict_data_example = RasaModelData(
+            label_key=LABEL_KEY,
+            label_sub_key=LABEL_SUB_KEY,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if feature_name
+                # we need to remove label features for prediction if they are present
+                in PREDICTION_FEATURES
+            },
+        )
+
         model = TED.load(
             str(tf_model_file),
             model_data_example,
+            predict_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
             # during prediction we don't care about previous dialogue turns,
