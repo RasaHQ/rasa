@@ -1,4 +1,4 @@
-FROM python:3.7-slim as base
+FROM python:3.8-slim as base
 
 RUN apt-get update -qq \
  && apt-get install -y --no-install-recommends \
