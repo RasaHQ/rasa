@@ -171,24 +171,11 @@ async def run_nlu_test(args: argparse.Namespace) -> None:
         await test_nlu(model_path, nlu_data, output, vars(args))
 
 
-# def test(args: argparse.Namespace):
-#     """Run end-to-end tests."""
-#     setattr(args, "e2e", True)
-#     breakpoint()
-#     run_core_test(args)
-#     breakpoint()
-#     run_nlu_test(args)
-#     breakpoint()
-
-
 async def test_async(args: argparse.Namespace):
     """Run end-to-end tests."""
     setattr(args, "e2e", True)
-    breakpoint()
     await run_core_test(args)
-    breakpoint()
     await run_nlu_test(args)
-    breakpoint()
 
 
 def test(

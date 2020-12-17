@@ -1289,14 +1289,12 @@ def get_eval_data(
     logger.info("Running model for predictions:")
 
     intent_results, entity_results, response_selection_results = [], [], []
-    breakpoint()
     response_labels = [
         e.get(INTENT_RESPONSE_KEY)
         for e in test_data.intent_examples
         if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
-    breakpoint()
     should_eval_intents = (
         is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
     )
@@ -1485,16 +1483,13 @@ async def run_evaluation(
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
 
-    breakpoint()
     # test_data = rasa.shared.nlu.training_data.loading.load_data(
     #     data_path, interpreter.model_metadata.language
     # )
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path]
     )
-    breakpoint()
     test_data = await test_data_importer.get_nlu_data()
-    breakpoint()
     result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
         "entity_evaluation": None,
