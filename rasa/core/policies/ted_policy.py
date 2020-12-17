@@ -951,7 +951,7 @@ class TED(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
-    #TODO-sams: remove
+    # TODO-sams: remove
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
     ) -> None:
@@ -1112,7 +1112,7 @@ class TED(TransformerRasaModel):
             lambda: self._encode_fake_features_per_attribute(tf_batch_data, attribute),
         )
 
-    #TODO-sams: remove
+    # TODO-sams: remove
     def _get_dense_units(
         self, attribute_features_list: List[tf.Tensor], attribute: Text
     ) -> int:
@@ -1125,7 +1125,7 @@ class TED(TransformerRasaModel):
                 units += f.shape[-1]
         return units
 
-    #TODO-sams: remove
+    # TODO-sams: remove
     def _get_concat_units(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> int:

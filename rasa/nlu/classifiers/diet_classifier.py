@@ -1302,7 +1302,9 @@ class DIET(TransformerRasaModel):
             )
             # self._tf_layers[f"ffnn.{name}"] = (x, self._training)
             self._prepare_ffnn_layer(
-                self.label_name, self.config[HIDDEN_LAYERS_SIZES][self.label_name], self.config[DROP_RATE]
+                self.label_name,
+                self.config[HIDDEN_LAYERS_SIZES][self.label_name],
+                self.config[DROP_RATE],
             )
 
             self._prepare_label_classification_layers()
