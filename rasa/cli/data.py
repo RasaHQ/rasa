@@ -279,13 +279,18 @@ def _create_paraphrase_pool(
     paraphrase_pool = collections.defaultdict(list)
     for p in paraphrases.intent_examples:
         if p.data["intent"] in pooled_intents:
-            paraphrases_for_example = p.data["metadata"]["example"]["paraphrases"].split("\n")
+            paraphrases_for_example = p.data["metadata"]["example"][
+                "paraphrases"
+            ].split("\n")
             paraphrase_scores = p.data["metadata"]["example"]["scores"].split("\n")
 
             for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
-                if paraphrase == "" or float(score) < paraphrase_quality_threshold: continue
+                if paraphrase == "" or float(score) < paraphrase_quality_threshold:
+                    continue
 
-                paraphrase_pool[p.data["intent"]].append((p, set(paraphrase.lower().split()), paraphrase))
+                paraphrase_pool[p.data["intent"]].append(
+                    (p, set(paraphrase.lower().split()), paraphrase)
+                )
 
     return paraphrase_pool
 
@@ -377,7 +382,7 @@ def _get_intents_with_performance_changes(
             rounded_augmented = round(
                 intent_report[intent_key][metric], significant_figures
             )
-            if (rounded_original != rounded_augmented):
+            if rounded_original != rounded_augmented:
                 changed_intents.add(intent_key)
 
     return changed_intents
@@ -387,10 +392,9 @@ def _create_augmentation_summary(
     pooled_intents: Set,
     changed_intents: Set,
     classification_report: Dict[Text, Dict[Text, float]],
-    intent_report: Dict[Text, float]
+    intent_report: Dict[Text, float],
 ) -> Tuple[
-    Dict[Text, Dict[Text, float]],
-    Dict[Text, float],
+    Dict[Text, Dict[Text, float]], Dict[Text, float],
 ]:
 
     intent_summary = collections.defaultdict(dict)
@@ -407,12 +411,8 @@ def _create_augmentation_summary(
         precision_change = (
             intent_results["precision"] - intent_results_original["precision"]
         )
-        recall_change = (
-            intent_results["recall"] - intent_results_original["recall"]
-        )
-        f1_change = (
-            intent_results["f1-score"] - intent_results_original["f1-score"]
-        )
+        recall_change = intent_results["recall"] - intent_results_original["recall"]
+        f1_change = intent_results["f1-score"] - intent_results_original["f1-score"]
 
         intent_results["precision_change"] = intent_summary[intent][
             "precision_change"
@@ -425,10 +425,7 @@ def _create_augmentation_summary(
         ] = f1_change
         intent_report[intent] = intent_results
 
-    return (
-        intent_summary,
-        intent_report
-    )
+    return (intent_summary, intent_report)
 
 
 def _plot_summary_reports(
@@ -533,7 +530,9 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
     )
 
     # Retrieve paraphrase pool and training data pool
-    paraphrase_pool = _create_paraphrase_pool(paraphrases, pooled_intents, args.paraphrase_score_threshold)
+    paraphrase_pool = _create_paraphrase_pool(
+        paraphrases, pooled_intents, args.paraphrase_score_threshold
+    )
     training_data_pool, training_data_vocab_per_intent = _create_training_data_pool(
         nlu_training_data, pooled_intents
     )
@@ -628,20 +627,30 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
     )
 
     # Retrieve intents for which performance has changed
-    changed_intents_diverse = _get_intents_with_performance_changes(
-        classification_report, intent_report_diverse.report, nlu_training_data.intents
-    ) - pooled_intents
+    changed_intents_diverse = (
+        _get_intents_with_performance_changes(
+            classification_report,
+            intent_report_diverse.report,
+            nlu_training_data.intents,
+        )
+        - pooled_intents
+    )
 
-    changed_intents_random = _get_intents_with_performance_changes(
-        classification_report, intent_report_random.report, nlu_training_data.intents
-    ) - pooled_intents
+    changed_intents_random = (
+        _get_intents_with_performance_changes(
+            classification_report,
+            intent_report_random.report,
+            nlu_training_data.intents,
+        )
+        - pooled_intents
+    )
 
     # Create and update result reports
     report_tuple = _create_augmentation_summary(
         pooled_intents,
         changed_intents_diverse,
         classification_report,
-        intent_report_diverse.report
+        intent_report_diverse.report,
     )
 
     intent_summary_diverse = report_tuple[0]
@@ -651,7 +660,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         pooled_intents,
         changed_intents_random,
         classification_report,
-        intent_report_random.report
+        intent_report_random.report,
     )
     intent_summary_random = report_tuple[0]
     intent_report_random.report.update(report_tuple[1])
@@ -673,7 +682,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         changed_intents_diverse,
         changed_intents_random,
         output_directory_diverse,
-        output_directory_random
+        output_directory_random,
     )
 
     telemetry.track_data_suggest()

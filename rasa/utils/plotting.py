@@ -200,7 +200,10 @@ def plot_curve(
 
 
 def plot_intent_augmentation_summary(
-    augmentation_summary: Dict[Text, Dict[Text, float]], changed_intents: Set[Text], metric: Text, output_file: Text
+    augmentation_summary: Dict[Text, Dict[Text, float]],
+    changed_intents: Set[Text],
+    metric: Text,
+    output_file: Text,
 ) -> None:
     """Plot the gain/loss curve per intent.
 

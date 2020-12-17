@@ -105,7 +105,7 @@ def set_suggest_arguments(parser: argparse.ArgumentParser):
         "--paraphrase-score-threshold",
         type=float,
         default=0.8,
-        help="Quality score threshold for paraphrases, i.e. any paraphrase with a score < paraphrase-score-threshold will be discarded."
+        help="Quality score threshold for paraphrases, i.e. any paraphrase with a score < paraphrase-score-threshold will be discarded.",
     )
 
     add_out_param(
