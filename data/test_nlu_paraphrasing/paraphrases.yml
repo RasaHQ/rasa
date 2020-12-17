@@ -1,0 +1,802 @@
+nlu:
+- intent: transfer_money
+  examples:
+    - text: can I transfer money to my mom
+      metadata:
+        paraphrases: |
+          can't I give money for my mother
+          can't I give money for my mama
+          I can transfer the money for my mama
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: I need to transfer money to a friend
+      metadata:
+        paraphrases: |
+          Let's transfer the money back to my friend
+          Now, I have gotta transfer me money for a friends!
+          needed for a good friend
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: I want to transfer $100 to Bob
+      metadata:
+        paraphrases: |
+          I wanted to transferred $100 for Bob
+          I wanted to transferred $100 for Bob.
+          I'm going to give $100 for Bob
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: pay Lisa please
+      metadata:
+        paraphrases: |
+          pay Lisa please
+          I pay Lisa please
+          pays Lisa please
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: i want to transfer $400 to Akela
+      metadata:
+        paraphrases: |
+          I wants to move $400 towards Akela
+          I wants to move $400 towards Akela. ...
+          I want for Akela $400
+        scores: |
+          0.444
+          0.389
+          0.451
+    - text: transfer money
+      metadata:
+        paraphrases: |
+          Transfer of money
+          money transfer
+          Transfer of money
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: I want to pay John
+      metadata:
+        paraphrases: |
+          I wanted to be paid for John
+          "My intention is to make a payment to John:"
+          I wants the money of John
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: transfer $60 to John Jacob
+      metadata:
+        paraphrases: |
+          Transfer of $60 from John Jakob
+          Transfer of $60 from John James
+          UN$60 being transferred to Jean Jacob
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: transfer $60 to Sally
+      metadata:
+        paraphrases: |
+          Transfer of $60 for Sally
+          $1.00 transferred to Sameera's
+          Fund transfers of $60 for Sally
+        scores: |
+          0.789
+          0.389
+          0.451
+- intent: human_handoff
+  examples:
+    - text: real agent please
+      metadata:
+        paraphrases: |
+          in-laws asking for
+          the real agent beg! (really
+          The genuine officer may ask for it.
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: real human
+      metadata:
+        paraphrases: |
+          Real human
+          a real person??
+          "truly humane person: the"
+        scores: |
+          0.444
+          0.389
+          0.451
+    - text: can I speak to an agent
+      metadata:
+        paraphrases: |
+          May I talk to the agent
+          May I talk to the agents
+          So, I can talk to the agent
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: give me a person please
+      metadata:
+        paraphrases: |
+          give us a man please
+          leave for me someone please
+          take a man please
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: chat with a live agent
+      metadata:
+        paraphrases: |
+          Chat with live agents
+          Get in touch of some live actors; and
+          Chattered by active agents; and
+        scores: |
+          0.789
+          0.389
+          0.451
+- intent: check_earnings
+  examples:
+    - text: How much money did I make last year?
+      metadata:
+        paraphrases: |
+          How many money was I making last years?
+          So how much of the money I made last years?
+          A lot of the money?
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: How much did I make last month?
+      metadata:
+        paraphrases: |
+          Who was the one who won?
+          Which amount did you make for me last day!!
+          Quantity I made last week.
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: how much was deposited in my account last month?
+      metadata:
+        paraphrases: |
+          How much has been deposited on my bank account the past month?
+          Which amount was saved by mine for one month now?
+          Could we know how many were put into our money last week?
+        scores: |
+          0.444
+          0.389
+          0.451
+    - text: How much money did I make last week?
+      metadata:
+        paraphrases: |
+          How many money was I making last weekend?
+          But what was my income from this past week?...
+          Quantum made I last weekend?
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: how much money have I earned?
+      metadata:
+        paraphrases: |
+          How much has I made?
+          How much has I made?.
+          Quantum money did it make for me?...
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: total deposits over last year
+      metadata:
+        paraphrases: |
+          Total deposits for the past year
+          the total of deposits during the past year
+          Total deposits for the previous year
+        scores: |
+          0.789
+          0.389
+          0.451
+- intent: inform
+  examples:
+    - text: my justice bank card
+      metadata:
+        paraphrases: |
+          My justice banks card
+          Injustice Bank Card
+          (my) justice bill of money,
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: Starbucks
+      metadata:
+        paraphrases: |
+          Starbucks
+          Space Buzzers
+          Big Star
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: towards my iron bank card
+      metadata:
+        paraphrases: |
+          Towards my steel banking card
+          Towards my steel-based bankcard,
+          From The Railways to the Iron Bank Cards
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: emblem credit card
+      metadata:
+        paraphrases: |
+          emblem credit card
+          Logo Credit Card
+          National badge credit card,
+        scores: |
+          0.789
+          0.747
+          0.975
+- intent: affirm
+  examples:
+    - text: yup
+      metadata:
+        paraphrases: |
+          yup
+          yops
+          up
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: that sounds good
+      metadata:
+        paraphrases: |
+          that it sounds good
+          it sounds good
+          "that it sounded right:)"
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: yes plz
+      metadata:
+        paraphrases: |
+          yes plz
+          that is plic's, and
+          yest plets; ......
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: indeed
+      metadata:
+        paraphrases: |
+          Indeed
+          And indeed
+          In fact.........
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: correct
+      metadata:
+        paraphrases: |
+          Correct
+          Right
+          Right.
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: yeah
+      metadata:
+        paraphrases: |
+          yeah
+          YEH .
+          Okay!...Yeah
+        scores: |
+          0.789
+          0.747
+          0.975
+- intent: goodbye
+  examples:
+    - text: i'm done
+      metadata:
+        paraphrases: |
+          I'm done
+          that we are done!...
+          Is done
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: stop
+      metadata:
+        paraphrases: |
+          Stop
+          Stop.---
+          STOP
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: bye
+      metadata:
+        paraphrases: |
+          Bye
+          Bye bye
+          By Bye Bye?
+        scores: |
+          0.789
+          0.747
+          0.975
+          0.134
+    - text: see you later
+      metadata:
+        paraphrases: |
+          See you later
+          Look at you later
+          Watch them later
+        scores: |
+          0.789
+          0.747
+          0.975
+- intent: pay_cc
+  examples:
+    - text: can you help me pay the current balance on my credit card
+      metadata:
+        paraphrases: |
+          Can you assist me in paying the present balance of my kredit card
+          I can help you pay for the present balance of my loan card
+          Be able to help us pay for this current account on our credit map
+        scores: |
+          0.789
+          0.747
+          0.975
+    - text: i want to pay off my credit card
+      metadata:
+        paraphrases: |
+          I wants to repay my kredit card
+          That’s what I want from my loan card
+          wishing to repay my banknotes
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: I want to pay my justice bank bill
+      metadata:
+        paraphrases: |
+          I wish to foot my court's bank invoice
+          Maybe I’ll be paying my court bill
+          Can pay for my bank account
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: i want to pay my credit card
+      metadata:
+        paraphrases: |
+          I wants to paid my kredit card
+          I do wants to make my loan card
+          You will pay the credit
+        scores: |
+          0.789
+          0.389
+          0.451
+- intent: check_balance
+  examples:
+    - text: How much money do I owe on my credit cards
+      metadata:
+        paraphrases: |
+          How many money I'm indebted to my kredit cards
+          And so, how much is it for me to pay on the credit.
+          Which sum to pay for my bank cards
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: What's the balance on that account?
+      metadata:
+        paraphrases: |
+          What is the equilibracy of it?
+          Why the scale of this account?
+          What was its balance?
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: what is my account balance
+      metadata:
+        paraphrases: |
+          what the balance of my
+          why on me account
+          me balance
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: what's my balance?
+      metadata:
+        paraphrases: |
+          what is my equilibrium?
+          - What is your balance?
+          Why my own balance?
+        scores: |
+          0.444
+          0.389
+          0.451
+    - text: Show me my credit card balance
+      metadata:
+        paraphrases: |
+          Show to me the balance of my kredit card
+          I showed them my bank cards.
+          Present my loan card
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: What's left on that account?
+      metadata:
+        paraphrases: |
+          Why do you have to go about that?
+          Who has remained behind on those scores?
+          This: What is left of that countdown?"
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: what's my account balance?
+      metadata:
+        paraphrases: |
+          what is my bill balance?
+          why the balance of my book is so big?
+          Whose are all of my books' balances?
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: How much do I have on that account?
+      metadata:
+        paraphrases: |
+          So how much of that is there for me?
+          How much does I get in that regard ?!
+          When are you going about the matter?
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: What's the balance on the credit all account
+      metadata:
+        paraphrases: |
+          What is the equilibrium on credit, all of account
+          And what are these credits?
+          What was that balance at that whole bank account;
+        scores: |
+          0.444
+          0.389
+          0.451
+- intent: search_transactions
+  examples:
+    - text: I want to check my spending history at starbucks
+      metadata:
+        paraphrases: |
+          I wish to verify my expenditure history in the big stars
+          We want our spending records in the big stars
+          Please check your story on big stars
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: can I search my transaction history
+      metadata:
+        paraphrases: |
+          May I look up my trading history
+          May I look up my trading history.)"
+          How to Search My Transaction History?
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: I want to search my past transactions
+      metadata:
+        paraphrases: |
+          I wish to look for my previous transactions
+          What I’m trying to do is search for my previous transactions
+          Maybe I'm looking into all of my previous transactions
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: I want to check my spending
+      metadata:
+        paraphrases: |
+          I wish to control my expenditure
+          I wish to control my expenditures
+          Please check your spending
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: I need to check my spending history
+      metadata:
+        paraphrases: |
+          I have to verify my expenditure history
+          “I need some checking of my expense history.”
+          A check on my expenditure history
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: can I look at past transactions
+      metadata:
+        paraphrases: |
+          to look back on former transactions
+          So let me look over past trade-offs
+          "am looking at previous transactions?:"
+        scores: |
+          0.444
+          0.389
+          0.451
+- intent: thankyou
+  examples:
+    - text: okay thank you goodbye
+      metadata:
+        paraphrases: |
+          ok, thanks well, goodbye
+          quite rightlyThank you bye-bye
+          a good way to say aside.
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: thank you and good bye
+      metadata:
+        paraphrases: |
+          congratulations for you, and farewell
+          ‘Thank you’s for goodbye
+          Please and farewell
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: thank you bye
+      metadata:
+        paraphrases: |
+          thank you goodbye
+          to say aside, thank you!
+          forgiveness
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: okay thank you
+      metadata:
+        paraphrases: |
+          no matter what.Thanks, well
+          so much for me, thanks
+          coolly good for you!......
+        scores: |
+          0.444
+          0.389
+          0.451
+    - text: thank you goodbye
+      metadata:
+        paraphrases: |
+          Adieuth thank you....
+          well-goodbye???
+          "Thank well"
+        scores: |
+          0.444
+          0.389
+          0.451
+- intent: check_recipients
+  examples:
+    - text: Who are my known recipients
+      metadata:
+        paraphrases: |
+          Who's my well-known recipients
+          I know who I receive
+          whom the known beneficiaries are?
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: Who can I send money to?
+      metadata:
+        paraphrases: |
+          Whom can we send the money?
+          Why should I give money?
+          whom may I pay?
+        scores: |
+          0.444
+          0.389
+          0.451
+    - text: who can I transfer money to?
+      metadata:
+        paraphrases: |
+          Whom can we transfer the money?
+          So who am I to turn over my money towards?
+          By whom may I pass on this money ?
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: Show me people I can send money to
+      metadata:
+        paraphrases: |
+          Show us people who I could send the money
+          Beware of a person whom they can pay.
+          Look at those I could send the money for
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: Show the recipient list
+      metadata:
+        paraphrases: |
+          Send out receipt listing for this post
+          "Displaying the list of winners:"
+          "Enterlisting receipt listing:"
+        scores: |
+          0.444
+          0.389
+          0.451
+    - text: Who is a valid payee
+      metadata:
+        paraphrases: |
+          - Who's a legitimate payee?
+          How to make an effective payment.
+          Those who are valid paid
+        scores: |
+          0.789
+          0.389
+          0.451
+- intent: deny
+  examples:
+    - text: nope
+      metadata:
+        paraphrases: |
+          Nope
+          NOT
+          of Noopy
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: no thanks
+      metadata:
+        paraphrases: |
+          no thanks
+          Nothing for thanks
+          - Nothing for thanks
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: not really
+      metadata:
+        paraphrases: |
+          Not really
+          Very little not really
+          Unreal indeed,
+        scores: |
+          0.789
+          0.747
+          0.451
+- intent: help
+  examples:
+    - text: how do I use this
+      metadata:
+        paraphrases: |
+          how I am using this
+          as a way of using this
+          ways that used
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: what can I ask you?
+      metadata:
+        paraphrases: |
+          That I might want you to ask me!
+          Could I ever ask ?
+          Let me ask?
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: help, what do you do
+      metadata:
+        paraphrases: |
+          help, how are you doing
+          I am helping and what you're doing
+          Reliefs, What You Do to Do!
+        scores: |
+          0.789
+          0.747
+          0.451
+    - text: what can you do?
+      metadata:
+        paraphrases: |
+          What can we do?
+          We ask what they can do!
+          Just why can I do it
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: what do you do?
+      metadata:
+        paraphrases: |
+          What do we do?
+          What do we do ?.........
+          Did you?
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: what can you help me with?
+      metadata:
+        paraphrases: |
+          Who else can we help with?
+          "What are you able to help?")
+          For what will she help us in this matter?
+        scores: |
+          0.789
+          0.747
+          0.451
+- intent: greet
+  examples:
+    - text: good evening
+      metadata:
+        paraphrases: |
+          Good evening
+          "in the good afternoons:"
+          for better
+        scores: |
+          0.789
+          0.389
+          0.451
+    - text: hey there
+      metadata:
+        paraphrases: |
+          hey there
+          ehey there
+          on it
+        scores: |
+          0.789
+          0.389
+          0.451
+- intent: ask_transfer_charge
+  examples:
+    - text: is there a transfer charge?
+      metadata:
+        paraphrases: |
+          Is there any transfer fee?
+          Is there any transfer fee?.
+          And does they pay for the transfer of funds ?...
+        scores: |
+          0.789
+          0.747
+          0.389
+    - text: Will I be charged for transferring money
+      metadata:
+        paraphrases: |
+          Will you charge me for money transfer
+          Should me be accused for moving money in the first place.
+          So, will I get charged in connection with monetary payment ?
+        scores: |
+          0.789
+          0.389
+          0.451

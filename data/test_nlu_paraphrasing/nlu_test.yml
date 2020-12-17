@@ -1,0 +1,96 @@
+version: "2.0"
+nlu:
+- intent: affirm
+  examples: |
+    - of course
+    - yes please
+- intent: ask_transfer_charge
+  examples: |
+    - is there a xfer fee
+    - is there a transfer fee
+- intent: check_balance
+  examples: |
+    - What's my [credit all](credit_card) balance
+    - How much money is on my account?
+    - What's my [credit](account_type) balance
+    - What's my [credit card](account_type) balance
+    - what's my account balance
+    - what's my [embelm](credit_card)'s card balance?
+    - Show me my [credit accounts](account_type)
+- intent: check_earnings
+  examples: |
+    - What did I earn last month?
+    - check deposits for last week
+    - How much money went into my account last month?
+- intent: deny
+  examples: |
+    - never
+    - no way
+- intent: goodbye
+  examples: |
+    - goodbye
+    - quit
+- intent: greet
+  examples: |
+    - hello
+    - good morning
+- intent: inform
+  examples: |
+    - for tomorrow
+    - my [emblem](credit_card) [credit card](account_type)
+    - I want to pay the [minimum balance](payment_amount)
+    - for friday
+    - [emblem](credit_card) account
+    - the last two weeks
+    - at [starbucks](vendor_name)
+    - my [minimum balance](payment_amount)
+    - today
+    - [iron bank](credit_card) [credit card](account_type)
+    - [credit all](credit_card)
+    - $100
+    - [justice bank](credit_card) [credit card](account_type)
+- intent: pay_cc
+  examples: |
+    - i want to pay off my [credit all](credit_card) [credit card](account_type)
+    - I want to pay off my [credit card](account_type)
+    - I want to pay the [current balance](payment_amount) on my [credit card](account_type)
+    - i want to pay off my [emblem](credit_card) [credit card](account_type)
+    - I would like to pay the [minimum balance](payment_amount) on my [embelm](credit_card) card
+- intent: search_transactions
+  examples: |
+    - how much did I spend at [Target](vendor_name) this week?
+    - I want to check my spending history
+    - can i seem my transactions with [target](vendor_name)
+- intent: thankyou
+  examples: |
+    - and thats all thank you and good bye
+    - thanks goodbye
+- intent: transfer_money
+  examples: |
+    - I want to pay someone
+    - can I transfer money to Kyle Gardner?
+    - I want to transfer money
+    - I want to pay Bill
+    - Pay Karen 60 Euros
+- intent: check_recipients
+  examples: |
+    - who can I pay?
+    - who can I transfer money?
+- intent: help
+  examples: |
+    - help
+    - help me
+- intent: human_handoff
+  examples: |
+    - i want to talk to a human
+    - I want a human
+- synonym: credit
+  examples: |
+    - credit card
+    - credit cards
+    - credit account
+    - credit accounts
+- synonym: emblem
+  examples: |
+    - emblm
+    - embelm

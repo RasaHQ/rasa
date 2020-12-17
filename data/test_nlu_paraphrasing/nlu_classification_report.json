@@ -1,0 +1,156 @@
+{
+  "goodbye": {
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1-score": 0.5,
+    "support": 2,
+    "confused_with": {
+      "inform": 1
+    }
+  },
+  "transfer_money": {
+    "precision": 0.375,
+    "recall": 0.6,
+    "f1-score": 0.4615384615384615,
+    "support": 5,
+    "confused_with": {
+      "search_transactions": 2
+    }
+  },
+  "check_recipients": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 2,
+    "confused_with": {
+      "transfer_money": 1,
+      "help": 1
+    }
+  },
+  "human_handoff": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 2,
+    "confused_with": {
+      "search_transactions": 2
+    }
+  },
+  "greet": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 2,
+    "confused_with": {
+      "inform": 1,
+      "ask_transfer_charge": 1
+    }
+  },
+  "check_balance": {
+    "precision": 1.0,
+    "recall": 0.2857142857142857,
+    "f1-score": 0.4444444444444445,
+    "support": 7,
+    "confused_with": {
+      "inform": 2,
+      "transfer_money": 1
+    }
+  },
+  "inform": {
+    "precision": 0.3333333333333333,
+    "recall": 0.3076923076923077,
+    "f1-score": 0.32,
+    "support": 13,
+    "confused_with": {
+      "deny": 2,
+      "transfer_money": 1
+    }
+  },
+  "search_transactions": {
+    "precision": 0.2,
+    "recall": 0.3333333333333333,
+    "f1-score": 0.25,
+    "support": 3,
+    "confused_with": {
+      "inform": 1,
+      "check_recipients": 1
+    }
+  },
+  "ask_transfer_charge": {
+    "precision": 0.3333333333333333,
+    "recall": 0.5,
+    "f1-score": 0.4,
+    "support": 2,
+    "confused_with": {
+      "transfer_money": 1
+    }
+  },
+  "thankyou": {
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1-score": 0.6666666666666666,
+    "support": 2,
+    "confused_with": {
+      "help": 1
+    }
+  },
+  "pay_cc": {
+    "precision": 0.625,
+    "recall": 1.0,
+    "f1-score": 0.7692307692307693,
+    "support": 5,
+    "confused_with": {}
+  },
+  "help": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 2,
+    "confused_with": {
+      "pay_cc": 2
+    }
+  },
+  "deny": {
+    "precision": 0.25,
+    "recall": 0.5,
+    "f1-score": 0.3333333333333333,
+    "support": 2,
+    "confused_with": {
+      "inform": 1
+    }
+  },
+  "affirm": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 2,
+    "confused_with": {
+      "inform": 1,
+      "human_handoff": 1
+    }
+  },
+  "check_earnings": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 3,
+    "confused_with": {
+      "transfer_money": 1,
+      "inform": 1,
+      "affirm": 1
+    }
+  },
+  "accuracy": 0.35185185185185186,
+  "macro avg": {
+    "precision": 0.3077777777777778,
+    "recall": 0.3017826617826618,
+    "f1-score": 0.27634757834757834,
+    "support": 54
+  },
+  "weighted avg": {
+    "precision": 0.3907407407407408,
+    "recall": 0.35185185185185186,
+    "f1-score": 0.3328695789806901,
+    "support": 54
+  }
+}

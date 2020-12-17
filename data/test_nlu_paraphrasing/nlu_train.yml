@@ -1,0 +1,60 @@
+version: "2.0"
+nlu:
+- intent: goodbye
+  examples: |
+    - bye
+- intent: greet
+  examples: |
+    - hi
+- intent: deny
+  examples: |
+    - no thanks
+- intent: human_handoff
+  examples: |
+    - give me a person please
+- intent: help
+  examples: |
+    - what can I ask you?
+- intent: affirm
+  examples: |
+    - correct
+- intent: ask_transfer_charge
+  examples: |
+    - do xfers cost something?
+- intent: check_earnings
+  examples: |
+    - how much was deposited in my account last month?
+- intent: thankyou
+  examples: |
+    - thanks
+- intent: check_recipients
+  examples: |
+    - Show me people I can send money to
+- intent: search_transactions
+  examples: |
+    - I want to search my past transactions
+- intent: transfer_money
+  examples: |
+    - transfer $60 to Sally
+- intent: pay_cc
+  examples: |
+    - can you help me pay the [current balance](payment_amount) on my [credit card](account_type)
+- intent: check_balance
+  examples: |
+    - What is my [emblem](credit_card) balance?
+- intent: inform
+  examples: |
+    - [justice bank](credit_card) card
+    - [justice bank](credit_card)
+    - [current balance](payment_amount)
+    - last week
+- synonym: credit
+  examples: |
+    - credit card
+    - credit cards
+    - credit account
+    - credit accounts
+- synonym: emblem
+  examples: |
+    - emblm
+    - embelm
