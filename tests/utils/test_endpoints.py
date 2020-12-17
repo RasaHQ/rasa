@@ -1,9 +1,11 @@
 import logging
+from typing import Text
 
 import pytest
 from aioresponses import aioresponses
 
 from tests.utilities import latest_request, json_of_latest_request
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 import rasa.utils.endpoints as endpoint_utils
 
 
@@ -120,3 +122,21 @@ async def test_request_non_json_response():
         response = await endpoint.request("post", subpath="test")
 
         assert not response
+
+
+@pytest.mark.parametrize(
+    "filename, endpoint_type, expected",
+    [
+        ("", "tracker_store", False),
+        (DEFAULT_ENDPOINTS_FILE, "stuff", False,),
+        (DEFAULT_ENDPOINTS_FILE, "empty", False,),
+        ("/unknown/path.yml", "tracker_store", False,),
+        (DEFAULT_ENDPOINTS_FILE, "tracker_store", True,),
+    ],
+)
+def test_read_endpoint_config(filename: Text, endpoint_type: Text, expected: bool):
+    conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
+    if expected:
+        assert isinstance(conf, endpoint_utils.EndpointConfig)
+    else:
+        assert conf is None
