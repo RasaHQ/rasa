@@ -1,12 +1,15 @@
 import logging
 import os
+import numpy as np
 from pathlib import Path
 import random
 from collections import Counter, OrderedDict
 import copy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable, Union
 import operator
+import tensorflow as tf
+import scipy.sparse
 
 import rasa.shared.data
 from rasa.shared.utils.common import lazy_property
@@ -25,11 +28,14 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
-
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.exceptions import RasaException
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
+
+TF_RECORD_KEY_SEPARATOR = "#"
 
 
 class TrainingData:
@@ -708,9 +714,261 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def divide_into_chunks(self, num_chunks: int) -> List["TrainingDataChunk"]:
+        """Divides the training data into smaller chunks.
+
+        Each chunk should be a good representation of the complete dataset. E.g. it
+        should not just contain examples of one intent, but instead match the
+        distribution of the complete dataset.
+
+        Args:
+            num_chunks: The total number of chunks into which the training data should be broken.
+
+        Returns:
+            A list of all training data chunks.
+        """
+        all_chunks = []
+
+        data_to_chunk = self
+
+        for chunk_index in range(num_chunks - 1):
+
+            chunk_size_fraction = 1 / (num_chunks - chunk_index)
+            current_chunk, leftover_examples = data_to_chunk.split_nlu_examples(
+                1 - chunk_size_fraction
+            )
+
+            # update the data to chunk in next iteration
+            data_to_chunk = TrainingData(
+                leftover_examples,
+                responses=data_to_chunk._needed_responses_for_examples(
+                    leftover_examples
+                ),
+            )
+            all_chunks.append(
+                TrainingDataChunk(
+                    current_chunk,
+                    responses=data_to_chunk._needed_responses_for_examples(
+                        current_chunk
+                    ),
+                )
+            )
+
+        # The last chunk is composed of whatever is left
+        all_chunks.append(
+            TrainingDataChunk(
+                data_to_chunk.training_examples, responses=data_to_chunk.responses
+            )
+        )
+        return all_chunks
+
     def has_e2e_examples(self):
         """Checks if there are any training examples from e2e stories."""
         return any(message.is_e2e_message() for message in self.training_examples)
+
+
+class TrainingDataChunk(TrainingData):
+    """Holds a portion of the complete TrainingData.
+
+    It can only hold training_examples and responses.
+    Setting entity synonyms, regex features and lookup
+    tables will result in an exception being raised.
+    """
+
+    def __init__(
+        self,
+        training_examples: Optional[List[Message]] = None,
+        entity_synonyms: Optional[Dict[Text, Text]] = None,
+        regex_features: Optional[List[Dict[Text, Text]]] = None,
+        lookup_tables: Optional[List[Dict[Text, Any]]] = None,
+        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
+    ) -> None:
+        """Initialize a training data chunk."""
+        if entity_synonyms or regex_features or lookup_tables:
+            raise RasaException(
+                f"{self.__class__} cannot have entity synonyms, "
+                f"regex features or lookup tables set. "
+                f"This is to reduce the memory overhead."
+            )
+        super().__init__(
+            training_examples, entity_synonyms, regex_features, lookup_tables, responses
+        )
+
+    @staticmethod
+    def _bytes_feature(array: np.ndarray) -> tf.train.Feature:
+        value = tf.io.serialize_tensor(array)
+        if isinstance(value, type(tf.constant(0))):
+            value = value.numpy()
+        return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+    @staticmethod
+    def _int_feature(array: Union[Tuple[int], np.ndarray]) -> tf.train.Feature:
+        return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
+
+    @staticmethod
+    def _construct_tf_record_key(
+        attribute: Text, feature_type: Text, origin: Text, is_dense: bool
+    ) -> Text:
+        prefix = (
+            f"{attribute}{TF_RECORD_KEY_SEPARATOR}{feature_type}"
+            f"{TF_RECORD_KEY_SEPARATOR}{origin}{TF_RECORD_KEY_SEPARATOR}"
+        )
+
+        if is_dense:
+            return f"{prefix}dense"
+        return f"{prefix}sparse"
+
+    @staticmethod
+    def _deconstruct_tf_record_key(key: Text) -> Tuple[Text, Text, Text, bool, Text]:
+        parts = key.split(TF_RECORD_KEY_SEPARATOR)
+
+        attribute = parts[0]
+        feature_type = parts[1]
+        origin = parts[2]
+        dense = parts[3] == "dense"
+        extra_info = parts[4] if not dense else ""
+
+        return attribute, feature_type, origin, dense, extra_info
+
+    def _to_tf_features(self, features: List[Features]) -> Dict[Text, tf.train.Feature]:
+        tf_features = {}
+
+        for feature in features:
+            key = self._construct_tf_record_key(
+                feature.attribute, feature.type, feature.origin, feature.is_dense()
+            )
+
+            if feature.is_dense():
+                tf_features[key] = self._bytes_feature(feature.features)
+            else:
+                data = feature.features.data
+                shape = feature.features.shape
+                row = feature.features.row
+                column = feature.features.col
+
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}data"] = self._int_feature(
+                    data
+                )
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}shape"] = self._int_feature(
+                    shape
+                )
+                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}row"] = self._int_feature(
+                    row
+                )
+                tf_features[
+                    f"{key}{TF_RECORD_KEY_SEPARATOR}column"
+                ] = self._int_feature(column)
+
+        return tf_features
+
+    def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
+        """Stores the chunk as TFRecord file to disk.
+
+        Args:
+            dir_path: The path to the directory.
+            filename: The filename.
+
+        Returns:
+            The absolute file path the chunk is stored to.
+        """
+        file_path = os.path.join(dir_path, filename)
+
+        # Write to TFRecord
+        with tf.io.TFRecordWriter(file_path) as tfwriter:
+            for message in self.training_examples:
+                example = tf.train.Example(
+                    features=tf.train.Features(
+                        feature=self._to_tf_features(message.features)
+                    )
+                )
+                # Append each example into tfrecord
+                tfwriter.write(example.SerializeToString())
+
+        return file_path
+
+    @classmethod
+    def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":
+        """Loads a training data chunk from the given TFRecord file path.
+
+        Args:
+            file_path: The file path that contains the training data chunk to load.
+
+        Returns:
+            The loaded training data chunk.
+        """
+        training_examples = []
+
+        raw_dataset = tf.data.TFRecordDataset([file_path])
+        for raw_record in raw_dataset:
+            example = tf.train.Example()
+            example.ParseFromString(raw_record.numpy())
+
+            features = []
+            for key in example.features.feature.keys():
+                (
+                    attribute,
+                    feature_type,
+                    origin,
+                    is_dense,
+                    extra_info,
+                ) = TrainingDataChunk._deconstruct_tf_record_key(key)
+
+                if is_dense:
+                    features.append(
+                        cls._convert_to_numpy(example, attribute, feature_type, origin)
+                    )
+
+                elif not is_dense and extra_info == "data":
+                    features.append(
+                        cls._convert_to_sparse_matrix(
+                            example, attribute, feature_type, origin
+                        )
+                    )
+
+            training_examples.append(Message(features=features))
+
+        return TrainingDataChunk(training_examples)
+
+    @classmethod
+    def _convert_to_numpy(
+        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
+    ) -> Features:
+        key = TrainingDataChunk._construct_tf_record_key(
+            attribute, feature_type, origin, True
+        )
+
+        bytes_list = example.features.feature[key].bytes_list.value[0]
+        data = tf.io.parse_tensor(bytes_list, out_type=tf.float64).numpy()
+
+        return Features(data, feature_type, attribute, origin)
+
+    @classmethod
+    def _convert_to_sparse_matrix(
+        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
+    ) -> Features:
+        prefix = TrainingDataChunk._construct_tf_record_key(
+            attribute, feature_type, origin, False
+        )
+
+        shape = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}shape"
+        ].int64_list.value
+        data = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}data"
+        ].int64_list.value
+        row = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}row"
+        ].int64_list.value
+        column = example.features.feature[
+            f"{prefix}{TF_RECORD_KEY_SEPARATOR}column"
+        ].int64_list.value
+
+        return Features(
+            scipy.sparse.coo_matrix((data, (row, column)), shape),
+            feature_type,
+            attribute,
+            origin,
+        )
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

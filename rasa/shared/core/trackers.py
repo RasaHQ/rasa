@@ -62,6 +62,10 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
+import pathlib
+import rasa.shared
+import jsonpickle
+from rasa.shared.exceptions import FileNotFoundException
 
 if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
@@ -854,6 +858,42 @@ class DialogueStateTracker:
         return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
             ACTION_TEXT
         )
+
+    def persist(self, path: Union[Text, pathlib.Path], filename: Text) -> pathlib.Path:
+        """Saves the tracker to a file.
+
+        Args:
+            path: Directory that the tracker should be saved in.
+            filename: Name of the file to save the tracker in.
+
+        Returns:
+            Full path of the stored tracker file.
+        """
+        tracker_file = pathlib.Path(path) / filename
+        rasa.shared.utils.io.create_directory_for_file(tracker_file)
+
+        # noinspection PyTypeChecker
+        rasa.shared.utils.io.write_text_file(str(jsonpickle.encode(self)), tracker_file)
+
+        return tracker_file
+
+    @classmethod
+    def load_tracker(
+        cls, file_path: Union[Text, pathlib.Path]
+    ) -> "DialogueStateTracker":
+        """Loads a tracker from a file.
+
+        Args:
+            file_path: Full path and name of the file.
+
+        Returns:
+            The loaded DialogueStateTracker.
+        """
+        tracker_file = pathlib.Path(file_path)
+        if not tracker_file.is_file():
+            raise FileNotFoundException(f"Could not load tracker from '{file_path}'.")
+
+        return jsonpickle.decode(rasa.shared.utils.io.read_file(tracker_file))
 
 
 def get_active_loop_name(state: State) -> Optional[Text]:

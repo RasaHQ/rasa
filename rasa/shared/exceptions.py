@@ -75,5 +75,9 @@ class InvalidConfigException(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
 
 
+class RasaTrainChunkException(RasaException):
+    """Basic exception for errors raised by `rasa train --number-of-chunks` commands."""
+
+
 class UnsupportedFeatureException(RasaCoreException):
     """Raised if a requested feature is not supported."""

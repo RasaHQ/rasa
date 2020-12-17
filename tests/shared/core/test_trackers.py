@@ -70,6 +70,7 @@ from tests.core.utilities import (
 )
 
 from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
+from rasa.shared.exceptions import FileNotFoundException
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -1314,7 +1315,6 @@ def test_autofill_slots_for_policy_entities():
     entities:
     - {nlu_entity}
     - {policy_entity}
-
     slots:
         {nlu_entity}:
             type: text

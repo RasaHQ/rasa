@@ -4,6 +4,7 @@ import logging
 import os
 import tempfile
 import typing
+from pathlib import Path
 from typing import Dict, Optional, Text, Union, List
 
 import rasa.shared.utils.io
@@ -71,6 +72,36 @@ async def train(
     agent.persist(output_path)
 
     return agent
+
+
+async def train_in_chunks(
+    domain_file: Union[Domain, Text],
+    training_resource: TrainingDataImporter,
+    output_path: Path,
+    number_of_chunks: int,
+    interpreter: Optional["NaturalLanguageInterpreter"] = None,
+    endpoints: Optional["AvailableEndpoints"] = None,
+    policy_config: Optional[Union[Text, Dict]] = None,
+    additional_arguments: Optional[Dict] = None,
+) -> "Agent":
+    """Trains the core model using smaller chunks.
+
+    Args:
+        domain_file: the path to the domain file
+        training_resource: either the path to the training data or a training data
+          importer
+        output_path: the path to store the model to
+        number_of_chunks: number of chunks to use
+        interpreter: the trained interpreter
+        endpoints: the available endpoints
+        policy_config: the config to use
+        additional_arguments: any additional arguments
+
+    Returns:
+        The trained agent.
+    """
+    # TODO
+    pass
 
 
 async def train_comparison_models(

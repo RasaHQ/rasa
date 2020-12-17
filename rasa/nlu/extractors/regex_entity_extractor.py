@@ -1,10 +1,12 @@
 import logging
 import os
 import re
+import typing
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
+from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -18,6 +20,11 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.shared.core.domain import Domain
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.components import Component
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,18 +54,58 @@ class RegexEntityExtractor(EntityExtractor):
 
         self.case_sensitive = self.component_config["case_sensitive"]
         self.patterns = patterns or []
+        self.entity_names = None
 
-    def train(
+    @classmethod
+    def create(
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
+    ) -> "Component":
+        """Creates this component (e.g. before a training is started).
+
+        Method can access all configuration parameters.
+
+        Args:
+            component_config: The components configuration parameters.
+            model_config: The model configuration parameters.
+            domain: The domain the model uses.
+
+        Returns:
+            The created component.
+        """
+        # Check language supporting
+        language = model_config.language
+        if not cls.can_handle_language(language):
+            # check failed
+            raise UnsupportedLanguageError(cls.name, language)
+
+        component = cls(component_config)
+
+        if domain is not None:
+            component.entity_names = domain.entities
+
+        return component
+
+    def prepare_partial_training(
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
+        if self.entity_names is None:
+            self.entity_names = training_data.entities
+
         self.patterns = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
-            use_only_entities=True,
+            patter_names=self.entity_names,
             use_word_boundaries=self.component_config["use_word_boundaries"],
         )
 

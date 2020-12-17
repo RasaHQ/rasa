@@ -10,8 +10,9 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaTrainChunkException
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -23,17 +24,41 @@ class MitieIntentClassifier(IntentClassifier):
         return [MitieNLP, Tokenizer]
 
     def __init__(
-        self, component_config: Optional[Dict[Text, Any]] = None, clf=None
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        classifier: Optional[Any] = None,
     ) -> None:
-        """Construct a new intent classifier using the MITIE framework."""
+        """Construct a new intent classifier using the MITIE framework.
 
+        Args:
+            component_config: The component configuration.
+            classifier: The MITIE classifier.
+        """
         super().__init__(component_config)
 
-        self.clf = clf
+        self.classifier = classifier
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specify which python packages need to be installed.
+
+        See parent class for more information.
+        """
         return ["mitie"]
+
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
+        raise RasaTrainChunkException(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def train(
         self,
@@ -41,6 +66,7 @@ class MitieIntentClassifier(IntentClassifier):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component. See parent class for more information."""
         import mitie
 
         model_file = kwargs.get("mitie_file")
@@ -60,10 +86,10 @@ class MitieIntentClassifier(IntentClassifier):
 
         if training_data.intent_examples:
             # we can not call train if there are no examples!
-            self.clf = trainer.train()
+            self.classifier = trainer.train()
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
+        """Process an incoming message."""
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
             raise Exception(
@@ -71,9 +97,9 @@ class MitieIntentClassifier(IntentClassifier):
                 "Missing a proper MITIE feature extractor."
             )
 
-        if self.clf:
-            token_strs = self._tokens_of_message(message)
-            intent, confidence = self.clf(token_strs, mitie_feature_extractor)
+        if self.classifier:
+            token_texts = self._tokens_of_message(message)
+            intent, confidence = self.classifier(token_texts, mitie_feature_extractor)
         else:
             # either the model didn't get trained or it wasn't
             # provided with any data
@@ -106,16 +132,24 @@ class MitieIntentClassifier(IntentClassifier):
         classifier_file = os.path.join(model_dir, file_name)
         if os.path.exists(classifier_file):
             classifier = mitie.text_categorizer(classifier_file)
-            return cls(meta, classifier)
+            return cls(meta, classifier=classifier)
         else:
             return cls(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        """Persist this component to disk for future loading.
 
-        if self.clf:
+        Args:
+            file_name: The file name of the model.
+            model_dir: The directory to store the model to.
+
+        Returns:
+            A dictionary with any information about the stored model.
+        """
+        if self.classifier:
             file_name = file_name + ".dat"
             classifier_file = os.path.join(model_dir, file_name)
-            self.clf.save_to_disk(classifier_file, pure_model=True)
+            self.classifier.save_to_disk(classifier_file, pure_model=True)
             return {"file": file_name}
         else:
             return {"file": None}

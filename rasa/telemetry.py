@@ -658,7 +658,10 @@ def initialize_error_reporting() -> None:
 
 @async_generator.asynccontextmanager
 async def track_model_training(
-    training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
+    training_data: "TrainingDataImporter",
+    model_type: Text,
+    number_of_chunks: int = 1,
+    is_finetuning: bool = False,
 ) -> typing.AsyncGenerator[None, None]:
     """Track a model training started.
 
@@ -670,6 +673,7 @@ async def track_model_training(
         training_data: Training data used for the training.
         model_type: Specifies the type of training, should be either "rasa", "core"
             or "nlu".
+        number_of_chunks: Number of chunks used for training.
         is_finetuning: `True` if the model is trained by finetuning another model.
     """
     if not initialize_telemetry():
@@ -706,6 +710,7 @@ async def track_model_training(
             "num_lookup_tables": len(nlu_data.lookup_tables),
             "num_synonyms": len(nlu_data.entity_synonyms),
             "num_regexes": len(nlu_data.regex_features),
+            "num_chunks": number_of_chunks,
             "is_finetuning": is_finetuning,
         },
     )

@@ -9,7 +9,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     SPACY_DOCS,
@@ -42,18 +42,22 @@ class SpacyFeaturizer(DenseFeaturizer):
 
         self.pooling_operation = self.component_config[POOLING]
 
-    def _features_for_doc(self, doc: "Doc") -> np.ndarray:
+    @staticmethod
+    def _features_for_doc(doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence / tokens."""
         return np.array([t.vector for t in doc if t.text and t.text.strip()])
 
-    def train(
+    def train_chunk(
         self,
-        training_data: TrainingData,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component on the given chunk.
 
-        for example in training_data.training_examples:
+        See parent class for more information.
+        """
+        for example in training_data_chunk.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)
 

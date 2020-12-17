@@ -11,8 +11,9 @@ from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaTrainChunkException
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -34,21 +35,22 @@ class MitieEntityExtractor(EntityExtractor):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Specifies which python packages need to be installed."""
         return ["mitie"]
 
-    def extract_entities(
+    def _extract_entities(
         self, text: Text, tokens: List[Token], feature_extractor
     ) -> List[Dict[Text, Any]]:
-        ents = []
-        tokens_strs = [token.text for token in tokens]
+        entities = []
+        token_texts = [token.text for token in tokens]
         if self.ner:
-            entities = self.ner.extract_entities(tokens_strs, feature_extractor)
+            entities = self.ner.extract_entities(token_texts, feature_extractor)
             for e in entities:
                 if len(e[0]):
                     start = tokens[e[0][0]].start
                     end = tokens[e[0][-1]].end
 
-                    ents.append(
+                    entities.append(
                         {
                             "entity": e[1],
                             "value": text[start:end],
@@ -58,7 +60,21 @@ class MitieEntityExtractor(EntityExtractor):
                         }
                     )
 
-        return ents
+        return entities
+
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        See parent class for more information.
+        """
+        raise RasaTrainChunkException(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def train(
         self,
@@ -66,6 +82,7 @@ class MitieEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Train this component. See parent class for more information."""
         import mitie
 
         model_file = kwargs.get("mitie_file")
@@ -136,10 +153,10 @@ class MitieEntityExtractor(EntityExtractor):
                 "Missing a proper MITIE feature extractor."
             )
 
-        ents = self.extract_entities(
+        entities = self._extract_entities(
             message.get(TEXT), message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
         )
-        extracted = self.add_extractor_name(ents)
+        extracted = self.add_extractor_name(entities)
         message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @classmethod

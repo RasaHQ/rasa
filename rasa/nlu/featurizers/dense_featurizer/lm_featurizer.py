@@ -11,7 +11,7 @@ from rasa.nlu.model import Metadata
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
 )
 from rasa.utils import train_utils
+from rasa.shared.core.domain import Domain
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -89,19 +90,24 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+        cls,
+        component_config: Dict[Text, Any],
+        model_config: RasaNLUModelConfig,
+        domain: Optional[Domain] = None,
     ) -> "DenseFeaturizer":
-        language = config.language
+        """Creates this component (e.g. before a training is started)."""
+        language = model_config.language
         if not cls.can_handle_language(language):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
         # TODO: remove this when HFTransformersNLP is removed for good
-        if isinstance(config, Metadata):
+        if isinstance(model_config, Metadata):
             hf_transformers_loaded = "HFTransformersNLP" in [
-                c["name"] for c in config.metadata["pipeline"]
+                c["name"] for c in model_config.metadata["pipeline"]
             ]
         else:
-            hf_transformers_loaded = "HFTransformersNLP" in config.component_names
+            hf_transformers_loaded = "HFTransformersNLP" in model_config.component_names
+
         return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
 
     @classmethod
@@ -779,16 +785,16 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         return batch_docs
 
-    def train(
+    def train_chunk(
         self,
-        training_data: TrainingData,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Compute tokens and dense features for each message in training data.
 
         Args:
-            training_data: NLU training data to be tokenized and featurized
+            training_data_chunk: NLU training data to be tokenized and featurized
             config: NLU pipeline config consisting of all components.
         """
         batch_size = 64
@@ -796,7 +802,9 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
-                filter(lambda x: x.get(attribute), training_data.training_examples)
+                filter(
+                    lambda x: x.get(attribute), training_data_chunk.training_examples
+                )
             )
 
             batch_start_index = 0

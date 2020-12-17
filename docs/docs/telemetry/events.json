@@ -89,6 +89,10 @@
           "type": "integer",
           "description": "Total number of regexes defined."
         },
+        "num_chunks": {
+          "type": "integer",
+          "description": "Number of chunks used for training."
+        },
         "is_finetuning": {
           "type": "boolean",
           "description": "True if a model is trained by finetuning an existing model."

@@ -1,6 +1,8 @@
 import asyncio
 from pathlib import Path
 from typing import Text, List
+import numpy as np
+import scipy.sparse
 
 import pytest
 
@@ -14,21 +16,27 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITIES,
+    FEATURE_TYPE_SEQUENCE,
     INTENT,
     ACTION_NAME,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingData,
+    TrainingDataChunk,
+    TF_RECORD_KEY_SEPARATOR,
+)
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
     template_key_to_intent_response_key,
     intent_response_key_to_template_key,
 )
-
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted
@@ -676,6 +684,165 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+def test_persist_load_training_data_chunk(tmp_path: Path):
+    messages = [
+        Message(
+            features=[
+                Features(
+                    np.random.random([4, 3]), FEATURE_TYPE_SEQUENCE, TEXT, "spacy"
+                ),
+                Features(
+                    scipy.sparse.coo_matrix(np.random.randint(0, 10, [4, 3])),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "regex",
+                ),
+            ]
+        )
+    ]
+
+    training_data_chunk = TrainingDataChunk(messages)
+    original_fingerprint = training_data_chunk.fingerprint()
+    file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.tfrecord")
+
+    loaded_training_data_chunk = TrainingDataChunk.load_chunk(file_path)
+    loaded_fingerprint = loaded_training_data_chunk.fingerprint()
+
+    # make sure the persisted data and the loaded data is the same
+    assert original_fingerprint == loaded_fingerprint
+    loaded_message = loaded_training_data_chunk.training_examples[0]
+    assert messages[0] == loaded_message
+
+
+@pytest.mark.parametrize(
+    "tf_record_key, attribute, feature_type, origin, is_dense",
+    [
+        (
+            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{TF_RECORD_KEY_SEPARATOR}spacy{TF_RECORD_KEY_SEPARATOR}dense",
+            TEXT,
+            FEATURE_TYPE_SEQUENCE,
+            "spacy",
+            True,
+        ),
+        (
+            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{TF_RECORD_KEY_SEPARATOR}regex{TF_RECORD_KEY_SEPARATOR}sparse"
+            f"{TF_RECORD_KEY_SEPARATOR}data",
+            TEXT,
+            FEATURE_TYPE_SEQUENCE,
+            "regex",
+            False,
+        ),
+    ],
+)
+def test_tf_record_key(
+    tf_record_key: Text,
+    attribute: Text,
+    feature_type: Text,
+    origin: Text,
+    is_dense: bool,
+):
+    (
+        actual_attribute,
+        actual_feature_type,
+        actual_origin,
+        actual_is_dense,
+        actual_extra_info,
+    ) = TrainingDataChunk._deconstruct_tf_record_key(tf_record_key)
+
+    assert attribute == actual_attribute
+    assert feature_type == actual_feature_type
+    assert origin == actual_origin
+    assert is_dense == actual_is_dense
+
+    if actual_extra_info:
+        assert not actual_is_dense
+        assert actual_extra_info in ["data", "row", "shape", "column"]
+        # remove the extra info from the key
+        tf_record_key = TF_RECORD_KEY_SEPARATOR.join(
+            tf_record_key.split(TF_RECORD_KEY_SEPARATOR)[:-1]
+        )
+
+    actual_key = TrainingDataChunk._construct_tf_record_key(
+        attribute, feature_type, origin, is_dense
+    )
+
+    assert tf_record_key == actual_key
+
+
+@pytest.mark.parametrize(
+    "intent_frequencies, num_chunks", [([100, 82, 63, 43], 8), ([15, 12, 10, 7], 4)]
+)
+def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: int):
+
+    # Create the initial training data
+    all_messages = []
+    for index, intent_count in enumerate(intent_frequencies):
+        all_messages.extend(
+            [
+                Message(
+                    text=f"intent_{index * intent_count + ex_index}", intent=f"{index}"
+                )
+                for ex_index in range(intent_count)
+            ]
+        )
+    training_data = TrainingData(all_messages)
+    original_fingerprint = training_data.fingerprint()
+    chunks = training_data.divide_into_chunks(num_chunks=num_chunks)
+    new_fingerprint = training_data.fingerprint()
+
+    # Original training data shouldn't be modified
+    assert original_fingerprint == new_fingerprint
+
+    # First check that no example is lost
+    chunk_sizes = [len(td.training_examples) for td in chunks]
+    assert sum(chunk_sizes) == sum(intent_frequencies)
+
+    # Check the equal distribution of examples across chunks
+    for index, intent_count in enumerate(intent_frequencies):
+        intent_label = f"{index}"
+        ideal_size = intent_count // num_chunks
+        num_examples_across_chunks = []
+        for chunk in chunks:
+            filtered_examples = chunk.filter_training_examples(
+                lambda x: x.get("intent") == intent_label
+            )
+            num_examples = len(filtered_examples.training_examples)
+            num_examples_across_chunks.append(num_examples)
+            assert (
+                num_examples == ideal_size
+                or num_examples == ideal_size + 1
+                or num_examples == ideal_size - 1
+            )
+        assert sum(num_examples_across_chunks) == intent_count
+
+
+def test_training_data_chunk_exception():
+
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(lookup_tables=[{"test_key": "test_val"}])
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(entity_synonyms={"test_key": "test_val"})
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
+    with pytest.raises(RasaException) as error:
+        _ = TrainingDataChunk(regex_features=[{"test_key": "test_val"}])
+        assert (
+            "TrainingDataChunk cannot have entity synonyms, regex "
+            "features or lookup tables set. This is to reduce the memory overhead."
+            in str(error.value)
+        )
 
 
 @pytest.mark.parametrize(

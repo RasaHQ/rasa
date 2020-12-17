@@ -47,6 +47,7 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
+from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -180,14 +181,15 @@ def load_component_by_meta(
 
 
 def create_component_by_config(
-    component_config: Dict[Text, Any], config: "RasaNLUModelConfig"
+    component_config: Dict[Text, Any],
+    model_config: "RasaNLUModelConfig",
+    domain: Optional[Domain] = None,
 ) -> Optional["Component"]:
     """Resolves a component and calls it's create method.
 
     Inits it based on a previously persisted model.
     """
-
     # try to get class name first, else create by name
     component_name = component_config.get("class", component_config["name"])
     component_class = get_component_class(component_name)
-    return component_class.create(component_config, config)
+    return component_class.create(component_config, model_config, domain)

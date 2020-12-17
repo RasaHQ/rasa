@@ -1,5 +1,6 @@
 import logging
 import typing
+from pathlib import Path
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
 import rasa.shared.utils.common
@@ -86,8 +87,6 @@ async def train(
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
-    from rasa.shared.importers.importer import TrainingDataImporter
-
     if not isinstance(nlu_config, RasaNLUModelConfig):
         nlu_config = config.load(nlu_config)
 
@@ -98,20 +97,8 @@ async def train(
         nlu_config, component_builder, model_to_finetune=model_to_finetune
     )
     persistor = create_persistor(storage)
-    if training_data_endpoint is not None:
-        training_data = await load_data_from_endpoint(
-            training_data_endpoint, nlu_config.language
-        )
-    elif isinstance(data, TrainingDataImporter):
-        training_data = await data.get_nlu_data(nlu_config.language)
-    else:
-        training_data = load_data(data, nlu_config.language)
 
-    training_data.print_stats()
-    if training_data.entity_roles_groups_used():
-        rasa.shared.utils.common.mark_as_experimental_feature(
-            "Entity Roles and Groups feature"
-        )
+    training_data = await _load_training_data(data, nlu_config, training_data_endpoint)
 
     interpreter = trainer.train(training_data, **kwargs)
 
@@ -121,5 +108,64 @@ async def train(
         )
     else:
         persisted_path = None
+
+    return trainer, interpreter, persisted_path
+
+
+async def _load_training_data(
+    data: Union[Text, "TrainingDataImporter"],
+    model_config: RasaNLUModelConfig,
+    training_data_endpoint: Optional[EndpointConfig] = None,
+) -> "TrainingData":
+    from rasa.shared.importers.importer import TrainingDataImporter
+
+    if training_data_endpoint is not None:
+        training_data = await load_data_from_endpoint(
+            training_data_endpoint, model_config.language
+        )
+    elif isinstance(data, TrainingDataImporter):
+        training_data = await data.get_nlu_data(model_config.language)
+    else:
+        training_data = load_data(data, model_config.language)
+
+    training_data.print_stats()
+
+    if training_data.entity_roles_groups_used():
+        rasa.shared.utils.common.mark_as_experimental_feature(
+            "Entity Roles and Groups feature"
+        )
+
+    return training_data
+
+
+async def train_in_chunks(
+    model_config: Union[Text, Dict, RasaNLUModelConfig],
+    training_data_importer: "TrainingDataImporter",
+    number_of_chunks: int,
+    train_path: Optional[Path] = None,
+    fixed_model_name: Optional[Text] = None,
+) -> Tuple[Trainer, Interpreter, Optional[Text]]:
+    """Loads the trainer and the data and runs the training of the model in chunks.
+
+    Args:
+        model_config: The model configuration.
+        training_data_importer: The training data importer.
+        number_of_chunks: The number of chunks to use.
+        train_path: The training path.
+        fixed_model_name: The fixed model name.
+
+    Returns:
+        The trainer, the trained interpreter, and the path to the persisted model.
+    """
+    if not isinstance(model_config, RasaNLUModelConfig):
+        model_config = config.load(model_config)
+
+    trainer = Trainer(model_config)
+
+    training_data = await _load_training_data(training_data_importer, model_config)
+
+    interpreter, persisted_path = trainer.train_in_chunks(
+        training_data, train_path, number_of_chunks, fixed_model_name
+    )
 
     return trainer, interpreter, persisted_path

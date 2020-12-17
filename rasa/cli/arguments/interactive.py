@@ -62,9 +62,9 @@ def _add_common_params(parser: argparse.ArgumentParser) -> None:
 # noinspection PyProtectedMember
 def _add_training_arguments(parser: argparse.ArgumentParser) -> argparse._ArgumentGroup:
     train_arguments = parser.add_argument_group("Train Arguments")
-    rasa.cli.arguments.train.add_config_param(train_arguments)
+    rasa.cli.arguments.default_arguments.add_config_param(train_arguments)
     rasa.cli.arguments.default_arguments.add_domain_param(train_arguments)
-    rasa.cli.arguments.train.add_out_param(
+    rasa.cli.arguments.default_arguments.add_out_param(
         train_arguments, help_text="Directory where your models should be stored."
     )
     rasa.cli.arguments.train.add_augmentation_param(train_arguments)

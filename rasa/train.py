@@ -2,6 +2,7 @@ import asyncio
 import os
 import tempfile
 from contextlib import ExitStack
+from pathlib import Path
 from typing import (
     Text,
     NamedTuple,
@@ -21,6 +22,7 @@ from rasa.shared.core.domain import Domain
 import rasa.shared.utils.common
 from rasa.nlu.model import Interpreter
 import rasa.utils.common
+import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.utils.common import TempDirectoryPath
 
@@ -63,6 +65,7 @@ def train(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> TrainingResult:
@@ -82,7 +85,9 @@ def train(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
             method of each NLU component.
-        loop: Optional EventLoop for running coroutines.
+        loop: The event loop which will be used to run `async` functions.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+                          the complete dataset will be used for training at once.
         model_to_finetune: Optional path to a model which should be finetuned or
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
@@ -103,6 +108,7 @@ def train(
             persist_nlu_training_data=persist_nlu_training_data,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
+            number_of_chunks=number_of_chunks,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         ),
@@ -121,6 +127,7 @@ async def train_async(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> TrainingResult:
@@ -130,7 +137,7 @@ async def train_async(
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
-        output_path: Output path.
+        output: Output path.
         dry_run: If `True` then no training will be done, and the information about
             whether the training needs to be done will be printed.
         force_training: If `True` retrain model even if data has not changed.
@@ -140,6 +147,8 @@ async def train_async(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
             method of each NLU component.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+            the complete dataset will be used for training at once.
         model_to_finetune: Optional path to a model which should be finetuned or
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
@@ -155,19 +164,25 @@ async def train_async(
         domain = await file_importer.get_domain()
 
         if domain.is_empty():
-            nlu_model = await handle_domain_if_not_exists(
-                file_importer, output, fixed_model_name
+            nlu_model = await _handle_domain_if_not_exists(
+                file_importer,
+                output_path=output,
+                fixed_model_name=fixed_model_name,
+                persist_nlu_training_data=persist_nlu_training_data,
+                number_of_chunks=number_of_chunks,
+                additional_arguments=nlu_additional_arguments,
             )
             return TrainingResult(model=nlu_model)
 
         return await _train_async_internal(
             file_importer,
-            train_path,
-            output,
-            dry_run,
-            force_training,
-            fixed_model_name,
-            persist_nlu_training_data,
+            train_path=train_path,
+            output_path=output,
+            dry_run=dry_run,
+            force_training=force_training,
+            fixed_model_name=fixed_model_name,
+            persist_nlu_training_data=persist_nlu_training_data,
+            number_of_chunks=number_of_chunks,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
             model_to_finetune=model_to_finetune,
@@ -175,13 +190,24 @@ async def train_async(
         )
 
 
-async def handle_domain_if_not_exists(
-    file_importer: TrainingDataImporter, output_path, fixed_model_name
-):
+async def _handle_domain_if_not_exists(
+    file_importer: TrainingDataImporter,
+    output_path: Text,
+    fixed_model_name: Optional[Text] = None,
+    persist_nlu_training_data: bool = False,
+    additional_arguments: Optional[Dict] = None,
+    number_of_chunks: int = 1,
+) -> Optional[Text]:
     """Trains only the nlu model and prints a warning about missing domain."""
     nlu_model_only = await _train_nlu_with_validated_data(
-        file_importer, output=output_path, fixed_model_name=fixed_model_name
+        file_importer,
+        output=output_path,
+        fixed_model_name=fixed_model_name,
+        persist_nlu_training_data=persist_nlu_training_data,
+        additional_arguments=additional_arguments,
+        number_of_chunks=number_of_chunks,
     )
+
     rasa.shared.utils.cli.print_warning(
         "Core training was skipped because no valid domain file was found. "
         "Only an NLU-model was created. Please specify a valid domain using "
@@ -236,6 +262,7 @@ async def _train_async_internal(
     force_training: bool,
     fixed_model_name: Optional[Text],
     persist_nlu_training_data: bool,
+    number_of_chunks: int = 1,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
@@ -301,6 +328,7 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
+            number_of_chunks=number_of_chunks,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
@@ -316,6 +344,7 @@ async def _train_async_internal(
             output=output_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
+            number_of_chunks=number_of_chunks,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
@@ -337,7 +366,7 @@ async def _train_async_internal(
 
     if fingerprint_comparison.is_training_required():
         async with telemetry.track_model_training(
-            file_importer, model_type="rasa",
+            file_importer, model_type="rasa", number_of_chunks=number_of_chunks
         ):
             await _do_training(
                 file_importer,
@@ -349,6 +378,7 @@ async def _train_async_internal(
                 core_additional_arguments=core_additional_arguments,
                 nlu_additional_arguments=nlu_additional_arguments,
                 old_model_zip_path=old_model,
+                number_of_chunks=number_of_chunks,
                 model_to_finetune=model_to_finetune,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
             )
@@ -377,9 +407,11 @@ async def _do_training(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     old_model_zip_path: Optional[Text] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ):
+    """Trains a Rasa model (Core and NLU)."""
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
 
@@ -392,6 +424,7 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
+            number_of_chunks=number_of_chunks,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
@@ -411,6 +444,7 @@ async def _do_training(
             additional_arguments=core_additional_arguments,
             interpreter=_load_interpreter(interpreter_path)
             or _interpreter_from_previous_model(old_model_zip_path),
+            number_of_chunks=number_of_chunks,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
@@ -457,9 +491,28 @@ def train_core(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
+    """Trains a Core model.
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config file for Core.
+        stories: Path to the Core training data.
+        output: Path where the trained model should be stored.
+        train_path: If `None` the model will be trained in a temporary
+            directory, otherwise in the provided directory.
+        fixed_model_name: Name of model to be stored.
+        additional_arguments: Additional training parameters.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+                          the complete dataset will be used for training at once.
+
+    Returns:
+        If `train_path` is given it returns the path to the model archive,
+        otherwise the path to the directory with the trained model files.
+    """
     return rasa.utils.common.run_in_loop(
         train_core_async(
             domain=domain,
@@ -469,6 +522,7 @@ def train_core(
             train_path=train_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=additional_arguments,
+            number_of_chunks=number_of_chunks,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
@@ -483,6 +537,7 @@ async def train_core_async(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
@@ -492,11 +547,13 @@ async def train_core_async(
         domain: Path to the domain file.
         config: Path to the config file for Core.
         stories: Path to the Core training data.
-        output: Output path.
+        output: Path where the trained model should be stored.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
         additional_arguments: Additional training parameters.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+            the complete dataset will be used for training at once.
         model_to_finetune: Optional path to a model which should be finetuned or
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
@@ -505,7 +562,6 @@ async def train_core_async(
     Returns:
         If `train_path` is given it returns the path to the model archive,
         otherwise the path to the directory with the trained model files.
-
     """
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
@@ -544,6 +600,7 @@ async def train_core_async(
         train_path=train_path,
         fixed_model_name=fixed_model_name,
         additional_arguments=additional_arguments,
+        number_of_chunks=number_of_chunks,
         model_to_finetune=model_to_finetune,
         finetuning_epoch_fraction=finetuning_epoch_fraction,
     )
@@ -556,6 +613,7 @@ async def _train_core_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
     interpreter: Optional[Interpreter] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
@@ -578,37 +636,62 @@ async def _train_core_with_validated_data(
             file_importer.get_domain(), file_importer.get_config()
         )
 
-        if model_to_finetune:
-            rasa.shared.utils.common.mark_as_experimental_feature(
-                "Incremental Training feature"
-            )
-            model_to_finetune = await _core_model_for_finetuning(
-                model_to_finetune,
-                file_importer=file_importer,
-                finetuning_epoch_fraction=finetuning_epoch_fraction,
-            )
-
-            if not model_to_finetune:
-                rasa.shared.utils.cli.print_error_and_exit(
-                    f"No Core model for finetuning found. Please make sure to either "
-                    f"specify a path to a previous model or to have a finetunable "
-                    f"model within the directory '{output}'."
+        if number_of_chunks > 1:
+            async with telemetry.track_model_training(
+                file_importer, model_type="core", number_of_chunks=number_of_chunks
+            ):
+                await rasa.core.train_in_chunks(
+                    domain_file=domain,
+                    training_resource=file_importer,
+                    output_path=Path(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
+                    policy_config=config,
+                    additional_arguments=additional_arguments,
+                    interpreter=interpreter,
+                    number_of_chunks=number_of_chunks,
+                )
+        else:
+            if model_to_finetune:
+                rasa.shared.utils.common.mark_as_experimental_feature(
+                    "Incremental Training feature"
+                )
+                model_to_finetune = await _core_model_for_finetuning(
+                    model_to_finetune,
+                    file_importer=file_importer,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
                 )
 
-        async with telemetry.track_model_training(
-            file_importer,
-            model_type="core",
-            is_finetuning=model_to_finetune is not None,
-        ):
-            await rasa.core.train(
-                domain_file=domain,
-                training_resource=file_importer,
-                output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
-                policy_config=config,
-                additional_arguments=additional_arguments,
-                interpreter=interpreter,
-                model_to_finetune=model_to_finetune,
-            )
+                if not model_to_finetune:
+                    rasa.shared.utils.cli.print_error_and_exit(
+                        f"No Core model for finetuning found. Please make sure to either "
+                        f"specify a path to a previous model or to have a finetunable "
+                        f"model within the directory '{output}'."
+                    )
+
+            async with telemetry.track_model_training(
+                file_importer,
+                model_type="core",
+                is_finetuning=model_to_finetune is not None,
+            ):
+                try:
+                    await rasa.core.train(
+                        domain_file=domain,
+                        training_resource=file_importer,
+                        output_path=os.path.join(
+                            _train_path, DEFAULT_CORE_SUBDIRECTORY_NAME
+                        ),
+                        policy_config=config,
+                        additional_arguments=additional_arguments,
+                        interpreter=interpreter,
+                        model_to_finetune=model_to_finetune,
+                    )
+                except MemoryError:
+                    rasa.shared.utils.io.raise_warning(
+                        "Training failed due to an out of memory error. Consider "
+                        "using the flag '--in-chunks' for training.",
+                        category=UserWarning,
+                    )
+                    raise
+
         rasa.shared.utils.cli.print_color(
             "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
@@ -670,6 +753,7 @@ def train_nlu(
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
     domain: Optional[Union[Domain, Text]] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
@@ -678,15 +762,17 @@ def train_nlu(
     Args:
         config: Path to the config file for NLU.
         nlu_data: Path to the NLU training data.
-        output: Output path.
+        output: Path where the trained model should be stored.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of the model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
-                                   with the model.
+            with the model.
         additional_arguments: Additional training parameters which will be passed to
-                              the `train` method of each component.
+            the `train` method of each component.
         domain: Path to the optional domain file/Domain object.
+        number_of_chunks: Number of chunks to use for training in chunks. If set to 1
+            the complete dataset will be used for training at once.
         model_to_finetune: Optional path to a model which should be finetuned or
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
@@ -695,7 +781,6 @@ def train_nlu(
     Returns:
         If `train_path` is given it returns the path to the model archive,
         otherwise the path to the directory with the trained model files.
-
     """
     return rasa.utils.common.run_in_loop(
         _train_nlu_async(
@@ -707,6 +792,7 @@ def train_nlu(
             persist_nlu_training_data,
             additional_arguments,
             domain=domain,
+            number_of_chunks=number_of_chunks,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
@@ -722,6 +808,7 @@ async def _train_nlu_async(
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
     domain: Optional[Union[Domain, Text]] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
@@ -753,6 +840,7 @@ async def _train_nlu_async(
         fixed_model_name=fixed_model_name,
         persist_nlu_training_data=persist_nlu_training_data,
         additional_arguments=additional_arguments,
+        number_of_chunks=number_of_chunks,
         model_to_finetune=model_to_finetune,
         finetuning_epoch_fraction=finetuning_epoch_fraction,
     )
@@ -765,6 +853,7 @@ async def _train_nlu_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
+    number_of_chunks: int = 1,
     model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
@@ -782,41 +871,63 @@ async def _train_nlu_with_validated_data(
             # Otherwise, create a temp train path and clean it up on exit.
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
         config = await file_importer.get_config()
+
         rasa.shared.utils.cli.print_color(
             "Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
 
-        if model_to_finetune:
-            rasa.shared.utils.common.mark_as_experimental_feature(
-                "Incremental Training feature"
-            )
-            model_to_finetune = await _nlu_model_for_finetuning(
-                model_to_finetune,
-                file_importer,
-                finetuning_epoch_fraction,
-                called_from_combined_training=train_path is not None,
-            )
-            if not model_to_finetune:
-                rasa.shared.utils.cli.print_error_and_exit(
-                    f"No NLU model for finetuning found. Please make sure to either "
-                    f"specify a path to a previous model or to have a finetunable "
-                    f"model within the directory '{output}'."
+        if number_of_chunks > 1:
+            async with telemetry.track_model_training(
+                file_importer, model_type="nlu", number_of_chunks=number_of_chunks
+            ):
+                await rasa.nlu.train_in_chunks(
+                    config,
+                    file_importer,
+                    number_of_chunks,
+                    train_path=_train_path,
+                    fixed_model_name="nlu",
                 )
+        else:
+            if model_to_finetune:
+                rasa.shared.utils.common.mark_as_experimental_feature(
+                    "Incremental Training feature"
+                )
+                model_to_finetune = await _nlu_model_for_finetuning(
+                    model_to_finetune,
+                    file_importer,
+                    finetuning_epoch_fraction,
+                    called_from_combined_training=train_path is not None,
+                )
+                if not model_to_finetune:
+                    rasa.shared.utils.cli.print_error_and_exit(
+                        f"No NLU model for finetuning found. Please make sure to either "
+                        f"specify a path to a previous model or to have a finetunable "
+                        f"model within the directory '{output}'."
+                    )
 
-        async with telemetry.track_model_training(
-            file_importer,
-            model_type="nlu",
-            is_finetuning=model_to_finetune is not None,
-        ):
-            await rasa.nlu.train(
-                config,
+            async with telemetry.track_model_training(
                 file_importer,
-                _train_path,
-                fixed_model_name="nlu",
-                persist_nlu_training_data=persist_nlu_training_data,
-                model_to_finetune=model_to_finetune,
-                **additional_arguments,
-            )
+                model_type="nlu",
+                is_finetuning=model_to_finetune is not None,
+            ):
+                try:
+                    await rasa.nlu.train(
+                        config,
+                        file_importer,
+                        _train_path,
+                        fixed_model_name="nlu",
+                        persist_nlu_training_data=persist_nlu_training_data,
+                        model_to_finetune=model_to_finetune,
+                        **additional_arguments,
+                    )
+                except MemoryError:
+                    rasa.shared.utils.io.raise_warning(
+                        "Training failed due to an out of memory error. Consider "
+                        "using the flag '--in-chunks' for training.",
+                        category=UserWarning,
+                    )
+                    raise
+
         rasa.shared.utils.cli.print_color(
             "NLU model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
@@ -872,4 +983,5 @@ async def _nlu_model_for_finetuning(
         )
         if not model_to_finetune:
             return None
+
     return model_to_finetune
