@@ -124,6 +124,8 @@ class KafkaEventBroker(EventBroker):
                 ssl_certfile=self.ssl_certfile,
                 ssl_keyfile=self.ssl_keyfile,
                 ssl_check_hostname=False,
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
                 sasl_mechanism="PLAIN",
                 security_protocol=self.security_protocol,
                 client_id=self.client_id,

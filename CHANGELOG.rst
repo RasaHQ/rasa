@@ -17,6 +17,19 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.19] - 2020-12-17
+^^^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#6251 <https://github.com/rasahq/rasa/issues/6251>`_: Kafka Producer connection now remains active across sends. Added support for group and client id.
+  The Kafka producer also adds support for the `PLAINTEXT` and `SASL_SSL` protocols.
+
+  DynamoDB table exists check fixed bug when more than 100 tables exist.
+- `#6814 <https://github.com/rasahq/rasa/issues/6814>`_: Replace use of ``python-telegram-bot`` package with ``pyTelegramBotAPI``
+- `#7423 <https://github.com/rasahq/rasa/issues/7423>`_: Use response selector keys (sub-intents) as labels for plotting the confusion matrix during NLU evaluation to improve readability.
+
+
 [1.10.18] - 2020-11-26
 ^^^^^^^^^^^^^^^^^^^^^^
 
