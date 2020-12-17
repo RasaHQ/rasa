@@ -360,7 +360,7 @@ async def test_read_rules_without_stories(default_domain: Domain):
     ],
 )
 def test_e2e_parsing(line: Text, expected: Dict):
-    actual = MarkdownStoryReader.parse_e2e_message(line)
+    actual = MarkdownStoryReader().parse_e2e_message(line)
 
     assert actual.as_dict() == expected
 

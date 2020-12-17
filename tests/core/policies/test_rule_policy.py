@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Text
+from typing import Text
 
 import pytest
 
@@ -770,7 +770,7 @@ def assert_predicted_action(
 ) -> None:
     assert prediction.max_confidence == confidence
     index_of_predicted_action = prediction.max_confidence_index
-    prediction_action_name = domain.action_names[index_of_predicted_action]
+    prediction_action_name = domain.action_names_or_texts[index_of_predicted_action]
     assert prediction_action_name == expected_action_name
 
 
@@ -814,6 +814,59 @@ async def test_predict_form_action_if_in_form():
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(prediction, domain, form_name)
+
+
+async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
+    loop_name = "some_loop"
+
+    domain = Domain.from_yaml(
+        f"""
+    intents:
+    - {GREET_INTENT_NAME}
+    actions:
+    - {UTTER_GREET_ACTION}
+    - some-action
+    slots:
+      {REQUESTED_SLOT}:
+        type: unfeaturized
+    forms:
+    - {loop_name}
+"""
+    )
+    e2e_rule = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(text="haha"),
+            ActionExecuted(UTTER_GREET_ACTION),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    policy.train([e2e_rule], domain, RegexInterpreter())
+
+    loop_conversation = DialogueStateTracker.from_events(
+        "in a loop",
+        evts=[
+            # We are in an activate form
+            ActionExecuted(loop_name),
+            ActiveLoop(loop_name),
+            SlotSet(REQUESTED_SLOT, "some value"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # User sends message as response to a requested slot
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ],
+        slots=domain.slots,
+    )
+
+    # RulePolicy triggers form again
+    prediction = policy.predict_action_probabilities(
+        loop_conversation, domain, RegexInterpreter()
+    )
+    assert_predicted_action(prediction, domain, loop_name)
 
 
 async def test_predict_form_action_if_multiple_turns():
@@ -1000,7 +1053,6 @@ async def test_form_unhappy_path():
     prediction = policy.predict_action_probabilities(
         unhappy_form_conversation, domain, RegexInterpreter()
     )
-
     assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
@@ -1449,7 +1501,6 @@ async def test_form_activation_rule():
         domain,
         RegexInterpreter(),
     )
-
     assert_predicted_action(prediction, domain, form_name)
 
 
@@ -1759,6 +1810,50 @@ actions:
     )
 
     assert_predicted_action(prediction, domain, expected_action_name)
+
+
+@pytest.mark.parametrize(
+    "intent_name", [USER_INTENT_RESTART, USER_INTENT_BACK, USER_INTENT_SESSION_START]
+)
+def test_e2e_beats_default_actions(intent_name: Text):
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+    """
+    )
+
+    e2e_rule = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(text="haha"),
+            ActionExecuted(UTTER_GREET_ACTION),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    policy = RulePolicy()
+    policy.train([e2e_rule], domain, RegexInterpreter())
+
+    new_conversation = DialogueStateTracker.from_events(
+        "bla2",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": intent_name}),
+        ],
+    )
+    prediction = policy.predict_action_probabilities(
+        new_conversation, domain, RegexInterpreter()
+    )
+    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
 @pytest.mark.parametrize(

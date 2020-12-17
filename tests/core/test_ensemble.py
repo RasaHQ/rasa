@@ -30,7 +30,7 @@ import rasa.core.actions.action
 
 from tests.core import utilities
 from rasa.core.constants import FORM_POLICY_PRIORITY
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, DefinePrevUserUtteredFeaturization
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.shared.core.constants import (
@@ -584,6 +584,60 @@ def test_prediction_applies_optional_policy_events(default_domain: Domain):
     assert len(prediction.events) == len(optional_events) + len(must_have_events)
     assert all(event in prediction.events for event in optional_events)
     assert all(event in prediction.events for event in must_have_events)
+
+
+def test_end_to_end_prediction_applies_define_featurization_events(
+    default_domain: Domain,
+):
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(priority=100, predict_index=0),
+            ConstantPolicy(priority=1, predict_index=1, is_end_to_end_prediction=True),
+        ]
+    )
+
+    # no events should be added if latest action is not action listen
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    prediction = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+    assert prediction.events == []
+
+    # DefinePrevUserUtteredFeaturization should be added after action listen
+    tracker = DialogueStateTracker.from_events(
+        "test", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    prediction = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+    assert prediction.events == [DefinePrevUserUtteredFeaturization(True)]
+
+
+def test_intent_prediction_does_not_apply_define_featurization_events(
+    default_domain: Domain,
+):
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(priority=100, predict_index=0),
+            ConstantPolicy(priority=1, predict_index=1, is_end_to_end_prediction=False),
+        ]
+    )
+
+    # no events should be added if latest action is not action listen
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    prediction = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+    assert prediction.events == []
+
+    # DefinePrevUserUtteredFeaturization should be added after action listen
+    tracker = DialogueStateTracker.from_events(
+        "test", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    prediction = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+    assert prediction.events == [DefinePrevUserUtteredFeaturization(False)]
 
 
 def test_with_float_returning_policy(default_domain: Domain):
