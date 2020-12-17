@@ -39,9 +39,7 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### CI Pipeline Overview
 
-There are different approaches to applying a CI pipeline depending on the number of changes.
-All follow a mix of training the new model, testing to compare to older versions,
-and setting up an easy CD pipeline to upload the new model.
+Your CI pipeline should include model training and testing as steps to streamline the deployment process. 
 
 The first step after saving new training data is to kick off the pipeline. (Is it usually kicked off
 manually or triggered by an event like saving a new file?)
