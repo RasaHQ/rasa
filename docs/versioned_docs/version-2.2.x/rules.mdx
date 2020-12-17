@@ -1,0 +1,128 @@
+---
+id: rules
+sidebar_label: Rules
+title: Rules
+description: Use Rasa Open Source rules to respond to FAQs, fill forms, or handle fallbacks gracefully.
+abstract: Rules are a type of training data used to train your assistant's dialogue management model.
+  Rules describe short pieces of conversations that should always follow the same path.
+---
+
+**Don't overuse rules**. Rules are great to handle small specific conversation patterns, but
+unlike [stories](./stories.mdx), rules don't have the power to generalize to unseen conversation
+paths. Combine rules and stories to make your assistant robust and able to handle
+real user behavior.
+
+If you can't decide whether to write a story or a rule to implement a certain behavior, see the
+best practices for [Writing Conversation Data](./writing-stories.mdx)).
+
+For additional examples on implementing rules in a Rasa assistant, refer to
+our [Rules example bot](https://github.com/RasaHQ/rasa/tree/master/examples/rules).
+
+## Writing a Rule
+
+Before you start writing rules, you have to make sure that the
+[Rule Policy](./policies.mdx#rule-policy) is added to your model configuration:
+
+```yaml-rasa
+policies:
+- ... # Other policies
+- name: RulePolicy
+```
+
+Rules can then be added to the `rules` section of your training data.
+
+To indicate that a rule can apply at any point in a conversation, start with the
+intent which starts the conversation and then add the actions which your assistant
+should perform in response to that.
+
+```yaml-rasa
+rules:
+
+- rule: Say `hello` whenever the user sends a message with intent `greet`
+  steps:
+  - intent: greet
+  - action: utter_greet
+```
+
+This example rule applies at the start of conversation as well as when the user decides
+to a send a message with an intent `greet` in the middle of an ongoing conversation.
+
+### Rules for the Conversation Start
+
+To write a rule which only applies at the beginning of a conversation, add a
+`conversation_start: true` to your rule:
+
+```yaml-rasa
+rules:
+
+- rule: Say `hello` when the user starts a conversation with intent `greet`
+  conversation_start: true
+  steps:
+  - intent: greet
+  - action: utter_greet
+```
+
+If a user sends a message with the intent `greet` later in the conversation, the rule will not match.
+
+### Rules with Conditions
+
+Conditions describe requirements which have to be fulfilled for a rule to be
+applicable. To do so, add any information about the prior conversation under the
+`condition` key:
+
+```yaml-rasa
+rules:
+
+- rule: Only say `hello` if the user provided a name
+  condition:
+  - slot_was_set:
+    - user_provided_name: true
+  steps:
+  - intent: greet
+  - action: utter_greet
+```
+
+Possible information that you can include under `condition` includes `slot_was_set` events
+and `active_loop` events.
+
+### Skip Waiting for User Input at the End of a Rule
+
+By default, rules will wait for the next user message when finished with the last step:
+
+```yaml-rasa
+rules:
+
+- rule: Rule which will wait for user message when it was applied
+  steps:
+  - intent: greet
+  - action: utter_greet
+  # - action: action_listen
+  # Every rule implicitly includes a prediction for `action_listen` as last step.
+  # This means that Rasa Open Source will wait for the next user message.
+```
+
+If you want to hand over the next action prediction to another story or rule, add
+`wait_for_user_input: false` to your rule:
+
+```yaml-rasa
+rules:
+
+- rule: Rule which will not wait for user message once it was applied
+  steps:
+  - intent: greet
+  - action: utter_greet
+  wait_for_user_input: false
+```
+
+This indicates that the assistant should execute another action
+before waiting for more user input.
+
+### Rules and Forms
+
+When a [Form](./forms.mdx) is active, the bot will make predictions based on
+how the form is defined, ignoring rules. Rules become applicable again if:
+
+- the form fills all required slots
+- the form rejects its execution (see
+[Handling Unhappy Paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) for
+ more details)

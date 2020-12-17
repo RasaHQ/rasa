@@ -1,0 +1,578 @@
+---
+id: domain
+sidebar_label: Domain
+title: Domain
+abstract: The domain defines the universe in which your assistant operates. It specifies the intents, entities, slots, responses, forms, and actions your bot should know about. It also defines a configuration for conversation sessions.
+---
+
+Here is a full example of a domain, taken from the
+[concertbot](https://github.com/RasaHQ/rasa/tree/master/examples/concertbot) example:
+
+```yaml-rasa (docs/sources/examples/concertbot/domain.yml)
+```
+
+## Multiple Domain Files
+
+The domain can be defined as a single YAML file or split across multiple files in a directory.
+When split across multiple files, the domain contents will be read and automatically merged together.
+
+Using the [command line interface](./command-line-interface.mdx#rasa-train),
+you can train a model with split domain files by running:
+
+```bash
+rasa train --domain path_to_domain_directory
+```
+
+## Intents
+
+The `intents` key in your domain file lists all intents
+used in your [NLU data](./nlu-training-data.mdx) and [conversation training data](./training-data-format.mdx#conversation-training-data).
+
+### Ignoring Entities for Certain Intents
+
+To ignore all entities for certain intents, you can
+add the `use_entities: []` parameter to the intent in your domain
+file like this:
+
+```yaml-rasa
+intents:
+  - greet:
+      use_entities: []
+```
+
+To ignore some entities or explicitly take only certain entities
+into account you can use this syntax:
+
+```yaml-rasa
+intents:
+- greet:
+    use_entities:
+      - name
+      - first_name
+    ignore_entities:
+      - location
+      - age
+```
+
+Excluded entities for those intents will be unfeaturized and therefore
+will not impact the next action predictions. This is useful when you have
+an intent where you don't care about the entities being picked up.
+
+If you list your intents without this parameter, the entities will be
+featurized as normal.
+
+:::note
+If you want these entities not to influence action prediction,
+set the [`influence_conversation: false`](./domain.mdx#slots-and-conversation-behavior)
+parameter for slots with the same name.
+
+:::
+
+## Entities
+
+The `entities` section lists all entities that can be
+extracted by any [entity extractor](./components.mdx) in your
+NLU pipeline.
+If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
+need to list the roles and groups of an entity in this section.
+
+For example:
+
+```yaml-rasa
+entities:
+   - PERSON           # entity extracted by SpacyEntityExtractor
+   - time             # entity extracted by DucklingEntityExtractor
+   - membership_type  # custom entity extracted by DIETClassifier
+   - priority         # custom entity extracted by DIETClassifier
+   - city:            # custom entity extracted by DIETClassifier
+       roles:
+       - from
+       - to
+   - topping:         # custom entity extracted by DIETClassifier
+       groups:
+       - 1
+       - 2
+   - size:            # custom entity extracted by DIETClassifier
+       groups:
+       - 1
+       - 2
+```
+
+## Slots
+
+Slots are your bot's memory. They act as a key-value store
+which can be used to store information the user provided (e.g their home city)
+as well as information gathered about the outside world (e.g. the result of a
+database query).
+
+Slots are defined in the slots section of your domain with their name,
+[type](domain.mdx#slot-types) and if and how they should [influence the assistant's
+behavior](domain.mdx#slots-and-conversation-behavior).
+The following example defines a slot with name "slot_name" and type `text`.
+
+```yaml
+slots:
+  slot_name:
+    type: text
+```
+
+### Slots and Conversation Behavior
+
+You can specify whether or not a slot influences the conversation with the
+`influence_conversation` property. 
+
+If you want to store information in a slot without it influencing the conversation,
+set `influence_conversation: false` when defining your slot. 
+
+The following example defines a slot `age` which will store information about the
+user's age, but which will *not* influence the flow of the conversation. This means
+that the assistant will ignore the value of the slot each time it predicts the next action.
+
+```yaml
+slots:
+  age:
+    type: text
+    # this slot will not influence the predictions
+    # of the dialogue policies
+    influence_conversation: false
+```
+
+When defining a slot, if you leave out `influence_conversation` or set it to `true`,
+that slot will influence the next action prediction, unless it has slot type `any`.
+The way the slot influences the conversation
+will depend on its [slot type](./domain.mdx#slot-types).
+
+The following example defines a slot `home_city` that influences the conversation. 
+A [`text` slot](domain.mdx#text-slot) will
+influence the assistant's behavior depending on whether the slot has a value.
+The specific value of a `text` slot (e.g. *Bangalore* or *New York* or *Hong Kong*)
+doesn't make any difference. 
+
+```yaml
+slots:
+  # this slot will influence the conversation depending on
+  # whether the slot is set or not
+  home_city:
+    type: text
+    influence_conversation: true
+```
+
+As an example, consider the two inputs "What is the weather like?" and "What is the
+weather like in Bangalore?" The conversation should diverge based on whether
+the `home_city` slot was set automatically by the NLU. If the slot is already set, the bot
+can predict the `action_forecast` action. If the slot is not set, it needs to get the `home_city`
+information before it is able to predict the weather.
+
+### Slot Types
+
+
+#### Text Slot
+
+* **Type**
+
+  `text`
+
+* **Use For**
+
+  Storing text values.
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+     cuisine:
+        type: text
+  ```
+
+* **Description**
+
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on whether the slot is set or not. Different texts do not influence the
+  conversation any further. This means the following two stories are equal:
+
+  ```yaml-rasa
+  stories:
+  - story: French cuisine
+    steps:
+    - intent: inform
+    - slot_was_set:
+      - cuisine: french
+
+  - story: Vietnamese cuisine
+    steps:
+    - intent: inform
+    - slot_was_set:
+      - cuisine: vietnamese
+  ```
+
+#### Boolean Slot
+
+* **Type**
+
+  `bool`
+
+* **Use For**
+
+  Storing `true` or `false` values.
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+     is_authenticated:
+        type: bool
+  ```
+
+* **Description**
+
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on whether the slot is empty, set to `true` or set to `false`. Note that an
+  empty `bool` slot influences the conversation differently than if the slot was set to
+  `false`.
+
+#### Categorical Slot
+
+* **Type**
+
+  `categorical`
+
+* **Use For**
+
+  Storing slots which can take one of N values.
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+    risk_level:
+      type: categorical
+      values:
+        - low
+        - medium
+        - high
+  ```
+
+* **Description**
+
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on the concrete value of the slot. This means the assistant's behavior is
+  different depending on whether the slot in the above example has the value `low`,
+  `medium`, or `high`.
+
+  A default value `__other__` is automatically added to the user-defined
+  values. All values encountered which are not explicitly defined in the slot's `values`
+  are mapped to `__other__`.
+  `__other__` should not be used as a user-defined value; if it is, it
+  will still behave as the default to which all unseen values are mapped.
+
+#### Float Slot
+
+* **Type**
+
+  `float`
+
+* **Use For**
+
+  Storing real numbers.
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+    temperature:
+      type: float
+      min_value: -100.0
+      max_value:  100.0
+  ```
+
+* **Defaults**
+
+  `max_value=1.0`, `min_value=0.0`
+
+* **Description**
+
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on the value of the slot. If the value is between `min_value` and
+  `max_value`, the specific value of the number is used.
+  All values below `min_value` will be treated as `min_value`, and all values above
+  `max_value` will be treated as `max_value`. Hence, if `max_value` is set to `1`,
+  there is no difference between the slot values `2` and `3.5`.
+
+#### List Slot
+
+* **Type**
+
+  `list`
+
+* **Use For**
+
+  Storing lists of values.
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+    shopping_items:
+      type: list
+  ```
+
+* **Description**
+
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on whether the list is empty or not. The length of the list stored in
+  the slot does not influence the dialogue. It only matters whether list length is zero or non-zero.
+
+#### Any Slot
+
+* **Type**
+
+  `any`
+
+* **Use For**
+
+  Storing arbitrary values (they can be of any type, such as dictionaries or lists).
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+    shopping_items:
+      type: any
+  ```
+
+* **Description**
+
+  Slots of type `any` are always ignored during conversations. The property
+  `influence_conversation` cannot be set to `true` for this slot type. If you want to
+  store a custom data structure which should influence the conversation, use a
+  [custom slot type](domain.mdx#custom-slot-types).
+
+#### Custom Slot Types
+
+Maybe your restaurant booking system can only handle bookings
+for up to 6 people. In this case you want the *value* of the
+slot to influence the next selected action (and not just whether
+it's been specified). You can do this by defining a custom slot class.
+
+The code below defines a custom slot class called `NumberOfPeopleSlot`.
+The featurization defines how the value of this slot gets converted to a vector
+so Rasa Open Source machine learning model can deal with it.
+The `NumberOfPeopleSlot` has three possible “values”, which can be represented with
+a vector of length `2`.
+
+|        |                |
+|--------|----------------|
+|`(0,0)` |not yet set     |
+|`(1,0)` |between 1 and 6 |
+|`(0,1)` |more than 6     |
+
+```python
+from rasa.shared.core.slots import Slot
+
+class NumberOfPeopleSlot(Slot):
+
+    def feature_dimensionality(self):
+        return 2
+
+    def as_feature(self):
+        r = [0.0] * self.feature_dimensionality()
+        if self.value:
+            if self.value <= 6:
+                r[0] = 1.0
+            else:
+                r[1] = 1.0
+        return r
+```
+
+Rasa Open Source needs some training stories to learn from how to handle the
+different situations:
+
+```yaml-rasa
+stories:
+- story: collecting table info
+  steps:
+  # ... other story steps
+  - intent: inform
+    entities:
+    - people: 3
+  - slot_was_set:
+    - people: 3
+  - action: action_book_table
+
+- story: too many people at the table
+  steps:
+  # ... other story steps
+  - intent: inform
+    entities:
+    - people: 9
+  - slot_was_set:
+    - people: 9
+  - action: action_explain_table_limit
+```
+
+#### Unfeaturized Slot
+
+:::caution deprecated
+The slot type `unfeaturized` is deprecated. Please use the property
+`influence_conversation` as described
+[here](domain.mdx#slots-and-conversation-behavior) or the slot type
+[`any`](domain.mdx#any-slot) instead.
+
+:::
+
+* **Type**
+
+  `unfeaturized`
+
+* **Use For**
+
+  Data you want to store which shouldn't influence the dialogue flow.
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+    internal_user_id:
+      type: unfeaturized
+  ```
+
+* **Description**
+
+  Slots of this type will never influence the conversation.
+
+### Slot Auto-fill
+
+The slot will be set automatically if your NLU model picks up an entity, and your domain
+ contains a slot with the same name. For example:
+
+```yaml-rasa
+stories:
+- story: entity slot-filling
+  steps:
+  - intent: greet
+    entities:
+    - name: Ali
+  - slot_was_set:
+    - name: Ali
+```
+
+In this case, you don't have to include the `slot_was_set` part in the
+story, because it is automatically picked up.
+
+To disable this behavior for a particular slot, you can set the
+`auto_fill` attribute to `False` in the domain file:
+
+```yaml-rasa
+slots:
+  name:
+    type: text
+    auto_fill: False
+```
+
+### Initial slot values
+
+You can provide an initial value for a slot in your domain file:
+
+```yaml-rasa
+slots:
+  num_fallbacks:
+    type: float
+    initial_value: 0
+```
+
+## Responses
+
+Responses are actions that send a message to a user without running any custom code or
+returning events. These responses can be defined directly in the domain file under the `responses` key
+and can include rich content such as buttons and attachments. For more information on responses and how to define them,
+see [Responses](./responses.mdx).
+
+
+## Forms
+
+Forms are a special type of action meant to help your assistant collect information from a user.
+Define forms under the `forms` key in your domain file.
+For more information on form and how to define them, see [Forms](./forms.mdx).
+
+
+## Actions
+
+[Actions](./actions.mdx) are the things your bot can actually do.
+For example, an action could:
+
+* respond to a user,
+
+* make an external API call,
+
+* query a database, or
+
+* just about anything!
+
+All [custom actions](./custom-actions.mdx) should be listed in your domain, except responses which need not be listed
+under `actions:` as they are already listed under `responses:`.
+
+## Session configuration
+
+A conversation session represents the dialogue between the assistant and the user.
+Conversation sessions can begin in three ways:
+
+1. the user begins the conversation with the assistant,
+
+2. the user sends their first message after a configurable period of inactivity, or
+
+3. a manual session start is triggered with the `/session_start` intent message.
+
+You can define the period of inactivity after which a new conversation
+session is triggered in the domain under the `session_config` key.
+
+Available parameters are:
+- `session_expiration_time` defines the time of inactivity in minutes after which a
+new session will begin.
+- `carry_over_slots_to_new_session` determines whether
+existing set slots should be carried over to new sessions.
+
+The default session configuration looks as follows:
+
+```yaml-rasa
+session_config:
+  session_expiration_time: 60  # value in minutes, 0 means infinitely long
+  carry_over_slots_to_new_session: true  # set to false to forget slots between sessions
+```
+
+This means that if a user sends their first message after 60 minutes of inactivity, a
+new conversation session is triggered, and that any existing slots are carried over
+into the new session. Setting the value of `session_expiration_time` to `0` means
+that sessions will not end (note that the `action_session_start` action will still
+be triggered at the very beginning of conversations).
+
+:::note
+A session start triggers the default action `action_session_start`. Its default
+implementation moves all existing slots into the new session. Note that all
+conversations begin with an `action_session_start`. Overriding this action could
+for instance be used to initialize the tracker with slots from an external API
+call, or to start the conversation with a bot message. The docs on
+[Customizing the session start action](./default-actions.mdx#customization) shows you how to do that.
+
+:::
+
+## Config
+
+The `config` key in the domain file maintains the `store_entities_as_slots` parameter.
+When an entity is recognized by the NLU model and the entity name matches a slot name,
+`store_entities_as_slots` defines whether the entity value should be placed in that slot.
+By default, entities will auto-fill slots of the same name.
+
+You can turn off all slot auto-filling by setting the `store_entities_as_slots` parameter to `false`:
+
+```yaml-rasa title="domain.yml"
+config:
+  store_entities_as_slots: false
+```
+
+You can also turn off this behavior for a specific slot using the [`auto_fill`](./domain.mdx#slot-auto-fill)
+parameter in that slot's definition.
+
+:::note looking for config.yml?
+If you're looking for information on the `config.yml` file, check out the docs on
+[Model Configuration](./model-configuration.mdx).
+:::
