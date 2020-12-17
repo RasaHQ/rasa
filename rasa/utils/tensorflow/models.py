@@ -264,7 +264,7 @@ class RasaModel(TmpKerasModel):
         model = cls(*args, **kwargs)
 
         # need to train on 1 example to build weights of the correct size
-        model.compile(run_eagerly=False if finetune_mode else True)
+        model.compile()
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
         model.fit(data_generator, verbose=False)
         # load trained weights
