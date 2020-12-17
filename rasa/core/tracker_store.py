@@ -917,33 +917,44 @@ class SQLTrackerStore(TrackerStore):
         )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
-        """Create databse `db` and update engine to reflect the updated `engine_url`."""
-
+        """Creates database `db` and updates engine accordingly."""
         from sqlalchemy import create_engine
+
+        if not self.engine.dialect.name == "postgresql":
+            rasa.shared.utils.io.raise_warning(
+                "The parameter 'login_db' can only be used with a postgres database.",
+            )
+            return
 
         self._create_database(self.engine, db)
         engine_url.database = db
         self.engine = create_engine(engine_url)
 
     @staticmethod
-    def _create_database(engine: "Engine", db: Text):
+    def _create_database(engine: "Engine", database_name: Text) -> None:
         """Create database `db` on `engine` if it does not exist."""
-
         import psycopg2
 
         conn = engine.connect()
 
-        cursor = conn.connection.cursor()
-        cursor.execute("COMMIT")
-        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", (db,))
-        exists = cursor.fetchone()
-        if not exists:
-            try:
-                cursor.execute(f"CREATE DATABASE {db}")
-            except psycopg2.IntegrityError as e:
-                logger.error(f"Could not create database '{db}': {e}")
+        matching_rows = (
+            conn.execution_options(isolation_level="AUTOCOMMIT")
+            .execute(
+                sa.text(
+                    "SELECT 1 FROM pg_catalog.pg_database "
+                    "WHERE datname = :database_name"
+                ),
+                database_name=database_name,
+            )
+            .rowcount
+        )
 
-        cursor.close()
+        if not matching_rows:
+            try:
+                conn.execute(f"CREATE DATABASE {database_name}")
+            except psycopg2.IntegrityError as e:
+                logger.error(f"Could not create database '{database_name}': {e}")
+
         conn.close()
 
     @contextlib.contextmanager
