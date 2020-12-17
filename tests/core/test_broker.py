@@ -2,12 +2,12 @@ import json
 import logging
 import textwrap
 from asyncio.events import AbstractEventLoop
-
-import kafka
-import pytest
-
 from pathlib import Path
 from typing import Union, Text, List, Optional, Type, Dict, Any
+
+import aio_pika.exceptions
+import kafka
+import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -22,6 +22,7 @@ from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
+from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 TEST_EVENTS = [
@@ -190,14 +191,15 @@ async def test_file_broker_properly_logs_newlines(tmp_path: Path):
     assert recovered == [event_with_newline]
 
 
-def test_load_custom_broker_name(tmp_path: Path):
+async def test_load_custom_broker_name(tmp_path: Path):
     config = EndpointConfig(
         **{
             "type": "rasa.core.brokers.file.FileEventBroker",
             "path": str(tmp_path / "rasa_event.log"),
         }
     )
-    assert EventBroker.create(config)
+    broker = await EventBroker.create(config)
+    assert broker
 
 
 class CustomEventBrokerWithoutAsync(EventBroker):
@@ -301,3 +303,26 @@ def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
 
     with pytest.warns(UserWarning):
         pika._create_rabbitmq_ssl_options()
+
+
+async def test_pika_connection_error(monkeypatch: MonkeyPatch):
+    # patch PikaEventBroker to raise an AMQP connection error
+    async def connect(self) -> None:
+        raise aio_pika.exceptions.ProbableAuthenticationError("Oups")
+
+    monkeypatch.setattr(PikaEventBroker, "connect", connect)
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/connexion_error_pika_endpoint.yml",
+        "event_broker",
+    )
+    with pytest.raises(ConnectionException):
+        await EventBroker.create(cfg)
+
+
+async def test_sql_connection_error(monkeypatch: MonkeyPatch):
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/connexion_error_sql_endpoint.yml",
+        "event_broker",
+    )
+    with pytest.raises(ConnectionException):
+        await EventBroker.create(cfg)

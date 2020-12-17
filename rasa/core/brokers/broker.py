@@ -5,6 +5,7 @@ from typing import Any, Dict, Text, Optional, Union
 
 import aio_pika.exceptions
 import psycopg2
+import sqlalchemy.exc
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -14,7 +15,11 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-CONNECTION_ERRORS = (psycopg2.OperationalError, aio_pika.exceptions.AMQPConnectionError)
+CONNECTION_ERRORS = (
+    psycopg2.OperationalError,
+    sqlalchemy.exc.OperationalError,
+    aio_pika.exceptions.AMQPConnectionError,
+)
 
 
 class EventBroker:

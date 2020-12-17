@@ -24,6 +24,7 @@ from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError, NoCredentialsError
 import psycopg2
 import pymongo.errors
+import sqlalchemy.exc
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -70,6 +71,7 @@ CONNECTION_ERRORS = (
     NoCredentialsError,
     psycopg2.OperationalError,
     pymongo.errors.ConnectionFailure,
+    sqlalchemy.exc.OperationalError,
 )
 
 

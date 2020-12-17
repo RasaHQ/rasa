@@ -1,0 +1,3 @@
+tracker_store:
+  type: mongod
+  url: mongodb://0.0.0.0:42

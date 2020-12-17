@@ -31,6 +31,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
+from rasa.shared.exceptions import ConnectionException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -891,3 +892,23 @@ def test_current_state_without_events(default_domain: Domain):
 
     # `events` key should not be in there
     assert state and "events" not in state
+
+
+def test_mongo_connection_error(default_domain: Domain):
+    store = read_endpoint_config(
+        "data/test_endpoints/tracker_stores/connexion_error_mongo_endpoint.yml",
+        "tracker_store",
+    )
+
+    with pytest.raises(ConnectionException):
+        TrackerStore.create(store, default_domain)
+
+
+def test_dynamo_connection_error(default_domain: Domain):
+    store = read_endpoint_config(
+        "data/test_endpoints/tracker_stores/connexion_error_dynamo_endpoint.yml",
+        "tracker_store",
+    )
+
+    with pytest.raises(ConnectionException):
+        TrackerStore.create(store, default_domain)

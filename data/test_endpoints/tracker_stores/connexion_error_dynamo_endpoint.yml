@@ -1,0 +1,2 @@
+tracker_store:
+  type: dynamo
