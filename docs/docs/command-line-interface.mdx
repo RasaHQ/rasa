@@ -17,11 +17,12 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa shell`            |Loads your trained model and lets you talk to your assistant on the command line.                                                         |
 |`rasa run`              |Starts a server with your trained model.                                                                                                  |
 |`rasa run actions`      |Starts an action server using the Rasa SDK.                                                                                               |
-|`rasa visualize`        |Generates a visual representation of your stories.                                                                                                                                                            |
+|`rasa visualize`        |Generates a visual representation of your stories.                                                                                        |
 |`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                            |
 |`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                                         |
 |`rasa data convert`     |Converts training data between different formats.                                                                                         |
-|`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                                             |
+|`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
+|`rasa data suggest nlu` |Performs data augmentation by paraphrasing and suggests utterances that can be added to the original training data.                       |
 |`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
 |`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
@@ -357,6 +358,30 @@ You can use `rasa data validate` with additional arguments, e.g. to specify the 
 domain files:
 
 ```text [rasa data validate --help]
+```
+
+## rasa data suggest nlu
+
+You can perform data augmentation by first [generating paraphrases](https://github.com/RasaHQ/paraphraser/tree/master) and subsequently run the following command in order to get data suggestions that can be added to the training data:
+
+```bash
+rasa data suggest nlu
+```
+
+LONGER EXPLANATION
+
+:::note
+Usage of `rasa data suggest nlu` requires a set of generated paraphrases from [https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser/tree/master).
+:::
+
+:::caution check results
+While data augmentation can substantially improve performance for some intents (and therefore also overall NLU performance), it can also degrade the performance of other intents. We therefore recommend you carefully check the generated reports.
+:::
+
+You need to specify additional arguments for `rasa data suggest nlu`, e.g. the location of your generated paraphrases, your training and evaluation data, as well as an `intent_report.json` from a trained model (without data augmentation) and its config file:
+
+```bash
+rasa data suggest nlu --help
 ```
 
 ## rasa export
