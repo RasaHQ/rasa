@@ -41,6 +41,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.utils.train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
+from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
     FeatureSignature,
@@ -895,15 +896,43 @@ class TED(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
-            self._prepare_sparse_dense_layer_for(name, self.data_signature)
+            print(f">>data {name} -> {self.data_signature[name]}")
+            # self._prepare_sparse_dense_layer_for(name, self.data_signature)
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name)
+                # self._prepare_sequence_layers(name)
+                self._tf_layers[f"{name}_sequence_layer"] = layers.RasaSequenceLayer(
+                    name, self.data_signature[name], self.config
+                )
+            elif SENTENCE in self.data_signature[name]:
+                self._tf_layers[f"{name}_input_layer"] = layers.RasaInputLayer(
+                    name, self.data_signature[name], self.config
+                )
+            else:
+                print(
+                    "> CREATING NO FEATURE COMBINING LAYERS for",
+                    name,
+                    self.data_signature[name],
+                )
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
-            self._prepare_sparse_dense_layer_for(name, self.label_signature)
+            print(f">>label {name} -> {self.data_signature.get(name, None)}")
+            # self._prepare_sparse_dense_layer_for(name, self.label_signature)
             if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._prepare_sequence_layers(name)
+                # self._prepare_sequence_layers(name)
+                self._tf_layers[f"{name}_sequence_layer"] = layers.RasaSequenceLayer(
+                    name, self.label_signature[name], self.config
+                )
+            elif SENTENCE in self.label_signature[name]:
+                self._tf_layers[f"{name}_input_layer"] = layers.RasaInputLayer(
+                    name, self.label_signature[name], self.config
+                )
+            else:
+                print(
+                    "> CREATING NO FEATURE COMBINING LAYERS for",
+                    name,
+                    self.label_signature[name],
+                )
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
@@ -922,6 +951,7 @@ class TED(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
+    #TODO-sams: remove
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
     ) -> None:
@@ -1082,6 +1112,7 @@ class TED(TransformerRasaModel):
             lambda: self._encode_fake_features_per_attribute(tf_batch_data, attribute),
         )
 
+    #TODO-sams: remove
     def _get_dense_units(
         self, attribute_features_list: List[tf.Tensor], attribute: Text
     ) -> int:
@@ -1094,6 +1125,7 @@ class TED(TransformerRasaModel):
                 units += f.shape[-1]
         return units
 
+    #TODO-sams: remove
     def _get_concat_units(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> int:
@@ -1138,14 +1170,17 @@ class TED(TransformerRasaModel):
             # if the input features are fake, we don't process them further,
             # but we need to calculate correct last dim (units) so that tf could infer
             # the last shape of the tensors
-            if self.config[NUM_TRANSFORMER_LAYERS][TEXT] > 0:
-                text_transformer_units = self.config[TRANSFORMER_SIZE][TEXT]
-            elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
-                text_transformer_units = self.config[HIDDEN_LAYERS_SIZES][TEXT][-1]
-            else:
-                text_transformer_units = self._get_concat_units(
-                    tf_batch_data, attribute
-                )
+            # if self.config[NUM_TRANSFORMER_LAYERS][TEXT] > 0:
+            #     text_transformer_units = self.config[TRANSFORMER_SIZE][TEXT]
+            # elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
+            #     text_transformer_units = self.config[HIDDEN_LAYERS_SIZES][TEXT][-1]
+            # else:
+            #     text_transformer_units = self._get_concat_units(
+            #         tf_batch_data, attribute
+            #     )
+            text_transformer_units = self._tf_layers[
+                f"{attribute}_sequence_layer"
+            ].output_units
 
             text_transformer_output = tf.zeros(
                 (0, 0, text_transformer_units), dtype=tf.float32
@@ -1239,16 +1274,27 @@ class TED(TransformerRasaModel):
             sequence_lengths += 1
             mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
-            attribute_features, _, _, _ = self._create_sequence(
-                tf_batch_data[attribute][SEQUENCE],
-                tf_batch_data[attribute][SENTENCE],
-                mask_sequence_text,
-                mask_text,
-                attribute,
-                sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
-                dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            # attribute_features, _, _, _ = self._create_sequence(
+            #     tf_batch_data[attribute][SEQUENCE],
+            #     tf_batch_data[attribute][SENTENCE],
+            #     mask_sequence_text,
+            #     mask_text,
+            #     attribute,
+            #     sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            #     dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            #     masked_lm_loss=self.config[MASKED_LM],
+            #     sequence_ids=False,
+            # )
+            attribute_features, _, _, _ = self._tf_layers[
+                f"{attribute}_sequence_layer"
+            ](
+                sequence_features=tf_batch_data[attribute][SEQUENCE],
+                sentence_features=tf_batch_data[attribute][SENTENCE],
+                mask_sequence=mask_sequence_text,
+                mask=mask_text,
+                name=attribute,
+                training=self._training,
                 masked_lm_loss=self.config[MASKED_LM],
-                sequence_ids=False,
             )
 
             if attribute == TEXT:
@@ -1280,8 +1326,15 @@ class TED(TransformerRasaModel):
         else:
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
-            attribute_features = self._combine_sparse_dense_features(
-                tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
+            # attribute_features = self._combine_sparse_dense_features(
+            #     tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}"
+            # )
+            attribute_features = self._tf_layers[f"{attribute}_input_layer"](
+                sequence_features=[],
+                sentence_features=tf_batch_data[attribute][SENTENCE],
+                mask_sequence=None,
+                mask_text=None,
+                training=self._training,
             )
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:

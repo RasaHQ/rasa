@@ -792,6 +792,7 @@ class TransformerRasaModel(RasaModel):
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
+    #TODO-sams: remove
     def _prepare_sparse_dense_dropout_layers(
         self, name: Text, drop_rate: float
     ) -> None:
@@ -802,6 +803,7 @@ class TransformerRasaModel(RasaModel):
             rate=drop_rate
         )
 
+    #TODO-sams: remove
     def _prepare_sparse_dense_layers(
         self, data_signature: List[FeatureSignature], name: Text, dense_dim: int
     ) -> None:
@@ -828,6 +830,7 @@ class TransformerRasaModel(RasaModel):
                     name=f"sparse_to_dense_ids.{name}",
                 )
 
+    #TODO-sams: remove
     def _prepare_input_layers(self, name: Text) -> None:
         self._prepare_ffnn_layer(
             name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
@@ -855,6 +858,7 @@ class TransformerRasaModel(RasaModel):
                 prefix="concat_layer",
             )
 
+    #TODO-sams: remove
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
 
@@ -890,6 +894,7 @@ class TransformerRasaModel(RasaModel):
                 f"tags.{name}",
             )
 
+    #TODO-sams: remove
     def _combine_sparse_dense_features(
         self,
         features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
@@ -927,7 +932,8 @@ class TransformerRasaModel(RasaModel):
             return tf.concat(dense_features, axis=-1)
 
         return tf.concat(dense_features, axis=-1) * mask
-
+    
+    #TODO-sams: remove
     def _combine_sequence_sentence_features(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -964,6 +970,7 @@ class TransformerRasaModel(RasaModel):
             "No features are present. Please check your configuration file."
         )
 
+    #TODO-sams: remove
     def _concat_sequence_sentence_features(
         self,
         sequence_x: tf.Tensor,
@@ -997,6 +1004,7 @@ class TransformerRasaModel(RasaModel):
         # (4) sum up sequence features and sentence features
         return sequence_x + sentence_x
 
+    #TODO-sams: remove
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
     ) -> Optional[tf.Tensor]:
@@ -1021,6 +1029,7 @@ class TransformerRasaModel(RasaModel):
 
         return None
 
+    #TODO-sams: remove
     def _create_sequence(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
