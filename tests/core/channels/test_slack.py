@@ -103,10 +103,12 @@ def test_slack_form_metadata():
     user = "user1"
     channel = "channel1"
     authed_user = "XXXXXXX"
+    team_id = "XXXXXXXXX"
     ts = "1579802617.000800"
     header = {"content-type": "application/x-www-form-urlencoded"}
     payload = {
         "type": "block_actions",
+        "team": {"id": team_id, "domain": "example"},
         "user": {"id": authed_user, "username": user, "name": "name"},
         "channel": {"id": channel},
         "message": {
@@ -145,7 +147,7 @@ def test_slack_form_metadata():
     assert metadata["out_channel"] == channel
     assert metadata["users"][0] == authed_user
     assert metadata["thread_id"] == ts
-    assert metadata["team_id"] is None
+    assert metadata["team_id"] == team_id
 
 
 def test_slack_metadata_missing_keys():
