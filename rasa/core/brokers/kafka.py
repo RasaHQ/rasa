@@ -23,7 +23,6 @@ class KafkaEventBroker(EventBroker):
         ssl_check_hostname=False,
         topic="rasa_core_events",
         client_id=None,
-        group_id=None,
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
     ) -> None:
@@ -32,7 +31,6 @@ class KafkaEventBroker(EventBroker):
         self.host = host
         self.topic = topic
         self.client_id = client_id
-        self.group_id = group_id
         self.security_protocol = security_protocol
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
@@ -94,7 +92,6 @@ class KafkaEventBroker(EventBroker):
                 sasl_mechanism="PLAIN",
                 security_protocol=self.security_protocol,
                 client_id=self.client_id,
-                group_id=self.group_id,
             )
         elif self.security_protocol == "PLAINTEXT":
             self.producer = kafka.KafkaProducer(
@@ -102,7 +99,6 @@ class KafkaEventBroker(EventBroker):
                 value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 security_protocol=self.security_protocol,
                 client_id=self.client_id,
-                group_id=self.group_id,
             )
         elif self.security_protocol == "SSL":
             self.producer = kafka.KafkaProducer(
@@ -114,7 +110,6 @@ class KafkaEventBroker(EventBroker):
                 ssl_check_hostname=False,
                 security_protocol=self.security_protocol,
                 client_id=self.client_id,
-                group_id=self.group_id,
             )
         elif self.security_protocol == "SASL_SSL":
             self.producer = kafka.KafkaProducer(
@@ -129,7 +124,6 @@ class KafkaEventBroker(EventBroker):
                 sasl_mechanism="PLAIN",
                 security_protocol=self.security_protocol,
                 client_id=self.client_id,
-                group_id=self.group_id,
             )
         else:
             logger.error("Kafka security_protocol invalid or not set")
