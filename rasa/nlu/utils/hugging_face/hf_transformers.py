@@ -7,7 +7,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -688,9 +688,9 @@ class HFTransformersNLP(Component):
 
         return batch_docs
 
-    def train_chunk(
+    def train(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -705,9 +705,7 @@ class HFTransformersNLP(Component):
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
-                filter(
-                    lambda x: x.get(attribute), training_data_chunk.training_examples
-                )
+                filter(lambda x: x.get(attribute), training_data.training_examples)
             )
 
             batch_start_index = 0

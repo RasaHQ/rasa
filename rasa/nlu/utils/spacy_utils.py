@@ -3,7 +3,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
-from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.utils.train_utils
 from rasa.shared.nlu.training_data.message import Message
@@ -223,9 +223,9 @@ class SpacyNLP(Component):
             attribute_docs[attribute] = [doc for _, doc in attribute_document_list]
         return attribute_docs
 
-    def train_chunk(
+    def train(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -234,10 +234,10 @@ class SpacyNLP(Component):
         See parent class for more information.
         """
         attribute_docs = self._docs_for_training_examples(
-            training_data_chunk.training_examples
+            training_data.training_examples
         )
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-            for idx, example in enumerate(training_data_chunk.training_examples):
+            for idx, example in enumerate(training_data.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
                 if len(example_attribute_doc):
                     # If length is 0, that means the initial text feature
