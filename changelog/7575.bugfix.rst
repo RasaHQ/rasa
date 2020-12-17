@@ -1,0 +1,1 @@
+Fix scikit-learn crashing during response selector evaluation.
