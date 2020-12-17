@@ -1,0 +1,929 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reminders and External Events</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Policies" href="../policies/" />
+    <link rel="prev" title="Actions" href="../actions/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Reminders and External Events" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/core/reminders-and-external-events" />
+  
+    <meta name="description" content="Learn how to use external events and schedule reminders." />
+    <meta itemprop="description" content="Learn how to use external events and schedule reminders.">
+    <meta name="twitter:description" content="Learn how to use external events and schedule reminders." />
+    <meta property="og:description" content="Learn how to use external events and schedule reminders." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Reminders and External Events">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/core/reminders-and-external-events/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.19
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.19/core/reminders-and-external-events/">1.10.19</a>
+              <a href="../../../1.10.18/core/reminders-and-external-events/">1.10.18</a>
+              <a href="../../../1.10.17/core/reminders-and-external-events/">1.10.17</a>
+              <a href="../../../1.10.16/core/reminders-and-external-events/">1.10.16</a>
+              <a href="../../../1.10.15/core/reminders-and-external-events/">1.10.15</a>
+              <a href="../../../1.10.14/core/reminders-and-external-events/">1.10.14</a>
+              <a href="../../../1.10.13/core/reminders-and-external-events/">1.10.13</a>
+              <a href="../../../1.10.12/core/reminders-and-external-events/">1.10.12</a>
+              <a href="../../../1.10.11/core/reminders-and-external-events/">1.10.11</a>
+              <a href="../../../1.10.10/core/reminders-and-external-events/">1.10.10</a>
+              <a href="../../../1.10.9/core/reminders-and-external-events/">1.10.9</a>
+              <a href="../../../1.10.8/core/reminders-and-external-events/">1.10.8</a>
+              <a href="../../../1.10.7/core/reminders-and-external-events/">1.10.7</a>
+              <a href="../../../1.10.6/core/reminders-and-external-events/">1.10.6</a>
+              <a href="../../../1.10.5/core/reminders-and-external-events/">1.10.5</a>
+              <a href="../../../1.10.4/core/reminders-and-external-events/">1.10.4</a>
+              <a href="../../../1.10.3/core/reminders-and-external-events/">1.10.3</a>
+              <a href="../../../1.10.2/core/reminders-and-external-events/">1.10.2</a>
+              <a href="../../../1.10.1/core/reminders-and-external-events/">1.10.1</a>
+              <a href="../../../1.10.0/core/reminders-and-external-events/">1.10.0</a>
+              <a href="../../../1.9.7/core/reminders-and-external-events/">1.9.7</a>
+              <a href="../../../1.9.6/core/reminders-and-external-events/">1.9.6</a>
+              <a href="../../../1.9.5/core/reminders-and-external-events/">1.9.5</a>
+              <a href="../../../1.9.4/core/reminders-and-external-events/">1.9.4</a>
+              <a href="../../../1.9.3/core/reminders-and-external-events/">1.9.3</a>
+              <a href="../../../1.9.2/core/reminders-and-external-events/">1.9.2</a>
+              <a href="../../../1.9.1/core/reminders-and-external-events/">1.9.1</a>
+              <a href="../../../1.9.0/core/reminders-and-external-events/">1.9.0</a>
+              <a href="../../../1.8.3/core/reminders-and-external-events/">1.8.3</a>
+              <a href="../../../1.8.2/core/reminders-and-external-events/">1.8.2</a>
+              <a href="../../../1.8.1/core/reminders-and-external-events/">1.8.1</a>
+              <a href="../../../1.8.0/core/reminders-and-external-events/">1.8.0</a>
+              <a href="../../../1.7.4/index/">1.7.4</a>
+              <a href="../../../1.7.3/index/">1.7.3</a>
+              <a href="../../../1.7.2/index/">1.7.2</a>
+              <a href="../../../1.7.1/index/">1.7.1</a>
+              <a href="../../../1.7.0/index/">1.7.0</a>
+              <a href="../../../1.6.2/index/">1.6.2</a>
+              <a href="../../../1.5.3/index/">1.5.3</a>
+              <a href="../../../1.4.6/index/">1.4.6</a>
+              <a href="../../../1.3.10/index/">1.3.10</a>
+              <a href="../../../1.2.9/index/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="reminders-and-external-events">
+<span id="id1"></span><h1>Reminders and External Events<a class="headerlink" href="#reminders-and-external-events" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/reminders-and-external-events.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>The <code class="docutils literal notranslate"><span class="pre">ReminderScheduled</span></code> event and the
+<a class="reference external" href="../../api/http-api/#operation/triggerConversationIntent">trigger_intent endpoint</a> let your assistant remind you
+about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
+You can find a full example assistant that implements these features
+<a class="reference external" href="https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md">here</a>.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#reminders" id="id5">Reminders</a></p>
+<ul>
+<li><p><a class="reference internal" href="#scheduling-reminders" id="id6">Scheduling Reminders</a></p></li>
+<li><p><a class="reference internal" href="#cancelling-reminders" id="id7">Cancelling Reminders</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#external-events" id="id8">External Events</a></p>
+<ul>
+<li><p><a class="reference internal" href="#getting-the-conversation-id" id="id9">Getting the Conversation ID</a></p></li>
+<li><p><a class="reference internal" href="#responding-to-external-events" id="id10">Responding to External Events</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="reminders">
+<span id="id2"></span><h2><a class="toc-backref" href="#id5">Reminders</a><a class="headerlink" href="#reminders" title="Permalink to this headline">¶</a></h2>
+<p>Instead of an external sensor, you might just want to be reminded about something after a certain amount of time.
+For this, Rasa provides the special event <code class="docutils literal notranslate"><span class="pre">ReminderScheduled</span></code>, and another event, <code class="docutils literal notranslate"><span class="pre">ReminderCancelled</span></code>, to unschedule a reminder.</p>
+<div class="section" id="scheduling-reminders">
+<span id="scheduling-reminders-guide"></span><h3><a class="toc-backref" href="#id6">Scheduling Reminders</a><a class="headerlink" href="#scheduling-reminders" title="Permalink to this headline">¶</a></h3>
+<p>Let’s say you want your assistant to remind you to call a friend in 5 seconds.
+(You probably want some longer time span, but for the sake of testing, let it be 5 seconds.)
+Thus, we define an intent <code class="docutils literal notranslate"><span class="pre">ask_remind_call</span></code> with some NLU data,</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:ask_remind_call
+<span class="k">-</span> remind me to call [<span class="nt">Albert</span>](<span class="na">name</span>)
+<span class="k">-</span> remind me to call [<span class="nt">Susan</span>](<span class="na">name</span>)
+<span class="k">-</span> later I have to call [<span class="nt">Daksh</span>](<span class="na">name</span>)
+<span class="k">-</span> later I have to call [<span class="nt">Anna</span>](<span class="na">name</span>)
+...
+</pre></div>
+</div>
+<p>and connect this intent with a new custom action <code class="docutils literal notranslate"><span class="pre">action_set_reminder</span></code>.
+We could make this connection by providing training stories (recommended for more complex assistants), or using the <a class="reference internal" href="../policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a>.</p>
+<p>The custom action <code class="docutils literal notranslate"><span class="pre">action_set_reminder</span></code> should schedule a reminder that, 5 seconds later, triggers an intent <code class="docutils literal notranslate"><span class="pre">EXTERNAL_reminder</span></code> with all the entities that the user provided in his/her last message (similar to an external event):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionSetReminder</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Schedules a reminder, supplied with the last message&#39;s entities.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;action_set_reminder&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dispatcher</span><span class="p">:</span> <span class="n">CollectingDispatcher</span><span class="p">,</span>
+        <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="s2">&quot;I will remind you in 5 seconds.&quot;</span><span class="p">)</span>
+
+        <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">entities</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">latest_message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entities&quot;</span><span class="p">)</span>
+
+        <span class="n">reminder</span> <span class="o">=</span> <span class="n">ReminderScheduled</span><span class="p">(</span>
+            <span class="s2">&quot;EXTERNAL_reminder&quot;</span><span class="p">,</span>
+            <span class="n">trigger_date_time</span><span class="o">=</span><span class="n">date</span><span class="p">,</span>
+            <span class="n">entities</span><span class="o">=</span><span class="n">entities</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_reminder&quot;</span><span class="p">,</span>
+            <span class="n">kill_on_user_message</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">reminder</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Note that this requires the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa_sdk.events</span></code> packages.</p>
+<p>Finally, we define another custom action <code class="docutils literal notranslate"><span class="pre">action_react_to_reminder</span></code> and link it to the <code class="docutils literal notranslate"><span class="pre">EXTERNAL_reminder</span></code> intent:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="k">-</span> EXTERNAL_reminder:
+  triggers: action_react_to_reminder
+</pre></div>
+</div>
+<p>where the <code class="docutils literal notranslate"><span class="pre">action_react_to_reminder</span></code> is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionReactToReminder</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Reminds the user to call someone.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;action_react_to_reminder&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dispatcher</span><span class="p">:</span> <span class="n">CollectingDispatcher</span><span class="p">,</span>
+        <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">tracker</span><span class="o">.</span><span class="n">get_latest_entity_values</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span> <span class="s2">&quot;someone&quot;</span><span class="p">)</span>
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remember to call </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+</div>
+<p>Instead of a custom action, we could also have used a simple response template.
+But here we want to make use of the fact that the reminder can carry entities, and we can process the entities in this custom action.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Reminders are cancelled whenever you shutdown your Rasa server.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Reminders currently (Rasa 1.8) don’t work in <cite>rasa shell</cite>.
+You have to test them with a
+<a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/">running Rasa X server</a> instead.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Proactively reaching out to the user is dependent on the abilities of a channel and
+hence not supported by every channel. If your channel does not support it, consider
+using the <a class="reference internal" href="../../user-guide/connectors/your-own-website/#callbackinput"><span class="std std-ref">CallbackInput</span></a> channel to send messages to a <a class="reference external" href="https://en.wikipedia.org/wiki/Webhook">webhook</a>.</p>
+</div>
+</div>
+<div class="section" id="cancelling-reminders">
+<span id="cancelling-reminders-guide"></span><h3><a class="toc-backref" href="#id7">Cancelling Reminders</a><a class="headerlink" href="#cancelling-reminders" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes the user may want to cancel a reminder that he has scheduled earlier.
+A simple way of adding this functionality to your assistant is to create an intent <code class="docutils literal notranslate"><span class="pre">ask_forget_reminders</span></code> and let your assistant respond to it with a custom action such as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ForgetReminders</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Cancels all reminders.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;action_forget_reminders&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Okay, I&#39;ll cancel all your reminders.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Cancel all reminders</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">ReminderCancelled</span><span class="p">()]</span>
+</pre></div>
+</div>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">ReminderCancelled()</span></code> simply cancels all the reminders that are currently scheduled.
+Alternatively, you may provide some parameters to narrow down the types of reminders that you want to cancel.
+For example,</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(intent=&quot;greet&quot;)</span></code> cancels all reminders with intent <code class="docutils literal notranslate"><span class="pre">greet</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(entities={...})</span></code> cancels all reminders with the given entities</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(&quot;...&quot;)</span></code> cancels the one unique reminder with the given name “<code class="docutils literal notranslate"><span class="pre">...</span></code>” that you supplied
+during its creation</p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="external-events">
+<span id="external-event-guide"></span><h2><a class="toc-backref" href="#id8">External Events</a><a class="headerlink" href="#external-events" title="Permalink to this headline">¶</a></h2>
+<p>Let’s say you want to send a message from some other device to change the course of an ongoing conversation.
+For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favorite
+plant needs watering, and your assistant should then relay this message to you.</p>
+<p>To do this, your Raspberry Pi needs to send a message to the <a class="reference external" href="../../api/http-api/#operation/triggerConversationIntent">trigger_intent endpoint</a> of your conversation.
+As the name says, this injects a user intent (possibly with entities) into your conversation.
+So for Rasa it is almost as if you had entered a message that got classified with this intent and these entities.
+Rasa then needs to respond to this input with an action such as <code class="docutils literal notranslate"><span class="pre">action_warn_dry</span></code>.
+The easiest and most reliable way to connect this action with the intent is via the <a class="reference internal" href="../policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a>.</p>
+<div class="section" id="getting-the-conversation-id">
+<span id="getting-conversation-id"></span><h3><a class="toc-backref" href="#id9">Getting the Conversation ID</a><a class="headerlink" href="#getting-the-conversation-id" title="Permalink to this headline">¶</a></h3>
+<p>The first thing we need is the Session ID of the conversation that your sensor should send a notification to.
+An easy way to get this is to define a custom action (see <a class="reference internal" href="../actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a>) that displays the ID in the conversation.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionTellID</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Informs the user about the conversation ID.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;action_tell_id&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+
+        <span class="n">conversation_id</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">sender_id</span>
+
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The ID of this conversation is: &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Trigger an intent with &quot;</span>
+            <span class="sa">f</span><span class="s1">&#39;curl -H &quot;Content-Type: application/json&quot; &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;-X POST -d </span><span class="se">\&#39;{{</span><span class="s1">&quot;name&quot;: &quot;EXTERNAL_dry_plant&quot;, &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;&quot;entities&quot;: </span><span class="se">{{</span><span class="s1">&quot;plant&quot;: &quot;Orchid&quot;</span><span class="se">}}}}\&#39;</span><span class="s1"> &#39;</span>
+            <span class="sa">f</span><span class="s2">&quot;http://localhost:5005/conversations/</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s2">/&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;trigger_intent&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+</div>
+<p>In addition, we also declare an intent <code class="docutils literal notranslate"><span class="pre">ask_id</span></code>, define some NLU data for it, and add both <code class="docutils literal notranslate"><span class="pre">action_tell_id</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ask_id</span></code> to the domain file, where we specify that one should trigger the other:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span>intents:
+  <span class="k">-</span> ask_id:
+    triggers: action_tell_id
+</pre></div>
+</div>
+<p>Now, when you ask “What is the ID of this conversation?”, the assistant replies with something like “The ID of this
+conversation is: 38cc25d7e23e4dde800353751b7c2d3e”.</p>
+<p>If you want your assistant to link to the Raspberry Pi automatically, you will have to write a custom action that
+informs the Pi about the conversation id when your conversation starts (see <a class="reference internal" href="../../api/rasa-sdk/#custom-session-start"><span class="std std-ref">Customizing the session start action</span></a>).</p>
+</div>
+<div class="section" id="responding-to-external-events">
+<span id="id4"></span><h3><a class="toc-backref" href="#id10">Responding to External Events</a><a class="headerlink" href="#responding-to-external-events" title="Permalink to this headline">¶</a></h3>
+<p>Now that we have our Session ID, we need to prepare the assistant so it responds to messages from the sensor.
+To this end, we define a new intent <code class="docutils literal notranslate"><span class="pre">EXTERNAL_dry_plant</span></code> without any NLU data.
+This intent will later be triggered by the external sensor.
+Here, we start the intent name with <code class="docutils literal notranslate"><span class="pre">EXTERNAL_</span></code> to indicate that this is not something the user would say, but you can name the intent however you like.</p>
+<p>In the domain file, we now connect the intent <code class="docutils literal notranslate"><span class="pre">EXTERNAL_dry_plant</span></code> with another custom action <code class="docutils literal notranslate"><span class="pre">action_warn_dry</span></code>, e.g.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionWarnDry</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Informs the user that a plant needs water.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;action_warn_dry&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dispatcher</span><span class="p">:</span> <span class="n">CollectingDispatcher</span><span class="p">,</span>
+        <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+
+        <span class="n">plant</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">tracker</span><span class="o">.</span><span class="n">get_latest_entity_values</span><span class="p">(</span><span class="s2">&quot;plant&quot;</span><span class="p">),</span> <span class="s2">&quot;someone&quot;</span><span class="p">)</span>
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Your </span><span class="si">{</span><span class="n">plant</span><span class="si">}</span><span class="s2"> needs some water!&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+</div>
+<p>Now, when you are in a conversation with id <code class="docutils literal notranslate"><span class="pre">38cc25d7e23e4dde800353751b7c2d3e</span></code>, then running</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -H <span class="s2">&quot;Content-Type: application/json&quot;</span> -X POST -d <span class="s1">&#39;{&quot;name&quot;: &quot;EXTERNAL_dry_plant&quot;, &quot;entities&quot;: {&quot;plant&quot;: &quot;Orchid&quot;}}&#39;</span> http://localhost:5005/conversations/38cc25d7e23e4dde800353751b7c2d3e/trigger_intent
+</pre></div>
+</div>
+<p>in the terminal will cause your assistant to say “Your Orchid needs some water!”.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>

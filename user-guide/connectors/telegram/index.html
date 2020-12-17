@@ -198,12 +198,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.18
+          viewing: 1.10.19
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.10.19/user-guide/connectors/telegram/">1.10.19</a>
               <a href="../../.././1.10.18/user-guide/connectors/telegram/">1.10.18</a>
               <a href="../../.././1.10.17/user-guide/connectors/telegram/">1.10.17</a>
               <a href="../../.././1.10.16/user-guide/connectors/telegram/">1.10.16</a>
@@ -305,6 +306,46 @@ will only listen when a user’s message starts with <code class="docutils liter
   <span class="nt">access_token</span><span class="p">:</span> <span class="s">&quot;490161424:AAGlRxinBRtKGb21_rlOEMtDFZMXBl6EC0o&quot;</span>
   <span class="nt">verify</span><span class="p">:</span> <span class="s">&quot;your_bot&quot;</span>
   <span class="nt">webhook_url</span><span class="p">:</span> <span class="s">&quot;https://your_url.com/webhooks/telegram/webhook&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="supported-response-attachments">
+<h2>Supported Response Attachments<a class="headerlink" href="#supported-response-attachments" title="Permalink to this headline">¶</a></h2>
+<p>In addition to standard <code class="docutils literal notranslate"><span class="pre">text:</span></code> responses, this channel also supports the following components from the <a class="reference external" href="https://core.telegram.org/bots/api/#message">Telegram API</a>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">button</span></code> arguments:
+- button_type: inline | vertical | reply</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">custom</span></code> arguments:
+- photo
+- audio
+- document
+- sticker
+- video
+- video_note
+- animation
+- voice
+- media
+- latitude, longitude (location)
+- latitude, longitude, title, address (venue)
+- phone_number
+- game_short_name
+- action</p></li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">utter_ask_transfer_form_confirm</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">buttons</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/affirm</span>
+    <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Yes</span>
+  <span class="p p-Indicator">-</span> <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/deny</span>
+    <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">No, cancel the transaction</span>
+  <span class="nt">button_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">vertical</span>
+  <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Would you like to transfer {currency}{amount_of_money} to {PERSON}?</span>
+  <span class="nt">image</span><span class="p">:</span> <span class="s">&quot;https://i.imgur.com/nGF1K8f.jpg&quot;</span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Here&#39;s my giraffe sticker!</span>
+  <span class="nt">custom</span><span class="p">:</span>
+    <span class="nt">sticker</span><span class="p">:</span> <span class="s">&quot;https://github.com/TelegramBots/book/raw/master/src/docs/sticker-fred.webp&quot;</span>
 </pre></div>
 </div>
 </div>

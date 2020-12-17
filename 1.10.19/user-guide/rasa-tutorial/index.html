@@ -1,0 +1,938 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial: Rasa Basics</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Tutorial: Building Assistants" href="../building-assistants/" />
+    <link rel="prev" title="Installation" href="../installation/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Tutorial: Rasa Basics" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/user-guide/rasa-tutorial" />
+  
+    <meta name="description" content="This tutorial will show you the different parts needed to build a
+chatbot or AI assistant using open source Rasa." />
+    <meta itemprop="description" content="This tutorial will show you the different parts needed to build a
+chatbot or AI assistant using open source Rasa.">
+    <meta name="twitter:description" content="This tutorial will show you the different parts needed to build a
+chatbot or AI assistant using open source Rasa." />
+    <meta property="og:description" content="This tutorial will show you the different parts needed to build a
+chatbot or AI assistant using open source Rasa." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Tutorial: Rasa Basics">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/user-guide/rasa-tutorial/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.19
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.19/user-guide/rasa-tutorial/">1.10.19</a>
+              <a href="../../../1.10.18/user-guide/rasa-tutorial/">1.10.18</a>
+              <a href="../../../1.10.17/user-guide/rasa-tutorial/">1.10.17</a>
+              <a href="../../../1.10.16/user-guide/rasa-tutorial/">1.10.16</a>
+              <a href="../../../1.10.15/user-guide/rasa-tutorial/">1.10.15</a>
+              <a href="../../../1.10.14/user-guide/rasa-tutorial/">1.10.14</a>
+              <a href="../../../1.10.13/user-guide/rasa-tutorial/">1.10.13</a>
+              <a href="../../../1.10.12/user-guide/rasa-tutorial/">1.10.12</a>
+              <a href="../../../1.10.11/user-guide/rasa-tutorial/">1.10.11</a>
+              <a href="../../../1.10.10/user-guide/rasa-tutorial/">1.10.10</a>
+              <a href="../../../1.10.9/user-guide/rasa-tutorial/">1.10.9</a>
+              <a href="../../../1.10.8/user-guide/rasa-tutorial/">1.10.8</a>
+              <a href="../../../1.10.7/user-guide/rasa-tutorial/">1.10.7</a>
+              <a href="../../../1.10.6/user-guide/rasa-tutorial/">1.10.6</a>
+              <a href="../../../1.10.5/user-guide/rasa-tutorial/">1.10.5</a>
+              <a href="../../../1.10.4/user-guide/rasa-tutorial/">1.10.4</a>
+              <a href="../../../1.10.3/user-guide/rasa-tutorial/">1.10.3</a>
+              <a href="../../../1.10.2/user-guide/rasa-tutorial/">1.10.2</a>
+              <a href="../../../1.10.1/user-guide/rasa-tutorial/">1.10.1</a>
+              <a href="../../../1.10.0/user-guide/rasa-tutorial/">1.10.0</a>
+              <a href="../../../1.9.7/user-guide/rasa-tutorial/">1.9.7</a>
+              <a href="../../../1.9.6/user-guide/rasa-tutorial/">1.9.6</a>
+              <a href="../../../1.9.5/user-guide/rasa-tutorial/">1.9.5</a>
+              <a href="../../../1.9.4/user-guide/rasa-tutorial/">1.9.4</a>
+              <a href="../../../1.9.3/user-guide/rasa-tutorial/">1.9.3</a>
+              <a href="../../../1.9.2/user-guide/rasa-tutorial/">1.9.2</a>
+              <a href="../../../1.9.1/user-guide/rasa-tutorial/">1.9.1</a>
+              <a href="../../../1.9.0/user-guide/rasa-tutorial/">1.9.0</a>
+              <a href="../../../1.8.3/user-guide/rasa-tutorial/">1.8.3</a>
+              <a href="../../../1.8.2/user-guide/rasa-tutorial/">1.8.2</a>
+              <a href="../../../1.8.1/user-guide/rasa-tutorial/">1.8.1</a>
+              <a href="../../../1.8.0/user-guide/rasa-tutorial/">1.8.0</a>
+              <a href="../../../1.7.4/user-guide/rasa-tutorial/">1.7.4</a>
+              <a href="../../../1.7.3/user-guide/rasa-tutorial/">1.7.3</a>
+              <a href="../../../1.7.2/user-guide/rasa-tutorial/">1.7.2</a>
+              <a href="../../../1.7.1/user-guide/rasa-tutorial/">1.7.1</a>
+              <a href="../../../1.7.0/user-guide/rasa-tutorial/">1.7.0</a>
+              <a href="../../../1.6.2/user-guide/rasa-tutorial/">1.6.2</a>
+              <a href="../../../1.5.3/user-guide/rasa-tutorial/">1.5.3</a>
+              <a href="../../../1.4.6/user-guide/rasa-tutorial/">1.4.6</a>
+              <a href="../../../1.3.10/user-guide/rasa-tutorial/">1.3.10</a>
+              <a href="../../../1.2.9/user-guide/rasa-tutorial/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="tutorial-rasa-basics">
+<span id="rasa-tutorial"></span><h1>Tutorial: Rasa Basics<a class="headerlink" href="#tutorial-rasa-basics" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/rasa-tutorial.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>This page explains the basics of building an assistant with Rasa and
+shows the structure of a Rasa project. You can test it out right here without
+installing anything.
+You can also <a class="reference internal" href="../installation/#installation"><span class="std std-ref">install Rasa</span></a> and follow along in your command line.</p>
+The <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">glossary</a> contains an overview of the most common terms you’ll see in the Rasa documentation.<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#create-a-new-project" id="id1">1. Create a New Project</a></p></li>
+<li><p><a class="reference internal" href="#view-your-nlu-training-data" id="id2">2. View Your NLU Training Data</a></p></li>
+<li><p><a class="reference internal" href="#define-your-model-configuration" id="id3">3. Define Your Model Configuration</a></p></li>
+<li><p><a class="reference internal" href="#write-your-first-stories" id="id4">4. Write Your First Stories</a></p></li>
+<li><p><a class="reference internal" href="#define-a-domain" id="id5">5. Define a Domain</a></p></li>
+<li><p><a class="reference internal" href="#train-a-model" id="id6">6. Train a Model</a></p></li>
+<li><p><a class="reference internal" href="#test-your-assistant" id="id7">7. Test Your Assistant</a></p></li>
+<li><p><a class="reference internal" href="#talk-to-your-assistant" id="id8">8. Talk to Your Assistant</a></p></li>
+<li><p><a class="reference internal" href="#next-steps" id="id9">Next Steps</a></p></li>
+</ul>
+</div>
+<p>In this tutorial, you will build a simple, friendly assistant which will ask how you’re doing
+and send you a fun picture to cheer you up if you are sad.</p>
+<img alt="../../_images/mood_bot.png" src="../../_images/mood_bot.png" />
+<div class="section" id="create-a-new-project">
+<h2><a class="toc-backref" href="#id1">1. Create a New Project</a><a class="headerlink" href="#create-a-new-project" title="Permalink to this headline">¶</a></h2>
+<p>The first step is to create a new Rasa project. To do this, run:</p>
+
+
+  <pre data-executable>rasa init --no-prompt</pre>
+<p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command creates all the files that a Rasa project needs and
+trains a simple bot on some sample data.
+If you leave out the <code class="docutils literal notranslate"><span class="pre">--no-prompt</span></code> flag you will be asked some questions about
+how you want your project to be set up.</p>
+<p>This creates the following files:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 64%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></p></td>
+<td><p>an empty file that helps python find your actions</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">actions.py</span></code></p></td>
+<td><p>code for your custom actions</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">config.yml</span></code> ‘*’</p></td>
+<td><p>configuration of your NLU and Core models</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code></p></td>
+<td><p>details for connecting to other services</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code> ‘*’</p></td>
+<td><p>your NLU training data</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code> ‘*’</p></td>
+<td><p>your stories</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> ‘*’</p></td>
+<td><p>your assistant’s domain</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></p></td>
+<td><p>details for connecting to channels like fb messenger</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">models/&lt;timestamp&gt;.tar.gz</span></code></p></td>
+<td><p>your initial model</p></td>
+</tr>
+</tbody>
+</table>
+<p>The most important files are marked with a ‘*’.
+You will learn about all of these in this tutorial.</p>
+</div>
+<div class="section" id="view-your-nlu-training-data">
+<h2><a class="toc-backref" href="#id2">2. View Your NLU Training Data</a><a class="headerlink" href="#view-your-nlu-training-data" title="Permalink to this headline">¶</a></h2>
+<p>The first piece of a Rasa assistant is an NLU model.
+NLU stands for Natural Language Understanding, which means turning
+user messages into structured data. To do this with Rasa,
+you provide training examples that show how Rasa should understand
+user messages, and then train a model by showing it those examples.</p>
+<p>Run the code cell below to see the NLU training data created by
+the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command:</p>
+
+
+  <pre data-executable>cat data/nlu.md</pre>
+<p>The lines starting with <code class="docutils literal notranslate"><span class="pre">##</span></code> define the names of your <code class="docutils literal notranslate"><span class="pre">intents</span></code>, which
+are groups of messages with the same meaning. Rasa’s job will be to
+predict the correct intent when your users send new, unseen messages to
+your assistant. You can find all the details of the data format in <a class="reference internal" href="../../nlu/training-data-format/#training-data-format"><span class="std std-ref">Training Data Format</span></a>.</p>
+</div>
+<div class="section" id="define-your-model-configuration">
+<span id="model-configuration"></span><h2><a class="toc-backref" href="#id3">3. Define Your Model Configuration</a><a class="headerlink" href="#define-your-model-configuration" title="Permalink to this headline">¶</a></h2>
+<p>The configuration file defines the NLU and Core components that your model
+will use. In this example, your NLU model will use the
+<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline. You can learn about the different NLU pipelines
+<a class="reference internal" href="../../nlu/choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">here</span></a>.</p>
+<p>Let’s take a look at your model configuration file.</p>
+
+
+  <pre data-executable>cat config.yml</pre>
+<p>The <code class="docutils literal notranslate"><span class="pre">language</span></code> and <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> keys specify how the NLU model should be built.
+The <code class="docutils literal notranslate"><span class="pre">policies</span></code> key defines the <a class="reference internal" href="../../core/policies/#policies"><span class="std std-ref">policies</span></a> that the Core model will use.</p>
+</div>
+<div class="section" id="write-your-first-stories">
+<h2><a class="toc-backref" href="#id4">4. Write Your First Stories</a><a class="headerlink" href="#write-your-first-stories" title="Permalink to this headline">¶</a></h2>
+<p>At this stage, you will teach your assistant how to respond to your messages.
+This is called dialogue management, and is handled by your Core model.</p>
+<p>Core models learn from real conversational data in the form of training “stories”.
+A story is a real conversation between a user and an assistant.
+Lines with intents and entities reflect the user’s input and action names show what the
+assistant should do in response.</p>
+<p>Below is an example of a simple conversation.
+The user says hello, and the assistant says hello back.
+This is how it looks as a story:</p>
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="gh">## story1</span>
+<span class="vm">* greet</span>
+<span class="vm">   </span>- utter_greet
+</pre></div>
+</div>
+<p>You can see the full details in <a class="reference internal" href="../../core/stories/#stories"><span class="std std-ref">Stories</span></a>.</p>
+<p>Lines that start with <code class="docutils literal notranslate"><span class="pre">-</span></code> are actions taken by the assistant.
+In this tutorial, all of our actions are messages sent back to the user,
+like <code class="docutils literal notranslate"><span class="pre">utter_greet</span></code>, but in general, an action can do anything,
+including calling an API and interacting with the outside world.</p>
+<p>Run the command below to view the example stories inside the file <code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</p>
+
+
+  <pre data-executable>cat data/stories.md</pre>
+</div>
+<div class="section" id="define-a-domain">
+<h2><a class="toc-backref" href="#id5">5. Define a Domain</a><a class="headerlink" href="#define-a-domain" title="Permalink to this headline">¶</a></h2>
+<p>The next thing we need to do is define a <a class="reference internal" href="../../core/domains/#domains"><span class="std std-ref">Domain</span></a>.
+The domain defines the universe your assistant lives in: what user inputs it
+should expect to get, what actions it should be able to predict, how to
+respond, and what information to store.
+The domain for our assistant is saved in a
+file called <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</p>
+
+
+  <pre data-executable>cat domain.yml</pre>
+<p>So what do the different parts mean?</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 80%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">intents</span></code></p></td>
+<td><p>things you expect users to say</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">actions</span></code></p></td>
+<td><p>things your assistant can do and say</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">responses</span></code></p></td>
+<td><p>response strings for the things your assistant can say</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>How does this fit together?</strong>
+Rasa Core’s job is to choose the right action to execute at each step
+of the conversation. In this case, our actions simply send a message to the user.
+These simple utterance actions are the <code class="docutils literal notranslate"><span class="pre">actions</span></code> in the domain that start
+with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>. The assistant will respond with a message based on a response
+from the <code class="docutils literal notranslate"><span class="pre">responses</span></code> section. See <a class="reference internal" href="../../core/actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a>
+to build actions that do more than just send a message.</p>
+</div>
+<div class="section" id="train-a-model">
+<h2><a class="toc-backref" href="#id6">6. Train a Model</a><a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>
+<p>Anytime we add new NLU or Core data, or update the domain or configuration, we
+need to re-train a neural network on our example stories and NLU data.
+To do this, run the command below. This command will call the Rasa Core and NLU train
+functions and store the trained model
+into the <code class="docutils literal notranslate"><span class="pre">models/</span></code> directory. The command will automatically only retrain the
+different model parts if something has changed in their data or configuration.</p>
+
+
+  <pre data-executable>rasa train
+
+echo "Finished training."</pre>
+<p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> command will look for both NLU and Core data and will train a combined model.</p>
+</div>
+<div class="section" id="test-your-assistant">
+<h2><a class="toc-backref" href="#id7">7. Test Your Assistant</a><a class="headerlink" href="#test-your-assistant" title="Permalink to this headline">¶</a></h2>
+<p>After you train a model, you always want to check that your assistant still behaves as you expect.
+In Rasa Open Source, you use end-to-end tests defined in your <code class="docutils literal notranslate"><span class="pre">tests/</span></code> directory to run through
+test conversations that ensure both NLU and Core make correct predictions.</p>
+
+
+  <pre data-executable>rasa test
+
+echo "Finished running tests."</pre>
+<p>See <a class="reference internal" href="../testing-your-assistant/#testing-your-assistant"><span class="std std-ref">Testing Your Assistant</span></a> to learn more about how to evaluate your model as you improve it.</p>
+</div>
+<div class="section" id="talk-to-your-assistant">
+<h2><a class="toc-backref" href="#id8">8. Talk to Your Assistant</a><a class="headerlink" href="#talk-to-your-assistant" title="Permalink to this headline">¶</a></h2>
+<p>Congratulations! 🚀 You just built an assistant
+powered entirely by machine learning.</p>
+<p>The next step is to try it out!
+If you’re following this tutorial on your local machine, start talking to your
+assistant by running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa shell
+</pre></div>
+</div>
+</div>
+<div class="section" id="next-steps">
+<h2><a class="toc-backref" href="#id9">Next Steps</a><a class="headerlink" href="#next-steps" title="Permalink to this headline">¶</a></h2>
+<p>Now that you’ve built your first Rasa bot it’s time to learn about
+some more advanced Rasa features.</p>
+<ul class="simple">
+<li><p>Learn how to implement business logic using <a class="reference internal" href="../../core/forms/#forms"><span class="std std-ref">forms</span></a></p></li>
+<li><p>Learn how to integrate other APIs using <a class="reference internal" href="../../core/actions/#actions"><span class="std std-ref">custom actions</span></a></p></li>
+<li><p>Learn how to connect your bot to different <a class="reference internal" href="../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">messaging apps</span></a></p></li>
+<li><p>Learn about customizing the <a class="reference internal" href="../../nlu/components/#components"><span class="std std-ref">components</span></a> in your NLU pipeline</p></li>
+<li><p>Read about custom and built-in <a class="reference internal" href="../../nlu/entity-extraction/#entity-extraction"><span class="std std-ref">entities</span></a></p></li>
+</ul>
+<p>You can also use Rasa X to collect more conversations
+and improve your assistant:</p>
+
+ 
+  <a href="../../../rasa-x/" >
+  <button class="button">Try Rasa X</button>
+  </a>
+
+
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
+  <script>
+     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
+    document.addEventListener('', event => {
+      if (event.detail.status == 'executing') {
+        console.error("");
+	console.error(JSON.stringify(event));
+        console.error(event.currentTarget)
+        gtag('event', 'execute-code-snippet', {
+          'event_category': 'code',
+          'event_label': ""
+        });
+      }
+      if (event.detail.status == 'failed') {
+        gtag('event', e.action, {
+          'event_category': 'code',
+          'event_label': e.text
+        });
+      }
+    })
+  </script></div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>
