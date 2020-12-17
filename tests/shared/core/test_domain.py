@@ -1,13 +1,16 @@
 import copy
 import json
 from pathlib import Path
-from typing import Dict, List, Text, Any, Union, Set
+from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
 
 from rasa.shared.exceptions import YamlSyntaxException
 import rasa.shared.utils.io
-from rasa.shared.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+from rasa.shared.constants import (
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
@@ -18,6 +21,7 @@ from rasa.shared.core.constants import (
     SLOT_LAST_OBJECT_TYPE,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     ENTITY_LABEL_SEPARATOR,
+    DEFAULT_ACTION_NAMES,
 )
 from rasa.shared.core.domain import (
     InvalidDomain,
@@ -29,14 +33,11 @@ from rasa.shared.core.domain import (
     State,
     Domain,
     KEY_FORMS,
+    KEY_E2E_ACTIONS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
-    DEFAULT_STORIES_FILE,
-)
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
 def test_slots_states_before_user_utterance(default_domain: Domain):
@@ -62,7 +63,7 @@ async def test_create_train_data_no_history(default_domain: Domain):
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
     )
 
-    assert len(training_trackers) == 3
+    assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain
     )
@@ -93,7 +94,7 @@ async def test_create_train_data_with_history(default_domain: Domain):
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
     )
-    assert len(training_trackers) == 3
+    assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain
     )
@@ -112,6 +113,8 @@ async def test_create_train_data_with_history(default_domain: Domain):
         '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
@@ -179,16 +182,22 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-    assert len(domain.action_names) == 15
+    assert len(domain.action_names_or_texts) == 16
 
 
-def test_avoid_action_repetition():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-    domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+def test_avoid_action_repetition(default_domain: Domain):
+    domain = Domain.from_yaml(
+        """
+actions:
+- utter_greet
 
-    assert not domain.is_empty() and not domain_with_no_actions.is_empty()
-    assert len(domain.intents) == len(domain_with_no_actions.intents)
-    assert len(domain.action_names) == len(domain_with_no_actions.action_names)
+responses:
+    utter_greet:
+    - text: "hi"
+    """
+    )
+
+    assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
 def test_utter_templates():
@@ -249,13 +258,14 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 
 
 def test_domain_to_dict():
-    test_yaml = """
+    test_yaml = f"""
     actions:
     - action_save_world
     config:
       store_entities_as_slots: true
     entities: []
-    forms: []
+    forms:
+      some_form:
     intents: []
     responses:
       utter_greet:
@@ -263,7 +273,15 @@ def test_domain_to_dict():
     session_config:
       carry_over_slots_to_new_session: true
       session_expiration_time: 60
-    slots: {}"""
+    {KEY_E2E_ACTIONS}:
+    - Hello, dear user
+    - what's up
+    slots:
+      some_slot:
+        type: categorical
+        values:
+        - high
+        - low"""
 
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
@@ -271,7 +289,7 @@ def test_domain_to_dict():
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         "entities": [],
-        "forms": {},
+        "forms": {"some_form": None},
         "intents": [],
         "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
@@ -279,7 +297,16 @@ def test_domain_to_dict():
             "carry_over_slots_to_new_session": True,
             "session_expiration_time": 60,
         },
-        "slots": {},
+        "slots": {
+            "some_slot": {
+                "values": ["high", "low"],
+                "initial_value": None,
+                "auto_fill": True,
+                "influence_conversation": True,
+                "type": "rasa.shared.core.slots.CategoricalSlot",
+            }
+        },
+        KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
     }
 
 
@@ -315,16 +342,18 @@ slots: {{}}
 
 
 def test_merge_yaml_domains():
-    test_yaml_1 = """config:
+    test_yaml_1 = f"""config:
   store_entities_as_slots: true
 entities: []
 intents: []
-slots: {}
+slots: {{}}
 responses:
   utter_greet:
-  - text: hey there!"""
+  - text: hey there!
+{KEY_E2E_ACTIONS}:
+- Hi"""
 
-    test_yaml_2 = """config:
+    test_yaml_2 = f"""config:
   store_entities_as_slots: false
 session_config:
     session_expiration_time: 20
@@ -336,6 +365,8 @@ intents:
 slots:
   cuisine:
     type: text
+{KEY_E2E_ACTIONS}:
+- Bye
 responses:
   utter_goodbye:
   - text: bye!
@@ -369,6 +400,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     assert domain.session_config == SessionConfig(20, True)
+    assert domain.action_texts == ["Bye", "Hi"]
 
 
 @pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
@@ -440,7 +472,8 @@ responses:
     assert merged.as_dict() == domain.as_dict()
 
 
-def test_merge_with_empty_other_domain():
+@pytest.mark.parametrize("other", [Domain.empty(), None])
+def test_merge_with_empty_other_domain(other: Optional[Domain]):
     domain = Domain.from_yaml(
         """config:
   store_entities_as_slots: false
@@ -461,7 +494,7 @@ responses:
   - text: hey you!"""
     )
 
-    merged = domain.merge(Domain.empty(), override=True)
+    merged = domain.merge(other, override=True)
 
     assert merged.as_dict() == domain.as_dict()
 
@@ -673,7 +706,8 @@ def test_domain_warnings():
 
     # all other domain elements should be in `in_domain` diff
     for _type, elements in zip(
-        warning_types, [domain.user_actions, domain.intents, domain.entities]
+        warning_types,
+        [domain.user_actions + domain.form_names, domain.intents, domain.entities],
     ):
         assert set(domain_warnings[_type]["in_domain"]) == set(elements)
 
@@ -681,8 +715,8 @@ def test_domain_warnings():
     domain_warnings = domain.domain_warnings(
         intents=domain.intents,
         entities=domain.entities,
-        actions=domain.user_actions,
-        slots=[s.name for s in domain.slots],
+        actions=domain.user_actions + domain.form_names,
+        slots=[s.name for s in domain._user_slots],
     )
 
     for diff_dict in domain_warnings.values():
@@ -691,22 +725,29 @@ def test_domain_warnings():
 
 def test_unfeaturized_slot_in_domain_warnings():
     # create empty domain
-    domain = Domain.empty()
-
-    # add one unfeaturized and one text slot
-    unfeaturized_slot = TextSlot(
-        "unfeaturized_slot", "value1", influence_conversation=False
+    featurized_slot_name = "text_slot"
+    unfeaturized_slot_name = "unfeaturized_slot"
+    domain = Domain.from_dict(
+        {
+            "slots": {
+                featurized_slot_name: {"initial_value": "value2", "type": "text"},
+                unfeaturized_slot_name: {
+                    "type": "text",
+                    "initial_value": "value1",
+                    "influence_conversation": False,
+                },
+            }
+        }
     )
-    text_slot = TextSlot("text_slot", "value2")
-    domain.slots.extend([unfeaturized_slot, text_slot])
 
     # ensure both are in domain
-    assert all(slot in domain.slots for slot in (unfeaturized_slot, text_slot))
+    for slot in (featurized_slot_name, unfeaturized_slot_name):
+        assert slot in [slot.name for slot in domain.slots]
 
     # text slot should appear in domain warnings, unfeaturized slot should not
     in_domain_slot_warnings = domain.domain_warnings()["slot_warnings"]["in_domain"]
-    assert text_slot.name in in_domain_slot_warnings
-    assert unfeaturized_slot.name not in in_domain_slot_warnings
+    assert featurized_slot_name in in_domain_slot_warnings
+    assert unfeaturized_slot_name not in in_domain_slot_warnings
 
 
 def test_check_domain_sanity_on_invalid_domain():
@@ -871,11 +912,8 @@ def test_clean_domain_for_file():
     assert cleaned == expected
 
 
-def test_add_knowledge_base_slots(default_domain: Domain):
-    # don't modify default domain as it is used in other tests
-    test_domain = copy.deepcopy(default_domain)
-
-    test_domain.action_names.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
+def test_not_add_knowledge_base_slots():
+    test_domain = Domain.empty()
 
     slot_names = [s.name for s in test_domain.slots]
 
@@ -883,7 +921,14 @@ def test_add_knowledge_base_slots(default_domain: Domain):
     assert SLOT_LAST_OBJECT not in slot_names
     assert SLOT_LAST_OBJECT_TYPE not in slot_names
 
-    test_domain.add_knowledge_base_slots()
+
+def test_add_knowledge_base_slots():
+    test_domain = Domain.from_yaml(
+        f"""
+actions:
+- {DEFAULT_KNOWLEDGE_BASE_ACTION}
+    """
+    )
 
     slot_names = [s.name for s in test_domain.slots]
 
@@ -1007,7 +1052,7 @@ def test_domain_deepcopy():
     assert new_domain.session_config == domain.session_config
     assert new_domain._custom_actions == domain._custom_actions
     assert new_domain.user_actions == domain.user_actions
-    assert new_domain.action_names == domain.action_names
+    assert new_domain.action_names_or_texts == domain.action_names_or_texts
     assert new_domain.store_entities_as_slots == domain.store_entities_as_slots
 
     # not the same objects
@@ -1025,7 +1070,7 @@ def test_domain_deepcopy():
     assert new_domain.session_config is not domain.session_config
     assert new_domain._custom_actions is not domain._custom_actions
     assert new_domain.user_actions is not domain.user_actions
-    assert new_domain.action_names is not domain.action_names
+    assert new_domain.action_names_or_texts is not domain.action_names_or_texts
 
 
 @pytest.mark.parametrize(
@@ -1142,3 +1187,103 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
 def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)
+
+
+def test_slot_order_is_preserved():
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+slots:
+  confirm:
+    type: bool
+    influence_conversation: false
+  previous_email:
+    type: text
+    influence_conversation: false
+  caller_id:
+    type: text
+    influence_conversation: false
+  email:
+    type: text
+    influence_conversation: false
+  incident_title:
+    type: text
+    influence_conversation: false
+  priority:
+    type: text
+    influence_conversation: false
+  problem_description:
+    type: text
+    influence_conversation: false
+  requested_slot:
+    type: text
+    influence_conversation: false
+  handoff_to:
+    type: text
+    influence_conversation: false
+"""
+
+    domain = Domain.from_yaml(test_yaml)
+    assert domain.as_yaml(clean_before_dump=True) == test_yaml
+
+
+def test_slot_order_is_preserved_when_merging():
+
+    slot_1 = """
+  b:
+    type: text
+    influence_conversation: false
+  a:
+    type: text
+    influence_conversation: false"""
+
+    test_yaml_1 = f"""
+slots:{slot_1}
+"""
+
+    slot_2 = """
+  d:
+    type: text
+    influence_conversation: false
+  c:
+    type: text
+    influence_conversation: false"""
+
+    test_yaml_2 = f"""
+slots:{slot_2}
+"""
+
+    test_yaml_merged = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+slots:{slot_2}{slot_1}
+"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain_merged = domain_1.merge(domain_2)
+
+    assert domain_merged.as_yaml(clean_before_dump=True) == test_yaml_merged
+
+
+def test_responses_text_multiline_is_preserved():
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+responses:
+  utter_confirm:
+  - text: |-
+      First line
+      Second line
+      Third line
+  - text: One more response
+  utter_cancel:
+  - text: First line
+  - text: Second line
+"""
+
+    domain = Domain.from_yaml(test_yaml)
+    assert domain.as_yaml(clean_before_dump=True) == test_yaml
