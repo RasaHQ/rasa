@@ -3,6 +3,7 @@ from typing import Text, List, Dict, Any
 import pytest
 
 import rasa.shared.nlu.training_data.entities_parser as entities_parser
+from rasa.shared.exceptions import InvalidEntityFormatException
 from rasa.shared.nlu.constants import TEXT
 
 
@@ -137,3 +138,12 @@ def test_parse_training_example_with_entities():
     assert message.get("entities") == [
         {"start": 10, "end": 16, "value": "Berlin", "entity": "city"}
     ]
+
+
+def test_markdown_entity_regex_error_handling():
+
+    with pytest.raises(InvalidEntityFormatException):
+        entities_parser.find_entities_in_training_example(
+            # JSON syntax error: missing closing " for `role`
+            'I want to fly from [Berlin]{"entity": "city", "role: "from"}'
+        )
