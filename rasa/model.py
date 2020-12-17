@@ -444,7 +444,8 @@ def move_model(source: Text, target: Text) -> bool:
 def should_retrain(
     new_fingerprint: Fingerprint,
     old_model: Text,
-    train_path: Union[Text, Path],
+    train_path: Text,
+    has_e2e_examples: bool = False,
     force_training: bool = False,
 ) -> FingerprintComparisonResult:
     """Check which components of a model should be retrained.
@@ -453,6 +454,7 @@ def should_retrain(
         new_fingerprint: The fingerprint of the new model to be trained.
         old_model: Path to the old zipped model file.
         train_path: Path to the directory in which the new model will be trained.
+        has_e2e_examples: Whether the new training data contains e2e examples.
         force_training: Indicates if the model needs to be retrained even if the data has not changed.
 
     Returns:
@@ -481,6 +483,10 @@ def should_retrain(
             ),
             force_training=force_training,
         )
+
+        # We should retrain core if nlu data changes and there are e2e stories.
+        if has_e2e_examples and fingerprint_comparison.should_retrain_nlu():
+            fingerprint_comparison.core = True
 
         core_merge_failed = False
         if not fingerprint_comparison.should_retrain_core():

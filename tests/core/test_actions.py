@@ -1,3 +1,4 @@
+import textwrap
 from typing import List, Text
 
 import pytest
@@ -11,16 +12,22 @@ from rasa.core.actions.action import (
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
     ActionExecutionRejection,
-    ActionListen,
     ActionRestart,
     ActionUtterTemplate,
     ActionRetrieveResponse,
     RemoteAction,
     ActionSessionStart,
+    ActionEndToEndResponse,
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.shared.core.domain import ActionNotFoundException, SessionConfig, Domain
+from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.core.domain import (
+    ActionNotFoundException,
+    SessionConfig,
+    Domain,
+    KEY_E2E_ACTIONS,
+)
 from rasa.shared.core.events import (
     Restarted,
     SlotSet,
@@ -56,7 +63,7 @@ from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.fixture(scope="module")
-def template_nlg():
+def template_nlg() -> TemplatedNaturalLanguageGenerator:
     templates = {
         "utter_ask_rephrase": [{"text": "can you rephrase that?"}],
         "utter_restart": [{"text": "congrats, you've restarted me!"}],
@@ -76,20 +83,9 @@ def template_nlg():
 
 
 @pytest.fixture(scope="module")
-def template_sender_tracker(_default_domain: Domain):
-    return DialogueStateTracker("template-sender", _default_domain.slots)
-
-
-def test_text_format():
-    assert "{}".format(ActionListen()) == "Action('action_listen')"
-    assert (
-        "{}".format(ActionUtterTemplate("my_action_name"))
-        == "ActionUtterTemplate('my_action_name')"
-    )
-    assert (
-        "{}".format(ActionRetrieveResponse("utter_test"))
-        == "ActionRetrieveResponse('utter_test')"
-    )
+def template_sender_tracker(default_domain_path: Text):
+    domain = Domain.load(default_domain_path)
+    return DialogueStateTracker("template-sender", domain.slots)
 
 
 def test_domain_action_instantiation():
@@ -103,8 +99,8 @@ def test_domain_action_instantiation():
     )
 
     instantiated_actions = [
-        action.action_for_name(action_name, domain, None)
-        for action_name in domain.action_names
+        action.action_for_name_or_text(action_name, domain, None)
+        for action_name in domain.action_names_or_texts
     ]
 
     assert len(instantiated_actions) == 14
@@ -708,16 +704,18 @@ async def test_action_default_ask_rephrase(
 def test_get_form_action(slot_mapping: Text):
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
-        f"""
+        textwrap.dedent(
+            f"""
     actions:
     - my_action
     forms:
       {form_action_name}:
         {slot_mapping}
     """
+        )
     )
 
-    actual = action.action_for_name(form_action_name, domain, None)
+    actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, FormAction)
 
 
@@ -725,42 +723,109 @@ def test_get_form_action_with_rasa_open_source_1_forms():
     form_action_name = "my_business_logic"
     with pytest.warns(FutureWarning):
         domain = Domain.from_yaml(
-            f"""
+            textwrap.dedent(
+                f"""
         actions:
         - my_action
         forms:
         - {form_action_name}
         """
+            )
         )
 
-    actual = action.action_for_name(form_action_name, domain, None)
+    actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, RemoteAction)
 
 
 def test_overridden_form_action():
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
-        f"""
+        textwrap.dedent(
+            f"""
     actions:
     - my_action
     - {form_action_name}
     forms:
         {form_action_name}:
     """
+        )
     )
 
-    actual = action.action_for_name(form_action_name, domain, None)
+    actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, RemoteAction)
 
 
 def test_get_form_action_if_not_in_forms():
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
-        """
+        textwrap.dedent(
+            """
     actions:
     - my_action
     """
+        )
     )
 
     with pytest.raises(ActionNotFoundException):
-        assert not action.action_for_name(form_action_name, domain, None)
+        assert not action.action_for_name_or_text(form_action_name, domain, None)
+
+
+@pytest.mark.parametrize(
+    "end_to_end_utterance", ["Hi", f"{UTTER_PREFIX} is a dangerous start"]
+)
+def test_get_end_to_end_utterance_action(end_to_end_utterance: Text):
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    actions:
+    - my_action
+    {KEY_E2E_ACTIONS}:
+    - {end_to_end_utterance}
+    - Bye Bye
+"""
+        )
+    )
+
+    actual = action.action_for_name_or_text(end_to_end_utterance, domain, None)
+
+    assert isinstance(actual, ActionEndToEndResponse)
+    assert actual.name() == end_to_end_utterance
+
+
+async def test_run_end_to_end_utterance_action():
+    end_to_end_utterance = "Hi"
+
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    actions:
+    - my_action
+    {KEY_E2E_ACTIONS}:
+    - {end_to_end_utterance}
+    - Bye Bye
+"""
+        )
+    )
+
+    e2e_action = action.action_for_name_or_text("Hi", domain, None)
+    events = await e2e_action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        DialogueStateTracker.from_events("sender", evts=[]),
+        domain,
+    )
+
+    assert events == [
+        BotUttered(
+            end_to_end_utterance,
+            {
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+                "custom": None,
+            },
+            {},
+        )
+    ]

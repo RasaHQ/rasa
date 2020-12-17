@@ -1485,7 +1485,7 @@ However, additional parameters exist that can be adapted.
 +=================================+==================+==============================================================+
 | hidden_layers_sizes             | text: []         | Hidden layer sizes for layers before the embedding layers    |
 |                                 | label: []        | for user messages and labels. The number of hidden layers is |
-|                                 |                  | equal to the length of the corresponding.                    |
+|                                 |                  | equal to the length of the corresponding list.               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | share_hidden_layers             | False            | Whether to share the hidden layer weights between user       |
 |                                 |                  | messages and labels.                                         |
@@ -1519,8 +1519,8 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| dense_dimension                 | text: 128        | Dense dimension for sparse features to use if no dense       |
-|                                 | label: 20        | features are present.                                        |
+| dense_dimension                 | text: 128        | Dense dimension for sparse features to use.                  |
+|                                 | label: 20        |                                                              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | concat_dimension                | text: 128        | Concat dimension for sequence and sentence features.         |
 |                                 | label: 20        |                                                              |

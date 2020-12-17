@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from unittest.mock import Mock
-from typing import List, Tuple, Text, Dict, Any, Optional
+from typing import List, Text, Dict, Any
 
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu import train
@@ -27,6 +27,8 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     CHECKPOINT_MODEL,
     BILOU_FLAG,
+    ENTITY_RECOGNITION,
+    INTENT_CLASSIFICATION,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -162,6 +164,48 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
         {"name": "WhitespaceTokenizer"},
         {"name": "CountVectorsFeaturizer"},
         {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=True
+    )
+
+
+async def test_train_persist_load_with_only_entity_recognition(
+    component_builder, tmpdir
+):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {
+            "name": "DIETClassifier",
+            ENTITY_RECOGNITION: True,
+            INTENT_CLASSIFICATION: False,
+            EPOCHS: 1,
+        },
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=True
+    )
+
+
+async def test_train_persist_load_with_only_intent_classification(
+    component_builder, tmpdir
+):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {
+            "name": "DIETClassifier",
+            ENTITY_RECOGNITION: False,
+            INTENT_CLASSIFICATION: True,
+            EPOCHS: 1,
+        },
     ]
     await _train_persist_load_with_different_settings(
         pipeline, component_builder, tmpdir, should_finetune=False

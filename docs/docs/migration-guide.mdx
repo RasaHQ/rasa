@@ -12,8 +12,54 @@ how you can migrate from one version to another.
 
 ## Rasa 2.1 to Rasa 2.2
 
+### General
+
+`TEDPolicy`'s  `transformer_size`, `number_of_transformer_layers`,
+and `dense_dimensions` parameters have been renamed.
+Please update your configuration files using the following mapping:
+
+|      Old Model Parameter    |                 New Model Parameter                    |
+|-----------------------------|--------------------------------------------------------|
+|`transformer_size`           |dictionary `transformer_size` with keys                 |
+|                             |`text`, `action_text`, `label_action_text`, `dialogue`  |
+|`number_of_transformer_layers`|dictionary `number_of_transformer_layers` with keys    |
+|                             |`text`, `action_text`, `label_action_text`, `dialogue`  |
+|`dense_dimension`            |dictionary `dense_dimension` with keys                  |
+|                             |`text`, `action_text`, `label_action_text`, `intent`,   |
+|                             |`action_name`, `label_action_name`, `entities`, `slots`,|
+|                             |`active_loop`                                           |
+
+For example:
+
+```yaml-rasa title="config.yml"
+policies:
+  - name: TEDPolicy
+    transformer_size:
+      text: 128
+      action_text: 128
+      label_action_text: 128
+      dialogue: 128
+    number_of_transformer_layers:
+      text: 1
+      action_text: 1
+      label_action_text: 1
+      dialogue: 1
+    dense_dimension:
+      text: 128
+      action_text: 128
+      label_action_text: 128
+      intent: 20
+      action_name: 20
+      label_action_name: 20
+      entities: 20
+      slots: 20
+      active_loop: 20
+```
+
+
 ### Deprecations
 
+#### Markdown Data
 Training and test data in Markdown format is now deprecated. This includes:
 - reading and writing of story files in Markdown format
 - reading and writing of NLU data in Markdown format
@@ -24,12 +70,22 @@ Support for Markdown data will be removed entirely in Rasa Open Source 3.0.0.
 Please convert your existing Markdown data by using the commands
 described [here](./migration-guide.mdx#training-data-files).
 
+
 ### Policies
 
 [Policies](./policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
 Policies without `**kwargs` will be supported until Rasa version `3.0.0`.
 However when using [incremental training](./command-line-interface.mdx#incremental-training)
 `**kwargs` **must** be included.
+
+
+#### Other
+
+* `Domain.random_template_for` is deprecated and will be removed in Rasa Open Source
+   3.0.0. You can alternatively use the `TemplatedNaturalLanguageGenerator`.
+* `Domain.action_names` is deprecated and will be removed in Rasa Open Source
+   3.0.0. Please use `Domain.action_names_or_texts` instead.
+
 
 ## Rasa 2.0 to Rasa 2.1
 
