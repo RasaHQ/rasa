@@ -79,6 +79,10 @@ class InvalidConfigException(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
 
 
+class UnsupportedFeatureException(RasaCoreException):
+    """Raised if a requested feature is not supported."""
+
+
 class InvalidEntityFormatException(RasaException):
     """Raised if the format of an entity is invalid."""
 

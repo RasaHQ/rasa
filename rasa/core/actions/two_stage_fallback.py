@@ -54,7 +54,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        affirm_action = action.action_from_name(
+        affirm_action = action.action_for_name_or_text(
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME, domain, self._action_endpoint
         )
 
@@ -67,7 +67,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        rephrase = action.action_from_name(
+        rephrase = action.action_for_name_or_text(
             ACTION_DEFAULT_ASK_REPHRASE_NAME, domain, self._action_endpoint
         )
 
@@ -112,7 +112,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        fallback = action.action_from_name(
+        fallback = action.action_for_name_or_text(
             ACTION_DEFAULT_FALLBACK_NAME, domain, self._action_endpoint
         )
 

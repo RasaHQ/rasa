@@ -163,13 +163,13 @@ class TestFloatSlot(SlotTestCollection):
 
     @pytest.fixture(
         params=[
-            (None, [0]),
-            (True, [1]),
-            (2.0, [1]),
-            (1.0, [1]),
-            (0.5, [0.5]),
-            (0, [0]),
-            (-0.5, [0.0]),
+            (None, [0, 0]),
+            (True, [1, 1]),
+            (2.0, [1, 1]),
+            (1.0, [1, 1]),
+            (0.5, [1, 0.5]),
+            (0, [1, 0]),
+            (-0.5, [1, 0.0]),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:

@@ -944,7 +944,7 @@ class SQLTrackerStore(TrackerStore):
 
         cursor = conn.connection.cursor()
         cursor.execute("COMMIT")
-        cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{db}'")
+        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", (db,))
         exists = cursor.fetchone()
         if not exists:
             try:
