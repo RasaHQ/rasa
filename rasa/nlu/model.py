@@ -3,11 +3,13 @@ import datetime
 import logging
 from math import ceil
 import os
-from contextlib import ExitStack
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.nlu
+from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
+from rasa.nlu.utils.mitie_utils import MitieNLP
+from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.exceptions import RasaException
@@ -28,11 +30,12 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 from rasa.utils.common import TempDirectoryPath
 from rasa.shared.core.domain import Domain
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
@@ -269,24 +272,44 @@ class Trainer:
 
         # perform tokenization & prepare other components for training in chunks
         for i, component in enumerate(self.pipeline):
-            if isinstance(component, Tokenizer):
+            if isinstance(
+                component, (SpacyNLP, MitieNLP, HFTransformersNLP, Tokenizer)
+            ):
+                logger.info(f"Starting to train component {component.name}.")
                 component.train(working_training_data, self.config, **context)
                 metadata["pipeline"].append(
                     self._persist_component(component, dir_name, i)
                 )
+                logger.info(f"Finished training component {component.name}.")
             else:
+                logger.info(
+                    f"Starting to prepare training for component {component.name}."
+                )
                 component.prepare_partial_training(working_training_data)
+                logger.info(f"Finished preparation for component {component.name}.")
 
+        logger.info(f"Divide training data into {number_of_chunks} chunks.")
         training_data_chunks = working_training_data.divide_into_chunks(
             number_of_chunks
         )
+        data_chunk_files = []
 
         # perform featurization
         for i, data_chunk in enumerate(training_data_chunks):
+            logger.info(f"Starting to train all featurizers on chunk {i}.")
             for component in self.pipeline:
                 if isinstance(component, Featurizer):
                     component.train_chunk(data_chunk, self.config, **context)
-            data_chunk.persist_chunk(data_chunk_dir, f"{i}_chunk.tfrecord")
+            logger.info(f"Finished training featurizers on chunk {i}.")
+            data_chunk_file = data_chunk.persist_chunk(
+                data_chunk_dir, f"{i}_chunk.tfrecord"
+            )
+            data_chunk_files.append(
+                DataChunkFile(Path(data_chunk_file), len(data_chunk.training_examples))
+            )
+            logger.info(
+                f"Chunk {i} contains {len(data_chunk.training_examples)} examples and was persisted to '{data_chunk_file}'."
+            )
 
         # persist featurizers
         for i, component in enumerate(self.pipeline):
@@ -295,16 +318,17 @@ class Trainer:
                     self._persist_component(component, dir_name, i)
                 )
 
-        # TODO training of classifiers probably needs to be adapted
+        # train classifiers / entity extractors
         for i, component in enumerate(self.pipeline):
             if isinstance(component, (IntentClassifier, EntityExtractor)):
-                for j in range(number_of_chunks):
-                    file_path = os.path.join(data_chunk_dir, f"{j}_chunk.tfrecord")
-                    data_chunk = TrainingDataChunk.load_chunk(file_path)
-                    component.train_chunk(data_chunk, self.config, **context)
+                logger.info(
+                    f"Starting to train component {component.name} on all chunks."
+                )
+                component.train_chunk(data_chunk_files, self.config, **context)
                 metadata["pipeline"].append(
                     self._persist_component(component, dir_name, i)
                 )
+                logger.info(f"Finished training of component {component.name}.")
 
         Metadata(metadata, dir_name).persist(dir_name)
 

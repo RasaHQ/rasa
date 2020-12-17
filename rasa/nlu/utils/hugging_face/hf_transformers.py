@@ -1,8 +1,8 @@
 import logging
+import typing
 from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.core.utils
-from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.components import Component
@@ -24,6 +24,10 @@ from rasa.nlu.constants import (
     NO_LENGTH_RESTRICTION,
 )
 from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.model import Metadata
+
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -135,7 +139,7 @@ class HFTransformersNLP(Component):
 
     @classmethod
     def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
+        cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
         """Cache the component for future use.
 

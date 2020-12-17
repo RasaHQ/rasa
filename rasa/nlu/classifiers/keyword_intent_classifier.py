@@ -1,7 +1,7 @@
 import os
 import logging
 import re
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, List
 
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
@@ -9,10 +9,11 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaTrainChunkException
 from rasa.nlu.model import Metadata
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +42,11 @@ class KeywordIntentClassifier(IntentClassifier):
 
     def train_chunk(
         self,
-        training_data_chunk: TrainingDataChunk,
+        data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Trains this component using the list of data chunk files.
 
         See parent class for more information.
         """

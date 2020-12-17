@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import numpy as np
@@ -12,8 +13,9 @@ import tensorflow as tf
 import scipy.sparse
 
 import rasa.shared.data
-from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
+from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.common import lazy_property
 from rasa.shared.nlu.constants import (
     RESPONSE,
     INTENT_RESPONSE_KEY,
@@ -795,10 +797,15 @@ class TrainingDataChunk(TrainingData):
         )
 
     @staticmethod
-    def _bytes_feature(array: np.ndarray) -> tf.train.Feature:
-        value = tf.io.serialize_tensor(array)
+    def _bytes_feature(array: Union[np.ndarray, Text]) -> tf.train.Feature:
+        if isinstance(array, np.ndarray):
+            value = tf.io.serialize_tensor(array.astype(np.float64))
+        else:
+            value = bytes(array, encoding=DEFAULT_ENCODING)
+
         if isinstance(value, type(tf.constant(0))):
             value = value.numpy()
+
         return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
     @staticmethod
@@ -830,7 +837,18 @@ class TrainingDataChunk(TrainingData):
 
         return attribute, feature_type, origin, dense, extra_info
 
-    def _to_tf_features(self, features: List[Features]) -> Dict[Text, tf.train.Feature]:
+    def _to_tf_features(
+        self, features: List[Features], message_data: Dict[Text, Any]
+    ) -> Dict[Text, tf.train.Feature]:
+        # encode the actual message features
+        tf_features = self._encode_message_features(features)
+        # as well as some message data as those are used, for example, as labels
+        tf_features.update(self._encode_message_data(message_data))
+        return tf_features
+
+    def _encode_message_features(
+        self, features: List[Features]
+    ) -> Dict[Text, tf.train.Feature]:
         tf_features = {}
 
         for feature in features:
@@ -841,7 +859,7 @@ class TrainingDataChunk(TrainingData):
             if feature.is_dense():
                 tf_features[key] = self._bytes_feature(feature.features)
             else:
-                data = feature.features.data
+                data = feature.features.data.astype(np.int64)
                 shape = feature.features.shape
                 row = feature.features.row
                 column = feature.features.col
@@ -861,6 +879,51 @@ class TrainingDataChunk(TrainingData):
 
         return tf_features
 
+    @staticmethod
+    def _relevant_message_data_keys() -> List[Text]:
+        from rasa.nlu.constants import TOKENS_NAMES
+
+        return [
+            TEXT,
+            INTENT,
+            RESPONSE,
+            INTENT_RESPONSE_KEY,
+            ENTITIES,
+            TOKENS_NAMES[TEXT],
+        ]
+
+    def _encode_message_data(
+        self, data: Dict[Text, Any]
+    ) -> Dict[Text, tf.train.Feature]:
+        from rasa.nlu.constants import TOKENS_NAMES
+
+        tf_message_data = {}
+
+        for data_key in TrainingDataChunk._relevant_message_data_keys():
+            if data_key not in data or not data[data_key]:
+                continue
+
+            value = data[data_key]
+
+            if data_key == ENTITIES:
+                # entities are a list of dicts
+                for idx, entity in enumerate(value):
+                    entity_str = json.dumps(entity)
+                    tf_message_data[
+                        f"{data_key}{TF_RECORD_KEY_SEPARATOR}{idx}"
+                    ] = self._bytes_feature(entity_str)
+            elif data_key == TOKENS_NAMES[TEXT]:
+                # tokens are a list of token objects
+                for idx, token in enumerate(value):
+                    tf_message_data[
+                        f"{data_key}{TF_RECORD_KEY_SEPARATOR}{idx}"
+                    ] = self._bytes_feature(json.dumps(token.__dict__))
+            else:
+                # all other values are simple strings
+                tf_message_data[data_key] = self._bytes_feature(value)
+
+        return tf_message_data
+
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
         """Stores the chunk as TFRecord file to disk.
 
@@ -878,7 +941,7 @@ class TrainingDataChunk(TrainingData):
             for message in self.training_examples:
                 example = tf.train.Example(
                     features=tf.train.Features(
-                        feature=self._to_tf_features(message.features)
+                        feature=self._to_tf_features(message.features, message.data)
                     )
                 )
                 # Append each example into tfrecord
@@ -887,7 +950,7 @@ class TrainingDataChunk(TrainingData):
         return file_path
 
     @classmethod
-    def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":
+    def load_chunk(cls, file_path: Union[Text, Path]) -> "TrainingDataChunk":
         """Loads a training data chunk from the given TFRecord file path.
 
         Args:
@@ -896,7 +959,12 @@ class TrainingDataChunk(TrainingData):
         Returns:
             The loaded training data chunk.
         """
+        from rasa.nlu.constants import TOKENS_NAMES
+
         training_examples = []
+
+        if isinstance(file_path, Path):
+            file_path = str(file_path.absolute())
 
         raw_dataset = tf.data.TFRecordDataset([file_path])
         for raw_record in raw_dataset:
@@ -904,30 +972,61 @@ class TrainingDataChunk(TrainingData):
             example.ParseFromString(raw_record.numpy())
 
             features = []
+            message_data = {ENTITIES: [], TOKENS_NAMES[TEXT]: []}
+
             for key in example.features.feature.keys():
-                (
-                    attribute,
-                    feature_type,
-                    origin,
-                    is_dense,
-                    extra_info,
-                ) = TrainingDataChunk._deconstruct_tf_record_key(key)
+                if (
+                    key in cls._relevant_message_data_keys()
+                    or key.startswith(ENTITIES)
+                    or key.startswith(TOKENS_NAMES[TEXT])
+                ):
+                    cls._decode_message_data(example, key, message_data)
+                else:
+                    _features = cls._decode_features(example, key)
+                    if _features:
+                        features.append(_features)
 
-                if is_dense:
-                    features.append(
-                        cls._convert_to_numpy(example, attribute, feature_type, origin)
-                    )
-
-                elif not is_dense and extra_info == "data":
-                    features.append(
-                        cls._convert_to_sparse_matrix(
-                            example, attribute, feature_type, origin
-                        )
-                    )
-
-            training_examples.append(Message(features=features))
+            training_examples.append(Message(features=features, data=message_data))
 
         return TrainingDataChunk(training_examples)
+
+    @classmethod
+    def _decode_message_data(
+        cls, example: tf.train.Example, key: Text, message_data: Dict[Text, Any]
+    ):
+        from rasa.nlu.constants import TOKENS_NAMES
+        from rasa.nlu.tokenizers.tokenizer import Token
+
+        bytes_list = example.features.feature[key].bytes_list.value[0]
+        text = bytes_list.decode(DEFAULT_ENCODING)
+
+        if key.startswith(ENTITIES):
+            entity = json.loads(text)
+            message_data[ENTITIES].append(entity)
+        elif key.startswith(TOKENS_NAMES[TEXT]):
+            token = Token.from_dict(json.loads(text))
+            message_data[TOKENS_NAMES[TEXT]].append(token)
+        else:
+            message_data[key] = text
+
+    @classmethod
+    def _decode_features(
+        cls, example: tf.train.Example, key: Text
+    ) -> Optional[Features]:
+        (
+            attribute,
+            feature_type,
+            origin,
+            is_dense,
+            extra_info,
+        ) = TrainingDataChunk._deconstruct_tf_record_key(key)
+
+        if is_dense:
+            return cls._convert_to_numpy(example, attribute, feature_type, origin)
+        elif not is_dense and extra_info == "data":
+            return cls._convert_to_sparse_matrix(
+                example, attribute, feature_type, origin
+            )
 
     @classmethod
     def _convert_to_numpy(

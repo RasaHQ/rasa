@@ -569,21 +569,6 @@ class Component(metaclass=ComponentMetaclass):
         """
         pass
 
-    def train_chunk(
-        self,
-        training_data_chunk: TrainingDataChunk,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-        """Train this component on the given chunk.
-
-        Args:
-            training_data_chunk: the
-                :class:`rasa.shared.nlu.training_data.training_data.TrainingDataChunk`.
-            config: The model configuration parameters.
-        """
-        pass
-
     def train(
         self,
         training_data: TrainingData,
@@ -605,14 +590,8 @@ class Component(metaclass=ComponentMetaclass):
             training_data: The
                 :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
-
         """
-        self.prepare_partial_training(training_data, config, **kwargs)
-        training_data_chunk = TrainingDataChunk(
-            training_examples=training_data.training_examples,
-            responses=training_data.responses,
-        )
-        self.train_chunk(training_data_chunk, config, **kwargs)
+        pass
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Process an incoming message.

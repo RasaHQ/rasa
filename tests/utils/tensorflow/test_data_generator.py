@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Text
+
 import pytest
 
 import scipy.sparse
@@ -6,6 +9,8 @@ import numpy as np
 from rasa.utils.tensorflow.model_data import FeatureArray, RasaModelData
 from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
+    RasaDataChunkFileGenerator,
+    DataChunkFile,
     RasaBatchDataGenerator,
 )
 
@@ -58,6 +63,59 @@ def test_data_generator_with_fixed_batch_size(model_data: RasaModelData):
 
     with pytest.raises(StopIteration):
         next(iterator)
+
+
+def test_file_loading_data_generator(model_data: RasaModelData):
+    data_chunks = [
+        DataChunkFile(Path("chunk1.tfrecord"), 5),
+        DataChunkFile(Path("chunk2.tfrecord"), 2),
+        DataChunkFile(Path("chunk3.tfrecord"), 4),
+        DataChunkFile(Path("chunk4.tfrecord"), 3),
+        DataChunkFile(Path("chunk5.tfrecord"), 4),
+    ]
+
+    data_generator = RasaDataChunkFileGenerator(
+        data_chunks, lambda x: RasaModelData(), batch_size=2
+    )
+
+    iterator = iter(data_generator)
+
+    assert len(data_generator) == 10
+
+    for i in range(len(data_generator)):
+        batch, _ = next(iterator)
+
+    with pytest.raises(StopIteration):
+        next(iterator)
+
+
+@pytest.mark.parametrize(
+    "start, end, expected_file_path, expected_examples_processed_so_far",
+    [
+        (4, 6, "chunk1.tfrecord", 0),
+        (0, 2, "chunk1.tfrecord", 0),
+        (6, 8, "chunk2.tfrecord", 5),
+    ],
+)
+def test_file_path_to_load(
+    start: int,
+    end: int,
+    expected_file_path: Text,
+    expected_examples_processed_so_far: int,
+):
+    data_chunks = [
+        DataChunkFile(Path("chunk1.tfrecord"), 5),
+        DataChunkFile(Path("chunk2.tfrecord"), 2),
+    ]
+
+    data_generator = RasaDataChunkFileGenerator(
+        data_chunks, lambda x: RasaModelData(), batch_size=2, shuffle=False
+    )
+
+    file_path, examples_processed_so_far = data_generator._file_path_to_load(start, end)
+
+    assert str(file_path) == expected_file_path
+    assert examples_processed_so_far == expected_examples_processed_so_far
 
 
 @pytest.mark.parametrize(

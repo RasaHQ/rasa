@@ -15,7 +15,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
 from rasa.shared.exceptions import RasaTrainChunkException
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 
 logger = logging.getLogger(__name__)
 
@@ -161,11 +162,11 @@ class CRFEntityExtractor(EntityExtractor):
 
     def train_chunk(
         self,
-        training_data_chunk: TrainingDataChunk,
+        data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Trains this component using the list of data chunk files.
 
         See parent class for more information.
         """

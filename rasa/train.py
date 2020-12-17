@@ -137,7 +137,7 @@ async def train_async(
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
-        output: Output path.
+        output: Path where the trained model should be stored.
         dry_run: If `True` then no training will be done, and the information about
             whether the training needs to be done will be printed.
         force_training: If `True` retrain model even if data has not changed.

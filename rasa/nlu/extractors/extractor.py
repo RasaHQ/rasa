@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -28,12 +29,37 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 
 
 class EntityExtractor(Component):
+    """Abstract entity extractor component."""
+
+    def train_chunk(
+        self,
+        data_chunk_files: List[DataChunkFile],
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Trains this component using the list of data chunk files.
+
+        Args:
+            data_chunk_files: List of data chunk files.
+            config: The model configuration parameters.
+        """
+        pass
+
     def add_extractor_name(
         self, entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
+        """Adds the name of this extractor to each given entity.
+
+        Args:
+            entities: List of entities.
+
+        Returns:
+            Updated list of entities
+        """
         for entity in entities:
             entity[EXTRACTOR] = self.name
         return entities
@@ -106,7 +132,6 @@ class EntityExtractor(Component):
         `extractor` set to something other than
         self.name (e.g. 'CRFEntityExtractor') are removed.
         """
-
         filtered = []
         for message in entity_examples:
             entities = []

@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import typing
 
 from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
@@ -7,7 +8,6 @@ import rasa.core.utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component, UnsupportedLanguageError
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.nlu.model import Metadata
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
@@ -31,6 +31,10 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.utils import train_utils
 from rasa.shared.core.domain import Domain
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.model import Metadata
+
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -215,7 +219,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
     @classmethod
     def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
+        cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
         """Cache the component for future use.
 

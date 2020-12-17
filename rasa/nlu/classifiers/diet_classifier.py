@@ -40,7 +40,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
 from rasa.utils.tensorflow.constants import (
@@ -96,7 +96,11 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     MASK,
 )
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+from rasa.utils.tensorflow.data_generator import (
+    DataChunkFile,
+    RasaDataChunkFileGenerator,
+    RasaBatchDataGenerator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -780,6 +784,57 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
         return len(np.unique(model_data.get(LABEL_KEY, LABEL_SUB_KEY))) >= 2
+
+    def train_chunk(
+        self,
+        data_chunk_files: List[DataChunkFile],
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Trains this component using the list of data chunk files.
+
+        Args:
+            data_chunk_files: List of data chunk files.
+            config: The model configuration parameters.
+        """
+        if not data_chunk_files:
+            return
+
+        def _load_data_func(file_path: Path) -> RasaModelData:
+            logger.debug(f"Loading training data chunk '{file_path}'.")
+            training_data_chunk = TrainingDataChunk.load_chunk(file_path)
+            return self.preprocess_train_data(training_data_chunk)
+
+        # load one chunk so that we can instantiate the model
+        sample_model_data = _load_data_func(data_chunk_files[0].file_path)
+
+        # keep one example for persisting and loading
+        self._data_example = sample_model_data.first_data_example()
+
+        self.model = self._instantiate_model_class(sample_model_data)
+
+        data_generator = RasaDataChunkFileGenerator(
+            data_chunk_files,
+            _load_data_func,
+            batch_size=self.component_config[BATCH_SIZES],
+            batch_strategy=self.component_config[BATCH_STRATEGY],
+            shuffle=True,
+        )
+
+        callbacks = train_utils.create_common_callbacks(
+            self.component_config[EPOCHS],
+            self.component_config[TENSORBOARD_LOG_DIR],
+            self.component_config[TENSORBOARD_LOG_LEVEL],
+            self.tmp_checkpoint_dir,
+        )
+
+        self.model.compile()
+        self.model.fit(
+            data_generator,
+            epochs=self.component_config[EPOCHS],
+            callbacks=callbacks,
+            verbose=False,
+        )
 
     def train(
         self,
