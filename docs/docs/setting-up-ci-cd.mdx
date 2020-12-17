@@ -40,24 +40,16 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 ### CI Pipeline Overview
 
 Your CI pipeline should include model training and testing as steps to streamline the deployment process. 
+The first step after saving new training data is to kick off the pipeline. This can be initiated manually 
+or when you create or update a pull request.
 
-The first step after saving new training data is to kick off the pipeline. (Is it usually kicked off
-manually or triggered by an event like saving a new file?)
-(need different pipelines / options based on how big the changes are - also should we lay out how
-small or big of changes warrant which tests?) Typically this is done by xyz
+Next, you need to run various sets of test to see the impact of your changes. This includes running 
+tests for data validation, NLU cross validation, and story testing. For 
+more information about testing, see [Testing Your Assistant](https://rasa.com/docs/rasa/testing-your-assistant). 
 
-Next, you need to pick what level of tests to run based on the amount of data changed. The various types
-are laid out in [Testing Your Assistant](https://rasa.com/docs/rasa/testing-your-assistant), but a good
-rule of thumb is to always run your test stories to ensure no bugs were introduced. Larger changes
-may need a full NLU test with cross validation to look out for confusion between intents.
-
-After testing and posting your results for your team to see, have a person or team of reviewers
-to check the test results with your developer. An easy process to help this is to have your CI
-pipeline automatically create a pull request with the test results in a comment. That way, the
-reviewer can see the changes along with the improved results.
-
-Once the reviewer merges you can then initiate your CD pipeline to add the new model
-to another environment.
+The last step is to review the results of your test and push the changes if the tests are successful. 
+Once the new model is trained and tested, it can be deployed automatically using a Continuous 
+Deployment pipeline.
 
 ### GitHub Actions CI Pipeline
 
