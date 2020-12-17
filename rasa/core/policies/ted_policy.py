@@ -1,10 +1,12 @@
 import logging
+import shutil
 from pathlib import Path
 from collections import defaultdict
 
 import numpy as np
 
 import rasa.shared.utils.io
+import rasa.utils.train_utils
 import tensorflow as tf
 import tensorflow_addons as tfa
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
@@ -100,6 +102,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
 )
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 
@@ -261,7 +264,7 @@ class TEDPolicy(Policy):
         TENSORBOARD_LOG_DIR: None,
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'minibatch'
+        # Valid values: 'epoch' and 'batch'
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
@@ -316,6 +319,10 @@ class TEDPolicy(Policy):
 
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+
+        self.tmp_checkpoint_dir = None
+        if self.config[CHECKPOINT_MODEL]:
+            self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
@@ -518,13 +525,32 @@ class TEDPolicy(Policy):
                 self._entity_tag_specs,
             )
 
-        self.model.fit(
+        (
+            data_generator,
+            validation_data_generator,
+        ) = rasa.utils.train_utils.create_data_generators(
             model_data,
-            self.config[EPOCHS],
             self.config[BATCH_SIZES],
+            self.config[EPOCHS],
+            self.config[BATCH_STRATEGY],
             self.config[EVAL_NUM_EXAMPLES],
-            self.config[EVAL_NUM_EPOCHS],
-            batch_strategy=self.config[BATCH_STRATEGY],
+            self.config[RANDOM_SEED],
+        )
+        callbacks = rasa.utils.train_utils.create_common_callbacks(
+            self.config[EPOCHS],
+            self.config[TENSORBOARD_LOG_DIR],
+            self.config[TENSORBOARD_LOG_LEVEL],
+            self.tmp_checkpoint_dir,
+        )
+
+        self.model.compile()
+        self.model.fit(
+            data_generator,
+            epochs=self.config[EPOCHS],
+            validation_data=validation_data_generator,
+            validation_freq=self.config[EVAL_NUM_EPOCHS],
+            callbacks=callbacks,
+            verbose=False,
         )
 
     def _featurize_tracker_for_e2e(
@@ -600,11 +626,14 @@ class TEDPolicy(Policy):
         )
         model_data = self._create_model_data(tracker_state_features)
 
-        output = self.model.predict(model_data)
+        data_generator = RasaBatchDataGenerator(
+            model_data, batch_size=len(tracker_state_features)
+        )
+        output = self.model.predict(data_generator)
 
         # take the last prediction in the sequence
-        similarities = output["similarities"].numpy()[:, -1, :]
-        confidences = output["action_scores"].numpy()[:, -1, :]
+        similarities = output["similarities"][:, -1, :]
+        confidences = output["action_scores"][:, -1, :]
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
@@ -687,10 +716,9 @@ class TEDPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        if self.model.checkpoint_model:
-            self.model.copy_best(str(tf_model_file))
-        else:
-            self.model.save(str(tf_model_file))
+        if self.config[CHECKPOINT_MODEL]:
+            shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+        self.model.save(str(tf_model_file))
 
         io_utils.json_pickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
@@ -797,21 +825,6 @@ class TEDPolicy(Policy):
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,
         )
-
-        if not should_finetune:
-            # build the graph for prediction
-            predict_data_example = RasaModelData(
-                label_key=LABEL_KEY,
-                label_sub_key=LABEL_SUB_KEY,
-                data={
-                    feature_name: features
-                    for feature_name, features in model_data_example.items()
-                    if feature_name
-                    # we need to remove label features for prediction if they are present
-                    in PREDICTION_FEATURES
-                },
-            )
-            model.build_for_predict(predict_data_example)
 
         return cls(
             featurizer=featurizer,
@@ -1635,7 +1648,6 @@ class TED(TransformerRasaModel):
         return tf.math.add_n(losses)
 
     # ---PREDICTION---
-
     def prepare_for_predict(self) -> None:
         """Prepares the model for prediction."""
         _, self.all_labels_embed = self._create_all_labels_embed()

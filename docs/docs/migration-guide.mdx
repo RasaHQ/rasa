@@ -10,6 +10,14 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.2 to Rasa 2.3
+
+### General
+
+If you want to use Tensorboard for `DIETClassifier`, `ResponseSelector`, or `TEDPolicy` and log metrics after
+every (mini)batch, please use 'batch' instead of 'minibatch' as 'tensorboard_log_level'.
+
+
 ## Rasa 2.1 to Rasa 2.2
 
 ### General

@@ -96,6 +96,7 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     MASK,
 )
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +243,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         TENSORBOARD_LOG_DIR: None,
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'minibatch'
+        # Valid values: 'epoch' and 'batch'
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
@@ -328,6 +329,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._entity_tag_specs = entity_tag_specs
 
         self.model = model
+
+        self.tmp_checkpoint_dir = None
+        if self.component_config[CHECKPOINT_MODEL]:
+            self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
@@ -809,13 +814,29 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
 
-        self.model.fit(
+        data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
-            self.component_config[EPOCHS],
             self.component_config[BATCH_SIZES],
-            self.component_config[EVAL_NUM_EXAMPLES],
-            self.component_config[EVAL_NUM_EPOCHS],
+            self.component_config[EPOCHS],
             self.component_config[BATCH_STRATEGY],
+            self.component_config[EVAL_NUM_EXAMPLES],
+            self.component_config[RANDOM_SEED],
+        )
+        callbacks = train_utils.create_common_callbacks(
+            self.component_config[EPOCHS],
+            self.component_config[TENSORBOARD_LOG_DIR],
+            self.component_config[TENSORBOARD_LOG_LEVEL],
+            self.tmp_checkpoint_dir,
+        )
+
+        self.model.compile()
+        self.model.fit(
+            data_generator,
+            epochs=self.component_config[EPOCHS],
+            validation_data=validation_data_generator,
+            validation_freq=self.component_config[EVAL_NUM_EPOCHS],
+            callbacks=callbacks,
+            verbose=False,
         )
 
     # process helpers
@@ -831,7 +852,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
 
-        return self.model.predict(model_data)
+        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
+        return self.model.predict(data_generator)
 
     def _predict_label(
         self, predict_out: Optional[Dict[Text, tf.Tensor]]
@@ -844,7 +866,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return label, label_ranking
 
-        message_sim = predict_out["i_scores"].numpy()
+        message_sim = predict_out["i_scores"]
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
@@ -933,6 +955,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Return the metadata necessary to load the model again.
         """
+        import shutil
 
         if self.model is None:
             return {"file": None}
@@ -942,10 +965,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-        if self.model.checkpoint_model:
-            self.model.copy_best(str(tf_model_file))
-        else:
-            self.model.save(str(tf_model_file))
+        if self.component_config[CHECKPOINT_MODEL]:
+            shutil.move(self.tmp_checkpoint_dir, model_dir / "checkpoints")
+        self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self._data_example
@@ -1085,20 +1107,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             meta,
             finetune_mode=finetune_mode,
         )
-
-        if not finetune_mode:
-
-            # build the graph for prediction
-            predict_data_example = RasaModelData(
-                label_key=label_key,
-                data={
-                    feature_name: features
-                    for feature_name, features in model_data_example.items()
-                    if TEXT in feature_name
-                },
-            )
-
-            model.build_for_predict(predict_data_example)
 
         return model
 

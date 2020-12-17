@@ -223,7 +223,7 @@ class ResponseSelector(DIETClassifier):
         TENSORBOARD_LOG_DIR: None,
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'minibatch'
+        # Valid values: 'epoch' and 'batch'
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
