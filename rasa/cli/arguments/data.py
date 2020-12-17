@@ -72,7 +72,7 @@ def set_validator_arguments(parser: argparse.ArgumentParser):
 
 def set_suggest_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
-    
+
     parser.add_argument(
         "--nlu-training-data", type=str, help="File containing your NLU training data."
     )
