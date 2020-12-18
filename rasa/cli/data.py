@@ -310,7 +310,7 @@ def _create_training_data_pool(
 
 
 def _build_diverse_augmentation_pool(
-    paraphrase_pool: Dict[Text, List], training_data_vocab_per_intent: Dict[Text, List]
+    paraphrase_pool: Dict[Text, List], training_data_vocab_per_intent: Dict[Text, Set]
 ) -> Dict[Text, List]:
     max_vocab_expansion = collections.defaultdict(list)
     for intent in paraphrase_pool.keys():
@@ -336,7 +336,7 @@ def _build_random_augmentation_pool(
 
 def _build_augmentation_training_sets(
     nlu_training_data: TrainingData,
-    training_data_pool: Dict[Text, Set],
+    training_data_pool: Dict[Text, List],
     random_expansion: Dict[Text, List],
     max_vocab_expansion: Dict[Text, List],
     pooled_intents: Set,
@@ -460,7 +460,8 @@ def _plot_summary_reports(
 
 
 def suggest_nlu_data(args: argparse.Namespace) -> None:
-    """Load NLU training & evaluation data, paraphrases and classification report and suggest additional training
+    """Load NLU training & evaluation data, paraphrases, an existing classification report, its corresponding config
+    file and suggest additional training
      examples.
 
     Args:
