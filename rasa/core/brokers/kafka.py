@@ -1,7 +1,8 @@
 import json
 import logging
 from asyncio import AbstractEventLoop
-from typing import Any, Text, List, Optional, Union, Dict
+from typing import Any, Text, List, Optional, Union
+import time
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
