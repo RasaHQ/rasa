@@ -69,8 +69,11 @@ jobs:
         uses: RasaHQ/rasa-train-test-gha@main
         with:
           requirements_file: requirements.txt
-          test_type: all
+          data_validate: true
+          rasa_train: true
           cross_validation: true
+          rasa_test: true
+          test_type: all
           publish_summary: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload model
