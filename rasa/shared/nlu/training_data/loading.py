@@ -50,7 +50,15 @@ def load_data(
 ) -> "TrainingDataFull":
     """Load training data from disk.
 
-    Merges them if loaded from disk and multiple files are found."""
+    Merges them if loaded from disk and multiple files are found.
+
+    Args:
+        resource_name: the name of the file.
+        language: the language specified in the config.
+
+    Returns:
+        The training data.
+    """
     if not os.path.exists(resource_name):
         raise ValueError(f"File '{resource_name}' does not exist.")
 
@@ -104,7 +112,15 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
 def _load(
     filename: Text, language: Optional[Text] = "en"
 ) -> Optional["TrainingDataFull"]:
-    """Loads a single training data file from disk."""
+    """Loads a single training data file from disk.
+
+    Args:
+        filename: the name of the file.
+        language: the language specified in the config.
+
+    Returns:
+        The training data.
+    """
 
     fformat = guess_format(filename)
     if fformat == UNK:

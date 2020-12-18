@@ -369,8 +369,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _label_id_index_mapping(
         training_data: TrainingDataFull, attribute: Text
     ) -> Dict[Text, int]:
-        """Create label_id dictionary."""
-
+        # create label_id dictionary
         distinct_label_ids = {
             example.get(attribute) for example in training_data.intent_examples
         } - {None}
@@ -385,8 +384,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _create_entity_tag_specs(
         self, training_data: TrainingDataFull
     ) -> List[EntityTagSpec]:
-        """Create entity tag specifications with their respective tag id mappings."""
-
+        # create entity tag specifications with their respective tag id mappings
         _tag_specs = []
 
         for tag_name in POSSIBLE_TAGS:

@@ -233,7 +233,6 @@ def validate_required_components_from_data(
         pipeline: The list of the :class:`rasa.nlu.components.Component`s.
         data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
     """
-
     if data.response_examples and not any_components_in_pipeline(
         ["ResponseSelector"], pipeline
     ):
@@ -363,9 +362,8 @@ class ComponentMetaclass(type):
     """Metaclass with `name` class property."""
 
     @property
-    def name(cls):
+    def name(cls) -> Text:
         """The name property is a function of the class - its __name__."""
-
         return cls.__name__
 
 
@@ -398,7 +396,6 @@ class Component(metaclass=ComponentMetaclass):
     @property
     def name(self) -> Text:
         """Access the class's property name from an instance."""
-
         return type(self).name
 
     # Which components are required by this component.
@@ -410,7 +407,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The list of class names of required components.
         """
-
         return []
 
     # Defines the default configuration parameters of a component
@@ -472,7 +468,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The list of required package names.
         """
-
         return []
 
     @classmethod
@@ -605,10 +600,8 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            training_data: The
-                :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+            training_data: The training data containing all the examples.
             config: The model configuration parameters.
-
         """
         self.prepare_partial_training(training_data, config, **kwargs)
         training_data_chunk = TrainingDataChunk(training_data.training_examples)
@@ -627,7 +620,7 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
+            message: The message to process.
         """
         pass
 
@@ -800,9 +793,15 @@ class ComponentBuilder:
     ) -> Tuple[Optional[Component], Optional[Text]]:
         """Load a component from the cache, if it exists.
 
-        Returns the component, if found, and the cache key.
-        """
+        Args:
+            component_meta:
+                The metadata of the component to load in the pipeline.
+            model_metadata:
+                The model's :class:`rasa.nlu.model.Metadata`.
 
+        Returns:
+            the component, if found, and the cache key.
+        """
         from rasa.nlu import registry
 
         # try to get class name first, else create by name
@@ -819,8 +818,7 @@ class ComponentBuilder:
         return None, cache_key
 
     def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
-        """Add a component to the cache."""
-
+        # add a component to the cache
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info(
@@ -850,7 +848,6 @@ class ComponentBuilder:
         Returns:
             The loaded component.
         """
-
         from rasa.nlu import registry
 
         try:

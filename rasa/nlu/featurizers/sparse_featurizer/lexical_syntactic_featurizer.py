@@ -130,8 +130,13 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         Each feature key, defined in the component configuration, points to
         different feature values and their indices in the overall resulting
         feature vector.
-        """
 
+        Args:
+            training_data: The complete training data.
+
+        Returns:
+            A dictionary of all feature values.
+        """
         # get all possible feature values
         all_features = []
         for example in training_data.training_examples:
@@ -180,8 +185,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return feature_vocabulary
 
     def _create_sparse_features(self, message: Message) -> None:
-        """Convert incoming messages into sparse features using the configured
-        features."""
+        # convert incoming messages into sparse features using the configured features
         import scipy.sparse
 
         tokens = message.get(TOKENS_NAMES[TEXT])
@@ -203,8 +207,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             message.add_features(final_sequence_features)
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
-        """Convert words into discrete features."""
-
+        # convert words into discrete features
         configured_features = self.component_config["features"]
         sentence_features = []
 
@@ -245,9 +248,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def _features_to_one_hot(
         self, sentence_features: List[Dict[Text, Any]]
     ) -> np.ndarray:
-        """Convert the word features into a one-hot presentation using the indices
-        in the feature-to-idx dictionary."""
-
+        # convert the word features into a one-hot presentation using the indices
+        # in the feature-to-idx dictionary
         one_hot_seq_feature_vector = np.zeros(
             [len(sentence_features), self.number_of_features]
         )
@@ -303,7 +305,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":
+        """Load this component from file.
 
+        See the parent class for details.
+        """
         file_name = meta.get("file")
 
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
@@ -312,9 +317,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
+        """Persist this component to disk for future loading.
 
+        See the parent class for details.
+        """
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         io_utils.json_pickle(feature_to_idx_file, self.feature_to_idx_dict)
 

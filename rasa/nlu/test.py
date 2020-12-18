@@ -1508,8 +1508,15 @@ def run_evaluation(
 def generate_folds(
     n: int, training_data: TrainingDataFull
 ) -> Iterator[Tuple[TrainingDataFull, TrainingDataFull]]:
-    """Generates n cross validation folds for given training data."""
+    """Generates n cross validation folds for given training data.
 
+    Args:
+        n: number of folds
+        training_data: The full training data
+
+    Returns:
+        An iterator containing a tuple of train and test data.
+    """
     from sklearn.model_selection import StratifiedKFold
 
     skf = StratifiedKFold(n_splits=n, shuffle=True)

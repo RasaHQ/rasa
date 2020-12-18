@@ -42,10 +42,16 @@ class UserMessageGenerator:
     def _create_reverse_mapping(
         data: "TrainingDataFull",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
-        """Create a mapping from intent to messages
+        """Create a mapping from intent to messages.
 
-        This allows a faster intent lookup."""
+        This allows a faster intent lookup.
 
+        Args:
+            data: The training data
+
+        Returns:
+            A mapping from intent to messages.
+        """
         d = defaultdict(list)
         for example in data.training_examples:
             if example.get(INTENT, {}) is not None:

@@ -24,7 +24,10 @@ if typing.TYPE_CHECKING:
 
 
 class TrainingDataReader:
+    """Reads training data from files."""
+
     def __init__(self):
+        """Initializes the reader."""
         self.filename: Text = ""
 
     def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingDataFull":
@@ -38,19 +41,39 @@ class TrainingDataReader:
 
 
 class TrainingDataWriter:
+    """Writes training data to files."""
+
     def dump(self, filename: Text, training_data) -> None:
-        """Writes a TrainingData object in markdown format to a file."""
+        """Writes a TrainingData object in markdown format to a file.
+
+        Args:
+            filename: the name of the file
+            training_data: The training data.
+        """
         s = self.dumps(training_data)
         rasa.shared.utils.io.write_text_file(s, filename)
 
     def dumps(self, training_data: "TrainingDataFull") -> Text:
-        """Turns TrainingData into a string."""
+        """Turns TrainingData into a string.
+
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A string representation of the training data.
+        """
         raise NotImplementedError
 
     @staticmethod
     def prepare_training_examples(training_data: "TrainingDataFull") -> OrderedDict:
-        """Pre-processes training data examples by removing not trainable entities."""
+        """Pre-processes training data examples by removing not trainable entities.
 
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A dictionary containing the training data.
+        """
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
         training_examples = OrderedDict()
@@ -135,6 +158,8 @@ class TrainingDataWriter:
 
 
 class JsonTrainingDataReader(TrainingDataReader):
+    """Reads training data from json files."""
+
     def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Transforms string into json object and passes it on."""
         js = json.loads(s)

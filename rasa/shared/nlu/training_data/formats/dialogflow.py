@@ -24,6 +24,8 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
+    """Reads training data in dialogflow format."""
+
     def read(self, fn: Text, **kwargs: Any) -> "TrainingDataFull":
         """Loads training data stored in the Dialogflow data format."""
         language = kwargs["language"]
@@ -154,4 +156,13 @@ class DialogflowReader(TrainingDataReader):
             return None
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
+        """Reads TrainingData from a string.
+
+        Args:
+            s: String with training data.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            New `TrainingData` object with parsed training data.
+        """
         raise NotImplementedError

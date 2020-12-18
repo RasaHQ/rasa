@@ -196,8 +196,14 @@ class Trainer:
         return pipeline
 
     def train(self, data: TrainingDataFull, **kwargs: Any) -> "Interpreter":
-        """Trains the underlying pipeline using the provided training data."""
+        """Trains the underlying pipeline using the provided training data.
 
+        Args:
+            data: The training data containing all the examples.
+
+        Returns:
+            The interpreter.
+        """
         self.training_data = data
 
         self.training_data.validate()

@@ -399,7 +399,15 @@ class TrainingDataFull(TrainingDataForNLUPipeline):
         lookup_tables: Optional[List[Dict[Text, Any]]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
+        """Initializes the full training data.
 
+        Args:
+            training_examples: The list of training example.
+            entity_synonyms: The dictionary of entity synonyms.
+            regex_features: The list of dictionaries of the regex features.
+            lookup_tables: The list of dictionaries of the lookup tables features.
+            responses: The dictionary of responses.
+        """
         super().__init__(training_examples)
         self.entity_synonyms = entity_synonyms or {}
         self.regex_features = regex_features or []
@@ -833,6 +841,8 @@ class TrainingDataFull(TrainingDataForNLUPipeline):
 
 
 class TrainingData(TrainingDataFull):
+    """Holds loaded intent and entity training data."""
+
     def __init__(self, *args, **kwargs):
         """Initializes training data class."""
         super().__init__(*args, **kwargs)

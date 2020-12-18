@@ -48,7 +48,6 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-
         raise NotImplementedError()
 
     async def get_config(self) -> Dict:
@@ -57,7 +56,6 @@ class TrainingDataImporter:
         Returns:
             The configuration as dictionary.
         """
-
         raise NotImplementedError()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
@@ -69,7 +67,6 @@ class TrainingDataImporter:
         Returns:
             Loaded NLU `TrainingData`.
         """
-
         raise NotImplementedError()
 
     @staticmethod
@@ -208,9 +205,22 @@ class NluDataImporter(TrainingDataImporter):
         return StoryGraph([])
 
     async def get_config(self) -> Dict:
+        """Retrieves the configuration that should be used for the training.
+
+        Returns:
+            The configuration as dictionary.
+        """
         return await self._importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
+        """Retrieves the NLU training data that should be used for training.
+
+        Args:
+            language: Can be used to only load training data for a certain language.
+
+        Returns:
+            Loaded NLU `TrainingData`.
+        """
         return await self._importer.get_nlu_data(language)
 
 
@@ -247,6 +257,17 @@ class CombinedDataImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
+        """Retrieves the stories that should be used for training.
+
+        Args:
+            template_variables: Values of templates that should be replaced while
+                                reading the story files.
+            use_e2e: Specifies whether to parse end to end learning annotations.
+            exclusion_percentage: Amount of training data that should be excluded.
+
+        Returns:
+            `StoryGraph` containing all loaded stories.
+        """
         stories = [
             importer.get_stories(template_variables, use_e2e, exclusion_percentage)
             for importer in self._importers
@@ -365,15 +386,31 @@ class ResponsesSyncImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
+        """Retrieves the stories that should be used for training.
 
+        Args:
+            template_variables: Values of templates that should be replaced while
+                                reading the story files.
+            use_e2e: Specifies whether to parse end to end learning annotations.
+            exclusion_percentage: Amount of training data that should be excluded.
+
+        Returns:
+            `StoryGraph` containing all loaded stories.
+        """
         return await self._importer.get_stories(
             template_variables, use_e2e, exclusion_percentage
         )
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
-        """Update NLU data with response templates for retrieval intents defined in the domain"""
+        """Retrieves the NLU training data that should be used for training.
 
+        Args:
+            language: Can be used to only load training data for a certain language.
+
+        Returns:
+            Loaded NLU `TrainingData`.
+        """
         existing_nlu_data = await self._importer.get_nlu_data(language)
         existing_domain = await self._importer.get_domain()
 
@@ -393,10 +430,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
             response_templates: Response templates the NLU data should
             be initialized with.
 
-        Returns: TrainingData object with response templates.
-
+        Returns:
+            TrainingData object with response templates.
         """
-
         return TrainingDataFull(responses=response_templates)
 
 
@@ -451,17 +487,37 @@ class E2EImporter(TrainingDataImporter):
     ) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
-        See parent class for details.
+        Args:
+            template_variables: Values of templates that should be replaced while
+                                reading the story files.
+            use_e2e: Specifies whether to parse end to end learning annotations.
+            exclusion_percentage: Amount of training data that should be excluded.
+
+        Returns:
+            `StoryGraph` containing all loaded stories.
         """
         return await self.importer.get_stories(
             template_variables, use_e2e, exclusion_percentage
         )
 
     async def get_config(self) -> Dict:
+        """Retrieves the configuration that should be used for the training.
+
+        Returns:
+            The configuration as dictionary.
+        """
         return await self.importer.get_config()
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
+        """Retrieves the NLU training data that should be used for training.
+
+        Args:
+            language: Can be used to only load training data for a certain language.
+
+        Returns:
+            Loaded NLU `TrainingData`.
+        """
         training_datasets = [_additional_training_data_from_default_actions()]
 
         training_datasets += await asyncio.gather(

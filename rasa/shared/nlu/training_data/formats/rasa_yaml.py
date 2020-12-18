@@ -380,8 +380,9 @@ class RasaYAMLWriter(TrainingDataWriter):
     def training_data_to_dict(
         cls, training_data: "TrainingDataFull"
     ) -> Optional[OrderedDict]:
-        """Represents NLU training data to a dict/list structure ready to be
-        serialized as YAML.
+        """Represents NLU training data to a dict/list structure.
+
+        The structure is ready to be serialized as YAML.
 
         Args:
             training_data: `TrainingData` to convert.
@@ -418,6 +419,14 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_intents(cls, training_data: "TrainingDataFull") -> List[OrderedDict]:
+        """Processes the intents.
+
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A list of dictionaries containing intent examples.
+        """
         training_data = cls.prepare_training_examples(training_data)
         return RasaYAMLWriter.process_training_examples_by_key(
             training_data,
@@ -428,6 +437,14 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_synonyms(cls, training_data: "TrainingDataFull") -> List[OrderedDict]:
+        """Processes the entity synonyms.
+
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A list of dictionaries containing entity synonyms.
+        """
         inverted_synonyms = OrderedDict()
         for example, synonym in training_data.entity_synonyms.items():
             if not inverted_synonyms.get(synonym):
@@ -440,6 +457,14 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_regexes(cls, training_data: "TrainingDataFull") -> List[OrderedDict]:
+        """Processes the regexes.
+
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A list of dictionaries containing regexes.
+        """
         inverted_regexes = OrderedDict()
         for regex in training_data.regex_features:
             if not inverted_regexes.get(regex["name"]):
@@ -454,6 +479,14 @@ class RasaYAMLWriter(TrainingDataWriter):
     def process_lookup_tables(
         cls, training_data: "TrainingDataFull"
     ) -> List[OrderedDict]:
+        """Processes the lookup tables.
+
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A list of dictionaries containing the lookup tables.
+        """
         prepared_lookup_tables = OrderedDict()
         for lookup_table in training_data.lookup_tables:
             # this is a lookup table filename

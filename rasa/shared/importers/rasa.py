@@ -55,9 +55,22 @@ class RasaFileImporter(TrainingDataImporter):
         )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
+        """Retrieves the NLU training data that should be used for training.
+
+        Args:
+            language: Can be used to only load training data for a certain language.
+
+        Returns:
+            Loaded NLU `TrainingData`.
+        """
         return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:
+        """Retrieves the domain of the bot.
+
+        Returns:
+            Loaded `Domain`.
+        """
         domain = Domain.empty()
 
         # If domain path is None, return an empty domain
