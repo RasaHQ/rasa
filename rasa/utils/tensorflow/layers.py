@@ -1058,7 +1058,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         sim_neg_ii: tf.Tensor,
         sim_neg_li: tf.Tensor,
         mask: Optional[tf.Tensor],
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, List[tf.Tensor], tf.Tensor]:
         """Define softmax loss."""
 
         logits = tf.concat(
@@ -1087,7 +1087,16 @@ class DotProductLoss(tf.keras.layers.Layer):
                 loss = tf.reduce_mean(loss, axis=-1)
 
         # average the loss over the batch
-        return tf.reduce_mean(loss)
+        return (
+            tf.reduce_mean(loss),
+            [
+                tf.reduce_mean(sim_neg_ii),
+                tf.reduce_mean(sim_neg_il),
+                tf.reduce_mean(sim_neg_ll),
+                tf.reduce_mean(sim_neg_li),
+            ],
+            tf.reduce_min(sim_pos),
+        )
 
     @property
     def _chosen_loss(self) -> Callable:
@@ -1112,7 +1121,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         all_labels_embed: tf.Tensor,
         all_labels: tf.Tensor,
         mask: Optional[tf.Tensor] = None,
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
+    ) -> Tuple[tf.Tensor, List[tf.Tensor], tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy.
 
         Arguments:
@@ -1160,8 +1169,8 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         accuracy = self._calc_accuracy(sim_pos, sim_neg_il)
 
-        loss = self._chosen_loss(
+        loss, max_neg_sim, min_pos_sim = self._chosen_loss(
             sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li, mask
         )
 
-        return loss, accuracy
+        return loss, max_neg_sim, min_pos_sim, accuracy

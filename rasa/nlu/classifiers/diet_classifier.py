@@ -1214,6 +1214,13 @@ class DIET(TransformerRasaModel):
         self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
         self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
 
+        # metric to keep track of max neg sim
+        self.max_neg_ii = tf.keras.metrics.Mean(name="i_neg_ii")
+        self.max_neg_il = tf.keras.metrics.Mean(name="i_neg_il")
+        self.max_neg_ll = tf.keras.metrics.Mean(name="i_neg_ll")
+        self.max_neg_li = tf.keras.metrics.Mean(name="i_neg_li")
+        self.min_pos_sim = tf.keras.metrics.Mean(name="i_pos_sim")
+
     def _update_metrics_to_log(self) -> None:
         debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
 
@@ -1223,8 +1230,14 @@ class DIET(TransformerRasaModel):
                 self.metrics_to_log.append("m_loss")
         if self.config[INTENT_CLASSIFICATION]:
             self.metrics_to_log.append("i_acc")
-            if debug_log_level:
-                self.metrics_to_log.append("i_loss")
+            # if debug_log_level:
+            self.metrics_to_log.append("i_loss")
+            self.metrics_to_log.append("i_pos_sim")
+            self.metrics_to_log.append("i_neg_ii")
+            self.metrics_to_log.append("i_neg_il")
+            self.metrics_to_log.append("i_neg_ll")
+            self.metrics_to_log.append("i_neg_li")
+
         if self.config[ENTITY_RECOGNITION]:
             for tag_spec in self._entity_tag_specs:
                 if tag_spec.num_tags != 0:
@@ -1602,6 +1615,7 @@ class DIET(TransformerRasaModel):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+        print(self.data_signature)
 
         batch_dim = self._get_batch_dim(tf_batch_data)
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
@@ -1671,16 +1685,29 @@ class DIET(TransformerRasaModel):
             self.label_name,
         )
 
-        loss, acc = self._calculate_label_loss(sentence_vector, label, label_ids)
+        loss, max_negs, min_pos_sim, acc = self._calculate_label_loss(
+            sentence_vector, label, label_ids
+        )
 
-        self._update_label_metrics(loss, acc)
+        self._update_label_metrics(loss, acc, max_negs, min_pos_sim)
 
         return loss
 
-    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
+    def _update_label_metrics(
+        self,
+        loss: tf.Tensor,
+        acc: tf.Tensor,
+        max_negs: List[tf.Tensor],
+        min_pos_sim: tf.Tensor,
+    ) -> None:
 
         self.intent_loss.update_state(loss)
         self.intent_acc.update_state(acc)
+        self.max_neg_ii.update_state(max_negs[0])
+        self.max_neg_il.update_state(max_negs[1])
+        self.max_neg_ll.update_state(max_negs[2])
+        self.max_neg_li.update_state(max_negs[3])
+        self.min_pos_sim.update_state(min_pos_sim)
 
     def _batch_loss_entities(
         self,
