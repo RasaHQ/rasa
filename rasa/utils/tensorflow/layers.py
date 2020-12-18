@@ -824,7 +824,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             embeds_flat, embeds_flat_2, same_label_mask
         )  # (bs x ns)
 
-        # tf.print(input_sims, tf.shape(input_sims))
+        # tf.print(input_sims, input_sims.shape)
 
         total_candidates = tf.shape(embeds_flat_2)[0]
         target_size = tf.shape(labels_flat)[0]
@@ -835,6 +835,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_ids = self._random_indices_from_scores(
             target_size, total_candidates, scores=input_sims
         )  # (bs x num_negs)
+
+        # tf.print(neg_ids, neg_ids.shape)
 
         neg_embeds = self._sample_idxs(
             target_size, embeds_flat_2, neg_ids
@@ -912,7 +914,6 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels_embed, inputs_embed, labels, labels
         )
 
-        # tf.print("=======================================")
         return (
             pos_inputs_embed,
             pos_labels_embed,
@@ -1048,7 +1049,24 @@ class DotProductLoss(tf.keras.layers.Layer):
         # average the loss over the batch
         loss = tf.reduce_mean(loss)
 
-        return loss
+        # tf.print("mean sim negs", [
+        #     tf.reduce_mean(sim_pos),
+        #     tf.reduce_mean(sim_neg_ii),
+        #     tf.reduce_mean(sim_neg_il),
+        #     tf.reduce_mean(sim_neg_ll),
+        #     tf.reduce_mean(sim_neg_li),
+        # ])
+
+        return (
+            tf.reduce_mean(loss),
+            [
+                tf.reduce_mean(sim_neg_ii),
+                tf.reduce_mean(sim_neg_il),
+                tf.reduce_mean(sim_neg_ll),
+                tf.reduce_mean(sim_neg_li),
+            ],
+            tf.reduce_min(sim_pos),
+        )
 
     def _loss_softmax(
         self,
@@ -1085,6 +1103,15 @@ class DotProductLoss(tf.keras.layers.Layer):
                 loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
+        # tf.print(
+        #     "mean sim negs",
+        #     [
+        #         tf.reduce_mean(sim_neg_ii),
+        #         tf.reduce_mean(sim_neg_il),
+        #         tf.reduce_mean(sim_neg_ll),
+        #         tf.reduce_mean(sim_neg_li),
+        #     ],
+        # )
 
         # average the loss over the batch
         return (
@@ -1172,5 +1199,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         loss, max_neg_sim, min_pos_sim = self._chosen_loss(
             sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li, mask
         )
+        # tf.print("=======================================")
 
         return loss, max_neg_sim, min_pos_sim, accuracy
