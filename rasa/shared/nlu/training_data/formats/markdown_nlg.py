@@ -9,7 +9,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 import rasa.shared.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
@@ -30,11 +30,11 @@ class NLGMarkdownReader(MarkdownReader):
         self.responses = {}
         super().__init__(ignore_deprecation_warning=ignore_deprecation_warning)
 
-    def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
+    def reads(self, s: Text, **kwargs: Any) -> "NLUTrainingDataFull":
         """Read markdown string and create TrainingData object."""
         lines = s.splitlines()
         self.responses = self.process_lines(lines)
-        return TrainingData(responses=self.responses)
+        return NLUTrainingDataFull(responses=self.responses)
 
     @staticmethod
     def process_lines(lines: List[Text]) -> Dict[Text, List[Dict[Text, Text]]]:
@@ -105,7 +105,7 @@ class NLGMarkdownReader(MarkdownReader):
 class NLGMarkdownWriter(MarkdownWriter):
     """Converts retrieval intent data to Markdown."""
 
-    def dumps(self, training_data: "TrainingData") -> Text:
+    def dumps(self, training_data: "NLUTrainingDataFull") -> Text:
         """Transforms the NlG part of TrainingData object into a markdown string."""
         md = ""
         for intent, utterances in training_data.responses.items():

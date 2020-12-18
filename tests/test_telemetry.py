@@ -17,7 +17,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import CmdlineInput
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from tests.conftest import DEFAULT_CONFIG_PATH
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
@@ -78,7 +78,7 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
 
     telemetry.track_core_model_test(5, True, default_agent)
 
-    telemetry.track_nlu_model_test(TrainingData())
+    telemetry.track_nlu_model_test(NLUTrainingDataFull())
 
     pending = asyncio.Task.all_tasks() - initial
     await asyncio.gather(*pending)

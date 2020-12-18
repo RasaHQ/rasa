@@ -1,6 +1,6 @@
 import pytest
 
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
@@ -65,7 +65,7 @@ def test_train_tokenizer(text, expected_tokens, expected_indices, spacy_nlp):
     message.set(RESPONSE, text)
     message.set(SPACY_DOCS[RESPONSE], spacy_nlp(text))
 
-    training_data = TrainingData()
+    training_data = NLUTrainingDataFull()
     training_data.training_examples = [message]
 
     tk.train(training_data)
@@ -94,6 +94,6 @@ def test_custom_intent_symbol(text, expected_tokens, spacy_nlp):
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
     message.set(INTENT, text)
 
-    tk.train(TrainingData([message]))
+    tk.train(NLUTrainingDataFull([message]))
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens

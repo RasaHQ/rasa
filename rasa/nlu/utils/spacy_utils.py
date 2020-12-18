@@ -3,7 +3,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
-from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataChunk
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.utils.train_utils
 from rasa.shared.nlu.training_data.message import Message
@@ -225,7 +225,7 @@ class SpacyNLP(Component):
 
     def train_chunk(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_data_chunk: NLUTrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

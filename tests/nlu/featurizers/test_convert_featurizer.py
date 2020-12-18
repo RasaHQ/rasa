@@ -6,7 +6,7 @@ import os
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
@@ -31,7 +31,7 @@ def test_convert_featurizer_process(monkeypatch: MonkeyPatch):
     sentence = "Hey how are you today ?"
     message = Message.build(text=sentence)
 
-    td = TrainingData([message])
+    td = NLUTrainingDataFull([message])
     tokenizer.train(td)
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
@@ -66,7 +66,7 @@ def test_convert_featurizer_train(monkeypatch: MonkeyPatch):
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
 
-    td = TrainingData([message])
+    td = NLUTrainingDataFull([message])
     tokenizer.train(td)
 
     tokens = featurizer.tokenize(message, attribute=TEXT)
@@ -75,7 +75,9 @@ def test_convert_featurizer_train(monkeypatch: MonkeyPatch):
     message.set(TOKENS_NAMES[RESPONSE], tokens)
 
     featurizer.train(
-        TrainingData([message]), RasaNLUModelConfig(), tf_hub_module=featurizer.module
+        NLUTrainingDataFull([message]),
+        RasaNLUModelConfig(),
+        tf_hub_module=featurizer.module,
     )
 
     expected = np.array([2.2636216, -0.26475656, -1.1358104, -0.49751878, -1.3946456])
@@ -129,7 +131,7 @@ def test_convert_featurizer_tokens_to_text(
     component_config = {"name": "ConveRTFeaturizer", "model_url": RESTRICTED_ACCESS_URL}
     featurizer = ConveRTFeaturizer(component_config)
     message = Message.build(text=sentence)
-    td = TrainingData([message])
+    td = NLUTrainingDataFull([message])
     tokenizer.train(td)
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
@@ -168,7 +170,7 @@ def test_convert_featurizer_token_edge_cases(
     component_config = {"name": "ConveRTFeaturizer", "model_url": RESTRICTED_ACCESS_URL}
     featurizer = ConveRTFeaturizer(component_config)
     message = Message.build(text=text)
-    td = TrainingData([message])
+    td = NLUTrainingDataFull([message])
     tokenizer.train(td)
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
@@ -194,7 +196,7 @@ def test_convert_featurizer_number_of_sub_tokens(
     featurizer = ConveRTFeaturizer(component_config)
 
     message = Message.build(text=text)
-    td = TrainingData([message])
+    td = NLUTrainingDataFull([message])
     tokenizer.train(td)
 
     tokens = featurizer.tokenize(message, attribute=TEXT)

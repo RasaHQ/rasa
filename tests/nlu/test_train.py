@@ -4,7 +4,7 @@ import pytest
 from rasa.nlu import registry, train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from typing import Any, Dict, List, Tuple, Text, Union
@@ -166,7 +166,7 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
     trainer = Trainer(_config, component_builder)
-    trainer.train(TrainingData())
+    trainer.train(NLUTrainingDataFull())
     persisted_path = trainer.persist(tmpdir.strpath)
 
     loaded = Interpreter.load(persisted_path, component_builder)

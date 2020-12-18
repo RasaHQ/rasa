@@ -38,7 +38,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.channels.channel import InputChannel
     from rasa.core.agent import Agent
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
 
@@ -920,7 +920,7 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
 
 
 @ensure_telemetry_enabled
-def track_nlu_model_test(test_data: "TrainingData") -> None:
+def track_nlu_model_test(test_data: "NLUTrainingDataFull") -> None:
     """Track when a user tests an nlu model.
 
     Args:

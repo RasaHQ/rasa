@@ -9,7 +9,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
@@ -54,7 +54,7 @@ def test_text_featurizer(sentence, expected_features):
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
 
-    featurizer.train(TrainingData([train_message]))
+    featurizer.train(NLUTrainingDataFull([train_message]))
 
     featurizer.process(test_message)
 
@@ -85,7 +85,7 @@ def test_text_featurizer_window_size(sentence, expected):
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
 
-    featurizer.train(TrainingData([train_message]))
+    featurizer.train(NLUTrainingDataFull([train_message]))
 
     featurizer.process(test_message)
 
@@ -127,7 +127,7 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
     SpacyTokenizer().process(train_message)
     SpacyTokenizer().process(test_message)
 
-    featurizer.train(TrainingData([train_message]))
+    featurizer.train(NLUTrainingDataFull([train_message]))
 
     featurizer.process(test_message)
 
@@ -173,7 +173,7 @@ def test_text_featurizer_using_pos_with_action_text(
     SpacyTokenizer().process(train_message)
     SpacyTokenizer().process(test_message)
 
-    featurizer.train(TrainingData([train_message]))
+    featurizer.train(NLUTrainingDataFull([train_message]))
     # Checking that text is processed as expected
     featurizer.process(test_message)
 

@@ -9,7 +9,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     SPACY_DOCS,
@@ -49,7 +49,7 @@ class SpacyFeaturizer(DenseFeaturizer):
 
     def train_chunk(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_data_chunk: NLUTrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

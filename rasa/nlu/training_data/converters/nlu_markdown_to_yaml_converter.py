@@ -5,7 +5,7 @@ from rasa.shared.utils.cli import print_success
 from rasa.nlu.utils.pattern_utils import read_lookup_table_file
 from rasa.shared.nlu.training_data.formats import MarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.utils.converter import TrainingDataConverter
 
 
@@ -67,7 +67,7 @@ class NLUMarkdownToYamlConverter(TrainingDataConverter):
 
         RasaYAMLWriter().dump(
             target_filename,
-            TrainingData(
+            NLUTrainingDataFull(
                 lookup_tables=[{"name": entity_name, "elements": examples_from_file}]
             ),
         )

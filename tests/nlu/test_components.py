@@ -8,7 +8,10 @@ from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_pa
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    NLUTrainingDataFull,
+    NLUTrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
@@ -244,7 +247,7 @@ def test_if_train_chunk_raises(component_class: Type[Component]):
         return
 
     # Create dummy training data chunk
-    training_data_chunk = TrainingDataChunk(
+    training_data_chunk = NLUTrainingDataChunk(
         [Message(text="some text", intent="some_intent")]
     )
     # create an instance of component
@@ -283,7 +286,9 @@ def test_prepare_partial_training_do_not_modify_data(component_class: Type[Compo
         return
 
     # Create dummy training data
-    training_data = TrainingData([Message(text="some text", intent="some_intent")])
+    training_data = NLUTrainingDataFull(
+        [Message(text="some text", intent="some_intent")]
+    )
     # `prepare_partial_training` should only depend on the tokenizer
     # so train tokenizer first to add tokens to training_data
     tokenizer = next(

@@ -24,7 +24,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 shape = 100
@@ -204,7 +204,7 @@ def test_convert_training_examples(
 
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
-    training_data = TrainingData([message])
+    training_data = NLUTrainingDataFull([message])
     tokenizer.train(training_data)
     count_vectors_featurizer.train(training_data)
     spacy_featurizer.train(training_data)

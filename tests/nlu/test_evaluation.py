@@ -64,7 +64,7 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.test import compare_nlu_models
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 from tests.nlu.conftest import DEFAULT_DATA_PATH
@@ -1156,7 +1156,7 @@ def test_replacing_fallback_intent():
     }
 
     interpreter = ConstantInterpreter(fallback_prediction)
-    training_data = TrainingData(
+    training_data = NLUTrainingDataFull(
         [Message.build("hi", "greet"), Message.build("bye", "bye")]
     )
 

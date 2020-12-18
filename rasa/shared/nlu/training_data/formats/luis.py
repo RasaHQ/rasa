@@ -15,7 +15,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 import rasa.shared.utils.io
 
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,9 @@ class LuisReader(JsonTrainingDataReader):
 
         return regex_features
 
-    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> "TrainingData":
+    def read_from_json(
+        self, js: Dict[Text, Any], **kwargs: Any
+    ) -> "NLUTrainingDataFull":
         """Loads training data stored in the LUIS.ai data format."""
         training_examples = []
 
@@ -81,6 +83,6 @@ class LuisReader(JsonTrainingDataReader):
 
             training_examples.append(Message(data=data))
 
-        return TrainingData(
+        return NLUTrainingDataFull(
             training_examples, regex_features=self._extract_regex_features(js)
         )

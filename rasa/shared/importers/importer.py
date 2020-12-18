@@ -12,7 +12,7 @@ from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
@@ -60,7 +60,9 @@ class TrainingDataImporter:
 
         raise NotImplementedError()
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(
+        self, language: Optional[Text] = "en"
+    ) -> NLUTrainingDataFull:
         """Retrieves the NLU training data that should be used for training.
 
         Args:
@@ -210,7 +212,9 @@ class NluDataImporter(TrainingDataImporter):
     async def get_config(self) -> Dict:
         return await self._importer.get_config()
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(
+        self, language: Optional[Text] = "en"
+    ) -> NLUTrainingDataFull:
         return await self._importer.get_nlu_data(language)
 
 
@@ -258,12 +262,14 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(
+        self, language: Optional[Text] = "en"
+    ) -> NLUTrainingDataFull:
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
         nlu_data = await asyncio.gather(*nlu_data)
 
         return reduce(
-            lambda merged, other: merged.merge(other), nlu_data, TrainingData()
+            lambda merged, other: merged.merge(other), nlu_data, NLUTrainingDataFull()
         )
 
 
@@ -371,7 +377,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(
+        self, language: Optional[Text] = "en"
+    ) -> NLUTrainingDataFull:
         """Update NLU data with response templates for retrieval intents defined in the domain"""
 
         existing_nlu_data = await self._importer.get_nlu_data(language)
@@ -386,7 +394,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
     @staticmethod
     def _get_nlu_data_with_responses(
         response_templates: Dict[Text, List[Dict[Text, Any]]]
-    ) -> TrainingData:
+    ) -> NLUTrainingDataFull:
         """Construct training data object with only the response templates supplied.
 
         Args:
@@ -397,7 +405,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
         """
 
-        return TrainingData(responses=response_templates)
+        return NLUTrainingDataFull(responses=response_templates)
 
 
 class E2EImporter(TrainingDataImporter):
@@ -461,7 +469,9 @@ class E2EImporter(TrainingDataImporter):
         return await self.importer.get_config()
 
     @rasa.shared.utils.common.cached_method
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(
+        self, language: Optional[Text] = "en"
+    ) -> NLUTrainingDataFull:
         training_datasets = [_additional_training_data_from_default_actions()]
 
         training_datasets += await asyncio.gather(
@@ -470,10 +480,12 @@ class E2EImporter(TrainingDataImporter):
         )
 
         return reduce(
-            lambda merged, other: merged.merge(other), training_datasets, TrainingData()
+            lambda merged, other: merged.merge(other),
+            training_datasets,
+            NLUTrainingDataFull(),
         )
 
-    async def _additional_training_data_from_stories(self) -> TrainingData:
+    async def _additional_training_data_from_stories(self) -> NLUTrainingDataFull:
         stories = await self.get_stories()
 
         utterances, actions = _unique_events_from_stories(stories)
@@ -496,7 +508,7 @@ class E2EImporter(TrainingDataImporter):
             f"Added {len(additional_messages_from_stories)} training data examples "
             f"from the story training data."
         )
-        return TrainingData(additional_messages_from_stories)
+        return NLUTrainingDataFull(additional_messages_from_stories)
 
 
 def _unique_events_from_stories(
@@ -530,10 +542,10 @@ def _messages_from_action(event: ActionExecuted) -> Message:
     return Message(data=event.as_sub_state())
 
 
-def _additional_training_data_from_default_actions() -> TrainingData:
+def _additional_training_data_from_default_actions() -> NLUTrainingDataFull:
     additional_messages_from_default_actions = [
         Message(data={ACTION_NAME: action_name})
         for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     ]
 
-    return TrainingData(additional_messages_from_default_actions)
+    return NLUTrainingDataFull(additional_messages_from_default_actions)
