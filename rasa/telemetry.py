@@ -694,7 +694,7 @@ async def track_model_training(
             "policies": config.get("policies"),
             "num_intent_examples": len(nlu_data.intent_examples),
             "num_entity_examples": len(nlu_data.entity_examples),
-            "num_actions": len(domain.action_names),
+            "num_actions": len(domain.action_names_or_texts),
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
             "num_templates": len(domain.templates),
@@ -872,7 +872,7 @@ def track_project_init(path: Text) -> None:
         path: Location of the project
     """
     _track(
-        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)},
+        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)}
     )
 
 

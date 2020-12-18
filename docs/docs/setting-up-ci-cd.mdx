@@ -59,6 +59,10 @@ always good to run this check before training a model. By including the
 :::note
 Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
 However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
+
+Also, if you use end-to-end stories, then this might not capture all conflicts. Specifically, if two user inputs
+result in different tokens yet exactly the same featurization, then conflicting actions after these inputs
+may exist but will not be reported by the tool. 
 :::
 
 To read more about the validator and all of the available options, see [the documentation for 

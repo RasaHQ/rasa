@@ -159,12 +159,13 @@ class PolicyTestCollection:
         self, trained_policy: Policy, default_domain: Domain
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
-        probabilities = trained_policy.predict_action_probabilities(
+        prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        ).probabilities
-        assert len(probabilities) == default_domain.num_actions
-        assert max(probabilities) <= 1.0
-        assert min(probabilities) >= 0.0
+        )
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert max(prediction.probabilities) <= 1.0
+        assert min(prediction.probabilities) >= 0.0
 
     @pytest.mark.filterwarnings(
         "ignore:.*without a trained model present.*:UserWarning"
@@ -183,7 +184,7 @@ class PolicyTestCollection:
             tracker, domain, RegexInterpreter()
         ).probabilities
         index = scores.index(max(scores))
-        return domain.action_names[index]
+        return domain.action_names_or_texts[index]
 
 
 class TestSklearnPolicy(PolicyTestCollection):
@@ -300,13 +301,14 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(
             new_trackers, domain=default_domain, interpreter=RegexInterpreter()
         )
-        predicted_probabilities = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        ).probabilities
+        )
 
-        assert len(predicted_probabilities) == default_domain.num_actions
-        assert np.allclose(sum(predicted_probabilities), 1.0)
-        for i, prob in enumerate(predicted_probabilities):
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert np.allclose(sum(prediction.probabilities), 1.0)
+        for i, prob in enumerate(prediction.probabilities):
             if i in classes:
                 assert prob >= 0.0
             else:
@@ -628,13 +630,14 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="policy_0_MappingPolicy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        ).probabilities
-        index = scores.index(max(scores))
-        action_planned = domain_with_mapping.action_names[index]
+        )
+        index = prediction.probabilities.index(max(prediction.probabilities))
+        action_planned = domain_with_mapping.action_names_or_texts[index]
+        assert not prediction.is_end_to_end_prediction
         assert action_planned == ACTION_LISTEN_NAME
-        assert scores != [0] * domain_with_mapping.num_actions
+        assert prediction.probabilities != [0] * domain_with_mapping.num_actions
 
     def test_do_not_follow_other_policy(
         self,
@@ -649,10 +652,11 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="other_policy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        ).probabilities
-        assert scores == [0] * domain_with_mapping.num_actions
+        )
+        assert prediction.probabilities == [0] * domain_with_mapping.num_actions
+        assert not prediction.is_end_to_end_prediction
 
 
 class TestFallbackPolicy(PolicyTestCollection):
@@ -760,8 +764,8 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "greet" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == (
-            "## sender\n* greet\n    - utter_hello\n* greet\n"
+        assert tracker.export_stories(MarkdownStoryWriter(), e2e=True) == (
+            "## sender\n* greet: Random\n    - utter_hello\n* greet: Random\n"
         )
 
     def test_ask_rephrase(self, trained_policy: Policy, default_domain: Domain):
@@ -889,8 +893,8 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == (
-            "## sender\n* greet\n    - utter_hello\n* bye\n"
+        assert tracker.export_stories(MarkdownStoryWriter(), e2e=True) == (
+            "## sender\n* greet: Random\n    - utter_hello\n* bye: Random\n"
         )
 
     def test_unknown_instead_affirmation(

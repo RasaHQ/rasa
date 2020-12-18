@@ -226,13 +226,14 @@ class MarkdownStoryReader(StoryReader):
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    @staticmethod
-    def parse_e2e_message(line: Text, is_used_for_training: bool = True) -> Message:
+    def parse_e2e_message(
+        self, line: Text, is_used_for_training: bool = True
+    ) -> Message:
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>`. For the
-        syntax of `<example>` see the Rasa docs on NLU training data."""
-
+        syntax of `<example>` see the Rasa docs on NLU training data.
+        """
         # Match three groups:
         # 1) Potential "form" annotation
         # 2) The correct intent
@@ -254,7 +255,7 @@ class MarkdownStoryReader(StoryReader):
         intent = match.group(2)
         message = match.group(4)
         example = entities_parser.parse_training_example(message, intent)
-        if not is_used_for_training:
+        if not is_used_for_training and not self.use_e2e:
             # In case this is a simple conversion from Markdown we should copy over
             # the original text and not parse the entities
             example.data[rasa.shared.nlu.constants.TEXT] = message

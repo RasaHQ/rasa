@@ -4,6 +4,7 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
+import rasa.utils.train_utils
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
@@ -455,7 +456,7 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = rasa.nlu.config.override_defaults(
+        self.component_config = rasa.utils.train_utils.override_defaults(
             self.defaults, component_config
         )
 
