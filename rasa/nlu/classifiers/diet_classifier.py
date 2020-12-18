@@ -329,6 +329,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # transform numbers to labels
         self.index_label_id_mapping = index_label_id_mapping
+        self.label_id_index_mapping = None
 
         self._entity_tag_specs = entity_tag_specs
 
@@ -386,9 +387,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _invert_mapping(mapping: Dict) -> Dict:
         return {value: key for key, value in mapping.items()}
 
-    def _create_entity_tag_specs(
-        self, training_data: TrainingData
-    ) -> List[EntityTagSpec]:
+    def _create_label_index_mappings(
+        self, training_data: TrainingData, attribute: Text
+    ) -> None:
+        self.label_id_index_mapping = self._label_id_index_mapping(
+            training_data, attribute=attribute
+        )
+        self.index_label_id_mapping = self._invert_mapping(self.label_id_index_mapping)
+
+    def _create_entity_tag_specs(self, training_data: TrainingData) -> None:
         """Create entity tag specifications with their respective tag id mappings."""
 
         _tag_specs = []
@@ -413,7 +420,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     )
                 )
 
-        return _tag_specs
+        self._entity_tag_specs = _tag_specs
 
     @staticmethod
     def _tag_id_index_mapping_for(
@@ -752,24 +759,22 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-        if self.component_config[BILOU_FLAG]:
-            bilou_utils.apply_bilou_schema(training_data)
+        if self.index_label_id_mapping is None:
+            self._create_label_index_mappings(training_data, INTENT)
 
-        label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=INTENT
-        )
-
-        if not label_id_index_mapping:
-            # no labels are present to train
+        # If no labels are present we cannot train the mdoel
+        if not self.index_label_id_mapping:
             return RasaModelData()
 
-        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
-
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=INTENT
+            training_data, self.label_id_index_mapping, attribute=INTENT
         )
 
-        self._entity_tag_specs = self._create_entity_tag_specs(training_data)
+        if self._entity_tag_specs is None:
+            self._create_entity_tag_specs(training_data)
+
+        if self.component_config[BILOU_FLAG]:
+            bilou_utils.apply_bilou_schema(training_data)
 
         label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
@@ -777,7 +782,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         model_data = self._create_model_data(
             training_data.nlu_examples,
-            label_id_index_mapping,
+            self.label_id_index_mapping,
             label_attribute=label_attribute,
         )
 
@@ -788,6 +793,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
         return len(np.unique(model_data.get(LABEL_KEY, LABEL_SUB_KEY))) >= 2
+
+    def prepare_partial_training(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
+        self._create_label_index_mappings(training_data, INTENT)
+        self._create_entity_tag_specs(training_data)
 
     def train_chunk(
         self,
@@ -804,13 +822,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if not data_chunk_files:
             return
 
-        # TODO:
-        #  we need to make sure that we can actually train on this data, e.g. see
-        #  checks inside train().
-        #  Do we have any intent examples to train on?
-        #  Do we have any response examples to train on?
-        #  Do we have any entity examples to train on?
-        #  Do we have enough training examples, e.g. enough labels?
+        if not self.index_label_id_mapping:
+            return
 
         def _load_data_func(file_path: Path) -> RasaModelData:
             training_data_chunk = TrainingDataChunk.load_chunk(file_path)
@@ -855,21 +868,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> None:
         """Train the embedding intent classifier on a data set."""
         model_data = self.preprocess_train_data(training_data)
-        if model_data.is_empty():
-            logger.debug(
-                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the classifier."
-            )
+
+        if not self._can_train_model(model_data):
             return
 
-        if self.component_config.get(INTENT_CLASSIFICATION):
-            if not self._check_enough_labels(model_data):
-                logger.error(
-                    f"Cannot train '{self.__class__.__name__}'. "
-                    f"Need at least 2 different intent classes. "
-                    f"Skipping training of classifier."
-                )
-                return
         if self.component_config.get(ENTITY_RECOGNITION):
             self.check_correct_entity_annotations(training_data)
 
@@ -904,6 +906,25 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             callbacks=callbacks,
             verbose=False,
         )
+
+    def _can_train_model(self, model_data: RasaModelData) -> bool:
+        if model_data.is_empty():
+            logger.debug(
+                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the classifier."
+            )
+            return False
+
+        if self.component_config.get(INTENT_CLASSIFICATION):
+            if not self._check_enough_labels(model_data):
+                logger.error(
+                    f"Cannot train '{self.__class__.__name__}'. "
+                    f"Need at least 2 different intent classes. "
+                    f"Skipping training of classifier."
+                )
+                return False
+
+        return True
 
     # process helpers
     def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:

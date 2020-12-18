@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
@@ -326,25 +327,22 @@ class ResponseSelector(DIETClassifier):
 
         label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
 
-        label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=label_attribute
-        )
+        if self.index_label_id_mapping is None:
+            self._create_label_index_mappings(training_data, label_attribute)
+
+        # If no labels are present we cannot train the mdoel
+        if not self.index_label_id_mapping:
+            return RasaModelData()
 
         self.responses = training_data.responses
 
-        if not label_id_index_mapping:
-            # no labels are present to train
-            return RasaModelData()
-
-        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
-
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=label_attribute
+            training_data, self.label_id_index_mapping, attribute=label_attribute
         )
 
         model_data = self._create_model_data(
             training_data.intent_examples,
-            label_id_index_mapping,
+            self.label_id_index_mapping,
             label_attribute=label_attribute,
         )
 
@@ -378,6 +376,19 @@ class ResponseSelector(DIETClassifier):
                 if hash(response.get(TEXT, "")) == label.get("id"):
                     return search_key
         return None
+
+    def prepare_partial_training(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
+        label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
+        self._create_label_index_mappings(training_data, label_attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
