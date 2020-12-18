@@ -90,7 +90,7 @@ def set_suggest_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "--paraphrases", type=str, help="File or folder containing your paraphrases."
+        "--paraphrases", type=str, help="File containing your paraphrases."
     )
 
     parser.add_argument(
@@ -104,13 +104,15 @@ def set_suggest_arguments(parser: argparse.ArgumentParser):
         "--paraphrase-score-threshold",
         type=float,
         default=0.8,
-        help="Quality score threshold for paraphrases, i.e. any paraphrase with a score < paraphrase-score-threshold will be discarded.",
+        help="Quality score threshold for paraphrases, i.e. any paraphrase with a score < paraphrase-score-threshold "
+        "will be discarded.",
     )
 
     add_out_param(
         parser,
         default="nlu_suggest",
-        help_text="Directory where the training data with the suggestions should be stored.",
+        help_text="Directory where the augmented training data and the reports from model runs with data augmentation "
+        "should be stored.",
     )
 
     parser.add_argument(
