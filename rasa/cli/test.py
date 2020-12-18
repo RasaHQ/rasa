@@ -168,7 +168,10 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
-        test_nlu(model_path, nlu_data, output, vars(args))
+        # test_nlu(model_path, nlu_data, output, vars(args))
+        rasa.utils.common.run_in_loop(
+            test_nlu(model_path, nlu_data, output, vars(args))
+        )
 
 
 def test(args: argparse.Namespace):
