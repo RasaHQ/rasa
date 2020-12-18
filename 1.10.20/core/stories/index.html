@@ -1,0 +1,909 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stories</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Domains" href="../domains/" />
+    <link rel="prev" title="The Rasa Core Dialogue Engine" href="../about/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Stories" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/core/stories" />
+  
+    <meta name="description" content="Stories are used to teach Rasa real conversation designs to learn
+from providing the basis for a scalable machine learning dialogue management." />
+    <meta itemprop="description" content="Stories are used to teach Rasa real conversation designs to learn
+from providing the basis for a scalable machine learning dialogue management.">
+    <meta name="twitter:description" content="Stories are used to teach Rasa real conversation designs to learn
+from providing the basis for a scalable machine learning dialogue management." />
+    <meta property="og:description" content="Stories are used to teach Rasa real conversation designs to learn
+from providing the basis for a scalable machine learning dialogue management." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Stories">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/core/stories/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.20
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.20/core/stories/">1.10.20</a>
+              <a href="../../../1.10.19/core/stories/">1.10.19</a>
+              <a href="../../../1.10.18/core/stories/">1.10.18</a>
+              <a href="../../../1.10.17/core/stories/">1.10.17</a>
+              <a href="../../../1.10.16/core/stories/">1.10.16</a>
+              <a href="../../../1.10.15/core/stories/">1.10.15</a>
+              <a href="../../../1.10.14/core/stories/">1.10.14</a>
+              <a href="../../../1.10.13/core/stories/">1.10.13</a>
+              <a href="../../../1.10.12/core/stories/">1.10.12</a>
+              <a href="../../../1.10.11/core/stories/">1.10.11</a>
+              <a href="../../../1.10.10/core/stories/">1.10.10</a>
+              <a href="../../../1.10.9/core/stories/">1.10.9</a>
+              <a href="../../../1.10.8/core/stories/">1.10.8</a>
+              <a href="../../../1.10.7/core/stories/">1.10.7</a>
+              <a href="../../../1.10.6/core/stories/">1.10.6</a>
+              <a href="../../../1.10.5/core/stories/">1.10.5</a>
+              <a href="../../../1.10.4/core/stories/">1.10.4</a>
+              <a href="../../../1.10.3/core/stories/">1.10.3</a>
+              <a href="../../../1.10.2/core/stories/">1.10.2</a>
+              <a href="../../../1.10.1/core/stories/">1.10.1</a>
+              <a href="../../../1.10.0/core/stories/">1.10.0</a>
+              <a href="../../../1.9.7/core/stories/">1.9.7</a>
+              <a href="../../../1.9.6/core/stories/">1.9.6</a>
+              <a href="../../../1.9.5/core/stories/">1.9.5</a>
+              <a href="../../../1.9.4/core/stories/">1.9.4</a>
+              <a href="../../../1.9.3/core/stories/">1.9.3</a>
+              <a href="../../../1.9.2/core/stories/">1.9.2</a>
+              <a href="../../../1.9.1/core/stories/">1.9.1</a>
+              <a href="../../../1.9.0/core/stories/">1.9.0</a>
+              <a href="../../../1.8.3/core/stories/">1.8.3</a>
+              <a href="../../../1.8.2/core/stories/">1.8.2</a>
+              <a href="../../../1.8.1/core/stories/">1.8.1</a>
+              <a href="../../../1.8.0/core/stories/">1.8.0</a>
+              <a href="../../../1.7.4/core/stories/">1.7.4</a>
+              <a href="../../../1.7.3/core/stories/">1.7.3</a>
+              <a href="../../../1.7.2/core/stories/">1.7.2</a>
+              <a href="../../../1.7.1/core/stories/">1.7.1</a>
+              <a href="../../../1.7.0/core/stories/">1.7.0</a>
+              <a href="../../../1.6.2/core/stories/">1.6.2</a>
+              <a href="../../../1.5.3/core/stories/">1.5.3</a>
+              <a href="../../../1.4.6/core/stories/">1.4.6</a>
+              <a href="../../../1.3.10/core/stories/">1.3.10</a>
+              <a href="../../../1.2.9/core/stories/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="stories">
+<span id="id1"></span><h1>Stories<a class="headerlink" href="#stories" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/stories.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#format" id="id2">Format</a></p>
+<ul>
+<li><p><a class="reference internal" href="#what-makes-up-a-story" id="id3">What makes up a story?</a></p></li>
+<li><p><a class="reference internal" href="#user-messages" id="id4">User Messages</a></p></li>
+<li><p><a class="reference internal" href="#actions" id="id5">Actions</a></p></li>
+<li><p><a class="reference internal" href="#events" id="id6">Events</a></p>
+<ul>
+<li><p><a class="reference internal" href="#slot-events" id="id7">Slot Events</a></p></li>
+<li><p><a class="reference internal" href="#form-events" id="id8">Form Events</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#checkpoints-and-or-statements" id="id9">Checkpoints and OR statements</a></p>
+<ul>
+<li><p><a class="reference internal" href="#checkpoints" id="id10">Checkpoints</a></p></li>
+<li><p><a class="reference internal" href="#or-statements" id="id11">OR Statements</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#end-to-end-story-evaluation-format" id="id12">End-to-End Story Evaluation Format</a></p></li>
+</ul>
+</div>
+<p>Rasa stories are a form of training data used to train the Rasa’s dialogue management models.</p>
+<p>A story is a representation of a conversation between a user and an AI assistant, converted into a specific format where user inputs are expressed as corresponding intents (and entities where necessary) while the responses of an assistant are expressed as corresponding action names.</p>
+<p>A training example for the Rasa Core dialogue system is called a <strong>story</strong>.
+This is a guide to the story data format.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can also <strong>spread your stories across multiple files</strong> and specify the
+folder containing the files for most of the scripts (e.g. training,
+visualization). The stories will be treated as if they would have
+been part of one large file.</p>
+</div>
+<div class="section" id="format">
+<h2><a class="toc-backref" href="#id2">Format</a><a class="headerlink" href="#format" title="Permalink to this headline">¶</a></h2>
+<p>Here’s an example of a dialogue in the Rasa story format:</p>
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="gh">## greet + location/price + cuisine + num people</span>    <span class="k">&lt;!--</span><span class="c c-MultiLine"> name of the story - just for debugging </span><span class="k">--&gt;</span><span class="vm"></span>
+<span class="vm">* greet</span>
+<span class="vm">   </span>- action_ask_howcanhelp
+<span class="vm">* inform</span><span class="p">{</span><span class="nt">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;rome&quot;</span><span class="p">,</span> <span class="nt">&quot;price&quot;</span><span class="p">:</span> <span class="s2">&quot;cheap&quot;</span><span class="p">}</span><span class="k">  &lt;!--</span><span class="c c-MultiLine"> user utterance, in format intent{entities} </span><span class="k">--&gt;</span>
+   - action_on_it
+   - action_ask_cuisine
+<span class="vm">* inform</span><span class="p">{</span><span class="nt">&quot;cuisine&quot;</span><span class="p">:</span> <span class="s2">&quot;spanish&quot;</span><span class="p">}</span>
+   - action_ask_numpeople        <span class="k">&lt;!--</span><span class="c c-MultiLine"> action that the bot should execute </span><span class="k">--&gt;</span><span class="vm"></span>
+<span class="vm">* inform</span><span class="p">{</span><span class="nt">&quot;people&quot;</span><span class="p">:</span> <span class="s2">&quot;six&quot;</span><span class="p">}</span>
+   - action_ack_dosearch
+</pre></div>
+</div>
+<div class="section" id="what-makes-up-a-story">
+<h3><a class="toc-backref" href="#id3">What makes up a story?</a><a class="headerlink" href="#what-makes-up-a-story" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>A story starts with a name preceded by two hashes <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">story_03248462</span></code>.
+You can call the story anything you like, but it can be very useful for
+debugging to give them descriptive names!</p></li>
+<li><p>The end of a story is denoted by a newline, and then a new story
+starts again with <code class="docutils literal notranslate"><span class="pre">##</span></code>.</p></li>
+<li><p>Messages sent by the user are shown as lines starting with <code class="docutils literal notranslate"><span class="pre">*</span></code>
+in the format <code class="docutils literal notranslate"><span class="pre">intent{&quot;entity1&quot;:</span> <span class="pre">&quot;value&quot;,</span> <span class="pre">&quot;entity2&quot;:</span> <span class="pre">&quot;value&quot;}</span></code>.</p></li>
+<li><p>Actions executed by the bot are shown as lines starting with <code class="docutils literal notranslate"><span class="pre">-</span></code>
+and contain the name of the action.</p></li>
+<li><p>Events returned by an action are on lines immediately after that action.
+For example, if an action returns a <code class="docutils literal notranslate"><span class="pre">SlotSet</span></code> event, this is shown as
+<code class="docutils literal notranslate"><span class="pre">slot{&quot;slot_name&quot;:</span> <span class="pre">&quot;value&quot;}</span></code>.</p></li>
+</ul>
+</div>
+<div class="section" id="user-messages">
+<h3><a class="toc-backref" href="#id4">User Messages</a><a class="headerlink" href="#user-messages" title="Permalink to this headline">¶</a></h3>
+<p>While writing stories, you do not have to deal with the specific contents of
+the messages that the users send. Instead, you can take advantage of the output
+from the NLU pipeline, which lets you use just the combination of an intent and
+entities to refer to all the possible messages the users can send to mean the
+same thing.</p>
+<p>It is important to include the entities here as well because the policies learn
+to predict the next action based on a <em>combination</em> of both the intent and
+entities (you can, however, change this behavior using the
+<a class="reference internal" href="../domains/#use-entities"><span class="std std-ref">use_entities</span></a> attribute).</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers.
+Refer to <code class="docutils literal notranslate"><span class="pre">Training</span> <span class="pre">Data</span> <span class="pre">Format</span></code> section of <a class="reference internal" href="../retrieval-actions/#retrieval-actions"><span class="std std-ref">Retrieval Actions</span></a> for more details on this format.
+If any of the intent names contain the delimiter, the file containing these stories will be considered as a training
+file for <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> model and will be ignored for training Core models.</p>
+</div>
+</div>
+<div class="section" id="actions">
+<h3><a class="toc-backref" href="#id5">Actions</a><a class="headerlink" href="#actions" title="Permalink to this headline">¶</a></h3>
+<p>While writing stories, you will encounter two types of actions: utterance actions
+and custom actions. Utterance actions are hardcoded messages that a bot can respond
+with. Custom actions, on the other hand, involve custom code being executed.</p>
+<p>All actions (both utterance actions and custom actions) executed by the bot are shown
+as lines starting with <code class="docutils literal notranslate"><span class="pre">-</span></code> followed by the name of the action.</p>
+<p>The responses for utterance actions must begin with the prefix <code class="docutils literal notranslate"><span class="pre">utter_</span></code>, and must match the name
+of the response defined in the domain.</p>
+<p>For custom actions, the action name is the string you choose to return from
+the <code class="docutils literal notranslate"><span class="pre">name</span></code> method of the custom action class. Although there is no restriction
+on naming your custom actions (unlike utterance actions), the best practice here is to
+prefix the name with <code class="docutils literal notranslate"><span class="pre">action_</span></code>.</p>
+</div>
+<div class="section" id="events">
+<h3><a class="toc-backref" href="#id6">Events</a><a class="headerlink" href="#events" title="Permalink to this headline">¶</a></h3>
+<p>Events such as setting a slot or activating/deactivating a form have to be
+explicitly written out as part of the stories. Having to include the events
+returned by a custom action separately, when that custom action is already
+part of a story might seem redundant. However, since Rasa cannot
+determine this fact during training, this step is necessary.</p>
+<p>You can read more about events <a class="reference internal" href="../../api/events/#events"><span class="std std-ref">here</span></a>.</p>
+<div class="section" id="slot-events">
+<h4><a class="toc-backref" href="#id7">Slot Events</a><a class="headerlink" href="#slot-events" title="Permalink to this headline">¶</a></h4>
+<p>Slot events are written as <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">slot{&quot;slot_name&quot;:</span> <span class="pre">&quot;value&quot;}</span></code>. If this slot is set
+inside a custom action, it is written on the line immediately following the
+custom action event. If your custom action resets a slot value to <cite>None</cite>, the
+corresponding event for that would be <code class="docutils literal notranslate"><span class="pre">-slot{&quot;slot_name&quot;:</span> <span class="pre">null}</span></code>.</p>
+</div>
+<div class="section" id="form-events">
+<h4><a class="toc-backref" href="#id8">Form Events</a><a class="headerlink" href="#form-events" title="Permalink to this headline">¶</a></h4>
+<p>There are three kinds of events that need to be kept in mind while dealing with
+forms in stories.</p>
+<ul class="simple">
+<li><p>A form action event (e.g. <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">restaurant_form</span></code>) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.</p></li>
+<li><p>A form activation event (e.g. <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">form{&quot;name&quot;:</span> <span class="pre">&quot;restaurant_form&quot;}</span></code>) is used right after the first form action event.</p></li>
+<li><p>A form deactivation event (e.g. <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">form{&quot;name&quot;:</span> <span class="pre">null}</span></code>), which is used to deactivate the form.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to get around the pitfall of forgetting to add events, the recommended
+way to write these stories is to use <a class="reference internal" href="../interactive-learning/#interactive-learning"><span class="std std-ref">interactive learning</span></a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="checkpoints-and-or-statements">
+<h2><a class="toc-backref" href="#id9">Checkpoints and OR statements</a><a class="headerlink" href="#checkpoints-and-or-statements" title="Permalink to this headline">¶</a></h2>
+<p>Checkpoints and OR statements should both be used with caution, if at all.
+There is usually a better way to achieve what you want by using forms and/or
+retrieval actions.</p>
+<div class="section" id="checkpoints">
+<h3><a class="toc-backref" href="#id10">Checkpoints</a><a class="headerlink" href="#checkpoints" title="Permalink to this headline">¶</a></h3>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">checkpoints</span></code> to modularize and simplify your training
+data. Checkpoints can be useful, but <strong>do not overuse them</strong>. Using
+lots of checkpoints can quickly make your example stories hard to
+understand. It makes sense to use them if a story block is repeated
+very often in different stories, but stories <em>without</em> checkpoints
+are easier to read and write. Here is an example story file which
+contains checkpoints (note that you can attach more than one checkpoint
+at a time):</p>
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="gh">## first story</span>
+<span class="vm">* greet</span>
+<span class="vm">   </span>- action_ask_user_question
+<span class="no">&gt; check_asked_question</span>
+
+<span class="gh">## user affirms question</span>
+<span class="no">&gt; check_asked_question</span><span class="vm"></span>
+<span class="vm">* affirm</span>
+<span class="vm">  </span>- action_handle_affirmation
+<span class="no">&gt; check_handled_affirmation</span>
+
+<span class="gh">## user denies question</span>
+<span class="no">&gt; check_asked_question</span><span class="vm"></span>
+<span class="vm">* deny</span>
+<span class="vm">  </span>- action_handle_denial
+<span class="no">&gt; check_handled_denial</span>
+
+<span class="gh">## user leaves</span>
+<span class="no">&gt; check_handled_denial</span>
+<span class="no">&gt; check_handled_affirmation</span><span class="vm"></span>
+<span class="vm">* goodbye</span>
+<span class="vm">  </span>- utter_goodbye
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unlike regular stories, checkpoints are not restricted to starting with an
+input from the user. As long as the checkpoint is inserted at the right points
+in the main stories, the first event can be a custom action or a response action
+as well.</p>
+</div>
+</div>
+<div class="section" id="or-statements">
+<h3><a class="toc-backref" href="#id11">OR Statements</a><a class="headerlink" href="#or-statements" title="Permalink to this headline">¶</a></h3>
+<p>Another way to write shorter stories, or to handle multiple intents
+the same way, is to use an <code class="docutils literal notranslate"><span class="pre">OR</span></code> statement. For example, if you ask
+the user to confirm something, and you want to treat the <code class="docutils literal notranslate"><span class="pre">affirm</span></code>
+and <code class="docutils literal notranslate"><span class="pre">thankyou</span></code> intents in the same way. The story below will be
+converted into two stories at training time:</p>
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="gh">## story</span>
+...
+  - utter_ask_confirm
+<span class="vm">* affirm </span><span class="k">OR </span><span class="vm">thankyou</span>
+<span class="vm">  </span>- action_handle_affirmation
+</pre></div>
+</div>
+<p>Just like checkpoints, <code class="docutils literal notranslate"><span class="pre">OR</span></code> statements can be useful, but if you are using a
+lot of them, it is probably better to restructure your domain and/or intents.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Overusing these features (both checkpoints and OR statements)
+will slow down training.</p>
+</div>
+</div>
+</div>
+<div class="section" id="end-to-end-story-evaluation-format">
+<h2><a class="toc-backref" href="#id12">End-to-End Story Evaluation Format</a><a class="headerlink" href="#end-to-end-story-evaluation-format" title="Permalink to this headline">¶</a></h2>
+<p>The end-to-end story format is a format that combines both NLU and Core training data
+into a single file for evaluation. Read more about <a class="reference internal" href="../../user-guide/testing-your-assistant/#testing-your-assistant"><span class="std std-ref">Testing Your Assistant</span></a></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This format is only used for end-to-end evaluation and cannot be used for training.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>
