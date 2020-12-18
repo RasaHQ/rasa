@@ -3,7 +3,7 @@ from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
@@ -44,7 +44,7 @@ class MyComponent(Component):
 
     def train(
         self,
-        training_data: TrainingDataFull,
+        training_data: NLUTrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

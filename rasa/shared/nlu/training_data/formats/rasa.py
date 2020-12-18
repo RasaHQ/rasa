@@ -10,14 +10,14 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 from rasa.shared.utils.io import json_to_string
 
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
-    def read_from_json(self, js: Dict[Text, Any], **_) -> "TrainingDataFull":
+    def read_from_json(self, js: Dict[Text, Any], **_) -> "NLUTrainingDataFull":
         """Loads training data stored in the rasa NLU data format."""
         import rasa.shared.nlu.training_data.schemas.data_schema as schema
         import rasa.shared.utils.validation as validation_utils
@@ -43,13 +43,13 @@ class RasaReader(JsonTrainingDataReader):
             )
             training_examples.append(msg)
 
-        return TrainingDataFull(
+        return NLUTrainingDataFull(
             training_examples, entity_synonyms, regex_features, lookup_tables
         )
 
 
 class RasaWriter(TrainingDataWriter):
-    def dumps(self, training_data: "TrainingDataFull", **kwargs) -> Text:
+    def dumps(self, training_data: "NLUTrainingDataFull", **kwargs) -> Text:
         """Writes Training Data to a string in json format."""
 
         js_entity_synonyms = defaultdict(list)

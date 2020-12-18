@@ -27,7 +27,10 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    NLUTrainingDataFull,
+    NLUTrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 from rasa.utils.common import TempDirectoryPath
@@ -149,7 +152,7 @@ class Trainer:
         """Intializes the trainer for loading data and training components."""
         self.config = config
         self.skip_validation = skip_validation
-        self.training_data = None  # type: Optional[TrainingDataFull]
+        self.training_data = None  # type: Optional[NLUTrainingDataFull]
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in
@@ -187,7 +190,7 @@ class Trainer:
 
         return pipeline
 
-    def train(self, data: TrainingDataFull, **kwargs: Any) -> "Interpreter":
+    def train(self, data: NLUTrainingDataFull, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
 
         self.training_data = data
@@ -208,7 +211,7 @@ class Trainer:
             )
 
         # data gets modified internally during the training - hence the copy
-        working_data: TrainingDataFull = copy.deepcopy(data)
+        working_data: NLUTrainingDataFull = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")
@@ -222,7 +225,7 @@ class Trainer:
 
     def train_in_chunks(
         self,
-        training_data: TrainingDataFull,
+        training_data: NLUTrainingDataFull,
         train_path: Path,
         number_of_chunks: int,
         fixed_model_name: Optional[Text] = None,
@@ -295,7 +298,7 @@ class Trainer:
             if isinstance(component, (IntentClassifier, EntityExtractor)):
                 for j in range(number_of_chunks):
                     file_path = os.path.join(data_chunk_dir, f"{j}_chunk.tfrecord")
-                    data_chunk = TrainingDataChunk.load_chunk(file_path)
+                    data_chunk = NLUTrainingDataChunk.load_chunk(file_path)
                     component.train_chunk(data_chunk, self.config, **context)
                 metadata["pipeline"].append(
                     self._persist_component(component, dir_name, i)

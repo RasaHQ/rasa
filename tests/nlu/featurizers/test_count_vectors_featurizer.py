@@ -11,7 +11,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTION_NAME
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
@@ -36,7 +36,7 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
 
-    ftr.train(TrainingDataFull([train_message]))
+    ftr.train(NLUTrainingDataFull([train_message]))
 
     ftr.process(test_message)
 
@@ -77,7 +77,7 @@ def test_count_vector_featurizer_response_attribute_featurization(
     second_message.set(RESPONSE, "hi")
     second_message.set(INTENT, "greet")
 
-    data = TrainingDataFull([train_message, second_message])
+    data = NLUTrainingDataFull([train_message, second_message])
 
     tk.train(data)
     ftr.train(data)
@@ -129,7 +129,7 @@ def test_count_vector_featurizer_attribute_featurization(
     train_message.set(INTENT, intent)
     train_message.set(RESPONSE, response)
 
-    data = TrainingDataFull([train_message])
+    data = NLUTrainingDataFull([train_message])
 
     tk.train(data)
     ftr.train(data)
@@ -186,7 +186,7 @@ def test_count_vector_featurizer_shared_vocab(
     train_message.set(INTENT, intent)
     train_message.set(RESPONSE, response)
 
-    data = TrainingDataFull([train_message])
+    data = NLUTrainingDataFull([train_message])
     tk.train(data)
     ftr.train(data)
 
@@ -227,7 +227,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
-    data = TrainingDataFull([train_message])
+    data = NLUTrainingDataFull([train_message])
     ftr.train(data)
 
     test_message = Message(data={TEXT: sentence})
@@ -259,7 +259,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
-    data = TrainingDataFull([train_message])
+    data = NLUTrainingDataFull([train_message])
     ftr.train(data)
 
     test_message = Message(data={TEXT: sentence})
@@ -299,7 +299,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     train_message = Message(data={TEXT: ""})
     train_message.set(TOKENS_NAMES[TEXT], tokens_feature)
 
-    data = TrainingDataFull([train_message])
+    data = NLUTrainingDataFull([train_message])
 
     ftr.train(data)
 
@@ -331,7 +331,7 @@ def test_count_vector_featurizer_char(sentence, expected):
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
-    data = TrainingDataFull([train_message])
+    data = NLUTrainingDataFull([train_message])
     ftr.train(data)
 
     test_message = Message(data={TEXT: sentence})
@@ -371,7 +371,7 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     WhitespaceTokenizer().process(train_message1)
     WhitespaceTokenizer().process(train_message2)
 
-    data = TrainingDataFull([train_message1, train_message2])
+    data = NLUTrainingDataFull([train_message1, train_message2])
     train_ftr.train(data)
 
     # persist featurizer
@@ -445,9 +445,9 @@ def test_count_vectors_featurizer_train():
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingDataFull([message]))
+    WhitespaceTokenizer().train(NLUTrainingDataFull([message]))
 
-    featurizer.train(TrainingDataFull([message]), RasaNLUModelConfig())
+    featurizer.train(NLUTrainingDataFull([message]), RasaNLUModelConfig())
 
     expected = np.array([0, 1, 0, 0, 0])
     expected_cls = np.array([1, 1, 1, 1, 1])
@@ -509,7 +509,7 @@ def test_count_vector_featurizer_use_lemma(
     SpacyTokenizer().process(train_message)
     SpacyTokenizer().process(test_message)
 
-    ftr.train(TrainingDataFull([train_message]))
+    ftr.train(NLUTrainingDataFull([train_message]))
 
     ftr.process(test_message)
 
@@ -554,7 +554,7 @@ def test_count_vector_featurizer_action_attribute_featurization(
     second_message.set(ACTION_TEXT, "hi")
     second_message.set(ACTION_NAME, "greet")
 
-    data = TrainingDataFull([train_message, second_message])
+    data = NLUTrainingDataFull([train_message, second_message])
 
     tk.train(data)
     ftr.train(data)
@@ -615,7 +615,7 @@ def test_count_vector_featurizer_process_by_attribute(
     train_message1 = Message(data={TEXT: "hello"})
     train_message1.set(ACTION_TEXT, "hi")
 
-    data = TrainingDataFull([train_message, train_message1])
+    data = NLUTrainingDataFull([train_message, train_message1])
 
     tk.train(data)
     ftr.train(data)

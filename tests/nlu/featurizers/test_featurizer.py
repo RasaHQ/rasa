@@ -9,7 +9,7 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
@@ -45,7 +45,7 @@ def test_calculate_cls_vector(pooling, features, expected):
 
 def test_flexible_nlu_pipeline():
     message = Message(data={TEXT: "This is a test message.", "intent": "test"})
-    training_data = TrainingDataFull([message, message, message, message, message])
+    training_data = NLUTrainingDataFull([message, message, message, message, message])
 
     tokenizer = WhitespaceTokenizer()
     tokenizer.train(training_data)

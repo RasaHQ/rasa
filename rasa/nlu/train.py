@@ -15,7 +15,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
-    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+    from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class TrainingException(Exception):
 
 async def load_data_from_endpoint(
     data_endpoint: EndpointConfig, language: Optional[Text] = "en"
-) -> "TrainingDataFull":
+) -> "NLUTrainingDataFull":
     """Load training data from a URL."""
     import requests
 
@@ -113,7 +113,7 @@ async def _load_training_data(
     data: Union[Text, "TrainingDataImporter"],
     model_config: RasaNLUModelConfig,
     training_data_endpoint: Optional[EndpointConfig] = None,
-) -> "TrainingDataFull":
+) -> "NLUTrainingDataFull":
     from rasa.shared.importers.importer import TrainingDataImporter
 
     if training_data_endpoint is not None:

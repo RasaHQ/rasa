@@ -18,7 +18,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
 )
 import rasa.shared.utils.io
 
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class RasaYAMLReader(TrainingDataReader):
             e.filename = self.filename
             raise e
 
-    def reads(self, string: Text, **kwargs: Any) -> "TrainingDataFull":
+    def reads(self, string: Text, **kwargs: Any) -> "NLUTrainingDataFull":
         """Reads TrainingData in YAML format from a string.
 
         Args:
@@ -81,7 +81,7 @@ class RasaYAMLReader(TrainingDataReader):
         if not validation.validate_training_data_format_version(
             yaml_content, self.filename
         ):
-            return TrainingDataFull()
+            return NLUTrainingDataFull()
 
         for key, value in yaml_content.items():
             if key == KEY_NLU:
@@ -89,7 +89,7 @@ class RasaYAMLReader(TrainingDataReader):
             elif key == KEY_RESPONSES:
                 self.responses = value
 
-        return TrainingDataFull(
+        return NLUTrainingDataFull(
             self.training_examples,
             self.entity_synonyms,
             self.regex_features,
@@ -355,14 +355,14 @@ class RasaYAMLReader(TrainingDataReader):
 class RasaYAMLWriter(TrainingDataWriter):
     """Writes training data into a file in a YAML format."""
 
-    def dumps(self, training_data: "TrainingDataFull") -> Text:
+    def dumps(self, training_data: "NLUTrainingDataFull") -> Text:
         """Turns TrainingData into a string."""
         stream = StringIO()
         self.dump(stream, training_data)
         return stream.getvalue()
 
     def dump(
-        self, target: Union[Text, Path, StringIO], training_data: "TrainingDataFull"
+        self, target: Union[Text, Path, StringIO], training_data: "NLUTrainingDataFull"
     ) -> None:
         """Writes training data into a file in a YAML format.
 
@@ -377,7 +377,7 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def training_data_to_dict(
-        cls, training_data: "TrainingDataFull"
+        cls, training_data: "NLUTrainingDataFull"
     ) -> Optional[OrderedDict]:
         """Represents NLU training data to a dict/list structure ready to be
         serialized as YAML.
@@ -414,7 +414,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         return result
 
     @classmethod
-    def process_intents(cls, training_data: "TrainingDataFull") -> List[OrderedDict]:
+    def process_intents(cls, training_data: "NLUTrainingDataFull") -> List[OrderedDict]:
         training_data = cls.prepare_training_examples(training_data)
         return RasaYAMLWriter.process_training_examples_by_key(
             training_data,
@@ -424,7 +424,9 @@ class RasaYAMLWriter(TrainingDataWriter):
         )
 
     @classmethod
-    def process_synonyms(cls, training_data: "TrainingDataFull") -> List[OrderedDict]:
+    def process_synonyms(
+        cls, training_data: "NLUTrainingDataFull"
+    ) -> List[OrderedDict]:
         inverted_synonyms = OrderedDict()
         for example, synonym in training_data.entity_synonyms.items():
             if not inverted_synonyms.get(synonym):
@@ -436,7 +438,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         )
 
     @classmethod
-    def process_regexes(cls, training_data: "TrainingDataFull") -> List[OrderedDict]:
+    def process_regexes(cls, training_data: "NLUTrainingDataFull") -> List[OrderedDict]:
         inverted_regexes = OrderedDict()
         for regex in training_data.regex_features:
             if not inverted_regexes.get(regex["name"]):
@@ -448,7 +450,9 @@ class RasaYAMLWriter(TrainingDataWriter):
         )
 
     @classmethod
-    def process_lookup_tables(cls, training_data: "TrainingDataFull") -> List[OrderedDict]:
+    def process_lookup_tables(
+        cls, training_data: "NLUTrainingDataFull"
+    ) -> List[OrderedDict]:
         prepared_lookup_tables = OrderedDict()
         for lookup_table in training_data.lookup_tables:
             # this is a lookup table filename

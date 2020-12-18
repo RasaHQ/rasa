@@ -5,7 +5,7 @@ from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
@@ -99,7 +99,7 @@ def test_custom_intent_symbol(text, expected_tokens):
     message = Message.build(text=text)
     message.set(INTENT, text)
 
-    tk.train(TrainingDataFull([message]))
+    tk.train(NLUTrainingDataFull([message]))
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
 
@@ -137,7 +137,9 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
     component_config = {"case_sensitive": False, "intent_tokenization_flag": True}
     tk = WhitespaceTokenizer(component_config)
 
-    tk.train(TrainingDataFull(training_examples=examples), supervised_embeddings_config)
+    tk.train(
+        NLUTrainingDataFull(training_examples=examples), supervised_embeddings_config
+    )
 
     assert examples[0].data.get(TOKENS_NAMES[TEXT])[0].text == "Any"
     assert examples[0].data.get(TOKENS_NAMES[TEXT])[1].text == "Mexican"

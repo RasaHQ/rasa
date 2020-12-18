@@ -2,7 +2,7 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import ENTITIES, TEXT, INTENT
 from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
@@ -82,7 +82,7 @@ def test_process(
 ):
     message = Message(data={TEXT: text})
 
-    training_data = TrainingDataFull()
+    training_data = NLUTrainingDataFull()
     training_data.lookup_tables = lookup
     training_data.training_examples = [
         Message(
@@ -166,7 +166,7 @@ def test_lowercase(
     expected_entities: List[Dict[Text, Any]],
 ):
     message = Message(data={TEXT: text})
-    training_data = TrainingDataFull()
+    training_data = NLUTrainingDataFull()
     training_data.lookup_tables = lookup
     training_data.training_examples = [
         Message(
@@ -197,7 +197,7 @@ def test_do_not_overwrite_any_entities():
     message = Message(data={TEXT: "Max lives in Berlin.", INTENT: "infrom"})
     message.set(ENTITIES, [{"entity": "person", "value": "Max", "start": 0, "end": 3}])
 
-    training_data = TrainingDataFull()
+    training_data = NLUTrainingDataFull()
     training_data.training_examples = [
         Message(
             data={

@@ -8,7 +8,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 import rasa.shared.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
@@ -28,12 +28,12 @@ class NLGMarkdownReader(TrainingDataReader):
         self.responses = {}
         super(NLGMarkdownReader, self).__init__()
 
-    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
+    def reads(self, s: Text, **kwargs: Any) -> "NLUTrainingDataFull":
         """Read markdown string and create TrainingData object"""
         self.__init__()
         lines = s.splitlines()
         self.responses = self.process_lines(lines)
-        return TrainingDataFull(responses=self.responses)
+        return NLUTrainingDataFull(responses=self.responses)
 
     @staticmethod
     def process_lines(lines: List[Text]) -> Dict[Text, List[Dict[Text, Text]]]:
@@ -102,7 +102,7 @@ class NLGMarkdownReader(TrainingDataReader):
 
 
 class NLGMarkdownWriter(TrainingDataWriter):
-    def dumps(self, training_data: "TrainingDataFull") -> Text:
+    def dumps(self, training_data: "NLUTrainingDataFull") -> Text:
         """Transforms the NlG part of TrainingData object into a markdown string."""
 
         md = ""

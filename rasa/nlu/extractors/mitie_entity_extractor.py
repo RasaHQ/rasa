@@ -11,7 +11,10 @@ from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    NLUTrainingDataFull,
+    NLUTrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaTrainChunkException
 import rasa.shared.utils.io
@@ -64,7 +67,7 @@ class MitieEntityExtractor(EntityExtractor):
 
     def train_chunk(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_data_chunk: NLUTrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -78,7 +81,7 @@ class MitieEntityExtractor(EntityExtractor):
 
     def train(
         self,
-        training_data: TrainingDataFull,
+        training_data: NLUTrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

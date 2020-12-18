@@ -7,7 +7,10 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    NLUTrainingDataChunk,
+    NLUTrainingDataFull,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
@@ -221,7 +224,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
 
 
 def validate_required_components_from_data(
-    pipeline: List["Component"], data: TrainingDataFull
+    pipeline: List["Component"], data: NLUTrainingDataFull
 ) -> None:
     """Validates that all components are present in the pipeline based on data.
 
@@ -552,7 +555,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def prepare_partial_training(
         self,
-        training_data: TrainingDataFull,
+        training_data: NLUTrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -570,7 +573,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def train_chunk(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_data_chunk: NLUTrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -585,7 +588,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def train(
         self,
-        training_data: TrainingDataFull,
+        training_data: NLUTrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -604,10 +607,9 @@ class Component(metaclass=ComponentMetaclass):
             training_data: The
                 :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
-
         """
         self.prepare_partial_training(training_data, config, **kwargs)
-        training_data_chunk = TrainingDataChunk(
+        training_data_chunk = NLUTrainingDataChunk(
             training_examples=training_data.training_examples,
             responses=training_data.responses,
         )

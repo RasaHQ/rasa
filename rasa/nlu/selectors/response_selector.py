@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -296,7 +296,9 @@ class ResponseSelector(DIETClassifier):
             add_to_output=True,
         )
 
-    def preprocess_train_data(self, training_data: TrainingDataFull) -> RasaModelData:
+    def preprocess_train_data(
+        self, training_data: NLUTrainingDataFull
+    ) -> RasaModelData:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.

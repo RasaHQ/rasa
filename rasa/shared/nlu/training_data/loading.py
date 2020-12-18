@@ -14,7 +14,7 @@ from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_INTENT_EXAMPLES,
     DIALOGFLOW_PACKAGE,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
@@ -45,7 +45,9 @@ _json_format_heuristics = {
 }
 
 
-def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingDataFull":
+def load_data(
+    resource_name: Text, language: Optional[Text] = "en"
+) -> "NLUTrainingDataFull":
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
@@ -60,7 +62,7 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     data_sets = [_load(f, language) for f in files]
     data_sets = [ds for ds in data_sets if ds]
     if len(data_sets) == 0:
-        training_data = TrainingDataFull()
+        training_data = NLUTrainingDataFull()
     elif len(data_sets) == 1:
         training_data = data_sets[0]
     else:
@@ -99,7 +101,9 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     return reader
 
 
-def _load(filename: Text, language: Optional[Text] = "en") -> Optional["TrainingDataFull"]:
+def _load(
+    filename: Text, language: Optional[Text] = "en"
+) -> Optional["NLUTrainingDataFull"]:
     """Loads a single training data file from disk."""
 
     fformat = guess_format(filename)
