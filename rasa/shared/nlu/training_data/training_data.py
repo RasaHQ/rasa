@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 TF_RECORD_KEY_SEPARATOR = "#"
 
 
-class TrainingDataForNLUPipeline:
-    """Parent class to hold training data for NLU pipline."""
+class NLUPipelineTrainingData:
+    """Parent class to hold training data for NLU pipeline."""
 
     # Validation will ensure and warn if these lower limits are not met
     MIN_EXAMPLES_PER_INTENT = 2
@@ -384,7 +384,7 @@ class TrainingDataForNLUPipeline:
         return any(message.is_e2e_message() for message in self.training_examples)
 
 
-class TrainingDataFull(TrainingDataForNLUPipeline):
+class TrainingDataFull(NLUPipelineTrainingData):
     """Holds loaded intent and entity training data."""
 
     # Validation will ensure and warn if these lower limits are not met
@@ -854,7 +854,7 @@ class TrainingData(TrainingDataFull):
         )
 
 
-class TrainingDataChunk(TrainingDataForNLUPipeline):
+class TrainingDataChunk(NLUPipelineTrainingData):
     """Holds a portion of the complete TrainingData.
 
     It can only hold training_examples and responses.
