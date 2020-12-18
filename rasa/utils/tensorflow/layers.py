@@ -717,6 +717,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         Checks that input features are different for positive negative samples.
         """
 
+        # invert the mask to have 1s for same labels and 0s for different labels.
         inverted_mask = tf.squeeze(tf.logical_not(mask), axis=-1)
         # tf.print(inverted_mask, inverted_mask.shape, batch_size, idxs, summarize=-1)
         return tf.squeeze(
@@ -771,10 +772,10 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         neg_inf = tf.constant(-1e9)
 
-        # normalized = tf.nn.l2_normalize(input_embeds, 1)
-        # normalized_2 = tf.nn.l2_normalize(input_embeds_2, 1)
+        normalized = tf.nn.l2_normalize(input_embeds, 1)
+        normalized_2 = tf.nn.l2_normalize(input_embeds_2, 1)
         sims = tf.reduce_sum(
-            tf.expand_dims(input_embeds_2, 0) * tf.expand_dims(input_embeds, 1), axis=-1
+            tf.expand_dims(normalized_2, 0) * tf.expand_dims(normalized, 1), axis=-1
         )
 
         modulated_sims = tf.where(tf.squeeze(mask, -1), sims, neg_inf)
@@ -788,24 +789,41 @@ class DotProductLoss(tf.keras.layers.Layer):
         labels: tf.Tensor,
         target_labels: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Get negative examples from given tensor."""
+        """Get negative examples from given embeds_2 based on their similarity to embeds.
+
+        Args:
+            embeds: Embeddings for the first term in the similarity (bs x seq x dim)
+            embeds_2: Embeddings for the second term in the similarity (ns x seq x dim)
+            labels: Label ids for the first term in the similarity (bs x seq x 1)
+            target_labels: Label ids for the second term in the similarity (ns x seq x 1)
+
+        Returns:
+        """
 
         embeds_flat = self._make_flat(embeds)
         embeds_flat_2 = self._make_flat(embeds_2)
         labels_flat = self._make_flat(labels)
         target_labels_flat = self._make_flat(target_labels)
 
-        # sims = self.sim(embeds_flat, embeds_flat)
         # tf.print(embeds_flat, embeds_flat.shape)
         # tf.print(labels_flat, labels_flat.shape)
         # tf.print(target_labels_flat, labels_flat.shape)
 
-        same_label_mask = self._get_same_label_mask(labels_flat, target_labels_flat)
+        # Compute the mask which indicates pairs of indices
+        # which have the same label. The mask will have 0
+        # for same label and 1 for different label.
+        same_label_mask = self._get_same_label_mask(
+            labels_flat, target_labels_flat
+        )  # (bs x ns x 1)
         # tf.print(same_label_mask, same_label_mask.shape, summarize=-1)
 
+        # Similarity between each unique pair of embeddings.
+        # Pair is composed of elements from first embeddings and
+        # elements from second embeddings.
         input_sims = self._get_pairwise_cosine_sim(
             embeds_flat, embeds_flat_2, same_label_mask
-        )
+        )  # (bs x ns)
+
         # tf.print(input_sims, tf.shape(input_sims))
 
         total_candidates = tf.shape(embeds_flat_2)[0]
@@ -813,18 +831,22 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         # print(target_size.shape, total_candidates.shape, input_sims.shape)
 
+        # Get negative indices on the basis of pairwise similarities
         neg_ids = self._random_indices_from_scores(
             target_size, total_candidates, scores=input_sims
-        )
-        # neg_ids = self._random_indices(target_size, total_candidates)
+        )  # (bs x num_negs)
 
-        # tf.print(neg_ids, tf.shape(neg_ids))
-
-        neg_embeds = self._sample_idxs(target_size, embeds_flat_2, neg_ids)
+        neg_embeds = self._sample_idxs(
+            target_size, embeds_flat_2, neg_ids
+        )  # (bs x num_negs x dim)
         # tf.print(neg_embeds, neg_embeds.shape)
 
-        # bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
-        bad_negs = self._get_bad_mask(target_size, same_label_mask, neg_ids)
+        # Sample bad negs corresponding to neg_ids from same label
+        # mask as that already contains a mask for which pairs of
+        # first and second embeddings the labels are the same.
+        bad_negs = self._get_bad_mask(
+            target_size, same_label_mask, neg_ids
+        )  # (bs x num_negs)
 
         # tf.print(bad_negs, tf.shape(bad_negs))
 
@@ -889,9 +911,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_li_embed, bad_neg_li = self._get_input_negs(
             labels_embed, inputs_embed, labels, labels
         )
-        # neg_labels_embed, labels_bad_negs = self._get_negs(
-        #     all_labels_embed, all_labels, labels
-        # )
+
         # tf.print("=======================================")
         return (
             pos_inputs_embed,
