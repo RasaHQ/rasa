@@ -22,6 +22,7 @@ import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
 import rasa.utils.common
+import asyncio
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 import rasa.nlu.classifiers.fallback_classifier
@@ -1454,7 +1455,31 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
     return pipeline
 
 
-async def run_evaluation(
+def run_evaluation(
+    data_path: Text,
+    model_path: Text,
+    output_directory: Optional[Text] = None,
+    successes: bool = False,
+    errors: bool = False,
+    component_builder: Optional[ComponentBuilder] = None,
+    disable_plotting: bool = False,
+    loop: Optional[asyncio.AbstractEventLoop] = None,
+) -> Dict:
+    return rasa.utils.common.run_in_loop(
+        run_evaluation_async(
+            data_path=data_path,
+            model_path=model_path,
+            output_directory=output_directory,
+            successes=successes,
+            errors=errors,
+            component_builder=component_builder,
+            disable_plotting=disable_plotting,
+        ),
+        loop,
+    )
+
+
+async def run_evaluation_async(
     data_path: Text,
     model_path: Text,
     output_directory: Optional[Text] = None,
@@ -1913,7 +1938,7 @@ async def compare_nlu(
                 model_path = os.path.join(get_model(model_path), "nlu")
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
-                result = await run_evaluation(
+                result = run_evaluation_async(
                     test_path, model_path, output_directory=output_path, errors=True
                 )
 

@@ -67,7 +67,7 @@ def add_subparser(
     test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
-async def run_core_test(args: argparse.Namespace) -> None:
+def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
@@ -101,7 +101,7 @@ async def run_core_test(args: argparse.Namespace) -> None:
         if args.evaluate_model_directory:
             test_core_models_in_directory(args.model, stories, output)
         else:
-            await test_core(
+            test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
@@ -116,7 +116,7 @@ async def run_core_test(args: argparse.Namespace) -> None:
     )
 
 
-async def run_nlu_test(args: argparse.Namespace) -> None:
+def run_nlu_test(args: argparse.Namespace) -> None:
     """Run NLU tests."""
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
@@ -168,17 +168,11 @@ async def run_nlu_test(args: argparse.Namespace) -> None:
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, nlu_data, output, vars(args))
+        test_nlu(model_path, nlu_data, output, vars(args))
 
 
-async def test_async(args: argparse.Namespace):
+def test(args: argparse.Namespace):
     """Run end-to-end tests."""
     setattr(args, "e2e", True)
-    await run_core_test(args)
-    await run_nlu_test(args)
-
-
-def test(
-    args: argparse.Namespace, loop: Optional[asyncio.AbstractEventLoop] = None,
-):
-    return rasa.utils.common.run_in_loop(test_async(args), loop,)
+    run_core_test(args)
+    run_nlu_test(args)
