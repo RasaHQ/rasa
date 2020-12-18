@@ -90,6 +90,7 @@ class KafkaEventBroker(EventBroker):
         return cls(broker_config.url, **broker_config.kwargs)
 
     def publish(self, event, retries=60, retry_delay_in_seconds=5) -> None:
+        """Publishes events."""
         if self.producer is None:
             self._create_producer()
             connected = self.producer.bootstrap_connected()

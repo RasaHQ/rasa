@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramOutput(TeleBot, OutputChannel):
-    """Output channel for Telegram"""
+    """Output channel for Telegram."""
 
     # skipcq: PYL-W0236
     @classmethod
@@ -267,6 +267,7 @@ class TelegramInput(InputChannel):
         return telegram_webhook
 
     def get_output_channel(self) -> TelegramOutput:
+        """Loads the telegram channel."""
         channel = TelegramOutput(self.access_token)
         channel.set_webhook(url=self.webhook_url)
 
