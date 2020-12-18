@@ -5,7 +5,6 @@ from typing import List, Optional, Dict, Text, Set, Any
 from collections import defaultdict
 
 import rasa.shared.utils.io
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
@@ -21,6 +20,7 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
+    TOKENS_NAMES,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message

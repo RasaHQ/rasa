@@ -26,7 +26,6 @@ from rasa.utils.tensorflow.model_data import (
     FeatureSignature,
     FeatureArray,
 )
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
@@ -37,6 +36,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    TOKENS_NAMES,
 )
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException

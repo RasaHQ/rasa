@@ -8,7 +8,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
@@ -28,6 +27,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
+    TOKENS_NAMES,
 )
 from rasa.utils.tensorflow.data_generator import DataChunkFile
 

@@ -20,7 +20,6 @@ from rasa.nlu.constants import (
     FEATURIZER_CLASS_ALIAS,
     NO_LENGTH_RESTRICTION,
     NUMBER_OF_SUB_TOKENS,
-    TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
 )
 from rasa.shared.nlu.constants import (
@@ -28,6 +27,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
+    TOKENS_NAMES,
 )
 from rasa.utils import train_utils
 from rasa.shared.core.domain import Domain

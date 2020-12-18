@@ -17,7 +17,6 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
@@ -26,6 +25,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    TOKENS_NAMES,
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG

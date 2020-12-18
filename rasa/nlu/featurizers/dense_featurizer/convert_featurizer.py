@@ -19,7 +19,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
-    TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
 from rasa.shared.nlu.constants import (
@@ -27,6 +26,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
+    TOKENS_NAMES,
 )
 from rasa.exceptions import RasaException
 import rasa.nlu.utils

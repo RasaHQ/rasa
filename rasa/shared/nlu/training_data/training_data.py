@@ -31,15 +31,12 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ACTION_NAME,
     ENTITY_ATTRIBUTE_START,
+    TOKENS_NAMES,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.exceptions import RasaException
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.constants import TOKENS_NAMES
-
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -900,8 +897,6 @@ class TrainingDataChunk(TrainingData):
     def _encode_message_data(
         self, data: Dict[Text, Any]
     ) -> Dict[Text, tf.train.Feature]:
-        from rasa.nlu.constants import TOKENS_NAMES
-
         tf_message_data = {}
 
         for data_key in RELEVANT_MESSAGE_KEYS:
@@ -964,8 +959,6 @@ class TrainingDataChunk(TrainingData):
         Returns:
             The loaded training data chunk.
         """
-        from rasa.nlu.constants import TOKENS_NAMES
-
         training_examples = []
 
         if isinstance(file_path, Path):
@@ -1008,7 +1001,6 @@ class TrainingDataChunk(TrainingData):
 
     @classmethod
     def _decode_message_data(cls, example: tf.train.Example, key: Text) -> Any:
-        from rasa.nlu.constants import TOKENS_NAMES
         from rasa.nlu.tokenizers.tokenizer import Token
 
         bytes_list = example.features.feature[key].bytes_list.value[0]

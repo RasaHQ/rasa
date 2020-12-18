@@ -17,7 +17,6 @@ from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
@@ -32,6 +31,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
+    TOKENS_NAMES,
 )
 
 BUFFER_SLOTS_PREFIX = "buf_"

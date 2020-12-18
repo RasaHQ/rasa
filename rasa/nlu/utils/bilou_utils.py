@@ -3,7 +3,6 @@ from collections import defaultdict, Counter
 from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
 
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     BILOU_ENTITIES,
     BILOU_ENTITIES_GROUP,
     BILOU_ENTITIES_ROLE,
@@ -17,6 +16,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    TOKENS_NAMES,
 )
 
 if TYPE_CHECKING:

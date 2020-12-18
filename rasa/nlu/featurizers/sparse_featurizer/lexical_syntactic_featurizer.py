@@ -15,8 +15,8 @@ from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE, TOKENS_NAMES
 
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils

@@ -13,9 +13,12 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
-    TOKENS_NAMES,
 )
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import (
+    TOKENS_NAMES,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 
 if typing.TYPE_CHECKING:

@@ -12,7 +12,6 @@ from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     FEATURIZER_CLASS_ALIAS,
     MIN_ADDITIONAL_REGEX_PATTERNS,
 )
@@ -22,6 +21,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
+    TOKENS_NAMES,
 )
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features

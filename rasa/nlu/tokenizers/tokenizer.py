@@ -7,12 +7,13 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES
 from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_RESPONSE_KEY,
     RESPONSE_IDENTIFIER_DELIMITER,
     ACTION_NAME,
+    TOKENS_NAMES,
 )
 from rasa.shared.exceptions import RasaTrainChunkException
 

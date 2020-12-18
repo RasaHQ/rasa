@@ -13,7 +13,6 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 from rasa.shared.core.domain import Domain
@@ -34,6 +33,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
     EXTRACTOR,
+    TOKENS_NAMES,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
