@@ -66,7 +66,7 @@ class EntitySynonymMapper(EntityExtractor):
         self._add_synonyms_from_data(training_data)
         self._process_entity_examples(training_data.entity_synonyms)
 
-    def train_chunk(
+    def train_on_chunks(
         self,
         data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,

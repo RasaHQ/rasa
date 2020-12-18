@@ -324,7 +324,7 @@ class Trainer:
                 logger.info(
                     f"Starting to train component {component.name} on all chunks."
                 )
-                component.train_chunk(data_chunk_files, self.config, **context)
+                component.train_on_chunks(data_chunk_files, self.config, **context)
                 metadata["pipeline"].append(
                     self._persist_component(component, dir_name, i)
                 )

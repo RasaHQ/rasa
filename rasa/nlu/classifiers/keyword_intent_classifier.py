@@ -40,7 +40,7 @@ class KeywordIntentClassifier(IntentClassifier):
         self.case_sensitive = self.component_config.get("case_sensitive")
         self.intent_keyword_map = intent_keyword_map or {}
 
-    def train_chunk(
+    def train_on_chunks(
         self,
         data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,

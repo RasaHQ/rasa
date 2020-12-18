@@ -807,7 +807,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._create_label_index_mappings(training_data, INTENT)
         self._create_entity_tag_specs(training_data)
 
-    def train_chunk(
+    def train_on_chunks(
         self,
         data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,

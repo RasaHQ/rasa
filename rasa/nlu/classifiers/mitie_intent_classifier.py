@@ -50,7 +50,7 @@ class MitieIntentClassifier(IntentClassifier):
         """
         return ["mitie"]
 
-    def train_chunk(
+    def train_on_chunks(
         self,
         data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,

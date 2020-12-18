@@ -259,7 +259,7 @@ def test_if_train_chunk_raises(component_class: Type[Component]):
         or isinstance(component, CRFEntityExtractor)
     ):
         with pytest.raises(RasaTrainChunkException):
-            component.train_chunk(training_data_chunk)
+            component.train_on_chunks(training_data_chunk)
     else:
         # because components depend on each other `train_chunk` can raise
         # exceptions if other components are not trained,

@@ -35,7 +35,7 @@ from rasa.utils.tensorflow.data_generator import DataChunkFile
 class EntityExtractor(Component):
     """Abstract entity extractor component."""
 
-    def train_chunk(
+    def train_on_chunks(
         self,
         data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,
