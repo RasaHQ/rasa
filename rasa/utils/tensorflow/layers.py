@@ -782,7 +782,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return modulated_sims
 
-    def _get_input_negs(
+    def _get_negs_based_on_sims(
         self,
         embeds: tf.Tensor,
         embeds_2: tf.Tensor,
@@ -892,23 +892,23 @@ class DotProductLoss(tf.keras.layers.Layer):
         # sample negative inputs
         # tf.print("Sample ii")
         # print("Sample ii")
-        neg_inputs_embed, inputs_bad_negs = self._get_input_negs(
+        neg_ii_embed, bad_neg_ii = self._get_negs_based_on_sims(
             inputs_embed, inputs_embed, labels, labels
         )
         # tf.print("Sample ll")
         # print("Sample ll")
         # sample negative labels
-        neg_labels_embed, labels_bad_negs = self._get_input_negs(
+        neg_ll_embed, bad_neg_ll = self._get_negs_based_on_sims(
             labels_embed, all_labels_embed, labels, all_labels
         )
         # tf.print("Sample il")
         # print("Sample il")
-        neg_il_embed, bad_neg_il = self._get_input_negs(
+        neg_il_embed, bad_neg_il = self._get_negs_based_on_sims(
             inputs_embed, all_labels_embed, labels, all_labels
         )
         # tf.print("Sample li")
         # print("Sample li")
-        neg_li_embed, bad_neg_li = self._get_input_negs(
+        neg_li_embed, bad_neg_li = self._get_negs_based_on_sims(
             labels_embed, inputs_embed, labels, labels
         )
 
@@ -916,10 +916,10 @@ class DotProductLoss(tf.keras.layers.Layer):
         return (
             pos_inputs_embed,
             pos_labels_embed,
-            neg_inputs_embed,
-            neg_labels_embed,
-            inputs_bad_negs,
-            labels_bad_negs,
+            neg_ii_embed,
+            neg_ll_embed,
+            bad_neg_ii,
+            bad_neg_ll,
             neg_il_embed,
             bad_neg_il,
             neg_li_embed,
