@@ -7,7 +7,7 @@ import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.constants import BILOU_ENTITIES
 from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 
@@ -78,7 +78,7 @@ def test_build_tag_id_dict():
     message_2 = Message.build(text="Berlin is the capital of Germany", intent="inform")
     message_2.set(BILOU_ENTITIES, ["U-location", "O", "O", "O", "O", "U-location"])
 
-    training_data = NLUTrainingDataFull([message_1, message_2])
+    training_data = TrainingDataFull([message_1, message_2])
 
     tag_id_dict = bilou_utils.build_tag_id_dict(training_data)
 
@@ -123,7 +123,7 @@ def test_apply_bilou_schema():
         ],
     )
 
-    training_data = NLUTrainingDataFull([message_1, message_2])
+    training_data = TrainingDataFull([message_1, message_2])
 
     tokenizer.train(training_data)
 

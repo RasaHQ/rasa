@@ -9,8 +9,8 @@ from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.shared.nlu.training_data.training_data import (
-    NLUTrainingDataFull,
-    NLUTrainingDataChunk,
+    TrainingDataFull,
+    TrainingDataChunk,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
@@ -225,7 +225,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
 
 
 def validate_required_components_from_data(
-    pipeline: List["Component"], data: NLUTrainingDataFull
+    pipeline: List["Component"], data: TrainingDataFull
 ) -> None:
     """Validates that all components are present in the pipeline based on data.
 
@@ -556,7 +556,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def prepare_partial_training(
         self,
-        training_data: NLUTrainingDataFull,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -574,7 +574,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def train_chunk(
         self,
-        training_data_chunk: NLUTrainingDataChunk,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -589,7 +589,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def train(
         self,
-        training_data: NLUTrainingDataFull,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -611,7 +611,7 @@ class Component(metaclass=ComponentMetaclass):
 
         """
         self.prepare_partial_training(training_data, config, **kwargs)
-        training_data_chunk = NLUTrainingDataChunk(
+        training_data_chunk = TrainingDataChunk(
             training_examples=training_data.training_examples,
             responses=training_data.responses,
         )

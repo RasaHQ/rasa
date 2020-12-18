@@ -16,7 +16,7 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
 
@@ -29,7 +29,7 @@ class Validator:
     def __init__(
         self,
         domain: Domain,
-        intents: NLUTrainingDataFull,
+        intents: TrainingDataFull,
         story_graph: StoryGraph,
         config: Optional[Dict[Text, Any]],
     ) -> None:

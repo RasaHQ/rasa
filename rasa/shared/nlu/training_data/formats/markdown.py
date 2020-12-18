@@ -16,7 +16,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
 )
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.util import encode_string, decode_string
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -59,7 +59,7 @@ class MarkdownReader(TrainingDataReader):
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 
-    def reads(self, s: Text, **kwargs: Any) -> "NLUTrainingDataFull":
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Read markdown string and create TrainingData object."""
         s = self._strip_comments(s)
         for line in s.splitlines():
@@ -71,7 +71,7 @@ class MarkdownReader(TrainingDataReader):
                 self._parse_item(line)
                 self._load_files(line)
 
-        return NLUTrainingDataFull(
+        return TrainingDataFull(
             self.training_examples,
             self.entity_synonyms,
             self.regex_features,
@@ -208,7 +208,7 @@ class MarkdownWriter(TrainingDataWriter):
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 
-    def dumps(self, training_data: "NLUTrainingDataFull") -> Text:
+    def dumps(self, training_data: "TrainingDataFull") -> Text:
         """Transforms a TrainingData object into a markdown string."""
         md = ""
         md += self._generate_training_examples_md(training_data)
@@ -218,9 +218,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_training_examples_md(
-        self, training_data: "NLUTrainingDataFull"
-    ) -> Text:
+    def _generate_training_examples_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown training examples."""
 
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
@@ -252,7 +250,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return "".join(lines)
 
-    def _generate_synonyms_md(self, training_data: "NLUTrainingDataFull") -> Text:
+    def _generate_synonyms_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown for entity synomyms."""
 
         entity_synonyms = sorted(
@@ -267,7 +265,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_regex_features_md(self, training_data: "NLUTrainingDataFull") -> Text:
+    def _generate_regex_features_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown for regex features."""
 
         md = ""
@@ -281,7 +279,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_lookup_tables_md(self, training_data: "NLUTrainingDataFull") -> Text:
+    def _generate_lookup_tables_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown for regex features."""
 
         md = ""

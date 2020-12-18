@@ -3,7 +3,7 @@ from typing import Dict, List, Text
 import pytest
 
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 
@@ -47,7 +47,7 @@ def test_extract_patterns(
     regex_features: Dict[Text, Text],
     expected_patterns: Dict[Text, Text],
 ):
-    training_data = NLUTrainingDataFull()
+    training_data = TrainingDataFull()
     if lookup_tables:
         training_data.lookup_tables = [lookup_tables]
     if regex_features:
@@ -73,7 +73,7 @@ def test_extract_patterns(
 def test_extract_patterns_use_only_entities_regexes(
     entity: Text, regex_features: Dict[Text, Text], expected_patterns: Dict[Text, Text]
 ):
-    training_data = NLUTrainingDataFull()
+    training_data = TrainingDataFull()
     if entity:
         training_data.training_examples = [
             Message(
@@ -109,7 +109,7 @@ def test_extract_patterns_use_only_entities_regexes(
 def test_extract_patterns_use_only_entities_lookup_tables(
     entity: Text, lookup_tables: Dict[Text, Text], expected_patterns: Dict[Text, Text]
 ):
-    training_data = NLUTrainingDataFull()
+    training_data = TrainingDataFull()
     if entity:
         training_data.training_examples = [
             Message(
@@ -166,7 +166,7 @@ def test_extract_patterns_use_only_lookup_tables_or_regex_features(
     use_regex_features: bool,
     expected_patterns: Dict[Text, Text],
 ):
-    training_data = NLUTrainingDataFull()
+    training_data = TrainingDataFull()
     if lookup_tables:
         training_data.lookup_tables = [lookup_tables]
     if regex_features:

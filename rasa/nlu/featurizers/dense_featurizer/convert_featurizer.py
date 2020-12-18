@@ -14,7 +14,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -297,7 +297,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
     def train_chunk(
         self,
-        training_data_chunk: NLUTrainingDataChunk,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from rasa.shared.nlu.training_data import loading
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
@@ -52,7 +52,7 @@ def test_spacy_training_sample_alignment(spacy_nlp_component):
     m1 = Message.build(text="I have a feeling", intent="feeling")
     m2 = Message.build(text="", intent="feeling")
     m3 = Message.build(text="I am the last message", intent="feeling")
-    td = NLUTrainingDataFull(training_examples=[m1, m2, m3])
+    td = TrainingDataFull(training_examples=[m1, m2, m3])
 
     attribute_docs = spacy_nlp_component._docs_for_training_examples(
         td.training_examples
@@ -160,7 +160,7 @@ def test_spacy_featurizer_train(spacy_nlp):
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     message.set(SPACY_DOCS[RESPONSE], spacy_nlp(sentence))
 
-    featurizer.train(NLUTrainingDataFull([message]), RasaNLUModelConfig())
+    featurizer.train(TrainingDataFull([message]), RasaNLUModelConfig())
 
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])

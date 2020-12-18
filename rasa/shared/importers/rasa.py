@@ -7,7 +7,7 @@ from rasa.shared.importers import utils
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.autoconfig import TrainingType
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.core.domain import InvalidDomain, Domain
 import rasa.shared.utils.io
 
@@ -54,9 +54,7 @@ class RasaFileImporter(TrainingDataImporter):
             exclusion_percentage,
         )
 
-    async def get_nlu_data(
-        self, language: Optional[Text] = "en"
-    ) -> NLUTrainingDataFull:
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
         return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:

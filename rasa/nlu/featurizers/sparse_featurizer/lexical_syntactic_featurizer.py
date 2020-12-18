@@ -14,8 +14,8 @@ from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import (
-    NLUTrainingDataFull,
-    NLUTrainingDataChunk,
+    TrainingDataFull,
+    TrainingDataChunk,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
@@ -94,7 +94,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def prepare_partial_training(
         self,
-        training_data: NLUTrainingDataFull,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -107,7 +107,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def train_chunk(
         self,
-        training_data_chunk: NLUTrainingDataChunk,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -123,7 +123,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         self._create_sparse_features(message)
 
     def _create_feature_to_idx_dict(
-        self, training_data: NLUTrainingDataFull
+        self, training_data: TrainingDataFull
     ) -> Dict[Text, Dict[Text, int]]:
         """Create dictionary of all feature values.
 

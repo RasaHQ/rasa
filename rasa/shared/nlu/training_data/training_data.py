@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 TF_RECORD_KEY_SEPARATOR = "#"
 
 
-class NLUTrainingData:
-    """Parent class to hold nlu training data."""
+class TrainingDataForNLUPipeline:
+    """Parent class to hold training data for NLU pipline."""
 
     # Validation will ensure and warn if these lower limits are not met
     MIN_EXAMPLES_PER_INTENT = 2
@@ -168,6 +168,11 @@ class NLUTrainingData:
         return set(entity_types) - {NO_ENTITY_TAG}
 
     def entity_roles_groups_used(self) -> bool:
+        """Checks if entity roles or groups are present in the training data.
+
+        Returns:
+            `True` if entity roles or groups are present, `False` otherwise.
+        """
         entity_groups_used = (
             self.entity_groups is not None and len(self.entity_groups) > 0
         )
@@ -177,8 +182,11 @@ class NLUTrainingData:
 
     @lazy_property
     def number_of_examples_per_entity(self) -> Dict[Text, int]:
-        """Calculates the number of examples per entity."""
+        """Calculates the number of examples per entity.
 
+        Returns:
+            A dictionary with number of examples per entity.
+        """
         entities = []
 
         def _append_entity(entity: Dict[Text, Any], attribute: Text) -> None:
@@ -194,17 +202,23 @@ class NLUTrainingData:
 
         return dict(Counter(entities))
 
-    def sorted_entities(self) -> List[Any]:
-        """Extract all entities from examples and sorts them by entity type."""
+    def sorted_entities(self) -> List[Message]:
+        """Extract all entities from examples and sorts them by entity type.
 
+        Returns:
+            A list of entity sorted examples.
+        """
         entity_examples = [
             entity for ex in self.entity_examples for entity in ex.get("entities")
         ]
         return sorted(entity_examples, key=lambda e: e["entity"])
 
     def sorted_intent_examples(self) -> List[Message]:
-        """Sorts the intent examples by the name of the intent and then response"""
+        """Sorts the intent examples by the name of the intent and then response.
 
+        Returns:
+            A list of sorted intent examples.
+        """
         return sorted(
             self.intent_examples,
             key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
@@ -265,7 +279,6 @@ class NLUTrainingData:
         Returns:
             Test and training examples.
         """
-
         self.validate()
 
         # Stratified split: both test and train should have (approximately) the
@@ -371,7 +384,7 @@ class NLUTrainingData:
         return any(message.is_e2e_message() for message in self.training_examples)
 
 
-class NLUTrainingDataFull(NLUTrainingData):
+class TrainingDataFull(TrainingDataForNLUPipeline):
     """Holds loaded intent and entity training data."""
 
     # Validation will ensure and warn if these lower limits are not met
@@ -429,11 +442,11 @@ class NLUTrainingDataFull(NLUTrainingData):
         }
         return rasa.shared.utils.io.deep_container_fingerprint(labels)
 
-    def merge(self, *others: Optional["NLUTrainingDataFull"]) -> "NLUTrainingDataFull":
+    def merge(self, *others: Optional["TrainingDataFull"]) -> "TrainingDataFull":
         """Return merged instance of this data with other training data.
 
         Args:
-            others: other training data instances to merge this one with
+            others: Other training data instances to merge this one with.
 
         Returns:
             Merged training data object. Merging is not done in place, this
@@ -461,23 +474,22 @@ class NLUTrainingDataFull(NLUTrainingData):
             entity_synonyms.update(o.entity_synonyms)
             responses.update(o.responses)
 
-        return NLUTrainingDataFull(
+        return TrainingDataFull(
             training_examples, entity_synonyms, regex_features, lookup_tables, responses
         )
 
     def filter_training_examples(
         self, condition: Callable[[Message], bool]
-    ) -> "NLUTrainingDataFull":
+    ) -> "TrainingDataFull":
         """Filter training examples.
 
         Args:
             condition: A function that will be applied to filter training examples.
 
         Returns:
-            NLUTrainingDataFull: A TrainingData with filtered training examples.
+            TrainingDataFull: A TrainingData with filtered training examples.
         """
-
-        return NLUTrainingDataFull(
+        return TrainingDataFull(
             list(filter(condition, self.training_examples)),
             self.entity_synonyms,
             self.regex_features,
@@ -494,13 +506,13 @@ class NLUTrainingDataFull(NLUTrainingData):
         return int(self.fingerprint(), 16)
 
     def sort_regex_features(self) -> None:
-        """Sorts regex features lexicographically by name+pattern"""
+        """Sorts regex features lexicographically by name+pattern."""
         self.regex_features = sorted(
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
 
     def _fill_response_phrases(self) -> None:
-        """Set response phrase for all examples by looking up NLG stories"""
+        """Set response phrase for all examples by looking up NLG stories."""
         for example in self.training_examples:
             # if intent_response_key is None, that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
@@ -531,9 +543,11 @@ class NLUTrainingDataFull(NLUTrainingData):
         return RasaWriter().dumps(self, **kwargs)
 
     def nlg_as_markdown(self) -> Text:
-        """Generates the markdown representation of the response phrases (NLG) of
-        TrainingData."""
+        """Generates the markdown representation of the response phrases (NLG).
 
+        Returns:
+            The markdown representation of the response phrases (NLG).
+        """
         from rasa.shared.nlu.training_data.formats import NLGMarkdownWriter
 
         return NLGMarkdownWriter().dumps(self)
@@ -549,15 +563,24 @@ class NLUTrainingDataFull(NLUTrainingData):
         # only dump responses. at some point it might make sense to remove the
         # differentiation between dumping NLU and dumping responses. but we
         # can't do that until after we remove markdown support.
-        return RasaYAMLWriter().dumps(NLUTrainingDataFull(responses=self.responses))
+        return RasaYAMLWriter().dumps(TrainingDataFull(responses=self.responses))
 
     def nlu_as_markdown(self) -> Text:
-        """Generates the markdown representation of the NLU part of TrainingData."""
+        """Generates the markdown representation of the NLU part of TrainingData.
+
+        Returns:
+            The markdown representation of the NLU part of TrainingData.
+        """
         from rasa.shared.nlu.training_data.formats import MarkdownWriter
 
         return MarkdownWriter().dumps(self)
 
     def nlu_as_yaml(self) -> Text:
+        """Generates yaml representation of the NLU part of TrainingData.
+
+        Returns:
+            The yaml representation of the NLU part of TrainingData.
+        """
         from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
         # avoid dumping NLG data (responses). this is a workaround until we
@@ -569,6 +592,11 @@ class NLUTrainingDataFull(NLUTrainingData):
         return RasaYAMLWriter().dumps(no_responses_training_data)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
+        """Persists the NLU part of TrainingData.
+
+        Args:
+            filename: The name of the file.
+        """
         if rasa.shared.data.is_likely_json_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_json(indent=2), filename)
         elif rasa.shared.data.is_likely_markdown_file(filename):
@@ -582,6 +610,11 @@ class NLUTrainingDataFull(NLUTrainingData):
             )
 
     def persist_nlg(self, filename: Text) -> None:
+        """Persists the response phrases (NLG) of TrainingData.
+
+        Args:
+            filename: The name of the file.
+        """
         if rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
         elif rasa.shared.data.is_likely_markdown_file(filename):
@@ -595,8 +628,7 @@ class NLUTrainingDataFull(NLUTrainingData):
             )
 
     @staticmethod
-    def get_nlg_persist_filename(nlu_filename: Text) -> Text:
-
+    def _get_nlg_persist_filename(nlu_filename: Text) -> Text:
         extension = Path(nlu_filename).suffix
         if rasa.shared.data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now
@@ -615,15 +647,21 @@ class NLUTrainingDataFull(NLUTrainingData):
     def persist(
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
     ) -> Dict[Text, Any]:
-        """Persists this training data to disk and returns necessary
-        information to load it again."""
+        """Persists and returns necessary information to load it again.
 
+        Args:
+            dir_name: The name of the directory.
+            filename: The name of the file.
+
+        Returns:
+            Necessary information to load this training data again.
+        """
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
         nlu_data_file = os.path.join(dir_name, filename)
         self.persist_nlu(nlu_data_file)
-        self.persist_nlg(self.get_nlg_persist_filename(nlu_data_file))
+        self.persist_nlg(self._get_nlg_persist_filename(nlu_data_file))
 
         return {"training_data": relpath(nlu_data_file, dir_name)}
 
@@ -642,10 +680,18 @@ class NLUTrainingDataFull(NLUTrainingData):
 
     def train_test_split(
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
-    ) -> Tuple["NLUTrainingDataFull", "NLUTrainingDataFull"]:
-        """Split into a training and test dataset,
-        preserving the fraction of examples per intent."""
+    ) -> Tuple["TrainingDataFull", "TrainingDataFull"]:
+        """Splits into a training and test dataset.
 
+        Preserves the fraction of examples per intent.
+
+        Args:
+            train_frac: percentage of examples to add to the training set.
+            random_seed: random seed used to shuffle examples.
+
+        Returns:
+            The tuple of train and test datasets.
+        """
         # collect all nlu data
         test, train = self.split_nlu_examples(train_frac, random_seed)
 
@@ -653,7 +699,7 @@ class NLUTrainingDataFull(NLUTrainingData):
         test_responses = self._needed_responses_for_examples(test)
         train_responses = self._needed_responses_for_examples(train)
 
-        data_train = NLUTrainingDataFull(
+        data_train = TrainingDataFull(
             train,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
@@ -661,7 +707,7 @@ class NLUTrainingDataFull(NLUTrainingData):
             responses=train_responses,
         )
 
-        data_test = NLUTrainingDataFull(
+        data_test = TrainingDataFull(
             test,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
@@ -682,7 +728,6 @@ class NLUTrainingDataFull(NLUTrainingData):
         Returns:
             All responses that appear at least once in the list of examples.
         """
-
         responses = {}
         for ex in examples:
             if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
@@ -691,6 +736,7 @@ class NLUTrainingDataFull(NLUTrainingData):
         return responses
 
     def print_stats(self) -> None:
+        """Prints training data statistics."""
         number_of_examples_for_each_intent = []
         for intent_name, example_count in self.number_of_examples_per_intent.items():
             number_of_examples_for_each_intent.append(
@@ -726,7 +772,11 @@ class NLUTrainingDataFull(NLUTrainingData):
             logger.info(f"  Found entity groups: {list_to_str(self.entity_groups)}")
 
     def is_empty(self) -> bool:
-        """Checks if any training data was loaded."""
+        """Checks if any training data was loaded.
+
+        Returns:
+            `True` if any training data was loaded, `False` otherwise.
+        """
         lists_to_check = [
             self.training_examples,
             self.entity_synonyms,
@@ -736,7 +786,11 @@ class NLUTrainingDataFull(NLUTrainingData):
         return not any([len(lst) > 0 for lst in lists_to_check])
 
     def contains_no_pure_nlu_data(self) -> bool:
-        """Checks if any NLU training data was loaded."""
+        """Checks if any NLU training data was loaded.
+
+        Returns:
+            `True` if any NLU training data was loaded, `False` otherwise.
+        """
         lists_to_check = [
             self.nlu_examples,
             self.entity_synonyms,
@@ -745,7 +799,7 @@ class NLUTrainingDataFull(NLUTrainingData):
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def divide_into_chunks(self, num_chunks: int) -> List["NLUTrainingDataChunk"]:
+    def divide_into_chunks(self, num_chunks: int) -> List["TrainingDataChunk"]:
         """Divides the training data into smaller chunks.
 
         Each chunk should be a good representation of the complete dataset. E.g. it
@@ -770,27 +824,27 @@ class NLUTrainingDataFull(NLUTrainingData):
             )
 
             # update the data to chunk in next iteration
-            data_to_chunk = NLUTrainingDataFull(leftover_examples)
-            all_chunks.append(NLUTrainingDataChunk(current_chunk))
+            data_to_chunk = TrainingDataFull(leftover_examples)
+            all_chunks.append(TrainingDataChunk(current_chunk))
 
         # The last chunk is composed of whatever is left
-        all_chunks.append(NLUTrainingDataChunk(data_to_chunk.training_examples))
+        all_chunks.append(TrainingDataChunk(data_to_chunk.training_examples))
         return all_chunks
 
 
-class TrainingData(NLUTrainingDataFull):
+class TrainingData(TrainingDataFull):
     def __init__(self, *args, **kwargs):
-        """Initialize a nlu training data abstract class."""
+        """Initializes training data class."""
         super().__init__(*args, **kwargs)
         rasa.shared.utils.io.raise_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
-            f"Please use the '{NLUTrainingDataFull.__name__}' instead.",
+            f"Please use the '{TrainingDataFull.__name__}' instead.",
             category=DeprecationWarning,
         )
 
 
-class NLUTrainingDataChunk(NLUTrainingData):
+class TrainingDataChunk(TrainingDataForNLUPipeline):
     """Holds a portion of the complete TrainingData.
 
     It can only hold training_examples and responses.
@@ -891,7 +945,7 @@ class NLUTrainingDataChunk(NLUTrainingData):
         return file_path
 
     @classmethod
-    def load_chunk(cls, file_path: Text) -> "NLUTrainingDataChunk":
+    def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":
         """Loads a training data chunk from the given TFRecord file path.
 
         Args:
@@ -915,7 +969,7 @@ class NLUTrainingDataChunk(NLUTrainingData):
                     origin,
                     is_dense,
                     extra_info,
-                ) = NLUTrainingDataChunk._deconstruct_tf_record_key(key)
+                ) = TrainingDataChunk._deconstruct_tf_record_key(key)
 
                 if is_dense:
                     features.append(
@@ -931,13 +985,13 @@ class NLUTrainingDataChunk(NLUTrainingData):
 
             training_examples.append(Message(features=features))
 
-        return NLUTrainingDataChunk(training_examples)
+        return TrainingDataChunk(training_examples)
 
     @classmethod
     def _convert_to_numpy(
         cls, example: Any, attribute: Text, feature_type: Text, origin: Text
     ) -> Features:
-        key = NLUTrainingDataChunk._construct_tf_record_key(
+        key = TrainingDataChunk._construct_tf_record_key(
             attribute, feature_type, origin, True
         )
 
@@ -950,7 +1004,7 @@ class NLUTrainingDataChunk(NLUTrainingData):
     def _convert_to_sparse_matrix(
         cls, example: Any, attribute: Text, feature_type: Text, origin: Text
     ) -> Features:
-        prefix = NLUTrainingDataChunk._construct_tf_record_key(
+        prefix = TrainingDataChunk._construct_tf_record_key(
             attribute, feature_type, origin, False
         )
 

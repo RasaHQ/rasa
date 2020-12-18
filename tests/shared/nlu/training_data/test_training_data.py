@@ -24,8 +24,8 @@ from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import (
-    NLUTrainingDataFull,
-    NLUTrainingDataChunk,
+    TrainingDataFull,
+    TrainingDataChunk,
     TF_RECORD_KEY_SEPARATOR,
 )
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
@@ -616,7 +616,7 @@ def test_guess_format_from_non_existing_file_path():
 
 
 def test_is_empty():
-    assert NLUTrainingDataFull().is_empty()
+    assert TrainingDataFull().is_empty()
 
 
 def test_custom_attributes(tmp_path):
@@ -703,11 +703,11 @@ def test_persist_load_training_data_chunk(tmp_path: Path):
         )
     ]
 
-    training_data_chunk = NLUTrainingDataChunk(messages)
+    training_data_chunk = TrainingDataChunk(messages)
     original_fingerprint = training_data_chunk.fingerprint()
     file_path = training_data_chunk.persist_chunk(str(tmp_path), "test.tfrecord")
 
-    loaded_training_data_chunk = NLUTrainingDataChunk.load_chunk(file_path)
+    loaded_training_data_chunk = TrainingDataChunk.load_chunk(file_path)
     loaded_fingerprint = loaded_training_data_chunk.fingerprint()
 
     # make sure the persisted data and the loaded data is the same
@@ -751,7 +751,7 @@ def test_tf_record_key(
         actual_origin,
         actual_is_dense,
         actual_extra_info,
-    ) = NLUTrainingDataChunk._deconstruct_tf_record_key(tf_record_key)
+    ) = TrainingDataChunk._deconstruct_tf_record_key(tf_record_key)
 
     assert attribute == actual_attribute
     assert feature_type == actual_feature_type
@@ -766,7 +766,7 @@ def test_tf_record_key(
             tf_record_key.split(TF_RECORD_KEY_SEPARATOR)[:-1]
         )
 
-    actual_key = NLUTrainingDataChunk._construct_tf_record_key(
+    actual_key = TrainingDataChunk._construct_tf_record_key(
         attribute, feature_type, origin, is_dense
     )
 
@@ -789,7 +789,7 @@ def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: 
                 for ex_index in range(intent_count)
             ]
         )
-    training_data = NLUTrainingDataFull(all_messages)
+    training_data = TrainingDataFull(all_messages)
     original_fingerprint = training_data.fingerprint()
     chunks = training_data.divide_into_chunks(num_chunks=num_chunks)
     new_fingerprint = training_data.fingerprint()
@@ -823,21 +823,21 @@ def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: 
 def test_training_data_chunk_exception():
 
     with pytest.raises(RasaException) as error:
-        _ = NLUTrainingDataChunk(lookup_tables=[{"test_key": "test_val"}])
+        _ = TrainingDataChunk(lookup_tables=[{"test_key": "test_val"}])
         assert (
             "TrainingDataChunk cannot have entity synonyms, regex "
             "features or lookup tables set. This is to reduce the memory overhead."
             in str(error.value)
         )
     with pytest.raises(RasaException) as error:
-        _ = NLUTrainingDataChunk(entity_synonyms={"test_key": "test_val"})
+        _ = TrainingDataChunk(entity_synonyms={"test_key": "test_val"})
         assert (
             "TrainingDataChunk cannot have entity synonyms, regex "
             "features or lookup tables set. This is to reduce the memory overhead."
             in str(error.value)
         )
     with pytest.raises(RasaException) as error:
-        _ = NLUTrainingDataChunk(regex_features=[{"test_key": "test_val"}])
+        _ = TrainingDataChunk(regex_features=[{"test_key": "test_val"}])
         assert (
             "TrainingDataChunk cannot have entity synonyms, regex "
             "features or lookup tables set. This is to reduce the memory overhead."
@@ -856,12 +856,12 @@ def test_training_data_chunk_exception():
     ],
 )
 def test_label_fingerprints(message: Message):
-    training_data1 = NLUTrainingDataFull(
+    training_data1 = TrainingDataFull(
         [
             Message({INTENT: "intent1"}),
             Message({ENTITIES: [{"entity": "entity1"}]}),
             Message({ACTION_NAME: "action_name1"}),
         ]
     )
-    training_data2 = training_data1.merge(NLUTrainingDataFull([message]))
+    training_data2 = training_data1.merge(TrainingDataFull([message]))
     assert training_data1.label_fingerprint() != training_data2.label_fingerprint()

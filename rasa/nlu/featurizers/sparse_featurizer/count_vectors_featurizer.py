@@ -15,8 +15,8 @@ from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import (
-    NLUTrainingDataFull,
-    NLUTrainingDataChunk,
+    TrainingDataFull,
+    TrainingDataChunk,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -328,7 +328,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
 
     def _get_all_attributes_processed_tokens(
-        self, training_data: NLUTrainingDataFull
+        self, training_data: TrainingDataFull
     ) -> Dict[Text, List[List[Text]]]:
         """Get processed text for all attributes of examples in training data"""
 
@@ -697,7 +697,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     def prepare_partial_training(
         self,
-        training_data: NLUTrainingDataFull,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -730,7 +730,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     def train_chunk(
         self,
-        training_data_chunk: NLUTrainingDataChunk,
+        training_data_chunk: TrainingDataChunk,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

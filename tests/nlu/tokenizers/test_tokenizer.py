@@ -12,7 +12,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
@@ -43,7 +43,7 @@ def test_train_tokenizer(
     message.set(RESPONSE, text)
     message.set(INTENT, text)
 
-    training_data = NLUTrainingDataFull()
+    training_data = TrainingDataFull()
     training_data.training_examples = [message]
 
     tk.train(training_data)
@@ -74,7 +74,7 @@ def test_train_tokenizer_e2e_actions(
     message.set(ACTION_TEXT, text)
     message.set(ACTION_NAME, text)
 
-    training_data = NLUTrainingDataFull()
+    training_data = TrainingDataFull()
     training_data.training_examples = [message]
 
     tk.train(training_data)
@@ -99,7 +99,7 @@ def test_train_tokenizer_action_name(
     message = Message.build(text=text)
     message.set(ACTION_NAME, text)
 
-    training_data = NLUTrainingDataFull()
+    training_data = TrainingDataFull()
     training_data.training_examples = [message]
 
     tk.train(training_data)

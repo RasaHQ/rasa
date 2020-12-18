@@ -2,16 +2,14 @@ from typing import Iterable, Text, Optional, Dict, List
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 
-def training_data_from_paths(
-    paths: Iterable[Text], language: Text
-) -> NLUTrainingDataFull:
+def training_data_from_paths(paths: Iterable[Text], language: Text) -> TrainingDataFull:
     from rasa.shared.nlu.training_data import loading
 
     training_data_sets = [loading.load_data(nlu_file, language) for nlu_file in paths]
-    return NLUTrainingDataFull().merge(*training_data_sets)
+    return TrainingDataFull().merge(*training_data_sets)
 
 
 async def story_graph_from_paths(

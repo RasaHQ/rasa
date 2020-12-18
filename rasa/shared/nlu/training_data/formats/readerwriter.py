@@ -20,19 +20,19 @@ import typing
 from typing import Text, Dict, Any, Union
 
 if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 
 class TrainingDataReader:
     def __init__(self):
         self.filename: Text = ""
 
-    def read(self, filename: Union[Text, Path], **kwargs: Any) -> "NLUTrainingDataFull":
+    def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingDataFull":
         """Reads TrainingData from a file."""
         self.filename = filename
         return self.reads(rasa.shared.utils.io.read_file(filename), **kwargs)
 
-    def reads(self, s: Text, **kwargs: Any) -> "NLUTrainingDataFull":
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Reads TrainingData from a string."""
         raise NotImplementedError
 
@@ -43,12 +43,12 @@ class TrainingDataWriter:
         s = self.dumps(training_data)
         rasa.shared.utils.io.write_text_file(s, filename)
 
-    def dumps(self, training_data: "NLUTrainingDataFull") -> Text:
+    def dumps(self, training_data: "TrainingDataFull") -> Text:
         """Turns TrainingData into a string."""
         raise NotImplementedError
 
     @staticmethod
-    def prepare_training_examples(training_data: "NLUTrainingDataFull") -> OrderedDict:
+    def prepare_training_examples(training_data: "TrainingDataFull") -> OrderedDict:
         """Pre-processes training data examples by removing not trainable entities."""
 
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
@@ -135,13 +135,11 @@ class TrainingDataWriter:
 
 
 class JsonTrainingDataReader(TrainingDataReader):
-    def reads(self, s: Text, **kwargs: Any) -> "NLUTrainingDataFull":
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Transforms string into json object and passes it on."""
         js = json.loads(s)
         return self.read_from_json(js, **kwargs)
 
-    def read_from_json(
-        self, js: Dict[Text, Any], **kwargs: Any
-    ) -> "NLUTrainingDataFull":
+    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> "TrainingDataFull":
         """Reads TrainingData from a json object."""
         raise NotImplementedError

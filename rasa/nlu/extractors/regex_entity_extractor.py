@@ -9,7 +9,7 @@ import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import NLUTrainingDataFull
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     ENTITIES,
@@ -90,7 +90,7 @@ class RegexEntityExtractor(EntityExtractor):
 
     def prepare_partial_training(
         self,
-        training_data: NLUTrainingDataFull,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
