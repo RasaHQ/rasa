@@ -21,9 +21,6 @@ keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots
 include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
 readme = "README.md"
 license = "Apache-2.0"
-[[tool.poetry.source]]
-name = "rasa-pypi"
-url = "https://pypi.rasa.com/simple/"
 
 [tool.towncrier]
 package = "rasa"
