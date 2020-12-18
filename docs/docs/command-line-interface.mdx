@@ -368,7 +368,11 @@ You can perform data augmentation by first [generating paraphrases](https://gith
 rasa data suggest nlu
 ```
 
-LONGER EXPLANATION
+Data augmentation is one strategy that can help produce more training data for intents that currently have little data, are frequently confused, or exhibit low performance in general. Our data augmentation strategy works by generating paraphrases for existing training examples and then evaluating whether adding a subset of these can improve intent classification performance.
+
+We are evaluating two strategies for selecting paraphrases, firstly by simply randomly choosing a subset of paraphrases, and secondly, by maximising vocabulary expansion, i.e. preferring paraphrases that add new words to a given intent.
+
+The paraphrases should be pre-processed and supplied with similarity scores in order to ensure that noise is minimised (see the [paraphraser repository](https://github.com/RasaHQ/paraphraser/tree/master) for more details).
 
 :::note
 Usage of `rasa data suggest nlu` requires a set of generated paraphrases from [https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser/tree/master).
