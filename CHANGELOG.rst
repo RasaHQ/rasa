@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.20] - 2020-12-18
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#7575 <https://github.com/rasahq/rasa/issues/7575>`_: Fix scikit-learn crashing during evaluation of `ResponseSelector` predictions.
+
+
 [1.10.19] - 2020-12-17
 ^^^^^^^^^^^^^^^^^^^^^^
 
