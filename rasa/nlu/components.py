@@ -611,10 +611,7 @@ class Component(metaclass=ComponentMetaclass):
 
         """
         self.prepare_partial_training(training_data, config, **kwargs)
-        training_data_chunk = TrainingDataChunk(
-            training_examples=training_data.training_examples,
-            responses=training_data.responses,
-        )
+        training_data_chunk = TrainingDataChunk(training_data.training_examples)
         self.train_chunk(training_data_chunk, config, **kwargs)
 
     def process(self, message: Message, **kwargs: Any) -> None:
