@@ -81,12 +81,14 @@ class RasaModel(TmpKerasModel):
         self._training = None  # training phase should be defined when building a graph
 
         self.random_seed = random_seed
+        self._set_random_seed()
 
+        self.prepared_for_prediction = False
+
+    def _set_random_seed(self):
         random.seed(self.random_seed)
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
-
-        self.prepared_for_prediction = False
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -217,9 +219,7 @@ class RasaModel(TmpKerasModel):
 
         return self.batch_predict(batch_in)
 
-    def _get_metric_results(self, prefix: Optional[Text] = None) -> Dict[Text, float]:
-        prefix = prefix or ""
-
+    def _get_metric_results(self, prefix: Optional[Text] = "") -> Dict[Text, float]:
         return {
             f"{prefix}{metric.name}": metric.result()
             for metric in self.metrics
