@@ -732,8 +732,8 @@ def test_persist_load_training_data_chunk(tmp_path: Path):
     loaded_fingerprint = loaded_training_data_chunk.fingerprint()
 
     # make sure the persisted data and the loaded data is the same
-    loaded_message = loaded_training_data_chunk.training_examples[0]
-    assert messages[0] == loaded_message
+    loaded_message = loaded_training_data_chunk.training_examples
+    assert messages[0] == loaded_message[0]
     assert original_fingerprint == loaded_fingerprint
 
 

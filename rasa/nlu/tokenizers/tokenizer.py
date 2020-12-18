@@ -106,6 +106,10 @@ class Token:
             other.lemma,
         )
 
+    def __str__(self) -> Text:
+        """Return the string representation of this Token."""
+        return f"{self.text} ({self.start}-{self.end})"
+
 
 class Tokenizer(Component):
     """Abstract tokenizer component."""

@@ -103,8 +103,9 @@ class Message:
         Returns:
             Fingerprint of the message.
         """
-        # TODO we need to sort data and include features
-        return rasa.shared.utils.io.deep_container_fingerprint(self.data)
+        # ensure the same order of keys inside data
+        data = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[0])}
+        return rasa.shared.utils.io.deep_container_fingerprint(data)
 
     @classmethod
     def build(

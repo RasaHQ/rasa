@@ -657,7 +657,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # we don't have any intent labels during prediction, just add them during
             # training
             attributes_to_consider.append(label_attribute)
-        if training and self.component_config[ENTITY_RECOGNITION]:
+        if (
+            training
+            and self.component_config[ENTITY_RECOGNITION]
+            and self._entity_tag_specs
+        ):
             # we don't have any entity tags during prediction, just add them during
             # training
             attributes_to_consider.append(ENTITIES)
@@ -800,8 +804,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if not data_chunk_files:
             return
 
+        # TODO:
+        #  we need to make sure that we can actually train on this data, e.g. see
+        #  checks inside train().
+        #  Do we have any intent examples to train on?
+        #  Do we have any response examples to train on?
+        #  Do we have any entity examples to train on?
+        #  Do we have enough training examples, e.g. enough labels?
+
         def _load_data_func(file_path: Path) -> RasaModelData:
-            logger.debug(f"Loading training data chunk '{file_path}'.")
             training_data_chunk = TrainingDataChunk.load_chunk(file_path)
             return self.preprocess_train_data(training_data_chunk)
 

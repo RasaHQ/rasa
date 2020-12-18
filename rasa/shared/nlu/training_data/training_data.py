@@ -27,6 +27,7 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
+    ENTITY_ATTRIBUTE_START,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -980,20 +981,29 @@ class TrainingDataChunk(TrainingData):
                     or key.startswith(ENTITIES)
                     or key.startswith(TOKENS_NAMES[TEXT])
                 ):
-                    cls._decode_message_data(example, key, message_data)
+                    _data_key, _data_value = cls._decode_message_data(example, key)
+                    if _data_key in [ENTITIES, TOKENS_NAMES[TEXT]]:
+                        message_data[_data_key].append(_data_value)
+                    else:
+                        message_data[_data_key] = _data_value
                 else:
                     _features = cls._decode_features(example, key)
                     if _features:
                         features.append(_features)
+
+            # make sure the token and entity order is correct
+            message_data[TOKENS_NAMES[TEXT]].sort(key=lambda t: t.start)
+            message_data[ENTITIES].sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
+
+            if not message_data[ENTITIES]:
+                del message_data[ENTITIES]
 
             training_examples.append(Message(features=features, data=message_data))
 
         return TrainingDataChunk(training_examples)
 
     @classmethod
-    def _decode_message_data(
-        cls, example: tf.train.Example, key: Text, message_data: Dict[Text, Any]
-    ):
+    def _decode_message_data(cls, example: tf.train.Example, key: Text) -> Any:
         from rasa.nlu.constants import TOKENS_NAMES
         from rasa.nlu.tokenizers.tokenizer import Token
 
@@ -1002,12 +1012,13 @@ class TrainingDataChunk(TrainingData):
 
         if key.startswith(ENTITIES):
             entity = json.loads(text)
-            message_data[ENTITIES].append(entity)
-        elif key.startswith(TOKENS_NAMES[TEXT]):
+            return ENTITIES, entity
+
+        if key.startswith(TOKENS_NAMES[TEXT]):
             token = Token.from_dict(json.loads(text))
-            message_data[TOKENS_NAMES[TEXT]].append(token)
-        else:
-            message_data[key] = text
+            return TOKENS_NAMES[TEXT], token
+
+        return key, text
 
     @classmethod
     def _decode_features(
