@@ -22,7 +22,6 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -177,18 +176,30 @@ class TrainingData:
 
     @lazy_property
     def nlu_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if not ex.is_core_message()]
+        """Return examples which have come from NLU training data.
+
+        E.g. If the example came from a story or domain it is not included.
+
+        Returns:
+            List of NLU training examples.
+        """
+        return [
+            ex for ex in self.training_examples if not ex.is_core_or_domain_message()
+        ]
 
     @lazy_property
     def intent_examples(self) -> List[Message]:
+        """Returns the list of examples that have intent."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
+        """Returns the list of examples that have response."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
+        """Returns the list of examples that have entities."""
         return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     @lazy_property
@@ -679,7 +690,6 @@ class TrainingData:
 
     def is_empty(self) -> bool:
         """Checks if any training data was loaded."""
-
         lists_to_check = [
             self.training_examples,
             self.entity_synonyms,
@@ -688,9 +698,8 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def can_train_nlu_model(self) -> bool:
+    def contains_no_pure_nlu_data(self) -> bool:
         """Checks if any NLU training data was loaded."""
-
         lists_to_check = [
             self.nlu_examples,
             self.entity_synonyms,
@@ -699,6 +708,20 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def has_e2e_examples(self):
+        """Checks if there are any training examples from e2e stories."""
+        return any(message.is_e2e_message() for message in self.training_examples)
+
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    """Converts list to a string.
+
+    Args:
+        lst: The list to convert.
+        delim: The delimiter that is used to separate list inputs.
+        quote: The quote that is used to wrap list inputs.
+
+    Returns:
+        The string.
+    """
     return delim.join([quote + e + quote for e in lst])

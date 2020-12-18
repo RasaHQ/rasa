@@ -1,12 +1,18 @@
 import json
 import logging
 import typing
+import scipy.sparse
+import numpy as np
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 from collections import defaultdict, OrderedDict
-import scipy.sparse
 
-import numpy as np
+from sklearn.base import clone
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import LabelEncoder
+
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
@@ -20,15 +26,10 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-import rasa.shared.utils.io
-from sklearn.base import clone
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import LabelEncoder
 from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
 from rasa.shared.nlu.training_data.features import Features
-from rasa.utils.tensorflow.constants import EPOCHS, SENTENCE
-from rasa.utils.tensorflow.model_data import Data
+from rasa.utils.tensorflow.model_data import Data, FeatureArray
+from rasa.utils.tensorflow.constants import SENTENCE
 
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
@@ -161,20 +162,32 @@ class SklearnPolicy(Policy):
         ]
         return features
 
-    def _get_features_for_attribute(self, attribute_data: Dict[Text, List[np.ndarray]]):
-        """
-        Given a list of all features for one attribute, turn it into a numpy array;
+    def _get_features_for_attribute(
+        self, attribute_data: Dict[Text, List[FeatureArray]]
+    ):
+        """Given a list of all features for one attribute, turn it into a numpy array.
+
         shape_attribute = features[SENTENCE][0][0].shape[-1]
             (Shape of features of one attribute)
+
         Args:
-            attribute_data: all features in the attribute stored in a np.array;
-        Output:
+            attribute_data: all features in the attribute stored in a FeatureArray
+
+        Returns:
             2D np.ndarray with features for an attribute with
                 shape [num_dialogs x (max_history * shape_attribute)]
         """
         sentence_features = attribute_data[SENTENCE][0]
-        if isinstance(sentence_features[0], scipy.sparse.coo_matrix):
+
+        # vstack serves as removing dimension
+        if sentence_features.is_sparse:
+            sentence_features = [
+                scipy.sparse.vstack(value) for value in sentence_features
+            ]
             sentence_features = [feature.toarray() for feature in sentence_features]
+        else:
+            sentence_features = [np.vstack(value) for value in sentence_features]
+
         # MaxHistoryFeaturizer is always used with SkLearn policy;
         max_history = self.featurizer.max_history
         features = self._fill_in_features_to_max_length(sentence_features, max_history)
@@ -221,7 +234,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        tracker_state_features, label_ids = self.featurize_for_training(
+        tracker_state_features, label_ids, _ = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         training_data, zero_state_features = model_data_utils.convert_to_data_format(
