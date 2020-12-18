@@ -2,12 +2,15 @@ import json
 import logging
 import os
 import numpy as np
-from pathlib import Path
 import random
-from collections import Counter, OrderedDict
+import typing
 import copy
+
+from pathlib import Path
+from collections import Counter, OrderedDict
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable, Union
+
 import operator
 import tensorflow as tf
 import scipy.sparse
@@ -33,6 +36,10 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.exceptions import RasaException
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.constants import TOKENS_NAMES
+
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -770,6 +777,16 @@ class TrainingData:
         return any(message.is_e2e_message() for message in self.training_examples)
 
 
+RELEVANT_MESSAGE_KEYS = [
+    TEXT,
+    INTENT,
+    RESPONSE,
+    INTENT_RESPONSE_KEY,
+    ENTITIES,
+    TOKENS_NAMES[TEXT],
+]
+
+
 class TrainingDataChunk(TrainingData):
     """Holds a portion of the complete TrainingData.
 
@@ -880,19 +897,6 @@ class TrainingDataChunk(TrainingData):
 
         return tf_features
 
-    @staticmethod
-    def _relevant_message_data_keys() -> List[Text]:
-        from rasa.nlu.constants import TOKENS_NAMES
-
-        return [
-            TEXT,
-            INTENT,
-            RESPONSE,
-            INTENT_RESPONSE_KEY,
-            ENTITIES,
-            TOKENS_NAMES[TEXT],
-        ]
-
     def _encode_message_data(
         self, data: Dict[Text, Any]
     ) -> Dict[Text, tf.train.Feature]:
@@ -900,7 +904,7 @@ class TrainingDataChunk(TrainingData):
 
         tf_message_data = {}
 
-        for data_key in TrainingDataChunk._relevant_message_data_keys():
+        for data_key in RELEVANT_MESSAGE_KEYS:
             if data_key not in data or not data[data_key]:
                 continue
 
@@ -977,7 +981,7 @@ class TrainingDataChunk(TrainingData):
 
             for key in example.features.feature.keys():
                 if (
-                    key in cls._relevant_message_data_keys()
+                    key in RELEVANT_MESSAGE_KEYS
                     or key.startswith(ENTITIES)
                     or key.startswith(TOKENS_NAMES[TEXT])
                 ):

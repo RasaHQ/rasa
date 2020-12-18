@@ -819,10 +819,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_chunk_files: List of data chunk files.
             config: The model configuration parameters.
         """
-        if not data_chunk_files:
-            return
-
-        if not self.index_label_id_mapping:
+        if not data_chunk_files or not self.index_label_id_mapping:
             return
 
         def _load_data_func(file_path: Path) -> RasaModelData:
@@ -831,11 +828,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # load one chunk so that we can instantiate the model
         sample_model_data = _load_data_func(data_chunk_files[0].file_path)
+        self.model = self._instantiate_model_class(sample_model_data)
 
         # keep one example for persisting and loading
         self._data_example = sample_model_data.first_data_example()
-
-        self.model = self._instantiate_model_class(sample_model_data)
 
         data_generator = RasaDataChunkFileGenerator(
             data_chunk_files,
