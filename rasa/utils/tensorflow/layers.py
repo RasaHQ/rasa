@@ -1049,24 +1049,28 @@ class DotProductLoss(tf.keras.layers.Layer):
         # average the loss over the batch
         loss = tf.reduce_mean(loss)
 
-        # tf.print("mean sim negs", [
-        #     tf.reduce_mean(sim_pos),
-        #     tf.reduce_mean(sim_neg_ii),
-        #     tf.reduce_mean(sim_neg_il),
-        #     tf.reduce_mean(sim_neg_ll),
-        #     tf.reduce_mean(sim_neg_li),
-        # ])
-
-        return (
-            tf.reduce_mean(loss),
+        tf.print(
+            "mean sim negs",
             [
+                tf.reduce_mean(sim_pos),
                 tf.reduce_mean(sim_neg_ii),
                 tf.reduce_mean(sim_neg_il),
                 tf.reduce_mean(sim_neg_ll),
                 tf.reduce_mean(sim_neg_li),
             ],
-            tf.reduce_min(sim_pos),
         )
+
+        # return (
+        #     tf.reduce_mean(loss),
+        #     [
+        #         tf.reduce_mean(sim_neg_ii),
+        #         tf.reduce_mean(sim_neg_il),
+        #         tf.reduce_mean(sim_neg_ll),
+        #         tf.reduce_mean(sim_neg_li),
+        #     ],
+        #     tf.reduce_min(sim_pos),
+        # )
+        return tf.reduce_mean(loss)
 
     def _loss_softmax(
         self,
@@ -1114,16 +1118,17 @@ class DotProductLoss(tf.keras.layers.Layer):
         # )
 
         # average the loss over the batch
-        return (
-            tf.reduce_mean(loss),
-            [
-                tf.reduce_mean(sim_neg_ii),
-                tf.reduce_mean(sim_neg_il),
-                tf.reduce_mean(sim_neg_ll),
-                tf.reduce_mean(sim_neg_li),
-            ],
-            tf.reduce_min(sim_pos),
-        )
+        # return (
+        #     tf.reduce_mean(loss),
+        #     [
+        #         tf.reduce_mean(sim_neg_ii),
+        #         tf.reduce_mean(sim_neg_il),
+        #         tf.reduce_mean(sim_neg_ll),
+        #         tf.reduce_mean(sim_neg_li),
+        #     ],
+        #     tf.reduce_min(sim_pos),
+        # )
+        return tf.reduce_mean(loss)
 
     @property
     def _chosen_loss(self) -> Callable:
@@ -1196,9 +1201,9 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         accuracy = self._calc_accuracy(sim_pos, sim_neg_il)
 
-        loss, max_neg_sim, min_pos_sim = self._chosen_loss(
+        loss = self._chosen_loss(
             sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li, mask
         )
         # tf.print("=======================================")
 
-        return loss, max_neg_sim, min_pos_sim, accuracy
+        return loss, accuracy

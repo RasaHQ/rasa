@@ -1615,7 +1615,6 @@ class DIET(TransformerRasaModel):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-        print(self.data_signature)
 
         batch_dim = self._get_batch_dim(tf_batch_data)
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
@@ -1685,11 +1684,9 @@ class DIET(TransformerRasaModel):
             self.label_name,
         )
 
-        loss, max_negs, min_pos_sim, acc = self._calculate_label_loss(
-            sentence_vector, label, label_ids
-        )
+        loss, acc = self._calculate_label_loss(sentence_vector, label, label_ids)
 
-        self._update_label_metrics(loss, acc, max_negs, min_pos_sim)
+        self._update_label_metrics(loss, acc)
 
         return loss
 
@@ -1697,17 +1694,17 @@ class DIET(TransformerRasaModel):
         self,
         loss: tf.Tensor,
         acc: tf.Tensor,
-        max_negs: List[tf.Tensor],
-        min_pos_sim: tf.Tensor,
+        # max_negs: List[tf.Tensor],
+        # min_pos_sim: tf.Tensor,
     ) -> None:
 
         self.intent_loss.update_state(loss)
         self.intent_acc.update_state(acc)
-        self.max_neg_ii.update_state(max_negs[0])
-        self.max_neg_il.update_state(max_negs[1])
-        self.max_neg_ll.update_state(max_negs[2])
-        self.max_neg_li.update_state(max_negs[3])
-        self.min_pos_sim.update_state(min_pos_sim)
+        # self.max_neg_ii.update_state(max_negs[0])
+        # self.max_neg_il.update_state(max_negs[1])
+        # self.max_neg_ll.update_state(max_negs[2])
+        # self.max_neg_li.update_state(max_negs[3])
+        # self.min_pos_sim.update_state(min_pos_sim)
 
     def _batch_loss_entities(
         self,
