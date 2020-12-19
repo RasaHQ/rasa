@@ -3,7 +3,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config import RasaNLUModelConfig
+import rasa.utils.train_utils
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import InvalidModelError
@@ -64,7 +65,9 @@ class SpacyNLP(Component):
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "SpacyNLP":
 
-        component_config = override_defaults(cls.defaults, component_config)
+        component_config = rasa.utils.train_utils.override_defaults(
+            cls.defaults, component_config
+        )
 
         spacy_model_name = component_config.get("model")
 

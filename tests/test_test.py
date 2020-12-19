@@ -184,10 +184,10 @@ def test_write_classification_errors():
         WronglyClassifiedUserUtterance(
             UserUttered("Hello", {"name": "goodbye"}), evaluation
         ),
-        WronglyPredictedAction("utter_greet", "utter_goodbye"),
+        WronglyPredictedAction("utter_greet", "", "utter_goodbye"),
     ]
     tracker = DialogueStateTracker.from_events("default", events)
-    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
     assert (
         dump.strip()
         == textwrap.dedent(
@@ -197,8 +197,6 @@ def test_write_classification_errors():
         - story: default
           steps:
           - intent: greet  # predicted: goodbye: Hello
-            user: |-
-              Hello
           - action: utter_greet  # predicted: utter_goodbye
 
     """
