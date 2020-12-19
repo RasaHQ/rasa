@@ -853,16 +853,33 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> tf.Tensor:
         """Define softmax loss."""
 
-        logits = tf.concat(
+        softmax_logits = tf.concat(
+            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+        )
+
+        sigmoid_logits = tf.concat(
             [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
         )
 
         # create label_ids for softmax
-        label_ids = tf.zeros_like(logits[..., 0], tf.int32)
+        softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
 
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=label_ids, logits=logits
+        sigmoid_label_ids = tf.concat(
+            [
+                tf.expand_dims(tf.ones_like(sigmoid_logits[..., 0], tf.float32), -1),
+                tf.zeros_like(sigmoid_logits[..., 1:], tf.float32),
+            ],
+            axis=-1,
         )
+
+        softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=softmax_label_ids, logits=softmax_logits
+        )
+        sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=sigmoid_label_ids, logits=sigmoid_logits
+        )
+
+        loss = softmax_loss + tf.reduce_mean(sigmoid_loss, axis=-1)
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -877,6 +894,14 @@ class DotProductLoss(tf.keras.layers.Layer):
                 loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
+
+        tf.print(
+            tf.reduce_mean(sim_pos),
+            tf.reduce_mean(sim_neg_ii),
+            tf.reduce_mean(sim_neg_il),
+            tf.reduce_mean(sim_neg_ll),
+            tf.reduce_mean(sim_neg_li),
+        )
 
         # average the loss over the batch
         return tf.reduce_mean(loss)
