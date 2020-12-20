@@ -118,7 +118,9 @@ SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
-PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
+PREDICTION_FEATURES = (
+    STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE] + [LABEL]
+)
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
@@ -422,11 +424,6 @@ class TEDPolicy(Policy):
             label_ids = np.array(
                 [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
             )
-            model_data.add_features(
-                LABEL_KEY,
-                LABEL_SUB_KEY,
-                [FeatureArray(label_ids, number_of_dimensions=3)],
-            )
 
             attribute_data, self.fake_features = convert_to_data_format(
                 tracker_state_features, featurizers=self.config[FEATURIZERS]
@@ -442,7 +439,13 @@ class TEDPolicy(Policy):
                 self.fake_features,
                 featurizers=self.config[FEATURIZERS],
             )
+            label_ids = np.atleast_3d(
+                np.tile(label_ids, (len(tracker_state_features), 1))
+            )
 
+        model_data.add_features(
+            LABEL_KEY, LABEL_SUB_KEY, [FeatureArray(label_ids, number_of_dimensions=3)],
+        )
         model_data.add_data(attribute_data)
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
         model_data.add_lengths(ACTION_TEXT, SEQUENCE_LENGTH, ACTION_TEXT, SEQUENCE)
@@ -585,6 +588,7 @@ class TEDPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        action_index: int,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take.
@@ -598,7 +602,9 @@ class TEDPolicy(Policy):
         tracker_state_features = self._featurize_tracker_for_e2e(
             tracker, domain, interpreter
         )
-        model_data = self._create_model_data(tracker_state_features)
+        model_data = self._create_model_data(
+            tracker_state_features, label_ids=np.array([[action_index]])
+        )
 
         output = self.model.predict(model_data)
 
@@ -1683,6 +1689,30 @@ class TED(TransformerRasaModel):
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
+
+        action_index = tf.cast(tf_batch_data.get(LABEL).get(IDS)[0][0][0][0], tf.int32)
+        num_labels = tf.shape(self.tf_label_data.get(LABEL).get(IDS))[1]
+        indices_to_choose_from = tf.concat(
+            [tf.range(action_index), tf.range(action_index + 1, num_labels)], 0
+        )
+        negative_samples = tf.random.shuffle(indices_to_choose_from)[:19]
+        all_candidates = tf.concat(
+            [negative_samples, tf.expand_dims(action_index, -1)], 0
+        )
+        print("\nall_candidates:\n")
+        tf.print(all_candidates)
+        indices = tf.expand_dims(all_candidates, 1)
+        print("indices:\n")
+        tf.print(indices)
+        num_updates = tf.minimum(num_labels, 20)
+        updates = tf.ones(num_updates)
+        mask = tf.zeros(num_labels)
+        mask = tf.tensor_scatter_nd_update(mask, indices, updates)
+        print("mask:\n")
+        tf.print(mask)
+        scores *= mask
+        sim_all *= mask
+
         predictions = {"action_scores": scores, "similarities": sim_all}
 
         if (

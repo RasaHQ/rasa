@@ -619,6 +619,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        action_index: int,
     ) -> PolicyPrediction:
         """Finds the best policy prediction.
 
@@ -650,7 +651,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                p, tracker, domain, interpreter
+                p, tracker, domain, interpreter, action_index
             )
             for i, p in enumerate(self.policies)
         }
@@ -673,6 +674,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        action_index: int,
     ) -> PolicyPrediction:
         number_of_arguments_in_rasa_1_0 = 2
         arguments = rasa.shared.utils.common.arguments_of(
@@ -684,7 +686,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             and "interpreter" in arguments
         ):
             prediction = policy.predict_action_probabilities(
-                tracker, domain, interpreter
+                tracker, domain, interpreter, action_index
             )
         else:
             rasa.shared.utils.io.raise_warning(
@@ -695,7 +697,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 category=DeprecationWarning,
             )
             prediction = policy.predict_action_probabilities(
-                tracker, domain, RegexInterpreter()
+                tracker, domain, RegexInterpreter(), action_index
             )
 
         if isinstance(prediction, list):
@@ -755,6 +757,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        action_index: int,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -771,7 +774,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Returns:
             The best policy prediction.
         """
-        winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
+        winning_prediction = self._best_policy_prediction(
+            tracker, domain, interpreter, action_index
+        )
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME

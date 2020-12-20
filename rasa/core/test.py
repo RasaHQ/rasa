@@ -488,6 +488,7 @@ def _collect_action_executed_predictions(
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
     circuit_breaker_tripped: bool,
+    action_index: int,
 ) -> Tuple[EvaluationStore, PolicyPrediction]:
     from rasa.core.policies.form_policy import FormPolicy
 
@@ -501,7 +502,9 @@ def _collect_action_executed_predictions(
         prediction = PolicyPrediction([], policy_name=None)
         predicted = "circuit breaker tripped"
     else:
-        action, prediction = processor.predict_next_action(partial_tracker)
+        action, prediction = processor.predict_next_action(
+            partial_tracker, action_index
+        )
         predicted = action.name()
 
         if (
@@ -607,6 +610,9 @@ async def _predict_tracker_actions(
                 event,
                 fail_on_prediction_errors,
                 circuit_breaker_tripped,
+                agent.domain.action_names_or_texts.index(
+                    event.action_name if event.action_name else event.action_text
+                ),
             )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(

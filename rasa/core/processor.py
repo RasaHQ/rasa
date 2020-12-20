@@ -346,14 +346,14 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker
+        self, tracker: DialogueStateTracker, action_index: int
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action.
         """
-        prediction = self._get_next_action_probabilities(tracker)
+        prediction = self._get_next_action_probabilities(tracker, action_index)
 
         action = rasa.core.actions.action.action_for_index(
             prediction.max_confidence_index, self.domain, self.action_endpoint
@@ -874,7 +874,7 @@ class MessageProcessor:
         self.tracker_store.save(tracker)
 
     def _get_next_action_probabilities(
-        self, tracker: DialogueStateTracker
+        self, tracker: DialogueStateTracker, action_index: int
     ) -> PolicyPrediction:
         """Collect predictions from ensemble and return action and predictions."""
         followup_action = tracker.followup_action
@@ -892,7 +892,7 @@ class MessageProcessor:
             )
 
         prediction = self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain, self.interpreter
+            tracker, self.domain, self.interpreter, action_index
         )
 
         if isinstance(prediction, PolicyPrediction):
