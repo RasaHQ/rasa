@@ -42,6 +42,7 @@ from rasa.utils.tensorflow.constants import (
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
     SCALE_LOSS,
+    LEARNING_RATE,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -261,13 +262,14 @@ class RasaModel(TmpKerasModel):
             Loaded model with weights appropriately set.
         """
         logger.debug(
-            f"Loading the model from {model_file_name} with finetune_mode={finetune_mode}..."
+            f"Loading the model from {model_file_name} "
+            f"with finetune_mode={finetune_mode}..."
         )
         # create empty model
         model = cls(*args, **kwargs)
-
+        learning_rate = kwargs.get("config", {}).get(LEARNING_RATE, 0.001)
         # need to train on 1 example to build weights of the correct size
-        model.compile()
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate))
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
         model.fit(data_generator, verbose=False)
         # load trained weights
