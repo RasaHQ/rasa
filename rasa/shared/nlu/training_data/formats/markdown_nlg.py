@@ -38,7 +38,14 @@ class NLGMarkdownReader(MarkdownReader):
 
     @staticmethod
     def process_lines(lines: List[Text]) -> Dict[Text, List[Dict[Text, Text]]]:
+        """Processes line in the file.
 
+        Args:
+            lines: The list of strings.
+
+        Returns:
+            A mapping of intents to bot events represented as texts.
+        """
         responses = {}
         story_intent = None
         story_bot_utterances = []  # Keeping it a list for future additions

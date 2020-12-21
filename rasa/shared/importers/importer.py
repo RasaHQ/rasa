@@ -77,7 +77,6 @@ class TrainingDataImporter:
         training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
-
         config = rasa.shared.utils.io.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
             config, config_path, domain_path, training_data_paths, training_type
@@ -93,7 +92,6 @@ class TrainingDataImporter:
 
         Instance loaded from configuration file will only read Core training data.
         """
-
         importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths, TrainingType.CORE
         )
@@ -109,7 +107,6 @@ class TrainingDataImporter:
 
         Instance loaded from configuration file will only read NLU training data.
         """
-
         importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths, TrainingType.NLU
         )
@@ -130,7 +127,6 @@ class TrainingDataImporter:
         training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
-
         from rasa.shared.importers.rasa import RasaFileImporter
 
         config = config or {}
@@ -300,12 +296,20 @@ class ResponsesSyncImporter(TrainingDataImporter):
         self._importer = importer
 
     async def get_config(self) -> Dict:
+        """Retrieves the configuration that should be used for the training.
+
+        Returns:
+            The configuration as dictionary.
+        """
         return await self._importer.get_config()
 
     @rasa.shared.utils.common.cached_method
     async def get_domain(self) -> Domain:
-        """Merge existing domain with properties of retrieval intents in NLU data."""
+        """Merge existing domain with properties of retrieval intents in NLU data.
 
+        Returns:
+            The merged `Domain`.
+        """
         existing_domain = await self._importer.get_domain()
         existing_nlu_data = await self._importer.get_nlu_data()
 
@@ -333,7 +337,6 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
         Returns: Names of corresponding retrieval actions
         """
-
         return [
             f"{rasa.shared.constants.UTTER_PREFIX}{intent}"
             for intent in retrieval_intents

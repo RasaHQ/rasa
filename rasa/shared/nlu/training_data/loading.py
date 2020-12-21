@@ -121,7 +121,6 @@ def _load(
     Returns:
         The training data.
     """
-
     fformat = guess_format(filename)
     if fformat == UNK:
         raise ValueError(f"Unknown data format for file '{filename}'.")
