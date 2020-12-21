@@ -39,16 +39,16 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### CI Pipeline Overview
 
-Your CI pipeline should include model training and testing as steps to streamline the deployment process. 
-The first step after saving new training data is to kick off the pipeline. This can be initiated manually 
+Your CI pipeline should include model training and testing as steps to streamline the deployment process.
+The first step after saving new training data is to kick off the pipeline. This can be initiated manually
 or when you create or update a pull request.
 
-Next, you need to run various sets of test to see the impact of your changes. This includes running 
-tests for data validation, NLU cross validation, and story testing. For 
-more information about testing, see [Testing Your Assistant](./testing-your-assistant.mdx). 
+Next, you need to run various sets of test to see the impact of your changes. This includes running
+tests for data validation, NLU cross validation, and story testing. For
+more information about testing, see [Testing Your Assistant](./testing-your-assistant.mdx).
 
-The last step is to review the results of your test and push the changes if the tests are successful. 
-Once the new model is trained and tested, it can be deployed automatically using a Continuous 
+The last step is to review the results of your test and push the changes if the tests are successful.
+Once the new model is trained and tested, it can be deployed automatically using a Continuous
 Deployment pipeline.
 
 ### GitHub Actions CI Pipeline
@@ -95,7 +95,7 @@ Pull Request as a comment:
 
 <img alt="image" src={useBaseUrl("/img/train-test-github-action.png")} />
 
-The pull request can be approved or denied based on the evaluation results and, in many cases, you will want to automate the model's deployment if all CI checks pass. You can continue to the next section to learn more about Continuous Deployment. 
+The pull request can be approved or denied based on the evaluation results and, in many cases, you will want to automate the model's deployment if all CI checks pass. You can continue to the next section to learn more about Continuous Deployment.
 
 
 ## Continuous Deployment (CD)
@@ -108,7 +108,7 @@ succeeded.
 
 ### Deploying Your Rasa Model
 
-If you ran [test stories](#testing-your-assistant) in your CI pipeline,
+If you ran [test stories](./testing-your-assistant.mdx) in your CI pipeline,
 you'll already have a trained model. You can set up your CD pipeline to upload the trained model to your
 Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X:
 
