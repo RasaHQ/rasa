@@ -853,9 +853,7 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> tf.Tensor:
         """Define softmax loss."""
 
-        softmax_logits = tf.concat(
-            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
-        )
+        softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
 
         sigmoid_logits = tf.concat(
             [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
@@ -864,7 +862,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         # create label_ids for softmax
         softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
 
-        sigmoid_label_ids = tf.concat(
+        sigmoid_labels = tf.concat(
             [
                 tf.expand_dims(tf.ones_like(sigmoid_logits[..., 0], tf.float32), -1),
                 tf.zeros_like(sigmoid_logits[..., 1:], tf.float32),
@@ -876,7 +874,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels=softmax_label_ids, logits=softmax_logits
         )
         sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=sigmoid_label_ids, logits=sigmoid_logits
+            labels=sigmoid_labels, logits=sigmoid_logits
         )
 
         loss = softmax_loss + tf.reduce_mean(sigmoid_loss, axis=-1)
