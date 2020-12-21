@@ -185,14 +185,13 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return feature_vocabulary
 
     def _create_sparse_features(self, message: Message) -> None:
-        # convert incoming messages into sparse features using the configured features
+        """Convert the message into sparse features using the configured features."""
         import scipy.sparse
 
         tokens = message.get(TOKENS_NAMES[TEXT])
-        # this check is required because there might be training data examples without TEXT,
-        # e.g., `Message("", {action_name: "action_listen"})`
+        # this check is required because there might be training data examples
+        # without TEXT, e.g., `Message("", {action_name: "action_listen"})`
         if tokens:
-
             sentence_features = self._tokens_to_features(tokens)
             one_hot_seq_feature_vector = self._features_to_one_hot(sentence_features)
 
@@ -207,7 +206,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             message.add_features(final_sequence_features)
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
-        # convert words into discrete features
+        """Convert words into discrete features."""
         configured_features = self.component_config["features"]
         sentence_features = []
 
@@ -248,8 +247,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def _features_to_one_hot(
         self, sentence_features: List[Dict[Text, Any]]
     ) -> np.ndarray:
-        # convert the word features into a one-hot presentation using the indices
-        # in the feature-to-idx dictionary
+        """Convert the word features into a one-hot presentation.
+
+        Uses the indices in the feature-to-idx dictionary.
+        """
         one_hot_seq_feature_vector = np.zeros(
             [len(sentence_features), self.number_of_features]
         )

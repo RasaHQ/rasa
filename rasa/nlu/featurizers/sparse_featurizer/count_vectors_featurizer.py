@@ -330,7 +330,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _get_all_attributes_processed_tokens(
         self, training_data: TrainingDataFull
     ) -> Dict[Text, List[List[Text]]]:
-        # get processed text for all attributes of examples in training data
+        """Get processed text for all attributes of examples in training data."""
         processed_attribute_tokens = {}
         for attribute in self._attributes:
             all_tokens = [

@@ -219,6 +219,7 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     def _generate_training_examples_md(self, training_data: "TrainingDataFull") -> Text:
+        """Generates markdown training examples."""
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
         training_examples = OrderedDict()
@@ -249,6 +250,7 @@ class MarkdownWriter(TrainingDataWriter):
         return "".join(lines)
 
     def _generate_synonyms_md(self, training_data: "TrainingDataFull") -> Text:
+        """Generates markdown for entity synomyms."""
         entity_synonyms = sorted(
             training_data.entity_synonyms.items(), key=lambda x: x[1]
         )
@@ -262,6 +264,7 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     def _generate_regex_features_md(self, training_data: "TrainingDataFull") -> Text:
+        """Generates markdown for regex features."""
         md = ""
         # regex features are already sorted
         regex_features = training_data.regex_features
@@ -274,6 +277,7 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     def _generate_lookup_tables_md(self, training_data: "TrainingDataFull") -> Text:
+        """Generates markdown for regex features."""
         md = ""
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
@@ -291,6 +295,7 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_section_header_md(
         section_type: Text, title: Text, prepend_newline: bool = True
     ) -> Text:
+        """Generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
         title = encode_string(title)
 
@@ -298,4 +303,5 @@ class MarkdownWriter(TrainingDataWriter):
 
     @staticmethod
     def _generate_fname_md(text: Text) -> Text:
+        """Generates markdown for a lookup table file path."""
         return f"  {encode_string(text)}\n"
