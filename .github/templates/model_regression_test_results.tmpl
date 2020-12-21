@@ -13,6 +13,8 @@ The accuracy_tpl template returns data for the accuracy field.
 {{ define "accuracy_tpl" -}}
 {{- if has .master "accuracy" -}}
 {{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.master.accuracy | math.Sub .branch.accuracy) }})
+{{- else if (index .master "micro avg") "f1-score" -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" ((index (index .master "micro avg") "f1-score") | math.Sub .branch.accuracy) }})
 {{- else -}}
 {{ printf "%.4f" .branch.accuracy }} (`no data`)
 {{- end -}}
