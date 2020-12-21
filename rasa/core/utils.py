@@ -124,12 +124,14 @@ class HashableNDArray:
 
         self.__tight = tight
         self.__wrapped = np.array(wrapped) if tight else wrapped
-        self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)
+        self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)  # nosec
 
     def __eq__(self, other) -> bool:
+        """Performs equality of the underlying array."""
         return np.all(self.__wrapped == other.__wrapped)
 
     def __hash__(self) -> int:
+        """Return the hash of the array."""
         return self.__hash
 
     def unwrap(self) -> np.ndarray:
@@ -266,21 +268,19 @@ def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
 
 def get_file_hash(path: Text) -> Text:
     """Calculate the md5 hash of a file."""
-    return md5(file_as_bytes(path)).hexdigest()
-
-
-def get_dict_hash(
-    data: Dict, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING
-) -> Text:
-    """Calculate the md5 hash of a dictionary."""
-    return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
+    return md5(file_as_bytes(path)).hexdigest()  # nosec
 
 
 async def download_file_from_url(url: Text) -> Text:
     """Download a story file from a url and persists it into a temp file.
 
-    Returns the file path of the temp file that contains the
-    downloaded content."""
+    Args:
+        url: url to download from
+
+    Returns:
+        The file path of the temp file that contains the
+        downloaded content.
+    """
     from rasa.nlu import utils as nlu_utils
 
     if not nlu_utils.is_url(url):

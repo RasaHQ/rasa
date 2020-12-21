@@ -54,6 +54,7 @@ ACTIVE_LOOP = "active_loop"
 LOOP_INTERRUPTED = "is_interrupted"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
+FOLLOWUP_ACTION = "followup_action"
 
 # start of special user message section
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
@@ -76,4 +77,5 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 USER = "user"
 SLOTS = "slots"
 
+USE_TEXT_FOR_FEATURIZATION = "use_text_for_featurization"
 ENTITY_LABEL_SEPARATOR = "#"

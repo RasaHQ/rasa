@@ -3,9 +3,10 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Dict, Text, List, Any, Union, Tuple
+from typing import Dict, Text, List, Any, Union, Tuple, Optional
 
 import rasa.shared.data
+from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.constants import (
@@ -14,6 +15,7 @@ from rasa.shared.constants import (
     LEGACY_DOCS_BASE_URL,
     DEFAULT_E2E_TESTS_PATH,
     DOCS_URL_STORIES,
+    DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
 )
 from rasa.shared.core.events import UserUttered
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -28,11 +30,32 @@ logger = logging.getLogger(__name__)
 
 
 class MarkdownStoryReader(StoryReader):
-    """Class that reads the core training data in a Markdown format"""
+    """Class that reads the core training data in a Markdown format."""
+
+    def __init__(
+        self,
+        domain: Optional[Domain] = None,
+        template_vars: Optional[Dict] = None,
+        use_e2e: bool = False,
+        source_name: Optional[Text] = None,
+        is_used_for_training: bool = True,
+        ignore_deprecation_warning: bool = False,
+    ) -> None:
+        """Creates reader. See parent class docstring for more information."""
+        super().__init__(
+            domain, template_vars, use_e2e, source_name, is_used_for_training
+        )
+
+        if not ignore_deprecation_warning:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "Stories in Markdown format are deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown stories to the "
+                "new YAML format.",
+                docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+            )
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
-
         try:
             with open(
                 filename, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
@@ -131,8 +154,8 @@ class MarkdownStoryReader(StoryReader):
         except Exception as e:
             raise ValueError(
                 "Invalid to parse arguments in line "
-                "'{}'. Failed to decode parameters"
-                "as a json object. Make sure the event"
+                "'{}'. Failed to decode parameters "
+                "as a json object. Make sure the event "
                 "name is followed by a proper json "
                 "object. Error: {}".format(line, e)
             )
@@ -203,13 +226,14 @@ class MarkdownStoryReader(StoryReader):
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    @staticmethod
-    def parse_e2e_message(line: Text, is_used_for_training: bool = True) -> Message:
+    def parse_e2e_message(
+        self, line: Text, is_used_for_training: bool = True
+    ) -> Message:
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>`. For the
-        syntax of `<example>` see the Rasa docs on NLU training data."""
-
+        syntax of `<example>` see the Rasa docs on NLU training data.
+        """
         # Match three groups:
         # 1) Potential "form" annotation
         # 2) The correct intent
@@ -231,7 +255,7 @@ class MarkdownStoryReader(StoryReader):
         intent = match.group(2)
         message = match.group(4)
         example = entities_parser.parse_training_example(message, intent)
-        if not is_used_for_training:
+        if not is_used_for_training and not self.use_e2e:
             # In case this is a simple conversion from Markdown we should copy over
             # the original text and not parse the entities
             example.data[rasa.shared.nlu.constants.TEXT] = message

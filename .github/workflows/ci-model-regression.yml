@@ -12,6 +12,7 @@ on:
 
 env:
   GKE_ZONE: us-central1-a
+  GCLOUD_VERSION: "318.0.0"
 
 jobs:
   cleanup_runs:
@@ -21,9 +22,9 @@ jobs:
 
     steps:
       - name: Find and cancel old builds of this branch
-        uses: rokroskar/workflow-run-cleanup-action@v0.2.2
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: "${{ secrets.GITHUB_TOKEN }}"
 
   read_test_configuration:
     name: Reads tests configuration
@@ -153,8 +154,9 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.2
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME}}
 
@@ -193,6 +195,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+          ref: ${{ matrix.dataset_branch }}
 
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
@@ -231,7 +234,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v1
+        uses: Gr1N/setup-poetry@v4
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -241,7 +244,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-3.8-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -296,6 +299,7 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -333,6 +337,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+          ref: ${{ matrix.dataset_branch }}
 
       - name: Download gomplate
         run: |-
@@ -376,7 +381,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v1
+        uses: Gr1N/setup-poetry@v4
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -386,7 +391,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-3.8-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -436,6 +441,7 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -612,8 +618,9 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.3
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 

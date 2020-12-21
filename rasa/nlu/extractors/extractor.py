@@ -128,8 +128,8 @@ class EntityExtractor(Component):
 
         return filtered
 
+    @staticmethod
     def convert_predictions_into_entities(
-        self,
         text: Text,
         tokens: List[Token],
         tags: Dict[Text, List[Text]],
@@ -158,16 +158,22 @@ class EntityExtractor(Component):
         last_token_end = -1
 
         for idx, token in enumerate(tokens):
-            current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
+            current_entity_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_TYPE, idx
+            )
 
             if current_entity_tag == NO_ENTITY_TAG:
                 last_entity_tag = NO_ENTITY_TAG
                 last_token_end = token.end
                 continue
 
-            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_group_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_GROUP, idx
+            )
             current_group_tag = bilou_utils.tag_without_prefix(current_group_tag)
-            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            current_role_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_ROLE, idx
+            )
             current_role_tag = bilou_utils.tag_without_prefix(current_role_tag)
 
             group_or_role_changed = (
@@ -207,7 +213,7 @@ class EntityExtractor(Component):
 
             if new_tag_found:
                 # new entity found
-                entity = self._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,
@@ -217,7 +223,7 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
-            elif self._check_is_single_entity(
+            elif EntityExtractor._check_is_single_entity(
                 text, token, last_token_end, split_entities_config, current_entity_tag
             ):
                 # current token has the same entity tag as the token before and
@@ -226,14 +232,16 @@ class EntityExtractor(Component):
                 # and a whitespace.
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
-                    self._update_confidence_values(entities, confidences, idx)
+                    EntityExtractor._update_confidence_values(
+                        entities, confidences, idx
+                    )
 
             else:
                 # the token has the same entity tag as the token before but the two
                 # tokens are separated by at least 2 symbols (e.g. multiple spaces,
                 # a comma and a space, etc.) and also shouldn't be represented as a
                 # single entity
-                entity = self._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,
@@ -407,12 +415,26 @@ class EntityExtractor(Component):
                     entity_start not in token_start_positions
                     or entity_end not in token_end_positions
                 ):
+                    entities_repr = [
+                        (
+                            entity[ENTITY_ATTRIBUTE_START],
+                            entity[ENTITY_ATTRIBUTE_END],
+                            entity[ENTITY_ATTRIBUTE_VALUE],
+                        )
+                        for entity in example.get(ENTITIES)
+                    ]
+                    tokens_repr = [
+                        (t.start, t.end, t.text)
+                        for t in example.get(TOKENS_NAMES[TEXT])
+                    ]
                     rasa.shared.utils.io.raise_warning(
                         f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
-                        f"end values of entities in the training data match the token "
-                        f"boundaries (e.g. entities don't include trailing whitespaces "
-                        f"or punctuation).",
+                        f"end values of entities ({entities_repr}) in the training "
+                        f"data match the token boundaries ({tokens_repr}). "
+                        "Common causes: \n  1) entities include trailing whitespaces or punctuation"
+                        "\n  2) the tokenizer gives an unexpected result, due to "
+                        "languages such as Chinese that don't use whitespace for word separation",
                         docs=DOCS_URL_TRAINING_DATA_NLU,
                     )
                     break
