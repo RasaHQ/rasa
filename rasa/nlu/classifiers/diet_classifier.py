@@ -829,7 +829,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.tmp_checkpoint_dir,
         )
 
-        self.model.compile()
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+        )
         self.model.fit(
             data_generator,
             epochs=self.component_config[EPOCHS],
@@ -1171,7 +1173,6 @@ class DIET(TransformerRasaModel):
         }
 
         # tf training
-        self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
         self._update_metrics_to_log()
 

@@ -60,6 +60,7 @@ from rasa.utils.tensorflow.constants import (
     BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
+    LEARNING_RATE,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -202,6 +203,8 @@ class TEDPolicy(Policy):
         EPOCHS: 1,
         # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
+        # Initial learning rate for the optimizer
+        LEARNING_RATE: 0.001,
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
@@ -543,7 +546,9 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir,
         )
 
-        self.model.compile()
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+        )
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
@@ -879,9 +884,6 @@ class TED(TransformerRasaModel):
         }
 
         self._entity_tag_specs = entity_tag_specs
-
-        # optimizer
-        self.optimizer = tf.keras.optimizers.Adam()
 
         # metrics
         self.action_loss = tf.keras.metrics.Mean(name="loss")
