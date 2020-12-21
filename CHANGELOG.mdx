@@ -17,10 +17,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [2.2.1] - 2020-12-17
-                       
+
 
 ### Bugfixes
-- [#7557](https://github.com/rasahq/rasa/issues/7557): Fixed a problem where a [form](forms.mdx) wouldn't reject when the 
+- [#7557](https://github.com/rasahq/rasa/issues/7557): Fixed a problem where a [form](forms.mdx) wouldn't reject when the
   `FormValidationAction` re-implemented `required_slots`.
 - [#7585](https://github.com/rasahq/rasa/issues/7585): Fixed an error when using the [SQLTrackerStore](tracker-stores.mdx#sqltrackerstore)
   with a Postgres database and the parameter `login_db` specified.
@@ -34,13 +34,13 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.2.0] - 2020-12-16
-                       
+
 
 ### Deprecations and Removals
-- [#6410](https://github.com/rasahq/rasa/issues/6410): `Domain.random_template_for` is deprecated and will be removed in Rasa Open Source 
+- [#6410](https://github.com/rasahq/rasa/issues/6410): `Domain.random_template_for` is deprecated and will be removed in Rasa Open Source
   3.0.0. You can alternatively use the `TemplatedNaturalLanguageGenerator`.
 
-  `Domain.action_names` is deprecated and will be removed in Rasa Open Source 
+  `Domain.action_names` is deprecated and will be removed in Rasa Open Source
   3.0.0. Please use `Domain.action_names_or_texts` instead.
 - [#7458](https://github.com/rasahq/rasa/issues/7458): Interfaces for `Policy.__init__` and `Policy.load` have changed.
   See [migration guide](./migration-guide.mdx#rasa-21-to-rasa-22) for details.
@@ -67,28 +67,28 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 ### Features
 - [#6971](https://github.com/rasahq/rasa/issues/6971): Incremental training of models in a pipeline is now supported.
 
-  If you have added new NLU training examples or new stories/rules for  
+  If you have added new NLU training examples or new stories/rules for
   dialogue manager, you don't need to train the pipeline from scratch.
   Instead, you can initialize the pipeline with a previously trained model
   and continue finetuning the model on the complete dataset consisting of
   new training examples. To do so, use `rasa train --finetune`. For more
-  detailed explanation of the command, check out the docs on [incremental  
+  detailed explanation of the command, check out the docs on [incremental
   training](./command-line-interface.mdx#incremental-training).
 
-  Added a configuration parameter `additional_vocabulary_size` to  
-  [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer)  
+  Added a configuration parameter `additional_vocabulary_size` to
+  [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer)
   and `number_additional_patterns` to [`RegexFeaturizer`](./components.mdx#regexfeaturizer).
   These parameters are useful to configure when using incremental training for your pipelines.
-- [#7408](https://github.com/rasahq/rasa/issues/7408): Add the option to use cross-validation to the 
+- [#7408](https://github.com/rasahq/rasa/issues/7408): Add the option to use cross-validation to the
   [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) endpoint.
   To use cross-validation specify the query parameter `cross_validation_folds` in addition
   to the training data in YAML format.
 
-  Add option to run NLU evaluation 
+  Add option to run NLU evaluation
   ([`POST /model/test/intents`](/pages/http-api#operation/testModelIntent)) and
-  model training ([`POST /model/train`](/pages/http-api#operation/trainModel)) 
-  asynchronously. 
-  To trigger asynchronous processing specify 
+  model training ([`POST /model/train`](/pages/http-api#operation/trainModel))
+  asynchronously.
+  To trigger asynchronous processing specify
   a callback URL in the query parameter `callback_url` which Rasa Open Source should send
   the results to. This URL will also be called in case of errors.
 - [#7496](https://github.com/rasahq/rasa/issues/7496): Make [TED Policy](./policies.mdx#ted-policy) an end-to-end policy. Namely, make it possible to train TED on stories that contain
@@ -137,11 +137,11 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#7397](https://github.com/rasahq/rasa/issues/7397): Add `rasa train --dry-run` command that allows to check if training needs to be performed
   and what exactly needs to be retrained.
 - [#7408](https://github.com/rasahq/rasa/issues/7408): [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) now returns
-  the `report` field for `intent_evaluation`, `entity_evaluation` and 
+  the `report` field for `intent_evaluation`, `entity_evaluation` and
   `response_selection_evaluation` as machine-readable JSON payload instead of string.
 - [#7436](https://github.com/rasahq/rasa/issues/7436): Make `rasa data validate stories` work for end-to-end.
 
-  The `rasa data validate stories` function now considers the tokenized user text instead of the plain text that is part of a state. 
+  The `rasa data validate stories` function now considers the tokenized user text instead of the plain text that is part of a state.
   This is closer to what Rasa Core actually uses to distinguish states and thus captures more story structure problems.
 
 ### Bugfixes
@@ -168,7 +168,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.1.3] - 2020-12-04
-                       
+
 
 ### Improvements
 - [#7426](https://github.com/rasahq/rasa/issues/7426): Removed `multidict` from the project dependencies. `multidict` continues to be a second
@@ -193,7 +193,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.1.2] - 2020-11-27
-                       
+
 
 ### Bugfixes
 - [#7235](https://github.com/rasahq/rasa/issues/7235): Slots that use `initial_value` won't cause rule contradiction errors when `conversation_start: true` is used. Previously, two rules that differed only in their use of `conversation_start` would be flagged as contradicting when a slot used `initial_value`.
@@ -203,14 +203,14 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.1.1] - 2020-11-23
-                       
+
 
 ### Bugfixes
 - [#7338](https://github.com/rasahq/rasa/issues/7338): Sender ID is correctly set when copying the tracker and sending it to the action server (instead of sending the `default` value). This fixes a problem where the action server would only retrieve trackers with a `sender_id` `default`.
 
 
 ## [2.1.0] - 2020-11-17
-                       
+
 
 ### Deprecations and Removals
 - [#7136](https://github.com/rasahq/rasa/issues/7136): The [`Policy`](policies.mdx) interface was changed to return a `PolicyPrediction` object when
@@ -246,8 +246,8 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   :::
 - [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](event-brokers.mdx#pika-event-broker) no longer supports
   the environment variables `RABBITMQ_SSL_CA_FILE` and `RABBITMQ_SSL_KEY_PASSWORD`.
-  You can alternatively specify `RABBITMQ_SSL_CA_FILE` in the RabbitMQ connection URL as 
-  described in the 
+  You can alternatively specify `RABBITMQ_SSL_CA_FILE` in the RabbitMQ connection URL as
+  described in the
   [RabbitMQ documentation](https://www.rabbitmq.com/uri-query-parameters.html).
 
   ```yaml-rasa title="endpoints.yml
@@ -276,7 +276,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Features
 - [#7136](https://github.com/rasahq/rasa/issues/7136): [Policies](policies.mdx) can now return obligatory and optional events as part of their
-  prediction. Obligatory events are always applied to the current conversation tracker. 
+  prediction. Obligatory events are always applied to the current conversation tracker.
   Optional events are only applied to the conversation tracker in case the policy wins.
 
 ### Improvements
@@ -303,13 +303,13 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   Entity roles and groups can now influence dialogue predictions. For more information see the section
   [Entity Roles and Groups influencing dialogue predictions](nlu-training-data.mdx#entity-roles-and-groups-influencing-dialogue-predictions).
 - [#6285](https://github.com/rasahq/rasa/issues/6285): Predictions of the [`FallbackClassifier`](components.mdx#fallbackclassifier) are
-  ignored when 
+  ignored when
   [evaluating the NLU model](testing-your-assistant.mdx#evaluating-an-nlu-model)
-  Note that the `FallbackClassifier` predictions still apply to 
+  Note that the `FallbackClassifier` predictions still apply to
   [test stories](testing-your-assistant.mdx#writing-test-stories).
 - [#6474](https://github.com/rasahq/rasa/issues/6474): Adapt the training data reader and emulator for wit.ai to their latest format.
-  Update the instructions in the 
-  [migrate from wit.ai documentation](migrate-from/facebook-wit-ai-to-rasa.mdx) 
+  Update the instructions in the
+  [migrate from wit.ai documentation](migrate-from/facebook-wit-ai-to-rasa.mdx)
   to run Rasa Open Source in wit.ai emulation mode.
 - [#6498](https://github.com/rasahq/rasa/issues/6498): Adding configurable prefixes to Redis [Tracker](./tracker-stores.mdx) and [Lock Stores](./lock-stores.mdx) so that a single Redis instance (and logical DB) can support multiple conversation trackers and locks.
   By default, conversations will be prefixed with `tracker:...` and all locks prefixed with `lock:...`. Additionally, you can add an alphanumeric-only `prefix: value` in `endpoints.yml` such that keys in redis will take the form `value:tracker:...` and `value:lock:...` respectively.
@@ -330,53 +330,53 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   ```yaml
   ...
   - name: DIETClassifier
-    split_entities_by_comma: 
+    split_entities_by_comma:
       address: True
       ingredient: False
   ...
   ```
 
-  where both `address` and `ingredient` are two entity types. 
+  where both `address` and `ingredient` are two entity types.
 
   This feature is also available for `CRFEntityExtractor`.
-- [#6860](https://github.com/rasahq/rasa/issues/6860): Fetching test stories from the HTTP API endpoint 
-  `GET /conversations/<conversation_id>/story` no longer triggers an update 
-  of the 
+- [#6860](https://github.com/rasahq/rasa/issues/6860): Fetching test stories from the HTTP API endpoint
+  `GET /conversations/<conversation_id>/story` no longer triggers an update
+  of the
   [conversation session](./domain.mdx#session-configuration).
 
-  Added a new boolean query parameter `all_sessions` (default: `false`) to the 
-  [HTTP API](./http-api.mdx) endpoint for fetching test stories 
-  (`GET /conversations/<conversation_id>/story`). 
+  Added a new boolean query parameter `all_sessions` (default: `false`) to the
+  [HTTP API](./http-api.mdx) endpoint for fetching test stories
+  (`GET /conversations/<conversation_id>/story`).
 
-  When setting `?all_sessions=true`, the endpoint returns test stories for all 
-  conversation sessions for `conversation_id`. 
-  When setting `?all_sessions=all_sessions`, or when omitting the `all_sessions` 
-  parameter, a single test story is returned for `conversation_id`. In cases where 
+  When setting `?all_sessions=true`, the endpoint returns test stories for all
+  conversation sessions for `conversation_id`.
+  When setting `?all_sessions=all_sessions`, or when omitting the `all_sessions`
+  parameter, a single test story is returned for `conversation_id`. In cases where
   multiple conversation sessions exist, only the last story is returned.
 
-  Specifying the `retrieve_events_from_previous_conversation_sessions` 
-  kwarg for the [Tracker Store](./tracker-stores.mdx) class is deprecated and will be 
-  removed in Rasa Open Source 3.0. Please use the `retrieve_full_tracker()` method 
+  Specifying the `retrieve_events_from_previous_conversation_sessions`
+  kwarg for the [Tracker Store](./tracker-stores.mdx) class is deprecated and will be
+  removed in Rasa Open Source 3.0. Please use the `retrieve_full_tracker()` method
   instead.
 - [#6865](https://github.com/rasahq/rasa/issues/6865): Improve the `rasa data convert nlg` command and introduce the `rasa data convert responses` command
   to simplify the migration from pre-2.0 response selector format to the new format.
 - [#6966](https://github.com/rasahq/rasa/issues/6966): Added warning for when an option is provided for a [component](components.mdx) that is not listed as a key in the defaults for that component.
-- [#6977](https://github.com/rasahq/rasa/issues/6977): [Forms](forms.mdx) no longer reject their execution before a potential custom 
-  action for validating / extracting slots was executed. 
+- [#6977](https://github.com/rasahq/rasa/issues/6977): [Forms](forms.mdx) no longer reject their execution before a potential custom
+  action for validating / extracting slots was executed.
   Forms continue to reject in two cases automatically:
   - A slot was requested to be filled, but no slot mapping applied to the latest user
     message and there was no custom action for potentially extracting other slots.
   - A slot was requested to be filled, but the custom action for validating / extracting
     slots didn't return any slot event.
-  
-  Additionally you can also reject the form execution manually by returning a 
-  `ActionExecutionRejected` event within your custom action for validating / extracting 
+
+  Additionally you can also reject the form execution manually by returning a
+  `ActionExecutionRejected` event within your custom action for validating / extracting
   slots.
-- [#7027](https://github.com/rasahq/rasa/issues/7027): Remove dependency between `ConveRTTokenizer` and `ConveRTFeaturizer`. The `ConveRTTokenizer` is now deprecated, and the 
+- [#7027](https://github.com/rasahq/rasa/issues/7027): Remove dependency between `ConveRTTokenizer` and `ConveRTFeaturizer`. The `ConveRTTokenizer` is now deprecated, and the
   `ConveRTFeaturizer` can be used with any other `Tokenizer`.
 
-  Remove dependency between `HFTransformersNLP`, `LanguageModelTokenizer`, and `LanguageModelFeaturizer`. Both 
-  `HFTransformersNLP` and `LanguageModelTokenizer` are now deprecated. `LanguageModelFeaturizer` implements the behavior 
+  Remove dependency between `HFTransformersNLP`, `LanguageModelTokenizer`, and `LanguageModelFeaturizer`. Both
+  `HFTransformersNLP` and `LanguageModelTokenizer` are now deprecated. `LanguageModelFeaturizer` implements the behavior
   of the stack and can be used with any other `Tokenizer`.
 - [#7061](https://github.com/rasahq/rasa/issues/7061): Gray out "Download" button in Rasa Playground when the project is not yet ready to be downloaded.
 - [#7068](https://github.com/rasahq/rasa/issues/7068): Slot mappings for [Forms](forms.mdx) in the domain are now optional. If you do not
@@ -397,19 +397,19 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   deprecated Rasa SDK `FormAction`.
 - [#7102](https://github.com/rasahq/rasa/issues/7102): Changed the default model weights loaded for `HFTransformersNLP` component.
 
-  Use a [language agnostic sentence embedding model](https://tfhub.dev/google/LaBSE/1) 
-  as the default model. These model weights should help improve performance on 
+  Use a [language agnostic sentence embedding model](https://tfhub.dev/google/LaBSE/1)
+  as the default model. These model weights should help improve performance on
   intent classification and response selection.
 - [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](forms.mdx#slot-mappings).
   If a slot mapping is not valid, an `InvalidDomain` error is raised.
-- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to 
-  [their latest format](https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0/) 
+- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to
+  [their latest format](https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0/)
   and add support for roles.
-  Update the instructions in the 
-  ["Migrate from LUIS" documentation page](migrate-from/microsoft-luis-to-rasa.mdx) 
+  Update the instructions in the
+  ["Migrate from LUIS" documentation page](migrate-from/microsoft-luis-to-rasa.mdx)
   to reflect the recent changes made to the UI of LUIS.
-- [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the [training data reader and emulator for DialogFlow](migrate-from/google-dialogflow-to-rasa.mdx) to 
-  [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse) 
+- [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the [training data reader and emulator for DialogFlow](migrate-from/google-dialogflow-to-rasa.mdx) to
+  [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)
   and add support for regex entities.
 - [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](event-brokers.mdx#pika-event-broker) was reimplemented with
   the `[aio-pika` library[(https://aio-pika.readthedocs.io/en/latest/). Messages will
@@ -419,15 +419,15 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Bugfixes
 - [#5974](https://github.com/rasahq/rasa/issues/5974): `ActionRestart` will now trigger `ActionSessionStart` as a followup action.
-- [#6582](https://github.com/rasahq/rasa/issues/6582): Fixed a bug with `rasa data split nlu` which caused the resulting train / test ratio to sometimes differ from the ratio specified by the user or by default. 
+- [#6582](https://github.com/rasahq/rasa/issues/6582): Fixed a bug with `rasa data split nlu` which caused the resulting train / test ratio to sometimes differ from the ratio specified by the user or by default.
 
   The splitting algorithm ensures that every intent and response class appears in both the training and the test set. This means that each split must contain at least as many examples as there are classes, which for small datasets can contradict the requested training fraction. When this happens, the command issues a warning to the user that the requested training fraction can't be satisfied.
-- [#6721](https://github.com/rasahq/rasa/issues/6721): Fixed bug where slots with `influence_conversation=false` affected the action 
-  prediction if they were set manually using the 
-  `POST /conversations/<conversation_id/tracker/events` endpoint in the 
+- [#6721](https://github.com/rasahq/rasa/issues/6721): Fixed bug where slots with `influence_conversation=false` affected the action
+  prediction if they were set manually using the
+  `POST /conversations/<conversation_id/tracker/events` endpoint in the
   [HTTP API](./http-api.mdx).
 - [#6760](https://github.com/rasahq/rasa/issues/6760): Update Pika event broker to be a separate process and make it use a
-  `multiprocessing.Queue` to send and process messages. This change should help 
+  `multiprocessing.Queue` to send and process messages. This change should help
   avoid situations when events stop being sent after a while.
 - [#6973](https://github.com/rasahq/rasa/issues/6973): Ignore rules when validating stories
 - [#6986](https://github.com/rasahq/rasa/issues/6986): - Updated Slack Connector for new Slack Events API
@@ -437,11 +437,11 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#7031](https://github.com/rasahq/rasa/issues/7031): The converter tool is now able to convert test stories that contain a number as entity type.
 - [#7034](https://github.com/rasahq/rasa/issues/7034): The converter tool now converts test stories and stories that contain full retrieval intents correctly.
   Previously the response keys were deleted during conversion to YAML.
-- [#7204](https://github.com/rasahq/rasa/issues/7204): The slack connector requires a configuration for `slack_signing_secret` to make 
+- [#7204](https://github.com/rasahq/rasa/issues/7204): The slack connector requires a configuration for `slack_signing_secret` to make
   the connector more secure. The configuration value needs to be added to your
   `credentials.yml` if you are using the slack connector.
 - [#7246](https://github.com/rasahq/rasa/issues/7246): Fixed model fingerprinting - it should avoid some more unecessary retrainings now.
-- [#7253](https://github.com/rasahq/rasa/issues/7253): Fixed a problem when slots of type `text` or `list` were referenced by name only in 
+- [#7253](https://github.com/rasahq/rasa/issues/7253): Fixed a problem when slots of type `text` or `list` were referenced by name only in
   the training data and this was treated as an empty value. This means that the two
   following stories are equivalent in case the slot type is `text`:
 
@@ -472,7 +472,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.8] - 2020-11-26
-                       
+
 
 ### Bugfixes
 - [#7235](https://github.com/rasahq/rasa/issues/7235): Slots that use `initial_value` won't cause rule contradiction errors when `conversation_start: true` is used. Previously, two rules that differed only in their use of `conversation_start` would be flagged as contradicting when a slot used `initial_value`.
@@ -481,7 +481,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.7] - 2020-11-24
-                       
+
 
 ### Bugfixes
 - [#5974](https://github.com/rasahq/rasa/issues/5974): `ActionRestart` will now trigger `ActionSessionStart` as a followup action.
@@ -493,7 +493,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.6] - 2020-11-10
-                       
+
 
 ### Bugfixes
 - [#6629](https://github.com/rasahq/rasa/issues/6629): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](lock-stores.mdx). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](lock-stores.mdx#redislockstore).
@@ -502,14 +502,14 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.5] - 2020-11-10
-                       
+
 
 ### Bugfixes
 - [#7200](https://github.com/rasahq/rasa/issues/7200): Fix a bug because of which only one retrieval intent was present in `all_retrieval_intent` key of the output of `ResponseSelector` even if there were multiple retrieval intents present in the training data.
 
 
 ## [2.0.4] - 2020-11-08
-                       
+
 
 ### Bugfixes
 - [#7140](https://github.com/rasahq/rasa/issues/7140): Fixed error when starting Rasa X locally without a proper git setup.
@@ -517,14 +517,14 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.3] - 2020-10-29
-                       
+
 
 ### Bugfixes
 - [#7089](https://github.com/rasahq/rasa/issues/7089): Fix [ConveRTTokenizer](components.mdx#converttokenizer) failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
 
-  Since the ConveRT model was taken [offline](https://github.com/RasaHQ/rasa/issues/6806), we can no longer use 
-  the earlier public URL of the model. Additionally, since the licence for the model is unknown, 
-  we cannot host it ourselves. Users can still use the component by setting `model_url` to a community/self-hosted 
+  Since the ConveRT model was taken [offline](https://github.com/RasaHQ/rasa/issues/6806), we can no longer use
+  the earlier public URL of the model. Additionally, since the licence for the model is unknown,
+  we cannot host it ourselves. Users can still use the component by setting `model_url` to a community/self-hosted
   model URL or path to a local directory containing model files. For example:
   ```yaml
   pipeline:
@@ -535,7 +535,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.2] - 2020-10-22
-                       
+
 
 ### Bugfixes
 - [#6691](https://github.com/rasahq/rasa/issues/6691): Fix description of previous event in output of `rasa data validate stories`
@@ -546,7 +546,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.1] - 2020-10-20
-                       
+
 
 ### Bugfixes
 - [#7018](https://github.com/rasahq/rasa/issues/7018): Create correct `KafkaProducer` for `PLAINTEXT` and `SASL_SSL` security protocols.
@@ -555,7 +555,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 
 ## [2.0.0] - 2020-10-07
-                       
+
 
 ### Deprecations and Removals
 - [#5757](https://github.com/rasahq/rasa/issues/5757): Removed previously deprecated packages `rasa_nlu` and `rasa_core`.
@@ -578,7 +578,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#5834](https://github.com/rasahq/rasa/issues/5834): Removed `restaurantbot` example as it was confusing and not a great way to build a bot.
 - [#6296](https://github.com/rasahq/rasa/issues/6296): `LabelTokenizerSingleStateFeaturizer` is deprecated. To replicate `LabelTokenizerSingleStateFeaturizer` functionality,
   add a `Tokenizer`  with `intent_tokenization_flag: True` and `CountVectorsFeaturizer` to the NLU pipeline.
-  An example of elements to be added to the pipeline is shown in the improvement changelog 6296`. 
+  An example of elements to be added to the pipeline is shown in the improvement changelog 6296`.
 
   `BinarySingleStateFeaturizer` is deprecated and will be removed in the future. We recommend to switch to `SingleStateFeaturizer`.
 - [#6354](https://github.com/rasahq/rasa/issues/6354): Specifying the parameters `force` and `save_to_default_model_directory` as part of the
@@ -586,8 +586,8 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   Please use the query parameters `force_training` and `save_to_default_model_directory`
   instead. See the [API documentation](/pages/http-api) for more information.
 - [#6409](https://github.com/rasahq/rasa/issues/6409): The conversation event `form` was renamed to `active_loop`. Rasa Open Source
-  will continue to be able to read and process old `form` events. Note that 
-  serialized trackers will no longer have the `active_form` field. Instead the 
+  will continue to be able to read and process old `form` events. Note that
+  serialized trackers will no longer have the `active_form` field. Instead the
   `active_loop` field will contain the same information. Story representations
   in Markdown and YAML will use `active_loop` instead of `form` to represent the
   event.
@@ -625,18 +625,18 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   - `evaluate_on_num_examples`
 
   Please check the documentation for more information.
-- [#6463](https://github.com/rasahq/rasa/issues/6463): The conversation event `form_validation` was renamed to `loop_interrupted`. 
-  Rasa Open Source will continue to be able to read and process old `form_validation` 
+- [#6463](https://github.com/rasahq/rasa/issues/6463): The conversation event `form_validation` was renamed to `loop_interrupted`.
+  Rasa Open Source will continue to be able to read and process old `form_validation`
   events.
 - [#6658](https://github.com/rasahq/rasa/issues/6658): `SklearnPolicy` was deprecated. `TEDPolicy` is the preferred machine-learning policy for dialogue models.
 - [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type [`unfeaturized`](domain.mdx#unfeaturized-slot) are
   now deprecated and will be removed in Rasa Open Source 3.0. Instead you should use
-  the property `influence_conversation: false` for every slot type as described in the 
+  the property `influence_conversation: false` for every slot type as described in the
   [migration guide](migration-guide.mdx#unfeaturized-slots).
 - [#6934](https://github.com/rasahq/rasa/issues/6934): [Conversation sessions](domain.mdx#session-configuration) are now enabled by default
   if your [Domain](domain.mdx) does not contain a session configuration.
   Previously a missing session configuration was treated as if conversation sessions
-  were disabled. You can explicitly disable conversation sessions using the following 
+  were disabled. You can explicitly disable conversation sessions using the following
   snippet:
 
   ```yaml-rasa title="domain.yml"
@@ -708,7 +708,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   and regexes defined in the training data. For more information see [RegexEntityExtractor](./components.mdx#regexentityextractor).
 - [#5996](https://github.com/rasahq/rasa/issues/5996): Introduced a new `YAML` format for Core training data and implemented a parser
   for it. Rasa Open Source can now read stories in both `Markdown` and `YAML` format.
-- [#6020](https://github.com/rasahq/rasa/issues/6020): You can now enable threaded message responses from Rasa through the Slack connector. 
+- [#6020](https://github.com/rasahq/rasa/issues/6020): You can now enable threaded message responses from Rasa through the Slack connector.
   This option is enabled using an optional configuration in the credentials.yml file
 
   ```yaml
@@ -719,7 +719,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   ```
 
   Button support has also been added in the Slack connector.
-- [#6065](https://github.com/rasahq/rasa/issues/6065): Add support for [rules](./rules.mdx) data and [forms](./forms.mdx) in YAML 
+- [#6065](https://github.com/rasahq/rasa/issues/6065): Add support for [rules](./rules.mdx) data and [forms](./forms.mdx) in YAML
   format.
 - [#6066](https://github.com/rasahq/rasa/issues/6066): The NLU `interpreter` is now passed to the [Policies](./policies.mdx) during training and
   inference time. Note that this requires an additional parameter `interpreter` in the
@@ -734,7 +734,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   deprecated and will be removed in the future. Please see the
   [rules documentation](./rules.mdx) for more information.
 
-  Added new NLU component [FallbackClassifier](./components.mdx#fallbackclassifier) 
+  Added new NLU component [FallbackClassifier](./components.mdx#fallbackclassifier)
   which predicts an intent `nlu_fallback` in case the confidence was below a given
   threshold. The intent `nlu_fallback` may
   then be used to write stories / rules to handle the fallback in case of low NLU
@@ -757,7 +757,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#6275](https://github.com/rasahq/rasa/issues/6275): Add optional metadata argument to `NaturalLanguageInterpreter`'s parse method.
 - [#6354](https://github.com/rasahq/rasa/issues/6354): The Rasa Open Source API endpoint `POST /model/train` now supports training data in YAML
   format. Please specify the header `Content-Type: application/yaml` when
-  training a model using YAML training data. 
+  training a model using YAML training data.
   See the [API documentation](/pages/http-api) for more information.
 - [#6374](https://github.com/rasahq/rasa/issues/6374): Added a YAML schema and a writer for 2.0 Training Core data.
 - [#6404](https://github.com/rasahq/rasa/issues/6404): Users can now use the ``rasa data convert {nlu|core} -f yaml`` command to convert training data from Markdown format to YAML format.
@@ -768,10 +768,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Improvements
 - [#4536](https://github.com/rasahq/rasa/issues/4536): Add support for Python 3.8.
-- [#5368](https://github.com/rasahq/rasa/issues/5368): Changed the project structure for Rasa projects initialized with the 
-  [CLI](./command-line-interface.mdx) (using the `rasa init` command): 
-  `actions.py` -> `actions/actions.py`. `actions` is now a Python package (it contains 
-  a file `actions/__init__.py`). In addition, the `__init__.py` at the 
+- [#5368](https://github.com/rasahq/rasa/issues/5368): Changed the project structure for Rasa projects initialized with the
+  [CLI](./command-line-interface.mdx) (using the `rasa init` command):
+  `actions.py` -> `actions/actions.py`. `actions` is now a Python package (it contains
+  a file `actions/__init__.py`). In addition, the `__init__.py` at the
   root of the project has been removed.
 - [#5481](https://github.com/rasahq/rasa/issues/5481): `DIETClassifier` now also assigns a confidence value to entity predictions.
 - [#5637](https://github.com/rasahq/rasa/issues/5637): Added behavior to the `rasa --version` command. It will now also list information
@@ -857,11 +857,11 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#6273](https://github.com/rasahq/rasa/issues/6273): Add `output_channel` query param to `/conversations/<conversation_id>/tracker/events` route, along with boolean `execute_side_effects` to optionally schedule/cancel reminders, and forward bot messages to output channel.
 - [#6276](https://github.com/rasahq/rasa/issues/6276): Allow Rasa to boot when model loading exception occurs. Forward HTTP Error responses to standard log output.
 - [#6294](https://github.com/rasahq/rasa/issues/6294): Rename `DucklingHTTPExtractor` to `DucklingEntityExtractor`.
-- [#6296](https://github.com/rasahq/rasa/issues/6296): * Modified functionality of `SingleStateFeaturizer`. 
-  
+- [#6296](https://github.com/rasahq/rasa/issues/6296): * Modified functionality of `SingleStateFeaturizer`.
+
     `SingleStateFeaturizer` uses trained NLU `Interpreter` to featurize intents and action names.
     This modified `SingleStateFeaturizer` can replicate `LabelTokenizerSingleStateFeaturizer` functionality.
-    This component is deprecated from now on. 
+    This component is deprecated from now on.
     To replicate `LabelTokenizerSingleStateFeaturizer` functionality,
     add a `Tokenizer`  with `intent_tokenization_flag: True` and `CountVectorsFeaturizer` to the NLU pipeline.
     Please update your configuration file.
@@ -873,16 +873,16 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
         - name: WhitespaceTokenizer
           intent_tokenization_flag: True
         - name: CountVectorsFeaturizer
-      ``` 
+      ```
 
-    Please train both NLU and Core (using `rasa train`) to use a trained tokenizer and featurizer for core featurization.  
+    Please train both NLU and Core (using `rasa train`) to use a trained tokenizer and featurizer for core featurization.
 
-    The new `SingleStateFeaturizer` stores slots, entities and forms in sparse features for more lightweight storage. 
+    The new `SingleStateFeaturizer` stores slots, entities and forms in sparse features for more lightweight storage.
 
     `BinarySingleStateFeaturizer` is deprecated and will be removed in the future.
     We recommend to switch to `SingleStateFeaturizer`.
 
-  * Modified `TEDPolicy` to handle sparse features. As a result, `TEDPolicy` may require more epochs than before to converge. 
+  * Modified `TEDPolicy` to handle sparse features. As a result, `TEDPolicy` may require more epochs than before to converge.
 
   * Default TEDPolicy featurizer changed to `MaxHistoryTrackerFeaturizer` with infinite max history (takes all dialogue turns into account).
   * Default batch size for TED increased from [8,32] to [64, 256]
@@ -891,7 +891,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   This means you can now use buttons, images, ... in your FAQ or chitchat responses
   (assuming they are using the response selector).
 
-  As a consequence, training data form in markdown has to have the file 
+  As a consequence, training data form in markdown has to have the file
   suffix `.md` from now on to allow proper file type detection-
 - [#6457](https://github.com/rasahq/rasa/issues/6457): Support for test stories written in yaml format.
 - [#6466](https://github.com/rasahq/rasa/issues/6466): [Response Selectors](./components.mdx#responseselector) are now trained on retrieval intent labels by default instead of the actual response text. For most models, this should improve training time and accuracy of the `ResponseSelector`.
@@ -903,10 +903,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   All response selector related evaluation artifacts - `report.json, successes.json, errors.json, confusion_matrix.png` now use the sub-intent of the retrieval intent as the target and predicted labels instead of the actual response text.
 
-  The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name` have been deprecated in favour 
-  of `intent_response_key` and `response_templates` respectively. Additionally a key `all_retrieval_intents` 
-  is added to the response selector output which will hold a list of all retrieval intents(faq,chitchat, etc.) 
-  that are present in the training data.An example output looks like this - 
+  The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name` have been deprecated in favour
+  of `intent_response_key` and `response_templates` respectively. Additionally a key `all_retrieval_intents`
+  is added to the response selector output which will hold a list of all retrieval intents(faq,chitchat, etc.)
+  that are present in the training data.An example output looks like this -
   ```
   "response_selector": {
       "all_retrieval_intents": ["faq"],
@@ -942,9 +942,9 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   If you were using retrieval actions before, rename all of them to start with `utter_` prefix. For example, `respond_chitchat` becomes `utter_chitchat`.
   Also, in order to keep the response templates more consistent, you should now add the `utter_` prefix to all response templates defined for retrieval intents. For example, a response template `chitchat/ask_name` becomes `utter_chitchat/ask_name`. Note that the NLU examples for this will still be under `chitchat/ask_name` intent.
   The example `responseselectorbot` should help clarify these changes further.
-- [#6613](https://github.com/rasahq/rasa/issues/6613): Added telemetry reporting. Rasa uses telemetry to report anonymous usage information. 
+- [#6613](https://github.com/rasahq/rasa/issues/6613): Added telemetry reporting. Rasa uses telemetry to report anonymous usage information.
   This information is essential to help improve Rasa Open Source for all users.
-  Reporting will be opt-out. More information can be found in our 
+  Reporting will be opt-out. More information can be found in our
   [telemetry documentation](./telemetry/telemetry.mdx).
 - [#6757](https://github.com/rasahq/rasa/issues/6757): Update `extract_other_slots` method inside `FormAction` to fill a slot from an entity
   with a different name if corresponding slot mapping of `from_entity` type is unique.
@@ -965,8 +965,8 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   any value. Slots of type `any` are always ignored during conversations.
 - [#6856](https://github.com/rasahq/rasa/issues/6856): Improved exception handling within Rasa Open Source.
 
-  All exceptions that are somewhat expected (e.g. errors in file formats like 
-  configurations or training data) will share a common base class 
+  All exceptions that are somewhat expected (e.g. errors in file formats like
+  configurations or training data) will share a common base class
   `RasaException`.
 
   ::warning Backwards Incompatibility
@@ -975,15 +975,15 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   ::
 
   Some other exceptions have also slightly changed:
-  - raise `YamlSyntaxException` instead of YAMLError (from ruamel) when 
+  - raise `YamlSyntaxException` instead of YAMLError (from ruamel) when
     failing to load a yaml file with information about the line where loading failed
-  - introduced `MissingDependencyException` as an exception raised if packages 
+  - introduced `MissingDependencyException` as an exception raised if packages
     need to be installed
 - [#6900](https://github.com/rasahq/rasa/issues/6900): Debug logs from `matplotlib` libraries are now hidden by default and are configurable with the `LOG_LEVEL_LIBRARIES` environment variable.
 - [#6943](https://github.com/rasahq/rasa/issues/6943): Update `KafkaEventBroker` to support `SASL_SSL` and `PLAINTEXT` protocols.
 
 ### Bugfixes
-- [#3597](https://github.com/rasahq/rasa/issues/3597): Fixed issue where temporary model directories were not removed after pulling from a model server. 
+- [#3597](https://github.com/rasahq/rasa/issues/3597): Fixed issue where temporary model directories were not removed after pulling from a model server.
 
   If the model pulled from the server was invalid, this could lead to large amounts of local storage usage.
 - [#5038](https://github.com/rasahq/rasa/issues/5038): Fixed a bug in the `CountVectorsFeaturizer` which resulted in the very first
@@ -1030,7 +1030,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#6222](https://github.com/rasahq/rasa/issues/6222): Better handling of input sequences longer than the maximum sequence length that the `HFTransformersNLP` models can handle.
 
   During training, messages with longer sequence length should result in an error, whereas during inference they are
-  gracefully handled but a debug message is logged. Ideally, passing messages longer than the acceptable maximum sequence 
+  gracefully handled but a debug message is logged. Ideally, passing messages longer than the acceptable maximum sequence
   lengths of each model should be avoided.
 - [#6231](https://github.com/rasahq/rasa/issues/6231): When using the `DynamoTrackerStore`, if there are more than 100 DynamoDB tables, the tracker could attempt to re-create an existing table if that table was not among the first 100 listed by the dynamo API.
 - [#6282](https://github.com/rasahq/rasa/issues/6282): Fixed a deprication warning that pops up due to changes in numpy
@@ -1038,12 +1038,12 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   Update default stories and rules on "Prototype an Assistant" page.
 - [#6419](https://github.com/rasahq/rasa/issues/6419): Fixed a bug in the `serialise` method of the `EvaluationStore` class which resulted in a wrong end-to-end evaluation of the predicted entities.
-- [#6535](https://github.com/rasahq/rasa/issues/6535): [Forms](./forms.mdx) with slot mappings defined in `domain.yml` must now be a 
-  dictionary (with form names as keys). The previous syntax where `forms` was simply a 
+- [#6535](https://github.com/rasahq/rasa/issues/6535): [Forms](./forms.mdx) with slot mappings defined in `domain.yml` must now be a
+  dictionary (with form names as keys). The previous syntax where `forms` was simply a
   list of form names is still supported.
 - [#6577](https://github.com/rasahq/rasa/issues/6577): Remove BILOU tag prefix from role and group labels when creating entities.
-- [#6601](https://github.com/rasahq/rasa/issues/6601): Fixed a bug in the featurization of the boolean slot type. Previously, to set a slot value to "true", 
-  you had to set it to "1", which is in conflict with the documentation. In older versions `true` 
+- [#6601](https://github.com/rasahq/rasa/issues/6601): Fixed a bug in the featurization of the boolean slot type. Previously, to set a slot value to "true",
+  you had to set it to "1", which is in conflict with the documentation. In older versions `true`
   (without quotes) was also possible, but now raised an error during yaml validation.
 - [#6603](https://github.com/rasahq/rasa/issues/6603): Fixed a bug in rasa interactive. Now it exports the stories and nlu training data as yml file.
 - [#6711](https://github.com/rasahq/rasa/issues/6711): Fixed slots not being featurized before first user utterance.
@@ -1059,7 +1059,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#6897](https://github.com/rasahq/rasa/issues/6897): Fixed issue where responses including `text: ""` and no `custom` key would incorrectly fail domain validation.
 - [#6898](https://github.com/rasahq/rasa/issues/6898): Fixed issue where extra keys other than `title` and `payload` inside of `buttons` made a response fail domain validation.
 - [#6919](https://github.com/rasahq/rasa/issues/6919): Do not filter training data in model.py but on component side.
-- [#6929](https://github.com/rasahq/rasa/issues/6929): Check if a model was provided when executing `rasa test core`. 
+- [#6929](https://github.com/rasahq/rasa/issues/6929): Check if a model was provided when executing `rasa test core`.
   If not, print a useful error message and stop.
 - [#6805](https://github.com/rasahq/rasa/issues/6805): Transfer only response templates for retrieval intents from domain to NLU Training Data.
 
@@ -1074,12 +1074,33 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#5811](https://github.com/rasahq/rasa/issues/5811): Event brokers documentation should say `url` instead of `host`.
 - [#5952](https://github.com/rasahq/rasa/issues/5952): Update `rasa init` documentation to include `tests/conversation_tests.md`
   in the resulting directory tree.
-- [#6819](https://github.com/rasahq/rasa/issues/6819): Update ["Validating Form Input" section](./forms.mdx#validating-form-input) to include details about 
+- [#6819](https://github.com/rasahq/rasa/issues/6819): Update ["Validating Form Input" section](./forms.mdx#validating-form-input) to include details about
   how `FormValidationAction` class makes it easier to validate form slots in custom actions and how to use it.
 - [#6823](https://github.com/rasahq/rasa/issues/6823): Update the examples in the API docs to use YAML instead of Markdown
 
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
+
+
+## [1.10.20] - 2020-12-18
+
+### Bugfixes
+
+- [#7575](https://github.com/rasahq/rasa/issues/7575): Fix scikit-learn crashing during evaluation of `ResponseSelector` predictions.
+
+
+## [1.10.19] - 2020-12-17
+
+### Improvements
+
+- [#6251](https://github.com/rasahq/rasa/issues/6251): Kafka Producer connection now remains active across sends. Added support for group and client id.
+  The Kafka producer also adds support for the `PLAINTEXT` and `SASL_SSL` protocols.
+
+  DynamoDB table exists check fixed bug when more than 100 tables exist.
+
+- [#6814](https://github.com/rasahq/rasa/issues/6814): Replace use of `python-telegram-bot` package with `pyTelegramBotAPI`
+- [#7423](https://github.com/rasahq/rasa/issues/7423): Use response selector keys (sub-intents) as labels for plotting the confusion matrix during NLU evaluation to improve readability.
+
 
 ## [1.10.18] - 2020-11-26
 
@@ -2419,7 +2440,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 ### Bugfixes
 
 * Added the ability to properly deal with spaCy `Doc`-objects created on
-  empty strings as discussed in 
+  empty strings as discussed in
   [issue #4445](https://github.com/RasaHQ/rasa/issues/4445 "Rasa issue #4445: Handling spaCy objects on empty strings").
   Only training samples that actually bear content are sent to `self.nlp.pipe`
   for every given attribute. Non-content-bearing samples are converted to empty
