@@ -818,7 +818,7 @@ class ComponentBuilder:
         return None, cache_key
 
     def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
-        # add a component to the cache
+        """Add a component to the cache."""
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info(
