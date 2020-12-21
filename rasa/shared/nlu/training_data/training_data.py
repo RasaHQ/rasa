@@ -857,7 +857,7 @@ class TrainingData(TrainingDataFull):
 class TrainingDataChunk(NLUPipelineTrainingData):
     """Holds a portion of the complete TrainingData.
 
-    It can only hold training_examples and responses.
+    It can only hold training_examples.
     Setting entity synonyms, regex features and lookup
     tables will result in an exception being raised.
     """
