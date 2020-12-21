@@ -7,7 +7,10 @@ from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
@@ -31,7 +34,7 @@ class EntitySynonymMapper(EntityExtractor):
 
     def prepare_partial_training(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

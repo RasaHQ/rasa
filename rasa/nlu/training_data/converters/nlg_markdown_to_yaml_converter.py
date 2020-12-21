@@ -4,7 +4,7 @@ from typing import Text
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.utils.cli import print_success
 from rasa.utils.converter import TrainingDataConverter
 
@@ -45,7 +45,7 @@ class NLGMarkdownToYamlConverter(TrainingDataConverter):
             new_response_name = cls._normalize_response_name(response_name)
             converted_responses[new_response_name] = examples
 
-        converted_training_data = TrainingData(responses=converted_responses)
+        converted_training_data = TrainingDataFull(responses=converted_responses)
         writer.dump(output_nlg_path, converted_training_data)
 
         print_success(f"Converted NLG file: '{source_path}' >> '{output_nlg_path}'.")

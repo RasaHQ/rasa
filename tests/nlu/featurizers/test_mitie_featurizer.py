@@ -2,7 +2,7 @@ import numpy as np
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -38,10 +38,10 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    MitieTokenizer().train(TrainingData([message]))
+    MitieTokenizer().train(TrainingDataFull([message]))
 
     featurizer.train(
-        TrainingData([message]),
+        TrainingDataFull([message]),
         RasaNLUModelConfig(),
         **{"mitie_feature_extractor": mitie_feature_extractor},
     )

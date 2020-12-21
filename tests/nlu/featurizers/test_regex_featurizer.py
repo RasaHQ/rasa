@@ -6,7 +6,7 @@ from pathlib import Path
 from _pytest.logging import LogCaptureFixture
 import logging
 
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -174,7 +174,7 @@ def test_lookup_tables_without_use_word_boundaries(
     ftr = RegexFeaturizer(
         {"use_word_boundaries": False, "number_additional_patterns": 0}
     )
-    training_data = TrainingData()
+    training_data = TrainingDataFull()
     training_data.lookup_tables = lookups
     ftr.train(training_data)
 
@@ -239,7 +239,7 @@ def test_lookup_tables(
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
     ftr = RegexFeaturizer({"number_additional_patterns": 0})
-    training_data = TrainingData()
+    training_data = TrainingDataFull()
     training_data.lookup_tables = lookups
     ftr.train(training_data)
 
@@ -321,10 +321,10 @@ def test_regex_featurizer_train():
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingData([message]))
+    WhitespaceTokenizer().train(TrainingDataFull([message]))
 
     featurizer.train(
-        TrainingData([message], regex_features=patterns), RasaNLUModelConfig()
+        TrainingDataFull([message], regex_features=patterns), RasaNLUModelConfig()
     )
 
     expected = np.array([0, 1, 0])
@@ -430,7 +430,7 @@ def test_lookup_with_and_without_boundaries(
     ftr = RegexFeaturizer(
         {"use_word_boundaries": use_word_boundaries, "number_additional_patterns": 0}
     )
-    training_data = TrainingData()
+    training_data = TrainingDataFull()
 
     # we use lookups because the "use_word_boundaries" flag is only used when
     # producing patterns from lookup tables
@@ -488,10 +488,10 @@ def test_persist_load_for_finetuning(tmp_path: Path):
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingData([message]))
+    WhitespaceTokenizer().train(TrainingDataFull([message]))
 
     featurizer.train(
-        TrainingData([message], regex_features=patterns), RasaNLUModelConfig()
+        TrainingDataFull([message], regex_features=patterns), RasaNLUModelConfig()
     )
 
     persist_value = featurizer.persist("ftr", str(tmp_path))
@@ -519,7 +519,7 @@ def test_persist_load_for_finetuning(tmp_path: Path):
 
     new_lookups = [{"name": "plates", "elements": "data/test/lookup_tables/plates.txt"}]
 
-    training_data = TrainingData()
+    training_data = TrainingDataFull()
     training_data.lookup_tables = new_lookups
     loaded_featurizer.train(training_data)
 
@@ -546,10 +546,10 @@ def test_incremental_train_featurization(tmp_path: Path):
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingData([message]))
+    WhitespaceTokenizer().train(TrainingDataFull([message]))
 
     featurizer.train(
-        TrainingData([message], regex_features=patterns), RasaNLUModelConfig()
+        TrainingDataFull([message], regex_features=patterns), RasaNLUModelConfig()
     )
 
     # Test featurization of message
@@ -582,10 +582,10 @@ def test_incremental_train_featurization(tmp_path: Path):
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingData([message]))
+    WhitespaceTokenizer().train(TrainingDataFull([message]))
 
     loaded_featurizer.train(
-        TrainingData([message], regex_features=patterns + new_patterns),
+        TrainingDataFull([message], regex_features=patterns + new_patterns),
         RasaNLUModelConfig(),
     )
 
@@ -635,7 +635,7 @@ def test_vocabulary_overflow_log():
     ]
 
     with pytest.warns(UserWarning) as warning:
-        featurizer.train(TrainingData([], regex_features=additional_patterns))
+        featurizer.train(TrainingDataFull([], regex_features=additional_patterns))
     assert (
         "The originally trained model was configured to handle a maximum number of 4 patterns"
         in warning[0].message.args[0]

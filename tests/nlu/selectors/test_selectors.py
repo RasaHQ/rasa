@@ -20,7 +20,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 
 @pytest.mark.parametrize(
@@ -107,7 +107,7 @@ def test_preprocess_selector_multiple_retrieval_intents():
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa-responses.md"
     )
-    training_data_extra_intent = TrainingData(
+    training_data_extra_intent = TrainingDataFull(
         [
             Message.build(
                 text="Is it possible to detect the version?", intent="faq/q1"

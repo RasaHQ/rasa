@@ -27,7 +27,10 @@ from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.common import lazy_property
 
@@ -163,7 +166,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def prepare_partial_training(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

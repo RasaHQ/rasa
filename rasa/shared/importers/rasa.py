@@ -7,7 +7,7 @@ from rasa.shared.importers import utils
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.autoconfig import TrainingType
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.core.domain import InvalidDomain, Domain
 import rasa.shared.utils.io
 
@@ -54,10 +54,23 @@ class RasaFileImporter(TrainingDataImporter):
             exclusion_percentage,
         )
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
+        """Retrieves the NLU training data that should be used for training.
+
+        Args:
+            language: Can be used to only load training data for a certain language.
+
+        Returns:
+            Loaded NLU `TrainingData`.
+        """
         return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:
+        """Retrieves the domain of the bot.
+
+        Returns:
+            Loaded `Domain`.
+        """
         domain = Domain.empty()
 
         # If domain path is None, return an empty domain

@@ -8,7 +8,10 @@ from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_pa
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
@@ -283,7 +286,7 @@ def test_prepare_partial_training_do_not_modify_data(component_class: Type[Compo
         return
 
     # Create dummy training data
-    training_data = TrainingData([Message(text="some text", intent="some_intent")])
+    training_data = TrainingDataFull([Message(text="some text", intent="some_intent")])
     # `prepare_partial_training` should only depend on the tokenizer
     # so train tokenizer first to add tokens to training_data
     tokenizer = next(

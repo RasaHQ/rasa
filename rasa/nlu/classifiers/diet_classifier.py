@@ -40,7 +40,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
 from rasa.utils.tensorflow.constants import (
@@ -367,10 +367,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     # training data helpers:
     @staticmethod
     def _label_id_index_mapping(
-        training_data: TrainingData, attribute: Text
+        training_data: TrainingDataFull, attribute: Text
     ) -> Dict[Text, int]:
         """Create label_id dictionary."""
-
         distinct_label_ids = {
             example.get(attribute) for example in training_data.intent_examples
         } - {None}
@@ -383,10 +382,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return {value: key for key, value in mapping.items()}
 
     def _create_entity_tag_specs(
-        self, training_data: TrainingData
+        self, training_data: TrainingDataFull
     ) -> List[EntityTagSpec]:
         """Create entity tag specifications with their respective tag id mappings."""
-
         _tag_specs = []
 
         for tag_name in POSSIBLE_TAGS:
@@ -413,7 +411,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def _tag_id_index_mapping_for(
-        tag_name: Text, training_data: TrainingData
+        tag_name: Text, training_data: TrainingDataFull
     ) -> Optional[Dict[Text, int]]:
         """Create mapping from tag name to id."""
         if tag_name == ENTITY_ATTRIBUTE_ROLE:
@@ -572,7 +570,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _create_label_data(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         label_id_dict: Dict[Text, int],
         attribute: Text,
     ) -> RasaModelData:
@@ -739,7 +737,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
     # train helpers
-    def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
+    def preprocess_train_data(self, training_data: TrainingDataFull) -> RasaModelData:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
@@ -783,7 +781,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

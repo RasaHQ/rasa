@@ -11,7 +11,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -46,4 +46,4 @@ class WitReader(JsonTrainingDataReader):
                 data[ENTITIES] = entities
             data[TEXT] = text
             training_examples.append(Message(data=data))
-        return TrainingData(training_examples)
+        return TrainingDataFull(training_examples)
