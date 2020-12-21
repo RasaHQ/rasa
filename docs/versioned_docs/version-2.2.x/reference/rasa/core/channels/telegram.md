@@ -6,10 +6,10 @@ title: rasa.core.channels.telegram
 ## TelegramOutput Objects
 
 ```python
-class TelegramOutput(Bot,  OutputChannel)
+class TelegramOutput(TeleBot,  OutputChannel)
 ```
 
-Output channel for Telegram
+Output channel for Telegram.
 
 #### send\_text\_with\_buttons
 
@@ -34,4 +34,12 @@ class TelegramInput(InputChannel)
 ```
 
 Telegram input channel
+
+#### get\_output\_channel
+
+```python
+ | get_output_channel() -> TelegramOutput
+```
+
+Loads the telegram channel.
 
