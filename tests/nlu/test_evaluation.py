@@ -919,6 +919,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
+@pytest.mark.timeout(600)
 def test_nlu_comparison(tmp_path: Path):
     config = {
         "language": "en",
