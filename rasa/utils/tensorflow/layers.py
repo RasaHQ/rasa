@@ -1083,7 +1083,7 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> Tuple[tf.Tensor, List[tf.Tensor], tf.Tensor]:
         """Define softmax loss."""
 
-        softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
+        softmax_logits = tf.concat([sim_pos, sim_neg_il], axis=-1)
 
         sigmoid_logits = tf.concat(
             [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
@@ -1123,12 +1123,12 @@ class DotProductLoss(tf.keras.layers.Layer):
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
         tf.print(
-            tf.reduce_mean(sim_pos),
+            (tf.reduce_mean(sim_pos), tf.math.reduce_std(sim_pos)),
             [
-                tf.reduce_mean(sim_neg_ii),
-                tf.reduce_mean(sim_neg_il),
-                tf.reduce_mean(sim_neg_ll),
-                tf.reduce_mean(sim_neg_li),
+                (tf.reduce_mean(sim_neg_ii), tf.math.reduce_std(sim_neg_ii)),
+                (tf.reduce_mean(sim_neg_il), tf.math.reduce_std(sim_neg_il)),
+                (tf.reduce_mean(sim_neg_ll), tf.math.reduce_std(sim_neg_ll)),
+                (tf.reduce_mean(sim_neg_li), tf.math.reduce_std(sim_neg_li)),
             ],
         )
 
