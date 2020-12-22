@@ -33,6 +33,7 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.endpoints
 import rasa.utils.io
+import rasa.utils.common
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
@@ -985,8 +986,8 @@ def create_app(
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
-            evaluation = await run_evaluation(
-                data_path, nlu_model, disable_plotting=True
+            evaluation = common_utils.run_in_loop(
+                run_evaluation(data_path, nlu_model, disable_plotting=True)
             )
             return response.json(evaluation)
         except Exception as e:
