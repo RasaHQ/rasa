@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
+from rasa.core.actions.action import Action
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -151,7 +152,7 @@ class MessageProcessor:
 
         scores = [
             {"action": a, "score": p}
-            for a, p in zip(self.domain.action_names, prediction.probabilities)
+            for a, p in zip(self.domain.action_names_or_texts, prediction.probabilities)
         ]
         return {
             "scores": scores,
@@ -510,7 +511,7 @@ class MessageProcessor:
                 )
 
     def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
-        return rasa.core.actions.action.action_for_name(
+        return rasa.core.actions.action.action_for_name_or_text(
             action_name, self.domain, self.action_endpoint
         )
 
@@ -766,7 +767,7 @@ class MessageProcessor:
             )
             events = []
 
-        self._log_action_on_tracker(tracker, action.name(), events, prediction)
+        self._log_action_on_tracker(tracker, action, events, prediction)
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):
@@ -809,7 +810,7 @@ class MessageProcessor:
     def _log_action_on_tracker(
         self,
         tracker: DialogueStateTracker,
-        action_name: Text,
+        action: Action,
         events: Optional[List[Event]],
         prediction: PolicyPrediction,
     ) -> None:
@@ -819,23 +820,19 @@ class MessageProcessor:
         if events is None:
             events = []
 
-        self._warn_about_new_slots(tracker, action_name, events)
+        self._warn_about_new_slots(tracker, action.name(), events)
 
         action_was_rejected_manually = any(
             isinstance(event, ActionExecutionRejected) for event in events
         )
-        if action_name is not None and not action_was_rejected_manually:
+        if not action_was_rejected_manually:
             logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
             tracker.update_with_events(prediction.events, self.domain)
 
             # log the action and its produced events
-            tracker.update(
-                ActionExecuted(
-                    action_name, prediction.policy_name, prediction.max_confidence
-                )
-            )
+            tracker.update(action.event_for_successful_execution(prediction))
 
-        logger.debug(f"Action '{action_name}' ended with events '{events}'.")
+        logger.debug(f"Action '{action.name()}' ended with events '{events}'.")
         tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
@@ -883,7 +880,7 @@ class MessageProcessor:
         followup_action = tracker.followup_action
         if followup_action:
             tracker.clear_followup_action()
-            if followup_action in self.domain.action_names:
+            if followup_action in self.domain.action_names_or_texts:
                 return PolicyPrediction.for_action_name(
                     self.domain, followup_action, FOLLOWUP_ACTION
                 )

@@ -35,7 +35,9 @@ class NLUMarkdownToYamlConverter(TrainingDataConverter):
             source_path, output_path
         )
 
-        yaml_training_data = MarkdownReader().read(source_path)
+        yaml_training_data = MarkdownReader(ignore_deprecation_warning=True).read(
+            source_path
+        )
         RasaYAMLWriter().dump(output_nlu_path, yaml_training_data)
 
         for lookup_table in yaml_training_data.lookup_tables:
