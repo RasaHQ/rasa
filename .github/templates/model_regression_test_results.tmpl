@@ -26,9 +26,6 @@ The print_result template returns data depends on available fields.
 {{- end -}}
 {{- end -}}
 
-Render Markdown with results.
-
-*/ -}}
 {{- $results_master := (datasource "results_master") -}}
 {{ range $dataset, $config := (datasource "data")}}
 {{- $dataset_master := (index $results_master $dataset) -}}
