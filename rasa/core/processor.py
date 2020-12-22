@@ -49,6 +49,7 @@ import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.otel import start_span
 
 logger = logging.getLogger(__name__)
 

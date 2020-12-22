@@ -28,6 +28,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.otel import start_span
 
 logger = logging.getLogger(__name__)
 
@@ -451,7 +452,8 @@ class Interpreter:
         message = Message(data=data, time=time)
 
         for component in self.pipeline:
-            component.process(message, **self.context)
+            with start_span(component.name):
+                component.process(message, **self.context)
 
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
@@ -468,5 +470,6 @@ class Interpreter:
 
         for component in self.pipeline:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
-                component.process(message, **self.context)
+                with start_span(component.name):
+                    component.process(message, **self.context)
         return message

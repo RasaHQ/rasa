@@ -51,6 +51,7 @@ from rasa.shared.core.events import (
 )
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.shared.core.domain import Domain
+from rasa.utils.otel import start_span, inject
 
 
 if TYPE_CHECKING:
@@ -667,9 +668,11 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
-            response = await self.action_endpoint.request(
-                json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
-            )
+            with start_span("action_endpoint.request", attributes={"action": json_body["next_action"]}) as span:
+                headers = inject(self.action_endpoint.url)
+                response = await self.action_endpoint.request(
+                    json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT, headers=headers
+                )
 
             self._validate_action_result(response)
 
