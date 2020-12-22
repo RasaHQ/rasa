@@ -230,6 +230,7 @@ class ResponseSelector(DIETClassifier):
         FEATURIZERS: [],
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
+        "reset_batch_size": True,
     }
 
     def __init__(
