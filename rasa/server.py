@@ -985,7 +985,9 @@ def create_app(
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
-            evaluation = run_evaluation(data_path, nlu_model, disable_plotting=True)
+            evaluation = await run_evaluation(
+                data_path, nlu_model, disable_plotting=True
+            )
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())

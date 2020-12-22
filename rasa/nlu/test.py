@@ -1913,7 +1913,7 @@ async def compare_nlu(
                 model_path = os.path.join(get_model(model_path), "nlu")
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
-                result = run_evaluation_async(
+                result = await run_evaluation(
                     test_path, model_path, output_directory=output_path, errors=True
                 )
 

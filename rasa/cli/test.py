@@ -1,8 +1,7 @@
 import argparse
 import logging
 import os
-import asyncio
-from typing import List, Optional
+from typing import List
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -21,6 +20,7 @@ from rasa.shared.constants import (
 from rasa.core.test import FAILED_STORIES_FILE
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
+import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     )
 
 
-def run_nlu_test(args: argparse.Namespace) -> None:
+async def run_nlu_test_async(args: argparse.Namespace) -> None:
     """Run NLU tests."""
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
@@ -150,7 +150,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
                 )
                 continue
 
-        compare_nlu_models(
+        await compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
             output=output,
@@ -168,10 +168,14 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
-        # test_nlu(model_path, nlu_data, output, vars(args))
-        rasa.utils.common.run_in_loop(
-            test_nlu(model_path, nlu_data, output, vars(args))
-        )
+        await test_nlu(model_path, nlu_data, output, vars(args))
+        # rasa.utils.common.run_in_loop(
+        #     test_nlu(model_path, nlu_data, output, vars(args))
+        # )
+
+
+def run_nlu_test(args: argparse.Namespace) -> None:
+    rasa.utils.common.run_in_loop(run_nlu_test_async(args))
 
 
 def test(args: argparse.Namespace):

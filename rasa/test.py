@@ -101,7 +101,10 @@ def test(
         additional_arguments = {}
 
     test_core(model, stories, output, additional_arguments)
-    test_nlu(model, nlu_data, output, additional_arguments)
+    # test_nlu(model, nlu_data, output, additional_arguments)
+    rasa.utils.common.run_in_loop(
+        test_nlu(model, nlu_data, output, additional_arguments)
+    )
 
 
 def test_core(
@@ -122,7 +125,7 @@ def test_core(
 
     try:
         unpacked_model = rasa.model.get_model(model)
-        unpacked_model = rasa.model.get_model(model)
+        # unpacked_model = rasa.model.get_model(model)
     except ModelNotFound:
         rasa.shared.utils.cli.print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
@@ -191,7 +194,7 @@ async def test_nlu(
         )
 
 
-def compare_nlu_models(
+async def compare_nlu_models(
     configs: List[Text],
     nlu: Text,
     output: Text,
@@ -217,7 +220,7 @@ def compare_nlu_models(
         model_name: [[] for _ in range(runs)] for model_name in model_names
     }
 
-    training_examples_per_run = compare_nlu(
+    training_examples_per_run = await compare_nlu(
         configs,
         data,
         exclusion_percentages,
