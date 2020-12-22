@@ -297,7 +297,8 @@ class FormAction(LoopAction):
                         # filled from trigger intent mapping
                         should_fill_trigger_slot = (
                             tracker.active_loop_name != self.name()
-                            and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
+                            and slot_mapping["type"]
+                            == str(SlotMapping.FROM_TRIGGER_INTENT)
                             and self.intent_is_desired(slot_mapping, tracker)
                         )
                         if should_fill_entity_slot:
@@ -313,7 +314,9 @@ class FormAction(LoopAction):
                             value = None
 
                         if value is not None:
-                            logger.debug(f"Extracted '{value}' for extra slot '{slot_name}'.")
+                            logger.debug(
+                                f"Extracted '{value}' for extra slot '{slot_name}'."
+                            )
                             slot_values[slot_name] = value
                             # this slot is done, check  next
                             break
