@@ -154,6 +154,7 @@ class RasaModel(tf.keras.models.Model):
         silent: bool = False,
         loading: bool = False,
         eager: bool = False,
+        reset_batch_value: bool = False,
     ) -> None:
         """Fit model data"""
 
@@ -194,8 +195,9 @@ class RasaModel(tf.keras.models.Model):
 
         for epoch in progress_bar:
             epoch_batch_size = self.linearly_increasing_batch_size(
-                epoch, batch_size, epochs
+                epoch, batch_size, epochs, reset_batch_value
             )
+            print(epoch_batch_size)
 
             training_steps = self._batch_loop(
                 train_dataset_function,
@@ -555,7 +557,10 @@ class RasaModel(tf.keras.models.Model):
 
     @staticmethod
     def linearly_increasing_batch_size(
-        epoch: int, batch_size: Union[List[int], int], epochs: int
+        epoch: int,
+        batch_size: Union[List[int], int],
+        epochs: int,
+        reset_batch_value: bool = False,
     ) -> int:
         """Linearly increase batch size with every epoch.
 
@@ -564,6 +569,11 @@ class RasaModel(tf.keras.models.Model):
 
         if not isinstance(batch_size, list):
             return int(batch_size)
+
+        if reset_batch_value:
+            if epoch > epochs // 2:
+                return min(32, batch_size[0] // 2)
+            epochs /= 2
 
         if epochs > 1:
             return int(

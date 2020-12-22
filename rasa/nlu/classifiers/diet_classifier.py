@@ -251,6 +251,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Split entities by comma, this makes sense e.g. for a list of ingredients
         # in a recipie, but it doesn't make sense for the parts of an address
         SPLIT_ENTITIES_BY_COMMA: True,
+        "reset_batch_size": False,
     }
 
     # init helpers
@@ -775,6 +776,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
             self.component_config[BATCH_STRATEGY],
+            reset_batch_value=self.component_config["reset_batch_size"],
         )
 
     # process helpers
@@ -1120,6 +1122,7 @@ class DIET(TransformerRasaModel):
         self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
         self._update_metrics_to_log()
+        self.metric_to_monitor = "i_acc"
 
         # needed for efficient prediction
         self.all_labels_embed: Optional[tf.Tensor] = None
