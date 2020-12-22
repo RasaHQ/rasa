@@ -396,10 +396,10 @@ class RasaBatchDataGenerator(RasaDataGenerator):
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""
         self.current_epoch += 1
-        self.current_batch_size = self.linearly_increasing_batch_size()
+        self.current_batch_size = self._linearly_increasing_batch_size()
         self._shuffle_and_balance(self.current_batch_size)
 
-    def linearly_increasing_batch_size(self) -> int:
+    def _linearly_increasing_batch_size(self) -> int:
         """Linearly increase batch size with every epoch.
 
         The idea comes from https://arxiv.org/abs/1711.00489.
