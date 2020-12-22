@@ -144,7 +144,7 @@ class PolicyTestCollection:
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
-    @pytest.mark.timeout(600)
+    @pytest.mark.timeout(1000)
     @pytest.mark.parametrize("should_finetune", [False, True])
     async def test_persist_and_load(
         self,
