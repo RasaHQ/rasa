@@ -426,7 +426,7 @@ async def _train_core_with_validated_data(
         return _train_path
 
 
-def train_nlu(
+async def train_nlu(
     config: Text,
     nlu_data: Text,
     output: Text,
@@ -458,17 +458,15 @@ def train_nlu(
 
     """
 
-    return rasa.utils.common.run_in_loop(
-        _train_nlu_async(
-            config,
-            nlu_data,
-            output,
-            train_path,
-            fixed_model_name,
-            persist_nlu_training_data,
-            additional_arguments,
-            domain=domain,
-        )
+    return await _train_nlu_async(
+        config,
+        nlu_data,
+        output,
+        train_path,
+        fixed_model_name,
+        persist_nlu_training_data,
+        additional_arguments,
+        domain=domain,
     )
 
 

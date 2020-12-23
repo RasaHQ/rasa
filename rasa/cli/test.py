@@ -149,7 +149,6 @@ async def run_nlu_test_async(args: argparse.Namespace) -> None:
                     f"Ignoring file '{file}' as it is not a valid config file."
                 )
                 continue
-
         await compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
@@ -169,12 +168,14 @@ async def run_nlu_test_async(args: argparse.Namespace) -> None:
         )
 
         await test_nlu(model_path, nlu_data, output, vars(args))
-        # rasa.utils.common.run_in_loop(
-        #     test_nlu(model_path, nlu_data, output, vars(args))
-        # )
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
+    """Adding this function layer to be able to run run_nlu_test_async in the event loop.
+
+    I have run_nlu_test_async to be able to have await calls inside because functions
+    test_nlu and compare_nlu_models are async.
+    """
     rasa.utils.common.run_in_loop(run_nlu_test_async(args))
 
 

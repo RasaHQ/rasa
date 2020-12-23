@@ -131,7 +131,7 @@ def train_core(
         )
 
 
-def train_nlu(
+async def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
     from rasa.train import train_nlu
@@ -148,7 +148,7 @@ def train_nlu(
             args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
         )
 
-    return train_nlu(
+    return await train_nlu(
         config=config,
         nlu_data=nlu_data,
         output=output,

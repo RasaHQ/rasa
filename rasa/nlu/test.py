@@ -1895,9 +1895,8 @@ async def compare_nlu(
                         model_name, percent_string
                     )
                 )
-
                 try:
-                    model_path = train_nlu(
+                    model_path = await train_nlu(
                         nlu_config,
                         train_split_path,
                         model_output_path,

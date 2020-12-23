@@ -101,7 +101,6 @@ def test(
         additional_arguments = {}
 
     test_core(model, stories, output, additional_arguments)
-    # test_nlu(model, nlu_data, output, additional_arguments)
     rasa.utils.common.run_in_loop(
         test_nlu(model, nlu_data, output, additional_arguments)
     )
@@ -113,6 +112,7 @@ def test_core(
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
+    """Checks if models are present and then runs the test function in the event loop."""
     import rasa.model
     from rasa.shared.nlu.interpreter import RegexInterpreter
     from rasa.core.agent import Agent
@@ -154,7 +154,6 @@ def test_core(
     kwargs = rasa.shared.utils.common.minimal_kwargs(
         additional_arguments, test, ["stories", "agent"]
     )
-
     rasa.utils.common.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
 
 
@@ -164,6 +163,7 @@ async def test_nlu(
     output_directory: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ):
+    """Tests the NLU Model."""
     from rasa.nlu.test import run_evaluation
     from rasa.model import get_model
 
