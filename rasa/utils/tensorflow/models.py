@@ -277,6 +277,7 @@ class RasaModel(TmpKerasModel):
 
         if not finetune_mode:
             # prepare the model for prediction
+            model._training = False
             model.prepare_for_predict()
             model.prepared_for_prediction = True
 

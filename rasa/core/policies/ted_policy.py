@@ -1314,7 +1314,7 @@ class TED(TransformerRasaModel):
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             attribute_features = self._tf_layers[f"encoding_layer.{attribute}"](
-                attribute_features
+                attribute_features, self._training
             )
 
         # attribute features have shape
