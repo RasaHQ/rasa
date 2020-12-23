@@ -805,7 +805,7 @@ def test_model_finetuning_new_domain_label_stops_all_training(
 
 @pytest.mark.timeout(300)
 @pytest.mark.parametrize("use_latest_model", [True, False])
-def test_model_finetuning_nlu(
+async def test_model_finetuning_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     trained_nlu_moodbot_path: Text,
