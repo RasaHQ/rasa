@@ -13,6 +13,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
+    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -45,6 +46,7 @@ KEY_SLOT_NAME = "slot_was_set"
 KEY_SLOT_VALUE = "value"
 KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
+KEY_BOT_END_TO_END_MESSAGE = "bot"
 KEY_CHECKPOINT = "checkpoint"
 KEY_CHECKPOINT_SLOTS = "slot_was_set"
 KEY_METADATA = "metadata"
@@ -279,6 +281,8 @@ class YAMLStoryReader(StoryReader):
             self._parse_or_statement(step)
         elif KEY_ACTION in step.keys():
             self._parse_action(step)
+        elif KEY_BOT_END_TO_END_MESSAGE in step.keys():
+            self._parse_bot_message(step)
         elif KEY_CHECKPOINT in step.keys():
             self._parse_checkpoint(step)
         # This has to be after the checkpoint test as there can be a slot key within
@@ -308,12 +312,19 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
-        if utterance:
+
+        if not utterance:
+            return
+
+        is_end_to_end_utterance = KEY_USER_INTENT not in step
+        if is_end_to_end_utterance:
+            utterance.intent = {INTENT_NAME_KEY: None}
+        else:
             self._validate_that_utterance_is_in_domain(utterance)
-            self.current_step_builder.add_user_messages([utterance])
+
+        self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
-
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
         # check if this is a retrieval intent
@@ -361,7 +372,7 @@ class YAMLStoryReader(StoryReader):
     ) -> Tuple[Text, Optional[Text]]:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
-        if not user_intent:
+        if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User utterance cannot be empty. "
@@ -513,6 +524,10 @@ class YAMLStoryReader(StoryReader):
             return
 
         self._add_event(action_name, {})
+
+    def _parse_bot_message(self, step: Dict[Text, Any]) -> None:
+        bot_message = step.get(KEY_BOT_END_TO_END_MESSAGE, "")
+        self._add_event("", {ACTION_TEXT: bot_message})
 
     def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
         self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})

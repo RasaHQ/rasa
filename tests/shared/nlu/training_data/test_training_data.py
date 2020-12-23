@@ -1,3 +1,5 @@
+import asyncio
+from pathlib import Path
 from typing import Text, List
 
 import pytest
@@ -12,10 +14,13 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITIES,
+    INTENT,
+    ACTION_NAME,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
@@ -25,6 +30,10 @@ from rasa.shared.nlu.training_data.util import (
 )
 
 import rasa.shared.data
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
 
 
 def test_luis_data():
@@ -623,6 +632,40 @@ def test_custom_attributes(tmp_path):
     assert example.get("sentiment") == 0.8
 
 
+async def test_without_additional_e2e_examples(tmp_path: Path):
+    domain_path = tmp_path / "domain.yml"
+    domain_path.write_text(Domain.empty().as_yaml())
+
+    config_path = tmp_path / "config.yml"
+    config_path.touch()
+
+    existing = TrainingDataImporter.load_from_dict(
+        {}, str(config_path), str(domain_path), []
+    )
+
+    stories = StoryGraph(
+        [
+            StoryStep(
+                events=[
+                    UserUttered(None, {"name": "greet_from_stories"}),
+                    ActionExecuted("utter_greet_from_stories"),
+                ]
+            )
+        ]
+    )
+
+    # Patch to return our test stories
+    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+
+    importer = E2EImporter(existing)
+
+    training_data = await importer.get_nlu_data()
+
+    assert training_data.training_examples
+    assert not training_data.is_empty()
+    assert len(training_data.nlu_examples) == 0
+
+
 def test_fingerprint_is_same_when_loading_data_again():
     from rasa.shared.importers.utils import training_data_from_paths
 
@@ -633,3 +676,25 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        Message({INTENT: "intent2"}),
+        Message({ENTITIES: [{"entity": "entity2"}]}),
+        Message({ENTITIES: [{"entity": "entity1", "group": "new_group"}]}),
+        Message({ENTITIES: [{"entity": "entity1", "role": "new_role"}]}),
+        Message({ACTION_NAME: "action_name2"}),
+    ],
+)
+def test_label_fingerprints(message: Message):
+    training_data1 = TrainingData(
+        [
+            Message({INTENT: "intent1"}),
+            Message({ENTITIES: [{"entity": "entity1"}]}),
+            Message({ACTION_NAME: "action_name1"}),
+        ]
+    )
+    training_data2 = training_data1.merge(TrainingData([message]))
+    assert training_data1.label_fingerprint() != training_data2.label_fingerprint()

@@ -8,3 +8,4 @@ pipeline:
 # https://rasa.com/docs/rasa/policies
 policies:
   - name: MemoizationPolicy
+  - name: RulePolicy

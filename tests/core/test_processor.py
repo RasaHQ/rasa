@@ -39,6 +39,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     Event,
     SlotSet,
+    DefinePrevUserUtteredFeaturization,
     ActionExecutionRejected,
     LoopInterrupted,
 )
@@ -191,14 +192,13 @@ async def test_reminder_scheduled(
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
 
-    assert t.events[-5] == UserUttered("test")
-    assert t.events[-4] == ActionExecuted("action_schedule_reminder")
-    assert isinstance(t.events[-3], ReminderScheduled)
-    assert t.events[-2] == UserUttered(
+    assert t.events[1] == UserUttered("test")
+    assert t.events[2] == ActionExecuted("action_schedule_reminder")
+    assert isinstance(t.events[3], ReminderScheduled)
+    assert t.events[4] == UserUttered(
         f"{EXTERNAL_MESSAGE_PREFIX}remind",
         intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
-    assert t.events[-1] == ActionExecuted("action_listen")
 
 
 async def test_trigger_external_latest_input_channel(
@@ -742,6 +742,7 @@ async def test_handle_message_with_session_start(
             [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
         ),
         SlotSet(entity, slot_1[entity]),
+        DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
         BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -763,6 +764,7 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
         BotUttered(
             "hey there post-session start hello!",
@@ -900,10 +902,12 @@ async def test_restart_triggers_session_start(
             [{"entity": entity, "start": 6, "end": 23, "value": "name1"}],
         ),
         SlotSet(entity, slot_1[entity]),
+        DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted("utter_greet"),
         BotUttered("hey there name1!", metadata={"template_name": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
+        DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted(ACTION_RESTART_NAME),
         Restarted(),
         ActionExecuted(ACTION_SESSION_START_NAME),
@@ -911,7 +915,8 @@ async def test_restart_triggers_session_start(
         # No previous slot is set due to restart.
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
-    assert list(tracker.events) == expected
+    for actual, expected in zip(tracker.events, expected):
+        assert actual == expected
 
 
 async def test_handle_message_if_action_manually_rejects(
@@ -1089,6 +1094,68 @@ async def test_policy_events_not_applied_if_rejected(
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(user_message, intent={"name": "greet"}),
         ActionExecutionRejected(ACTION_LISTEN_NAME),
+    ]
+    for event, expected in zip(tracker.events, expected_events):
+        assert event == expected
+
+
+async def test_logging_of_end_to_end_action():
+    end_to_end_action = "hi, how are you?"
+    domain = Domain(
+        intents=["greet"],
+        entities=[],
+        slots=[],
+        templates={},
+        action_names=[],
+        forms={},
+        action_texts=[end_to_end_action],
+    )
+
+    conversation_id = "test_logging_of_end_to_end_action"
+    user_message = "/greet"
+
+    class ConstantEnsemble(PolicyEnsemble):
+        def __init__(self) -> None:
+            super().__init__([])
+            self.number_of_calls = 0
+
+        def probabilities_using_best_policy(
+            self,
+            tracker: DialogueStateTracker,
+            domain: Domain,
+            interpreter: NaturalLanguageInterpreter,
+            **kwargs: Any,
+        ) -> PolicyPrediction:
+            if self.number_of_calls == 0:
+                prediction = PolicyPrediction.for_action_name(
+                    domain, end_to_end_action, "some policy"
+                )
+                prediction.is_end_to_end_prediction = True
+                self.number_of_calls += 1
+                return prediction
+            else:
+                return PolicyPrediction.for_action_name(domain, ACTION_LISTEN_NAME)
+
+    tracker_store = InMemoryTrackerStore(domain)
+    processor = MessageProcessor(
+        RegexInterpreter(),
+        ConstantEnsemble(),
+        domain,
+        tracker_store,
+        NaturalLanguageGenerator.create(None, domain),
+    )
+
+    await processor.handle_message(UserMessage(user_message, sender_id=conversation_id))
+
+    tracker = tracker_store.retrieve(conversation_id)
+    expected_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(user_message, intent={"name": "greet"}),
+        ActionExecuted(action_text=end_to_end_action),
+        BotUttered("hi, how are you?", {}, {}, 123),
+        ActionExecuted(ACTION_LISTEN_NAME),
     ]
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected

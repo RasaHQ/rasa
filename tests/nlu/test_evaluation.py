@@ -427,6 +427,7 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
         successes=False,
         errors=False,
         disable_plotting=True,
+        report_as_dict=True,
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -435,12 +436,17 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
+    assert all(key in intent_results.evaluation for key in ["errors", "report"])
+
     assert len(entity_results.train["CRFEntityExtractor"]["Accuracy"]) == n_folds
     assert len(entity_results.train["CRFEntityExtractor"]["Precision"]) == n_folds
     assert len(entity_results.train["CRFEntityExtractor"]["F1-score"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
+
+    for extractor_evaluation in entity_results.evaluation.values():
+        assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
 def test_run_cv_evaluation_with_response_selector():
@@ -480,18 +486,26 @@ def test_run_cv_evaluation_with_response_selector():
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
+    assert all(key in intent_results.evaluation for key in ["errors", "report"])
+
     assert len(response_selection_results.train["Accuracy"]) == n_folds
     assert len(response_selection_results.train["Precision"]) == n_folds
     assert len(response_selection_results.train["F1-score"]) == n_folds
     assert len(response_selection_results.test["Accuracy"]) == n_folds
     assert len(response_selection_results.test["Precision"]) == n_folds
     assert len(response_selection_results.test["F1-score"]) == n_folds
+    assert all(
+        key in response_selection_results.evaluation for key in ["errors", "report"]
+    )
+
     assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
     assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
     assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
     assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
     assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
     assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
+    for extractor_evaluation in entity_results.evaluation.values():
+        assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
 def test_response_selector_present():
