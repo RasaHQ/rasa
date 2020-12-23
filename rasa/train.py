@@ -661,7 +661,7 @@ async def _core_model_for_finetuning(
         return None
 
 
-def train_nlu(
+async def train_nlu(
     config: Text,
     nlu_data: Text,
     output: Text,
@@ -697,19 +697,17 @@ def train_nlu(
         otherwise the path to the directory with the trained model files.
 
     """
-    return rasa.utils.common.run_in_loop(
-        _train_nlu_async(
-            config,
-            nlu_data,
-            output,
-            train_path,
-            fixed_model_name,
-            persist_nlu_training_data,
-            additional_arguments,
-            domain=domain,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
-        )
+    return await _train_nlu_async(
+        config,
+        nlu_data,
+        output,
+        train_path,
+        fixed_model_name,
+        persist_nlu_training_data,
+        additional_arguments,
+        domain=domain,
+        model_to_finetune=model_to_finetune,
+        finetuning_epoch_fraction=finetuning_epoch_fraction,
     )
 
 

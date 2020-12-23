@@ -139,7 +139,7 @@ def test_train_core_temp_files(
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
 
-def test_train_nlu_temp_files(
+async def test_train_nlu_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
@@ -150,12 +150,14 @@ def test_train_nlu_temp_files(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(default_stack_config, default_nlu_data, output=str(tmp_path / "models"))
+    await train_nlu(
+        default_stack_config, default_nlu_data, output=str(tmp_path / "models")
+    )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
 
-def test_train_nlu_wrong_format_error_message(
+async def test_train_nlu_wrong_format_error_message(
     capsys: CaptureFixture,
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -167,17 +169,19 @@ def test_train_nlu_wrong_format_error_message(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models"))
+    await train_nlu(
+        default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models")
+    )
 
     captured = capsys.readouterr()
     assert "Please verify the data format" in captured.out
 
 
-def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
+async def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
 
     with pytest.warns(UserWarning) as records:
-        train_nlu(
+        await train_nlu(
             "data/test_config/config_response_selector_minimal.yml",
             data_path,
             output=str(tmp_path / "models"),
@@ -190,12 +194,12 @@ def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
     )
 
 
-def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
+async def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
     domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
 
     with pytest.warns(None) as records:
-        train_nlu(
+        await train_nlu(
             "data/test_config/config_response_selector_minimal.yml",
             data_path,
             output=str(tmp_path / "models"),
@@ -209,7 +213,7 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
     )
 
 
-def test_train_nlu_no_nlu_file_error_message(
+async def test_train_nlu_no_nlu_file_error_message(
     capsys: CaptureFixture,
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -220,7 +224,7 @@ def test_train_nlu_no_nlu_file_error_message(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(default_stack_config, "", output=str(tmp_path / "models"))
+    await train_nlu(default_stack_config, "", output=str(tmp_path / "models"))
 
     captured = capsys.readouterr()
     assert "No NLU data given" in captured.out
@@ -328,7 +332,7 @@ def test_train_core_autoconfig(
     assert args[1] == autoconfig.TrainingType.CORE
 
 
-def test_train_nlu_autoconfig(
+async def test_train_nlu_autoconfig(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
@@ -345,7 +349,7 @@ def test_train_nlu_autoconfig(
     )
 
     # do training
-    train_nlu(
+    await train_nlu(
         default_stack_config,
         default_nlu_data,
         output="test_train_nlu_temp_files_models",
@@ -835,7 +839,7 @@ def test_model_finetuning_nlu(
     new_nlu_path = tmp_path / "new_nlu.yml"
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
-    train_nlu(
+    await train_nlu(
         str(new_config_path),
         str(new_nlu_path),
         domain="examples/moodbot/domain.yml",
@@ -859,7 +863,7 @@ def test_model_finetuning_nlu(
     assert new_diet_metadata[EPOCHS] == 2
 
 
-def test_model_finetuning_nlu_new_label(
+async def test_model_finetuning_nlu_new_label(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
@@ -874,7 +878,7 @@ def test_model_finetuning_nlu_new_label(
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        await train_nlu(
             "examples/moodbot/config.yml",
             str(new_nlu_path),
             domain="examples/moodbot/domain.yml",
@@ -885,7 +889,7 @@ def test_model_finetuning_nlu_new_label(
     mocked_nlu_training.assert_not_called()
 
 
-def test_model_finetuning_nlu_new_entity(
+async def test_model_finetuning_nlu_new_entity(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
@@ -900,7 +904,7 @@ def test_model_finetuning_nlu_new_entity(
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        await train_nlu(
             "examples/moodbot/config.yml",
             str(new_nlu_path),
             domain="examples/moodbot/domain.yml",
@@ -911,7 +915,7 @@ def test_model_finetuning_nlu_new_entity(
     mocked_nlu_training.assert_not_called()
 
 
-def test_model_finetuning_nlu_new_label_already_in_domain(
+async def test_model_finetuning_nlu_new_label_already_in_domain(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     trained_rasa_model: Text,
@@ -932,7 +936,7 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        await train_nlu(
             default_config_path,
             str(new_nlu_path),
             domain=default_domain_path,
@@ -943,7 +947,7 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     mocked_nlu_training.assert_not_called()
 
 
-def test_model_finetuning_nlu_new_label_to_domain_only(
+async def test_model_finetuning_nlu_new_label_to_domain_only(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
@@ -957,7 +961,7 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
     new_domain_path = tmp_path / "new_domain.yml"
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
 
-    train_nlu(
+    await train_nlu(
         "examples/moodbot/config.yml",
         "examples/moodbot/data/nlu.yml",
         domain=str(new_domain_path),
@@ -969,7 +973,7 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
 
 
 @pytest.mark.timeout(200)
-def test_model_finetuning_nlu_with_default_epochs(
+async def test_model_finetuning_nlu_with_default_epochs(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
@@ -985,7 +989,7 @@ def test_model_finetuning_nlu_with_default_epochs(
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
-    train_nlu(
+    await train_nlu(
         str(new_config_path),
         "examples/moodbot/data/nlu.yml",
         output=output,
@@ -1071,7 +1075,7 @@ def test_model_finetuning_with_invalid_model_core(
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
-def test_model_finetuning_with_invalid_model_nlu(
+async def test_model_finetuning_with_invalid_model_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
@@ -1087,7 +1091,7 @@ def test_model_finetuning_with_invalid_model_nlu(
     output = str(tmp_path / "models")
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        await train_nlu(
             default_stack_config,
             default_nlu_data,
             domain=default_domain_path,
