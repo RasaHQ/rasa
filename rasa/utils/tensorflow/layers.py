@@ -1083,11 +1083,15 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> Tuple[tf.Tensor, List[tf.Tensor], tf.Tensor]:
         """Define softmax loss."""
 
-        softmax_logits = tf.concat([sim_pos, sim_neg_il], axis=-1)
+        softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
 
         sigmoid_logits = tf.concat(
-            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_li], axis=-1
         )
+
+        # sigmoid_logits = tf.concat(
+        #     [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_li], axis=-1
+        # )
 
         # create label_ids for softmax
         softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
@@ -1107,7 +1111,15 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels=sigmoid_label_ids, logits=sigmoid_logits
         )
 
-        loss = softmax_loss + tf.reduce_mean(sigmoid_loss, axis=-1)
+        ii_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=tf.zeros_like(sim_neg_ii), logits=sim_neg_ii
+        )
+
+        loss = (
+            softmax_loss
+            + tf.reduce_mean(sigmoid_loss, axis=-1)
+            + 0.01 * tf.reduce_mean(ii_loss, axis=-1)
+        )
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -1129,6 +1141,23 @@ class DotProductLoss(tf.keras.layers.Layer):
                 (tf.reduce_mean(sim_neg_il), tf.math.reduce_std(sim_neg_il)),
                 (tf.reduce_mean(sim_neg_ll), tf.math.reduce_std(sim_neg_ll)),
                 (tf.reduce_mean(sim_neg_li), tf.math.reduce_std(sim_neg_li)),
+            ],
+            [
+                (
+                    tf.reduce_max(softmax_loss),
+                    tf.reduce_mean(softmax_loss),
+                    tf.math.reduce_std(softmax_loss),
+                ),
+                (
+                    tf.reduce_max(sigmoid_loss),
+                    tf.reduce_mean(sigmoid_loss),
+                    tf.math.reduce_std(sigmoid_loss),
+                ),
+                (
+                    tf.reduce_max(ii_loss),
+                    tf.reduce_mean(ii_loss),
+                    tf.math.reduce_std(ii_loss),
+                ),
             ],
         )
 
