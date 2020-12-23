@@ -14,7 +14,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
-    RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
+    RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
 
 from rasa.shared.constants import (
@@ -175,7 +175,7 @@ def action_from_name(
     ):
         return ActionRetrieveResponse(name)
     elif name.startswith(UTTER_PREFIX):
-        return ActionUtterTemplate(name)
+        return ActionResponse(name)
     elif should_use_form_action:
         from rasa.core.actions.forms import FormAction
 
@@ -245,14 +245,14 @@ class Action:
         return "Action('{}')".format(self.name())
 
 
-class ActionUtterTemplate(Action):
-    """An action which only effect is to utter a template when it is run.
+class ActionResponse(Action):
+    """An action which only effect is to utter a response when it is run.
 
-    Both, name and utter template, need to be specified using
+    Both, name and response, need to be specified using
     the `name` method."""
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False):
-        self.template_name = name
+        self.response_name = name
         self.silent_fail = silent_fail
 
     async def run(
@@ -262,28 +262,28 @@ class ActionUtterTemplate(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        """Simple run implementation uttering a (hopefully defined) template."""
+        """Simple run implementation uttering a (hopefully defined) response."""
 
-        message = await nlg.generate(self.template_name, tracker, output_channel.name())
+        message = await nlg.generate(self.response_name, tracker, output_channel.name())
         if message is None:
             if not self.silent_fail:
                 logger.error(
                     "Couldn't create message for response '{}'."
-                    "".format(self.template_name)
+                    "".format(self.response_name)
                 )
             return []
-        message["template_name"] = self.template_name
+        message["response_name"] = self.response_name
 
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
-        return self.template_name
+        return self.response_name
 
     def __str__(self) -> Text:
-        return "ActionUtterTemplate('{}')".format(self.name())
+        return "ActionResponse('{}')".format(self.name())
 
 
-class ActionRetrieveResponse(ActionUtterTemplate):
+class ActionRetrieveResponse(ActionResponse):
     """An action which queries the Response Selector for the appropriate response."""
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False):
@@ -332,11 +332,11 @@ class ActionRetrieveResponse(ActionUtterTemplate):
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
 
-        # Override template name of ActionUtterTemplate
-        # with the complete template name retrieved from
+        # Override utter action of ActionResponse
+        # with the complete utter action retrieved from
         # the output of response selector.
-        self.template_name = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
-            RESPONSE_SELECTOR_TEMPLATE_NAME_KEY
+        self.response_name = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
+            RESPONSE_SELECTOR_UTTER_ACTION_KEY
         ]
 
         return await super().run(output_channel, nlg, tracker, domain)
@@ -348,7 +348,7 @@ class ActionRetrieveResponse(ActionUtterTemplate):
         return "ActionRetrieveResponse('{}')".format(self.name())
 
 
-class ActionBack(ActionUtterTemplate):
+class ActionBack(ActionResponse):
     """Revert the tracker state by two user utterances."""
 
     def name(self) -> Text:
@@ -389,7 +389,7 @@ class ActionListen(Action):
         return []
 
 
-class ActionRestart(ActionUtterTemplate):
+class ActionRestart(ActionResponse):
     """Resets the tracker to its initial state.
 
     Utters the restart response if available."""
@@ -455,7 +455,7 @@ class ActionSessionStart(Action):
         return _events
 
 
-class ActionDefaultFallback(ActionUtterTemplate):
+class ActionDefaultFallback(ActionResponse):
     """Executes the fallback action and goes back to the previous state
     of the dialogue"""
 
@@ -563,14 +563,14 @@ class RemoteAction(Action):
 
         bot_messages = []
         for response in responses:
-            template = response.pop("template", None)
-            if template:
+            response = response.pop("response", None)
+            if response:
                 draft = await nlg.generate(
-                    template, tracker, output_channel.name(), **response
+                    response, tracker, output_channel.name(), **response
                 )
                 if not draft:
                     continue
-                draft["template_name"] = template
+                draft["response_name"] = response
             else:
                 draft = {}
 
@@ -791,13 +791,13 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "Yes", "payload": f"/{intent_to_affirm}"},
                 {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
-            "template_name": self.name(),
+            "response_name": self.name(),
         }
 
         return [create_bot_utterance(message)]
 
 
-class ActionDefaultAskRephrase(ActionUtterTemplate):
+class ActionDefaultAskRephrase(ActionResponse):
     """Default implementation which asks the user to rephrase his intent."""
 
     def name(self) -> Text:

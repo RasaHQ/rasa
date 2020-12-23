@@ -195,14 +195,14 @@ def test_avoid_action_repetition():
 def test_utter_responses():
     domain_file = "examples/moodbot/domain.yml"
     domain = Domain.load(domain_file)
-    expected_template = {
+    expected_response = {
         "text": "Hey! How are you?",
         "buttons": [
             {"title": "great", "payload": "/mood_great"},
             {"title": "super sad", "payload": "/mood_unhappy"},
         ],
     }
-    assert domain.random_template_for("utter_greet") == expected_template
+    assert domain.random_response_for("utter_greet") == expected_response
 
 
 def test_custom_slot_type(tmpdir: Path):
@@ -1003,7 +1003,7 @@ def test_domain_deepcopy():
     assert new_domain.entities == domain.entities
     assert new_domain.forms == domain.forms
     assert new_domain.form_names == domain.form_names
-    assert new_domain.templates == domain.templates
+    assert new_domain.responses == domain.responses
     assert new_domain.action_texts == domain.action_texts
     assert new_domain.session_config == domain.session_config
     assert new_domain._custom_actions == domain._custom_actions
@@ -1019,7 +1019,7 @@ def test_domain_deepcopy():
     assert new_domain.forms is not domain.forms
     assert new_domain.form_names is not domain.form_names
     assert new_domain.slots is not domain.slots
-    assert new_domain.templates is not domain.templates
+    assert new_domain.responses is not domain.responses
     assert new_domain.action_texts is not domain.action_texts
     assert new_domain.session_config is not domain.session_config
     assert new_domain._custom_actions is not domain._custom_actions
@@ -1028,19 +1028,19 @@ def test_domain_deepcopy():
 
 
 @pytest.mark.parametrize(
-    "template_key, validation",
+    "response_key, validation",
     [("utter_chitchat/faq", True), ("utter_chitchat", False)],
 )
-def test_is_retrieval_intent_template(template_key, validation):
+def test_is_retrieval_intent_response(response_key, validation):
     domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-    assert domain.is_retrieval_intent_template((template_key, [{}])) == validation
+    assert domain.is_retrieval_intent_response((response_key, [{}])) == validation
 
 
-def test_retrieval_intent_template_seggregation():
+def test_retrieval_intent_response_seggregation():
     domain = Domain.load("data/test_domains/mixed_retrieval_intents.yml")
-    assert domain.templates != domain.retrieval_intent_templates
-    assert domain.templates and domain.retrieval_intent_templates
-    assert list(domain.retrieval_intent_templates.keys()) == [
+    assert domain.responses != domain.retrieval_intent_responses
+    assert domain.responses and domain.retrieval_intent_responses
+    assert list(domain.retrieval_intent_responses.keys()) == [
         "utter_chitchat/ask_weather",
         "utter_chitchat/ask_name",
     ]

@@ -14,12 +14,12 @@ class NaturalLanguageGenerator:
 
     async def generate(
         self,
-        template_name: Text,
+        action_name: Text,
         tracker: "DialogueStateTracker",
         output_channel: Text,
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
-        """Generate a response for the requested template.
+        """Generate a response for the requested utter action.
 
         There are a lot of different methods to implement this, e.g. the
         generation can be based on responses or be fully ML based by feeding
@@ -56,7 +56,7 @@ def _create_from_endpoint_config(
 
         # this is the default type if no nlg type is set
         nlg = CallbackNaturalLanguageGenerator(endpoint_config=endpoint_config)
-    elif endpoint_config.type.lower() == "template":
+    elif endpoint_config.type.lower() == "template" or endpoint_config.type.lower() == "response":
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         nlg = TemplatedNaturalLanguageGenerator(domain.responses)

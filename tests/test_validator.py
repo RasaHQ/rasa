@@ -26,15 +26,6 @@ async def test_verify_intents_does_fail_on_invalid_data():
     assert not validator.verify_intents()
 
 
-async def test_verify_valid_utterances():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=[DEFAULT_NLU_DATA, DEFAULT_STORIES_FILE],
-    )
-    validator = await Validator.from_importer(importer)
-    assert validator.verify_utterances()
-
-
 async def test_verify_valid_responses():
     importer = RasaFileImporter(
         domain_path="data/test_domains/selectors.yml",
@@ -72,24 +63,6 @@ async def test_verify_bad_story_structure_ignore_warnings():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=True)
-
-
-async def test_fail_on_invalid_utterances(tmpdir):
-    # domain and stories are from different domain and should produce warnings
-    invalid_domain = str(tmpdir / "invalid_domain.yml")
-    rasa.shared.utils.io.write_yaml(
-        {
-            "responses": {"utter_greet": [{"text": "hello"}]},
-            "actions": [
-                "utter_greet",
-                "utter_non_existent",  # error: utter template odes not exist
-            ],
-        },
-        invalid_domain,
-    )
-    importer = RasaFileImporter(domain_path=invalid_domain)
-    validator = await Validator.from_importer(importer)
-    assert not validator.verify_utterances()
 
 
 async def test_verify_there_is_example_repetition_in_intents():

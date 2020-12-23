@@ -13,7 +13,7 @@ from rasa.core.actions.action import (
     ActionExecutionRejection,
     ActionListen,
     ActionRestart,
-    ActionUtterTemplate,
+    ActionResponse,
     ActionRetrieveResponse,
     RemoteAction,
     ActionSessionStart,
@@ -32,7 +32,7 @@ from rasa.shared.core.events import (
     Event,
     UserUttered,
 )
-from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
     USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
@@ -54,12 +54,12 @@ from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.fixture(scope="module")
-def template_nlg():
+def response_nlg():
     responses = {
         "utter_ask_rephrase": [{"text": "can you rephrase that?"}],
         "utter_restart": [{"text": "congrats, you've restarted me!"}],
         "utter_back": [{"text": "backing up..."}],
-        "utter_invalid": [{"text": "a template referencing an invalid {variable}."}],
+        "utter_invalid": [{"text": "a response referencing an invalid {variable}."}],
         "utter_buttons": [
             {
                 "text": "button message",
@@ -81,8 +81,8 @@ def template_sender_tracker(default_domain):
 def test_text_format():
     assert "{}".format(ActionListen()) == "Action('action_listen')"
     assert (
-        "{}".format(ActionUtterTemplate("my_action_name"))
-        == "ActionUtterTemplate('my_action_name')"
+        "{}".format(ActionResponse("my_action_name"))
+        == "ActionResponse('my_action_name')"
     )
     assert (
         "{}".format(ActionRetrieveResponse("utter_test"))
@@ -181,10 +181,10 @@ async def test_remote_action_logs_events(
         "responses": [
             {
                 "text": "test text",
-                "template": None,
+                "response": None,
                 "buttons": [{"title": "cheap", "payload": "cheap"}],
             },
-            {"template": "utter_greet"},
+            {"response": "utter_greet"},
         ],
     }
 
@@ -229,7 +229,7 @@ async def test_remote_action_logs_events(
         "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
     )
     assert events[1] == BotUttered(
-        "hey there None!", metadata={"template_name": "utter_greet"}
+        "hey there None!", metadata={"utter_action": "utter_greet"}
     )
     assert events[2] == SlotSet("name", "rasa")
 
@@ -256,7 +256,7 @@ async def test_remote_action_utterances_with_none_values(
                 "buttons": None,
                 "elements": [],
                 "custom": None,
-                "template": "utter_ask_cuisine",
+                "response": "utter_ask_cuisine",
                 "image": None,
                 "attachment": None,
             }
@@ -275,7 +275,7 @@ async def test_remote_action_utterances_with_none_values(
 
     assert events == [
         BotUttered(
-            "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
+            "what dou want to eat?", metadata={"utter_action": "utter_ask_cuisine"}
         ),
         ActiveLoop("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
@@ -358,8 +358,8 @@ async def test_action_utter_retrieved_response(
                 "chitchat": {
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
-                        "response_templates": [{"text": "I am a bot."}],
-                        "template_name": "utter_chitchat/ask_name",
+                        "response": [{"text": "I am a bot."}],
+                        "utter_action": "utter_chitchat/ask_name",
                     }
                 }
             }
@@ -378,7 +378,7 @@ async def test_action_utter_retrieved_response(
         "text"
     )
     assert (
-        events[0].as_dict().get("metadata").get("template_name")
+        events[0].as_dict().get("metadata").get("utter_action")
         == "utter_chitchat/ask_name"
     )
 
@@ -396,8 +396,8 @@ async def test_action_utter_default_retrieved_response(
                 "default": {
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
-                        "response_templates": [{"text": "I am a bot."}],
-                        "template_name": "utter_chitchat/ask_name",
+                        "response": [{"text": "I am a bot."}],
+                        "utter_action": "utter_chitchat/ask_name",
                     }
                 }
             }
@@ -417,7 +417,7 @@ async def test_action_utter_default_retrieved_response(
     )
 
     assert (
-        events[0].as_dict().get("metadata").get("template_name")
+        events[0].as_dict().get("metadata").get("utter_action")
         == "utter_chitchat/ask_name"
     )
 
@@ -435,8 +435,8 @@ async def test_action_utter_retrieved_empty_response(
                 "dummy": {
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
-                        "response_templates": [{"text": "I am a bot."}],
-                        "template_name": "utter_chitchat/ask_name",
+                        "response": [{"text": "I am a bot."}],
+                        "utter_action": "utter_chitchat/ask_name",
                     }
                 }
             }
@@ -454,35 +454,35 @@ async def test_action_utter_retrieved_empty_response(
     assert events == []
 
 
-async def test_action_utter_template(
+async def test_response(
     default_channel, default_nlg, default_tracker, default_domain
 ):
-    events = await ActionUtterTemplate("utter_channel").run(
+    events = await ActionResponse("utter_channel").run(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
     assert events == [
         BotUttered(
-            "this is a default channel", metadata={"template_name": "utter_channel"}
+            "this is a default channel", metadata={"utter_action": "utter_channel"}
         )
     ]
 
 
-async def test_action_utter_template_unknown_template(
+async def test_response_unknown_response(
     default_channel, default_nlg, default_tracker, default_domain
 ):
-    events = await ActionUtterTemplate("utter_unknown").run(
+    events = await ActionResponse("utter_unknown").run(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
     assert events == []
 
 
-async def test_action_utter_template_with_buttons(
-    default_channel, template_nlg, template_sender_tracker, default_domain
+async def test_response_with_buttons(
+    default_channel, response_nlg, template_sender_tracker, default_domain
 ):
-    events = await ActionUtterTemplate("utter_buttons").run(
-        default_channel, template_nlg, template_sender_tracker, default_domain
+    events = await ActionResponse("utter_buttons").run(
+        default_channel, response_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [
@@ -494,67 +494,67 @@ async def test_action_utter_template_with_buttons(
                     {"payload": "button2", "title": "button2"},
                 ]
             },
-            metadata={"template_name": "utter_buttons"},
+            metadata={"utter_action": "utter_buttons"},
         )
     ]
 
 
-async def test_action_utter_template_invalid_template(
-    default_channel, template_nlg, template_sender_tracker, default_domain
+async def test_response_invalid_response(
+    default_channel, response_nlg, template_sender_tracker, default_domain
 ):
-    events = await ActionUtterTemplate("utter_invalid").run(
-        default_channel, template_nlg, template_sender_tracker, default_domain
+    events = await ActionResponse("utter_invalid").run(
+        default_channel, response_nlg, template_sender_tracker, default_domain
     )
 
     assert len(events) == 1
     assert isinstance(events[0], BotUttered)
-    assert events[0].text.startswith("a template referencing an invalid {variable}.")
+    assert events[0].text.startswith("a response referencing an invalid {variable}.")
 
 
-async def test_action_utter_template_channel_specific(
+async def test_response_channel_specific(
     default_nlg, default_tracker, default_domain
 ):
     from rasa.core.channels.slack import SlackBot
 
     output_channel = SlackBot("DummyToken", "General")
 
-    events = await ActionUtterTemplate("utter_channel").run(
+    events = await ActionResponse("utter_channel").run(
         output_channel, default_nlg, default_tracker, default_domain
     )
 
     assert events == [
         BotUttered(
             "you're talking to me on slack!",
-            metadata={"channel": "slack", "template_name": "utter_channel"},
+            metadata={"channel": "slack", "utter_action": "utter_channel"},
         )
     ]
 
 
 async def test_action_back(
-    default_channel, template_nlg, template_sender_tracker, default_domain
+    default_channel, response_nlg, template_sender_tracker, default_domain
 ):
     events = await ActionBack().run(
-        default_channel, template_nlg, template_sender_tracker, default_domain
+        default_channel, response_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [
-        BotUttered("backing up...", metadata={"template_name": "utter_back"}),
+        BotUttered("backing up...", metadata={"utter_action": "utter_back"}),
         UserUtteranceReverted(),
         UserUtteranceReverted(),
     ]
 
 
 async def test_action_restart(
-    default_channel, template_nlg, template_sender_tracker, default_domain
+    default_channel, response_nlg, template_sender_tracker, default_domain
 ):
     events = await ActionRestart().run(
-        default_channel, template_nlg, template_sender_tracker, default_domain
+        default_channel, response_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [
         BotUttered(
             "congrats, you've restarted me!",
-            metadata={"template_name": "utter_restart"},
+            metadata={"utter_action": "utter_restart"},
         ),
         Restarted(),
     ]
@@ -562,12 +562,12 @@ async def test_action_restart(
 
 async def test_action_session_start_without_slots(
     default_channel: CollectingOutputChannel,
-    template_nlg: TemplatedNaturalLanguageGenerator,
+    response_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
     default_domain: Domain,
 ):
     events = await ActionSessionStart().run(
-        default_channel, template_nlg, template_sender_tracker, default_domain
+        default_channel, response_nlg, template_sender_tracker, default_domain
     )
     assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
 
@@ -592,7 +592,7 @@ async def test_action_session_start_without_slots(
 )
 async def test_action_session_start_with_slots(
     default_channel: CollectingOutputChannel,
-    template_nlg: TemplatedNaturalLanguageGenerator,
+    response_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
     default_domain: Domain,
     session_config: SessionConfig,
@@ -607,7 +607,7 @@ async def test_action_session_start_with_slots(
     default_domain.session_config = session_config
 
     events = await ActionSessionStart().run(
-        default_channel, template_nlg, template_sender_tracker, default_domain
+        default_channel, response_nlg, template_sender_tracker, default_domain
     )
 
     assert events == expected_events
@@ -618,7 +618,7 @@ async def test_action_session_start_with_slots(
 
 async def test_applied_events_after_action_session_start(
     default_channel: CollectingOutputChannel,
-    template_nlg: TemplatedNaturalLanguageGenerator,
+    response_nlg: TemplatedNaturalLanguageGenerator,
 ):
     slot_set = SlotSet("my_slot", "value")
     events = [
@@ -634,7 +634,7 @@ async def test_applied_events_after_action_session_start(
 
     # Mapping Policy kicks in and runs the session restart action
     events = await ActionSessionStart().run(
-        default_channel, template_nlg, tracker, Domain.empty()
+        default_channel, response_nlg, tracker, Domain.empty()
     )
     for event in events:
         tracker.update(event)
@@ -652,7 +652,7 @@ async def test_action_default_fallback(
     assert events == [
         BotUttered(
             "sorry, I didn't get that, can you rephrase it?",
-            metadata={"template_name": "utter_default"},
+            metadata={"utter_action": "utter_default"},
         ),
         UserUtteranceReverted(),
     ]
@@ -674,21 +674,21 @@ async def test_action_default_ask_affirmation(
                     {"title": "No", "payload": "/out_of_scope"},
                 ]
             },
-            {"template_name": "action_default_ask_affirmation"},
+            {"utter_action": "action_default_ask_affirmation"},
         )
     ]
 
 
 async def test_action_default_ask_rephrase(
-    default_channel, template_nlg, template_sender_tracker, default_domain
+    default_channel, response_nlg, template_sender_tracker, default_domain
 ):
     events = await ActionDefaultAskRephrase().run(
-        default_channel, template_nlg, template_sender_tracker, default_domain
+        default_channel, response_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [
         BotUttered(
-            "can you rephrase that?", metadata={"template_name": "utter_ask_rephrase"}
+            "can you rephrase that?", metadata={"utter_action": "utter_ask_rephrase"}
         )
     ]
 

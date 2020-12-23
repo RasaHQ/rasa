@@ -51,10 +51,10 @@ async def test_formbot_example():
     async def mock_form_happy_path(input_text, output_text, slot=None):
         if slot:
             form = "restaurant_form"
-            template = f"utter_ask_{slot}"
+            response = f"utter_ask_{slot}"
         else:
             form = None
-            template = "utter_submit"
+            response = "utter_submit"
         response = {
             "events": [
                 {"event": "form", "name": form, "timestamp": None},
@@ -65,7 +65,7 @@ async def test_formbot_example():
                     "value": slot,
                 },
             ],
-            "responses": [{"template": template}],
+            "responses": [{"response": response}],
         }
         with aioresponses() as mocked:
             mocked.post(

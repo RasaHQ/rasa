@@ -163,7 +163,7 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_responses = data.get(KEY_RESPONSES, {})
+        responses = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -173,7 +173,7 @@ class Domain:
             intents,
             data.get(KEY_ENTITIES, {}),
             slots,
-            utter_responses,
+            responses,
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, []),
             data.get(KEY_E2E_ACTIONS, []),
@@ -629,24 +629,24 @@ class Domain:
         return len(self.input_states)
 
     @rasa.shared.utils.common.lazy_property
-    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Return only the templates which are defined for retrieval intents"""
+    def retrieval_intent_responses(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the responses which are defined for retrieval intents"""
 
         return dict(
             filter(
-                lambda x: self.is_retrieval_intent_template(x), self.templates.items()
+                lambda x: self.is_retrieval_intent_response(x), self.responses.items()
             )
         )
 
     @staticmethod
-    def is_retrieval_intent_template(
-        template: Tuple[Text, List[Dict[Text, Any]]]
+    def is_retrieval_intent_response(
+        response: Tuple[Text, List[Dict[Text, Any]]]
     ) -> bool:
-        """Check if the response template is for a retrieval intent.
+        """Check if the response is for a retrieval intent.
 
-        These templates have a `/` symbol in their name. Use that to filter them from the rest.
+        These responses have a `/` symbol in their name. Use that to filter them from the rest.
         """
-        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
@@ -717,15 +717,15 @@ class Domain:
             f"action for this domain. "
             f"Available actions are: \n{action_names}"
         )
-
-    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
+        
+    def random_response_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
         import numpy as np
 
         if utter_action in self.responses:
             return np.random.choice(self.responses[utter_action])
         else:
             return None
-
+    
     # noinspection PyTypeChecker
     @rasa.shared.utils.common.lazy_property
     def slot_states(self) -> List[Text]:
@@ -1209,10 +1209,10 @@ class Domain:
         actions: List[Text], responses: Dict[Text, Any]
     ) -> List[Text]:
         """Combines actions with utter actions listed in responses section."""
-        unique_template_names = [
+        unique_response_names = [
             a for a in sorted(list(responses.keys())) if a not in actions
         ]
-        return actions + unique_template_names
+        return actions + unique_response_names
 
     @staticmethod
     def _combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
@@ -1265,7 +1265,7 @@ class Domain:
         If the domain contains any duplicate slots, intents, actions
         or entities, an InvalidDomain error is raised.  This error
         is also raised when intent-action mappings are incorrectly
-        named or an utterance template is missing."""
+        named or a response is missing."""
 
         def get_duplicates(my_items):
             """Returns a list of duplicate items in my_items."""
@@ -1357,7 +1357,7 @@ class Domain:
             )
 
     def check_missing_responses(self) -> None:
-        """Warn user of utterance names which have no specified template."""
+        """Warn user of utterance names which have no specified response."""
 
         utterances = [
             a
@@ -1368,9 +1368,9 @@ class Domain:
         missing_responses = [t for t in utterances if t not in self.responses.keys()]
 
         if missing_responses:
-            for template in missing_responses:
+            for response in missing_responses:
                 rasa.shared.utils.io.raise_warning(
-                    f"Action '{template}' is listed as a "
+                    f"Action '{response}' is listed as a "
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "
                     f"check your domain.",

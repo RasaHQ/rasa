@@ -79,7 +79,7 @@ SECTION_NLU = Section(
         FINGERPRINT_RASA_VERSION_KEY,
     ],
 )
-SECTION_NLG = Section(name="NLG templates", relevant_keys=[FINGERPRINT_NLG_KEY])
+SECTION_NLG = Section(name="NLG responses", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 class FingerprintComparisonResult:

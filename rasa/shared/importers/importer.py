@@ -40,7 +40,7 @@ class TrainingDataImporter:
         """Retrieves the stories that should be used for training.
 
         Args:
-            template_variables: Values of responses that should be replaced while
+            template_variables: Values of templates that should be replaced while
                                 reading the story files.
             use_e2e: Specifies whether to parse end to end learning annotations.
             exclusion_percentage: Amount of training data that should be excluded.
@@ -296,8 +296,8 @@ class CombinedDataImporter(TrainingDataImporter):
 class RetrievalModelsDataImporter(TrainingDataImporter):
     """A `TrainingDataImporter` that sets up the data for training retrieval models.
 
-    Synchronizes response responses between Domain and NLU
-    and adds retrieval intent properties from the NLU training data
+    Synchronizes responses between Domain and NLU and
+    adds retrieval intent properties from the NLU training data
     back to the Domain.
     """
 
@@ -317,7 +317,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         # Check if NLU data has any retrieval intents, if yes
         # add corresponding retrieval actions with `utter_` prefix automatically
         # to an empty domain, update the properties of existing retrieval intents
-        # and merge response responses
+        # and merge responses
         if existing_nlu_data.retrieval_intents:
 
             domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
@@ -348,7 +348,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
     @staticmethod
     def _get_domain_with_retrieval_intents(
         retrieval_intents: Set[Text],
-        response_templates: Dict[Text, List[Dict[Text, Any]]],
+        responses: Dict[Text, List[Dict[Text, Any]]],
         existing_domain: Domain,
     ) -> Domain:
         """Construct a domain consisting of retrieval intents listed in the NLU training data.
@@ -378,7 +378,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             retrieval_intent_properties,
             [],
             [],
-            response_templates,
+            responses,
             RetrievalModelsDataImporter._construct_retrieval_action_names(
                 retrieval_intents
             ),
@@ -398,32 +398,32 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Update NLU data with response templates for retrieval intents defined in the domain"""
+        """Update NLU data with responses for retrieval intents defined in the domain"""
 
         existing_nlu_data = await self._importer.get_nlu_data(language)
         existing_domain = await self._importer.get_domain()
 
         return existing_nlu_data.merge(
             self._get_nlu_data_with_responses(
-                existing_domain.retrieval_intent_templates
+                existing_domain.retrieval_intent_responses
             )
         )
 
     @staticmethod
     def _get_nlu_data_with_responses(
-        response_templates: Dict[Text, List[Dict[Text, Any]]]
+        responses: Dict[Text, List[Dict[Text, Any]]]
     ) -> TrainingData:
-        """Construct training data object with only the response templates supplied.
+        """Construct training data object with only the responses supplied.
 
         Args:
-            response_templates: Response templates the NLU data should
+            responses: Responses the NLU data should
             be initialized with.
 
-        Returns: TrainingData object with response templates.
+        Returns: TrainingData object with responses.
 
         """
 
-        return TrainingData(responses=response_templates)
+        return TrainingData(responses=responses)
 
 
 class E2EImporter(TrainingDataImporter):

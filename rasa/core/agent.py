@@ -397,6 +397,11 @@ class Agent:
         if hasattr(self.nlg, "responses"):
             self.nlg.responses = domain.responses if domain else {}
 
+        # Templates are deprecated and will be removed in the future
+        # Please use responses instead.
+        if hasattr(self.nlg, "templates"):
+            self.nlg.templates = domain.templates if domain else {}
+
         self.model_directory = model_directory
 
     @classmethod

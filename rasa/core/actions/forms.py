@@ -485,7 +485,7 @@ class FormAction(LoopAction):
         nlg: NaturalLanguageGenerator,
         events_so_far: List[Event],
     ) -> List[Event]:
-        """Request the next slot and utter template if needed, else return `None`."""
+        """Request the next slot and response if needed, else return `None`."""
         request_slot_events = []
 
         if await self.is_done(output_channel, nlg, tracker, domain, events_so_far):

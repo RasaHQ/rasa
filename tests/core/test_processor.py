@@ -10,7 +10,7 @@ from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
-from rasa.core.actions.action import ActionUtterTemplate
+from rasa.core.actions.action import ActionResponse
 from tests.utilities import latest_request
 
 from rasa.core import jobs
@@ -729,7 +729,7 @@ async def test_handle_message_with_session_start(
         ),
         SlotSet(entity, slot_1[entity]),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
+        BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
@@ -752,7 +752,7 @@ async def test_handle_message_with_session_start(
         ActionExecuted("utter_greet"),
         BotUttered(
             "hey there post-session start hello!",
-            metadata={"template_name": "utter_greet"},
+            metadata={"utter_action": "utter_greet"},
         ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
@@ -856,7 +856,7 @@ async def test_handle_message_if_action_manually_rejects(
         return rejection_events
 
     monkeypatch.setattr(
-        ActionUtterTemplate, ActionUtterTemplate.run.__name__, mocked_run
+        ActionResponse, ActionResponse.run.__name__, mocked_run
     )
     await default_processor.handle_message(message)
 

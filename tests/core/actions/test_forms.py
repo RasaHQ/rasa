@@ -386,7 +386,7 @@ async def test_no_slots_extracted_with_custom_slot_mappings():
         with pytest.raises(ActionExecutionRejection):
             await action.run(
                 CollectingOutputChannel(),
-                TemplatedNaturalLanguageGenerator(domain.templates),
+                TemplatedNaturalLanguageGenerator(domain.responses),
                 tracker,
                 domain,
             )
