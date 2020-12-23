@@ -1134,32 +1134,32 @@ class DotProductLoss(tf.keras.layers.Layer):
                 loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
-        tf.print(
-            (tf.reduce_mean(sim_pos), tf.math.reduce_std(sim_pos)),
-            [
-                (tf.reduce_mean(sim_neg_ii), tf.math.reduce_std(sim_neg_ii)),
-                (tf.reduce_mean(sim_neg_il), tf.math.reduce_std(sim_neg_il)),
-                (tf.reduce_mean(sim_neg_ll), tf.math.reduce_std(sim_neg_ll)),
-                (tf.reduce_mean(sim_neg_li), tf.math.reduce_std(sim_neg_li)),
-            ],
-            [
-                (
-                    tf.reduce_max(softmax_loss),
-                    tf.reduce_mean(softmax_loss),
-                    tf.math.reduce_std(softmax_loss),
-                ),
-                (
-                    tf.reduce_max(sigmoid_loss),
-                    tf.reduce_mean(sigmoid_loss),
-                    tf.math.reduce_std(sigmoid_loss),
-                ),
-                (
-                    tf.reduce_max(ii_loss),
-                    tf.reduce_mean(ii_loss),
-                    tf.math.reduce_std(ii_loss),
-                ),
-            ],
-        )
+        # tf.print(
+        #     (tf.reduce_mean(sim_pos), tf.math.reduce_std(sim_pos)),
+        #     [
+        #         (tf.reduce_mean(sim_neg_ii), tf.math.reduce_std(sim_neg_ii)),
+        #         (tf.reduce_mean(sim_neg_il), tf.math.reduce_std(sim_neg_il)),
+        #         (tf.reduce_mean(sim_neg_ll), tf.math.reduce_std(sim_neg_ll)),
+        #         (tf.reduce_mean(sim_neg_li), tf.math.reduce_std(sim_neg_li)),
+        #     ],
+        #     [
+        #         (
+        #             tf.reduce_max(softmax_loss),
+        #             tf.reduce_mean(softmax_loss),
+        #             tf.math.reduce_std(softmax_loss),
+        #         ),
+        #         (
+        #             tf.reduce_max(sigmoid_loss),
+        #             tf.reduce_mean(sigmoid_loss),
+        #             tf.math.reduce_std(sigmoid_loss),
+        #         ),
+        #         (
+        #             tf.reduce_max(ii_loss),
+        #             tf.reduce_mean(ii_loss),
+        #             tf.math.reduce_std(ii_loss),
+        #         ),
+        #     ],
+        # )
 
         # average the loss over the batch
         # return (
