@@ -269,7 +269,7 @@ class RasaModel(TmpKerasModel):
         model = cls(*args, **kwargs)
         learning_rate = kwargs.get("config", {}).get(LEARNING_RATE, 0.001)
         # need to train on 1 example to build weights of the correct size
-        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate), run_eagerly=True)
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate))
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
         model.fit(data_generator, verbose=False)
         # load trained weights

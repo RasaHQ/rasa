@@ -830,7 +830,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         self.model.compile(
-            run_eagerly = True,
             optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
         )
         self.model.fit(
