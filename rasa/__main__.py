@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import sys
+import inspect
 
 from rasa_sdk import __version__ as rasa_sdk_version
 
@@ -113,7 +114,10 @@ def main() -> None:
             set_log_and_warnings_filters()
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
-            cmdline_arguments.func(cmdline_arguments)
+            if inspect.iscoroutinefunction(cmdline_arguments.func):
+                rasa.utils.common.run_in_loop(cmdline_arguments.func(cmdline_arguments))
+            else:
+                cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
             print_version()
         else:
