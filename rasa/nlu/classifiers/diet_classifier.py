@@ -839,6 +839,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             validation_freq=self.component_config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,
             verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
         )
 
     # process helpers

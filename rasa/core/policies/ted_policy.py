@@ -556,6 +556,7 @@ class TEDPolicy(Policy):
             validation_freq=self.config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,
             verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
         )
 
     def _featurize_tracker_for_e2e(
