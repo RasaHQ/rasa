@@ -758,11 +758,10 @@ class MessageProcessor:
             # case of a rejection.
             temporary_tracker = tracker.copy()
             temporary_tracker.update_with_events(prediction.events, self.domain)
-            if tracer:
-                with start_span("run_action"):
-                    events = await action.run(
-                        output_channel, nlg, temporary_tracker, self.domain
-                    )
+            with start_span("run_action"):
+                events = await action.run(
+                    output_channel, nlg, temporary_tracker, self.domain
+                )
         except rasa.core.actions.action.ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(

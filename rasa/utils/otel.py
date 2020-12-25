@@ -13,12 +13,11 @@ logging.basicConfig(format="%(message)s", level=logging.DEBUG)
 
 tracer = None
 
-def init_tracer_endpoint(telemetry):
-    logging.getLogger('').handlers = []
-    logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+def init_tracer_endpoint(endpoints):
     service_name = "rasa"
-    if telemetry and telemetry.kwargs.get("service_name"):
-        service_name = telemetry.kwargs.get("service_name")
+    if endpoints and endpoints.telemetry and endpoints.telemetry.kwargs.get("service_name"):
+        service_name = endpoints.telemetry.kwargs.get("service_name")
+    logger.debug(f"initializing tracing, service_name: {service_name}")
 
     config = Config(
         config={ # usually read from some yaml config
