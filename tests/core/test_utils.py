@@ -205,7 +205,6 @@ def test_get_number_of_sanic_workers(
         (RedisLockStore(), True),
         (EndpointConfig(type="in_memory"), False),
         (EndpointConfig(type="custom_lock_store"), True),
-        (EndpointConfig(type="random_store"), False),
         (None, False),
         (InMemoryLockStore(), False),
         (CustomRedisLockStore(), True),
