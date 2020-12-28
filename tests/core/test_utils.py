@@ -15,8 +15,9 @@ from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 
+
 class CustomRedisLockStore(RedisLockStore):
-     """Test class used to test the behavior of custom lock stores."""
+    """Test class used to test the behavior of custom lock stores."""
 
 
 def test_is_int():
