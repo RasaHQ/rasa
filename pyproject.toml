@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.2.1"
+version = "2.2.2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -85,7 +85,6 @@ coloredlogs = ">=10,<15"
 "ruamel.yaml" = "^0.16.5"
 scikit-learn = ">=0.22,<0.24"
 slackclient = "^2.0.0"
-python-telegram-bot = ">=11.1,<13.0"
 twilio = ">=6.26,<6.46"
 webexteamssdk = ">=1.1.1,<1.7.0"
 mattermostwrapper = "~2.2"
@@ -127,6 +126,7 @@ regex = ">=2020.6,<2020.10"
 joblib = "^0.15.1"
 sentry-sdk = ">=0.17.0,<0.20.0"
 aio-pika = "^6.7.1"
+pyTelegramBotAPI = "^3.7.3"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
