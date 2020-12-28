@@ -663,7 +663,7 @@ async def test_action_default_ask_affirmation(
         ActionExecuted(ACTION_LISTEN_NAME),
         # User triggers a restart manually by triggering the intent
         UserUttered(
-            text=f"/foobar",
+            text="/foobar",
             intent={"name": "foobar"},
             parse_data={
                 "intent_ranking": [
