@@ -16,7 +16,7 @@ and implement at least a `blueprint` and `name` method.
 ## The `name` method
 
 The `name` method defines the url prefix for the connector's webhook. It also defines the channel name you should use 
-in any [channel specific response variations](./responses.mdx#channel_specific_response_variations) and the name you
+in any [channel specific response variations](../responses.mdx#channel_specific_response_variations) and the name you
 should pass to the `output_channel` query parameter on the [trigger intent endpoint](https://www.rasa.com/docs/rasa/pages/http-api#operation/triggerConversationIntent)
 
 For example, if your custom channel is named `myio`, you would define the `name` method as:
