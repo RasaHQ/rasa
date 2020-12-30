@@ -196,7 +196,6 @@ def compare_nlu_models(
     exclusion_percentages: List[int],
 ):
     """Trains multiple models, compares them and saves the results."""
-
     from rasa.nlu.test import drop_intents_below_freq
     from rasa.nlu.utils.miscellaneous_utils import write_json_to_file
     from rasa.utils.io import create_path

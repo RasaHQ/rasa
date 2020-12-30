@@ -20,13 +20,11 @@ def module_path_from_object(o: Any) -> Text:
 
 def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
     """Write an object as a json string to a file."""
-
     write_to_file(filename, rasa.shared.utils.io.json_to_string(obj, **kwargs))
 
 
 def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
-
     rasa.shared.utils.io.write_text_file(str(text), filename)
 
 
@@ -34,7 +32,8 @@ def is_model_dir(model_dir: Text) -> bool:
     """Checks if the given directory contains a model and can be safely removed.
 
     specifically checks if the directory has no subdirectories and
-    if all files have an appropriate ending."""
+    if all files have an appropriate ending.
+    """
     allowed_extensions = {".json", ".pkl", ".dat"}
     dir_tree = list(os.walk(model_dir))
     if len(dir_tree) != 1:

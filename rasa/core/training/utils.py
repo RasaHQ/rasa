@@ -55,8 +55,7 @@ async def load_data(
     debug_plots: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> List["TrackerWithCachedStates"]:
-    """
-    Load training data from a resource.
+    """Load training data from a resource.
 
     Args:
         resource_name: resource to load the data from. either a path or an importer
@@ -108,6 +107,5 @@ async def load_data(
 
 def persist_data(trackers: List["DialogueStateTracker"], path: Text) -> None:
     """Dump a list of dialogue trackers in the story format to disk."""
-
     for t in trackers:
         t.export_stories_to_file(path)
