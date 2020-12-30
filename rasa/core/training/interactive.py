@@ -1545,9 +1545,9 @@ async def _get_tracker_events_to_plot(
 async def _get_training_trackers(
     file_importer: TrainingDataImporter, domain: Dict[str, Any]
 ) -> List[DialogueStateTracker]:
-    from rasa.core import training
+    from rasa.core.training import utils as training_utils
 
-    return await training.load_data(
+    return await training_utils.load_data(
         file_importer,
         Domain.from_dict(domain),
         augmentation_factor=0,

@@ -7,7 +7,7 @@ from typing import Text, List
 import numpy as np
 import pytest
 
-from rasa.core import training
+from rasa.core.training import utils as training_utils
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOOP_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
@@ -24,7 +24,7 @@ from rasa.utils.tensorflow.model_data_utils import _surface_attributes
     ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
 )
 async def test_can_read_test_story(stories_file: Text, default_domain: Domain):
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         stories_file,
         default_domain,
         use_story_concatenation=False,
@@ -61,7 +61,7 @@ async def test_can_read_test_story(stories_file: Text, default_domain: Domain):
 async def test_can_read_test_story_with_checkpoint_after_or(
     stories_file: Text, default_domain: Domain
 ):
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         stories_file,
         default_domain,
         use_story_concatenation=False,
@@ -79,7 +79,7 @@ async def test_can_read_test_story_with_checkpoint_after_or(
     ],
 )
 async def test_read_story_file_with_cycles(stories_file: Text, default_domain: Domain):
-    graph = await training.extract_story_graph(stories_file, default_domain)
+    graph = await training_utils.extract_story_graph(stories_file, default_domain)
 
     assert len(graph.story_steps) == 5
 
@@ -105,7 +105,7 @@ async def test_generate_training_data_with_cycles(
     stories_file: Text, default_domain: Domain
 ):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
-    training_trackers = await training.load_data(
+    training_trackers = await training_utils.load_data(
         stories_file, default_domain, augmentation_factor=0
     )
 
@@ -135,7 +135,7 @@ async def test_generate_training_data_with_cycles(
 async def test_generate_training_data_with_unused_checkpoints(
     stories_file: Text, default_domain: Domain
 ):
-    training_trackers = await training.load_data(stories_file, default_domain)
+    training_trackers = await training_utils.load_data(stories_file, default_domain)
     # there are 3 training stories:
     #   2 with unused end checkpoints -> training_trackers
     #   1 with unused start checkpoints -> ignored
@@ -152,7 +152,7 @@ async def test_generate_training_data_with_unused_checkpoints(
 async def test_generate_training_data_original_and_augmented_trackers(
     stories_file: Text, default_domain: Domain
 ):
-    training_trackers = await training.load_data(
+    training_trackers = await training_utils.load_data(
         stories_file, default_domain, augmentation_factor=3
     )
     # there are three original stories
@@ -177,7 +177,7 @@ async def test_generate_training_data_original_and_augmented_trackers(
 async def test_visualize_training_data_graph(
     stories_file: Text, tmp_path: Path, default_domain: Domain
 ):
-    graph = await training.extract_story_graph(stories_file, default_domain)
+    graph = await training_utils.extract_story_graph(stories_file, default_domain)
 
     graph = graph.with_cycles_removed()
 
@@ -213,7 +213,7 @@ async def test_load_multi_file_training_data(
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         stories_resources[0], default_domain, augmentation_factor=0
     )
     trackers = sorted(trackers, key=lambda t: t.sender_id)
@@ -231,7 +231,7 @@ async def test_load_multi_file_training_data(
     )
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
-    trackers_mul = await training.load_data(
+    trackers_mul = await training_utils.load_data(
         stories_resources[1], default_domain, augmentation_factor=0
     )
     trackers_mul = sorted(trackers_mul, key=lambda t: t.sender_id)
@@ -281,7 +281,7 @@ async def test_load_training_data_reader_not_found_throws(
     (tmp_path / "file").touch()
 
     with pytest.raises(Exception):
-        await training.load_data(str(tmp_path), default_domain)
+        await training_utils.load_data(str(tmp_path), default_domain)
 
 
 def test_session_started_event_is_not_serialised():
@@ -313,7 +313,7 @@ async def test_action_deactivate_form_is_mapped_to_new_form(
     stories_file = tmp_path / f"stories{file_suffix}"
     stories_file.write_text(story_payload)
     with pytest.warns(FutureWarning):
-        training_trackers = await training.load_data(
+        training_trackers = await training_utils.load_data(
             str(stories_file), default_domain, augmentation_factor=3
         )
 
@@ -336,7 +336,7 @@ async def test_action_deactivate_form_is_mapped_to_new_form(
 )
 async def test_yaml_slot_different_types(stories_file: Text, default_domain: Domain):
     with pytest.warns(None):
-        tracker = await training.load_data(
+        tracker = await training_utils.load_data(
             stories_file,
             default_domain,
             use_story_concatenation=False,

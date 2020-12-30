@@ -26,7 +26,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.utils import write_json_to_file
+from rasa.nlu.utils.miscellaneous_utils import write_json_to_file
 from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
@@ -250,7 +250,9 @@ class Trainer:
             component_meta = component.component_config
             if update:
                 component_meta.update(update)
-            component_meta["class"] = utils.module_path_from_object(component)
+            component_meta["class"] = utils.miscellaneous_utils.module_path_from_object(
+                component
+            )
 
             metadata["pipeline"].append(component_meta)
 

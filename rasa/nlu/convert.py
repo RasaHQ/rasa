@@ -4,7 +4,7 @@ from typing import Text
 
 from rasa.shared.utils.cli import print_error
 import rasa.shared.nlu.training_data.loading
-from rasa.nlu.utils import write_to_file
+from rasa.nlu.utils.miscellaneous_utils import write_to_file
 
 
 def convert_training_data(

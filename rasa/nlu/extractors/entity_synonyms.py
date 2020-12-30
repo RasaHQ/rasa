@@ -9,7 +9,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.utils import write_json_to_file
+from rasa.nlu.utils.miscellaneous_utils import write_json_to_file
 import rasa.utils.io
 import rasa.shared.utils.io
 

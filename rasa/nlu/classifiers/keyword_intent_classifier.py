@@ -4,7 +4,7 @@ import re
 from typing import Any, Dict, Optional, Text
 
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu import utils
+from rasa.nlu.utils import miscellaneous_utils as utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io

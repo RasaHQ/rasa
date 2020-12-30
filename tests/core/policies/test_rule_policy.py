@@ -6,7 +6,7 @@ import pytest
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
-from rasa.core import training
+from rasa.core.training import utils as training_utils
 from rasa.core.actions.action import ActionDefaultFallback
 from rasa.core.channels import CollectingOutputChannel
 from rasa.shared.core.constants import (
@@ -680,7 +680,7 @@ async def test_rule_policy_finetune(
         is_rule_tracker=True,
     )
 
-    original_data = await training.load_data(
+    original_data = await training_utils.load_data(
         "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 
@@ -722,7 +722,7 @@ async def test_rule_policy_contradicting_rule_finetune(
         is_rule_tracker=True,
     )
 
-    original_data = await training.load_data(
+    original_data = await training_utils.load_data(
         "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 
@@ -1659,7 +1659,7 @@ def trained_rule_policy_domain() -> Domain:
 
 @pytest.fixture(scope="session")
 async def trained_rule_policy(trained_rule_policy_domain: Domain) -> RulePolicy:
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 

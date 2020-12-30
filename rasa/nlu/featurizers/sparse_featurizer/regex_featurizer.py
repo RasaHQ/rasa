@@ -8,7 +8,7 @@ import scipy.sparse
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.nlu import utils
+from rasa.nlu.utils import miscellaneous_utils as utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (

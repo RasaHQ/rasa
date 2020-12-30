@@ -14,6 +14,7 @@ import pytest
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training, restore
+from rasa.core.training import utils as training_utils
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -158,7 +159,7 @@ async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
     )
     p = tmp_path / "export.yml"
     tracker.export_stories_to_file(str(p))
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         str(p),
         moodbot_domain,
         use_story_concatenation=False,

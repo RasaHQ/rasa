@@ -5,7 +5,7 @@ import pytest
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core import training
+from rasa.core.training import utils as training_utils
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     UserUttered,
@@ -30,20 +30,20 @@ from rasa.shared.core.training_data.structures import Story, RuleStep
 async def test_persist_and_read_test_story_graph(
     tmp_path: Path, default_domain: Domain
 ):
-    graph = await training.extract_story_graph(
+    graph = await training_utils.extract_story_graph(
         "data/test_stories/stories.md", default_domain
     )
     out_path = tmp_path / "persisted_story.md"
     rasa.shared.utils.io.write_text_file(graph.as_story_string(), str(out_path))
 
-    recovered_trackers = await training.load_data(
+    recovered_trackers = await training_utils.load_data(
         str(out_path),
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
     )
-    existing_trackers = await training.load_data(
+    existing_trackers = await training_utils.load_data(
         "data/test_stories/stories.md",
         default_domain,
         use_story_concatenation=False,
@@ -61,20 +61,20 @@ async def test_persist_and_read_test_story_graph(
 
 
 async def test_persist_and_read_test_story(tmp_path: Path, default_domain: Domain):
-    graph = await training.extract_story_graph(
+    graph = await training_utils.extract_story_graph(
         "data/test_stories/stories.md", default_domain
     )
     out_path = tmp_path / "persisted_story.md"
     Story(graph.story_steps).dump_to_file(str(out_path))
 
-    recovered_trackers = await training.load_data(
+    recovered_trackers = await training_utils.load_data(
         str(out_path),
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
     )
-    existing_trackers = await training.load_data(
+    existing_trackers = await training_utils.load_data(
         "data/test_stories/stories.md",
         default_domain,
         use_story_concatenation=False,

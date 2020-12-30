@@ -12,7 +12,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.shared.utils.io
 
-from rasa.core import training
+from rasa.core.training import utils as training_utils
 import rasa.core.actions.action
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
@@ -78,7 +78,7 @@ from tests.core.utilities import get_tracker, read_dialogue_file, user_uttered
 async def train_trackers(
     domain: Domain, augmentation_factor: int = 20
 ) -> List[TrackerWithCachedStates]:
-    return await training.load_data(
+    return await training_utils.load_data(
         DEFAULT_STORIES_FILE, domain, augmentation_factor=augmentation_factor
     )
 
@@ -870,7 +870,9 @@ class TestFormPolicy(TestMemoizationPolicy):
 
     async def test_memorise(self, trained_policy: FormPolicy, default_domain: Domain):
         domain = Domain.load("data/test_domains/form.yml")
-        trackers = await training.load_data("data/test_stories/stories_form.md", domain)
+        trackers = await training_utils.load_data(
+            "data/test_stories/stories_form.md", domain
+        )
         trained_policy.train(trackers, domain, RegexInterpreter())
 
         (

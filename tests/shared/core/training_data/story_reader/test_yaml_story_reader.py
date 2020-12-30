@@ -7,7 +7,7 @@ from rasa.shared.exceptions import FileNotFoundException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core import training
+from rasa.core.training import utils as training_utils
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data import loading
@@ -27,7 +27,7 @@ async def rule_steps_without_stories(default_domain: Domain) -> List[StoryStep]:
 
 
 async def test_can_read_test_story_with_slots(default_domain: Domain):
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         "data/test_yaml_stories/simple_story_with_only_end.yml",
         default_domain,
         use_story_concatenation=False,
@@ -132,7 +132,7 @@ async def test_default_slot_value_if_unfeaturized_slot():
 
 
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
         default_domain,
         use_story_concatenation=False,
@@ -169,7 +169,7 @@ async def test_can_read_test_story_with_entities_slot_autofill(default_domain: D
 
 
 async def test_can_read_test_story_with_entities_without_value(default_domain: Domain):
-    trackers = await training.load_data(
+    trackers = await training_utils.load_data(
         "data/test_yaml_stories/story_with_or_and_entities_with_no_value.yml",
         default_domain,
         use_story_concatenation=False,
@@ -208,7 +208,7 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 
     with pytest.warns(UserWarning) as record:
-        tracker = await training.load_data(
+        tracker = await training_utils.load_data(
             yaml_file,
             default_domain,
             use_story_concatenation=False,
@@ -225,7 +225,7 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
 async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
     yaml_file = "data/test_yaml_stories/story_with_slot_was_set.yml"
 
-    tracker = await training.load_data(
+    tracker = await training_utils.load_data(
         yaml_file,
         default_domain,
         use_story_concatenation=False,
@@ -240,7 +240,7 @@ async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
 
     with pytest.raises(YamlSyntaxException):
-        _ = await training.load_data(
+        _ = await training_utils.load_data(
             yaml_file,
             default_domain,
             use_story_concatenation=False,
@@ -378,7 +378,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
 
 async def test_parsing_of_e2e_stories(default_domain: Domain):
     yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
-    tracker = await training.load_data(
+    tracker = await training_utils.load_data(
         yaml_file,
         default_domain,
         use_story_concatenation=False,

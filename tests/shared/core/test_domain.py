@@ -12,6 +12,7 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.core import training, utils
+from rasa.core.training import utils as training_utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
 from rasa.shared.core.constants import (
@@ -59,7 +60,7 @@ def test_slots_states_before_user_utterance(default_domain: Domain):
 
 async def test_create_train_data_no_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
+    training_trackers = await training_utils.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
     )
 
@@ -91,7 +92,7 @@ async def test_create_train_data_no_history(default_domain: Domain):
 
 async def test_create_train_data_with_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = await training.load_data(
+    training_trackers = await training_utils.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
     )
     assert len(training_trackers) == 4
@@ -140,7 +141,7 @@ async def test_create_train_data_unfeaturized_entities():
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
+    training_trackers = await training_utils.load_data(
         stories_file, domain, augmentation_factor=0
     )
 

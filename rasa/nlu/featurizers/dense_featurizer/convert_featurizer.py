@@ -164,7 +164,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 containing the model files."""
             )
 
-        if rasa.nlu.utils.is_url(model_url):
+        if rasa.nlu.utils.miscellaneous_utils.is_url(model_url):
             return model_url
 
         if os.path.isdir(model_url):

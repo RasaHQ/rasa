@@ -12,6 +12,7 @@ from aiohttp import ClientError
 
 import rasa
 from rasa.core import jobs, training
+from rasa.core.training import utils as training_utils
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.shared.core.domain import Domain
@@ -45,7 +46,7 @@ from rasa.model import (
     get_model_subdirectories,
     unpack_model,
 )
-from rasa.nlu.utils import is_url
+from rasa.nlu.utils.miscellaneous_utils import is_url
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
@@ -695,7 +696,7 @@ class Agent:
                 f"at least maximum max_history."
             )
 
-        return await training.load_data(
+        return await training_utils.load_data(
             training_resource,
             self.domain,
             remove_duplicates,

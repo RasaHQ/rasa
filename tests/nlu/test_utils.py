@@ -10,7 +10,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.training_data.message
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-from rasa.nlu import utils
+from rasa.nlu.utils import miscellaneous_utils as utils
 from pathlib import Path
 
 

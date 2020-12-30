@@ -336,9 +336,9 @@ async def _create_data_generator(
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
 
-    from rasa.core import training
+    from rasa.core.training import utils as training_utils
 
-    story_graph = await training.extract_story_graph(
+    story_graph = await training_utils.extract_story_graph(
         resource_name, agent.domain, use_e2e
     )
     return TrainingDataGenerator(
