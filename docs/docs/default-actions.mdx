@@ -32,6 +32,11 @@ to use the custom definition instead of the default one:
     - action_restart
   ```
 
+:::caution
+After adding this action to your domain file, re-train your model with
+`rasa train --force`. Otherwise Rasa won't know you've changed anything
+and may skip re-training your dialogue model.
+
 ## action_listen
 This action is predicted to signal that the assistant should do nothing and wait
 for the next user input.
