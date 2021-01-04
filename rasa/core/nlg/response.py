@@ -89,11 +89,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         r = copy.deepcopy(self._random_response_for(utter_action, output_channel))
         # Filling the slots in the response with placeholders and returning the response
         if r is not None:
-            return self._fill_template(r, filled_slots, **kwargs)
+            return self._fill_response(r, filled_slots, **kwargs)
         else:
             return None
 
-    def _fill_template(
+    def _fill_response(
         self,
         response: Dict[Text, Any],
         filled_slots: Optional[Dict[Text, Any]] = None,

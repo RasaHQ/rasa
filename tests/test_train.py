@@ -1034,7 +1034,7 @@ def test_model_finetuning_with_invalid_model(
 
     mocked_core_training.assert_not_called()
     mocked_nlu_training.assert_not_called()
-
+    import pdb;pdb.set_trace()
     output = capsys.readouterr().out
     assert "No NLU model for finetuning found" in output
 

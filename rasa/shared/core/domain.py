@@ -1168,13 +1168,13 @@ class Domain:
         from ruamel.yaml.scalarstring import LiteralScalarString
 
         final_responses = responses.copy()
-        for response_name, examples in final_responses.items():
+        for utter_action, examples in final_responses.items():
             for i, example in enumerate(examples):
                 response_text = example.get(KEY_RESPONSES_TEXT, "")
                 if not response_text or "\n" not in response_text:
                     continue
                 # Has new lines, use `LiteralScalarString`
-                final_responses[response_name][i][
+                final_responses[utter_action][i][
                     KEY_RESPONSES_TEXT
                 ] = LiteralScalarString(response_text)
 
@@ -1389,10 +1389,10 @@ class Domain:
         actions: List[Text], responses: Dict[Text, Any]
     ) -> List[Text]:
         """Combines actions with utter actions listed in responses section."""
-        unique_response_names = [
+        unique_utter_actions = [
             a for a in sorted(list(responses.keys())) if a not in actions
         ]
-        return actions + unique_response_names
+        return actions + unique_utter_actions
 
     @staticmethod
     def _combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:

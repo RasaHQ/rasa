@@ -41,9 +41,9 @@ class NLGMarkdownToYamlConverter(TrainingDataConverter):
         training_data = reader.read(source_path)
         converted_responses = {}
 
-        for response_name, examples in training_data.responses.items():
-            new_response_name = cls._normalize_response_name(response_name)
-            converted_responses[new_response_name] = examples
+        for utter_action, examples in training_data.responses.items():
+            new_utter_action = cls._normalize_utter_action(utter_action)
+            converted_responses[new_utter_action] = examples
 
         converted_training_data = TrainingData(responses=converted_responses)
         writer.dump(output_nlg_path, converted_training_data)
@@ -51,16 +51,16 @@ class NLGMarkdownToYamlConverter(TrainingDataConverter):
         print_success(f"Converted NLG file: '{source_path}' >> '{output_nlg_path}'.")
 
     @staticmethod
-    def _normalize_response_name(response_name: Text) -> Text:
+    def _normalize_utter_action(utter_action: Text) -> Text:
         """During the conversion, ensure that responses start with `utter_`.
 
         Args:
-            response_name: The name of the response, e.g. "chitchat/ask_name".
+            utter_action: The name of the response, e.g. "chitchat/ask_name".
 
         Returns:
             A normalised response name starting with "utter_".
         """
-        if not response_name.startswith(UTTER_PREFIX):
-            response_name = f"{UTTER_PREFIX}{response_name}"
+        if not utter_action.startswith(UTTER_PREFIX):
+            utter_action = f"{UTTER_PREFIX}{utter_action}"
 
-        return response_name
+        return utter_action

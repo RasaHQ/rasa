@@ -268,7 +268,7 @@ class ActionResponse(Action):
             silent_fail: `True` if the action should fail silently in case no response
                 was defined for this action.
         """
-        self.response_name = name
+        self.utter_action = name
         self.silent_fail = silent_fail
 
     async def run(
@@ -280,21 +280,21 @@ class ActionResponse(Action):
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) response."""
 
-        message = await nlg.generate(self.response_name, tracker, output_channel.name())
+        message = await nlg.generate(self.utter_action, tracker, output_channel.name())
         if message is None:
             if not self.silent_fail:
                 logger.error(
                     "Couldn't create message for response '{}'."
-                    "".format(self.response_name)
+                    "".format(self.utter_action)
                 )
             return []
-        message["response_name"] = self.response_name
+        message["utter_action"] = self.utter_action
 
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
         """Returns action name."""
-        return self.response_name
+        return self.utter_action
 
 
 class ActionEndToEndResponse(Action):
@@ -396,7 +396,7 @@ class ActionRetrieveResponse(ActionResponse):
         # Override utter action of ActionResponse
         # with the complete utter action retrieved from
         # the output of response selector.
-        self.response_name = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
+        self.utter_action = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
             RESPONSE_SELECTOR_UTTER_ACTION_KEY
         ]
 
@@ -622,14 +622,14 @@ class RemoteAction(Action):
 
         bot_messages = []
         for response in responses:
-            response = response.pop("response", None)
-            if response:
+            generated_response = response.pop("response", None)
+            if generated_response:
                 draft = await nlg.generate(
-                    response, tracker, output_channel.name(), **response
+                    generated_response, tracker, output_channel.name(), **response
                 )
                 if not draft:
                     continue
-                draft["response_name"] = response
+                draft["utter_action"] = generated_response
             else:
                 draft = {}
 
@@ -850,7 +850,7 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "Yes", "payload": f"/{intent_to_affirm}"},
                 {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
-            "response_name": self.name(),
+            "utter_action": self.name(),
         }
 
         return [create_bot_utterance(message)]

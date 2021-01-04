@@ -221,7 +221,6 @@ async def test_remote_action_logs_events(
                 "latest_input_channel": None,
             },
         }
-
     assert len(events) == 3  # first two events are bot utterances
     assert events[0] == BotUttered(
         "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
@@ -810,7 +809,7 @@ async def test_run_end_to_end_utterance_action():
     e2e_action = action.action_for_name_or_text("Hi", domain, None)
     events = await e2e_action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         DialogueStateTracker.from_events("sender", evts=[]),
         domain,
     )
