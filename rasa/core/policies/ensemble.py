@@ -23,6 +23,7 @@ from rasa.shared.constants import (
     DOCS_URL_MIGRATION_GUIDE,
     DEFAULT_CONFIG_PATH,
     DOCS_URL_ACTIONS,
+    DOCS_URL_DEFAULT_ACTIONS,
 )
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
@@ -80,7 +81,7 @@ class PolicyEnsemble:
                 f"Default intents such as '{USER_INTENT_RESTART}' and "
                 f"'{USER_INTENT_BACK}' will not trigger actions "
                 f"'{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'.",
-                docs=DOCS_URL_ACTIONS,
+                docs=DOCS_URL_DEFAULT_ACTIONS,
             )
 
     @staticmethod
