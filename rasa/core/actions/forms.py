@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Text, List, Optional, Union, Any, Dict, Tuple, Set
 import logging
 import json
@@ -6,7 +5,7 @@ import json
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.domain import Domain, InvalidDomain, SlotMapping
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -29,20 +28,18 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-class SlotMapping(Enum):
-    FROM_ENTITY = 0
-    FROM_INTENT = 1
-    FROM_TRIGGER_INTENT = 2
-    FROM_TEXT = 3
-
-    def __str__(self) -> Text:
-        return self.name.lower()
-
-
 class FormAction(LoopAction):
+    """Action which implements and executes the form logic."""
+
     def __init__(
         self, form_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> None:
+        """Creates a `FormAction`.
+
+        Args:
+            form_name: Name of the form.
+            action_endpoint: Endpoint to execute custom actions.
+        """
         self._form_name = form_name
         self.action_endpoint = action_endpoint
         # creating it requires domain, which we don't have in init
@@ -398,7 +395,7 @@ class FormAction(LoopAction):
 
         validate_name = f"validate_{self.name()}"
 
-        if validate_name not in domain.action_names:
+        if validate_name not in domain.action_names_or_texts:
             return events
 
         _tracker = self._temporary_tracker(tracker, events, domain)
@@ -528,20 +525,21 @@ class FormAction(LoopAction):
             None,
         )
 
-    def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
+    def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Optional[Text]:
         search_path = [
             f"action_ask_{self._form_name}_{slot_name}",
             f"{UTTER_PREFIX}ask_{self._form_name}_{slot_name}",
             f"action_ask_{slot_name}",
+            f"{UTTER_PREFIX}ask_{slot_name}",
         ]
 
         found_actions = (
             action_name
             for action_name in search_path
-            if action_name in domain.action_names
+            if action_name in domain.action_names_or_texts
         )
 
-        return next(found_actions, f"{UTTER_PREFIX}ask_{slot_name}")
+        return next(found_actions, None)
 
     async def _ask_for_slot(
         self,
@@ -553,15 +551,21 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
-        action_to_ask_for_next_slot = action.action_from_name(
-            self._name_of_utterance(domain, slot_name),
-            self.action_endpoint,
-            domain.user_actions,
+        action_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
+        if not action_to_ask_for_next_slot:
+            # Use a debug log as the user might have asked as part of a custom action
+            logger.debug(
+                f"There was no action found to ask for slot '{slot_name}' "
+                f"name to be filled."
+            )
+            return []
+
+        action_to_ask_for_next_slot = action.action_for_name_or_text(
+            action_to_ask_for_next_slot, domain, self.action_endpoint
         )
-        events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
+        return await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
         )
-        return events_to_ask_for_next_slot
 
     # helpers
     @staticmethod

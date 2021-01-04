@@ -213,21 +213,17 @@ def test_get_core_nlu_directories_with_none():
     assert all(not os.listdir(directory) for directory in directories)
 
 
-def test_same_file_names_get_resolved(tmp_path):
+def test_same_file_names_get_resolved(tmp_path: Path):
     # makes sure the resolution properly handles if there are two files with
     # with the same name in different directories
 
     (tmp_path / "one").mkdir()
     (tmp_path / "two").mkdir()
-    data_dir_one = str(tmp_path / "one" / "stories.md")
-    data_dir_two = str(tmp_path / "two" / "stories.md")
-    shutil.copy2(DEFAULT_STORIES_FILE, data_dir_one)
-    shutil.copy2(DEFAULT_STORIES_FILE, data_dir_two)
+    shutil.copy2(DEFAULT_STORIES_FILE, tmp_path / "one" / "stories.yml")
+    shutil.copy2(DEFAULT_STORIES_FILE, tmp_path / "two" / "stories.yml")
 
-    nlu_dir_one = str(tmp_path / "one" / "nlu.yml")
-    nlu_dir_two = str(tmp_path / "two" / "nlu.yml")
-    shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_one)
-    shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_two)
+    shutil.copy2(DEFAULT_NLU_DATA, tmp_path / "one" / "nlu.yml")
+    shutil.copy2(DEFAULT_NLU_DATA, tmp_path / "two" / "nlu.yml")
 
     core_directory, nlu_directory = rasa.shared.data.get_core_nlu_directories(
         [str(tmp_path)]
@@ -241,7 +237,7 @@ def test_same_file_names_get_resolved(tmp_path):
     stories = os.listdir(core_directory)
 
     assert len(stories) == 2
-    assert all(f.endswith("stories.md") for f in stories)
+    assert all(f.endswith("stories.yml") for f in stories)
 
 
 @pytest.mark.parametrize(
@@ -254,6 +250,8 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/dialogflow/entities/cuisine.json",
                 "data/examples/dialogflow/entities/cuisine_entries_en.json",
                 "data/examples/dialogflow/entities/cuisine_entries_es.json",
+                "data/examples/dialogflow/entities/flightNumber.json",
+                "data/examples/dialogflow/entities/flightNumber_entries_en.json",
                 "data/examples/dialogflow/entities/location.json",
                 "data/examples/dialogflow/entities/location_entries_en.json",
                 "data/examples/dialogflow/entities/location_entries_es.json",
@@ -273,14 +271,7 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/dialogflow/package.json",
             ],
         ),
-        (
-            "luis",
-            [
-                "data/examples/luis/demo-restaurants_v2.json",
-                "data/examples/luis/demo-restaurants_v4.json",
-                "data/examples/luis/demo-restaurants_v5.json",
-            ],
-        ),
+        ("luis", ["data/examples/luis/demo-restaurants_v7.json",],),
         (
             "rasa",
             [

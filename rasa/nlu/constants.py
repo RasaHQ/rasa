@@ -63,9 +63,6 @@ TOKENS_NAMES = {
     rasa.shared.nlu.constants.INTENT_RESPONSE_KEY: "intent_response_key_tokens",
 }
 
-TOKENS = "tokens"
-TOKEN_IDS = "token_ids"
-
 SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 
@@ -81,3 +78,5 @@ RESPONSE_IDENTIFIER_DELIMITER = "/"
 FEATURIZER_CLASS_ALIAS = "alias"
 
 NO_LENGTH_RESTRICTION = -1
+MIN_ADDITIONAL_REGEX_PATTERNS = 10
+MIN_ADDITIONAL_CVF_VOCABULARY = 1000

@@ -1,9 +1,11 @@
 import json
 import logging
+from asyncio import AbstractEventLoop
 from typing import Any, Text, List, Optional, Union, Dict
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +39,6 @@ class KafkaEventBroker(EventBroker):
                 to servers and can be used to identify specific server-side log entries
                 that correspond to this client. Also submitted to `GroupCoordinator` for
                 logging with respect to producer group administration.
-            group_id: The name of the producer group to join for dynamic partition
-                assignment (if enabled), and to use for fetching and committing offsets.
-                If None, auto-partition assignment (via group coordinator) and offset
-                commits are disabled.
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
             ssl_cafile: Optional filename of ca file to use in certificate
@@ -75,7 +73,12 @@ class KafkaEventBroker(EventBroker):
         logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional["KafkaEventBroker"]:
+    async def from_endpoint_config(
+        cls,
+        broker_config: EndpointConfig,
+        event_loop: Optional[AbstractEventLoop] = None,
+    ) -> Optional["KafkaEventBroker"]:
+        """Creates broker. See the parent class for more information."""
         if broker_config is None:
             return None
 

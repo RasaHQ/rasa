@@ -22,7 +22,6 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -61,17 +60,59 @@ class TrainingData:
 
         self._fill_response_phrases()
 
-    def merge(self, *others: "TrainingData") -> "TrainingData":
-        """Return merged instance of this data with other training data."""
+    def fingerprint(self) -> Text:
+        """Fingerprint the training data.
 
+        Returns:
+            hex string as a fingerprint of the training data.
+        """
+        relevant_attributes = {
+            "training_examples": list(
+                sorted(e.fingerprint() for e in self.training_examples)
+            ),
+            "entity_synonyms": self.entity_synonyms,
+            "regex_features": self.regex_features,
+            "lookup_tables": self.lookup_tables,
+            "responses": self.responses,
+        }
+
+        return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
+
+    def label_fingerprint(self) -> Text:
+        """Fingerprints the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        labels = {
+            "intents": sorted(self.intents),
+            "entities": sorted(self.entities),
+            "entity_groups": sorted(self.entity_groups),
+            "entity_roles": sorted(self.entity_roles),
+            "actions": sorted(self.action_names),
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(labels)
+
+    def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
+        """Return merged instance of this data with other training data.
+
+        Args:
+            others: other training data instances to merge this one with
+
+        Returns:
+            Merged training data object. Merging is not done in place, this
+            will be a new instance.
+        """
         training_examples = copy.deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = copy.deepcopy(self.regex_features)
         lookup_tables = copy.deepcopy(self.lookup_tables)
         responses = copy.deepcopy(self.responses)
-        others = [other for other in others if other]
 
         for o in others:
+            if not o:
+                continue
+
             training_examples.extend(copy.deepcopy(o.training_examples))
             regex_features.extend(copy.deepcopy(o.regex_features))
             lookup_tables.extend(copy.deepcopy(o.lookup_tables))
@@ -109,10 +150,12 @@ class TrainingData:
         )
 
     def __hash__(self) -> int:
-        stringified = self.nlu_as_json() + self.nlg_as_markdown()
-        text_hash = rasa.shared.utils.io.get_text_hash(stringified)
+        """Calculate hash for the training data object.
 
-        return int(text_hash, 16)
+        Returns:
+            Hash of the training data object.
+        """
+        return int(self.fingerprint(), 16)
 
     @staticmethod
     def sanitize_examples(examples: List[Message]) -> List[Message]:
@@ -133,18 +176,30 @@ class TrainingData:
 
     @lazy_property
     def nlu_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if not ex.is_core_message()]
+        """Return examples which have come from NLU training data.
+
+        E.g. If the example came from a story or domain it is not included.
+
+        Returns:
+            List of NLU training examples.
+        """
+        return [
+            ex for ex in self.training_examples if not ex.is_core_or_domain_message()
+        ]
 
     @lazy_property
     def intent_examples(self) -> List[Message]:
+        """Returns the list of examples that have intent."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
+        """Returns the list of examples that have response."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
+        """Returns the list of examples that have entities."""
         return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     @lazy_property
@@ -153,8 +208,13 @@ class TrainingData:
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
     @lazy_property
+    def action_names(self) -> Set[Text]:
+        """Returns the set of action names in the training data."""
+        return {ex.get(ACTION_NAME) for ex in self.training_examples} - {None}
+
+    @lazy_property
     def retrieval_intents(self) -> Set[Text]:
-        """Returns the total number of response types in the training data"""
+        """Returns the total number of response types in the training data."""
         return {
             ex.get(INTENT)
             for ex in self.training_examples
@@ -630,7 +690,6 @@ class TrainingData:
 
     def is_empty(self) -> bool:
         """Checks if any training data was loaded."""
-
         lists_to_check = [
             self.training_examples,
             self.entity_synonyms,
@@ -639,9 +698,8 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def can_train_nlu_model(self) -> bool:
+    def contains_no_pure_nlu_data(self) -> bool:
         """Checks if any NLU training data was loaded."""
-
         lists_to_check = [
             self.nlu_examples,
             self.entity_synonyms,
@@ -650,6 +708,20 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def has_e2e_examples(self):
+        """Checks if there are any training examples from e2e stories."""
+        return any(message.is_e2e_message() for message in self.training_examples)
+
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    """Converts list to a string.
+
+    Args:
+        lst: The list to convert.
+        delim: The delimiter that is used to separate list inputs.
+        quote: The quote that is used to wrap list inputs.
+
+    Returns:
+        The string.
+    """
     return delim.join([quote + e + quote for e in lst])

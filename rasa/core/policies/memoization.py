@@ -17,7 +17,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
@@ -71,6 +71,7 @@ class MemoizationPolicy(Policy):
         priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the policy.
 
@@ -81,7 +82,6 @@ class MemoizationPolicy(Policy):
             lookup: a dictionary that stores featurized tracker states and
                 predicted actions for them
         """
-
         if max_history == MAX_HISTORY_NOT_SET:
             max_history = OLD_DEFAULT_MAX_HISTORY  # old default value
             rasa.shared.utils.io.raise_warning(
@@ -97,7 +97,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, **kwargs)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
@@ -221,7 +221,7 @@ class MemoizationPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         result = self._default_predictions(domain)
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
@@ -234,7 +234,7 @@ class MemoizationPolicy(Policy):
         else:
             logger.debug("There is no memorised next action")
 
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {

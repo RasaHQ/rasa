@@ -14,7 +14,6 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
     parser.add_argument(
         "-f",
         "--format",
-        required=True,
         default="yaml",
         choices=["json", "md", "yaml"],
         help="Output format the training data should be converted into. "
@@ -26,7 +25,6 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
 
     add_out_param(
         parser,
-        required=True,
         default=DEFAULT_CONVERTED_DATA_PATH,
         help_text="File (for `json` and `md`) or existing path (for `yaml`) "
         "where to save training data in Rasa format.",

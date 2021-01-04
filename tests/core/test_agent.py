@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from typing import Any, Dict, Text, List, Callable, Optional
 from unittest.mock import Mock
 
@@ -52,9 +53,9 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
 
 @pytest.fixture()
 def model_server(
-    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_moodbot_path: Text
+    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_rasa_model: Text
 ) -> TestClient:
-    app = model_server_app(trained_moodbot_path, model_hash="somehash")
+    app = model_server_app(trained_rasa_model, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))
 
 
@@ -78,7 +79,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     loaded = Agent.load(trained_moodbot_path)
 
     # test domain
-    assert loaded.domain.action_names == moodbot_domain.action_names
+    assert loaded.domain.action_names_or_texts == moodbot_domain.action_names_or_texts
     assert loaded.domain.intents == moodbot_domain.intents
     assert loaded.domain.entities == moodbot_domain.entities
     assert loaded.domain.responses == moodbot_domain.responses
@@ -157,7 +158,7 @@ def test_agent_wrong_use_of_load():
 
 
 async def test_agent_with_model_server_in_thread(
-    model_server: TestClient, moodbot_domain: Domain, moodbot_metadata: Any
+    model_server: TestClient, default_domain: Domain, unpacked_trained_rasa_model: Text
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}
@@ -171,14 +172,17 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
-    assert hash(agent.domain) == hash(moodbot_domain)
+    assert agent.domain.as_dict() == default_domain.as_dict()
+
+    expected_policies = PolicyEnsemble.load_metadata(
+        str(Path(unpacked_trained_rasa_model, "core"))
+    )["policy_names"]
 
     agent_policies = {
         rasa.shared.utils.common.module_path_from_instance(p)
         for p in agent.policy_ensemble.policies
     }
-    moodbot_policies = set(moodbot_metadata["policy_names"])
-    assert agent_policies == moodbot_policies
+    assert agent_policies == set(expected_policies)
     assert model_server.app.number_of_model_requests == 1
     jobs.kill_scheduler()
 
@@ -238,7 +242,7 @@ def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
             domain=Domain.from_dict({"forms": ["restaurant_form"]}),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "haven't added the FormPolicy" in str(execinfo.value)
+    assert "neither added the 'RulePolicy' nor the 'FormPolicy'" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(

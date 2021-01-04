@@ -6,6 +6,7 @@ from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
 import aiohttp
 
 import rasa.core
+from rasa.core.policies.policy import PolicyPrediction
 
 from rasa.shared.core import events
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -101,39 +102,8 @@ def action_for_index(
             f"Domain has {domain.num_actions} actions."
         )
 
-    return action_for_name(domain.action_names[index], domain, action_endpoint)
-
-
-def action_for_name(
-    action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
-) -> "Action":
-    """Create an `Action` object based on the name of the `Action`.
-
-    Args:
-        action_name: The name of the `Action`.
-        domain: The `Domain` of the current model. The domain contains the actions
-            provided by the user + the default actions.
-        action_endpoint: Can be used to run `custom_actions`
-            (e.g. using the `rasa-sdk`).
-
-    Returns:
-        The instantiated `Action` or `None` if no `Action` was found for the given
-        index.
-    """
-
-    if action_name not in domain.action_names:
-        domain.raise_action_not_found_exception(action_name)
-
-    should_use_form_action = (
-        action_name in domain.form_names and domain.slot_mapping_for_form(action_name)
-    )
-
-    return action_from_name(
-        action_name,
-        action_endpoint,
-        domain.user_actions_and_forms,
-        should_use_form_action,
-        domain.retrieval_intents,
+    return action_for_name_or_text(
+        domain.action_names_or_texts[index], domain, action_endpoint
     )
 
 
@@ -157,31 +127,53 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
     )
 
 
-def action_from_name(
-    name: Text,
-    action_endpoint: Optional[EndpointConfig],
-    user_actions: List[Text],
-    should_use_form_action: bool = False,
-    retrieval_intents: Optional[List[Text]] = None,
+def action_for_name_or_text(
+    action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> "Action":
-    """Return an action instance for the name."""
+    """Retrieves an action by its name or by its text in case it's an end-to-end action.
+
+    Args:
+        action_name_or_text: The name of the action.
+        domain: The current model domain.
+        action_endpoint: The endpoint to execute custom actions.
+
+    Raises:
+        ActionNotFoundException: If action not in current domain.
+
+    Returns:
+        The instantiated action.
+    """
+    if action_name_or_text not in domain.action_names_or_texts:
+        domain.raise_action_not_found_exception(action_name_or_text)
 
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
-    if name in defaults and name not in user_actions:
-        return defaults[name]
-    elif name.startswith(UTTER_PREFIX) and is_retrieval_action(
-        name, retrieval_intents or []
+    if (
+        action_name_or_text in defaults
+        and action_name_or_text not in domain.user_actions_and_forms
     ):
-        return ActionRetrieveResponse(name)
-    elif name.startswith(UTTER_PREFIX):
-        return ActionResponse(name)
-    elif should_use_form_action:
+        return defaults[action_name_or_text]
+
+    if action_name_or_text.startswith(UTTER_PREFIX) and is_retrieval_action(
+        action_name_or_text, domain.retrieval_intents
+    ):
+        return ActionRetrieveResponse(action_name_or_text)
+
+    if action_name_or_text in domain.action_texts:
+        return ActionEndToEndResponse(action_name_or_text)
+
+    if action_name_or_text.startswith(UTTER_PREFIX):
+        return ActionResponse(action_name_or_text)
+
+    is_form = action_name_or_text in domain.form_names
+    # Users can override the form by defining an action with the same name as the form
+    user_overrode_form_action = is_form and action_name_or_text in domain.user_actions
+    if is_form and not user_overrode_form_action:
         from rasa.core.actions.forms import FormAction
 
-        return FormAction(name, action_endpoint)
-    else:
-        return RemoteAction(name, action_endpoint)
+        return FormAction(action_name_or_text, action_endpoint)
+
+    return RemoteAction(action_name_or_text, action_endpoint)
 
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
@@ -242,16 +234,40 @@ class Action:
         raise NotImplementedError
 
     def __str__(self) -> Text:
-        return "Action('{}')".format(self.name())
+        """Returns text representation of form."""
+        return f"{self.__class__.__name__}('{self.name()}')"
+
+    def event_for_successful_execution(
+        self, prediction: PolicyPrediction
+    ) -> ActionExecuted:
+        """Event which should be logged for the successful execution of this action.
+
+        Args:
+            prediction: Prediction which led to the execution of this event.
+
+        Returns:
+            Event which should be logged onto the tracker.
+        """
+        return ActionExecuted(
+            self.name(), prediction.policy_name, prediction.max_confidence
+        )
 
 
 class ActionResponse(Action):
     """An action which only effect is to utter a response when it is run.
 
     Both, name and response, need to be specified using
-    the `name` method."""
+    the `name` method.
+    """
 
-    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
+    def __init__(self, name: Text, silent_fail: Optional[bool] = False) -> None:
+        """Creates action.
+
+        Args:
+            name: Name of the action.
+            silent_fail: `True` if the action should fail silently in case no response
+                was defined for this action.
+        """
         self.response_name = name
         self.silent_fail = silent_fail
 
@@ -277,16 +293,61 @@ class ActionResponse(Action):
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
+        """Returns action name."""
         return self.response_name
 
-    def __str__(self) -> Text:
-        return "ActionResponse('{}')".format(self.name())
+
+class ActionEndToEndResponse(Action):
+    """Action to utter end-to-end responses to the user."""
+
+    def __init__(self, action_text: Text) -> None:
+        """Creates action.
+
+        Args:
+            action_text: Text of end-to-end bot response.
+        """
+        self.action_text = action_text
+
+    def name(self) -> Text:
+        """Returns action name."""
+        # In case of an end-to-end action there is no label (aka name) for the action.
+        # We fake a name by returning the text which the bot sends back to the user.
+        return self.action_text
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        """Runs action (see parent class for full docstring)."""
+        message = {"text": self.action_text}
+        return [create_bot_utterance(message)]
+
+    def event_for_successful_execution(
+        self, prediction: PolicyPrediction
+    ) -> ActionExecuted:
+        """Event which should be logged for the successful execution of this action.
+
+        Args:
+            prediction: Prediction which led to the execution of this event.
+
+        Returns:
+            Event which should be logged onto the tracker.
+        """
+        return ActionExecuted(
+            policy=prediction.policy_name,
+            confidence=prediction.max_confidence,
+            action_text=self.action_text,
+        )
 
 
 class ActionRetrieveResponse(ActionResponse):
     """An action which queries the Response Selector for the appropriate response."""
 
-    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
+    def __init__(self, name: Text, silent_fail: Optional[bool] = False) -> None:
+        """Creates action. See docstring of parent class."""
         super().__init__(name, silent_fail)
         self.action_name = name
         self.silent_fail = silent_fail
@@ -342,10 +403,8 @@ class ActionRetrieveResponse(ActionResponse):
         return await super().run(output_channel, nlg, tracker, domain)
 
     def name(self) -> Text:
+        """Returns action name."""
         return self.action_name
-
-    def __str__(self) -> Text:
-        return "ActionRetrieveResponse('{}')".format(self.name())
 
 
 class ActionBack(ActionResponse):

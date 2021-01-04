@@ -3,8 +3,10 @@ import pytest
 import rasa.shared.utils.io
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.shared.importers.autoconfig import TrainingType
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
+from pathlib import Path
 
 
 async def test_verify_intents_does_not_fail_on_valid_data():
@@ -38,6 +40,18 @@ async def test_verify_valid_responses():
     assert validator.verify_utterances_in_stories()
 
 
+async def test_verify_valid_responses_in_rules():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[
+            DEFAULT_NLU_DATA,
+            "data/test_stories/rules_without_stories_and_wrong_names.md",
+        ],
+    )
+    validator = await Validator.from_importer(importer)
+    assert not validator.verify_utterances_in_stories()
+
+
 async def test_verify_story_structure():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
@@ -54,6 +68,107 @@ async def test_verify_bad_story_structure():
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
+
+
+async def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
+    story_file_name = tmp_path / "stories.yml"
+    story_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+        - story: path 1
+          steps:
+          - user: |
+              amazing!
+          - action: utter_happy
+        - story: path 2 (should always conflict path 1)
+          steps:
+          - user: |
+              amazing!
+          - action: utter_cheer_up
+        """
+    )
+    # The two stories with identical user texts
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[story_file_name],
+        training_type=TrainingType.NLU,
+    )
+    validator = await Validator.from_importer(importer)
+    assert not validator.verify_story_structure(ignore_warnings=False)
+
+
+async def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace(
+    tmp_path: Path,
+):
+    story_file_name = tmp_path / "stories.yml"
+    story_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+        - story: path 1
+          steps:
+          - user: |
+              truly amazing!
+          - action: utter_happy
+        - story: path 2 (should always conflict path 1)
+          steps:
+          - user: |
+              truly  amazing!
+          - action: utter_cheer_up
+        """
+    )
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[story_file_name],
+        training_type=TrainingType.NLU,
+    )
+    validator = await Validator.from_importer(importer)
+    assert not validator.verify_story_structure(ignore_warnings=False)
+
+
+async def test_verify_correct_e2e_story_structure(tmp_path: Path):
+    story_file_name = tmp_path / "stories.yml"
+    with open(story_file_name, "w") as file:
+        file.write(
+            """
+            stories:
+            - story: path 1
+              steps:
+              - user: |
+                  hello assistant! Can you help me today?
+              - action: utter_greet
+            - story: path 2 - state is similar but different from the one in path 1
+              steps:
+              - user: |
+                  hello assistant! you Can help me today?
+              - action: utter_goodbye
+            - story: path 3
+              steps:
+              - user: |
+                  That's it for today. Chat again tomorrow!
+              - action: utter_goodbye
+            """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[story_file_name],
+        training_type=TrainingType.NLU,
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_story_structure(ignore_warnings=False)
+
+
+async def test_verify_story_structure_ignores_rules():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_with_rules_conflicting.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_story_structure(ignore_warnings=False)
 
 
 async def test_verify_bad_story_structure_ignore_warnings():

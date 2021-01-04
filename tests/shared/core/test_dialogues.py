@@ -9,9 +9,9 @@ from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
 from rasa.core.tracker_store import InMemoryTrackerStore
 from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     TEST_DIALOGUES,
     EXAMPLE_DOMAINS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
 )
 from tests.core.utilities import tracker_from_dialogue_file
 
@@ -37,7 +37,7 @@ def test_inmemory_tracker_store(pair):
 
 
 def test_tracker_default():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
     filename = "data/test_dialogues/default.json"
     tracker = tracker_from_dialogue_file(filename, domain)
     assert tracker.get_slot("name") == "Peter"
@@ -45,7 +45,7 @@ def test_tracker_default():
 
 
 def test_dialogue_from_parameters():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
     filename = "data/test_dialogues/default.json"
     tracker = tracker_from_dialogue_file(filename, domain)
     serialised_dialogue = InMemoryTrackerStore.serialise_tracker(tracker)

@@ -22,13 +22,13 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.shared.exceptions import InvalidParameterException, RasaException
+from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
     FailSafeTrackerStore,
@@ -354,11 +354,6 @@ class Agent:
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
 
-        if self.domain is not None:
-            self.domain.add_requested_slot()
-            self.domain.add_knowledge_base_slots()
-            self.domain.add_categorical_slot_default_value()
-
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
         )
@@ -416,6 +411,8 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         path_to_model_archive: Optional[Text] = None,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         try:
@@ -446,7 +443,15 @@ class Agent:
 
         if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
 
             # ensures the domain hasn't changed between test and train
             domain.compare_with_specification(core_model)
@@ -553,14 +558,16 @@ class Agent:
         sender_id: Text,
         action: Text,
         output_channel: OutputChannel,
-        policy: Text,
-        confidence: float,
+        policy: Optional[Text],
+        confidence: Optional[float],
     ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
-
         processor = self.create_processor()
+        prediction = PolicyPrediction.for_action_name(
+            self.domain, action, policy, confidence or 0.0
+        )
         return await processor.execute_action(
-            sender_id, action, output_channel, self.nlg, policy, confidence
+            sender_id, action, output_channel, self.nlg, prediction
         )
 
     async def trigger_intent(
