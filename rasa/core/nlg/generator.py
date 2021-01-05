@@ -14,7 +14,7 @@ class NaturalLanguageGenerator:
 
     async def generate(
         self,
-        action_name: Text,
+        utter_action: Text,
         tracker: "DialogueStateTracker",
         output_channel: Text,
         **kwargs: Any,
@@ -56,7 +56,10 @@ def _create_from_endpoint_config(
 
         # this is the default type if no nlg type is set
         nlg = CallbackNaturalLanguageGenerator(endpoint_config=endpoint_config)
-    elif endpoint_config.type.lower() == "template" or endpoint_config.type.lower() == "response":
+    elif (
+        endpoint_config.type.lower() == "template"
+        or endpoint_config.type.lower() == "response"
+    ):
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         nlg = TemplatedNaturalLanguageGenerator(domain.responses)

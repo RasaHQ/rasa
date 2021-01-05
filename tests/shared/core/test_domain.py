@@ -200,7 +200,7 @@ responses:
     assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
-def test_utter_responses():
+def test_responses():
     domain_file = "examples/moodbot/domain.yml"
     domain = Domain.load(domain_file)
     expected_response = {
