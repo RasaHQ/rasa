@@ -162,6 +162,11 @@ class RasaNLUModelConfig:
                 docs=DOCS_URL_PIPELINE,
             )
 
-    def override(self, config) -> None:
+    def override(self, config: Optional[Dict[Text, Any]] = None) -> None:
+        """Overrides default config with given values.
+
+        Args:
+            config: New values for the configuration.
+        """
         if config:
             self.__dict__.update(config)
