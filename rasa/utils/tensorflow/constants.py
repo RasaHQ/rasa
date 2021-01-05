@@ -1,6 +1,7 @@
 # constants for configuration parameters of our tensorflow models
 
 LABEL = "label"
+IDS = "ids"
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 
@@ -67,6 +68,7 @@ COSINE = "cosine"
 BALANCED = "balanced"
 
 SEQUENCE = "sequence"
+SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
 SENTENCE = "sentence"
 
 POOLING = "pooling"
@@ -81,3 +83,5 @@ SENTENCE_FEATURES = "sentence_features"
 
 FEATURIZERS = "featurizers"
 CHECKPOINT_MODEL = "checkpoint_model"
+
+MASK = "mask"

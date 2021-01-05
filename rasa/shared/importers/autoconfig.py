@@ -36,7 +36,8 @@ class TrainingType(Enum):
 
 
 def get_configuration(
-    config_file_path: Text, training_type: Optional[TrainingType] = TrainingType.BOTH
+    config_file_path: Optional[Text],
+    training_type: Optional[TrainingType] = TrainingType.BOTH,
 ) -> Dict[Text, Any]:
     """Determine configuration from a configuration file.
 

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Text
+from typing import Text
 
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
@@ -31,7 +31,7 @@ class NLGMarkdownToYamlConverter(TrainingDataConverter):
             source_path: Path to the training data file.
             output_path: Path to the output directory.
         """
-        reader = NLGMarkdownReader()
+        reader = NLGMarkdownReader(ignore_deprecation_warning=True)
         writer = RasaYAMLWriter()
 
         output_nlg_path = cls.generate_path_for_converted_training_data_file(
