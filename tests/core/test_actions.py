@@ -451,9 +451,7 @@ async def test_action_utter_retrieved_empty_response(
     assert events == []
 
 
-async def test_response(
-    default_channel, default_nlg, default_tracker, default_domain
-):
+async def test_response(default_channel, default_nlg, default_tracker, default_domain):
     events = await ActionResponse("utter_channel").run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -508,9 +506,7 @@ async def test_response_invalid_response(
     assert events[0].text.startswith("a response referencing an invalid {variable}.")
 
 
-async def test_response_channel_specific(
-    default_nlg, default_tracker, default_domain
-):
+async def test_response_channel_specific(default_nlg, default_tracker, default_domain):
     from rasa.core.channels.slack import SlackBot
 
     output_channel = SlackBot("DummyToken", "General")

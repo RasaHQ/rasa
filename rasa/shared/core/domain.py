@@ -857,7 +857,7 @@ class Domain:
             return np.random.choice(self.responses[utter_action])
         else:
             return None
-    
+
     # noinspection PyTypeChecker
     @rasa.shared.utils.common.lazy_property
     def slot_states(self) -> List[Text]:
