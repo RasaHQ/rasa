@@ -144,7 +144,6 @@ class PolicyTestCollection:
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
-    @pytest.mark.timeout(1000)
     @pytest.mark.parametrize("should_finetune", [False, True])
     async def test_persist_and_load(
         self,
@@ -170,7 +169,6 @@ class PolicyTestCollection:
             )
             assert predicted_probabilities == actual_probabilities
 
-    @pytest.mark.timeout(600)
     def test_prediction_on_empty_tracker(
         self, trained_policy: Policy, default_domain: Domain
     ):
