@@ -270,7 +270,8 @@ async def load_agent_on_start(
         )
     except Exception as e:
         rasa.shared.utils.io.raise_warning(
-            f"The model at '{model_path}' could not be loaded. " f"Error: {e}"
+            f"The model at '{model_path}' could not be loaded. "
+            f"Error: {type(e)}: {e}"
         )
         app.agent = None
 
@@ -311,7 +312,7 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
                 f"The method '{EventBroker.__name__}.{EventBroker.close.__name__} was "
                 f"changed to be asynchronous. Please adapt your custom event broker "
                 f"accordingly. Support for synchronous implementations will be removed "
-                f"in Rasa Open Source 2.2.0."
+                f"in Rasa Open Source 3.0.0."
             )
             event_broker.close()
         else:

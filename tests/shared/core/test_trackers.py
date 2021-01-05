@@ -1,12 +1,14 @@
 import json
 import logging
 import os
+import textwrap
 import time
 from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
 
 import fakeredis
+import freezegun
 import pytest
 
 import rasa.shared.utils.io
@@ -36,6 +38,8 @@ from rasa.shared.core.events import (
     LegacyForm,
     LegacyFormValidation,
     LoopInterrupted,
+    DefinePrevUserUtteredFeaturization,
+    EntitiesAdded,
 )
 from rasa.shared.core.slots import (
     FloatSlot,
@@ -65,31 +69,20 @@ from tests.core.utilities import (
     get_tracker,
 )
 
-from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
-    MarkdownStoryWriter,
-)
-from rasa.shared.nlu.constants import (
-    ACTION_NAME,
-    PREDICTED_CONFIDENCE_KEY,
-)
+from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
-    # skipcq:PYL-W0231
-    # can't call call super init since it would init a redis connection
     def __init__(self, _domain: Domain) -> None:
+        super().__init__(_domain)
+
+        # Patch the Redis connection in RedisTrackerStore using fakeredis
         self.red = fakeredis.FakeStrictRedis()
-        self.record_exp = None
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
-
-        # Defined in RedisTrackerStore but needs to be added for the MockRedisTrackerStore
-        self.prefix = "tracker:"
-
-        TrackerStore.__init__(self, _domain)
 
 
 def stores_to_be_tested():
@@ -212,10 +205,12 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
         None,
         "action_listen",
         "greet",
+        None,  # DefinePrevUserUtteredFeaturization
         "utter_greet",
         None,
         "action_listen",
         "greet",
+        None,  # DefinePrevUserUtteredFeaturization
         "utter_greet",
         None,
         "action_listen",
@@ -238,6 +233,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
         "session_started",
         "action",
         "user",
+        "user_featurization",
         "action",
         "bot",
         "action",
@@ -501,6 +497,13 @@ def test_traveling_back_in_time(default_domain: Domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
+def test_tracker_init_copy(default_domain: Domain):
+    sender_id = "some-id"
+    tracker = DialogueStateTracker(sender_id, default_domain.slots)
+    tracker_copy = tracker.init_copy()
+    assert tracker.sender_id == tracker_copy.sender_id
+
+
 async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
     trackers = await default_agent.load_data(DEFAULT_STORIES_FILE)
 
@@ -612,7 +615,7 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     tracker_json["events"].insert(
-        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME},
+        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME}
     )
     tracker_json["events"].insert(5, {"event": SessionStarted.type_name})
 
@@ -626,22 +629,6 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
     # the SessionStart event was at index 5, the tracker's `applied_events()` should
     # be the same as the list of events from index 6 onwards
     assert tracker.applied_events() == list(tracker.events)[6:]
-
-
-async def test_tracker_dump_e2e_story(default_agent: Agent):
-    sender_id = "test_tracker_dump_e2e_story"
-
-    await default_agent.handle_text("/greet", sender_id=sender_id)
-    await default_agent.handle_text("/goodbye", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
-
-    story = tracker.export_stories(MarkdownStoryWriter(), e2e=True)
-    assert story.strip().split("\n") == [
-        "## test_tracker_dump_e2e_story",
-        "* greet: /greet",
-        "    - utter_greet",
-        "* goodbye: /goodbye",
-    ]
 
 
 def test_get_last_event_for():
@@ -1153,8 +1140,8 @@ def test_reading_of_trackers_with_legacy_form_validation_events():
     tracker = DialogueStateTracker.from_dict(
         "sender",
         events_as_dict=[
-            {"event": LegacyFormValidation.type_name, "name": None, "validate": True,},
-            {"event": LegacyFormValidation.type_name, "name": None, "validate": False,},
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": True},
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": False},
         ],
     )
 
@@ -1238,3 +1225,156 @@ def test_trackers_for_conversation_sessions(
     subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
 
     assert len(subtrackers) == n_subtrackers
+
+
+def test_policy_predictions_dont_change_persistence():
+    original_user_message = UserUttered("hi", intent={"name": "greet"})
+    tracker = DialogueStateTracker.from_events(
+        "Vova",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hi", intent={"name": "greet"}),
+            DefinePrevUserUtteredFeaturization(True),
+            EntitiesAdded(entities=[{"entity": "entity1", "value": "value1"}]),
+        ],
+    )
+
+    user_message: UserUttered = list(tracker.events)[1]
+    # The entities from the policy predictions are accessible
+    assert user_message.entities
+
+    actual_serialized = user_message.as_dict()
+
+    # Assert entities predicted by policies are not persisted
+    assert not actual_serialized["parse_data"]["entities"]
+
+    expected_serialized = original_user_message.as_dict()
+    # don't compare timestamps
+    expected_serialized.pop("timestamp")
+    actual_serialized.pop("timestamp")
+
+    assert actual_serialized == expected_serialized
+
+
+@freezegun.freeze_time("2018-01-01")
+def test_policy_prediction_reflected_in_tracker_state():
+    entities_predicted_by_policy = [{"entity": "entity1", "value": "value1"}]
+    nlu_entities = [{"entity": "entityNLU", "value": "value100"}]
+
+    tracker = DialogueStateTracker.from_events(
+        "Tester",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "hi",
+                intent={"name": "greet"},
+                entities=nlu_entities.copy(),
+                message_id="unique",
+                metadata={"some": "data"},
+            ),
+            DefinePrevUserUtteredFeaturization(True),
+            EntitiesAdded(entities=entities_predicted_by_policy),
+        ],
+    )
+
+    tracker_state = tracker.current_state()
+
+    expected_state = {
+        "sender_id": "Tester",
+        "slots": {},
+        "latest_message": {
+            "intent": {"name": "greet"},
+            "entities": nlu_entities + entities_predicted_by_policy,
+            "text": "hi",
+            "message_id": "unique",
+            "metadata": {"some": "data"},
+        },
+        "latest_event_time": 1514764800.0,
+        "followup_action": None,
+        "paused": False,
+        "events": None,
+        "latest_input_channel": None,
+        "active_loop": {},
+        "latest_action": {"action_name": "action_listen"},
+        "latest_action_name": "action_listen",
+    }
+
+    assert tracker_state == expected_state
+
+    # Make sure we didn't change the actual event
+    assert tracker.latest_message.parse_data["entities"] == nlu_entities
+
+
+def test_autofill_slots_for_policy_entities():
+    policy_entity, policy_entity_value = "policy_entity", "end-to-end"
+    nlu_entity, nlu_entity_value = "nlu_entity", "nlu rocks"
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    entities:
+    - {nlu_entity}
+    - {policy_entity}
+
+    slots:
+        {nlu_entity}:
+            type: text
+        {policy_entity}:
+            type: text
+    """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "some sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "hi",
+                intent={"name": "greet"},
+                entities=[{"entity": nlu_entity, "value": nlu_entity_value}],
+            ),
+            DefinePrevUserUtteredFeaturization(True),
+            EntitiesAdded(
+                entities=[
+                    {"entity": policy_entity, "value": policy_entity_value},
+                    {"entity": nlu_entity, "value": nlu_entity_value},
+                ]
+            ),
+        ],
+        domain=domain,
+        slots=domain.slots,
+    )
+
+    # Slots are correctly set
+    assert tracker.slots[nlu_entity].value == nlu_entity_value
+    assert tracker.slots[policy_entity].value == policy_entity_value
+
+    expected_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "hi",
+            intent={"name": "greet"},
+            entities=[
+                {"entity": nlu_entity, "value": nlu_entity_value},
+                # Added by `DefinePrevUserUtteredEntities`
+                {"entity": policy_entity, "value": policy_entity_value},
+            ],
+        ),
+        # SlotSet event added for entity predicted by NLU
+        SlotSet(nlu_entity, nlu_entity_value),
+        DefinePrevUserUtteredFeaturization(True),
+        EntitiesAdded(
+            entities=[
+                {"entity": policy_entity, "value": policy_entity_value},
+                {"entity": nlu_entity, "value": nlu_entity_value},
+            ]
+        ),
+        # SlotSet event added for entity predicted by policies
+        # This event is somewhat duplicate. We don't deduplicate as this is a true
+        # reflection of the given events and it doesn't change the actual state.
+        SlotSet(nlu_entity, nlu_entity_value),
+        SlotSet(policy_entity, policy_entity_value),
+    ]
+
+    for actual, expected in zip(tracker.events, expected_events):
+        assert actual == expected
