@@ -1132,8 +1132,9 @@ def create_app(
         eval_agent = app.agent
 
         if model_path:
-            model_server = app.agent.model_server.copy()
+            model_server = app.agent.model_server
             if model_server is not None:
+                model_server = model_server.copy()
                 model_server.url = model_path
                 # Set wait time between pulls to `0` so that the agent does not schedule
                 # a job to pull the model from the server
