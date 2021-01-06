@@ -509,7 +509,7 @@ async def test_train_persist_load_with_composite_entities(
 async def test_process_gives_diagnostic_data(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
-    """Test if processing a message returns attention weights as numpy array."""
+    """Tests if processing a message returns attention weights as numpy array."""
 
     _config = RasaNLUModelConfig(
         {
