@@ -566,6 +566,10 @@ class DotProductLoss(tf.keras.layers.Layer):
             to run in parallel.
         same_sampling: Boolean, if 'True' sample same negative labels
             for the whole batch.
+        constrain_similarities: Boolean, if 'True' applies sigmoid on all
+            similarity terms and adds to the loss function to
+            ensure that similarity values are approximately bounded.
+            Used inside _loss_softmax() only.
     """
 
     def __init__(
@@ -580,6 +584,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         name: Optional[Text] = None,
         parallel_iterations: int = 1000,
         same_sampling: bool = False,
+        constrain_similarities=True,
     ) -> None:
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -591,6 +596,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.scale_loss = scale_loss
         self.parallel_iterations = parallel_iterations
         self.same_sampling = same_sampling
+        self.constrain_similarities = constrain_similarities
 
     @staticmethod
     def _make_flat(x: tf.Tensor) -> tf.Tensor:
@@ -853,31 +859,49 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> tf.Tensor:
         """Define softmax loss."""
 
+        # Similarity terms between input and label should be optimized relative
+        # to each other and hence use them as logits for softmax term
         softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
 
-        sigmoid_logits = tf.concat(
-            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
-        )
+        if not self.constrain_similarities:
+            # Concatenate other similarity terms as well. Due to this,
+            # similarity values between input and label may not be
+            # approximately bounded in a defined range.
+            softmax_logits = tf.concat(
+                [softmax_logits, sim_neg_ii, sim_neg_ll], axis=-1
+            )
 
         # create label_ids for softmax
         softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
 
-        sigmoid_labels = tf.concat(
-            [
-                tf.expand_dims(tf.ones_like(sigmoid_logits[..., 0], tf.float32), -1),
-                tf.zeros_like(sigmoid_logits[..., 1:], tf.float32),
-            ],
-            axis=-1,
-        )
-
         softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=softmax_label_ids, logits=softmax_logits
         )
-        sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=sigmoid_labels, logits=sigmoid_logits
-        )
 
-        loss = softmax_loss + tf.reduce_mean(sigmoid_loss, axis=-1)
+        loss = softmax_loss
+
+        if self.constrain_similarities:
+            # Constrain similarity values in a range by applying sigmoid
+            # on them individually so that they saturate at extreme values.
+            sigmoid_logits = tf.concat(
+                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+            )
+
+            sigmoid_labels = tf.concat(
+                [
+                    tf.expand_dims(
+                        tf.ones_like(sigmoid_logits[..., 0], tf.float32), -1
+                    ),
+                    tf.zeros_like(sigmoid_logits[..., 1:], tf.float32),
+                ],
+                axis=-1,
+            )
+
+            sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                labels=sigmoid_labels, logits=sigmoid_logits
+            )
+
+            loss += tf.reduce_mean(sigmoid_loss, axis=-1)
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -892,14 +916,6 @@ class DotProductLoss(tf.keras.layers.Layer):
                 loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
-
-        tf.print(
-            tf.reduce_mean(sim_pos),
-            tf.reduce_mean(sim_neg_ii),
-            tf.reduce_mean(sim_neg_il),
-            tf.reduce_mean(sim_neg_ll),
-            tf.reduce_mean(sim_neg_li),
-        )
 
         # average the loss over the batch
         return tf.reduce_mean(loss)

@@ -73,6 +73,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     CHECKPOINT_MODEL,
     DENSE_DIMENSION,
+    CONSTRAIN_SIMILARITIES,
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -230,6 +231,9 @@ class ResponseSelector(DIETClassifier):
         FEATURIZERS: [],
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
+        # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
+        # ensure that similarity values are approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: True,
     }
 
     def __init__(

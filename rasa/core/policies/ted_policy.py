@@ -99,6 +99,7 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     FEATURIZERS,
     ENTITY_RECOGNITION,
+    CONSTRAIN_SIMILARITIES,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -272,6 +273,9 @@ class TEDPolicy(Policy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: True,
+        # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
+        # ensure that similarity values are approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: True,
     }
 
     @staticmethod

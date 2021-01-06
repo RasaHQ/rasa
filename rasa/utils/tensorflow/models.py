@@ -55,6 +55,7 @@ from rasa.utils.tensorflow.constants import (
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
     SCALE_LOSS,
+    CONSTRAIN_SIMILARITIES,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -790,6 +791,7 @@ class TransformerRasaModel(RasaModel):
             scale_loss,
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
+            constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
         )
 
     def _prepare_sparse_dense_dropout_layers(

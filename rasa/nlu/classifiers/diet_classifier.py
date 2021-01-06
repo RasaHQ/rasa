@@ -95,6 +95,7 @@ from rasa.utils.tensorflow.constants import (
     SEQUENCE_LENGTH,
     DENSE_DIMENSION,
     MASK,
+    CONSTRAIN_SIMILARITIES,
 )
 
 logger = logging.getLogger(__name__)
@@ -252,6 +253,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Split entities by comma, this makes sense e.g. for a list of ingredients
         # in a recipie, but it doesn't make sense for the parts of an address
         SPLIT_ENTITIES_BY_COMMA: True,
+        # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
+        # ensure that similarity values are approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: True,
     }
 
     # init helpers
