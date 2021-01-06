@@ -6,6 +6,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import Domain
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -113,12 +114,12 @@ async def test_training_script_with_max_history_set(tmp_path: Path):
         additional_arguments={},
     )
     agent = Agent.load(tmpdir)
+
+    expected_max_history = {FormPolicy: 2, RulePolicy: None}
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, "max_history"):
-            if type(policy) == FormPolicy:
-                assert policy.featurizer.max_history == 2
-            else:
-                assert policy.featurizer.max_history == 5
+            expected_history = expected_max_history.get(type(policy), 5)
+            assert policy.featurizer.max_history == expected_history
 
 
 @pytest.mark.parametrize(
@@ -181,7 +182,9 @@ async def test_trained_interpreter_passed_to_policies(
 ):
     from rasa.core.policies.ted_policy import TEDPolicy
 
-    policies_config = {"policies": [{"name": TEDPolicy.__name__}]}
+    policies_config = {
+        "policies": [{"name": TEDPolicy.__name__}, {"name": RulePolicy.__name__}]
+    }
 
     policy_train = Mock()
     monkeypatch.setattr(TEDPolicy, "train", policy_train)

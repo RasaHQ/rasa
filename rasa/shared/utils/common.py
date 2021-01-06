@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import importlib
+import inspect
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
@@ -34,10 +35,11 @@ def class_from_module_path(
 
 def all_subclasses(cls: Any) -> List[Any]:
     """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [
+    classes = cls.__subclasses__() + [
         g for s in cls.__subclasses__() for g in all_subclasses(s)
     ]
+
+    return [subclass for subclass in classes if not inspect.isabstract(subclass)]
 
 
 def module_path_from_instance(inst: Any) -> Text:

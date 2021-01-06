@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "poetry>=1.0.5",]
+requires = [ "poetry>=1.1.4",]
 build-backend = "poetry.masonry.api"
 
 [tool.black]
@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.1.1"
+version = "2.2.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -21,9 +21,6 @@ keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots
 include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
 readme = "README.md"
 license = "Apache-2.0"
-[[tool.poetry.source]]
-name = "rasa-pypi"
-url = "https://pypi.rasa.com/simple/"
 
 [tool.towncrier]
 package = "rasa"
@@ -94,7 +91,7 @@ colorhash = "~1.0.2"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2021.0"
-rasa-sdk = "^2.1.0"
+rasa-sdk = "^2.2.0"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = ">=19.12.2,<21.0.0"
@@ -153,6 +150,7 @@ pep440-version-utils = "^0.3.0"
 pydoc-markdown = "^3.5.0"
 pytest-timeout = "^1.4.2"
 mypy = "^0.790"
+bandit = "^1.6.3"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]

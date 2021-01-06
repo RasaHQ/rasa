@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from unittest.mock import Mock
+from typing import List, Text, Dict, Any
 
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu import train
@@ -26,6 +27,8 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     CHECKPOINT_MODEL,
     BILOU_FLAG,
+    ENTITY_RECOGNITION,
+    INTENT_CLASSIFICATION,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -108,7 +111,10 @@ def test_check_labels_features_exist(messages, expected):
 
 
 async def _train_persist_load_with_different_settings(
-    pipeline, component_builder, tmp_path
+    pipeline: List[Dict[Text, Any]],
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    should_finetune: bool,
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
@@ -122,7 +128,11 @@ async def _train_persist_load_with_different_settings(
     assert trainer.pipeline
     assert trained.pipeline
 
-    loaded = Interpreter.load(persisted_path, component_builder)
+    loaded = Interpreter.load(
+        persisted_path,
+        component_builder,
+        new_config=_config if should_finetune else None,
+    )
 
     assert loaded.pipeline
     assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
@@ -130,7 +140,7 @@ async def _train_persist_load_with_different_settings(
 
 @pytest.mark.skip_on_windows
 async def test_train_persist_load_with_different_settings_non_windows(
-    component_builder, tmpdir
+    component_builder: ComponentBuilder, tmp_path: Path
 ):
     pipeline = [
         {
@@ -142,7 +152,10 @@ async def test_train_persist_load_with_different_settings_non_windows(
         {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
     ]
     await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir
+        pipeline, component_builder, tmp_path, should_finetune=False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmp_path, should_finetune=True
     )
 
 
@@ -153,7 +166,52 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
         {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
     ]
     await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir
+        pipeline, component_builder, tmpdir, should_finetune=False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=True
+    )
+
+
+async def test_train_persist_load_with_only_entity_recognition(
+    component_builder, tmpdir
+):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {
+            "name": "DIETClassifier",
+            ENTITY_RECOGNITION: True,
+            INTENT_CLASSIFICATION: False,
+            EPOCHS: 1,
+        },
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=True
+    )
+
+
+async def test_train_persist_load_with_only_intent_classification(
+    component_builder, tmpdir
+):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {
+            "name": "DIETClassifier",
+            ENTITY_RECOGNITION: False,
+            INTENT_CLASSIFICATION: True,
+            EPOCHS: 1,
+        },
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, should_finetune=True
     )
 
 
