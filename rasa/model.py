@@ -314,8 +314,6 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
 
-    update_component_indices_of_pipeline(config)
-
     responses = domain.templates
 
     # Do a copy of the domain to not change the actual domain (shallow is enough)
@@ -376,8 +374,6 @@ def _get_fingerprint_of_config_without_epochs(
             for p in copied_config[key]:
                 if "epochs" in p:
                     del p["epochs"]
-                # if COMPONENT_INDEX in p:  # ToDo: Remove comment
-                #     del p[COMPONENT_INDEX]
 
     return rasa.shared.utils.io.deep_container_fingerprint(copied_config)
 
@@ -620,17 +616,3 @@ def get_model_for_finetuning(
         "contains no model or model file cannot be found."
     )
     return None
-
-
-def update_component_indices_of_pipeline(
-    config: Optional[Dict[Text, Any]] = None
-) -> None:
-    """Adds component indices to the pipeline in the given config.
-    
-    Args:
-        config: Configuration.
-    """
-    if not config or not "pipeline" in config:
-        return
-    for index, component in enumerate(config["pipeline"]):
-        component["index"] = index

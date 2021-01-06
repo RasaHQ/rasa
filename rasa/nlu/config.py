@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from typing import Any, Dict, List, Optional, Text, Union
@@ -69,7 +70,7 @@ def component_config_from_pipeline(
         by the given defaults.
     """
     try:
-        configuration = pipeline[index]
+        configuration = copy.deepcopy(pipeline[index])
         configuration[COMPONENT_INDEX] = index
         return rasa.utils.train_utils.override_defaults(defaults, configuration)
     except IndexError:
