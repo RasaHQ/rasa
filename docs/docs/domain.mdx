@@ -384,12 +384,12 @@ class NumberOfPeopleSlot(Slot):
         return r
 ```
 
-A custom slot class is implemented as an independent python module, 
-separate from custom action code. It should be saved in a directory 
+You can implement a custom slot class as an independent python module, 
+separate from custom action code. Save the code for your custom slot in a directory 
 alongside an empty file called "\_\_init\_\_.py" so that it will be recognized as a python module.
 You can then refer to the custom slot class by it's module path.
 
-For example, say the code above is saved in "addons/my_custom_slots.py", a directory relative to your bot project:
+For example, say you have saved the code above in "addons/my_custom_slots.py", a directory relative to your bot project:
 
 ```bash
 └── rasa_bot
@@ -403,7 +403,7 @@ For example, say the code above is saved in "addons/my_custom_slots.py", a direc
     ├── endpoints.yml
 ```
 
-The custom slot type's module path
+Your custom slot type's module path
 is then `addons.my_custom_slots.NumberOfPeopleSlot`.
 Use the module path to refer to the custom slot type in your domain file:
 
@@ -414,8 +414,9 @@ slots:
     influence_conversation: true
 ```
 
-Rasa Open Source needs some training stories to learn from how to handle the
-different situations:
+Now that your custom slot class can be used by Rasa Open Source, add training stories that diverge based on the value of the `people` slot.
+You could write one story for the case where `people` has a value between 1 and 6, and one for a value greater than six. You can choose any value within these ranges to put in your stories, since they are all featurized the same way (see the featurization table above).
+
 
 ```yaml-rasa
 stories:
