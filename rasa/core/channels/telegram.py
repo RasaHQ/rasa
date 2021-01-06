@@ -212,9 +212,9 @@ class TelegramInput(InputChannel):
                     text = update.callback_query.data
                 else:
                     msg = update.message
-                    if self._is_user_message(msg):
+                    if msg is not None and self._is_user_message(msg):
                         text = msg.text.replace("/bot", "")
-                    elif self._is_location(msg):
+                    elif msg is not None and self._is_location(msg):
                         text = '{{"lng":{0}, "lat":{1}}}'.format(
                             msg.location.longitude, msg.location.latitude
                         )
