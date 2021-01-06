@@ -1135,8 +1135,8 @@ def create_app(
             model_server = app.agent.model_server.copy()
             if model_server is not None:
                 model_server.url = model_path
-                # Set wait time between pulls to 0 so that we don't schedule a job
-                # to keep pulling the model from the server
+                # Set wait time between pulls to `0` so that the agent does not schedule
+                # a job to pull the model from the server
                 model_server.kwargs["wait_time_between_pulls"] = 0
             eval_agent = await _load_agent(
                 model_path, model_server, app.agent.remote_storage

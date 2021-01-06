@@ -837,7 +837,7 @@ async def test_evaluate_intent_with_model_param(
     assert previous_model_file == response.json()["model_file"]
 
 
-async def test_evaluate_intent_with_model_server_param(
+async def test_evaluate_intent_with_model_server(
     rasa_app: SanicASGITestClient,
     trained_rasa_model: Text,
     default_nlu_data: Text,
