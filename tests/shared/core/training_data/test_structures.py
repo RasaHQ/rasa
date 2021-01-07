@@ -1,9 +1,22 @@
 import rasa.core
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SessionStarted, SlotSet, UserUttered, ActionExecuted
+from rasa.shared.core.events import (
+    SessionStarted,
+    SlotSet,
+    UserUttered,
+    ActionExecuted,
+    DefinePrevUserUtteredFeaturization,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 from rasa.shared.core.training_data.structures import Story
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -19,17 +32,28 @@ def test_session_start_is_not_serialised(default_domain: Domain):
     # add the two SessionStarted events and a user event
     tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
     tracker.update(SessionStarted())
-    tracker.update(UserUttered("say something"))
+    tracker.update(
+        UserUttered("say something", intent={INTENT_NAME_KEY: "some_intent"})
+    )
+    tracker.update(DefinePrevUserUtteredFeaturization(False))
 
-    # make sure session start is not serialised
-    story = Story.from_events(tracker.events, "some-story01")
+    YAMLStoryWriter().dumps(
+        Story.from_events(tracker.events, "some-story01").story_steps
+    )
 
-    expected = """## some-story01
-    - slot{"slot": "value"}
-* say something
+    expected = """version: "2.0"
+stories:
+- story: some-story01
+  steps:
+  - slot_was_set:
+    - slot: value
+  - intent: some_intent
 """
 
-    assert story.as_story_string(flat=True) == expected
+    actual = YAMLStoryWriter().dumps(
+        Story.from_events(tracker.events, "some-story01").story_steps
+    )
+    assert actual == expected
 
 
 def test_as_story_string_or_statement():

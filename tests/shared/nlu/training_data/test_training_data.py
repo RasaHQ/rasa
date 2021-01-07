@@ -1,3 +1,5 @@
+import asyncio
+from pathlib import Path
 from typing import Text, List
 
 import pytest
@@ -28,6 +30,10 @@ from rasa.shared.nlu.training_data.util import (
 )
 
 import rasa.shared.data
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
 
 
 def test_luis_data():
@@ -624,6 +630,40 @@ def test_custom_attributes(tmp_path):
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
     assert example.get("sentiment") == 0.8
+
+
+async def test_without_additional_e2e_examples(tmp_path: Path):
+    domain_path = tmp_path / "domain.yml"
+    domain_path.write_text(Domain.empty().as_yaml())
+
+    config_path = tmp_path / "config.yml"
+    config_path.touch()
+
+    existing = TrainingDataImporter.load_from_dict(
+        {}, str(config_path), str(domain_path), []
+    )
+
+    stories = StoryGraph(
+        [
+            StoryStep(
+                events=[
+                    UserUttered(None, {"name": "greet_from_stories"}),
+                    ActionExecuted("utter_greet_from_stories"),
+                ]
+            )
+        ]
+    )
+
+    # Patch to return our test stories
+    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+
+    importer = E2EImporter(existing)
+
+    training_data = await importer.get_nlu_data()
+
+    assert training_data.training_examples
+    assert not training_data.is_empty()
+    assert len(training_data.nlu_examples) == 0
 
 
 def test_fingerprint_is_same_when_loading_data_again():
