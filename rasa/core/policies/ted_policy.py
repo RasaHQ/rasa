@@ -324,11 +324,25 @@ class TEDPolicy(Policy):
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
+    def _check_similarity_confidence_setting(self) -> None:
+        if (
+            not self.config[CONSTRAIN_SIMILARITIES]
+            and not self.config[RELATIVE_CONFIDENCE]
+        ):
+            raise ValueError(
+                f"If {CONSTRAIN_SIMILARITIES} is set to False, "
+                f"{RELATIVE_CONFIDENCE} cannot be set to False as"
+                f"similarities need to be constrained during training "
+                f"time in order to compute appropriate confidence values "
+                f"for each label at inference time."
+            )
+
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
         self.config = rasa.utils.train_utils.override_defaults(
             self.defaults, new_config
         )
+        self._check_similarity_confidence_setting()
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 

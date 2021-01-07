@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from unittest.mock import Mock
 from typing import List, Text, Dict, Any
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu import train
@@ -29,6 +30,7 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
+    RELATIVE_CONFIDENCE,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -306,6 +308,56 @@ async def test_softmax_normalization(
         [intent.get("confidence") for intent in intent_ranking]
     ) == pytest.approx(1)
     assert output_sums_to_1 == output_should_sum_to_1
+
+    # check whether the normalization of rankings is reflected in intent prediction
+    assert parse_data.get("intent") == intent_ranking[0]
+
+
+@pytest.mark.parametrize(
+    "classifier_params, output_length",
+    [({RANDOM_SEED: 42, EPOCHS: 1, RELATIVE_CONFIDENCE: False}, LABEL_RANKING_LENGTH)],
+)
+async def test_softmax_with_absolute_confidence(
+    component_builder,
+    tmp_path,
+    classifier_params,
+    output_length,
+    monkeypatch: MonkeyPatch,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
+    )
+    assert pipeline[2]["name"] == "DIETClassifier"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/test/many_intents.md",
+        component_builder=component_builder,
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    mock = Mock()
+    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+
+    parse_data = loaded.parse("hello")
+    intent_ranking = parse_data.get("intent_ranking")
+
+    # check that the output was correctly truncated
+    assert len(intent_ranking) == output_length
+
+    intent_confidences = [intent.get("confidence") for intent in intent_ranking]
+
+    # check each confidence is in range
+    confidence_in_range = [
+        0.0 <= confidence <= 1.0 for confidence in intent_confidences
+    ]
+    assert all(confidence_in_range)
+
+    # normalize shouldn't have been called
+    mock.normalize.assert_not_called()
 
     # check whether the normalization of rankings is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]

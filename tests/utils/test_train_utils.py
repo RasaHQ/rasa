@@ -1,4 +1,6 @@
 import numpy as np
+import pytest
+from typing import List
 
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
@@ -26,3 +28,22 @@ def test_align_token_features():
     assert np.all(actual_features[0][3] == np.mean(token_features[0][3:5], axis=0))
     # embedding is split into 4 sub-tokens
     assert np.all(actual_features[0][4] == np.mean(token_features[0][5:10], axis=0))
+
+
+def test_normalize():
+    input_values = [0.7, 0.1, 0.1]
+    normalized_values = train_utils.normalize(np.array(input_values))
+    assert np.allclose(
+        normalized_values, np.array([0.77777778, 0.11111111, 0.11111111]), atol=1e-5
+    )
+
+
+@pytest.mark.parametrize(
+    "input_values, ranking_length, output_values",
+    [([0.5, 0.8, 0.1], 2, [0.5, 0.8, 0.0]), ([0.5, 0.3, 0.9], 5, [0.5, 0.3, 0.9]),],
+)
+def test_sort_and_rank(
+    input_values: List[float], ranking_length: int, output_values: List[float]
+):
+    ranked_values = train_utils.sort_and_rank(np.array(input_values), ranking_length)
+    assert np.array_equal(ranked_values, output_values)

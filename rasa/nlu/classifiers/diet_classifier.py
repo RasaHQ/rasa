@@ -254,7 +254,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Split entities by comma, this makes sense e.g. for a list of ingredients
         # in a recipie, but it doesn't make sense for the parts of an address
         SPLIT_ENTITIES_BY_COMMA: True,
-        # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
+        # If 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
         # Return softmax based probabilities during prediction.
@@ -290,6 +290,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
 
+    def _check_similarity_confidence_setting(self) -> None:
+        if (
+            not self.component_config[CONSTRAIN_SIMILARITIES]
+            and not self.component_config[RELATIVE_CONFIDENCE]
+        ):
+            raise ValueError(
+                f"If {CONSTRAIN_SIMILARITIES} is set to False, "
+                f"{RELATIVE_CONFIDENCE} cannot be set to False as"
+                f"similarities need to be constrained during training "
+                f"time in order to compute appropriate confidence values "
+                f"for each label at inference time."
+            )
+
     def _check_config_parameters(self) -> None:
         self.component_config = train_utils.check_deprecated_options(
             self.component_config
@@ -297,6 +310,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
+        self._check_similarity_confidence_setting()
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
