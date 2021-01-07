@@ -32,19 +32,38 @@ if TYPE_CHECKING:
     from rasa.nlu.tokenizers.tokenizer import Token
 
 
-def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
+def normalize(values: np.ndarray) -> np.ndarray:
     """Normalizes an array of positive numbers over the top `ranking_length` values.
 
+    Args:
+        values: Values to normalize
+
+    Returns:
+        Normalized values.
+    """
+    new_values = values.copy()
+
+    if np.sum(new_values) > 0:
+        new_values = new_values / np.sum(new_values)
+
+    return new_values
+
+
+def sort_and_rank(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
+    """Sorts the values in descending order and keep only top `ranking_length` values.
+
     Other values will be set to 0.
+    Args:
+        values: Values to sort and rank
+        ranking_length: number of values to maintain above 0.
+
+    Returns:
+        Modified values.
     """
     new_values = values.copy()  # prevent mutation of the input
     if 0 < ranking_length < len(new_values):
         ranked = sorted(new_values, reverse=True)
         new_values[new_values < ranked[ranking_length - 1]] = 0
-
-    if np.sum(new_values) > 0:
-        new_values = new_values / np.sum(new_values)
-
     return new_values
 
 

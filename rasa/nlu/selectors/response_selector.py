@@ -74,6 +74,7 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
+    RELATIVE_CONFIDENCE,
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -234,6 +235,8 @@ class ResponseSelector(DIETClassifier):
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
+        # Return sigmoid based probabilities during prediction.
+        RELATIVE_CONFIDENCE: False,
     }
 
     def __init__(

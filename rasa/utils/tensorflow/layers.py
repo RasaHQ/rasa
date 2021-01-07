@@ -570,6 +570,8 @@ class DotProductLoss(tf.keras.layers.Layer):
             similarity terms and adds to the loss function to
             ensure that similarity values are approximately bounded.
             Used inside _loss_softmax() only.
+        relative_confidence: Boolean, if 'True' confidence is calculated by applying
+            softmax over similarities, else sigmoid is applied on individual similarities.
     """
 
     def __init__(
@@ -584,7 +586,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         name: Optional[Text] = None,
         parallel_iterations: int = 1000,
         same_sampling: bool = False,
-        constrain_similarities=True,
+        constrain_similarities: bool = True,
+        relative_confidence: bool = True,
     ) -> None:
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -597,6 +600,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.parallel_iterations = parallel_iterations
         self.same_sampling = same_sampling
         self.constrain_similarities = constrain_similarities
+        self.relative_confidence = relative_confidence
 
     @staticmethod
     def _make_flat(x: tf.Tensor) -> tf.Tensor:
@@ -737,14 +741,26 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return sim
 
-    @staticmethod
-    def confidence_from_sim(sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
+    def confidence_from_sim(self, sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
+        """Computes model confidence/probability from computed similarities.
+
+        Args:
+            sim: Computed similarities
+            similarity_type: Similarity function to use - COSINE, INNER, AUTO.
+
+        Returns:
+            Confidences corresponding to each similarity value.
+        """
         if similarity_type == COSINE:
             # clip negative values to zero
             return tf.nn.relu(sim)
         else:
-            # normalize result to [0, 1] with softmax
-            return tf.nn.softmax(sim)
+            if self.relative_confidence:
+                # normalize result to [0, 1] with softmax
+                return tf.nn.softmax(sim)
+            else:
+                # Convert each individual similarity to probability
+                return tf.nn.sigmoid(sim)
 
     def _train_sim(
         self,

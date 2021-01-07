@@ -100,6 +100,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
     CONSTRAIN_SIMILARITIES,
+    RELATIVE_CONFIDENCE,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -276,6 +277,8 @@ class TEDPolicy(Policy):
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
+        # Return sigmoid based probabilities during prediction.
+        RELATIVE_CONFIDENCE: True,
     }
 
     @staticmethod
@@ -613,9 +616,13 @@ class TEDPolicy(Policy):
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
-            confidence = rasa.utils.train_utils.normalize(
+            confidence = rasa.utils.train_utils.sort_and_rank(
                 confidence, self.config[RANKING_LENGTH]
             )
+
+            if self.config[RELATIVE_CONFIDENCE]:
+                # Normalize the values if returned probabilities are from softmax.
+                confidence = rasa.utils.train_utils.normalize(confidence)
 
         optional_events = self._create_optional_event_for_entities(
             output, is_e2e_prediction, interpreter, tracker

@@ -96,6 +96,7 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     MASK,
     CONSTRAIN_SIMILARITIES,
+    RELATIVE_CONFIDENCE,
 )
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
+        # Return sigmoid based probabilities during prediction.
+        RELATIVE_CONFIDENCE: True,
     }
 
     # init helpers
@@ -858,9 +861,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[LOSS_TYPE] == SOFTMAX
             and self.component_config[RANKING_LENGTH] > 0
         ):
-            message_sim = train_utils.normalize(
+            message_sim = train_utils.sort_and_rank(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
+
+            if self.component_config[RELATIVE_CONFIDENCE]:
+                # Normalize the values if returned probabilities are from
+                # softmax(hence relative to each other).
+                message_sim = train_utils.normalize(message_sim)
 
         message_sim[::-1].sort()
         message_sim = message_sim.tolist()
