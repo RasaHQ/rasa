@@ -235,8 +235,8 @@ class ResponseSelector(DIETClassifier):
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
-        # Return sigmoid based probabilities during prediction.
-        RELATIVE_CONFIDENCE: False,
+        # Return softmax based probabilities during prediction.
+        RELATIVE_CONFIDENCE: True,
     }
 
     def __init__(
@@ -249,7 +249,7 @@ class ResponseSelector(DIETClassifier):
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
         finetune_mode: bool = False,
     ) -> None:
-
+        """Declare instance variables with default values."""
         component_config = component_config or {}
 
         # the following properties cannot be adapted for the ResponseSelector

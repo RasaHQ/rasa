@@ -589,6 +589,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         constrain_similarities: bool = True,
         relative_confidence: bool = True,
     ) -> None:
+        """Declare instance variables with default values."""
         super().__init__(name=name)
         self.num_neg = num_neg
         self.loss_type = loss_type
@@ -874,7 +875,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
         """Define softmax loss."""
-
         # Similarity terms between input and label should be optimized relative
         # to each other and hence use them as logits for softmax term
         softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)

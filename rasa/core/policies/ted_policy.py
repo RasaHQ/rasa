@@ -277,7 +277,7 @@ class TEDPolicy(Policy):
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
-        # Return sigmoid based probabilities during prediction.
+        # Return softmax based probabilities during prediction.
         RELATIVE_CONFIDENCE: True,
     }
 
