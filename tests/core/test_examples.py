@@ -1,6 +1,7 @@
 import json
 from typing import Text, Optional
 
+import pytest
 from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
@@ -20,6 +21,7 @@ async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     assert len(responses) == 4
 
 
+@pytest.mark.timeout(300)
 async def test_formbot_example(form_bot_agent: Agent):
     async def mock_form_happy_path(
         input_text: Text, output_text: Text, slot: Optional[Text] = None
