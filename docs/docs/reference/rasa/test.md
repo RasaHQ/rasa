@@ -16,10 +16,26 @@ Plot core model comparison graph.
 - `output_directory` - path to the output directory
 - `number_of_examples` - number of examples per run
 
+#### test\_core
+
+```python
+test_core(model: Optional[Text] = None, stories: Optional[Text] = None, output: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None) -> None
+```
+
+Tests a trained Core model against a set of test stories.
+
+#### test\_nlu
+
+```python
+async test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None)
+```
+
+Tests the NLU Model.
+
 #### compare\_nlu\_models
 
 ```python
-compare_nlu_models(configs: List[Text], nlu: Text, output: Text, runs: int, exclusion_percentages: List[int])
+async compare_nlu_models(configs: List[Text], nlu: Text, output: Text, runs: int, exclusion_percentages: List[int])
 ```
 
 Trains multiple models, compares them and saves the results.

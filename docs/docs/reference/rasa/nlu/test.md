@@ -551,7 +551,7 @@ are not predicted upon parsing.
 #### run\_evaluation
 
 ```python
-run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
+async run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Evaluate intent classification, response selection and entity extraction.
@@ -661,7 +661,7 @@ extraction.
 #### compare\_nlu
 
 ```python
-compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, Any], model_names: List[Text], output: Text, runs: int) -> List[int]
+async compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, Any], model_names: List[Text], output: Text, runs: int) -> List[int]
 ```
 
 Trains and compares multiple NLU models.
