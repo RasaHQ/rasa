@@ -52,3 +52,11 @@ Kafka event broker.
 
 Creates broker. See the parent class for more information.
 
+#### publish
+
+```python
+ | publish(event, retries=60, retry_delay_in_seconds=5) -> None
+```
+
+Publishes events.
+

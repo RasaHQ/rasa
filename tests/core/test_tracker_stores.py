@@ -891,3 +891,8 @@ def test_current_state_without_events(default_domain: Domain):
 
     # `events` key should not be in there
     assert state and "events" not in state
+
+
+def test_login_db_with_no_postgresql(tmp_path: Path):
+    with pytest.warns(UserWarning):
+        SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db="other")
