@@ -1944,6 +1944,11 @@ class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state.
+
+        Args:
+            tracker: The current conversation state.
+        """
         # HideRuleTurn event is added by RulePolicy before actual action is executed,
         # we will reset it on each action executed
         tracker.hide_rule_turn = True

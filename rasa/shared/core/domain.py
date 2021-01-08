@@ -1146,6 +1146,14 @@ class Domain:
         return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
+        """Find which slots should be auto fill with entities.
+
+        Args:
+            entities: The list of entities.
+
+        Returns:
+            A list of `SlotSet` events.
+        """
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:

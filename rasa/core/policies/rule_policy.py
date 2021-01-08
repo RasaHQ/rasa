@@ -684,7 +684,14 @@ class RulePolicy(MemoizationPolicy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
+        """Trains the policy on given training trackers.
 
+        Args:
+            training_trackers:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which can be used by the polices for featurization.
+        """
         # only consider original trackers (no augmented ones)
         training_trackers = [
             t
