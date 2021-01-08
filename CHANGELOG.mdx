@@ -16,6 +16,21 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.2.4] - 2021-01-08
+                       
+
+### Improvements
+- [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated 
+  [MappingPolicy](policies.mdx#mapping-policy) are missing
+  from the model's `policies` configuration. Changed the info log to a warning as one
+  of this policies should be added to the model configuration.
+
+### Bugfixes
+- [#7692](https://github.com/rasahq/rasa/issues/7692): Explicitly specify the `crypto` extra dependency of `pyjwt` to ensure that the 
+  `cryptography` dependency is installed. `cryptography` is strictly required to be able
+  to be able to verify JWT tokens.
+
+
 ## [2.2.3] - 2021-01-06
                        
 
