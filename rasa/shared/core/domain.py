@@ -1068,13 +1068,82 @@ class Domain:
         }
         return self._clean_state(state)
 
+    @staticmethod
+    def _remove_only_rule_features(
+        state: State, tracker: "DialogueStateTracker"
+    ) -> None:
+        # remove only rule slots
+        for slot in tracker.only_rule_slots:
+            if state.get(rasa.shared.core.constants.SLOTS, {}).get(slot):
+                del state[rasa.shared.core.constants.SLOTS][slot]
+        # remove active loop feature if it is only rule loop
+        if (
+            state.get(rasa.shared.core.constants.ACTIVE_LOOP, {}).get(
+                rasa.shared.core.constants.LOOP_NAME
+            )
+            in tracker.only_rule_loops
+        ):
+            del state[rasa.shared.core.constants.ACTIVE_LOOP][
+                rasa.shared.core.constants.LOOP_NAME
+            ]
+
+    @staticmethod
+    def _substitute_only_rule_user_input(state: State, last_ml_state: State) -> None:
+        if not rasa.shared.core.trackers.is_prev_action_listen_in_state(state):
+            if not last_ml_state.get(rasa.shared.core.constants.USER) and state.get(
+                rasa.shared.core.constants.USER
+            ):
+                del state[rasa.shared.core.constants.USER]
+            elif last_ml_state.get(rasa.shared.core.constants.USER):
+                state[rasa.shared.core.constants.USER] = last_ml_state[
+                    rasa.shared.core.constants.USER
+                ]
+
     def states_for_tracker_history(
-        self, tracker: "DialogueStateTracker"
+        self, tracker: "DialogueStateTracker", for_only_ml_policy: bool = False
     ) -> List[State]:
-        """Array of states for each state of the trackers history."""
-        return [
-            self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
-        ]
+        """Array of states for each state of the trackers history.
+
+        Args:
+            tracker: Instance of `DialogueStateTracker` to featurize.
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
+
+        Return:
+            A list of states.
+        """
+        states = []
+        last_ml_action_sub_state = None
+        last_action_is_ml_action = True
+        for tr in tracker.generate_all_prior_trackers():
+            if for_only_ml_policy:
+                # remember previous ml action based on the last non hidden turn
+                # we need this to override previous action in the ml state
+                if last_action_is_ml_action:
+                    last_ml_action_sub_state = self._get_prev_action_sub_state(tr)
+                last_action_is_ml_action = not tr.hide_rule_turn
+
+                if tr.hide_rule_turn:
+                    continue
+
+            state = self.get_active_states(tr)
+
+            if for_only_ml_policy:
+                # clean state from only rule features
+                self._remove_only_rule_features(state, tracker)
+                # make sure user input is the same as for previous state
+                # for non action_listen turns
+                if states:
+                    self._substitute_only_rule_user_input(state, states[-1])
+                # substitute previous rule action with last_ml_action_sub_state
+                if last_ml_action_sub_state:
+                    state[
+                        rasa.shared.core.constants.PREVIOUS_ACTION
+                    ] = last_ml_action_sub_state
+
+            states.append(state)
+
+        return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
         if self.store_entities_as_slots:

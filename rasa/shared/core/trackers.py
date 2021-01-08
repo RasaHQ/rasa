@@ -59,6 +59,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     EntitiesAdded,
+    HideRuleTurn,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -205,6 +206,9 @@ class DialogueStateTracker:
         self.latest_bot_utterance = None
         self._reset()
         self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
+        self.hide_rule_turn = False
+        self.only_rule_slots = []
+        self.only_rule_loops = []
 
     ###
     # Public tracker interface
@@ -273,16 +277,20 @@ class DialogueStateTracker:
             }.items()
         )
 
-    def past_states(self, domain: Domain) -> List[State]:
+    def past_states(
+        self, domain: Domain, for_only_ml_policy: bool = False
+    ) -> List[State]:
         """Generate the past states of this tracker based on the history.
 
         Args:
-            domain: a :class:`rasa.shared.core.domain.Domain`
+            domain: a :class:`rasa.shared.core.domain.Domain`.
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
 
         Returns:
             a list of states
         """
-        return domain.states_for_tracker_history(self)
+        return domain.states_for_tracker_history(self, for_only_ml_policy)
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.

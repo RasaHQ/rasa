@@ -723,7 +723,10 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
 
     def __eq__(self, other: Any) -> bool:
         """Compares this event with another event."""
-        return isinstance(other, EntitiesAdded)
+        if not isinstance(other, EntitiesAdded):
+            return NotImplemented
+
+        return self.entities == other.entities
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> "EntitiesAdded":
@@ -1540,6 +1543,9 @@ class ActionExecuted(Event):
         """Applies event to current conversation state."""
         tracker.set_latest_action(self.as_sub_state())
         tracker.clear_followup_action()
+        # HideRuleTurn event is added by RulePolicy before actual action is executed,
+        # so we can safely reset it on each action executed
+        tracker.hide_rule_turn = False
 
 
 class AgentUttered(SkipEventInMDStoryMixin):
@@ -1875,3 +1881,72 @@ class SessionStarted(AlwaysEqualEventMixin):
         """Applies event to current conversation state."""
         # noinspection PyProtectedMember
         tracker._reset()
+
+
+class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
+    """Emulate undoing of the last dialogue turn.
+
+    The bot reverts everything until before the most recent action.
+    This includes the action itself, as well as any events that
+    action created, like set slot events, unless they are in a list
+    to reapply them.
+    """
+
+    type_name = "hide_rule_turn"
+
+    def __init__(
+        self,
+        only_rule_slots: List[Text],
+        only_rule_loops: List[Text],
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Initializes event.
+
+        Args:
+            only_rule_slots: The list of slot names,
+                SlotSet events for which shouldn't be hidden
+            only_rule_loops: The list of loop names,
+                ActiveLoop events for which shouldn't be hidden
+            timestamp: the timestamp
+            metadata: some optional metadata
+        """
+        super().__init__(timestamp, metadata)
+        self.only_rule_slots = only_rule_slots
+        self.only_rule_loops = only_rule_loops
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(32143124321)
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "HideRuleTurn":
+        return HideRuleTurn(
+            parameters.get("only_rule_slots"),
+            parameters.get("only_rule_loops"),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Converts the event into a dict.
+
+        Returns:
+            A dict that represents this event.
+        """
+        d = super().as_dict()
+        d.update(
+            {
+                "only_rule_slots": self.only_rule_slots,
+                "only_rule_loops": self.only_rule_loops,
+            }
+        )
+        return d
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        # HideRuleTurn event is added by RulePolicy before actual action is executed,
+        # we will reset it on each action executed
+        tracker.hide_rule_turn = True
+        # only rule slots and loops are always the same for all the trackers
+        tracker.only_rule_slots = self.only_rule_slots
+        tracker.only_rule_loops = self.only_rule_loops

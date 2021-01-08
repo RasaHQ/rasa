@@ -9,7 +9,12 @@ from collections import defaultdict
 from rasa.shared.constants import DOCS_URL_RULES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
-from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
+from rasa.shared.core.events import (
+    LoopInterrupted,
+    UserUttered,
+    ActionExecuted,
+    HideRuleTurn,
+)
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -42,6 +47,7 @@ from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
+from rasa.shared.core.events import Event
 
 
 if TYPE_CHECKING:
@@ -58,6 +64,9 @@ DEFAULT_ACTION_MAPPINGS = {
 
 RULES = "rules"
 RULES_FOR_LOOP_UNHAPPY_PATH = "rules_for_loop_unhappy_path"
+RULES_NOT_IN_STORIES = "rules_not_in_stories"
+ONLY_RULE_SLOTS = "only_rule_slots"
+ONLY_RULE_LOOPS = "only_rule_loops"
 
 LOOP_WAS_INTERRUPTED = "loop_was_interrupted"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
@@ -404,6 +413,38 @@ class RulePolicy(MemoizationPolicy):
 
         logger.debug("Found no incompletions in rules.")
 
+    @staticmethod
+    def _get_slots_loops_from_states(
+        trackers_as_states: List[List[State]],
+    ) -> Tuple[Set[Text], Set[Text]]:
+        slots = set()
+        loops = set()
+        for states in trackers_as_states:
+            for state in states:
+                slots.update(set(state.get(SLOTS, {}).keys()))
+                active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                if active_loop:
+                    loops.add(active_loop)
+        return slots, loops
+
+    def _find_only_rule_slots_loops(
+        self,
+        rule_trackers_as_states: List[List[State]],
+        story_trackers_as_states: List[List[State]],
+    ) -> Tuple[List[Text], List[Text]]:
+        rule_slots, rule_loops = self._get_slots_loops_from_states(
+            rule_trackers_as_states
+        )
+        story_slots, story_loops = self._get_slots_loops_from_states(
+            story_trackers_as_states
+        )
+
+        # set is not json serializable, so convert to list
+        return (
+            list(rule_slots - story_slots - {SHOULD_NOT_BE_SET}),
+            list(rule_loops - story_loops - {SHOULD_NOT_BE_SET}),
+        )
+
     def _predict_next_action(
         self,
         tracker: TrackerWithCachedStates,
@@ -426,15 +467,13 @@ class RulePolicy(MemoizationPolicy):
 
         return predicted_action_name
 
-    def _check_prediction(
+    def _predicted_action_name(
         self,
         tracker: TrackerWithCachedStates,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         gold_action_name: Text,
-        collect_sources: bool,
     ) -> Optional[Text]:
-
         predicted_action_name = self._predict_next_action(tracker, domain, interpreter)
         # if there is an active_loop,
         # RulePolicy will always predict active_loop first,
@@ -449,22 +488,34 @@ class RulePolicy(MemoizationPolicy):
                 tracker, domain, interpreter
             )
 
-        if collect_sources:
-            # we need to remember which action should be predicted by the rule
-            # in order to correctly output the names of the contradicting rules
-            rule_name = tracker.sender_id
-            if self._prediction_source in {DEFAULT_RULES, LOOP_RULES}:
-                # the real gold action contradict the one in the rules in this case
-                gold_action_name = predicted_action_name
-                rule_name = self._prediction_source
+        return predicted_action_name
 
-            self._rules_sources[self._prediction_source].append(
-                (rule_name, gold_action_name)
-            )
-            return
+    def _collect_sources(
+        self,
+        tracker: TrackerWithCachedStates,
+        predicted_action_name: Optional[Text],
+        gold_action_name: Text,
+    ) -> None:
+        # we need to remember which action should be predicted by the rule
+        # in order to correctly output the names of the contradicting rules
+        rule_name = tracker.sender_id
+        if self._prediction_source in {DEFAULT_RULES, LOOP_RULES}:
+            # the real gold action contradict the one in the rules in this case
+            gold_action_name = predicted_action_name
+            rule_name = self._prediction_source
 
+        self._rules_sources[self._prediction_source].append(
+            (rule_name, gold_action_name)
+        )
+
+    def _check_prediction(
+        self,
+        tracker: TrackerWithCachedStates,
+        predicted_action_name: Optional[Text],
+        gold_action_name: Text,
+    ) -> List[Text]:
         if not predicted_action_name or predicted_action_name == gold_action_name:
-            return
+            return []
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
         contradicting_rules = {
@@ -482,7 +533,7 @@ class RulePolicy(MemoizationPolicy):
         if predicted_action_name != self._fallback_action_name:
             error_message += f" which predicted action '{predicted_action_name}'"
 
-        return error_message + "."
+        return [error_message + "."]
 
     def _run_prediction_on_trackers(
         self,
@@ -490,11 +541,12 @@ class RulePolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         collect_sources: bool,
-    ) -> List[Text]:
+    ) -> Tuple[List[Text], Set[Text]]:
         if collect_sources:
             self._rules_sources = defaultdict(list)
 
         error_messages = []
+        rules_used_in_stories = set()
         pbar = tqdm(
             trackers,
             desc="Processed trackers",
@@ -524,19 +576,31 @@ class RulePolicy(MemoizationPolicy):
                     continue
 
                 gold_action_name = event.action_name or event.action_text
-                error_message = self._check_prediction(
-                    running_tracker,
-                    domain,
-                    interpreter,
-                    gold_action_name,
-                    collect_sources,
+                predicted_action_name = self._predicted_action_name(
+                    running_tracker, domain, interpreter, gold_action_name
                 )
-                if error_message:
-                    error_messages.append(error_message)
+                if collect_sources:
+                    self._collect_sources(
+                        running_tracker, predicted_action_name, gold_action_name
+                    )
+                else:
+                    # to be able to remove only rules turns from the dialogue history
+                    # for ML policies,
+                    # we need to know which rules were used in ML trackers
+                    if (
+                        not tracker.is_rule_tracker
+                        and predicted_action_name == gold_action_name
+                        and self._prediction_source not in {DEFAULT_RULES, LOOP_RULES}
+                    ):
+                        rules_used_in_stories.add(self._prediction_source)
+
+                    error_messages += self._check_prediction(
+                        running_tracker, predicted_action_name, gold_action_name
+                    )
 
                 running_tracker.update(event)
 
-        return error_messages
+        return error_messages, rules_used_in_stories
 
     def _find_contradicting_rules(
         self,
@@ -544,7 +608,7 @@ class RulePolicy(MemoizationPolicy):
         all_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> None:
+    ) -> Set[Text]:
         logger.debug("Started checking rules and stories for contradictions.")
         # during training we run `predict_action_probabilities` to check for
         # contradicting rules.
@@ -553,11 +617,11 @@ class RulePolicy(MemoizationPolicy):
         logger.setLevel(logging.WARNING)
 
         # we need to run prediction on rule trackers twice, because we need to collect
-        # information which rule snippets contributed to the learned rules
+        # the information about which rule snippets contributed to the learned rules
         self._run_prediction_on_trackers(
             rule_trackers, domain, interpreter, collect_sources=True
         )
-        error_messages = self._run_prediction_on_trackers(
+        error_messages, rules_used_in_stories = self._run_prediction_on_trackers(
             all_trackers, domain, interpreter, collect_sources=False
         )
 
@@ -571,6 +635,47 @@ class RulePolicy(MemoizationPolicy):
             )
 
         logger.debug("Found no contradicting rules.")
+        return rules_used_in_stories
+
+    def _create_lookup_from_trackers(
+        self,
+        rule_trackers: List[TrackerWithCachedStates],
+        story_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+    ) -> None:
+        (
+            rule_trackers_as_states,
+            rule_trackers_as_actions,
+        ) = self.featurizer.training_states_and_actions(rule_trackers, domain)
+
+        rules_lookup = self._create_lookup_from_states(
+            rule_trackers_as_states, rule_trackers_as_actions
+        )
+        self.lookup[RULES] = self._remove_rule_snippet_predictions(rules_lookup)
+
+        (
+            story_trackers_as_states,
+            story_trackers_as_actions,
+        ) = self.featurizer.training_states_and_actions(story_trackers, domain)
+
+        if self._check_for_contradictions:
+            (
+                self.lookup[ONLY_RULE_SLOTS],
+                self.lookup[ONLY_RULE_LOOPS],
+            ) = self._find_only_rule_slots_loops(
+                rule_trackers_as_states, story_trackers_as_states
+            )
+
+        # use all trackers to find negative rules in unhappy paths
+        trackers_as_states = rule_trackers_as_states + story_trackers_as_states
+        trackers_as_actions = rule_trackers_as_actions + story_trackers_as_actions
+
+        # negative rules are not anti-rules, they are auxiliary to actual rules
+        self.lookup[
+            RULES_FOR_LOOP_UNHAPPY_PATH
+        ] = self._create_loop_unhappy_lookup_from_states(
+            trackers_as_states, trackers_as_actions
+        )
 
     def train(
         self,
@@ -586,47 +691,28 @@ class RulePolicy(MemoizationPolicy):
             for t in training_trackers
             if not hasattr(t, "is_augmented") or not t.is_augmented
         ]
-        # only use trackers from rule-based training data
+        # trackers from rule-based training data
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
         if self._restrict_rules:
             self._check_rule_restriction(rule_trackers)
-
         if self._check_for_contradictions:
             self._check_for_incomplete_rules(rule_trackers, domain)
 
-        (
-            rule_trackers_as_states,
-            rule_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(rule_trackers, domain)
-
-        rules_lookup = self._create_lookup_from_states(
-            rule_trackers_as_states, rule_trackers_as_actions
-        )
-        self.lookup[RULES] = self._remove_rule_snippet_predictions(rules_lookup)
-
+        # trackers from ML-based training data
         story_trackers = [t for t in training_trackers if not t.is_rule_tracker]
-        (
-            story_trackers_as_states,
-            story_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(story_trackers, domain)
 
-        # use all trackers to find negative rules in unhappy paths
-        trackers_as_states = rule_trackers_as_states + story_trackers_as_states
-        trackers_as_actions = rule_trackers_as_actions + story_trackers_as_actions
-
-        # negative rules are not anti-rules, they are auxiliary to actual rules
-        self.lookup[
-            RULES_FOR_LOOP_UNHAPPY_PATH
-        ] = self._create_loop_unhappy_lookup_from_states(
-            trackers_as_states, trackers_as_actions
-        )
+        self._create_lookup_from_trackers(rule_trackers, story_trackers, domain)
 
         # make this configurable because checking might take a lot of time
         if self._check_for_contradictions:
             # using trackers here might not be the most efficient way, however
             # it allows us to directly test `predict_action_probabilities` method
-            self._find_contradicting_rules(
+            rules_used_in_stories = self._find_contradicting_rules(
                 rule_trackers, training_trackers, domain, interpreter
+            )
+            # set is not json serializable, so convert to list
+            self.lookup[RULES_NOT_IN_STORIES] = list(
+                set(self.lookup[RULES].keys()) - rules_used_in_stories
             )
 
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
@@ -959,9 +1045,17 @@ class RulePolicy(MemoizationPolicy):
         returning_from_unhappy_path: bool,
         is_end_to_end_prediction: bool,
     ) -> "PolicyPrediction":
+        optional_events = []
+        if self._prediction_source in self.lookup.get(RULES_NOT_IN_STORIES, []):
+            # the prediction is based on rules that are not present in the stories
+            optional_events = [
+                HideRuleTurn(self.lookup[ONLY_RULE_SLOTS], self.lookup[ONLY_RULE_LOOPS])
+            ]
+
         return self._prediction(
             probabilities,
             events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
+            optional_events=optional_events,
             is_end_to_end_prediction=is_end_to_end_prediction,
         )
 

@@ -51,17 +51,21 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
 
     @staticmethod
-    def _create_states(tracker: DialogueStateTracker, domain: Domain) -> List[State]:
+    def _create_states(
+        tracker: DialogueStateTracker, domain: Domain, for_only_ml_policy: bool = False
+    ) -> List[State]:
         """Create states for the given tracker.
 
         Args:
             tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
             domain: a :class:`rasa.shared.core.domain.Domain`
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
 
         Returns:
             a list of states
         """
-        return tracker.past_states(domain)
+        return tracker.past_states(domain, for_only_ml_policy)
 
     def _featurize_states(
         self,
@@ -235,14 +239,17 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        for_only_ml_policy: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
 
         Returns:
             A list of states.
@@ -257,6 +264,7 @@ class TrackerFeaturizer:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         use_text_for_last_user_input: bool = False,
+        for_only_ml_policy: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Create state features for prediction.
 
@@ -266,6 +274,8 @@ class TrackerFeaturizer:
             interpreter: The interpreter
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
 
         Returns:
             A dictionary of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -273,7 +283,7 @@ class TrackerFeaturizer:
             turns in all trackers.
         """
         trackers_as_states = self.prediction_states(
-            trackers, domain, use_text_for_last_user_input
+            trackers, domain, use_text_for_last_user_input, for_only_ml_policy
         )
         return self._featurize_states(trackers_as_states, interpreter)
 
@@ -393,20 +403,24 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers: List[DialogueStateTracker],
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        for_only_ml_policy: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain,
+            trackers: The trackers to transform.
+            domain: The domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
 
         Returns:
             A list of states.
         """
         trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in trackers
+            self._create_states(tracker, domain, for_only_ml_policy)
+            for tracker in trackers
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
@@ -548,20 +562,24 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         trackers: List[DialogueStateTracker],
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        for_only_ml_policy: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
 
         Returns:
             A list of states.
         """
         trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in trackers
+            self._create_states(tracker, domain, for_only_ml_policy)
+            for tracker in trackers
         ]
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)

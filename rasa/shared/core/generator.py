@@ -107,7 +107,19 @@ class TrackerWithCachedStates(DialogueStateTracker):
             for frozen_state in frozen_states
         ]
 
-    def past_states(self, domain: Domain) -> List[State]:
+    def past_states(
+        self, domain: Domain, for_only_ml_policy: bool = False
+    ) -> List[State]:
+        """Generate the past states of this tracker based on the history.
+
+        Args:
+            domain: a :class:`rasa.shared.core.domain.Domain`.
+            for_only_ml_policy: If True ignore dialogue turns that are present
+                only in rules.
+
+        Returns:
+            a list of states
+        """
         states_for_hashing = self.past_states_for_hashing(domain)
         return self._unfreeze_states(states_for_hashing)
 
