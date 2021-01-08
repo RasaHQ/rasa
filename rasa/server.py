@@ -1151,7 +1151,7 @@ def create_app(
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
-        return run_evaluation(
+        return await run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
