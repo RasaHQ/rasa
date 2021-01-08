@@ -244,6 +244,7 @@ def test_event_has_proper_implementation(
     assert actual_entities[0] == expected_entity
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize(
     "test_file",
     [

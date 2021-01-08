@@ -33,7 +33,7 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import train_async, _train_nlu_async
+from rasa.train import train_async, train_nlu_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -223,7 +223,7 @@ def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 
-        return await _train_nlu_async(*args, output=output_path, **kwargs)
+        return await train_nlu_async(*args, output=output_path, **kwargs)
 
     return _train_nlu
 
