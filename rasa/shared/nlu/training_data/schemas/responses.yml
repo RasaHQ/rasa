@@ -29,6 +29,8 @@ schema;responses:
                   type: "str"
                 payload:
                   type: "str"
+          button_type:
+            type: "str"
           quick_replies:
             type: "seq"
             sequence:
