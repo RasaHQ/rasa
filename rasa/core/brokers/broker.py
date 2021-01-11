@@ -4,7 +4,6 @@ from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union
 
 import aio_pika.exceptions
-import psycopg2
 import sqlalchemy.exc
 
 import rasa.shared.utils.common
@@ -16,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 CONNECTION_ERRORS = (
-    psycopg2.OperationalError,
     sqlalchemy.exc.OperationalError,
     aio_pika.exceptions.AMQPConnectionError,
 )

@@ -22,7 +22,6 @@ from typing import (
 
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError, NoCredentialsError
-import psycopg2
 import pymongo.errors
 import sqlalchemy.exc
 
@@ -69,7 +68,6 @@ DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 CONNECTION_ERRORS = (
     NoCredentialsError,
-    psycopg2.OperationalError,
     pymongo.errors.ConnectionFailure,
     sqlalchemy.exc.OperationalError,
 )
@@ -947,6 +945,8 @@ class SQLTrackerStore(TrackerStore):
     @staticmethod
     def _create_database(engine: "Engine", database_name: Text) -> None:
         """Create database `db` on `engine` if it does not exist."""
+        import psycopg2
+
         conn = engine.connect()
 
         matching_rows = (
