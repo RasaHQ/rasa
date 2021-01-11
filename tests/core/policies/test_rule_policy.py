@@ -1934,6 +1934,172 @@ def test_predict_nothing_if_fallback_disabled():
     assert prediction.max_confidence == 0
 
 
+def test_hide_rule_turn():
+    chitchat = "chitchat"
+    action_chitchat = "action_chitchat"
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        - {chitchat}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {action_chitchat}
+    """
+    )
+    chitchat_story = TrackerWithCachedStates.from_events(
+        "chitchat story",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": chitchat}),
+            ActionExecuted(action_chitchat),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    policy = RulePolicy()
+    policy.train(
+        [GREET_RULE, chitchat_story,], domain, RegexInterpreter(),
+    )
+
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+
+    conversation_events += prediction.optional_events
+    conversation_events += [
+        ActionExecuted(UTTER_GREET_ACTION),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+
+    conversation_events += prediction.optional_events
+    conversation_events += [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": chitchat}),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    states = tracker.past_states(domain, for_only_ml_policy=True)
+    assert states == [
+        {},
+        {
+            USER: {TEXT: "haha", INTENT: chitchat},
+            PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+        },
+    ]
+
+
+def test_hide_rule_turn_with_slots():
+    some_action = "some_action"
+    some_other_action = "some_other_action"
+    some_intent = "some_intent"
+    some_other_intent = "some_other_intent"
+    some_slot = "some_slot"
+    some_slot_value = "value1"
+    some_other_slot = "some_other_slot"
+    some_other_slot_value = "value2"
+    domain = Domain.from_yaml(
+        f"""
+    intents:
+    - {some_intent}
+    - {some_other_intent}
+    actions:
+    - {some_action}
+    - {some_other_action}
+    slots:
+      {some_slot}:
+        type: text
+      {some_other_slot}:
+        type: text
+        """
+    )
+
+    simple_rule = TrackerWithCachedStates.from_events(
+        "simple rule with an action that sets 1 slot",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": some_intent}),
+            ActionExecuted(some_action),
+            SlotSet(some_slot, some_slot_value),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    simple_rule_with_slot_set = TrackerWithCachedStates.from_events(
+        "simple rule with an additional slot set before it starts",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            SlotSet(some_other_slot, some_other_slot_value),
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": some_intent}),
+            ActionExecuted(some_action),
+            SlotSet(some_slot, some_slot_value),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    simple_story_with_other_slot_set = TrackerWithCachedStates.from_events(
+        "simple rule with an additional slot set before it starts",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": some_other_action}),
+            ActionExecuted(some_other_action),
+            SlotSet(some_other_slot, some_other_slot_value),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    policy = RulePolicy()
+    policy.train(
+        [simple_rule, simple_rule_with_slot_set, simple_story_with_other_slot_set],
+        domain,
+        RegexInterpreter(),
+    )
+
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": some_intent}),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, some_action)
+    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+    assert some_slot in prediction.optional_events[0].only_rule_slots
+    assert some_other_slot not in prediction.optional_events[0].only_rule_slots
+
+
 def test_hide_rule_turn_with_loops():
     form_name = "some_form"
     another_form_name = "another_form"
