@@ -62,7 +62,7 @@ class Message:
         if origin in self.get(DIAGNOSTIC_DATA, {}):
             rasa.shared.utils.io.raise_warning(
                 f"Please make sure every pipeline component has a distinct name. "
-                f"The name '{self.name}' appears at least twice and diagnostic "
+                f"The name '{origin}' appears at least twice and diagnostic "
                 f"data will be overwritten."
             )
         self.data.setdefault(DIAGNOSTIC_DATA, {})
