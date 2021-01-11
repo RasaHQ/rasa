@@ -1083,9 +1083,7 @@ class Domain:
             )
             in tracker.only_rule_loops
         ):
-            del state[rasa.shared.core.constants.ACTIVE_LOOP][
-                rasa.shared.core.constants.LOOP_NAME
-            ]
+            del state[rasa.shared.core.constants.ACTIVE_LOOP]
 
     @staticmethod
     def _substitute_only_rule_user_input(state: State, last_ml_state: State) -> None:

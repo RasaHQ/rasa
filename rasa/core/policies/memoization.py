@@ -224,7 +224,9 @@ class MemoizationPolicy(Policy):
     ) -> PolicyPrediction:
         result = self._default_predictions(domain)
 
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
+        tracker_as_states = self.featurizer.prediction_states(
+            [tracker], domain, for_only_ml_policy=True
+        )
         states = tracker_as_states[0]
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
         predicted_action_name = self.recall(states, tracker, domain)
@@ -310,7 +312,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
             tracker_as_states = self.featurizer.prediction_states(
-                [mcfly_tracker], domain
+                [mcfly_tracker], domain, for_only_ml_policy=True
             )
             states = tracker_as_states[0]
 

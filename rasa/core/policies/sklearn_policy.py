@@ -284,7 +284,9 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        X = self.featurizer.create_state_features([tracker], domain, interpreter)
+        X = self.featurizer.create_state_features(
+            [tracker], domain, interpreter, for_only_ml_policy=True
+        )
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )

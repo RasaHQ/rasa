@@ -20,7 +20,10 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
     REQUESTED_SLOT,
+    USER,
+    PREVIOUS_ACTION,
 )
+from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -29,6 +32,7 @@ from rasa.shared.core.events import (
     SlotSet,
     ActionExecutionRejected,
     LoopInterrupted,
+    HideRuleTurn,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -1928,3 +1932,111 @@ def test_predict_nothing_if_fallback_disabled():
     )
 
     assert prediction.max_confidence == 0
+
+
+def test_hide_rule_turn_with_loops():
+    form_name = "some_form"
+    another_form_name = "another_form"
+    activate_form = "activate_form"
+    activate_another_form = "activate_another_form"
+    chitchat = "chitchat"
+    action_chitchat = "action_chitchat"
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        - {activate_form}
+        - {chitchat}
+        - {activate_another_form}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {action_chitchat}
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+        - {another_form_name}
+    """
+    )
+
+    form_activation_rule = _form_activation_rule(domain, form_name, activate_form)
+
+    another_form_activation_rule = _form_activation_rule(
+        domain, another_form_name, activate_another_form
+    )
+    another_form_activation_story = another_form_activation_rule.copy()
+    another_form_activation_story.is_rule_tracker = False
+
+    chitchat_story = TrackerWithCachedStates.from_events(
+        "chitchat story",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": chitchat}),
+            ActionExecuted(action_chitchat),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    policy = RulePolicy()
+    policy.train(
+        [
+            form_activation_rule,
+            chitchat_story,
+            another_form_activation_rule,
+            another_form_activation_story,
+        ],
+        domain,
+        RegexInterpreter(),
+    )
+
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": activate_form}),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, form_name)
+    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+    assert form_name in prediction.optional_events[0].only_rule_loops
+    assert another_form_name not in prediction.optional_events[0].only_rule_loops
+
+    conversation_events += prediction.optional_events
+    conversation_events += [
+        ActionExecuted(form_name),
+        ActiveLoop(form_name),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+    assert form_name in prediction.optional_events[0].only_rule_loops
+    assert another_form_name not in prediction.optional_events[0].only_rule_loops
+
+    conversation_events += prediction.optional_events
+    conversation_events += [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": chitchat}),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    states = tracker.past_states(domain, for_only_ml_policy=True)
+    assert states == [
+        {},
+        {
+            USER: {TEXT: "haha", INTENT: chitchat},
+            PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+        },
+    ]
