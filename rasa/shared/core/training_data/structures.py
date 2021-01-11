@@ -407,7 +407,11 @@ class StoryGraph:
         Returns:
             fingerprint of the stories
         """
-        self_as_string = self.as_story_string()
+        from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+            YAMLStoryWriter,
+        )
+
+        self_as_string = YAMLStoryWriter().dumps(self.story_steps)
         return rasa.shared.utils.io.get_text_hash(self_as_string)
 
     def ordered_steps(self) -> List[StoryStep]:

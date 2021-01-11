@@ -16,7 +16,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY
-from rasa.utils.tensorflow.model_data_utils import surface_attributes
+from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 
 @pytest.mark.parametrize(
@@ -109,7 +109,7 @@ async def test_generate_training_data_with_cycles(
         stories_file, default_domain, augmentation_factor=0
     )
 
-    training_data, label_ids = featurizer.featurize_trackers(
+    _, label_ids, _ = featurizer.featurize_trackers(
         training_trackers, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -163,8 +163,8 @@ async def test_generate_training_data_original_and_augmented_trackers(
         for t in training_trackers
         if not hasattr(t, "is_augmented") or not t.is_augmented
     ]
-    assert len(original_trackers) == 3
-    assert len(training_trackers) <= 33
+    assert len(original_trackers) == 4
+    assert len(training_trackers) <= 34
 
 
 @pytest.mark.parametrize(
@@ -226,7 +226,7 @@ async def test_load_multi_file_training_data(
         hashed.append(json.dumps(sts + acts, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
-    data, label_ids = featurizer.featurize_trackers(
+    data, label_ids, _ = featurizer.featurize_trackers(
         trackers, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -244,7 +244,7 @@ async def test_load_multi_file_training_data(
         hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
     hashed_mul = sorted(hashed_mul, reverse=True)
 
-    data_mul, label_ids_mul = featurizer_mul.featurize_trackers(
+    data_mul, label_ids_mul, _ = featurizer_mul.featurize_trackers(
         trackers_mul, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -252,8 +252,8 @@ async def test_load_multi_file_training_data(
     # we check for intents, action names and entities -- the features which
     # are included in the story files
 
-    data = surface_attributes(data)
-    data_mul = surface_attributes(data_mul)
+    data = _surface_attributes(data)
+    data_mul = _surface_attributes(data_mul)
 
     for attribute in [INTENT, ACTION_NAME, ENTITIES]:
         if attribute not in data or attribute not in data_mul:

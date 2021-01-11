@@ -441,3 +441,33 @@ def test_responses_are_converted_from_markdown():
 
     # dumping again should also not change the format
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
+
+
+def test_responses_text_multiline_is_preserved():
+    responses_yml = textwrap.dedent(
+        """
+      responses:
+        utter_confirm:
+        - text: |-
+            First line
+            Second line
+            Third line
+        - text: One more response
+        utter_cancel:
+        - text: First line
+        - text: Second line
+    """
+    )
+
+    reader = RasaYAMLReader()
+    result = reader.reads(responses_yml)
+
+    dumped = RasaYAMLWriter().dumps(result)
+
+    validation_reader = RasaYAMLReader()
+    dumped_result = validation_reader.reads(dumped)
+
+    assert dumped_result.responses == result.responses
+
+    # dumping again should also not change the format
+    assert dumped == RasaYAMLWriter().dumps(dumped_result)

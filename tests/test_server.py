@@ -1,36 +1,38 @@
+import asyncio
+import json
 import os
+import time
+import urllib.parse
+import uuid
+from contextlib import ExitStack
 from http import HTTPStatus
+from multiprocessing import Process, Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
+from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
 from unittest.mock import Mock, ANY
 
+import pytest
 import requests
-import time
-import uuid
-import urllib.parse
-
-from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
-from contextlib import ExitStack
-
 from _pytest import pathlib
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-
-import pytest
 from freezegun import freeze_time
 from mock import MagicMock
-from multiprocessing import Process, Manager
+from ruamel.yaml import StringIO
+from sanic import Sanic
+from sanic.testing import SanicASGITestClient
 
 import rasa
 import rasa.constants
+import rasa.core.jobs
+import rasa.nlu
+import rasa.server
 import rasa.shared.constants
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.server
 from rasa.core import utils
-from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.shared.core import events
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.core.channels import (
     channel,
     CollectingOutputChannel,
@@ -39,7 +41,15 @@ from rasa.core.channels import (
     CallbackInput,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
+from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.model import unpack_model
+from rasa.nlu.test import CVEvaluationResult
+from rasa.shared.core import events
+from rasa.shared.core.constants import (
+    ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
+    REQUESTED_SLOT,
+)
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     Event,
@@ -50,15 +60,12 @@ from rasa.shared.core.events import (
     SessionStarted,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.model import unpack_model
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.train import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic
-from sanic.testing import SanicASGITestClient
+from tests.core.conftest import DEFAULT_STACK_CONFIG
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
-from ruamel.yaml import StringIO
-
 
 # a couple of event instances that we can use for testing
 test_events = [
@@ -110,6 +117,12 @@ def rasa_app_core(rasa_core_server: Sanic) -> SanicASGITestClient:
 @pytest.fixture
 def rasa_secured_app(rasa_server_secured: Sanic) -> SanicASGITestClient:
     return rasa_server_secured.asgi_client
+
+
+@pytest.fixture()
+async def tear_down_scheduler() -> Generator[None, None, None]:
+    yield None
+    rasa.core.jobs.__scheduler = None
 
 
 async def test_root(rasa_app: SanicASGITestClient):
@@ -179,7 +192,7 @@ def shared_statuses() -> DictProxy:
 
 @pytest.fixture
 def background_server(
-    shared_statuses: DictProxy, tmpdir: pathlib.Path
+    shared_statuses: DictProxy, tmpdir: pathlib.Path, monkeypatch: MonkeyPatch
 ) -> Generator[Process, None, None]:
     # Create a fake model archive which the mocked train function can return
 
@@ -190,25 +203,28 @@ def background_server(
     # Fake training function which blocks until we tell it to stop blocking
     # If we can send a status request while this is blocking, we can be sure that the
     # actual training is also not blocking
-    def mocked_training_function(*_, **__) -> Text:
+    async def mocked_training_function(*_, **__) -> TrainingResult:
         # Tell the others that we are now blocking
         shared_statuses["started_training"] = True
         # Block until somebody tells us to not block anymore
         while shared_statuses.get("stop_training") is not True:
             time.sleep(1)
 
-        return fake_model_path
+        return TrainingResult(model=fake_model_path)
 
-    def run_server() -> NoReturn:
-        rasa.train = mocked_training_function
+    def run_server(monkeypatch: MonkeyPatch) -> NoReturn:
+        import sys
+
+        monkeypatch.setattr(
+            sys.modules["rasa.train"], "train_async", mocked_training_function,
+        )
 
         from rasa import __main__
-        import sys
 
         sys.argv = ["rasa", "run", "--enable-api"]
         __main__.main()
 
-    server = Process(target=run_server)
+    server = Process(target=run_server, args=(monkeypatch,))
     yield server
     server.terminate()
 
@@ -411,26 +427,19 @@ async def test_parse_on_invalid_emulation_mode(rasa_app_nlu: SanicASGITestClient
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_train_stack_success(
+async def test_train_stack_success_with_md(
     rasa_app: SanicASGITestClient,
     default_domain_path: Text,
-    default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
     tmp_path: Path,
 ):
-    with ExitStack() as stack:
-        domain_file = stack.enter_context(open(default_domain_path))
-        config_file = stack.enter_context(open(default_stack_config))
-        stories_file = stack.enter_context(open(default_stories_file))
-        nlu_file = stack.enter_context(open(default_nlu_data))
-
-        payload = dict(
-            domain=domain_file.read(),
-            config=config_file.read(),
-            stories=stories_file.read(),
-            nlu=nlu_file.read(),
-        )
+    payload = dict(
+        domain=Path(default_domain_path).read_text(),
+        config=Path(default_stack_config).read_text(),
+        stories=Path("data/test_stories/stories_defaultdomain.md").read_text(),
+        nlu=Path(default_nlu_data).read_text(),
+    )
 
     _, response = await rasa_app.post("/model/train", json=payload)
     assert response.status == HTTPStatus.OK
@@ -483,25 +492,24 @@ async def test_train_nlu_success(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-async def test_train_core_success(
+async def test_train_core_success_with(
     rasa_app: SanicASGITestClient,
     default_stack_config: Text,
     default_stories_file: Text,
     default_domain_path: Text,
     tmp_path: Path,
 ):
-    with ExitStack() as stack:
-        domain_file = stack.enter_context(open(default_domain_path))
-        config_file = stack.enter_context(open(default_stack_config))
-        core_file = stack.enter_context(open(default_stories_file))
+    payload = f"""
+{Path(default_domain_path).read_text()}
+{Path(default_stack_config).read_text()}
+{Path(default_stories_file).read_text()}
+    """
 
-        payload = dict(
-            domain=domain_file.read(),
-            config=config_file.read(),
-            stories=core_file.read(),
-        )
-
-    _, response = await rasa_app.post("/model/train", json=payload)
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=payload,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
     assert response.status == HTTPStatus.OK
 
     # save model to temporary file
@@ -643,12 +651,14 @@ rule my rule
     "headers, expected",
     [({}, False), ({"force_training": False}, False), ({"force_training": True}, True)],
 )
-def test_training_payload_from_yaml_force_training(headers: Dict, expected: bool):
+def test_training_payload_from_yaml_force_training(
+    headers: Dict, expected: bool, tmp_path: Path
+):
     request = Mock()
     request.body = b""
     request.args = headers
 
-    payload = rasa.server._training_payload_from_yaml(request)
+    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
     assert payload.get("force_training") == expected
 
 
@@ -664,13 +674,13 @@ def test_training_payload_from_yaml_force_training(headers: Dict, expected: bool
     ],
 )
 def test_training_payload_from_yaml_save_to_default_model_directory(
-    headers: Dict, expected: Text
+    headers: Dict, expected: Text, tmp_path: Path
 ):
     request = Mock()
     request.body = b""
     request.args = headers
 
-    payload = rasa.server._training_payload_from_yaml(request)
+    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
     assert payload.get("output")
     assert payload.get("output") == expected
 
@@ -701,7 +711,11 @@ async def test_evaluate_stories(
 ):
     stories = rasa.shared.utils.io.read_file(default_stories_file)
 
-    _, response = await rasa_app.post("/model/test/stories", data=stories)
+    _, response = await rasa_app.post(
+        "/model/test/stories",
+        data=stories,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
 
     assert response.status == HTTPStatus.OK
 
@@ -735,9 +749,9 @@ async def test_evaluate_stories_not_ready_agent(
 
 
 async def test_evaluate_stories_end_to_end(
-    rasa_app: SanicASGITestClient, end_to_end_story_file: Text
+    rasa_app: SanicASGITestClient, end_to_end_test_story_file: Text
 ):
-    stories = rasa.shared.utils.io.read_file(end_to_end_story_file)
+    stories = rasa.shared.utils.io.read_file(end_to_end_test_story_file)
 
     _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories)
 
@@ -799,7 +813,7 @@ async def test_evaluate_intent_on_just_nlu_model(
 
 
 async def test_evaluate_intent_with_model_param(
-    rasa_app: SanicASGITestClient, trained_nlu_model, default_nlu_data: Text
+    rasa_app: SanicASGITestClient, trained_nlu_model: Text, default_nlu_data: Text
 ):
     _, response = await rasa_app.get("/status")
     previous_model_file = response.json()["model_file"]
@@ -821,6 +835,229 @@ async def test_evaluate_intent_with_model_param(
 
     _, response = await rasa_app.get("/status")
     assert previous_model_file == response.json()["model_file"]
+
+
+async def test_evaluate_intent_with_model_server(
+    rasa_app: SanicASGITestClient,
+    trained_rasa_model: Text,
+    default_nlu_data: Text,
+    tear_down_scheduler: None,
+):
+    production_model_server_url = (
+        "https://example.com/webhooks/actions?model=production"
+    )
+    test_model_server_url = "https://example.com/webhooks/actions?model=test"
+
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
+
+    with aioresponses() as mocked:
+        # Mock retrieving the production model from the model server
+        mocked.get(
+            production_model_server_url,
+            body=Path(trained_rasa_model).read_bytes(),
+            headers={"ETag": "production"},
+        )
+        # Mock retrieving the test model from the model server
+        mocked.get(
+            test_model_server_url,
+            body=Path(trained_rasa_model).read_bytes(),
+            headers={"ETag": "test"},
+        )
+
+        agent_with_model_server = await load_agent(
+            model_server=EndpointConfig(production_model_server_url)
+        )
+        rasa_app.app.agent = agent_with_model_server
+
+        _, response = await rasa_app.post(
+            f"/model/test/intents?model={test_model_server_url}",
+            data=nlu_data,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        )
+
+    assert response.status == HTTPStatus.OK
+    assert set(response.json().keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
+
+    production_model_server = rasa_app.app.agent.model_server
+    # Assert that the model server URL for the test didn't override the production
+    # model server URL
+    assert production_model_server.url == production_model_server_url
+    # Assert the tests didn't break pulling the models
+    assert production_model_server.kwargs.get("wait_time_between_pulls") != 0
+
+
+async def test_cross_validation(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text
+):
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
+
+    _, response = await rasa_app_nlu.post(
+        "/model/test/intents",
+        data=payload,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        params={"cross_validation_folds": 3},
+    )
+
+    assert response.status == HTTPStatus.OK
+    response_body = response.json()
+    for required_key in {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }:
+        assert required_key in response_body
+
+        details = response_body[required_key]
+        assert all(
+            key in details for key in ["precision", "f1_score", "report", "errors"]
+        )
+
+
+async def test_cross_validation_with_md(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text
+):
+    payload = """
+    ## intent: greet
+    - Hi
+    - Hello
+        """
+
+    _, response = await rasa_app_nlu.post(
+        "/model/test/intents", data=payload, params={"cross_validation_folds": 3},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+
+
+async def test_cross_validation_with_callback_success(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+):
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
+
+    callback_url = "https://example.com/webhooks/actions"
+    with aioresponses() as mocked:
+        mocked.post(callback_url, payload={})
+
+        mocked_cross_validation = Mock(
+            return_value=(
+                CVEvaluationResult({}, {}, {}),
+                CVEvaluationResult({}, {}, {}),
+                CVEvaluationResult({}, {}, {}),
+            )
+        )
+        monkeypatch.setattr(
+            rasa.nlu, rasa.nlu.cross_validate.__name__, mocked_cross_validation
+        )
+
+        _, response = await rasa_app_nlu.post(
+            "/model/test/intents",
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+            params={"cross_validation_folds": 3, "callback_url": callback_url},
+        )
+
+        assert response.status == HTTPStatus.NO_CONTENT
+
+        # Sleep to give event loop time to process things in the background
+        await asyncio.sleep(1)
+
+        mocked_cross_validation.assert_called_once()
+
+        last_request = latest_request(mocked, "POST", callback_url)
+        assert last_request
+
+        content = last_request[0].kwargs["data"]
+        response_body = json.loads(content)
+        for required_key in {
+            "intent_evaluation",
+            "entity_evaluation",
+            "response_selection_evaluation",
+        }:
+            assert required_key in response_body
+
+            details = response_body[required_key]
+            assert all(
+                key in details for key in ["precision", "f1_score", "report", "errors"]
+            )
+
+
+async def test_cross_validation_with_callback_error(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+):
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
+
+    monkeypatch.setattr(
+        rasa.nlu, rasa.nlu.cross_validate.__name__, Mock(side_effect=ValueError())
+    )
+
+    callback_url = "https://example.com/webhooks/actions"
+    with aioresponses() as mocked:
+        mocked.post(callback_url, payload={})
+
+        _, response = await rasa_app_nlu.post(
+            "/model/test/intents",
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+            params={"cross_validation_folds": 3, "callback_url": callback_url},
+        )
+
+        assert response.status == HTTPStatus.NO_CONTENT
+
+        await asyncio.sleep(1)
+
+        last_request = latest_request(mocked, "POST", callback_url)
+        assert last_request
+
+        content = last_request[0].kwargs["json"]
+        assert content["code"] == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+async def test_callback_unexpected_error(
+    rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+):
+    nlu_data = Path(default_nlu_data).read_text()
+    config = Path(DEFAULT_STACK_CONFIG).read_text()
+    payload = f"{nlu_data}\n{config}"
+
+    async def raiseUnexpectedError() -> NoReturn:
+        raise ValueError()
+
+    monkeypatch.setattr(
+        rasa.server,
+        rasa.server._training_payload_from_yaml.__name__,
+        Mock(side_effect=ValueError()),
+    )
+
+    callback_url = "https://example.com/webhooks/actions"
+    with aioresponses() as mocked:
+        mocked.post(callback_url, payload={})
+
+        _, response = await rasa_app_nlu.post(
+            "/model/test/intents",
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+            params={"cross_validation_folds": 3, "callback_url": callback_url},
+        )
+
+        assert response.status == HTTPStatus.NO_CONTENT
+
+        await asyncio.sleep(1)
+
+        last_request = latest_request(mocked, "POST", callback_url)
+        assert last_request
+
+        content = last_request[0].kwargs["json"]
+        assert content["code"] == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 async def test_predict(rasa_app: SanicASGITestClient):
@@ -858,7 +1095,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     content = response.json()
     assert response.status == HTTPStatus.OK
     assert content["paused"] is False
-    assert content["slots"] == {"name": None}
+    assert content["slots"] == {"name": None, REQUESTED_SLOT: None}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
         {
@@ -867,6 +1104,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "policy": None,
             "confidence": 1,
             "timestamp": 1514764800,
+            "action_text": None,
         },
         {"event": "session_started", "timestamp": 1514764800},
         {
@@ -875,6 +1113,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "policy": None,
             "confidence": None,
             "timestamp": 1514764800,
+            "action_text": None,
         },
     ]
     assert content["latest_message"] == {
@@ -1172,7 +1411,7 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
 
 
 async def test_load_model_from_model_server(
-    rasa_app: SanicASGITestClient, trained_core_model: Text
+    rasa_app: SanicASGITestClient, trained_core_model: Text, tear_down_scheduler: None
 ):
     _, response = await rasa_app.get("/status")
 
@@ -1203,10 +1442,6 @@ async def test_load_model_from_model_server(
             assert "fingerprint" in response.json()
 
             assert old_fingerprint != response.json()["fingerprint"]
-
-    import rasa.core.jobs
-
-    rasa.core.jobs.__scheduler = None
 
 
 async def test_load_model_invalid_request_body(rasa_app: SanicASGITestClient):
