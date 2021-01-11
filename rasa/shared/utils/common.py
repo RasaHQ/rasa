@@ -5,7 +5,7 @@ import inspect
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
-import rasa.shared.utils.io as io_utils
+import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 
 
@@ -50,7 +50,7 @@ def class_from_module_path(
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
     if ensure_class and not inspect.isclass(klass):
-        io_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"`class_from_module_path()` is expected to return a class, "
             f"but {module_path} is not one. "
             f"This warning will be converted "
