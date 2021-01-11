@@ -76,7 +76,7 @@ CONNECTION_ERRORS = (
 
 
 class TrackerStore:
-    """Class to hold all of the TrackerStore classes."""
+    """Represents common behavior and interface for all `TrackerStore`s."""
 
     def __init__(
         self,
