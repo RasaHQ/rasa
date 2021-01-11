@@ -49,10 +49,9 @@ to a send a message with an intent `greet` in the middle of an ongoing conversat
 
 Dialogue turns that only appear as rules in the training data and do not appear in stories
 will be ignored by ML-only policies like `TEDPolicy` at prediction time.
-For example if you have a greet rule above and don't add it to any of your stories then
-when during prediction `RulePolicy` predicts `utter_greet`, afterwards `TEDPolicy` will
-see dialogue turns as if user never input intent `greet`.
-
+For example if you define the greeting rule as above and don't add it to any of your stories,
+after `RulePolicy` predicts `utter_greet`, `TEDPolicy` will
+make predictions as if the `greet, utter_greet` turn did not occur.
 
 
 ### Rules for the Conversation Start
