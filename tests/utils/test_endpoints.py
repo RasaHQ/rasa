@@ -125,18 +125,22 @@ async def test_request_non_json_response():
 
 
 @pytest.mark.parametrize(
-    "filename, endpoint_type, expected",
+    "filename, endpoint_type", [(DEFAULT_ENDPOINTS_FILE, "tracker_store"),],
+)
+def test_read_endpoint_config(filename: Text, endpoint_type: Text):
+    conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
+    assert isinstance(conf, endpoint_utils.EndpointConfig)
+
+
+@pytest.mark.parametrize(
+    "filename, endpoint_type",
     [
-        ("", "tracker_store", False),
-        (DEFAULT_ENDPOINTS_FILE, "stuff", False,),
-        (DEFAULT_ENDPOINTS_FILE, "empty", False,),
-        ("/unknown/path.yml", "tracker_store", False,),
-        (DEFAULT_ENDPOINTS_FILE, "tracker_store", True,),
+        ("", "tracker_store"),
+        (DEFAULT_ENDPOINTS_FILE, "stuff"),
+        (DEFAULT_ENDPOINTS_FILE, "empty"),
+        ("/unknown/path.yml", "tracker_store"),
     ],
 )
-def test_read_endpoint_config(filename: Text, endpoint_type: Text, expected: bool):
+def test_read_endpoint_config_not_found(filename: Text, endpoint_type: Text):
     conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
-    if expected:
-        assert isinstance(conf, endpoint_utils.EndpointConfig)
-    else:
-        assert conf is None
+    assert conf is None
