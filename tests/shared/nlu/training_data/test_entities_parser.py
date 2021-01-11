@@ -1,6 +1,7 @@
 from typing import Text, List, Dict, Any
 
 import pytest
+from jsonschema import ValidationError
 
 import rasa.shared.nlu.training_data.entities_parser as entities_parser
 from rasa.shared.exceptions import InvalidEntityFormatException
@@ -140,10 +141,17 @@ def test_parse_training_example_with_entities():
     ]
 
 
-def test_markdown_entity_regex_error_handling():
-
+def test_markdown_entity_regex_error_handling_not_json():
     with pytest.raises(InvalidEntityFormatException):
         entities_parser.find_entities_in_training_example(
             # JSON syntax error: missing closing " for `role`
             'I want to fly from [Berlin]{"entity": "city", "role: "from"}'
+        )
+
+
+def test_markdown_entity_regex_error_handling_wrong_schema():
+    with pytest.raises(ValidationError):
+        entities_parser.find_entities_in_training_example(
+            # Schema error: "entiti" instead of "entity"
+            'I want to fly from [Berlin]{"entiti": "city", "role": "from"}'
         )
