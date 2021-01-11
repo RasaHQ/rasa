@@ -23,7 +23,7 @@ from rasa.shared.core.events import Event
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, State
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
@@ -36,7 +36,6 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
-from rasa.utils.tensorflow.constants import EPOCHS
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -192,6 +191,62 @@ class Policy:
             entity_tags = entity_tags[:max_training_samples]
 
         return state_features, label_ids, entity_tags
+
+    def prediction_states(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+    ) -> List[State]:
+        """Transforms list of trackers to lists of states for prediction.
+
+        Args:
+            tracker: The tracker to be featurized.
+            domain: The Domain.
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
+
+        Returns:
+            A list of states.
+        """
+        return self.featurizer.prediction_states(
+            [tracker],
+            domain,
+            use_text_for_last_user_input=use_text_for_last_user_input,
+            for_only_ml_policy=self.supported_data() == SupportedData.ML_DATA,
+        )[0]
+
+    def featurize_for_prediction(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        use_text_for_last_user_input: bool = False,
+    ) -> List[List[Dict[Text, List["Features"]]]]:
+        """Transform training trackers into a vector representation.
+
+        The trackers, consisting of multiple turns, will be transformed
+        into a float vector which can be used by a ML model.
+
+        Args:
+            tracker: The tracker to be featurized.
+            domain: The Domain.
+            interpreter: The NLU interpreter.
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
+
+        Returns:
+            A dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+            the tracker.
+        """
+        return self.featurizer.create_state_features(
+            [tracker],
+            domain,
+            interpreter,
+            use_text_for_last_user_input=use_text_for_last_user_input,
+            for_only_ml_policy=self.supported_data() == SupportedData.ML_DATA,
+        )
 
     def train(
         self,

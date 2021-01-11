@@ -916,10 +916,7 @@ class RulePolicy(MemoizationPolicy):
             # the text or the intent
             return None, None, False
 
-        tracker_as_states = self.featurizer.prediction_states(
-            [tracker], domain, use_text_for_last_user_input, for_only_ml_policy=False
-        )
-        states = tracker_as_states[0]
+        states = self.prediction_states(tracker, domain, use_text_for_last_user_input)
 
         current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")

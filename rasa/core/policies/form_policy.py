@@ -112,10 +112,7 @@ class FormPolicy(MemoizationPolicy):
         # since it is assumed that training stories contain
         # only unhappy paths, notify the form that
         # it should not be validated if predicted by other policy
-        tracker_as_states = self.featurizer.prediction_states(
-            [tracker], domain, for_only_ml_policy=True
-        )
-        states = tracker_as_states[0]
+        states = self.prediction_states(tracker, domain)
 
         memorized_form = self.recall(states, tracker, domain)
 
