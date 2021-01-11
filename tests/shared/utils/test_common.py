@@ -152,24 +152,29 @@ async def test_cached_method_with_async_function():
         ("Domain", None, "Domain"),
         # not in locals but in lookup_path
         ("Event", "rasa.shared.core.events", "Event"),
-        # import errors below
-        ("rasa.shared.core.domain.FunkyDomain", None, None),
-        ("FunkyDomain", None, None),
-        ("FunkyDomain", "rasa.shared.core.domain", None),
     ],
 )
 def test_class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text], outcome: Optional[Text]
+    module_path: Text, lookup_path: Optional[Text], outcome: Text
 ):
-    if outcome is None:
-        with pytest.raises(ImportError):
-            rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
-    else:
-        klass = rasa.shared.utils.common.class_from_module_path(
-            module_path, lookup_path
-        )
-        assert isinstance(klass, object)
-        assert klass.__name__ == outcome
+    klass = rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
+    assert isinstance(klass, object)
+    assert klass.__name__ == outcome
+
+
+@pytest.mark.parametrize(
+    "module_path, lookup_path",
+    [
+        ("rasa.shared.core.domain.FunkyDomain", None),
+        ("FunkyDomain", None),
+        ("FunkyDomain", "rasa.shared.core.domain"),
+    ],
+)
+def test_class_from_module_path_not_found(
+    module_path: Text, lookup_path: Optional[Text]
+):
+    with pytest.raises(ImportError):
+        rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
 
 
 @pytest.mark.parametrize(
