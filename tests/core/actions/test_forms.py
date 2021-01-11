@@ -352,7 +352,18 @@ async def test_validate_slots(
         assert events == expected_events
 
 
-async def test_no_slots_extracted_with_custom_slot_mappings():
+@pytest.mark.parametrize(
+    "custom_events",
+    [
+        # Custom action returned no events
+        [],
+        # Custom action returned events but no `SlotSet` events
+        [BotUttered("some text").as_dict()],
+        # Custom action returned only `SlotSet` event for `required_slot`
+        [SlotSet(REQUESTED_SLOT, "some value").as_dict()],
+    ],
+)
+async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[Event]):
     form_name = "my form"
     events = [
         ActiveLoop(form_name),
@@ -378,7 +389,7 @@ async def test_no_slots_extracted_with_custom_slot_mappings():
     action_server_url = "http:/my-action-server:5055/webhook"
 
     with aioresponses() as mocked:
-        mocked.post(action_server_url, payload={"events": []})
+        mocked.post(action_server_url, payload={"events": custom_events})
 
         action_server = EndpointConfig(action_server_url)
         action = FormAction(form_name, action_server)
