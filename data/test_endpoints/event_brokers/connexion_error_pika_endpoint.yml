@@ -1,9 +1,0 @@
-event_broker:
-  type: pika
-  url: localhost
-  username: username
-  password: password
-  queues:
-    - queue-1
-  connection_attempts: 1
-  retry_delay_in_seconds: 0

@@ -1,8 +1,0 @@
-event_broker:
-  type: sql
-  dialect: postgresql
-  url: "0.0.0.0"
-  port: 42
-  db: boom
-  username: user
-  password: pw

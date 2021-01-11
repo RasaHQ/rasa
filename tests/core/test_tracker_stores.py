@@ -900,20 +900,14 @@ def test_login_db_with_no_postgresql(tmp_path: Path):
 
 
 def test_mongo_connection_error(default_domain: Domain):
-    store = read_endpoint_config(
-        "data/test_endpoints/tracker_stores/connexion_error_mongo_endpoint.yml",
-        "tracker_store",
-    )
+    store = EndpointConfig.from_dict({"type": "mongod", "url": "mongodb://0.0.0.0:42",})
 
     with pytest.raises(ConnectionException):
         TrackerStore.create(store, default_domain)
 
 
 def test_dynamo_connection_error(default_domain: Domain):
-    store = read_endpoint_config(
-        "data/test_endpoints/tracker_stores/connexion_error_dynamo_endpoint.yml",
-        "tracker_store",
-    )
+    store = EndpointConfig.from_dict({"type": "dynamo",})
 
     with pytest.raises(ConnectionException):
         TrackerStore.create(store, default_domain)

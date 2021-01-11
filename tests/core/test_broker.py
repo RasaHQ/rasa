@@ -311,18 +311,32 @@ async def test_pika_connection_error(monkeypatch: MonkeyPatch):
         raise aio_pika.exceptions.ProbableAuthenticationError("Oups")
 
     monkeypatch.setattr(PikaEventBroker, "connect", connect)
-    cfg = read_endpoint_config(
-        "data/test_endpoints/event_brokers/connexion_error_pika_endpoint.yml",
-        "event_broker",
+    cfg = EndpointConfig.from_dict(
+        {
+            "type": "pika",
+            "url": "localhost",
+            "username": "username",
+            "password": "password",
+            "queues": ["queue-1"],
+            "connection_attempts": 1,
+            "retry_delay_in_seconds": 0,
+        }
     )
     with pytest.raises(ConnectionException):
         await EventBroker.create(cfg)
 
 
 async def test_sql_connection_error(monkeypatch: MonkeyPatch):
-    cfg = read_endpoint_config(
-        "data/test_endpoints/event_brokers/connexion_error_sql_endpoint.yml",
-        "event_broker",
+    cfg = EndpointConfig.from_dict(
+        {
+            "type": "sql",
+            "dialect": "postgresql",
+            "url": "0.0.0.0",
+            "port": 42,
+            "db": "boom",
+            "username": "user",
+            "password": "pw",
+        }
     )
     with pytest.raises(ConnectionException):
         await EventBroker.create(cfg)
