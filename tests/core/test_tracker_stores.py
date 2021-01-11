@@ -894,6 +894,11 @@ def test_current_state_without_events(default_domain: Domain):
     assert state and "events" not in state
 
 
+def test_login_db_with_no_postgresql(tmp_path: Path):
+    with pytest.warns(UserWarning):
+        SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db="other")
+
+
 def test_mongo_connection_error(default_domain: Domain):
     store = read_endpoint_config(
         "data/test_endpoints/tracker_stores/connexion_error_mongo_endpoint.yml",
