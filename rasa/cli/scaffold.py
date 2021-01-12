@@ -211,7 +211,6 @@ def run(args: argparse.Namespace) -> None:
         )
         path = os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
-
         # set the default directory. we can't use the `default` property
         # in questionary as we want to avoid showing the "." in the prompt as the
         # initial value. users tend to overlook it and it leads to invalid
