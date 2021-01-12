@@ -2099,6 +2099,23 @@ def test_hide_rule_turn_with_slots():
     assert some_slot in prediction.optional_events[0].only_rule_slots
     assert some_other_slot not in prediction.optional_events[0].only_rule_slots
 
+    conversation_events += prediction.optional_events
+    conversation_events += [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": some_other_action}),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    states = tracker.past_states(domain, for_only_ml_policy=True)
+    assert states == [
+        {},
+        {
+            USER: {TEXT: "haha", INTENT: some_other_action},
+            PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+        },
+    ]
+
 
 def test_hide_rule_turn_with_loops():
     form_name = "some_form"
