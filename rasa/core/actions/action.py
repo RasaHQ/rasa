@@ -835,7 +835,7 @@ class ActionDefaultAskAffirmation(Action):
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
+        intent_ranking = tracker.latest_message.parse_data.get(INTENT_RANKING_KEY, [])
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
