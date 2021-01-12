@@ -1,10 +1,9 @@
 from typing import Text, List, Dict, Any
 
 import pytest
-from jsonschema import ValidationError
 
 import rasa.shared.nlu.training_data.entities_parser as entities_parser
-from rasa.shared.exceptions import InvalidEntityFormatException
+from rasa.shared.exceptions import InvalidEntityFormatException, SchemaValidationError
 from rasa.shared.nlu.constants import TEXT
 
 
@@ -150,7 +149,7 @@ def test_markdown_entity_regex_error_handling_not_json():
 
 
 def test_markdown_entity_regex_error_handling_wrong_schema():
-    with pytest.raises(ValidationError):
+    with pytest.raises(SchemaValidationError):
         entities_parser.find_entities_in_training_example(
             # Schema error: "entiti" instead of "entity"
             'I want to fly from [Berlin]{"entiti": "city", "role": "from"}'

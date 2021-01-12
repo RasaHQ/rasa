@@ -1,4 +1,5 @@
 from typing import Optional, Text
+import jsonschema
 
 
 class RasaException(Exception):
@@ -81,6 +82,10 @@ class InvalidConfigException(ValueError, RasaException):
 
 class UnsupportedFeatureException(RasaCoreException):
     """Raised if a requested feature is not supported."""
+
+
+class SchemaValidationError(RasaException, jsonschema.ValidationError):
+    """Raised if schema validation via `jsonschema` failed."""
 
 
 class InvalidEntityFormatException(RasaException):

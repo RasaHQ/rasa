@@ -136,43 +136,6 @@ class MarkdownReader(TrainingDataReader):
                     self.current_title, item, self.lookup_tables
                 )
 
-    @staticmethod
-    def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
-        """Converts the provided json_str to a valid dict containing the entity
-        attributes.
-
-        Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
-        [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
-
-        Args:
-            json_str: the entity dict as string without "{}"
-
-        Raises:
-            ValidationError if validation of entity dict fails.
-            JSONDecodeError if provided entity dict is not valid json.
-
-        Returns:
-            a proper python dict
-        """
-        import json
-        import rasa.shared.utils.validation as validation_utils
-        import rasa.shared.nlu.training_data.schemas.data_schema as schema
-
-        # add {} as they are not part of the regex
-        try:
-            data = json.loads(f"{{{json_str}}}")
-        except JSONDecodeError as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Incorrect training data format ('{{{json_str}}}'), make sure your "
-                f"data is valid. For more information about the format visit "
-                f"{LEGACY_DOCS_BASE_URL}/nlu/training-data-format/."
-            )
-            raise e
-
-        validation_utils.validate_training_data(data, schema.entity_dict_schema())
-
-        return data
-
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in AVAILABLE_SECTIONS:
