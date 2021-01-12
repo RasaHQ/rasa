@@ -128,8 +128,8 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
         json_str: The entity dict as string without "{}".
 
     Raises:
-        ValidationError if validation of entity dict fails.
-        InvalidEntityFormatException if provided entity dict is not valid json.
+        ValidationError if validation of parsed entity fails.
+        InvalidEntityFormatException if provided entity is not valid json.
 
     Returns:
         Deserialized and validated `json_str`.
