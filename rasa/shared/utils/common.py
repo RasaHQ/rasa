@@ -25,7 +25,8 @@ def class_from_module_path(
         lookup_path: a path where to load the class from, if it cannot
                      be found in the local / global scope.
         ensure_class: a boolean that will ensure that the loaded Python class
-                      is actually class if `True`.
+                      is actually class if `True`. When acticated, a deprecation
+                      warning is raised when the loaded object is not a class.
 
     Returns:
         a Python class
