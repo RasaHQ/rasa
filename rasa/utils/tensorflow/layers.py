@@ -710,6 +710,12 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return neg_embeds, bad_negs
 
+    def _compute_vector_length(self, embedding):
+        norm = tf.norm(embedding, axis=-1)
+        mean_norm = tf.reduce_mean(norm)
+        std_norm = tf.math.reduce_std(norm)
+        # tf.print("Norm", mean_norm, std_norm)
+
     def _sample_negatives(
         self,
         inputs_embed: tf.Tensor,
@@ -720,6 +726,10 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Sample negative examples."""
 
+        # self._compute_vector_length(inputs_embed)
+        # tf.print('---------------')
+        # self._compute_vector_length(labels_embed)
+        # tf.print('===============s')
         pos_inputs_embed = tf.expand_dims(inputs_embed, axis=-2)
         pos_labels_embed = tf.expand_dims(labels_embed, axis=-2)
 
@@ -758,6 +768,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         Returns:
             Confidences corresponding to each similarity value.
         """
+        # return sim
         if similarity_type == COSINE:
             # clip negative values to zero
             return tf.nn.relu(sim)
@@ -905,7 +916,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             # Constrain similarity values in a range by applying sigmoid
             # on them individually so that they saturate at extreme values.
             sigmoid_logits = tf.concat(
-                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_li], axis=-1
             )
 
             sigmoid_labels = tf.concat(

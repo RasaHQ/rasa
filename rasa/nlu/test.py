@@ -332,6 +332,20 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
+    # import matplotlib.pyplot as plt
+    #
+    # plt.gcf().clear()
+    #
+    # fig = plt.hist(pos_hist)
+    # plt.title("Positive_sims")
+    # plt.savefig(f"{hist_filename.split('.')[0]}_pos.png")
+    #
+    # plt.gcf().clear()
+    #
+    # fig = plt.hist(neg_hist)
+    # plt.title("Negative_sims")
+    # plt.savefig(f"{hist_filename.split('.')[0]}_neg.png")
+
     plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
