@@ -17,7 +17,7 @@ class InvalidParameterException(RasaException, ValueError):
     """Raised when an invalid parameter is used."""
 
 
-class MarkdownException(RasaException):
+class MarkdownException(RasaException, ValueError):
     """Raised if there is an error reading Markdown."""
 
 
