@@ -637,7 +637,7 @@ def initialize_error_reporting() -> None:
             MemoryError,  # machine is running out of memory
             NotImplementedError,  # user is using a feature that is not implemented
             asyncio.CancelledError,  # an async operation has been cancelled by the user
-            # rasa errors
+            # expected Rasa errors
             RasaException,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
