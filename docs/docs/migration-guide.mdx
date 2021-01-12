@@ -10,6 +10,22 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.2 to Rasa 2.3
+
+### Machine Learning Components
+
+Few changes have been made to the default loss function inside machine learning (ML)
+components - `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
+- Configuration option `loss_type=softmax` is now deprecated. Use `loss_type=cross_entropy` instead.
+- The default loss function (`loss_type=cross_entropy`) adds a sigmoid cross-entropy loss of all similarity values to constrain
+them to an approximate range. If you notice a degradation in performance, set `constrain_similarities=False`
+in the respective ML component.
+- Added an option `relative_confidence` to each ML component. Contrary to the default behaviour,
+if `relative_confidence` is set to `False`, the confidences for each label will be between 0 and 1
+but they will not sum up to 1. It is also recommended to set `relative_confidence=False` as it will be made
+default in Rasa Open Source 3.0. You may need to tune fallback confidence thresholds after making this change.
+
+
 ## Rasa 2.1 to Rasa 2.2
 
 ### General

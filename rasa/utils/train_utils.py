@@ -380,6 +380,16 @@ def override_defaults(
     return config
 
 
+def _check_confidence_setting(component_config) -> None:
+    if component_config[RELATIVE_CONFIDENCE]:
+        rasa.shared.utils.io.raise_warning(
+            f"{RELATIVE_CONFIDENCE} is set to `True`. It is recommended "
+            f"to set it to `False`. It will be set to `False` by default "
+            f"Rasa Open Source 3.0 onwards.",
+            category=UserWarning,
+        )
+
+
 def _check_similarity_confidence_setting(component_config) -> None:
     if (
         not component_config[CONSTRAIN_SIMILARITIES]
@@ -387,9 +397,9 @@ def _check_similarity_confidence_setting(component_config) -> None:
     ):
         raise ValueError(
             f"If {CONSTRAIN_SIMILARITIES} is set to False, "
-            f"{RELATIVE_CONFIDENCE} cannot be set to False as"
+            f"{RELATIVE_CONFIDENCE} cannot be set to False as "
             f"similarities need to be constrained during training "
-            f"time in order to compute appropriate confidence values "
+            f"time as well in order to correctly compute confidence values "
             f"for each label at inference time."
         )
 
@@ -401,7 +411,7 @@ def _check_similarity_loss_setting(component_config) -> None:
         or component_config[SIMILARITY_TYPE] == INNER
         and component_config[LOSS_TYPE] == MARGIN
     ):
-        raise rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"`{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]}`"
             f" and `{LOSS_TYPE}={component_config[LOSS_TYPE]}` "
             f"is not a recommended setting as it may not lead to best results."

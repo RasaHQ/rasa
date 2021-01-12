@@ -299,6 +299,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
 
+        train_utils._check_confidence_setting(self.component_config)
         train_utils._check_similarity_confidence_setting(self.component_config)
         train_utils._check_similarity_loss_setting(self.component_config)
 
@@ -1018,6 +1019,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ) = cls._load_from_files(meta, model_dir)
 
         meta = train_utils.update_similarity_type(meta)
+        meta = train_utils.update_loss_type(meta)
 
         model = cls._load_model(
             entity_tag_specs,

@@ -548,37 +548,7 @@ class CRF(tf.keras.layers.Layer):
 
 
 class DotProductLoss(tf.keras.layers.Layer):
-    """Dot-product loss layer.
-
-    Arguments:
-        num_neg: Positive integer, the number of incorrect labels;
-            the algorithm will minimize their similarity to the input.
-        loss_type: The type of the loss function, either 'softmax' or 'margin'.
-        mu_pos: Float, indicates how similar the algorithm should
-            try to make embedding vectors for correct labels;
-            should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-        mu_neg: Float, maximum negative similarity for incorrect labels,
-            should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-        use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
-            maximum similarity over incorrect intent labels,
-            used only if 'loss_type' is set to 'margin'.
-        neg_lambda: Float, the scale of how important is to minimize
-            the maximum similarity between embeddings of different labels,
-            used only if 'loss_type' is set to 'margin'.
-        scale_loss: Boolean, if 'True' scale loss inverse proportionally to
-            the confidence of the correct prediction.
-        name: Optional name of the layer.
-        parallel_iterations: Positive integer, the number of iterations allowed
-            to run in parallel.
-        same_sampling: Boolean, if 'True' sample same negative labels
-            for the whole batch.
-        constrain_similarities: Boolean, if 'True' applies sigmoid on all
-            similarity terms and adds to the loss function to
-            ensure that similarity values are approximately bounded.
-            Used inside _loss_softmax() only.
-        relative_confidence: Boolean, if 'True' confidence is calculated by applying
-            softmax over similarities, else sigmoid is applied on individual similarities.
-    """
+    """Dot-product loss layer"""
 
     def __init__(
         self,
@@ -600,7 +570,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         Args:
             num_neg: Positive integer, the number of incorrect labels;
                 the algorithm will minimize their similarity to the input.
-            loss_type: The type of the loss function, either 'softmax' or 'margin'.
+            loss_type: The type of the loss function, either 'cross_entropy' or 'margin'.
             mu_pos: Float, indicates how similar the algorithm should
                 try to make embedding vectors for correct labels;
                 should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -622,7 +592,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             constrain_similarities: Boolean, if 'True' applies sigmoid on all
                 similarity terms and adds to the loss function to
                 ensure that similarity values are approximately bounded.
-                Used inside _loss_softmax() only.
+                Used inside _loss_cross_entropy() only.
             relative_confidence: Boolean, if 'True' confidence is calculated by applying
                 softmax over similarities, else sigmoid is applied on individual similarities.
         """
@@ -791,12 +761,12 @@ class DotProductLoss(tf.keras.layers.Layer):
         if similarity_type == COSINE:
             # clip negative values to zero
             return tf.nn.relu(sim)
-        if self.relative_confidence:
+        elif self.relative_confidence:
             # normalize result to [0, 1] with softmax
             return tf.nn.softmax(sim)
-        else:
-            # Convert each individual similarity to probability
-            return tf.nn.sigmoid(sim)
+
+        # In other cases convert each individual similarity to probability
+        return tf.nn.sigmoid(sim)
 
     def _train_sim(
         self,
