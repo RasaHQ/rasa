@@ -19,9 +19,12 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     INNER,
     COSINE,
+    CROSS_ENTROPY,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     DENSE_DIMENSION,
+    CONSTRAIN_SIMILARITIES,
+    RELATIVE_CONFIDENCE,
 )
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT, ENTITIES
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
@@ -77,10 +80,31 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
     if config.get(SIMILARITY_TYPE) == AUTO:
-        if config[LOSS_TYPE] == SOFTMAX:
+        if config[LOSS_TYPE] == CROSS_ENTROPY:
             config[SIMILARITY_TYPE] = INNER
         elif config[LOSS_TYPE] == MARGIN:
             config[SIMILARITY_TYPE] = COSINE
+
+    return config
+
+
+def update_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """
+    If LOSS_TYPE is set to 'softmax', update it to 'cross_entropy' since former is deprecated.
+    Args:
+        config: model configuration
+
+    Returns: updated model configuration
+    """
+    # TODO: Completely deprecate this with 3.0
+    if config.get(LOSS_TYPE) == SOFTMAX:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"`{LOSS_TYPE}={SOFTMAX}` is deprecated. "
+            f"Please update your configuration file to use"
+            f"`{LOSS_TYPE}={CROSS_ENTROPY}` instead.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        )
+        config[LOSS_TYPE] = CROSS_ENTROPY
 
     return config
 
@@ -354,3 +378,35 @@ def override_defaults(
                 config[key] = custom[key]
 
     return config
+
+
+def _check_similarity_confidence_setting(component_config) -> None:
+    if (
+        not component_config[CONSTRAIN_SIMILARITIES]
+        and not component_config[RELATIVE_CONFIDENCE]
+    ):
+        raise ValueError(
+            f"If {CONSTRAIN_SIMILARITIES} is set to False, "
+            f"{RELATIVE_CONFIDENCE} cannot be set to False as"
+            f"similarities need to be constrained during training "
+            f"time in order to compute appropriate confidence values "
+            f"for each label at inference time."
+        )
+
+
+def _check_similarity_loss_setting(component_config) -> None:
+    if (
+        component_config[SIMILARITY_TYPE] == COSINE
+        and component_config[LOSS_TYPE] == CROSS_ENTROPY
+        or component_config[SIMILARITY_TYPE] == INNER
+        and component_config[LOSS_TYPE] == MARGIN
+    ):
+        raise rasa.shared.utils.io.raise_warning(
+            f"`{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]}`"
+            f" and `{LOSS_TYPE}={component_config[LOSS_TYPE]}` "
+            f"is not a recommended setting as it may not lead to best results."
+            f"Ideally use `{SIMILARITY_TYPE}={INNER}`"
+            f" and `{LOSS_TYPE}={CROSS_ENTROPY}` or"
+            f"`{SIMILARITY_TYPE}={COSINE}` and `{LOSS_TYPE}={MARGIN}`.",
+            category=UserWarning,
+        )

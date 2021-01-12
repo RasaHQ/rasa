@@ -64,7 +64,7 @@ from rasa.utils.tensorflow.constants import (
     MAX_RELATIVE_POSITION,
     RETRIEVAL_INTENT,
     USE_TEXT_AS_LABEL,
-    SOFTMAX,
+    CROSS_ENTROPY,
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_DIR,
@@ -171,8 +171,8 @@ class ResponseSelector(DIETClassifier):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
+        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        LOSS_TYPE: CROSS_ENTROPY,
         # Number of top actions to normalize scores for loss type 'softmax'.
         # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,

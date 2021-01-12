@@ -66,6 +66,7 @@ MARGIN = "margin"
 AUTO = "auto"
 INNER = "inner"
 COSINE = "cosine"
+CROSS_ENTROPY = "cross_entropy"
 
 BALANCED = "balanced"
 

@@ -79,7 +79,8 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SOFTMAX,
+    CROSS_ENTROPY,
+    INNER,
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_DIR,
@@ -210,7 +211,7 @@ class TEDPolicy(Policy):
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
+        LOSS_TYPE: CROSS_ENTROPY,
         # Number of top actions to normalize scores for loss type 'softmax'.
         # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
@@ -342,7 +343,9 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.override_defaults(
             self.defaults, new_config
         )
-        self._check_similarity_confidence_setting()
+        rasa.utils.train_utils._check_similarity_confidence_setting(self.config)
+        rasa.utils.train_utils._check_similarity_loss_setting(self.config)
+        self.config = rasa.utils.train_utils.update_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
@@ -629,12 +632,15 @@ class TEDPolicy(Policy):
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
-        if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
+        if self.config[LOSS_TYPE] == CROSS_ENTROPY and self.config[RANKING_LENGTH] > 0:
             confidence = rasa.utils.train_utils.sort_and_rank(
                 confidence, self.config[RANKING_LENGTH]
             )
 
-            if self.config[RELATIVE_CONFIDENCE]:
+            if (
+                self.config[SIMILARITY_TYPE] == INNER
+                and self.config[RELATIVE_CONFIDENCE]
+            ):
                 # Normalize the values if returned probabilities are from softmax.
                 confidence = rasa.utils.train_utils.normalize(confidence)
 

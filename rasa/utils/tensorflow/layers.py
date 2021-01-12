@@ -5,7 +5,13 @@ import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
-from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
+from rasa.utils.tensorflow.constants import (
+    SOFTMAX,
+    MARGIN,
+    COSINE,
+    INNER,
+    CROSS_ENTROPY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -589,7 +595,37 @@ class DotProductLoss(tf.keras.layers.Layer):
         constrain_similarities: bool = True,
         relative_confidence: bool = True,
     ) -> None:
-        """Declare instance variables with default values."""
+        """Declare instance variables with default values.
+
+        Args:
+            num_neg: Positive integer, the number of incorrect labels;
+                the algorithm will minimize their similarity to the input.
+            loss_type: The type of the loss function, either 'softmax' or 'margin'.
+            mu_pos: Float, indicates how similar the algorithm should
+                try to make embedding vectors for correct labels;
+                should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+            mu_neg: Float, maximum negative similarity for incorrect labels,
+                should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+            use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
+                maximum similarity over incorrect intent labels,
+                used only if 'loss_type' is set to 'margin'.
+            neg_lambda: Float, the scale of how important is to minimize
+                the maximum similarity between embeddings of different labels,
+                used only if 'loss_type' is set to 'margin'.
+            scale_loss: Boolean, if 'True' scale loss inverse proportionally to
+                the confidence of the correct prediction.
+            name: Optional name of the layer.
+            parallel_iterations: Positive integer, the number of iterations allowed
+                to run in parallel.
+            same_sampling: Boolean, if 'True' sample same negative labels
+                for the whole batch.
+            constrain_similarities: Boolean, if 'True' applies sigmoid on all
+                similarity terms and adds to the loss function to
+                ensure that similarity values are approximately bounded.
+                Used inside _loss_softmax() only.
+            relative_confidence: Boolean, if 'True' confidence is calculated by applying
+                softmax over similarities, else sigmoid is applied on individual similarities.
+        """
         super().__init__(name=name)
         self.num_neg = num_neg
         self.loss_type = loss_type
@@ -755,13 +791,12 @@ class DotProductLoss(tf.keras.layers.Layer):
         if similarity_type == COSINE:
             # clip negative values to zero
             return tf.nn.relu(sim)
+        if self.relative_confidence:
+            # normalize result to [0, 1] with softmax
+            return tf.nn.softmax(sim)
         else:
-            if self.relative_confidence:
-                # normalize result to [0, 1] with softmax
-                return tf.nn.softmax(sim)
-            else:
-                # Convert each individual similarity to probability
-                return tf.nn.sigmoid(sim)
+            # Convert each individual similarity to probability
+            return tf.nn.sigmoid(sim)
 
     def _train_sim(
         self,
@@ -865,7 +900,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return loss
 
-    def _loss_softmax(
+    def _loss_cross_entropy(
         self,
         sim_pos: tf.Tensor,
         sim_neg_il: tf.Tensor,
@@ -874,7 +909,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         sim_neg_li: tf.Tensor,
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
-        """Define softmax loss."""
+        """Define cross entropy loss."""
         # Similarity terms between input and label should be optimized relative
         # to each other and hence use them as logits for softmax term
         softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
@@ -917,6 +952,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 labels=sigmoid_labels, logits=sigmoid_logits
             )
 
+            # average over logits axis
             loss += tf.reduce_mean(sigmoid_loss, axis=-1)
 
         if self.scale_loss:
@@ -942,12 +978,12 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         if self.loss_type == MARGIN:
             return self._loss_margin
-        elif self.loss_type == SOFTMAX:
-            return self._loss_softmax
+        elif self.loss_type == CROSS_ENTROPY:
+            return self._loss_cross_entropy
         else:
             raise ValueError(
                 f"Wrong loss type '{self.loss_type}', "
-                f"should be '{MARGIN}' or '{SOFTMAX}'"
+                f"should be '{MARGIN}' or '{CROSS_ENTROPY}'"
             )
 
     # noinspection PyMethodOverriding

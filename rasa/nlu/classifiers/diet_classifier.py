@@ -83,9 +83,10 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SOFTMAX,
     AUTO,
+    INNER,
     BALANCED,
+    CROSS_ENTROPY,
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
@@ -184,8 +185,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
+        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        LOSS_TYPE: CROSS_ENTROPY,
         # Number of top actions to normalize scores for loss type 'softmax'.
         # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
@@ -290,19 +291,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
 
-    def _check_similarity_confidence_setting(self) -> None:
-        if (
-            not self.component_config[CONSTRAIN_SIMILARITIES]
-            and not self.component_config[RELATIVE_CONFIDENCE]
-        ):
-            raise ValueError(
-                f"If {CONSTRAIN_SIMILARITIES} is set to False, "
-                f"{RELATIVE_CONFIDENCE} cannot be set to False as"
-                f"similarities need to be constrained during training "
-                f"time in order to compute appropriate confidence values "
-                f"for each label at inference time."
-            )
-
     def _check_config_parameters(self) -> None:
         self.component_config = train_utils.check_deprecated_options(
             self.component_config
@@ -310,7 +298,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
-        self._check_similarity_confidence_setting()
+
+        train_utils._check_similarity_confidence_setting(self.component_config)
+        train_utils._check_similarity_loss_setting(self.component_config)
+
+        self.component_config = train_utils.update_loss_type(self.component_config)
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
@@ -872,14 +864,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = message_sim.argsort()[::-1]
 
         if (
-            self.component_config[LOSS_TYPE] == SOFTMAX
+            self.component_config[LOSS_TYPE] == CROSS_ENTROPY
             and self.component_config[RANKING_LENGTH] > 0
         ):
             message_sim = train_utils.sort_and_rank(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
 
-            if self.component_config[RELATIVE_CONFIDENCE]:
+            if (
+                self.component_config[SIMILARITY_TYPE] == INNER
+                and self.component_config[RELATIVE_CONFIDENCE]
+            ):
                 # Normalize the values if returned probabilities are from
                 # softmax(hence relative to each other).
                 message_sim = train_utils.normalize(message_sim)
