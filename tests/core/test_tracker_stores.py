@@ -899,15 +899,11 @@ def test_login_db_with_no_postgresql(tmp_path: Path):
         SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db="other")
 
 
-def test_mongo_connection_error(default_domain: Domain):
-    store = EndpointConfig.from_dict({"type": "mongod", "url": "mongodb://0.0.0.0:42",})
-
-    with pytest.raises(ConnectionException):
-        TrackerStore.create(store, default_domain)
-
-
-def test_dynamo_connection_error(default_domain: Domain):
-    store = EndpointConfig.from_dict({"type": "dynamo",})
+@pytest.mark.parametrize(
+    "config", [{"type": "mongod", "url": "mongodb://0.0.0.0:42",}, {"type": "dynamo",}],
+)
+def test_tracker_store_connection_error(config: Dict, default_domain: Domain):
+    store = EndpointConfig.from_dict(config)
 
     with pytest.raises(ConnectionException):
         TrackerStore.create(store, default_domain)
