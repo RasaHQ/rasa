@@ -420,7 +420,7 @@ class DynamoTrackerStore(TrackerStore):
     def get_or_create_table(
         self, table_name: Text
     ) -> "boto3.resources.factory.dynamodb.Table":
-        """Returns table or creates one if the table name is not in the table list"""
+        """Returns table or creates one if the table name is not in the table list."""
         import boto3
 
         dynamo = boto3.resource("dynamodb", region_name=self.region)
@@ -455,7 +455,7 @@ class DynamoTrackerStore(TrackerStore):
         return table
 
     def save(self, tracker):
-        """Saves the current conversation state"""
+        """Saves the current conversation state."""
         from botocore.exceptions import ClientError
 
         if self.event_broker:
@@ -490,7 +490,7 @@ class DynamoTrackerStore(TrackerStore):
         return dialogues[0].get("session_date")
 
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
-        """Serializes the tracker, returns object with decimal types"""
+        """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
         d.update(
             {"sender_id": tracker.sender_id,}
@@ -520,7 +520,7 @@ class DynamoTrackerStore(TrackerStore):
         )
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the DynamoTrackerStore"""
+        """Returns sender_ids of the DynamoTrackerStore."""
         return [
             i["sender_id"]
             for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
@@ -528,8 +528,7 @@ class DynamoTrackerStore(TrackerStore):
 
 
 class MongoTrackerStore(TrackerStore):
-    """
-    Stores conversation history in Mongo
+    """Stores conversation history in Mongo.
 
     Property methods:
         conversations: returns the current conversation
@@ -567,11 +566,11 @@ class MongoTrackerStore(TrackerStore):
 
     @property
     def conversations(self):
-        """Returns the current conversation"""
+        """Returns the current conversation."""
         return self.db[self.collection]
 
     def _ensure_indices(self):
-        """Create an index on the sender_id"""
+        """Create an index on the sender_id."""
         self.conversations.create_index("sender_id")
 
     @staticmethod
@@ -584,7 +583,7 @@ class MongoTrackerStore(TrackerStore):
         return state
 
     def save(self, tracker, timeout=None):
-        """Saves the current conversation state"""
+        """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -699,7 +698,7 @@ class MongoTrackerStore(TrackerStore):
         )
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the Mongo Tracker Store"""
+        """Returns sender_ids of the Mongo Tracker Store."""
         return [c["sender_id"] for c in self.conversations.find()]
 
 
