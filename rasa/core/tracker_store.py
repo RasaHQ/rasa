@@ -21,9 +21,6 @@ from typing import (
 )
 
 from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError, BotoCoreError
-import pymongo.errors
-import sqlalchemy.exc
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -65,12 +62,6 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
 # default value for key prefix in RedisTrackerStore
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
-
-CONNECTION_ERRORS = (
-    BotoCoreError,
-    pymongo.errors.ConnectionFailure,
-    sqlalchemy.exc.OperationalError,
-)
 
 
 class TrackerStore:
@@ -124,9 +115,19 @@ class TrackerStore:
         if isinstance(obj, TrackerStore):
             return obj
 
+        from botocore.exceptions import BotoCoreError
+        import pymongo.errors
+        import sqlalchemy.exc
+
+        connection_errors = (
+            BotoCoreError,
+            pymongo.errors.ConnectionFailure,
+            sqlalchemy.exc.OperationalError,
+        )
+
         try:
             return _create_from_endpoint_config(obj, domain, event_broker)
-        except CONNECTION_ERRORS as error:
+        except connection_errors as error:
             raise ConnectionException("Cannot connect to tracker store.") from error
 
     def get_or_create_tracker(
@@ -455,6 +456,8 @@ class DynamoTrackerStore(TrackerStore):
 
     def save(self, tracker):
         """Saves the current conversation state"""
+        from botocore.exceptions import ClientError
+
         if self.event_broker:
             self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
