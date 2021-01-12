@@ -177,7 +177,7 @@ class TrackerStore:
         raise NotImplementedError()
 
     def exists(self, sender_id: Text) -> bool:
-        """Checks if tracker exists for the specified id.
+        """Checks if tracker exists for the specified ID.
 
         This method may be overridden by the specific tracker store for
         faster implementations
@@ -186,7 +186,7 @@ class TrackerStore:
             sender_id: Conversation ID to check if the tracker exists.
 
         Returns:
-            True if the tracker exists
+            `True` if the tracker exists, `False` otherwise.
         """
         return self.retrieve(sender_id) is not None
 

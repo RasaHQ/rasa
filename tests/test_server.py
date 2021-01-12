@@ -1268,7 +1268,7 @@ async def test_put_tracker(rasa_app: SanicASGITestClient):
 async def test_predict_without_conversation_id(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post("/conversations/non_existent_id/predict")
 
-    assert response.status == 404
+    assert response.status == HTTPStatus.NOT_FOUND
     assert response.json()["message"] == "Conversation ID not found."
 
 
@@ -1478,7 +1478,7 @@ async def test_execute_without_conversation_id(rasa_app: SanicASGITestClient):
         "/conversations/non_existent_id/execute", json=data
     )
 
-    assert response.status == 404
+    assert response.status == HTTPStatus.NOT_FOUND
     assert response.json()["message"] == "Conversation ID not found."
 
 
@@ -1778,7 +1778,7 @@ async def test_get_story_without_conversation_id(
 
     _, response = await rasa_app.get(url)
 
-    assert response.status == 404
+    assert response.status == HTTPStatus.NOT_FOUND
     assert response.json()["message"] == "Conversation ID not found."
 
 
