@@ -264,6 +264,7 @@ class FormAction(LoopAction):
         if they are set by corresponding entities from the user input
         else return `None`.
         """
+        # change here
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
         entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
@@ -323,6 +324,7 @@ class FormAction(LoopAction):
         """Extract the value of requested slot from a user input
         else return `None`.
         """
+        # change here
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
@@ -446,6 +448,7 @@ class FormAction(LoopAction):
         slot_values = self.extract_other_slots(tracker, domain)
 
         # extract requested slot
+        # change here
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
         if slot_to_fill:
             slot_values.update(self.extract_requested_slot(tracker, domain))
