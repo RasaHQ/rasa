@@ -154,16 +154,15 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
     return decorator
 
 
-def ensure_conversation_exists(app: Sanic) -> Callable[..., HTTPResponse]:
-    """Wraps a request handler ensuring the conversation exists.
-    """
+def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
+    """Wraps a request handler ensuring the conversation exists."""
 
     def decorator(f: Callable[..., HTTPResponse]) -> HTTPResponse:
         @wraps(f)
-        def decorated(*args: Any, **kwargs: Any) -> HTTPResponse:
+        def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
-            if app.agent.tracker_store.exists(conversation_id):
-                return f(*args, **kwargs)
+            if request.app.agent.tracker_store.exists(conversation_id):
+                return f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
                     HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
@@ -811,7 +810,7 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    @ensure_conversation_exists(app)
+    @ensure_conversation_exists()
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
@@ -838,7 +837,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    @ensure_conversation_exists(app)
+    @ensure_conversation_exists()
     async def execute_action(request: Request, conversation_id: Text):
         request_params = request.json
 
@@ -947,7 +946,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    @ensure_conversation_exists(app)
+    @ensure_conversation_exists()
     async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format

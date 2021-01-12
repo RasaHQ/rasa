@@ -173,7 +173,7 @@ class TrackerStore:
         return tracker
 
     def save(self, tracker):
-        """Save method that will be overridden by specific tracker"""
+        """Save method that will be overridden by specific tracker."""
         raise NotImplementedError()
 
     def exists(self, sender_id: Text) -> bool:
