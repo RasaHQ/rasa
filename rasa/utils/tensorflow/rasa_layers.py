@@ -41,7 +41,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         sparse_dropout: bool,
         dense_dropout: bool,
         dense_concat_dimension: int,
-        sparse_to_dense_kw: Dict[Text, Any] = {},
+        **sparse_to_dense_kwargs: Any,
     ) -> None:
         super().__init__(
             name=f"concatenate_sparse_dense_features_{attribute}_{feature_type}"
@@ -69,11 +69,11 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         self.use_dense_dropout = dense_dropout
 
         if self.have_sparse_features:
-            if "name" not in sparse_to_dense_kw:
-                sparse_to_dense_kw[
+            if "name" not in sparse_to_dense_kwargs:
+                sparse_to_dense_kwargs[
                     "name"
                 ] = f"sparse_to_dense.{attribute}_{feature_type}"
-            self._sparse_to_dense = layers.DenseForSparse(**sparse_to_dense_kw)
+            self._sparse_to_dense = layers.DenseForSparse(**sparse_to_dense_kwargs)
 
             if self.use_sparse_dropout:
                 self._sparse_dropout = layers.SparseDropout(rate=dropout_rate)
@@ -146,12 +146,12 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
                 self.output_units = sentence_signature.units
 
     def call(
-        self, sequence_x: tf.Tensor, sentence_x: tf.Tensor, mask_text: tf.Tensor,
+        self, sequence: tf.Tensor, sentence: tf.Tensor, mask_text: tf.Tensor,
     ) -> tf.Tensor:
         if self.do_concatenation:
             if self.unify_dimensions_before_concat:
-                sequence_x = self.unify_dimensions_layers[SEQUENCE](sequence_x)
-                sentence_x = self.unify_dimensions_layers[SENTENCE](sentence_x)
+                sequence = self.unify_dimensions_layers[SEQUENCE](sequence)
+                sentence = self.unify_dimensions_layers[SENTENCE](sentence)
 
             # we need to concatenate the sequence features with the sentence features
             # we cannot use tf.concat as the sequence features are padded
@@ -163,18 +163,17 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             # (2) multiply by sentence features so that we get a matrix of
             #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
             #     for the sentence features
-            sentence_x = last * sentence_x
+            sentence = last * sentence
 
             # (3) add a zero to the end of sequence matrix to match the final shape
-            sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
+            sequence = tf.pad(sequence, [[0, 0], [0, 1], [0, 0]])
 
             # (4) sum up sequence features and sentence features
-            return sequence_x + sentence_x
-        else:
-            if self.return_just == SEQUENCE:
-                return sequence_x
-            elif self.return_just == SENTENCE:
-                return sentence_x
+            return sequence + sentence
+        elif self.return_just == SEQUENCE:
+            return sequence
+        elif self.return_just == SENTENCE:
+            return sentence
 
 
 # does:
@@ -206,7 +205,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
                     sparse_dropout=config[SPARSE_INPUT_DROPOUT],
                     dense_dropout=config[DENSE_INPUT_DROPOUT],
                     dense_concat_dimension=config[DENSE_DIMENSION][name],
-                    sparse_to_dense_kw=sparse_to_dense_layer_options,
+                    **sparse_to_dense_layer_options,
                 )
             else:
                 self.concat_sparse_dense[feature_type] = lambda features, training: None
@@ -256,12 +255,12 @@ class RasaInputLayer(tf.keras.layers.Layer):
         mask_text: tf.Tensor = None,
         training: bool = True,
     ) -> tf.Tensor:
-        sequence_x = self.concat_sparse_dense[SEQUENCE](sequence_features, training)
-        if sequence_x is not None and mask_sequence is not None:
-            sequence_x = sequence_x * mask_sequence
-        sentence_x = self.concat_sparse_dense[SENTENCE](sentence_features, training)
+        sequence = self.concat_sparse_dense[SEQUENCE](sequence_features, training)
+        if sequence is not None and mask_sequence is not None:
+            sequence = sequence * mask_sequence
+        sentence = self.concat_sparse_dense[SENTENCE](sentence_features, training)
 
-        return self.concat_seq_sent(sequence_x, sentence_x, mask_text)
+        return self.concat_seq_sent(sequence, sentence, mask_text)
 
 
 from rasa.utils.tensorflow.transformer import TransformerEncoder

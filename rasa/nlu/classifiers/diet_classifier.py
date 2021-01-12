@@ -1294,7 +1294,7 @@ class DIET(TransformerRasaModel):
             self.text_name, self.data_signature[self.text_name], self.config
         )
         if self.config[MASKED_LM]:
-            self._prepare_mask_lm_layers(self.text_name)
+            self._prepare_mask_lm_loss(self.text_name)
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
             self._tf_layers[
@@ -1312,7 +1312,7 @@ class DIET(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
-    def _prepare_mask_lm_layers(self, name: Text) -> None:
+    def _prepare_mask_lm_loss(self, name: Text) -> None:
         self._prepare_embed_layers(f"{name}_lm_mask")
         self._prepare_embed_layers(f"{name}_golden_token")
 

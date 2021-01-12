@@ -896,37 +896,11 @@ class TED(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
-            if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._tf_layers[
-                    f"{name}_sequence_layer"
-                ] = rasa_layers.RasaSequenceLayer(
-                    name, self.data_signature[name], self.config
-                )
-            elif SENTENCE in self.data_signature[name]:
-                self._tf_layers[f"{name}_input_layer"] = rasa_layers.RasaInputLayer(
-                    name, self.data_signature[name], self.config
-                )
-            else:
-                logger.debug(
-                    f"Creationg no feature combining layers for attribute '{name}' with data signature: {self.data_signature[name]}"
-                )
+            self._prepare_input_layers(name, self.data_signature[name])
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
-            if name in SEQUENCE_FEATURES_TO_ENCODE:
-                self._tf_layers[
-                    f"{name}_sequence_layer"
-                ] = rasa_layers.RasaSequenceLayer(
-                    name, self.label_signature[name], self.config
-                )
-            elif SENTENCE in self.label_signature[name]:
-                self._tf_layers[f"{name}_input_layer"] = rasa_layers.RasaInputLayer(
-                    name, self.label_signature[name], self.config
-                )
-            else:
-                logger.debug(
-                    f"Creationg no feature combining layers for attribute '{name}' with label signature: {self.label_signature[name]}"
-                )
+            self._prepare_input_layers(name, self.label_signature[name])
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
@@ -944,6 +918,40 @@ class TED(TransformerRasaModel):
 
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
+
+    def _prepare_input_layers(
+        self, attribute_name: Text, data_signature: Dict[Text, List[FeatureSignature]]
+    ) -> None:
+        if attribute_name in SEQUENCE_FEATURES_TO_ENCODE:
+            self._tf_layers[
+                f"{attribute_name}_sequence_layer"
+            ] = rasa_layers.RasaSequenceLayer(
+                attribute_name, data_signature, self.config
+            )
+        elif SENTENCE in data_signature:
+            sparse_to_dense_layer_options = {
+                "units": self.config[DENSE_DIMENSION][attribute_name],
+                "reg_lambda": self.config[REGULARIZATION_CONSTANT],
+                "name": f"sparse_to_dense.{attribute_name}_{SENTENCE}",
+            }
+
+            self._tf_layers[
+                f"{attribute_name}_sparse_dense_concat_layer"
+                # ] = rasa_layers.RasaInputLayer(attribute_name, data_signature, self.config)
+            ] = rasa_layers.ConcatenateSparseDenseFeatures(
+                attribute=attribute_name,
+                feature_type=SENTENCE,
+                data_signature=data_signature[SENTENCE],
+                dropout_rate=self.config[DROP_RATE],
+                sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+                dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+                dense_concat_dimension=self.config[DENSE_DIMENSION][attribute_name],
+                **sparse_to_dense_layer_options,
+            )
+        else:
+            logger.debug(
+                f"Creationg no input layers for '{attribute_name}' ({data_signature})"
+            )
 
     def _prepare_encoding_layers(self, name: Text) -> None:
         """Create ffnn layer for given attribute name. The layer is used just before
@@ -1089,7 +1097,12 @@ class TED(TransformerRasaModel):
         if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
             units = self.config[ENCODING_DIMENSION]
         else:
-            units = self._get_dense_units(tf_batch_data[attribute][SENTENCE], attribute)
+            # state-level attributes don't get fed into encoding layer, hence use just the
+            # output dimensionality after combining sparse & dense features
+            units = self._tf_layers[
+                f"{attribute}_sparse_dense_concat_layer"
+            ].output_units
+            # units = self._get_dense_units(tf_batch_data[attribute][SENTENCE], attribute)
 
         attribute_features = tf.zeros(
             (batch_dim, dialogue_dim, units), dtype=tf.float32
@@ -1235,13 +1248,9 @@ class TED(TransformerRasaModel):
         else:
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
-            attribute_features = self._tf_layers[f"{attribute}_input_layer"](
-                sequence_features=[],
-                sentence_features=tf_batch_data[attribute][SENTENCE],
-                mask_sequence=None,
-                mask_text=None,
-                training=self._training,
-            )
+            attribute_features = self._tf_layers[
+                f"{attribute}_sparse_dense_concat_layer"
+            ](features=tf_batch_data[attribute][SENTENCE], training=self._training)
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             attribute_features = self._tf_layers[f"encoding_layer.{attribute}"](
