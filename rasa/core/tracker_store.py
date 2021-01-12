@@ -21,7 +21,7 @@ from typing import (
 )
 
 from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError, NoCredentialsError
+from botocore.exceptions import ClientError, BotoCoreError
 import pymongo.errors
 import sqlalchemy.exc
 
@@ -67,7 +67,7 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 CONNECTION_ERRORS = (
-    NoCredentialsError,
+    BotoCoreError,
     pymongo.errors.ConnectionFailure,
     sqlalchemy.exc.OperationalError,
 )
