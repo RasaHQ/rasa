@@ -142,9 +142,10 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
     try:
         data = json.loads(f"{{{json_str}}}")
     except JSONDecodeError as e:
-        raise InvalidEntityFormatException(
-            f"Incorrect training data format ('{{{json_str}}}'). Make sure your "
-            f"data is valid. More info at {DOCS_URL_TRAINING_DATA_NLU}"
+        raise InvalidEntityFormatException.create_from(
+            e,
+            f"Incorrect training data format ('{{{json_str}}}'). "
+            f"More info at {DOCS_URL_TRAINING_DATA_NLU}",
         ) from e
 
     validation_utils.validate_training_data(data, schema.entity_dict_schema())

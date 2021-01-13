@@ -1,4 +1,6 @@
+import json
 from typing import Optional, Text
+
 import jsonschema
 
 
@@ -92,8 +94,14 @@ class SchemaValidationError(RasaException, jsonschema.ValidationError):
     """Raised if schema validation via `jsonschema` failed."""
 
 
-class InvalidEntityFormatException(RasaException):
+class InvalidEntityFormatException(RasaException, json.JSONDecodeError):
     """Raised if the format of an entity is invalid."""
+
+    @classmethod
+    def create_from(
+        cls, other: json.JSONDecodeError, msg: Text
+    ) -> "InvalidEntityFormatException":
+        return cls(msg, other.doc, other.pos)
 
 
 class ConnectionException(RasaException):
