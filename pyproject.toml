@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.2.2"
+version = "2.2.5"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -98,7 +98,7 @@ colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = ">=19.12.2,<21.0.0"
 sanic-cors = "^0.10.0b1"
-sanic-jwt = ">=1.3.2,<1.5.0"
+sanic-jwt = ">=1.3.2,<2.0"
 cloudpickle = ">=1.2,<1.5"
 multidict = "^4.6"
 aiohttp = "~3.6"
@@ -111,7 +111,6 @@ async_generator = "~1.10"
 SQLAlchemy = "~1.3.3"
 sklearn-crfsuite = "~0.3"
 psycopg2-binary = "~2.8.2"
-PyJWT = "~1.7"
 python-dateutil = "~2.8"
 tensorflow = "~2.3"
 tensorflow_hub = "~0.9"
@@ -164,6 +163,10 @@ gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
+
+[tool.poetry.dependencies.PyJWT]
+version = "^2.0.0"
+extras = [ "crypto",]
 
 [tool.poetry.dependencies.colorama]
 version = "^0.4.4"
