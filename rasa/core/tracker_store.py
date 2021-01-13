@@ -119,15 +119,13 @@ class TrackerStore:
         import pymongo.errors
         import sqlalchemy.exc
 
-        connection_errors = (
+        try:
+            return _create_from_endpoint_config(obj, domain, event_broker)
+        except (
             BotoCoreError,
             pymongo.errors.ConnectionFailure,
             sqlalchemy.exc.OperationalError,
-        )
-
-        try:
-            return _create_from_endpoint_config(obj, domain, event_broker)
-        except connection_errors as error:
+        ) as error:
             raise ConnectionException("Cannot connect to tracker store.") from error
 
     def get_or_create_tracker(

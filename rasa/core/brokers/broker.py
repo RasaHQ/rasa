@@ -3,9 +3,6 @@ import logging
 from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union
 
-import aio_pika.exceptions
-import sqlalchemy.exc
-
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.exceptions import ConnectionException
@@ -29,14 +26,12 @@ class EventBroker:
         import aio_pika.exceptions
         import sqlalchemy.exc
 
-        connection_errors = (
-            sqlalchemy.exc.OperationalError,
-            aio_pika.exceptions.AMQPConnectionError,
-        )
-
         try:
             return await _create_from_endpoint_config(obj, loop)
-        except connection_errors as error:
+        except (
+            sqlalchemy.exc.OperationalError,
+            aio_pika.exceptions.AMQPConnectionError,
+        ) as error:
             raise ConnectionException("Cannot connect to event broker.") from error
 
     @classmethod
