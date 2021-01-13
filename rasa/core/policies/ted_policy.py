@@ -286,16 +286,6 @@ class TEDPolicy(Policy):
             SingleStateFeaturizer(), max_history=max_history
         )
 
-    def init_split_entities(self, split_entities_config):
-        """Initialise the behaviour for splitting entities by comma (or not)."""
-        if isinstance(split_entities_config, bool):
-            split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
-        else:
-            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[
-                SPLIT_ENTITIES_BY_COMMA
-            ]
-        return split_entities_config
-
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
@@ -308,8 +298,9 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-        self.split_entities_config = self.init_split_entities(
-            kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE)
+        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
+            kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
+            self.defaults[SPLIT_ENTITIES_BY_COMMA],
         )
 
         if not featurizer:

@@ -23,7 +23,12 @@ from rasa.utils.tensorflow.constants import (
     NUM_TRANSFORMER_LAYERS,
     DENSE_DIMENSION,
 )
-from rasa.shared.nlu.constants import ACTION_NAME, INTENT, ENTITIES
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    INTENT,
+    ENTITIES,
+    SPLIT_ENTITIES_BY_COMMA,
+)
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.core.constants import DIALOGUE
 
@@ -335,3 +340,12 @@ def override_defaults(
                 config[key] = custom[key]
 
     return config
+
+
+def init_split_entities(split_entities_config, default_split_entity):
+    """Initialise the behaviour for splitting entities by comma (or not)."""
+    if isinstance(split_entities_config, bool):
+        split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
+    else:
+        split_entities_config[SPLIT_ENTITIES_BY_COMMA] = default_split_entity
+    return split_entities_config
