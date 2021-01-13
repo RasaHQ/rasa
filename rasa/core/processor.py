@@ -405,7 +405,9 @@ class MessageProcessor:
                 f"Invalid entity specification: {entities}. Assuming no entities."
             )
             entity_list = []
-        tracker.update(UserUttered.create_external(intent_name, entity_list), self.domain)
+        tracker.update(
+            UserUttered.create_external(intent_name, entity_list), self.domain
+        )
         await self._predict_and_execute_next_action(output_channel, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
