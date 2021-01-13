@@ -3,7 +3,11 @@ import jsonschema
 
 
 class RasaException(Exception):
-    """Base exception class for all errors raised by Rasa Open Source."""
+    """Base exception class for all errors raised by Rasa Open Source.
+
+    These exceptions results from invalid use cases and will be reported
+    to the users, but will be ignored in telemetry.
+    """
 
 
 class RasaCoreException(RasaException):
