@@ -1,0 +1,272 @@
+$backgroundColor: rgba(200, 200, 200, 0.9);
+$chromeColor: rgba(52, 61, 78, 1);
+$chromeColor2: white;
+$chromeColor3: grey;
+$bubbleColor: rgba(255, 255, 255, 0.8);
+$textColor: rgba(52, 61, 78, 1);
+$linkColor: #3498db;
+
+.chatroom {
+  width: 100%;
+  height: 600px;
+  color: $textColor;
+  max-height: 90vh;
+  background-color: $backgroundColor;
+  border-radius: 3px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  letter-spacing: normal;
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow: 0 0 0 2px rgba(white, 0.8);
+
+  * {
+    box-sizing: border-box;
+  }
+
+  &.closed {
+    height: 40px;
+  }
+
+  h3 {
+    background-color: $chromeColor;
+    color: #fff;
+    margin: 0;
+    height: 40px;
+    font-weight: 600;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .chats {
+    box-sizing: border-box;
+    padding: 20px;
+    margin: 0;
+    height: calc(100% - 80px);
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+
+    .chat {
+      background: $bubbleColor;
+      position: relative;
+      padding: 5px 13px;
+      font-size: 14px;
+      border-radius: 10px;
+      list-style: none;
+      float: left;
+      clear: both;
+      margin: 10px 0 0 0;
+      max-width: 90%;
+
+      img {
+        max-width: 100%;
+        vertical-align: middle;
+      }
+
+      &.left {
+        border-bottom-left-radius: 0;
+      }
+
+      &.right {
+        float: right;
+        clear: both;
+        border-bottom-right-radius: 0;
+      }
+
+      .text {
+        word-wrap: break-word;
+      }
+
+      &.chat-img {
+        padding: 5px;
+      }
+
+      a {
+        text-decoration: none;
+        color: $linkColor;
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 1.5em;
+      }
+      ul li,
+      ol li {
+        padding-left: 0;
+      }
+
+      &.waiting {
+        margin: 10px 0;
+        background: transparent;
+        padding: 0;
+
+        @keyframes fade {
+          from {
+            opacity: 1;
+          }
+
+          to {
+            opacity: 0.3;
+          }
+        }
+
+        span {
+          font-size: 1.5em;
+          animation-name: fade;
+          animation-duration: 0.8s;
+          animation-iteration-count: infinite;
+          animation-direction: alternate;
+          animation-timing-function: ease-in-out;
+        }
+        span:nth-child(1) {
+          animation-delay: 0s;
+        }
+        span:nth-child(2) {
+          animation-delay: 0.4s;
+        }
+        span:nth-child(3) {
+          animation-delay: 0.8s;
+        }
+      }
+    }
+
+    .time {
+      list-style: none;
+      clear: both;
+      height: 10px;
+      font-size: 10px;
+      color: desaturate($textColor, 50%);
+      margin: 5px 0 20px 0;
+
+      &.left {
+        float: left;
+      }
+      &.right {
+        float: right;
+      }
+    }
+
+    .chat-buttons {
+      position: relative;
+      padding: 0;
+      font-size: 14px;
+      list-style: none;
+      clear: both;
+      margin: 10px 0;
+      text-align: center;
+
+      .chat-button {
+        display: inline-block;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin: 3px;
+
+        background-color: $chromeColor;
+        color: $chromeColor2;
+        border: 2px solid $chromeColor2;
+        padding: 5px 10px;
+        letter-spacing: normal;
+        border-radius: 5px;
+
+        &:hover,
+        &.chat-button-selected {
+          background-color: rgba($chromeColor, 0.6);
+          color: $chromeColor2;
+        }
+        &.chat-button-disabled {
+          color: $chromeColor3;
+          border: 2px solid $chromeColor3;
+        }
+      }
+    }
+  }
+
+  .input {
+    height: 40px;
+    width: 100%;
+    margin: 0;
+    padding: 0 5px;
+    background-color: $chromeColor;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    input[type="text"] {
+      background-color: rgba(white, 0.8);
+      outline: 0;
+      border: 1px solid $chromeColor2;
+      border-right: none;
+      color: $textColor;
+      padding: 0 5px;
+      border-top-left-radius: 3px;
+      border-bottom-left-radius: 3px;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      height: 30px;
+      flex: 4;
+      box-sizing: border-box;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+
+      &:focus {
+        box-shadow: none;
+        background-color: white;
+      }
+    }
+
+    input[type="submit"] {
+      display: inline-block;
+      background: $chromeColor;
+      border: 1px solid $chromeColor2;
+      color: $chromeColor2;
+      height: 30px;
+      min-width: 70px;
+      line-height: 1;
+      text-align: center;
+      padding: 0;
+      font-size: 12px;
+      flex: 1;
+      box-shadow: none;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-top-right-radius: 3px;
+      border-bottom-right-radius: 3px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      outline: none;
+      font-weight: 600;
+      text-transform: uppercase;
+
+      &:hover {
+        background: $bubbleColor;
+      }
+    }
+  }
+
+  #speech-input {
+    height: 30px;
+    width: 30px;
+    margin-left: 5px;
+    background: $chromeColor;
+    border: 1px solid $chromeColor2;
+    color: $chromeColor2;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: $bubbleColor;
+    }
+  }
+
+  .vertical-center {
+    vertical-align: middle;
+  }
+}

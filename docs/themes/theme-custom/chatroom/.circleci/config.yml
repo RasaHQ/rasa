@@ -1,0 +1,97 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:9.11-stretch
+    working_directory: ~/repo
+    steps:
+      - checkout
+
+      - run:
+          name: Install tools
+          command: |
+            sudo apt-get update
+            sudo apt-get install python3-pip jq -y
+            sudo pip3 install awscli --upgrade
+            aws --version
+
+      - run:
+          name: Install dependencies and build
+          command: yarn install && yarn build
+
+      - run:
+          name: Check Flow types
+          command: yarn flow
+
+      - run:
+          name: Publish NPM module
+          command: |
+            if [[ -n "$CIRCLE_TAG" ]]; then
+              echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+              npm pub --access=public
+            else
+              echo "Skipping NPM publication for non-tags"
+            fi
+
+      - run:
+          name: Compress files
+          command: |
+            find . \
+              -type f \
+              -not -path "./node_modules/*" \
+              -not -path "./.cache/*" \
+              -not -path "./.git/*" \
+              -not -path "./.circleci/*" \
+              -exec gzip -9 '{}' \; \
+              -exec mv '{}.gz' '{}' \; \
+              -exec echo '{}' \;
+
+      - run:
+          name: Deploy to AWS S3
+          command: |
+            if [[ -n "$CIRCLE_TAG" ]]; then
+              aws s3 sync \
+                . \
+                s3://npm-scalableminds/$(zcat package.json | jq -r .name)@$(zcat package.json | jq -r .version)/ \
+                --exclude "node_modules/*" \
+                --exclude ".cache/*" \
+                --exclude ".git/*" \
+                --exclude ".circleci/*" \
+                --acl public-read \
+                --region eu-central-1 \
+                --content-encoding gzip
+
+              aws s3 sync \
+                . \
+                s3://npm-scalableminds/$(zcat package.json | jq -r .name)/ \
+                --exclude "node_modules/*" \
+                --exclude ".cache/*" \
+                --exclude ".git/*" \
+                --exclude ".circleci/*" \
+                --acl public-read \
+                --region eu-central-1 \
+                --content-encoding gzip
+
+            else
+              aws s3 sync \
+                . \
+                s3://npm-scalableminds/$(zcat package.json | jq -r .name)@$CIRCLE_BRANCH/ \
+                --exclude "node_modules/*" \
+                --exclude ".cache/*" \
+                --exclude ".git/*" \
+                --exclude ".circleci/*" \
+                --acl public-read \
+                --region eu-central-1 \
+                --content-encoding gzip
+            fi
+
+workflows:
+  version: 2
+  circleci_build:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/

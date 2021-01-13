@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" href="./dist/Chatroom.css">
+    <link rel="stylesheet" type="text/css" href="./index.css">
+    <title>Chatroom Demo</title>
+  </head>
+  <body>
+    <div class="chat-container"></div>
+    <div style="text-align: center;">
+      <button class="chat-demo-button" id="demo-button">Start Demo</button>
+      <button class="chat-demo-button" id="clear-button">Clear</button>
+    </div>
+    <script src="./dist/Chatroom.js"></script>
+    <script type="text/javascript">
+window.chatroom = new window.DemoChatroom({
+  title: "Chat with a bot",
+  container: document.querySelector(".chat-container"),
+});
+
+window.demoMessages = [
+  {
+    message: { type: "text", text: "Hello how can I help you?" },
+    username: "bot"
+  },
+  {
+    message: { type: "text", text: "I need glue" },
+    username: "user"
+  },
+  {
+    message: {
+      type: "text",
+      text:
+        "We have many sorts of adhesives. Let me help you find the right one."
+    },
+    username: "bot"
+  },
+  {
+    message: {
+      type: "text",
+      text: "Are you bonding magnets?"
+    },
+    username: "bot"
+  },
+  {
+    message: {
+      type: "button",
+      buttons: [
+        { title: "Yes", payload: "Yes" },
+        { title: "No", payload: "No" }
+      ]
+    },
+    username: "bot"
+  },
+  {
+    message: { type: "text", text: "No" },
+    username: "user"
+  }
+];
+
+function startDemo() {
+  window.chatroom.demo(window.demoMessages);
+}
+function clearDemo() {
+  window.chatroom.clear();
+}
+document.getElementById("demo-button").addEventListener("click", startDemo, false);
+document.getElementById("clear-button").addEventListener("click", clearDemo, false);
+window.addEventListener("load", startDemo, false);
+</script>
+  </body>
+</html>

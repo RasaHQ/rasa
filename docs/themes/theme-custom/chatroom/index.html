@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" href="./dist/Chatroom.css">
+    <link rel="stylesheet" type="text/css" href="./index.css">
+    <title>Chatroom Example</title>
+  </head>
+  <body>
+    <div class="chat-container"></div>
+    <script src="./dist/Chatroom.js"></script>
+    <script type="text/javascript">
+window.chatroom = new window.Chatroom({
+  title: "Chat with a bot",
+  container: document.querySelector(".chat-container"),
+  welcomeMessage: "Nice to meet you.",
+  host: "http://localhost:5005",
+  speechRecognition: "en-US",
+  voiceLang: "en-US"
+});
+window.chatroom.openChat();
+</script>
+  </body>
+</html>
