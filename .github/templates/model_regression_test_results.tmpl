@@ -7,33 +7,27 @@ a markdown table with a summary of the tests.
 */ -}}
 {{- /*
 
-The accuracy_tpl template returns data for the accuracy field.
+The print_result template returns data depends on available fields.
 
 */ -}}
-{{ define "accuracy_tpl" -}}
-{{- if has .master "accuracy" -}}
-{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.master.accuracy | math.Sub .branch.accuracy) }})
-{{- else -}}
-{{ printf "%.4f" .branch.accuracy }} (`no data`)
-{{- end -}}
-{{- end -}}
-{{- /*
-
-The micro_avg_tpl template returns data for the "micro avg" field.
-
-*/ -}}
-{{ define "micro_avg_tpl" -}}
-{{- if has (index .master "micro avg") "f1-score" -}}
+{{ define "print_result" -}}
+{{- if and (has (index .branch "micro avg") "f1-score") (has (index .master "micro avg") "f1-score") -}}
 {{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index .master "micro avg") "f1-score") | math.Sub (index (index .branch "micro avg") "f1-score")) }})
-{{- else -}}
+{{- else if and (has .branch "accuracy") (has .master "accuracy") -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.master.accuracy | math.Sub .branch.accuracy) }})
+{{- else if and (has .branch "accuracy") (has (index .master "micro avg") "f1-score") -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" ((index (index .master "micro avg") "f1-score") | math.Sub .branch.accuracy) }})
+{{- else if and (has (index .branch "micro avg") "f1-score") (has .master "accuracy") -}}
+{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" (.master.accuracy | math.Sub (index (index .branch "micro avg") "f1-score")) }})
+{{- else if (has .branch "accuracy") -}}
+{{ printf "%.4f" .branch.accuracy }} (`no data`)
+{{- else if has (index .branch "micro avg") "f1-score" -}}
 {{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} (`no data`)
+{{- else -}}
+`no data`
 {{- end -}}
 {{- end -}}
-{{- /*
 
-Render Markdown with results.
-
-*/ -}}
 {{- $results_master := (datasource "results_master") -}}
 {{ range $dataset, $config := (datasource "data")}}
 {{- $dataset_master := (index $results_master $dataset) -}}
@@ -42,7 +36,7 @@ Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (k
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
 |---------------|-----------------|-----------------|-------------------|
 {{ range $config_name, $config_data := $config -}}
-| `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |
+| `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}`|
 {{- if has $config_data "intent_classification" -}}
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
 {{- $intent_class_master := $config_data.intent_classification -}}
@@ -50,7 +44,7 @@ Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (k
 {{- $intent_class_master = (index $dataset_master $config_name).intent_classification -}}
 {{- end -}}
 {{- $intent_class := index $config_data.intent_classification -}}
-{{- if has (index $intent_class "micro avg") "f1-score" -}}{{ template "micro_avg_tpl" (dict "branch" $intent_class "master" $intent_class_master) }}{{- else if has $intent_class "accuracy" -}}{{ template "accuracy_tpl" (dict "branch" $intent_class "master" $intent_class_master) }}{{- else -}}`no data`{{- end -}} |
+{{ template "print_result" (dict "branch" $intent_class "master" $intent_class_master) }}|
 {{- else -}}
 `no data`|
 {{- end -}}
@@ -61,7 +55,7 @@ Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (k
 {{- $entity_class_master = (index $dataset_master $config_name).entity_prediction -}}
 {{- end -}}
 {{- $entity_class := $config_data.entity_prediction -}}
-{{- if has (index $entity_class "micro avg") "f1-score" -}}{{ template "micro_avg_tpl" (dict "branch" $entity_class "master" $entity_class_master) }}{{- else if has $entity_class "accuracy" -}}{{ template "accuracy_tpl" (dict "branch" $entity_class "master" $entity_class_master) }}{{- else -}}`no data`{{- end -}} |
+{{ template "print_result" (dict "branch" $entity_class "master" $entity_class_master) }}|
 {{- else -}}
 `no data`|
 {{- end -}}
@@ -72,7 +66,7 @@ Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (k
 {{- $response_class_master = (index $dataset_master $config_name).response_selection -}}
 {{- end -}}
 {{- $response_class := $config_data.response_selection -}}
-{{- if has (index $response_class "micro avg") "f1-score" -}}{{ template "micro_avg_tpl" (dict "branch" $response_class "master" $response_class_master) }}{{- else if has $response_class "accuracy" -}}{{ template "accuracy_tpl" (dict "branch" $response_class "master" $response_class_master) }}{{- else -}}`no data`{{- end -}} |
+{{ template "print_result" (dict "branch" $response_class "master" $response_class_master) }}|
 {{- else -}}
 `no data`|
 {{- end }}
