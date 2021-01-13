@@ -31,7 +31,9 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
-    EXTRACTOR, SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    EXTRACTOR,
+    SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
@@ -306,8 +308,9 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-        self.split_entities_config = self.init_split_entities(kwargs.get(SPLIT_ENTITIES_BY_COMMA,
-                                        SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE))
+        self.split_entities_config = self.init_split_entities(
+            kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE)
+        )
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
@@ -683,7 +686,7 @@ class TEDPolicy(Policy):
             tokens,
             predicted_tags,
             self.split_entities_config,
-            confidences=confidence_values
+            confidences=confidence_values,
         )
 
         # add the extractor name

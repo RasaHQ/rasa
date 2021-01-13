@@ -176,6 +176,25 @@ If you want to fine-tune your model, start by modifying the following parameters
   set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
   to learn.
 
+* `split_entities_by_comma`:
+  This parameter defines whether adjacent entities separated by a comma should be treated as one, or split. For example,
+  whether the entities with type ingredients "apple, banana" should be split into "apple" and "banana". Can either be
+  `True`/`False` globally:
+  ```yaml-rasa title="config.yml"
+  policies:
+    - name: TEDPolicy
+      split_entities_by_comma: True
+  ```
+  or set per entity type, such as:
+  ```yaml-rasa title="config.yml"
+  policies:
+  policies:
+    - name: TEDPolicy
+      split_entities_by_comma:
+        address: False
+        ingredients: True
+  ```
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 

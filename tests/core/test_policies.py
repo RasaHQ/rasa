@@ -18,8 +18,12 @@ from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
-from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY, \
-    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE, SPLIT_ENTITIES_BY_COMMA
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    INTENT_NAME_KEY,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    SPLIT_ENTITIES_BY_COMMA,
+)
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
@@ -560,18 +564,30 @@ class TestTEDPolicy(PolicyTestCollection):
     @pytest.mark.parametrize(
         "split_entities_config, expected_initialized_config",
         [
-            (SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-             {SPLIT_ENTITIES_BY_COMMA:SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE}),
-            ({"address":False, "ingredients": True}, {"address":False, "ingredients": True, SPLIT_ENTITIES_BY_COMMA:SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE}),
+            (
+                SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+                {SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE},
+            ),
+            (
+                {"address": False, "ingredients": True},
+                {
+                    "address": False,
+                    "ingredients": True,
+                    SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+                },
+            ),
         ],
     )
     def test_init_split_entities_config(
-            self,
-            trained_policy: TEDPolicy,
-            split_entities_config: Any,
-            expected_initialized_config: Dict[(str, bool)]
+        self,
+        trained_policy: TEDPolicy,
+        split_entities_config: Any,
+        expected_initialized_config: Dict[(str, bool)],
     ):
-        assert trained_policy.init_split_entities(split_entities_config=split_entities_config)
+        assert trained_policy.init_split_entities(
+            split_entities_config=split_entities_config
+        )
+
 
 class TestTEDPolicyMargin(TestTEDPolicy):
     def create_policy(
