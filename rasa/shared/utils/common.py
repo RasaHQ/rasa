@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text] = None, ensure_class: bool = True
+    module_path: Text, lookup_path: Optional[Text] = None
 ) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
@@ -24,9 +24,6 @@ def class_from_module_path(
                      or the name of the class in the local / global scope.
         lookup_path: a path where to load the class from, if it cannot
                      be found in the local / global scope.
-        ensure_class: a boolean that will ensure that the loaded Python class
-                      is actually class if `True`. When acticated, a deprecation
-                      warning is raised when the loaded object is not a class.
 
     Returns:
         a Python class
@@ -50,7 +47,7 @@ def class_from_module_path(
     if klass is None:
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
-    if ensure_class and not inspect.isclass(klass):
+    if not inspect.isclass(klass):
         rasa.shared.utils.io.raise_deprecation_warning(
             f"`class_from_module_path()` is expected to return a class, "
             f"but {module_path} is not one. "
