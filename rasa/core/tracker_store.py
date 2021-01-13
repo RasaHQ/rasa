@@ -518,7 +518,7 @@ class DynamoTrackerStore(TrackerStore):
         )
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the DynamoTrackerStore."""
+        """Returns sender_ids of the `DynamoTrackerStore`."""
         return [
             i["sender_id"]
             for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
