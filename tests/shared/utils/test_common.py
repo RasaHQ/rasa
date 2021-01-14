@@ -148,9 +148,7 @@ async def test_cached_method_with_async_function():
     "module_path, lookup_path, outcome",
     [
         ("rasa.shared.core.domain.Domain", None, "Domain"),
-        # lookup in locals()
-        ("Domain", None, "Domain"),
-        # not in locals but in lookup_path
+        # lookup_path
         ("Event", "rasa.shared.core.events", "Event"),
     ],
 )
