@@ -15,6 +15,8 @@ from tensorflow.python.keras.engine import training
 from tensorflow.python.keras.engine import training_utils
 from tensorflow.python.keras.engine import data_adapter
 from tensorflow.python.keras.utils import version_utils
+from tensorflow.python.keras.utils import tf_inspect
+from tensorflow.python.keras.engine import base_layer
 from tensorflow.python.eager import context
 from tensorflow.python.keras.engine.data_adapter import DataHandler
 
@@ -31,7 +33,6 @@ class TmpKerasModel(tf.keras.models.Model):
     # This code is adapted from
     # https://github.com/tensorflow/tensorflow/blob/v2.3.1/tensorflow/python/keras/engine/training.py#L824-L1146
 
-    @training.enable_multi_worker
     def fit(
         self,
         x: Optional[
@@ -107,7 +108,7 @@ class TmpKerasModel(tf.keras.models.Model):
             ValueError: In case of mismatch between the provided input data
                 and what the model expects.
         """
-        training._keras_api_gauge.get_cell("fit").set(True)
+        base_layer.keras_api_gauge.get_cell("fit").set(True)
         # Legacy graph support is contained in `training_v1.Model`.
         version_utils.disallow_legacy_graph("Model", "fit")
         self._assert_compile_was_called()
@@ -172,31 +173,38 @@ class TmpKerasModel(tf.keras.models.Model):
             data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access
                 initial_epoch
             )
+            logs = None
             for epoch, iterator in data_handler.enumerate_epochs():
                 self.reset_metrics()
                 callbacks.on_epoch_begin(epoch)
                 with data_handler.catch_stop_iteration():
                     for step in data_handler.steps():
                         with training.trace.Trace(
-                            "TraceContext",
-                            graph_type="train",
+                            "train",
                             epoch_num=epoch,
                             step_num=step,
                             batch_size=batch_size,
+                            _r=1,
                         ):
                             callbacks.on_train_batch_begin(step)
-                            tmp_logs = train_function(iterator)
+                            tmp_logs = self.train_function(iterator)
                             if data_handler.should_sync:
                                 context.async_wait()
                             logs = tmp_logs  # No error, now safe to assign to logs.
                             end_step = step + data_handler.step_increment
                             callbacks.on_train_batch_end(end_step, logs)
+                            if self.stop_training:
+                                break
+
+                if logs is None:
+                    raise ValueError("Expect x to be a non-empty array or dataset.")
                 epoch_logs = copy.copy(logs)
 
                 # Run validation.
                 if validation_data and self._should_eval(epoch, validation_freq):
                     # Create data_handler for evaluation and cache it.
                     if getattr(self, "_eval_data_handler", None) is None:
+                        self._fit_frame = tf_inspect.currentframe()
                         self._eval_data_handler = CustomDataHandler(
                             x=val_x,
                             y=val_y,
@@ -234,6 +242,7 @@ class TmpKerasModel(tf.keras.models.Model):
             # If eval data_hanlder exists, delete it after all epochs are done.
             if getattr(self, "_eval_data_handler", None) is not None:
                 del self._eval_data_handler
+                del self._fit_frame
             callbacks.on_train_end(logs=training_logs)
             return self.history
 
