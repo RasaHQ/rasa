@@ -1,9 +1,8 @@
 import pytest
 
-from jsonschema import ValidationError
 from pep440_version_utils import Version
 
-from rasa.shared.exceptions import YamlException
+from rasa.shared.exceptions import YamlException, SchemaValidationError
 import rasa.shared.utils.io
 import rasa.shared.utils.validation as validation_utils
 import rasa.utils.io as io_utils
@@ -71,7 +70,7 @@ def test_example_training_data_is_valid():
     ],
 )
 def test_validate_training_data_is_throwing_exceptions(invalid_data):
-    with pytest.raises(ValidationError):
+    with pytest.raises(SchemaValidationError):
         validation_utils.validate_training_data(
             invalid_data, schema.rasa_nlu_data_schema()
         )
@@ -123,7 +122,7 @@ def test_url_data_format():
     ],
 )
 def test_validate_entity_dict_is_throwing_exceptions(invalid_data):
-    with pytest.raises(ValidationError):
+    with pytest.raises(SchemaValidationError):
         validation_utils.validate_training_data(
             invalid_data, schema.entity_dict_schema()
         )
