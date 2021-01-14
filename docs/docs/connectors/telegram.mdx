@@ -41,3 +41,48 @@ telegram:
 
 Restart your Rasa X or Rasa Open Source server
 to make the new channel endpoint available for Telegram to send messages to.
+
+
+## Supported Response Attachments
+
+In addition to standard `text:` responses, this channel also supports the following components from the [Telegram API](https://core.telegram.org/bots/api/#message):
+
+- `button` arguments:
+  - button_type: inline | vertical | reply
+- `custom` arguments:
+  - photo
+  - audio
+  - document
+  - sticker
+  - video
+  - video_note
+  - animation
+  - voice
+  - media
+  - latitude, longitude (location)
+  - latitude, longitude, title, address (venue)
+  - phone_number
+  - game_short_name
+  - action
+
+Examples:
+
+```yaml-rasa
+
+  utter_ask_transfer_form_confirm:
+  - buttons:
+    - payload: /affirm
+      title: Yes
+    - payload: /deny
+      title: No, cancel the transaction
+    button_type: vertical
+    text: Would you like to transfer {currency}{amount_of_money} to {PERSON}?
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+```
+
+```yaml-rasa
+  utter_giraffe_sticker:
+  - text: Here's my giraffe sticker!
+    custom:
+      sticker: "https://github.com/TelegramBots/book/raw/master/src/docs/sticker-fred.webp"
+```
