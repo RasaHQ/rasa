@@ -1960,7 +1960,7 @@ def test_hide_rule_turn():
     )
     policy = RulePolicy()
     policy.train(
-        [GREET_RULE, chitchat_story,], domain, RegexInterpreter(),
+        [GREET_RULE, chitchat_story], domain, RegexInterpreter(),
     )
 
     conversation_events = [
@@ -2114,6 +2114,84 @@ def test_hide_rule_turn_with_slots():
             USER: {TEXT: "haha", INTENT: some_other_action},
             PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
         },
+    ]
+
+
+def test_hide_rule_turn_no_last_action_listen():
+    action_after_chitchat = "action_after_chitchat"
+    chitchat = "chitchat"
+    action_chitchat = "action_chitchat"
+    followup_on_chitchat = "followup_on_chitchat"
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {chitchat}
+        actions:
+        - {action_chitchat}
+        - {action_after_chitchat}
+        slots:
+          {followup_on_chitchat}:
+            type: bool
+    """
+    )
+    simple_rule_no_last_action_listen = TrackerWithCachedStates.from_events(
+        "simple rule without action listen in the end",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(action_chitchat),
+            SlotSet(followup_on_chitchat, True),
+            ActionExecuted(action_after_chitchat),
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    chitchat_story = TrackerWithCachedStates.from_events(
+        "chitchat story",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": chitchat}),
+            ActionExecuted(action_chitchat),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    policy = RulePolicy()
+    policy.train(
+        [simple_rule_no_last_action_listen, chitchat_story], domain, RegexInterpreter(),
+    )
+
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": chitchat}),
+        ActionExecuted(action_chitchat),
+        SlotSet(followup_on_chitchat, True),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, action_after_chitchat)
+    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+    assert followup_on_chitchat in prediction.optional_events[0].only_rule_slots
+
+    conversation_events += prediction.optional_events
+    conversation_events += [
+        ActionExecuted(action_after_chitchat),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    states = tracker.past_states(domain, for_only_ml_policy=True)
+    assert states == [
+        {},
+        {USER: {INTENT: chitchat}, PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME}},
+        {USER: {INTENT: chitchat}, PREVIOUS_ACTION: {ACTION_NAME: action_chitchat}},
     ]
 
 

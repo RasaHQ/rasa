@@ -1139,7 +1139,7 @@ class Domain:
                         rasa.shared.core.constants.PREVIOUS_ACTION
                     ] = last_ml_action_sub_state
 
-            states.append(state)
+            states.append(self._clean_state(state))
 
         return states
 
