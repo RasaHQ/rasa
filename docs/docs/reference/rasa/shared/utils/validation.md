@@ -55,7 +55,7 @@ Validate rasa training data format to ensure proper training.
 
 **Raises**:
 
-  ValidationError if validation fails.
+  SchemaValidationError if validation fails.
 
 #### validate\_training\_data\_format\_version
 
