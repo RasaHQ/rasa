@@ -1,7 +1,6 @@
 import datetime
 
 import tensorflow as tf
-import tensorflow_addons as tfa
 import numpy as np
 import logging
 import os
@@ -1068,7 +1067,7 @@ class TransformerRasaModel(RasaModel):
 
         if num_layers > 0:
             # apply activation
-            outputs = tfa.activations.gelu(outputs)
+            outputs = tf.nn.gelu(outputs)
 
         return outputs, inputs, seq_ids, lm_mask_bool
 
