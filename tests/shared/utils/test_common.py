@@ -5,8 +5,8 @@ from unittest.mock import Mock
 import pytest
 from _pytest.recwarn import WarningsRecorder
 
+import rasa.shared.core.domain
 import rasa.shared.utils.common
-from rasa.shared.core.domain import Domain, State
 
 
 def test_all_subclasses():
@@ -178,8 +178,8 @@ def test_class_from_module_path_not_found(
 @pytest.mark.parametrize(
     "module_path, result, outcome",
     [
-        ("rasa.shared.core.domain.Domain", Domain, True),
-        ("rasa.shared.core.domain.State", State, False),
+        ("rasa.shared.core.domain.Domain", rasa.shared.core.domain.Domain, True),
+        ("rasa.shared.core.domain.logger", rasa.shared.core.domain.logger, False),
     ],
 )
 def test_class_from_module_path_ensure_class(
