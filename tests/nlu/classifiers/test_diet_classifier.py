@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import Mock
 from typing import List, Text, Dict, Any
 
+import rasa
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -38,6 +39,7 @@ from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
+from rasa.core.agent import Agent
 
 
 def test_compute_default_label_features():
@@ -507,41 +509,23 @@ async def test_train_persist_load_with_composite_entities(
 
 
 async def test_process_gives_diagnostic_data(
-    component_builder: ComponentBuilder, tmp_path: Path
+    component_builder: ComponentBuilder, trained_nlu_moodbot_path: Text,
 ):
     """Tests if processing a message returns attention weights as numpy array."""
-
-    _config = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", RANDOM_SEED: 1, EPOCHS: 1},
-            ],
-            "language": "en",
-        }
-    )
-
-    (trainer, trained, persisted_path) = await train(
-        _config,
-        path=str(tmp_path),
-        data="data/test/many_intents.md",
-        component_builder=component_builder,
-    )
-
-    assert trainer.pipeline
-    assert trained.pipeline
-
-    loaded = Interpreter.load(persisted_path, component_builder)
+    with rasa.model.unpack_model(trained_nlu_moodbot_path) as unpacked_model_directory:
+        _, nlu_model_directory = rasa.model.get_model_subdirectories(
+            unpacked_model_directory
+        )
+        interpreter = Interpreter.load(nlu_model_directory, component_builder)
 
     message = Message(data={TEXT: "hello"})
-    for component in loaded.pipeline:
+    for component in interpreter.pipeline:
         component.process(message)
 
     diagnostic_data = message.get(DIAGNOSTIC_DATA)
 
     # The last component is DIETClassifier, which should add attention weights
-    name = "component_2_DIETClassifier"
+    name = f"component_{len(interpreter.pipeline) - 1}_DIETClassifier"
     assert isinstance(diagnostic_data, dict)
     assert name in diagnostic_data
     assert "attention_weights" in diagnostic_data[name]
