@@ -631,7 +631,15 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
+        ignore_errors=[
+            # std lib errors
+            KeyboardInterrupt,  # user hit the interrupt key (Ctrl+C)
+            MemoryError,  # machine is running out of memory
+            NotImplementedError,  # user is using a feature that is not implemented
+            asyncio.CancelledError,  # an async operation has been cancelled by the user
+            # expected Rasa errors
+            RasaException,
+        ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
