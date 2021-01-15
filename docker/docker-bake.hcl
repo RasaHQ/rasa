@@ -14,6 +14,10 @@ variable "BASE_MITIE_IMAGE_HASH" {
   default = "localdev"
 }
 
+group "base-images" {
+  targets = ["base", "base-mitie"]
+}
+
 target "base" {
   dockerfile = "docker/Dockerfile.base"
   tags       = ["${IMAGE_NAME}:base-${IMAGE_TAG}"]

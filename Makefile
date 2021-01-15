@@ -1,4 +1,4 @@
-.PHONY: clean test lint init docs
+.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
 JOBS ?= 1
 
@@ -178,3 +178,33 @@ livedocs:
 
 release:
 	poetry run python scripts/release.py
+
+build-docker:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl default
+
+build-docker-full:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base-images && \
+	docker buildx bake -f docker/docker-bake.hcl full
+
+build-docker-mitie-en:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base-images && \
+	docker buildx bake -f docker/docker-bake.hcl mitie-en
+
+build-docker-spacy-en:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl spacy-en
+
+build-docker-spacy-de:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl spacy-de
