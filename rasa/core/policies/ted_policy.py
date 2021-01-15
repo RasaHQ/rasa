@@ -1214,7 +1214,6 @@ class TED(TransformerRasaModel):
                 sentence_features=tf_batch_data[attribute][SENTENCE],
                 mask_sequence=mask_sequence_text,
                 mask=mask_text,
-                name=attribute,
                 training=self._training,
                 masked_lm_loss=self.config[MASKED_LM],
             )
