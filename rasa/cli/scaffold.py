@@ -209,7 +209,7 @@ def run(args: argparse.Namespace) -> None:
             .skip_if(args.no_prompt, default="")
             .ask()
         )
-        path = os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
+        path = os.path.realpath(os.path.expanduser(os.path.expandvars(path))) 
 
         # set the default directory. we can't use the `default` property
         # in questionary as we want to avoid showing the "." in the prompt as the
