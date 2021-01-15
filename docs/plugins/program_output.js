@@ -13,7 +13,7 @@
     Caveat: this plugin operates at 2 separate points in time:
         1. During the "pre-build" phase, pre-generating files inside the
            sources/ folder. This phase is run on the "main" version of the repo
-           (master branch, release branches, tags, etc...), which doesn't have
+           (main branch, release branches, tags, etc...), which doesn't have
            several versions of the docs site. This is why `getProgramOutputs()` is
            version-agnostic and simply outputs files in `mainSourceDir`.
         2. At the build phase, happening on the `documentation` branch. In this context,
