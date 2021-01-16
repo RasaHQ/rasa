@@ -1,4 +1,5 @@
 import argparse
+import platform
 import os
 import sys
 from typing import List, Text
@@ -209,7 +210,6 @@ def run(args: argparse.Namespace) -> None:
             .skip_if(args.no_prompt, default="")
             .ask()
         )
-
         # set the default directory. we can't use the `default` property
         # in questionary as we want to avoid showing the "." in the prompt as the
         # initial value. users tend to overlook it and it leads to invalid
@@ -217,6 +217,9 @@ def run(args: argparse.Namespace) -> None:
         # Can't use `if not path` either, as `None` will be handled differently (abort)
         if path == "":
             path = "."
+            
+        if platform.system() != 'Windows':
+            path = os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
     if args.no_prompt and not os.path.isdir(path):
         print_error_and_exit(f"Project init path '{path}' not found.")
