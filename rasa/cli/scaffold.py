@@ -1,5 +1,4 @@
 import argparse
-import platform
 import os
 import sys
 from typing import List, Text
@@ -217,8 +216,8 @@ def run(args: argparse.Namespace) -> None:
         # Can't use `if not path` either, as `None` will be handled differently (abort)
         if path == "":
             path = "."
-            
-        if platform.system() != 'Windows':
+
+        if "win" not in sys.platform.lower():
             path = os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
     if args.no_prompt and not os.path.isdir(path):
