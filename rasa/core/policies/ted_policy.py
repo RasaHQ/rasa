@@ -526,6 +526,7 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
+            eager=True,
         )
 
     def _featurize_tracker_for_e2e(
