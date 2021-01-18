@@ -556,6 +556,20 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         return policy_name.endswith("_" + FormPolicy.__name__)
 
+    @staticmethod
+    def _prediction_type(predictions: Dict[Text, PolicyPrediction]) -> Optional[bool]:
+        # No user input prediction overrule all other predictions.
+        if any(
+            prediction.is_end_to_end_prediction is None
+            for prediction in predictions.values()
+        ):
+            return
+
+        # End-to-end predictions overrule all other predictions.
+        return any(
+            prediction.is_end_to_end_prediction for prediction in predictions.values()
+        )
+
     def _pick_best_policy(
         self, predictions: Dict[Text, PolicyPrediction]
     ) -> PolicyPrediction:
@@ -578,12 +592,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         form_confidence = None
         form_policy_name = None
-        # End-to-end predictions overrule all other predictions.
-        use_only_end_to_end = any(
-            prediction.is_end_to_end_prediction for prediction in predictions.values()
-        )
-        policy_events = []
+        # different type of predictions have different priorities
+        use_only_end_to_end = self._prediction_type(predictions)
 
+        policy_events = []
         for policy_name, prediction in predictions.items():
             policy_events += prediction.events
 

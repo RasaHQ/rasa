@@ -235,7 +235,7 @@ class Policy:
         probabilities: List[float],
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
-        is_end_to_end_prediction: bool = False,
+        is_end_to_end_prediction: Optional[bool] = False,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -341,7 +341,8 @@ class Policy:
         """
         return [0.0] * domain.num_actions
 
-    def format_tracker_states(self, states: List[Dict]) -> Text:
+    @staticmethod
+    def format_tracker_states(states: List[Dict]) -> Text:
         """Format tracker states to human readable format on debug log.
 
         Args:
@@ -399,7 +400,7 @@ class PolicyPrediction:
         policy_priority: int = 1,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
-        is_end_to_end_prediction: bool = False,
+        is_end_to_end_prediction: Optional[bool] = False,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
