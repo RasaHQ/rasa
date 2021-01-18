@@ -12,9 +12,10 @@ from scratch with the data you provide.
 In addition, we also support pre-trained word embeddings such as spaCy. For information on
 what pipeline is best for your use case, check out [choosing a pipeline](./tuning-your-model.mdx#how-to-choose-a-pipeline).
 
-## Training a Model in Any Language
+## Training a Model in Many Languages
 
-The following pipeline can be used to train models in any language:
+The following pipeline can be used to train models in whitespace tokenizable langauges:
+
 ```yaml-rasa (docs/sources/data/configs_for_docs/default_config.yml)
 ```
 
@@ -38,7 +39,6 @@ Even more so when training word embeddings from scratch, more training data will
 better model! If you find your model is having trouble discerning your inputs, try training
 with more example sentences.
 :::
-
 
 ## Using Pre-trained Language Models
 
