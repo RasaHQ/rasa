@@ -74,8 +74,11 @@ class EntityExtractor(Component):
         split_entities_config = self.component_config.get(
             SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
+        default_value = (self.defaults[SPLIT_ENTITIES_BY_COMMA]
+                         if SPLIT_ENTITIES_BY_COMMA in self.defaults
+                         else SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE)
         return rasa.utils.train_utils.init_split_entities(
-            split_entities_config, self.defaults[SPLIT_ENTITIES_BY_COMMA]
+            split_entities_config, default_value
         )
 
     @staticmethod
