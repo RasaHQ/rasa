@@ -230,6 +230,12 @@ jobs:
       if: steps.cache-poetry.outputs.cache-hit != 'true' && needs.changes.outputs.backend == 'true'
       run: python -m venv create .venv
 
+    - name: Create virtual environment - clear cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'unit-tests:clear-poetry-cache')
+      run: |
+        rm -rf .venv
+        python -m venv create .venv
+
     - name: Set up virtual environment
       if: needs.changes.outputs.backend == 'true'
       # Poetry on Windows cannot pick up the virtual environments directory properly,
