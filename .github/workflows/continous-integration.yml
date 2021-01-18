@@ -225,7 +225,7 @@ jobs:
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'unit-tests:clear-poetry-cache')
-      run: rm -rf .venv
+      run: rm -r .venv
 
       # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
       # The virtualenv simply doesn't work on Windows with our setup,
