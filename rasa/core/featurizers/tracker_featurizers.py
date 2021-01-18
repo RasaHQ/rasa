@@ -106,11 +106,21 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
-        if event.text:
+        # train stories support both text and intent,
+        # but if intent is present, the text is ignored
+        if event.text and not event.intent_name:
             return {TEXT: event.text, ENTITIES: event.entities}
 
         # input is not textual, so add empty dict
         return {}
+
+    @staticmethod
+    def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
+        for states in trackers_as_states:
+            for state in states:
+                # remove text features to only use intent
+                if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
+                    del state[USER][TEXT]
 
     def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -125,7 +135,7 @@ class TrackerFeaturizer:
             A tuple of list of states, list of actions and list of entity data.
         """
         raise NotImplementedError(
-            "Featurizer must have the capacity to encode trackers to feature vectors"
+            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
         )
 
     def training_states_and_actions(
@@ -168,8 +178,11 @@ class TrackerFeaturizer:
             - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
               ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
               turns in all training trackers
-            - the label ids (e.g. action ids) for every dialuge turn in all training
+            - the label ids (e.g. action ids) for every dialogue turn in all training
               trackers
+            - A dictionary of entity type (ENTITY_TAGS) to a list of features
+              containing entity tag ids for text user inputs otherwise empty dict
+              for all dialogue turns in all training trackers
         """
         if self.state_featurizer is None:
             raise ValueError(
@@ -193,9 +206,8 @@ class TrackerFeaturizer:
 
         return tracker_state_features, label_ids, entity_tags
 
-    @staticmethod
     def _choose_last_user_input(
-        trackers_as_states: List[List[State]], use_text_for_last_user_input: bool
+        self, trackers_as_states: List[List[State]], use_text_for_last_user_input: bool
     ) -> None:
         for states in trackers_as_states:
             last_state = states[-1]
@@ -207,10 +219,15 @@ class TrackerFeaturizer:
                 # remove intent features to only use text
                 if last_state.get(USER, {}).get(INTENT):
                     del last_state[USER][INTENT]
+                # don't add entities if text is used for featurization
+                if last_state.get(USER, {}).get(ENTITIES):
+                    del last_state[USER][ENTITIES]
             else:
                 # remove text features to only use intent
                 if last_state.get(USER, {}).get(TEXT):
                     del last_state[USER][TEXT]
+        # make sure that all dialogue steps are either intent or text based
+        self._remove_user_text_if_intent(trackers_as_states)
 
     def prediction_states(
         self,
@@ -223,7 +240,8 @@ class TrackerFeaturizer:
         Args:
             trackers: The trackers to transform
             domain: The domain
-            use_text_for_last_user_input: boolean
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
 
         Returns:
             A list of states.
@@ -245,7 +263,8 @@ class TrackerFeaturizer:
             trackers: A list of state trackers
             domain: The domain
             interpreter: The interpreter
-            use_text_for_last_user_input: boolean
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
 
         Returns:
             A dictionary of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -311,7 +330,6 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A tuple of list of states, list of actions and list of entity data.
         """
-
         trackers_as_states = []
         trackers_as_actions = []
         trackers_as_entities = []
@@ -365,6 +383,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_actions.append(actions)
             trackers_as_entities.append(entities)
 
+        self._remove_user_text_if_intent(trackers_as_states)
         return trackers_as_states, trackers_as_actions, trackers_as_entities
 
     def prediction_states(
@@ -378,12 +397,12 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         Args:
             trackers: The trackers to transform
             domain: The domain,
-            use_text_for_last_user_input: boolean
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
 
         Returns:
             A list of states.
         """
-
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers
         ]
@@ -454,7 +473,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A tuple of list of states, list of actions and list of entity data.
         """
-
         trackers_as_states = []
         trackers_as_actions = []
         trackers_as_entities = []
@@ -517,6 +535,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 entity_data = {}
                 pbar.set_postfix({"# actions": "{:d}".format(len(trackers_as_actions))})
 
+        self._remove_user_text_if_intent(trackers_as_states)
+
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions, trackers_as_entities
@@ -532,12 +552,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         Args:
             trackers: The trackers to transform
             domain: The domain
-            use_text_for_last_user_input: boolean
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
 
         Returns:
             A list of states.
         """
-
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers
         ]

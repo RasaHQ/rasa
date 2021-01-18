@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ACTION_TEXT,
     ACTION_NAME,
+    ENTITIES,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -58,6 +59,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     DefinePrevUserUtteredFeaturization,
+    EntitiesAdded,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -136,11 +138,26 @@ class DialogueStateTracker:
         slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
-    ):
+        domain: Optional[Domain] = None,
+    ) -> "DialogueStateTracker":
+        """Creates tracker from existing events.
+
+        Args:
+            sender_id: The ID of the conversation.
+            evts: Existing events which should be applied to the new tracker.
+            slots: Slots which can be set.
+            max_event_history: Maximum number of events which should be stored.
+            sender_source: File source of the messages.
+            domain: The current model domain.
+
+        Returns:
+            Instantiated tracker with its state updated according to the given
+            events.
+        """
         tracker = cls(sender_id, slots, max_event_history, sender_source)
 
         for e in evts:
-            tracker.update(e)
+            tracker.update(e, domain)
 
         return tracker
 
@@ -196,8 +213,7 @@ class DialogueStateTracker:
     def current_state(
         self, event_verbosity: EventVerbosity = EventVerbosity.NONE
     ) -> Dict[Text, Any]:
-        """Return the current tracker state as an object."""
-
+        """Returns the current tracker state as an object."""
         _events = self._events_for_verbosity(event_verbosity)
         if _events:
             _events = [e.as_dict() for e in _events]
@@ -208,7 +224,7 @@ class DialogueStateTracker:
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
-            "latest_message": self.latest_message.parse_data,
+            "latest_message": self._latest_message_data(),
             "latest_event_time": latest_event_time,
             FOLLOWUP_ACTION: self.followup_action,
             "paused": self.is_paused(),
@@ -231,8 +247,24 @@ class DialogueStateTracker:
 
         return None
 
+    def _latest_message_data(self) -> Dict[Text, Any]:
+        parse_data_with_nlu_state = self.latest_message.parse_data.copy()
+        # Combine entities predicted by NLU with entities predicted by policies so that
+        # users can access them together via `latest_message` (e.g. in custom actions)
+        parse_data_with_nlu_state["entities"] = self.latest_message.entities
+
+        return parse_data_with_nlu_state
+
     @staticmethod
     def freeze_current_state(state: State) -> FrozenState:
+        """Convert State dict into a hashable format FrozenState.
+
+        Args:
+            state: The state which should be converted
+
+        Return:
+            hashable form of the state of type `FrozenState`
+        """
         return frozenset(
             {
                 key: frozenset(values.items())
@@ -301,8 +333,12 @@ class DialogueStateTracker:
             self.active_loop[LOOP_REJECTED] = True
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
-        """Set latest action name
-        and reset form validation and rejection parameters
+        """Sets latest action name or text.
+
+        Resets loop validation and rejection parameters.
+
+        Args:
+            action: Serialized action event.
         """
         self.latest_action = action
         if self.active_loop_name:
@@ -473,8 +509,11 @@ class DialogueStateTracker:
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
-        """Removes events from `done_events` until the first occurrence `event_type`
-        is found which is also removed."""
+        """Removes events from `done_events`.
+
+        Removes events from `done_events` until the first occurrence `event_type`
+        is found which is also removed.
+        """
         # list gets modified - hence we need to copy events!
         for e in reversed(done_events[:]):
             del done_events[-1]
@@ -605,9 +644,17 @@ class DialogueStateTracker:
         self.events.append(event)
         event.apply_to(self)
 
-        if domain and isinstance(event, UserUttered):
-            # store all entities as slots
-            for e in domain.slots_for_entities(event.parse_data["entities"]):
+        if domain and isinstance(event, (UserUttered, EntitiesAdded)):
+            if isinstance(event, UserUttered):
+                # Rather get entities from `parse_data` as
+                # `DefinePrevUserUtteredEntities` might have already affected the
+                # `UserUttered.entities` attribute (this might e.g. happen when the
+                # `InMemoryTrackerStore` is used).
+                entities = event.parse_data[ENTITIES]
+            else:
+                entities = event.entities
+
+            for e in domain.slots_for_entities(entities):
                 self.update(e)
 
     def update_with_events(

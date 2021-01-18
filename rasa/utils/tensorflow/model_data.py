@@ -38,6 +38,7 @@ class FeatureArray(np.ndarray):
     def __new__(
         cls, input_array: np.ndarray, number_of_dimensions: int
     ) -> "FeatureArray":
+        """Create and return a new object.  See help(type) for accurate signature."""
         FeatureArray._validate_number_of_dimensions(number_of_dimensions, input_array)
 
         feature_array = np.asarray(input_array).view(cls)
@@ -63,11 +64,23 @@ class FeatureArray(np.ndarray):
         return feature_array
 
     def __init__(self, input_array: Any, number_of_dimensions: int, **kwargs):
-        # Needed in order to avoid 'Invalid keyword argument number_of_dimensions to function FeatureArray.__init__ '
+        """Initialize. FeatureArray.
+
+        Needed in order to avoid 'Invalid keyword argument number_of_dimensions
+        to function FeatureArray.__init__ '
+        Args:
+            input_array: the array that contains features
+            number_of_dimensions: number of dimensions in input_array
+        """
         super().__init__(**kwargs)
         self.number_of_dimensions = number_of_dimensions
 
     def __array_finalize__(self, obj: Any) -> None:
+        """This method is called whenever the system internally allocates a new array from obj.
+
+        Args:
+            obj: A subclass (subtype) of ndarray.
+        """
         if obj is None:
             return
 
@@ -83,7 +96,20 @@ class FeatureArray(np.ndarray):
         self.__dict__.update(default_attributes)
 
     # pytype: disable=attribute-error
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    def __array_ufunc__(self, ufunc: Any, method: Text, *inputs, **kwargs) -> Any:
+        """Overwrite this method as we are subclassing numpy array.
+
+        Args:
+            ufunc: The ufunc object that was called.
+            method: A string indicating which Ufunc method was called
+                    (one of "__call__", "reduce", "reduceat", "accumulate", "outer",
+                    "inner").
+            *inputs: A tuple of the input arguments to the ufunc.
+            **kwargs: Any additional arguments
+
+        Returns:
+            The result of the operation.
+        """
         f = {
             "reduce": ufunc.reduce,
             "accumulate": ufunc.accumulate,
@@ -101,8 +127,12 @@ class FeatureArray(np.ndarray):
         output.__dict__ = self.__dict__  # carry forward attributes
         return output
 
-    def __reduce__(self):
-        # Needed in order to pickle this object
+    def __reduce__(self) -> Tuple[Any, Any, Any]:
+        """Needed in order to pickle this object.
+
+        Returns:
+            A tuple.
+        """
         pickled_state = super(FeatureArray, self).__reduce__()
         new_state = pickled_state[2] + (
             self.number_of_dimensions,
@@ -111,7 +141,14 @@ class FeatureArray(np.ndarray):
         )
         return pickled_state[0], pickled_state[1], new_state
 
-    def __setstate__(self, state, **kwargs):
+    def __setstate__(self, state, **kwargs) -> None:
+        """Sets the state.
+
+        Args:
+            state: The state argument must be a sequence that contains the following
+                   elements version, shape, dtype, isFortan, rawdata.
+            **kwargs: Any additional parameter
+        """
         # Needed in order to load the object
         self.number_of_dimensions = state[-3]
         self.is_sparse = state[-2]
@@ -184,7 +221,7 @@ class FeatureArray(np.ndarray):
         ],
         List[int],
     ]:
-        """Returns the shape and type information needed to convert this feature array into tensors.
+        """Returns shapes and types needed to convert this feature array into tensors.
 
         Returns:
             A list of shape tuples.
@@ -243,6 +280,12 @@ class RasaModelData:
     """Data object used for all RasaModels.
 
     It contains all features needed to train the models.
+    'data' is a mapping of attribute name, e.g. TEXT, INTENT, etc., and feature name,
+    e.g. SENTENCE, SEQUENCE, etc., to a list of feature arrays representing the actual
+    features.
+    'label_key' and 'label_sub_key' point to the labels inside 'data'. For
+    example, if your intent labels are stored under INTENT -> IDS, 'label_key' would
+    be "INTENT" and 'label_sub_key' would be "IDS".
     """
 
     def __init__(
@@ -259,7 +302,6 @@ class RasaModelData:
             label_sub_key: the sub key of a label used for balancing, etc.
             data: the data holding the features
         """
-
         self.data = data or defaultdict(lambda: defaultdict(list))
         self.label_key = label_key
         self.label_sub_key = label_sub_key
@@ -339,6 +381,15 @@ class RasaModelData:
         return out_data
 
     def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
+        """Check if feature key (and sub-key) is present and features are available.
+
+        Args:
+            key: The key.
+            sub_key: The optional sub-key.
+
+        Returns:
+            False, if no features for the given keys exists, True otherwise.
+        """
         return not self.does_feature_not_exist(key, sub_key)
 
     def does_feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
@@ -630,7 +681,6 @@ class RasaModelData:
         Returns:
             The tf.data.Dataset.
         """
-
         shapes, types = self._get_shapes_types()
 
         return tf.data.Dataset.from_generator(
@@ -660,7 +710,6 @@ class RasaModelData:
         Returns:
             The features of the batch.
         """
-
         if not data:
             data = self.data
 
@@ -721,7 +770,6 @@ class RasaModelData:
         Returns:
             The shuffled data.
         """
-
         ids = np.random.permutation(self.num_examples)
         return self._data_for_ids(data, ids)
 
@@ -830,7 +878,6 @@ class RasaModelData:
         Returns:
             A generator over the batches.
         """
-
         data = self.data
         num_examples = self.num_examples
 
@@ -862,7 +909,6 @@ class RasaModelData:
         Raises:
             A ValueError if the number of examples does not fit.
         """
-
         if number_of_test_examples >= self.num_examples - len(label_counts):
             raise ValueError(
                 f"Test set of {number_of_test_examples} is too large. Remaining "
@@ -886,7 +932,6 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-
         new_data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
@@ -911,7 +956,6 @@ class RasaModelData:
         Returns:
             Reorganized RasaModelData
         """
-
         label_data = []
         for label_id in unique_label_ids:
             matching_ids = np.array(label_ids) == label_id
@@ -955,7 +999,6 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-
         data_train = defaultdict(lambda: defaultdict(list))
         data_val = defaultdict(lambda: defaultdict(list))
 
@@ -1004,7 +1047,6 @@ class RasaModelData:
         Returns:
             The combined features.
         """
-
         if isinstance(feature_1, scipy.sparse.spmatrix) and isinstance(
             feature_2, scipy.sparse.spmatrix
         ):

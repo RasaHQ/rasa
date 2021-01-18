@@ -357,8 +357,8 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-def test_run_evaluation(unpacked_trained_moodbot_path: Text):
-    result = run_evaluation(
+async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
+    result = await run_evaluation(
         DEFAULT_DATA_PATH,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
         errors=False,
@@ -427,6 +427,7 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
         successes=False,
         errors=False,
         disable_plotting=True,
+        report_as_dict=True,
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -435,12 +436,17 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
+    assert all(key in intent_results.evaluation for key in ["errors", "report"])
+
     assert len(entity_results.train["CRFEntityExtractor"]["Accuracy"]) == n_folds
     assert len(entity_results.train["CRFEntityExtractor"]["Precision"]) == n_folds
     assert len(entity_results.train["CRFEntityExtractor"]["F1-score"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
+
+    for extractor_evaluation in entity_results.evaluation.values():
+        assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
 def test_run_cv_evaluation_with_response_selector():
@@ -480,18 +486,26 @@ def test_run_cv_evaluation_with_response_selector():
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
+    assert all(key in intent_results.evaluation for key in ["errors", "report"])
+
     assert len(response_selection_results.train["Accuracy"]) == n_folds
     assert len(response_selection_results.train["Precision"]) == n_folds
     assert len(response_selection_results.train["F1-score"]) == n_folds
     assert len(response_selection_results.test["Accuracy"]) == n_folds
     assert len(response_selection_results.test["Precision"]) == n_folds
     assert len(response_selection_results.test["F1-score"]) == n_folds
+    assert all(
+        key in response_selection_results.evaluation for key in ["errors", "report"]
+    )
+
     assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
     assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
     assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
     assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
     assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
     assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
+    for extractor_evaluation in entity_results.evaluation.values():
+        assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
 def test_response_selector_present():
@@ -905,7 +919,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-def test_nlu_comparison(tmp_path: Path):
+async def test_nlu_comparison(tmp_path: Path):
     config = {
         "language": "en",
         "pipeline": [
@@ -919,7 +933,7 @@ def test_nlu_comparison(tmp_path: Path):
     configs = [write_file_config(config).name, write_file_config(config).name]
 
     output = str(tmp_path)
-    compare_nlu_models(
+    await compare_nlu_models(
         configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
     )
 

@@ -4,6 +4,7 @@ from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
 
 import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.exceptions import InvalidEntityFormatException
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -11,7 +12,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.shared.nlu.training_data.message import Message
-import rasa.shared.utils.io
+
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -127,8 +128,8 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
         json_str: The entity dict as string without "{}".
 
     Raises:
-        ValidationError if validation of entity dict fails.
-        JSONDecodeError if provided entity dict is not valid json.
+        SchemaValidationError if validation of parsed entity fails.
+        InvalidEntityFormatException if provided entity is not valid json.
 
     Returns:
         Deserialized and validated `json_str`.
@@ -141,12 +142,11 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
     try:
         data = json.loads(f"{{{json_str}}}")
     except JSONDecodeError as e:
-        rasa.shared.utils.io.raise_warning(
-            f"Incorrect training data format ('{{{json_str}}}'). Make sure your "
-            f"data is valid.",
-            docs=DOCS_URL_TRAINING_DATA_NLU,
-        )
-        raise e
+        raise InvalidEntityFormatException.create_from(
+            e,
+            f"Incorrect training data format ('{{{json_str}}}'). "
+            f"More info at {DOCS_URL_TRAINING_DATA_NLU}",
+        ) from e
 
     validation_utils.validate_training_data(data, schema.entity_dict_schema())
 

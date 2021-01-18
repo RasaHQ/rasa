@@ -139,8 +139,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # ## Architecture of the used neural network
         # Hidden layer sizes for layers before the embedding layers for user message
         # and labels.
-        # The number of hidden layers is equal to the length of the corresponding
-        # list.
+        # The number of hidden layers is equal to the length of the corresponding list.
         HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []},
         # Whether to share the hidden layer weights between user message and labels.
         SHARE_HIDDEN_LAYERS: False,
@@ -174,7 +173,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
-        # Default dense dimension to use if no dense features are present.
+        # Dense dimension to use for sparse features.
         DENSE_DIMENSION: {TEXT: 128, LABEL: 20},
         # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 128, LABEL: 20},
@@ -310,9 +309,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
+        finetune_mode: bool = False,
     ) -> None:
         """Declare instance variables with default values."""
-
         if component_config is not None and EPOCHS not in component_config:
             rasa.shared.utils.io.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
@@ -334,6 +333,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
 
         self.split_entities_config = self.init_split_entities()
+
+        self.finetune_mode = finetune_mode
+
+        if not self.model and self.finetune_mode:
+            raise rasa.shared.exceptions.InvalidParameterException(
+                f"{self.__class__.__name__} was instantiated "
+                f"with `model=None` and `finetune_mode=True`. "
+                f"This is not a valid combination as the component "
+                f"needs an already instantiated and trained model "
+                f"to continue training in finetune mode."
+            )
 
     @property
     def label_key(self) -> Optional[Text]:
@@ -500,7 +510,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _check_input_dimension_consistency(self, model_data: RasaModelData) -> None:
         """Checks if features have same dimensionality if hidden layers are shared."""
-
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
             num_text_sentence_features = model_data.number_of_units(TEXT, SENTENCE)
             num_label_sentence_features = model_data.number_of_units(LABEL, SENTENCE)
@@ -519,7 +528,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self, label_examples: List[Message], attribute: Text = INTENT
     ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
         """Collects precomputed encodings."""
-
         features = defaultdict(list)
 
         for e in label_examples:
@@ -546,7 +554,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         labels_example: List[Message],
     ) -> List[FeatureArray]:
         """Computes one-hot representation for the labels."""
-
         logger.debug("No label features found. Computing default label features.")
 
         eye_matrix = np.eye(len(labels_example), dtype=np.float32)
@@ -571,7 +578,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         If the features are already computed, fetch them from the message object
         else compute a one hot encoding for the label as the feature vector.
         """
-
         # Collect one example for each label
         labels_idx_examples = []
         for label_name, idx in label_id_dict.items():
@@ -634,7 +640,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_attribute: Optional[Text] = None,
         training: bool = True,
     ) -> RasaModelData:
-        """Prepare data for training and create a RasaModelData object"""
+        """Prepare data for training and create a RasaModelData object."""
         from rasa.utils.tensorflow import model_data_utils
 
         attributes_to_consider = [TEXT]
@@ -658,7 +664,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # no training data are present to train
             return RasaModelData()
 
-        features_for_examples = model_data_utils.convert_training_examples(
+        features_for_examples = model_data_utils.featurize_training_examples(
             training_data,
             attributes_to_consider,
             entity_tag_specs=self._entity_tag_specs,
@@ -679,7 +685,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_data, training_data, label_attribute, label_id_dict, training
         )
 
-        # make sure all keys are in the same order during training and prediction
+        # as we rely on the order of key and sub-key when constructing the actual
+        # tensors from the model data
         model_data.sort()
 
         return model_data
@@ -731,7 +738,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
@@ -798,7 +804,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        self.model = self._instantiate_model_class(model_data)
+        if not self.finetune_mode:
+            # No pre-trained model to load from. Create a new instance of the model.
+            self.model = self._instantiate_model_class(model_data)
 
         self.model.fit(
             model_data,
@@ -887,7 +895,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return []
 
-        predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
+        predicted_tags, confidence_values = train_utils.entity_label_to_tags(
+            predict_out, self._entity_tag_specs, self.component_config[BILOU_FLAG]
+        )
 
         entities = self.convert_predictions_into_entities(
             message.get(TEXT),
@@ -902,31 +912,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
-    def _entity_label_to_tags(
-        self, predict_out: Dict[Text, Any]
-    ) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
-        predicted_tags = {}
-        confidence_values = {}
-
-        for tag_spec in self._entity_tag_specs:
-            predictions = predict_out[f"e_{tag_spec.tag_name}_ids"].numpy()
-            confidences = predict_out[f"e_{tag_spec.tag_name}_scores"].numpy()
-            confidences = [float(c) for c in confidences[0]]
-            tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
-
-            if self.component_config[BILOU_FLAG]:
-                tags, confidences = bilou_utils.ensure_consistent_bilou_tagging(
-                    tags, confidences
-                )
-
-            predicted_tags[tag_spec.tag_name] = tags
-            confidence_values[tag_spec.tag_name] = confidences
-
-        return predicted_tags, confidence_values
-
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
-
         out = self._predict(message)
 
         if self.component_config[INTENT_CLASSIFICATION]:
@@ -988,10 +975,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
+        should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
-
         if not model_dir or not meta.get("file"):
             logger.debug(
                 f"Failed to load model for '{cls.__name__}'. "
@@ -1011,7 +998,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta = train_utils.update_similarity_type(meta)
 
         model = cls._load_model(
-            entity_tag_specs, label_data, meta, data_example, model_dir
+            entity_tag_specs,
+            label_data,
+            meta,
+            data_example,
+            model_dir,
+            finetune_mode=should_finetune,
         )
 
         return cls(
@@ -1019,6 +1011,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             index_label_id_mapping=index_label_id_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
+            finetune_mode=should_finetune,
         )
 
     @classmethod
@@ -1071,6 +1064,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta: Dict[Text, Any],
         data_example: Dict[Text, Dict[Text, List[FeatureArray]]],
         model_dir: Text,
+        finetune_mode: bool = False,
     ) -> "RasaModel":
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
@@ -1083,20 +1077,27 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         model = cls._load_model_class(
-            tf_model_file, model_data_example, label_data, entity_tag_specs, meta
+            tf_model_file,
+            model_data_example,
+            label_data,
+            entity_tag_specs,
+            meta,
+            finetune_mode=finetune_mode,
         )
 
-        # build the graph for prediction
-        predict_data_example = RasaModelData(
-            label_key=label_key,
-            data={
-                feature_name: features
-                for feature_name, features in model_data_example.items()
-                if TEXT in feature_name
-            },
-        )
+        if not finetune_mode:
 
-        model.build_for_predict(predict_data_example)
+            # build the graph for prediction
+            predict_data_example = RasaModelData(
+                label_key=label_key,
+                data={
+                    feature_name: features
+                    for feature_name, features in model_data_example.items()
+                    if TEXT in feature_name
+                },
+            )
+
+            model.build_for_predict(predict_data_example)
 
         return model
 
@@ -1108,6 +1109,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data: RasaModelData,
         entity_tag_specs: List[EntityTagSpec],
         meta: Dict[Text, Any],
+        finetune_mode: bool,
     ) -> "RasaModel":
 
         return cls.model_class().load(
@@ -1117,6 +1119,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             config=copy.deepcopy(meta),
+            finetune_mode=finetune_mode,
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
@@ -1539,6 +1542,7 @@ class DIET(TransformerRasaModel):
             self.entity_role_f1.update_state(f1)
 
     def prepare_for_predict(self) -> None:
+        """Prepares the model for prediction."""
         if self.config[INTENT_CLASSIFICATION]:
             _, self.all_labels_embed = self._create_all_labels()
 

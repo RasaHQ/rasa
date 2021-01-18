@@ -88,5 +88,4 @@ E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
 
 IGNORE_INTENTS_LIST = "intents_to_ignore"
 IGNORE_RETRIEVAL_INTENTS = "ignore_retrieval_intents"
-
 MASK = "mask"

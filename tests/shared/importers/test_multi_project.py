@@ -364,4 +364,4 @@ async def test_multi_project_training(trained_async):
         "utter_goodbye",
     ]
 
-    assert all([a in domain.action_names for a in expected_actions])
+    assert all([a in domain.action_names_or_texts for a in expected_actions])

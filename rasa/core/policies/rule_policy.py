@@ -108,6 +108,7 @@ class RulePolicy(MemoizationPolicy):
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
         check_for_contradictions: bool = True,
+        **kwargs: Any,
     ) -> None:
         """Create a `RulePolicy` object.
 
@@ -124,6 +125,10 @@ class RulePolicy(MemoizationPolicy):
                 if no rule matched.
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
+            restrict_rules: If `True` rules are restricted to contain a maximum of 1
+                user message. This is used to avoid that users build a state machine
+                using the rules.
+            check_for_contradictions: Check for contradictions.
         """
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
@@ -136,7 +141,11 @@ class RulePolicy(MemoizationPolicy):
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
-            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
+            featurizer=featurizer,
+            priority=priority,
+            max_history=None,
+            lookup=lookup,
+            **kwargs,
         )
 
     @classmethod
@@ -154,7 +163,7 @@ class RulePolicy(MemoizationPolicy):
 
         if (
             domain is None
-            or rule_policy._fallback_action_name not in domain.action_names
+            or rule_policy._fallback_action_name not in domain.action_names_or_texts
         ):
             raise InvalidDomain(
                 f"The fallback action '{rule_policy._fallback_action_name}' which was "
@@ -411,7 +420,9 @@ class RulePolicy(MemoizationPolicy):
             probabilities != self._default_predictions(domain)
             or tracker.is_rule_tracker
         ):
-            predicted_action_name = domain.action_names[np.argmax(probabilities)]
+            predicted_action_name = domain.action_names_or_texts[
+                np.argmax(probabilities)
+            ]
 
         return predicted_action_name
 
@@ -770,19 +781,21 @@ class RulePolicy(MemoizationPolicy):
         Args:
             tracker: The current conversation tracker.
             domain: The domain of the current model.
-            use_text_for_last_user_input: The boolean controlling
-                whether to use intent or text.
+            use_text_for_last_user_input: `True` if text of last user message
+                should be used for the prediction. `False` if intent should be used.
 
         Returns:
-            A tuple of the predicted action name (or `None` if no matching rule was
-            found), a description of the matching rule, and `True` if a loop action
+            A tuple of the predicted action name or text (or `None` if no matching rule
+            was found), a description of the matching rule, and `True` if a loop action
             was predicted after the loop has been in an unhappy path before.
         """
         if (
             use_text_for_last_user_input
             and not tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
-            # make text prediction only after user utterance
+            # make text prediction only directly after user utterance
+            # because we've otherwise already decided whether to use
+            # the text or the intent
             return None, None, False
 
         tracker_as_states = self.featurizer.prediction_states(
@@ -872,7 +885,6 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
-        # user text input is ground truth, so try to predict using it first
         (
             rules_action_name_from_text,
             self._prediction_source,
@@ -909,12 +921,9 @@ class RulePolicy(MemoizationPolicy):
 
         # predict rules from text first
         if rules_action_name_from_text:
-            policy_events = (
-                [LoopInterrupted(True)] if returning_from_unhappy_path_from_text else []
-            )
-            return self._prediction(
+            return self._prediction_with_unhappy_path(
                 self._prediction_result(rules_action_name_from_text, tracker, domain),
-                events=policy_events,
+                returning_from_unhappy_path=returning_from_unhappy_path_from_text,
                 is_end_to_end_prediction=True,
             )
 
@@ -926,20 +935,35 @@ class RulePolicy(MemoizationPolicy):
         ) = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=False
         )
-        # returning_from_unhappy_path is a negative condition, so `or` should be applied
-        returning_from_unhappy_path = (
-            returning_from_unhappy_path_from_text
-            or returning_from_unhappy_path_from_intent
-        )
-        policy_events = [LoopInterrupted(True)] if returning_from_unhappy_path else []
         if rules_action_name_from_intent:
-            return self._prediction(
-                self._prediction_result(rules_action_name_from_intent, tracker, domain),
-                events=policy_events,
-                is_end_to_end_prediction=False,
+            probabilities = self._prediction_result(
+                rules_action_name_from_intent, tracker, domain
             )
+        else:
+            probabilities = self._default_predictions(domain)
 
-        return self._prediction(self._default_predictions(domain), events=policy_events)
+        return self._prediction_with_unhappy_path(
+            probabilities,
+            returning_from_unhappy_path=(
+                # returning_from_unhappy_path is a negative condition,
+                # so `or` should be applied
+                returning_from_unhappy_path_from_text
+                or returning_from_unhappy_path_from_intent
+            ),
+            is_end_to_end_prediction=False,
+        )
+
+    def _prediction_with_unhappy_path(
+        self,
+        probabilities: List[float],
+        returning_from_unhappy_path: bool,
+        is_end_to_end_prediction: bool,
+    ) -> "PolicyPrediction":
+        return self._prediction(
+            probabilities,
+            events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
+            is_end_to_end_prediction=is_end_to_end_prediction,
+        )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)

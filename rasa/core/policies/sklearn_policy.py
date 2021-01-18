@@ -28,8 +28,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
 from rasa.shared.nlu.training_data.features import Features
-from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
+from rasa.utils.tensorflow.constants import SENTENCE
 
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
@@ -73,6 +73,8 @@ class SklearnPolicy(Policy):
         Args:
             featurizer: Featurizer used to convert the training data into
                 vector format.
+            priority: Policy priority
+            max_history: Maximum history of the dialogs.
             model: The sklearn model or model pipeline.
             param_grid: If *param_grid* is not None and *cv* is given,
                 a grid search on the given *param_grid* is performed
@@ -86,7 +88,6 @@ class SklearnPolicy(Policy):
             shuffle: Whether to shuffle training data.
             zero_state_features: Contains default feature values for attributes
         """
-
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
                 raise TypeError(
@@ -105,7 +106,7 @@ class SklearnPolicy(Policy):
                 )
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, **kwargs)
 
         self.model = model or self._default_model()
         self.cv = cv
@@ -170,7 +171,7 @@ class SklearnPolicy(Policy):
             (Shape of features of one attribute)
 
         Args:
-            attribute_data: all features in the attribute stored in a np.array
+            attribute_data: all features in the attribute stored in a FeatureArray
 
         Returns:
             2D np.ndarray with features for an attribute with
@@ -315,7 +316,10 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> Policy:
+    def load(
+        cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any
+    ) -> Policy:
+        """See the docstring for `Policy.load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
         if not Path(path).exists():
@@ -338,6 +342,7 @@ class SklearnPolicy(Policy):
             featurizer=featurizer,
             priority=meta["priority"],
             zero_state_features=zero_state_features,
+            should_finetune=should_finetune,
         )
 
         state = io_utils.pickle_load(filename)

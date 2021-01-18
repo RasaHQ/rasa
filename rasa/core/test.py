@@ -247,6 +247,10 @@ class WronglyPredictedAction(ActionExecuted):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ) -> None:
+        """Creates event for a successful event execution.
+
+        See the docstring of the parent class `ActionExecuted` for more information.
+        """
         self.action_name_prediction = action_name_prediction
         super().__init__(
             action_name_target,
@@ -304,17 +308,18 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
-        from rasa.shared.core.events import md_format_message
+        from rasa.shared.core.events import format_message
 
-        predicted_message = md_format_message(
+        predicted_message = format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
-        from rasa.shared.core.events import md_format_message
+        """Returns text representation of event."""
+        from rasa.shared.core.events import format_message
 
-        correct_message = md_format_message(
+        correct_message = format_message(
             self.text, self.intent.get("name"), self.entities
         )
         return (

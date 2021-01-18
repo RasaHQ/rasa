@@ -88,7 +88,9 @@ class SingleStateFeaturizer:
             }
 
         self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
-        self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
+        self._default_feature_states[ACTION_NAME] = convert_to_dict(
+            domain.action_names_or_texts
+        )
         self._default_feature_states[ENTITIES] = convert_to_dict(domain.entity_states)
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
@@ -287,14 +289,16 @@ class SingleStateFeaturizer:
         #  Should we support BILOU tagging?
 
         if TEXT not in entity_data or len(self.entity_tag_id_mapping) < 2:
-            # we cannot build a classifier if there are less than 2 class
+            # we cannot build a classifier with fewer than 2 classes
             return {}
 
         parsed_text = interpreter.featurize_message(Message({TEXT: entity_data[TEXT]}))
+        if not parsed_text:
+            return {}
         entities = entity_data.get(ENTITIES, [])
 
         _tags = []
-        for token in parsed_text.get(TOKENS_NAMES[TEXT]):
+        for token in parsed_text.get(TOKENS_NAMES[TEXT], []):
             _tag = determine_token_labels(
                 token, entities, attribute_key=ENTITY_ATTRIBUTE_TYPE
             )
@@ -304,7 +308,7 @@ class SingleStateFeaturizer:
         # transpose to have seq_len x 1
         return {
             ENTITY_TAGS: [
-                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN,)
+                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN)
             ]
         }
 
@@ -332,7 +336,8 @@ class SingleStateFeaturizer:
         """
 
         return [
-            self._encode_action(action, interpreter) for action in domain.action_names
+            self._encode_action(action, interpreter)
+            for action in domain.action_names_or_texts
         ]
 
 
