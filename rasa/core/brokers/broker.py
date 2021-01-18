@@ -5,6 +5,7 @@ from typing import Any, Dict, Text, Optional, Union
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,16 @@ class EventBroker:
         if isinstance(obj, EventBroker):
             return obj
 
-        return await _create_from_endpoint_config(obj, loop)
+        import aio_pika.exceptions
+        import sqlalchemy.exc
+
+        try:
+            return await _create_from_endpoint_config(obj, loop)
+        except (
+            sqlalchemy.exc.OperationalError,
+            aio_pika.exceptions.AMQPConnectionError,
+        ) as error:
+            raise ConnectionException("Cannot connect to event broker.") from error
 
     @classmethod
     async def from_endpoint_config(
