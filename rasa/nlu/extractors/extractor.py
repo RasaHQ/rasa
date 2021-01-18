@@ -32,14 +32,36 @@ import rasa.utils.train_utils
 
 
 class EntityExtractor(Component):
+    """Entity extractors are components which extract entities.
+
+    They can be placed in the pipeline like other components, and can extract
+    entities like a person's name, or a location.
+    """
+
     def add_extractor_name(
         self, entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
+        """Adds this extractor's name to a list of entities.
+
+        Args:
+            entities: the extracted entities.
+
+        Returns:
+            the modified entities.
+        """
         for entity in entities:
             entity[EXTRACTOR] = self.name
         return entities
 
     def add_processor_name(self, entity: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Adds this extractor's name to the list of processors for this entity.
+
+        Args:
+            entity: the extracted entity and its metadata.
+
+        Returns:
+            the modified entity.
+        """
         if "processors" in entity:
             entity["processors"].append(self.name)
         else:
@@ -48,11 +70,11 @@ class EntityExtractor(Component):
         return entity
 
     def init_split_entities(self):
-        """Initialise the behaviour for splitting entities by comma (or not)."""
+        """Initialises the behaviour for splitting entities by comma (or not)."""
         split_entities_config = self.component_config.get(
             SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-        rasa.utils.train_utils.init_split_entities(
+        return rasa.utils.train_utils.init_split_entities(
             split_entities_config, self.defaults[SPLIT_ENTITIES_BY_COMMA]
         )
 

@@ -561,33 +561,6 @@ class TestTEDPolicy(PolicyTestCollection):
             or batch_slots_sentence_shape[1] == 0
         )
 
-    @pytest.mark.parametrize(
-        "split_entities_config, expected_initialized_config",
-        [
-            (
-                SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-                {SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE},
-            ),
-            (
-                {"address": False, "ingredients": True},
-                {
-                    "address": False,
-                    "ingredients": True,
-                    SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-                },
-            ),
-        ],
-    )
-    def test_init_split_entities_config(
-        self,
-        trained_policy: TEDPolicy,
-        split_entities_config: Any,
-        expected_initialized_config: Dict[(str, bool)],
-    ):
-        assert trained_policy.init_split_entities(
-            split_entities_config=split_entities_config
-        )
-
 
 class TestTEDPolicyMargin(TestTEDPolicy):
     def create_policy(

@@ -90,6 +90,7 @@ from rasa.shared.nlu.constants import (
     INTENT_RESPONSE_KEY,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    SPLIT_ENTITIES_BY_COMMA,
 )
 
 from rasa.utils.tensorflow.model_data import RasaModelData
@@ -230,6 +231,10 @@ class ResponseSelector(DIETClassifier):
         FEATURIZERS: [],
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
+        # Split entities by comma, this makes sense e.g. for a list of
+        # ingredients in a recipe, but it doesn't make sense for the parts of an
+        # address
+        SPLIT_ENTITIES_BY_COMMA: True,
     }
 
     def __init__(
