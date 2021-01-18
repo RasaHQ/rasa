@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import rasa.utils.train_utils as train_utils
-from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.constants import (
