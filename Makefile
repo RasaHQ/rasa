@@ -166,9 +166,7 @@ release:
 	poetry run python scripts/release.py
 
 build-docker-base-mitie:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base-mitie
+	docker build -f docker/Dockerfile.base-mitie -t rasa:base-mitie-localdev docker/
 
 build-docker:
 	export IMAGE_NAME=rasa && \
