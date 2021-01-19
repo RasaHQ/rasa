@@ -211,12 +211,6 @@ jobs:
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-      with:
-        version: v0.5.1
-        driver: docker
-
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
       uses: Gr1N/setup-poetry@v4
