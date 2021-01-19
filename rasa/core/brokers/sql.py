@@ -54,7 +54,8 @@ class SQLEventBroker(EventBroker):
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
 
     @classmethod
-    async def from_endpoint_config(cls,
+    async def from_endpoint_config(
+        cls,
         broker_config: EndpointConfig,
         event_loop: Optional[AbstractEventLoop] = None,
     ) -> "SQLEventBroker":

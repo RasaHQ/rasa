@@ -43,7 +43,8 @@ class KafkaEventBroker(EventBroker):
         logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
-    async def from_endpoint_config(cls,
+    async def from_endpoint_config(
+        cls,
         broker_config,
         event_loop: Optional[AbstractEventLoop] = None,
     ) -> Optional["KafkaEventBroker"]:

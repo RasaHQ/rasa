@@ -9,6 +9,7 @@ from _pytest.pytester import RunResult
 
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.events import UserUttered
 from rasa.core.trackers import DialogueStateTracker

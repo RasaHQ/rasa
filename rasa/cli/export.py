@@ -95,7 +95,6 @@ async def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventB
             f"can be found here: {DOCS_URL_EVENT_BROKERS}. Exiting."
         )
 
-
     return broker
 
 
@@ -169,7 +168,7 @@ def _prepare_event_broker(event_broker: "EventBroker") -> None:
         )
 
 
-def export_trackers(args: arparse.Namespace) -> None:
+def export_trackers(args: argparse.Namespace) -> None:
     """Export events for a connected tracker store using an event broker.
 
     Args:

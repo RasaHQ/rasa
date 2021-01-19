@@ -27,7 +27,7 @@ class FileEventBroker(EventBroker):
     async def from_endpoint_config(
         cls,
         broker_config: Optional["EndpointConfig"],
-        event_loop: Optional[AstractEventLoop] = None,
+        event_loop: Optional[AbstractEventLoop] = None,
     ) -> Optional["FileEventBroker"]:
         if broker_config is None:
             return None

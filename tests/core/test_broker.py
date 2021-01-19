@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 from asyncio.events import AbstractEventLoop
-from typing import Union, Text, List, Optional, Type, Dict
+from typing import Union, Text, List, Optional, Type, Dict, Any
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -51,8 +51,6 @@ async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
 
 # noinspection PyProtectedMember
 def test_pika_message_property_app_id_without_env_set(monkeypatch: MonkeyPatch):
-    pika_processor = PikaMessageProcessor(TEST_CONNECTION_PARAMETERS, queues=None)
-
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
     pika_broker = PikaEventBroker("some host", "username", "password")
@@ -65,7 +63,7 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
     pika_broker = PikaEventBroker("some host", "username", "password")
 
-    assert pika_processor._message({}, None).app_id == rasa_environment
+    assert pika_broker._message({}, None).app_id == rasa_environment
 
 
 @pytest.mark.parametrize(
@@ -210,6 +208,7 @@ class CustomEventBrokerWithoutAsync(EventBroker):
     def publish(self, event: Dict[Text, Any]) -> None:
         pass
 
+
 async def test_load_custom_broker_without_async_support(tmpdir):
     log_file_path = tmpdir.join("events.log").strpath
 
@@ -269,4 +268,3 @@ def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
 
     with pytest.warns(UserWarning):
         pika._create_rabbitmq_ssl_options()
-
