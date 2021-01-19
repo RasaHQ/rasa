@@ -25,10 +25,6 @@ TEST_EVENTS = [
     Restarted(),
 ]
 
-TEST_CONNECTION_PARAMETERS = pika.connection.ConnectionParameters(
-    "amqp://username:password@host:port"
-)
-
 
 async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
 
