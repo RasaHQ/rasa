@@ -44,9 +44,7 @@ class KafkaEventBroker(EventBroker):
 
     @classmethod
     async def from_endpoint_config(
-        cls,
-        broker_config,
-        event_loop: Optional[AbstractEventLoop] = None,
+        cls, broker_config, event_loop: Optional[AbstractEventLoop] = None,
     ) -> Optional["KafkaEventBroker"]:
         if broker_config is None:
             return None

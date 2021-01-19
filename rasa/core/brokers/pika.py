@@ -12,7 +12,7 @@ import aio_pika
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
-    DOCS_URL_PIKA_EVENT_BROKER
+    DOCS_URL_PIKA_EVENT_BROKER,
 )
 from rasa.core.brokers.broker import EventBroker
 import rasa.utils.io

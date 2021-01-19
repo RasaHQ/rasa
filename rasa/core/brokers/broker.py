@@ -83,7 +83,9 @@ async def _create_from_endpoint_config(
     return broker
 
 
-async def _load_from_module_string(broker_config: EndpointConfig,) -> Optional["EventBroker"]:
+async def _load_from_module_string(
+    broker_config: EndpointConfig,
+) -> Optional["EventBroker"]:
     """Instantiate an event broker based on its class name."""
     try:
         event_broker_class = common.class_from_module_path(broker_config.type)

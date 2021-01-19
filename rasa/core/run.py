@@ -296,6 +296,7 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
         else:
             await event_broker.close()
 
+
 if __name__ == "__main__":
     raise RuntimeError(
         "Calling `rasa.core.run` directly is no longer supported. "

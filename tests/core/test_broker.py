@@ -98,7 +98,6 @@ def test_pika_queues_from_args(
             "password",
             queues=queues_arg,
             get_message=lambda: ("", None),
-
         )
 
     assert pika_processor.queues == expected
@@ -216,7 +215,7 @@ async def test_load_custom_broker_without_async_support(tmpdir):
         **{
             "type": f"{CustomEventBrokerWithoutAsync.__module__}."
             f"{CustomEventBrokerWithoutAsync.__name__}",
-            "path": str(log_file_path)
+            "path": str(log_file_path),
         }
     )
 
@@ -258,7 +257,7 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         await broker.connect()
 
     assert (
-        len(caplog.records) == 1 and caplog.records[0].name == 'rasa.core.brokers.pika'
+        len(caplog.records) == 1 and caplog.records[0].name == "rasa.core.brokers.pika"
     )
 
 
