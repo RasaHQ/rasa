@@ -992,6 +992,7 @@ async def test_cross_validation_with_callback_success(
 async def test_cross_validation_with_callback_error(
     rasa_app_nlu: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
 ):
+    print('test')
     nlu_data = Path(default_nlu_data).read_text()
     config = Path(DEFAULT_STACK_CONFIG).read_text()
     payload = f"{nlu_data}\n{config}"
