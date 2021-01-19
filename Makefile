@@ -1,4 +1,4 @@
-.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
+.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de build-docker-base-mitie
 
 JOBS ?= 1
 
@@ -121,18 +121,10 @@ prepare-spacy:
 	poetry run python -m spacy link en_core_web_md en --force
 	poetry run python -m spacy link de_core_news_sm de --force
 
-prepare-mitie:
-	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
-ifeq ($(OS),Windows_NT)
-	7z x data/MITIE-models-v0.2.tar.bz2 -bb3
-	7z x MITIE-models-v0.2.tar -bb3
-	cp MITIE-models/english/total_word_feature_extractor.dat data/
-	rm -r MITIE-models
-	rm MITIE-models-v0.2.tar
-else
-	tar -xvjf data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C data/ MITIE-models/english/total_word_feature_extractor.dat
-endif
-	rm data/MITIE*.bz2
+prepare-mitie: build-docker-base-mitie
+	docker run --rm -v ${PWD}/data:/mnt --entrypoint cp \
+	rasa:base-mitie-localdev \
+	/build/data/total_word_feature_extractor.dat /mnt/total_word_feature_extractor.dat
 
 prepare-tests-files: prepare-spacy prepare-mitie
 
@@ -178,6 +170,11 @@ livedocs:
 
 release:
 	poetry run python scripts/release.py
+
+build-docker-base-mitie:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base-mitie
 
 build-docker:
 	export IMAGE_NAME=rasa && \

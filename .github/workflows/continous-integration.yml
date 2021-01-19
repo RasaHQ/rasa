@@ -211,6 +211,12 @@ jobs:
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+      with:
+        version: v0.5.1
+        driver: docker
+
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
       uses: Gr1N/setup-poetry@v4
@@ -308,7 +314,7 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
       with:
-        version: latest
+        version: v0.5.1
         driver: docker
 
     - name: Login to DockerHub Registry 🔢
@@ -337,16 +343,12 @@ jobs:
     - name: Check if a base image exists
       id: check_image
       run: |
-        DOCKERHUB_TAGS_URL="https://registry.hub.docker.com/v2/repositories/rasa/rasa/tags?page_size=10000"
-
         # Base image
         BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
-        BASE_IMAGE_TAG=$(curl -s ${DOCKERHUB_TAGS_URL} | jq -r '.results[] | select(.name == "base-'${BASE_IMAGE_HASH}'") | .name')
-
         echo "::set-output name=base_image_hash::${BASE_IMAGE_HASH}"
 
-        echo $BASE_IMAGE_TAG $BASE_IMAGE_HASH
-        if [[ "${BASE_IMAGE_TAG}" == "base-${BASE_IMAGE_HASH}" ]]; then
+        docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} > /dev/null; EXIT_CODE=$? || true
+        if [[ $EXIT_CODE -eq 0 ]]; then
           echo "::set-output name=base_exists::true"
         else
           echo "::set-output name=base_exists::false"
@@ -354,12 +356,10 @@ jobs:
 
         # Base MITIE image
         BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
-        BASE_MITIE_IMAGE_TAG=$(curl -s ${DOCKERHUB_TAGS_URL} | jq -r '.results[] | select(.name == "base-mitie-'${BASE_MITIE_IMAGE_HASH}'") | .name')
-
         echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH}"
 
-        echo $BASE_MITIE_IMAGE_TAG $BASE_MITIE_IMAGE_HASH
-        if [[ "${BASE_MITIE_IMAGE_TAG}" == "base-mitie-${BASE_MITIE_IMAGE_HASH}" ]]; then
+        docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH} > /dev/null; EXIT_CODE=$? || true
+        if [[ $EXIT_CODE -eq 0 ]]; then
           echo "::set-output name=base_mitie_exists::true"
         else
           echo "::set-output name=base_mitie_exists::false"
@@ -460,7 +460,7 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
       with:
-        version: latest
+        version: v0.5.1
         driver: docker
 
     - name: Login to DockerHub Registry 🔢

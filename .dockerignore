@@ -6,3 +6,5 @@ docs
 !docker/configs
 rasa/tests
 rasa/scripts
+data/
+examples/
