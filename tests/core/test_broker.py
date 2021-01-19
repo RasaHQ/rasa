@@ -87,14 +87,13 @@ def test_pika_queues_from_args(
     expected: List[Text],
     warning: Optional[Type[Warning]],
 ):
-    with pytest.warns(warning):
-        pika_processor = PikaEventBroker(
-            "host",
-            "username",
-            "password",
-            queues=queues_arg,
-            get_message=lambda: ("", None),
-        )
+    pika_processor = PikaEventBroker(
+        "host",
+        "username",
+        "password",
+        queues=queues_arg,
+        get_message=lambda: ("", None),
+    )
 
     assert pika_processor.queues == expected
 
@@ -215,8 +214,7 @@ async def test_load_custom_broker_without_async_support(tmpdir):
         }
     )
 
-    with pytest.warns(UserWarning):
-        assert isinstance(await EventBroker.create(config), FileEventBroker)
+    assert isinstance(await EventBroker.create(config), FileEventBroker)
 
 
 async def test_load_non_existent_custom_broker_name():
