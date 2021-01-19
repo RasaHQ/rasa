@@ -18,6 +18,14 @@ python-versions = "*"
 version = "0.5.0"
 
 [[package]]
+name = "aio-pika"
+version = "6.7.1"
+description = "Wrapper for the aiormq for asyncio and humans."
+category = "main"
+optional = false
+python-versions = ">3.5.*, <4"
+
+[[package]]
 category = "main"
 description = "Async http client/server framework (asyncio)"
 name = "aiohttp"
@@ -3387,6 +3395,10 @@ python-versions = ">=3.6,<3.8"
 [metadata.files]
 absl-py = [
     {file = "absl-py-0.9.0.tar.gz", hash = "sha256:75e737d6ce7723d9ff9b7aa1ba3233c34be62ef18d5859e706b8fdc828989830"},
+]
+aio-pika = [
+    {file = "aio-pika-6.7.1.tar.gz", hash = "sha256:9773440a89840941ac3099a7720bf9d51e8764a484066b82ede4d395660ff430"},
+    {file = "aio_pika-6.7.1-py3-none-any.whl", hash = "sha256:a8065be3c722eb8f9fff8c0e7590729e7782202cdb9363d9830d7d5d47b45c7c"},
 ]
 aiofiles = [
     {file = "aiofiles-0.5.0-py3-none-any.whl", hash = "sha256:377fdf7815cc611870c59cbd07b68b180841d2a2b79812d8c218be02448c2acb"},

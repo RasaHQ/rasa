@@ -23,6 +23,7 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.utils.common import raise_warning
 from sanic import Sanic
+from asyncio import AbstractEventLoop
 
 logger = logging.getLogger()  # get the root logger
 
@@ -197,6 +198,7 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
+    app.register_listener(close_resources, "after_server_stop")
 
     # noinspection PyUnresolvedReferences
     async def clear_model_files(_app: Sanic, _loop: Text) -> None:
@@ -224,7 +226,7 @@ async def load_agent_on_start(
     endpoints: AvailableEndpoints,
     remote_storage: Optional[Text],
     app: Sanic,
-    loop: Text,
+    loop: AbstractEventLoop,
 ):
     """Load an agent.
 
@@ -240,7 +242,7 @@ async def load_agent_on_start(
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None
 
-    _broker = EventBroker.create(endpoints.event_broker)
+    _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
     _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
     _lock_store = LockStore.create(endpoints.lock_store)
 
@@ -274,6 +276,25 @@ async def load_agent_on_start(
     logger.info("Rasa server is up and running.")
     return app.agent
 
+
+async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
+    """Gracefully closes resources when shutting down server.
+
+    Args:
+        app: The Sanic application.
+        _: The current Sanic worker event loop.
+    """
+    current_agent = getattr(app, "agent")
+    if not current_agent:
+        logger.debug("No agent found when shutting down server.")
+        return
+
+    event_broker = current_agent.tracker_store.event_broker
+    if event_broker:
+        if asyncio.iscoroutinefunction(event_broker.close):
+            event_broker.close()
+        else:
+            await event_broker.close()
 
 if __name__ == "__main__":
     raise RuntimeError(

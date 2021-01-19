@@ -3,6 +3,7 @@ import logging
 import typing
 from typing import List, Text, Optional
 
+import rasa.utils.common
 import rasa.cli.utils as cli_utils
 import rasa.core.utils as rasa_core_utils
 from rasa.cli.arguments import export as arguments
@@ -71,7 +72,7 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
     return TrackerStore.create(endpoints.tracker_store)
 
 
-def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"]:
+async def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"]:
     """Get `EventBroker` from `endpoints`.
 
     Prints an error and exits if no event broker could be loaded.
@@ -83,16 +84,19 @@ def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"
         Initialized event broker.
 
     """
-    if not endpoints.event_broker:
+    from rasa.core.brokers.broker import EventBroker
+
+    broker = await EventBroker.create(endpoints.event_broker)
+
+    if not broker:
         cli_utils.print_error_and_exit(
             f"Could not find an `event_broker` section in the supplied "
             f"endpoints file. Instructions on how to configure an event broker "
             f"can be found here: {DOCS_URL_EVENT_BROKERS}. Exiting."
         )
 
-    from rasa.core.brokers.broker import EventBroker
 
-    return EventBroker.create(endpoints.event_broker)
+    return broker
 
 
 def _get_requested_conversation_ids(
@@ -165,7 +169,16 @@ def _prepare_event_broker(event_broker: "EventBroker") -> None:
         )
 
 
-def export_trackers(args: argparse.Namespace) -> None:
+def export_trackers(args: arparse.Namespace) -> None:
+    """Export events for a connected tracker store using an event broker.
+
+    Args:
+        args: Command-line arguments to process.
+    """
+    rasa.utils.common.run_in_loop(_export_trackers(args))
+
+
+async def _export_trackers(args: argparse.Namespace) -> None:
     """Export events for a connected tracker store using an event broker.
 
     Args:
@@ -176,7 +189,7 @@ def export_trackers(args: argparse.Namespace) -> None:
 
     endpoints = rasa_core_utils.read_endpoints_from_path(args.endpoints)
     tracker_store = _get_tracker_store(endpoints)
-    event_broker = _get_event_broker(endpoints)
+    event_broker = await _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
 
@@ -192,7 +205,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     )
 
     try:
-        published_events = exporter.publish_events()
+        published_events = await exporter.publish_events()
         cli_utils.print_success(
             f"Done! Successfully published {published_events} events 🎉"
         )

@@ -1,6 +1,7 @@
 import json
 import logging
 import typing
+from asyncio import AbstractEventLoop
 from typing import Optional, Text, Dict
 
 from rasa.core.brokers.broker import EventBroker
@@ -23,8 +24,10 @@ class FileEventBroker(EventBroker):
         self.event_logger = self._event_logger()
 
     @classmethod
-    def from_endpoint_config(
-        cls, broker_config: Optional["EndpointConfig"]
+    async def from_endpoint_config(
+        cls,
+        broker_config: Optional["EndpointConfig"],
+        event_loop: Optional[AstractEventLoop] = None,
     ) -> Optional["FileEventBroker"]:
         if broker_config is None:
             return None

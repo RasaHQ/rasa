@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import logging
 import uuid
@@ -58,7 +59,7 @@ class Exporter:
         self.minimum_timestamp = minimum_timestamp
         self.maximum_timestamp = maximum_timestamp
 
-    def publish_events(self) -> int:
+    async def publish_events(self) -> int:
         """Publish events in a tracker store using an event broker.
 
         Exits if the publishing of events is interrupted due to an error. In that case,
@@ -89,7 +90,10 @@ class Exporter:
                 logger.exception(e)
                 raise PublishingError(current_timestamp)
 
-        self.event_broker.close()
+        if asyncio.iscoroutinefunction(self.event_broker.close):
+            self.event_broker.close()
+        else:
+            await self.event_broker.close()
 
         return published_events
 
