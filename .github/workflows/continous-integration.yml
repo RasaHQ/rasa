@@ -255,6 +255,9 @@ jobs:
         make prepare-tests-ubuntu
 
     - name: Install Dependencies (Windows) 📦
+      env:
+        # required in order to use buildx command
+        DOCKER_CLI_EXPERIMENTAL: enabled
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
       # Restoring cache doesn't work properly on Windows due to symlinks.
       # We create symlinks for spacy models, that's why we need to clean them up
