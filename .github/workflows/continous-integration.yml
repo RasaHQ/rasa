@@ -342,6 +342,8 @@ jobs:
 
     - name: Check if a base image exists
       id: check_image
+      env:
+        DOCKER_CLI_EXPERIMENTAL: enabled
       run: |
         # Base image
         BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
