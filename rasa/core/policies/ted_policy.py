@@ -1208,16 +1208,15 @@ class TED(TransformerRasaModel):
             sequence_lengths += 1
             mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
+            _inputs = (
+                tf_batch_data[attribute][SEQUENCE],
+                tf_batch_data[attribute][SENTENCE],
+                mask_sequence_text,
+                mask_text,
+            )
             attribute_features, _, _, _ = self._tf_layers[
                 f"{attribute}_sequence_layer"
-            ](
-                sequence_features=tf_batch_data[attribute][SEQUENCE],
-                sentence_features=tf_batch_data[attribute][SENTENCE],
-                mask_sequence=mask_sequence_text,
-                mask=mask_text,
-                training=self._training,
-                masked_lm_loss=self.config[MASKED_LM],
-            )
+            ](_inputs, masked_lm_loss=self.config[MASKED_LM], training=self._training,)
 
             if attribute == TEXT:
                 text_transformer_output = attribute_features
@@ -1248,9 +1247,10 @@ class TED(TransformerRasaModel):
         else:
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
+            _inputs = (tf_batch_data[attribute][SENTENCE],)
             attribute_features = self._tf_layers[
                 f"{attribute}_sparse_dense_concat_layer"
-            ](features=tf_batch_data[attribute][SENTENCE], training=self._training)
+            ](_inputs, training=self._training)
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             attribute_features = self._tf_layers[f"encoding_layer.{attribute}"](

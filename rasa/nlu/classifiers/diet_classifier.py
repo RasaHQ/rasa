@@ -816,7 +816,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
             self.component_config[BATCH_STRATEGY],
-            eager=True,
+            # eager=True,
         )
 
     # process helpers
@@ -1303,6 +1303,7 @@ class DIET(TransformerRasaModel):
             ] = rasa_layers.RasaInputLayer(
                 self.label_name, self.label_signature[self.label_name], self.config
             )
+
             self._prepare_ffnn_layer(
                 self.label_name,
                 self.config[HIDDEN_LAYERS_SIZES][self.label_name],
@@ -1337,33 +1338,11 @@ class DIET(TransformerRasaModel):
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
     ) -> tf.Tensor:
-        if (
-            not (len(sentence_features) > 0 and len(sequence_features) > 0)
-            and (
-                len(sentence_features) == 1
-                and not isinstance(sentence_features[0], tf.SparseTensor)
-            )
-            or (
-                len(sequence_features) == 1
-                and not isinstance(sequence_features[0], tf.SparseTensor)
-            )
-        ):
-            print("NOT using input_layer")
-            if len(sequence_features) == 1:
-                x = sequence_features[0]
-            else:
-                x = sentence_features[0]
-        else:
-            print("using input_layer")
-            x = self._tf_layers[f"{name}_input_layer"](
-                sequence_features=sequence_features,
-                sentence_features=sentence_features,
-                mask_sequence=sequence_mask,
-                mask_text=text_mask,
-                training=self._training,
-            )
-        print(f"x # {type(x)} # {x.shape}")
+        _inputs = (sequence_features, sentence_features, sequence_mask, text_mask)
+        x = self._tf_layers[f"{name}_input_layer"](_inputs, training=self._training)
+
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
+
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -1444,16 +1423,15 @@ class DIET(TransformerRasaModel):
         )
         mask_text = self._compute_mask(sequence_lengths)
 
-        (text_transformed, text_in, text_seq_ids, lm_mask_bool_text,) = self._tf_layers[
-            f"{self.text_name}_sequence_layer"
-        ](
-            sequence_features=tf_batch_data[TEXT][SEQUENCE],
-            sentence_features=tf_batch_data[TEXT][SENTENCE],
-            mask_sequence=mask_sequence_text,
-            mask=mask_text,
-            training=self._training,
-            masked_lm_loss=self.config[MASKED_LM],
+        _inputs = (
+            tf_batch_data[TEXT][SEQUENCE],
+            tf_batch_data[TEXT][SENTENCE],
+            mask_sequence_text,
+            mask_text,
         )
+        (text_transformed, text_in, text_seq_ids, _) = self._tf_layers[
+            f"{self.text_name}_sequence_layer"
+        ](_inputs, masked_lm_loss=self.config[MASKED_LM], training=self._training)
 
         losses = []
 
@@ -1591,12 +1569,15 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
+        _inputs = (
+            tf_batch_data[TEXT][SEQUENCE],
+            tf_batch_data[TEXT][SENTENCE],
+            mask_sequence_text,
+            mask,
+            # False,
+        )
         text_transformed, _, _, _ = self._tf_layers[f"{self.text_name}_sequence_layer"](
-            sequence_features=tf_batch_data[TEXT][SEQUENCE],
-            sentence_features=tf_batch_data[TEXT][SENTENCE],
-            mask_sequence=mask_sequence_text,
-            mask=mask,
-            training=self._training,
+            _inputs, masked_lm_loss=False, training=self._training
         )
 
         predictions: Dict[Text, tf.Tensor] = {}

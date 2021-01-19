@@ -32,6 +32,14 @@ from rasa.utils.tensorflow.transformer import TransformerEncoder
 # TODO: use this? it's in layers.py
 tfa.options.TF_ADDONS_PY_OPS = True
 
+# class ArtificialLayer(tf.keras.layers.Layer):
+#     def __init__(self, name: Text):
+#         super().__init__(name=f"{name}_artificial")
+
+#     def call(self, arg1, arg2) -> tf.Tensor:
+#         result = arg2
+#         return result
+
 
 class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
     # TODO add docstring
@@ -88,17 +96,14 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
 
     def call(
         self,
-        features: List[Union[tf.Tensor, tf.SparseTensor]],
+        inputs: Tuple[List[Union[tf.Tensor, tf.SparseTensor]]],
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> tf.Tensor:
+        features = inputs[0]
+
         dense_features = []
-        print(
-            f"   sparse+dense layer got sparse ({self.have_sparse_features}) and dense ({self.have_dense_features}) features"
-        )
         for f in features:
-            print(f"   - {type(f)}")
             if isinstance(f, tf.SparseTensor):
-                print("   -> sparse")
                 if self.use_sparse_dropout:
                     _f = self._sparse_dropout(f, training)
                 else:
@@ -111,15 +116,9 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
 
                 dense_features.append(dense_f)
             else:
-                print("   -> dense")
                 dense_features.append(f)
 
-        if len(dense_features) > 1:
-            print("   DO sparse+dense concatenation")
-            return tf.concat(dense_features, axis=-1)
-        else:
-            print("   SKIP sparse+dense concatenation")
-            return dense_features[0]
+        return tf.concat(dense_features, axis=-1)
 
 
 class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
@@ -161,9 +160,11 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
                 self.return_just = SENTENCE
                 self.output_units = sentence_signature.units
 
-    def call(
-        self, sequence: tf.Tensor, sentence: tf.Tensor, mask_text: tf.Tensor,
-    ) -> tf.Tensor:
+    def call(self, inputs: Tuple[tf.Tensor, tf.Tensor, tf.Tensor]) -> tf.Tensor:
+        sequence = inputs[0]
+        sentence = inputs[1]
+        mask_text = inputs[2]
+
         if self.do_concatenation:
             if self.unify_dimensions_before_concat:
                 sequence = self.unify_dimensions_layers[SEQUENCE](sequence)
@@ -272,41 +273,45 @@ class RasaInputLayer(tf.keras.layers.Layer):
         else:
             self.output_units = self.concat_sparse_dense[SENTENCE].output_units
 
-        self.identifier = name
-
     def call(
         self,
-        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask_sequence: tf.Tensor = None,
-        mask_text: tf.Tensor = None,
-        training: bool = True,
+        inputs: Tuple[
+            List[Union[tf.Tensor, tf.SparseTensor]],
+            List[Union[tf.Tensor, tf.SparseTensor]],
+            tf.Tensor,
+            tf.Tensor,
+        ],
+        training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> tf.Tensor:
-        print(f"concat_seq_sent layer ({self.identifier})")
+        sequence_features = inputs[0]
+        sentence_features = inputs[1]
+        mask_sequence = inputs[2]
+        mask_text = inputs[3]
+
         if self.do_seq_sent_concat:
-            print(" do_concat")
-            print("  sequence")
-            sequence = self.concat_sparse_dense[SEQUENCE](sequence_features, training)
+            _inputs = (sequence_features,)
+            sequence = self.concat_sparse_dense[SEQUENCE](_inputs, training=training)
+
             if sequence is not None and mask_sequence is not None:
                 sequence = sequence * mask_sequence
-            print("  sentence")
-            sentence = self.concat_sparse_dense[SENTENCE](sentence_features, training)
-            print(f"   sentence # {type(sentence)} # {sentence.shape}")
-            print(f"   sequence # {type(sequence)} # {sequence.shape}")
-            sequence_sentence = self.concat_seq_sent(sequence, sentence, mask_text)
-            print(
-                f"   sequence_sentence # {type(sequence_sentence)} # {sequence_sentence.shape}"
-            )
+
+            _inputs = (sentence_features,)
+            sentence = self.concat_sparse_dense[SENTENCE](_inputs, training=training)
+
+            _inputs = (sequence, sentence, mask_text)
+            sequence_sentence = self.concat_seq_sent(_inputs)
+
             return sequence_sentence
+
         elif self.concat_sparse_dense[SEQUENCE]:
-            print(" return_only_seq")
-            sequence = self.concat_sparse_dense[SEQUENCE](sequence_features, training)
-            print(f"   sequence # {type(sequence)} # {sequence.shape}")
+            _inputs = (sequence_features,)
+            sequence = self.concat_sparse_dense[SEQUENCE](_inputs, training=training)
+
             return sequence
         else:
-            print(" return_only_sent")
-            sentence = self.concat_sparse_dense[SENTENCE](sentence_features, training)
-            print(f"   sentence # {type(sentence)} # {sentence.shape}")
+            _inputs = (sentence_features,)
+            sentence = self.concat_sparse_dense[SENTENCE](_inputs, training=training)
+
             return sentence
 
 
@@ -424,19 +429,25 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
     def call(
         self,
-        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask_sequence: tf.Tensor,
-        mask: tf.Tensor,
-        training: bool,
+        inputs: Tuple[
+            List[Union[tf.Tensor, tf.SparseTensor]],
+            List[Union[tf.Tensor, tf.SparseTensor]],
+            tf.Tensor,
+            tf.Tensor,
+            # bool,
+        ],
         masked_lm_loss: bool = False,
+        training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
-        print("SEQUENCE layer")
-        inputs = self.input_layer(
-            sequence_features, sentence_features, mask_sequence, mask
-        )
+        sequence_features = inputs[0]
+        sentence_features = inputs[1]
+        mask_sequence = inputs[2]
+        mask_text = inputs[3]
 
-        inputs = self.ffnn(inputs, training)
+        _inputs = (sequence_features, sentence_features, mask_sequence, mask_text)
+        x = self.input_layer(_inputs)
+
+        x = self.ffnn(x, training)
 
         if self.produce_dense_token_ids:
             seq_ids = self._features_as_seq_ids(sequence_features)
@@ -446,17 +457,17 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # TODO unify this with self.produce_dense_token_ids?
         if masked_lm_loss:
             transformer_inputs, lm_mask_bool = self.input_mask_layer(
-                inputs, mask, training
+                x, mask_text, training
             )
         else:
-            transformer_inputs = inputs
+            transformer_inputs = x
             lm_mask_bool = None
 
         if self.num_transformer_layers > 0:
-            outputs = self.transformer(transformer_inputs, 1 - mask, training)
+            outputs = self.transformer(transformer_inputs, 1 - mask_text, training)
             # apply activation
             outputs = tfa.activations.gelu(outputs)
         else:
             outputs = transformer_inputs
 
-        return outputs, inputs, seq_ids, lm_mask_bool
+        return outputs, x, seq_ids, lm_mask_bool
