@@ -217,7 +217,7 @@ def run(args: argparse.Namespace) -> None:
         if path == "":
             path = "."
 
-        if "win" not in sys.platform.lower():
+        if "win" not in sys.platform.lower(): 
             path = os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
     if args.no_prompt and not os.path.isdir(path):
