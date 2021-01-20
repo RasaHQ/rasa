@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type, List, Text, Tuple, Optional, Any, Dict
+from typing import Type, List, Text, Tuple, Optional, Any
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -18,12 +18,7 @@ from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
-from rasa.shared.nlu.constants import (
-    ACTION_NAME,
-    INTENT_NAME_KEY,
-    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-    SPLIT_ENTITIES_BY_COMMA,
-)
+from rasa.shared.nlu.constants import (ACTION_NAME, INTENT_NAME_KEY)
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
