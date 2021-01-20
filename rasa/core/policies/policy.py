@@ -223,7 +223,7 @@ class Policy:
         interpreter: NaturalLanguageInterpreter,
         use_text_for_last_user_input: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        """Transform training trackers into a vector representation.
+        """Transforms training tracker into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model.
