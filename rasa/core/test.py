@@ -343,6 +343,7 @@ async def _create_data_generator(
     story_graph = await test_data_importer.get_stories(
         resource_name, agent.domain, use_e2e
     )
+
     return TrainingDataGenerator(
         story_graph,
         agent.domain,
