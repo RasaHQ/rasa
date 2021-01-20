@@ -1429,7 +1429,7 @@ class DIET(TransformerRasaModel):
             mask_sequence_text,
             mask_text,
         )
-        (text_transformed, text_in, text_seq_ids, _) = self._tf_layers[
+        (text_transformed, text_in, text_seq_ids, lm_mask_bool_text) = self._tf_layers[
             f"{self.text_name}_sequence_layer"
         ](_inputs, masked_lm_loss=self.config[MASKED_LM], training=self._training)
 
