@@ -571,8 +571,8 @@ class TEDPolicy(Policy):
             non_e2e_action_name = domain.action_names_or_texts[
                 np.argmax(confidences[0])
             ]
-            e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
             logger.debug(f"User intent lead to '{non_e2e_action_name}'.")
+            e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
             logger.debug(f"User text lead to '{e2e_action_name}'.")
             if (
                 np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
