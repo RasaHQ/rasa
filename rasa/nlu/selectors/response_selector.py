@@ -89,8 +89,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE,
     INTENT_RESPONSE_KEY,
     INTENT_NAME_KEY,
-    PREDICTED_CONFIDENCE_KEY,
-    SPLIT_ENTITIES_BY_COMMA,
+    PREDICTED_CONFIDENCE_KEY
 )
 
 from rasa.utils.tensorflow.model_data import RasaModelData
