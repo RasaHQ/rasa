@@ -61,29 +61,12 @@ nlu:
   - text: |
       how much CO2 to [new york]{{"entity": "city", "role": "to"}}?
 - intent: greet
+  metadata: initiate-conversation
   examples: |
     - Hi
     - Hello
 """
 
-INTENT_EXAMPLES_WITH_METADATA_ROUNDTRIP = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-nlu:
-- intent: intent_name
-  examples:
-  - text: |
-      how much CO2 will that use?
-    metadata:
-      sentiment: positive
-  - text: |
-      how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
-    metadata: co2-trip-calculation
-  - text: |
-      how much CO2 to [new york]{{"entity": "city", "role": "to"}}?
-- intent: greet
-  examples: |
-    - Hi
-    - Hello
-"""
 
 MINIMAL_VALID_EXAMPLE = """
 nlu:\n
@@ -198,10 +181,10 @@ def test_intent_with_metadata_is_parsed():
 
 def test_metadata_roundtrip():
     reader = RasaYAMLReader()
-    result = reader.reads(INTENT_EXAMPLES_WITH_METADATA_ROUNDTRIP)
+    result = reader.reads(INTENT_EXAMPLES_WITH_METADATA)
 
     dumped = RasaYAMLWriter().dumps(result)
-    assert dumped == INTENT_EXAMPLES_WITH_METADATA_ROUNDTRIP
+    assert dumped == INTENT_EXAMPLES_WITH_METADATA
 
     validation_reader = RasaYAMLReader()
     dumped_result = validation_reader.reads(dumped)

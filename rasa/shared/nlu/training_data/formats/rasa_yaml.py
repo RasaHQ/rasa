@@ -37,6 +37,7 @@ KEY_REGEX_EXAMPLES = "examples"
 KEY_LOOKUP = "lookup"
 KEY_LOOKUP_EXAMPLES = "examples"
 KEY_METADATA = "metadata"
+KEY_METADATA_INTENT = "intent"
 KEY_METADATA_EXAMPLE = "example"
 
 MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
@@ -475,39 +476,51 @@ class RasaYAMLWriter(TrainingDataWriter):
         result = []
 
         for entity_key, examples in training_examples.items():
-            converted_examples = []
-            render_as_objects = False
-            for example in examples:
-                converted_example = {
-                    KEY_INTENT_TEXT: example_extraction_predicate(example)
-                }
-
-                if isinstance(example, dict) and KEY_METADATA_EXAMPLE in example.get(
-                    KEY_METADATA, {}
-                ):
-                    render_as_objects = True
-                    converted_example[KEY_METADATA] = example[KEY_METADATA][
-                        KEY_METADATA_EXAMPLE
-                    ]
-
-                converted_examples.append(converted_example)
+            converted, intent_metadata = RasaYAMLWriter._convert_training_examples(
+                examples, example_extraction_predicate
+            )
 
             next_item = OrderedDict()
             next_item[key_name] = entity_key
+            if intent_metadata:
+                next_item[KEY_METADATA] = intent_metadata
 
+            render_as_objects = True in [KEY_METADATA in ex for ex in converted]
             if render_as_objects:
-                rendered_examples = RasaYAMLWriter._render_training_examples_as_objects(
-                    converted_examples
+                rendered = RasaYAMLWriter._render_training_examples_as_objects(
+                    converted
                 )
             else:
-                rendered_examples = RasaYAMLWriter._render_training_examples_as_text(
-                    converted_examples
-                )
-            next_item[key_examples] = rendered_examples
+                rendered = RasaYAMLWriter._render_training_examples_as_text(converted)
+            next_item[key_examples] = rendered
 
             result.append(next_item)
 
         return result
+
+    @staticmethod
+    def _convert_training_examples(
+        training_examples: List[Dict], example_extraction_predicate=lambda x: x
+    ) -> Tuple[List[Dict], Optional[Dict]]:
+        """Returns converted training examples and potential intent metadata."""
+        result = []
+        intent_metadata = None
+
+        for example in training_examples:
+            converted = {KEY_INTENT_TEXT: example_extraction_predicate(example)}
+
+            if isinstance(example, dict) and KEY_METADATA in example:
+                metadata = example[KEY_METADATA]
+
+                if KEY_METADATA_EXAMPLE in metadata:
+                    converted[KEY_METADATA] = metadata[KEY_METADATA_EXAMPLE]
+
+                if intent_metadata is None and KEY_METADATA_INTENT in metadata:
+                    intent_metadata = metadata[KEY_METADATA_INTENT]
+
+            result.append(converted)
+
+        return result, intent_metadata
 
     @staticmethod
     def _render_training_examples_as_objects(examples: List[Dict]) -> List[Dict]:
