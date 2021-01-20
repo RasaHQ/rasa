@@ -18,7 +18,7 @@ from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
-from rasa.shared.nlu.constants import (ACTION_NAME, INTENT_NAME_KEY)
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
