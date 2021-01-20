@@ -38,6 +38,7 @@ from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
@@ -336,9 +337,10 @@ async def _create_data_generator(
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
 
-    from rasa.core import training
-
-    story_graph = await training.extract_story_graph(
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[resource_name]
+    )
+    story_graph = await test_data_importer.get_stories(
         resource_name, agent.domain, use_e2e
     )
     return TrainingDataGenerator(
