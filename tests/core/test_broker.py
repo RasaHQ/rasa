@@ -63,7 +63,7 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
 
 
 @pytest.mark.parametrize(
-    "queue_arg,queues_arg,expected,warning",
+    "queues_arg,expected,warning",
     [
         # default case
         (["q1", "q2"], ["q1", "q2"], None),
