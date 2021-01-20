@@ -1,4 +1,4 @@
-.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de build-docker-base-mitie
+.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
 JOBS ?= 1
 
@@ -39,6 +39,8 @@ help:
 	@echo "        Build the docs locally."
 	@echo "    release"
 	@echo "        Prepare a release."
+	@echo "    build-docker"
+	@echo "        Build Rasa Open Source Docker image."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -121,20 +123,34 @@ prepare-spacy:
 	poetry run python -m spacy link en_core_web_md en --force
 	poetry run python -m spacy link de_core_news_sm de --force
 
-prepare-mitie: build-docker-base-mitie
-	docker run --rm -v ${PWD}/data:/mnt --entrypoint cp \
-	rasa:base-mitie-localdev \
-	/build/data/total_word_feature_extractor.dat /mnt/total_word_feature_extractor.dat
+prepare-mitie:
+	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+ifeq ($(OS),Windows_NT)
+	7z x data/MITIE-models-v0.2.tar.bz2 -bb3
+	7z x MITIE-models-v0.2.tar -bb3
+	cp MITIE-models/english/total_word_feature_extractor.dat data/
+	rm -r MITIE-models
+	rm MITIE-models-v0.2.tar
+else
+	tar -xvjf data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C data/ MITIE-models/english/total_word_feature_extractor.dat
+endif
+	rm data/MITIE*.bz2
 
 prepare-tests-files: prepare-spacy prepare-mitie
 
-prepare-tests-macos: prepare-tests-files
+prepare-wget-macos:
+	brew install wget || true
+
+prepare-wget-windows:
+	choco install wget
+
+prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
-prepare-tests-windows: prepare-tests-files
+prepare-tests-windows: prepare-wget-windows prepare-tests-files
 	choco install graphviz
 
 test: clean
@@ -164,9 +180,6 @@ livedocs:
 
 release:
 	poetry run python scripts/release.py
-
-build-docker-base-mitie:
-	docker build -f docker/Dockerfile.base-mitie -t rasa:base-mitie-localdev docker/
 
 build-docker:
 	export IMAGE_NAME=rasa && \
