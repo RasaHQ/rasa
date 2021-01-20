@@ -66,34 +66,26 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     "queue_arg,queues_arg,expected,warning",
     [
         # default case
-        (None, ["q1"], ["q1"], None),
-        # only provide `queue`
-        ("q1", None, ["q1"], FutureWarning),
-        # supplying a list for `queue` works too
-        (["q1", "q2"], None, ["q1", "q2"], FutureWarning),
-        # `queues` arg supplied, takes precedence
-        ("q1", "q2", ["q2"], FutureWarning),
-        # same, but with a list
-        ("q1", ["q2", "q3"], ["q2", "q3"], FutureWarning),
-        # only supplying `queues` works, and queues is a string
-        (None, "q1", ["q1"], None),
+        (["q1", "q2"], ["q1", "q2"], None),
+        # `queues` arg supplied, as string
+        ("q1", ["q1"], None),
         # no queues provided. Use default queue and print warning.
-        (None, None, [DEFAULT_QUEUE_NAME], UserWarning),
+        (None, [DEFAULT_QUEUE_NAME], UserWarning),
     ],
 )
 def test_pika_queues_from_args(
-    queue_arg: Union[Text, List[Text], None],
     queues_arg: Union[Text, List[Text], None],
     expected: List[Text],
     warning: Optional[Type[Warning]],
 ):
-    pika_processor = PikaEventBroker(
-        "host",
-        "username",
-        "password",
-        queues=queues_arg,
-        get_message=lambda: ("", None),
-    )
+    with pytest.warns(warning):
+        pika_processor = PikaEventBroker(
+            "host",
+            "username",
+            "password",
+            queues=queues_arg,
+            get_message=lambda: ("", None),
+        )
 
     assert pika_processor.queues == expected
 
