@@ -527,6 +527,9 @@ class TEDPolicy(Policy):
                 self._label_data,
                 self._entity_tag_specs,
             )
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+            )
 
         (
             data_generator,
@@ -546,9 +549,6 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir,
         )
 
-        self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
-        )
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],

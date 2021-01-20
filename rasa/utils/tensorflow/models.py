@@ -74,6 +74,8 @@ class RasaModel(TmpKerasModel):
         Args:
             random_seed: set the random seed to get reproducible results
         """
+        # make sure that keras releases resources from previously trained model
+        tf.keras.backend.clear_session()
         super().__init__(**kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")

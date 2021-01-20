@@ -813,6 +813,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+            )
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
@@ -829,9 +832,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.tmp_checkpoint_dir,
         )
 
-        self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
-        )
         self.model.fit(
             data_generator,
             epochs=self.component_config[EPOCHS],
@@ -1145,7 +1145,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
-
         return self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
