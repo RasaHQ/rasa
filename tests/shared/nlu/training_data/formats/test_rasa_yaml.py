@@ -19,13 +19,15 @@ from rasa.shared.nlu.training_data.formats.rasa_yaml import (
 )
 
 
-MULTILINE_INTENT_EXAMPLES = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+MULTILINE_INTENT_EXAMPLES = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   examples: |
     - how much CO2 will that use?
     - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
+    - what's the carbon footprint of a flight from london to new york?
+    - how much co2 to new york?
+    - how much co2 is produced on a return flight from london to new york?
 """
 
 MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = """
@@ -43,7 +45,7 @@ nlu:
     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
-INTENT_EXAMPLES_WITH_METADATA = """
+INTENT_EXAMPLES_WITH_METADATA = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   metadata:
@@ -54,7 +56,14 @@ nlu:
     metadata:
       sentiment: positive
   - text: |
-      how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
+      how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
+    metadata: co2-trip-calculation
+  - text: |
+      how much CO2 to [new york]{{"entity": "city", "role": "to"}}?
+- intent: greet
+  examples: |
+    - Hi
+    - Hello
 """
 
 MINIMAL_VALID_EXAMPLE = """
@@ -141,7 +150,7 @@ def test_multiline_intent_is_parsed(example: Text):
 
     assert not len(record)
 
-    assert len(training_data.training_examples) == 2
+    assert len(training_data.training_examples) == 5
     assert training_data.training_examples[0].get(
         INTENT
     ) == training_data.training_examples[1].get(INTENT)
@@ -156,13 +165,16 @@ def test_intent_with_metadata_is_parsed():
 
     assert not len(record)
 
-    assert len(training_data.training_examples) == 2
-    example_1, example_2 = training_data.training_examples
+    assert len(training_data.training_examples) == 5
+    example_1, example_2, *other_examples = training_data.training_examples
     assert example_1.get(METADATA) == {
         METADATA_INTENT: ["johnny"],
         METADATA_EXAMPLE: {"sentiment": "positive"},
     }
-    assert example_2.get(METADATA) == {METADATA_INTENT: ["johnny"]}
+    assert example_2.get(METADATA) == {
+        METADATA_INTENT: ["johnny"],
+        METADATA_EXAMPLE: "co2-trip-calculation",
+    }
 
 
 # This test would work only with examples that have a `version` key specified
