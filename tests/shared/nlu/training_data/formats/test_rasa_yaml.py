@@ -66,6 +66,25 @@ nlu:
     - Hello
 """
 
+INTENT_EXAMPLES_WITH_METADATA_ROUNDTRIP = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+nlu:
+- intent: intent_name
+  examples:
+  - text: |
+      how much CO2 will that use?
+    metadata:
+      sentiment: positive
+  - text: |
+      how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
+    metadata: co2-trip-calculation
+  - text: |
+      how much CO2 to [new york]{{"entity": "city", "role": "to"}}?
+- intent: greet
+  examples: |
+    - Hi
+    - Hello
+"""
+
 MINIMAL_VALID_EXAMPLE = """
 nlu:\n
 stories:
@@ -175,6 +194,22 @@ def test_intent_with_metadata_is_parsed():
         METADATA_INTENT: ["johnny"],
         METADATA_EXAMPLE: "co2-trip-calculation",
     }
+
+
+def test_metadata_roundtrip():
+    reader = RasaYAMLReader()
+    result = reader.reads(INTENT_EXAMPLES_WITH_METADATA_ROUNDTRIP)
+
+    dumped = RasaYAMLWriter().dumps(result)
+    assert dumped == INTENT_EXAMPLES_WITH_METADATA_ROUNDTRIP
+
+    validation_reader = RasaYAMLReader()
+    dumped_result = validation_reader.reads(dumped)
+
+    assert dumped_result.training_examples == result.training_examples
+
+    # dumping again should also not change the format
+    assert dumped == RasaYAMLWriter().dumps(dumped_result)
 
 
 # This test would work only with examples that have a `version` key specified

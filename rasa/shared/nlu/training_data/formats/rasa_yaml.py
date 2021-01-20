@@ -8,6 +8,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import YamlException
 from rasa.shared.utils import validation
 from ruamel.yaml import StringIO
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
@@ -36,6 +37,7 @@ KEY_REGEX_EXAMPLES = "examples"
 KEY_LOOKUP = "lookup"
 KEY_LOOKUP_EXAMPLES = "examples"
 KEY_METADATA = "metadata"
+KEY_METADATA_EXAMPLE = "example"
 
 MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
 
@@ -470,21 +472,59 @@ class RasaYAMLWriter(TrainingDataWriter):
         key_examples: Text,
         example_extraction_predicate=lambda x: x,
     ) -> List[OrderedDict]:
-        from ruamel.yaml.scalarstring import LiteralScalarString
-
         result = []
-        for entity_key, examples in training_examples.items():
 
-            converted_examples = [
-                TrainingDataWriter.generate_list_item(
-                    example_extraction_predicate(example).strip(STRIP_SYMBOLS)
-                )
-                for example in examples
-            ]
+        for entity_key, examples in training_examples.items():
+            converted_examples = []
+            render_as_objects = False
+            for example in examples:
+                converted_example = {
+                    KEY_INTENT_TEXT: example_extraction_predicate(example)
+                }
+
+                if isinstance(example, dict) and KEY_METADATA_EXAMPLE in example.get(
+                    KEY_METADATA, {}
+                ):
+                    render_as_objects = True
+                    converted_example[KEY_METADATA] = example[KEY_METADATA][
+                        KEY_METADATA_EXAMPLE
+                    ]
+
+                converted_examples.append(converted_example)
 
             next_item = OrderedDict()
             next_item[key_name] = entity_key
-            next_item[key_examples] = LiteralScalarString("".join(converted_examples))
+
+            if render_as_objects:
+                rendered_examples = RasaYAMLWriter._render_training_examples_as_objects(
+                    converted_examples
+                )
+            else:
+                rendered_examples = RasaYAMLWriter._render_training_examples_as_text(
+                    converted_examples
+                )
+            next_item[key_examples] = rendered_examples
+
             result.append(next_item)
 
         return result
+
+    @staticmethod
+    def _render_training_examples_as_objects(examples: List[Dict]) -> List[Dict]:
+        def render(example: Dict) -> Dict:
+            value = example[KEY_INTENT_TEXT]
+            example[KEY_INTENT_TEXT] = LiteralScalarString(
+                TrainingDataWriter.generate_string_item(value)
+            )
+            return example
+
+        return [render(ex) for ex in examples]
+
+    @staticmethod
+    def _render_training_examples_as_text(examples: List[Dict]) -> List[Text]:
+        def render(example: Dict) -> Text:
+            return TrainingDataWriter.generate_list_item(
+                example[KEY_INTENT_TEXT].strip(STRIP_SYMBOLS)
+            )
+
+        return LiteralScalarString("".join([render(example) for example in examples]))
