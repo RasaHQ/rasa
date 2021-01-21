@@ -213,7 +213,7 @@ class Policy:
             [tracker],
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
-            for_only_ml_policy=self.supported_data() == SupportedData.ML_DATA,
+            ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
         )[0]
 
     def featurize_for_prediction(
@@ -245,7 +245,7 @@ class Policy:
             domain,
             interpreter,
             use_text_for_last_user_input=use_text_for_last_user_input,
-            for_only_ml_policy=self.supported_data() == SupportedData.ML_DATA,
+            ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
         )
 
     def train(

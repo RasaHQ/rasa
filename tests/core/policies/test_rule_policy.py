@@ -1999,7 +1999,7 @@ def test_hide_rule_turn():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    states = tracker.past_states(domain, for_only_ml_policy=True)
+    states = tracker.past_states(domain, ignore_rule_only_turns=True)
     assert states == [
         {},
         {
@@ -2096,8 +2096,8 @@ def test_hide_rule_turn_with_slots():
     )
     assert_predicted_action(prediction, domain, some_action)
     assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert some_slot in prediction.optional_events[0].only_rule_slots
-    assert some_other_slot not in prediction.optional_events[0].only_rule_slots
+    assert some_slot in prediction.optional_events[0].rule_only_slots
+    assert some_other_slot not in prediction.optional_events[0].rule_only_slots
 
     conversation_events += prediction.optional_events
     conversation_events += [
@@ -2107,7 +2107,7 @@ def test_hide_rule_turn_with_slots():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    states = tracker.past_states(domain, for_only_ml_policy=True)
+    states = tracker.past_states(domain, ignore_rule_only_turns=True)
     assert states == [
         {},
         {
@@ -2178,7 +2178,7 @@ def test_hide_rule_turn_no_last_action_listen():
     )
     assert_predicted_action(prediction, domain, action_after_chitchat)
     assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert followup_on_chitchat in prediction.optional_events[0].only_rule_slots
+    assert followup_on_chitchat in prediction.optional_events[0].rule_only_slots
 
     conversation_events += prediction.optional_events
     conversation_events += [
@@ -2187,7 +2187,7 @@ def test_hide_rule_turn_no_last_action_listen():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    states = tracker.past_states(domain, for_only_ml_policy=True)
+    states = tracker.past_states(domain, ignore_rule_only_turns=True)
     assert states == [
         {},
         {USER: {INTENT: chitchat}, PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME}},
@@ -2265,8 +2265,8 @@ def test_hide_rule_turn_with_loops():
     )
     assert_predicted_action(prediction, domain, form_name)
     assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert form_name in prediction.optional_events[0].only_rule_loops
-    assert another_form_name not in prediction.optional_events[0].only_rule_loops
+    assert form_name in prediction.optional_events[0].rule_only_loops
+    assert another_form_name not in prediction.optional_events[0].rule_only_loops
 
     conversation_events += prediction.optional_events
     conversation_events += [
@@ -2282,8 +2282,8 @@ def test_hide_rule_turn_with_loops():
     )
     assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
     assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert form_name in prediction.optional_events[0].only_rule_loops
-    assert another_form_name not in prediction.optional_events[0].only_rule_loops
+    assert form_name in prediction.optional_events[0].rule_only_loops
+    assert another_form_name not in prediction.optional_events[0].rule_only_loops
 
     conversation_events += prediction.optional_events
     conversation_events += [
@@ -2293,7 +2293,7 @@ def test_hide_rule_turn_with_loops():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    states = tracker.past_states(domain, for_only_ml_policy=True)
+    states = tracker.past_states(domain, ignore_rule_only_turns=True)
     assert states == [
         {},
         {

@@ -207,8 +207,8 @@ class DialogueStateTracker:
         self._reset()
         self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
         self.hide_rule_turn = False
-        self.only_rule_slots = []
-        self.only_rule_loops = []
+        self.rule_only_slots = []
+        self.rule_only_loops = []
 
     ###
     # Public tracker interface
@@ -278,19 +278,19 @@ class DialogueStateTracker:
         )
 
     def past_states(
-        self, domain: Domain, for_only_ml_policy: bool = False
+        self, domain: Domain, ignore_rule_only_turns: bool = False
     ) -> List[State]:
         """Generate the past states of this tracker based on the history.
 
         Args:
             domain: a :class:`rasa.shared.core.domain.Domain`.
-            for_only_ml_policy: If True ignore dialogue turns that are present
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
 
         Returns:
             a list of states
         """
-        return domain.states_for_tracker_history(self, for_only_ml_policy)
+        return domain.states_for_tracker_history(self, ignore_rule_only_turns)
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.

@@ -25,6 +25,8 @@ from rasa.shared.core.constants import (
     ENTITY_LABEL_SEPARATOR,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    RULE_ONLY_SLOTS,
+    RULE_ONLY_LOOPS,
 )
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (
@@ -1896,24 +1898,24 @@ class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
 
     def __init__(
         self,
-        only_rule_slots: List[Text],
-        only_rule_loops: List[Text],
+        rule_only_slots: List[Text],
+        rule_only_loops: List[Text],
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Initializes event.
 
         Args:
-            only_rule_slots: The list of slot names,
+            rule_only_slots: The list of slot names,
                 SlotSet events for which shouldn't be hidden
-            only_rule_loops: The list of loop names,
+            rule_only_loops: The list of loop names,
                 ActiveLoop events for which shouldn't be hidden
             timestamp: the timestamp
             metadata: some optional metadata
         """
         super().__init__(timestamp, metadata)
-        self.only_rule_slots = only_rule_slots
-        self.only_rule_loops = only_rule_loops
+        self.rule_only_slots = rule_only_slots
+        self.rule_only_loops = rule_only_loops
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
@@ -1922,8 +1924,8 @@ class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> "HideRuleTurn":
         return HideRuleTurn(
-            parameters.get("only_rule_slots"),
-            parameters.get("only_rule_loops"),
+            parameters.get(RULE_ONLY_SLOTS),
+            parameters.get(RULE_ONLY_LOOPS),
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )
@@ -1937,8 +1939,8 @@ class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
         d = super().as_dict()
         d.update(
             {
-                "only_rule_slots": self.only_rule_slots,
-                "only_rule_loops": self.only_rule_loops,
+                RULE_ONLY_SLOTS: self.rule_only_slots,
+                RULE_ONLY_LOOPS: self.rule_only_loops,
             }
         )
         return d
@@ -1953,5 +1955,5 @@ class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
         # we will reset it on each action executed
         tracker.hide_rule_turn = True
         # only rule slots and loops are always the same for all the trackers
-        tracker.only_rule_slots = self.only_rule_slots
-        tracker.only_rule_loops = self.only_rule_loops
+        tracker.rule_only_slots = self.rule_only_slots
+        tracker.rule_only_loops = self.rule_only_loops

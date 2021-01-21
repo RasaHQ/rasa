@@ -79,3 +79,6 @@ SLOTS = "slots"
 
 USE_TEXT_FOR_FEATURIZATION = "use_text_for_featurization"
 ENTITY_LABEL_SEPARATOR = "#"
+
+RULE_ONLY_SLOTS = "rule_only_slots"
+RULE_ONLY_LOOPS = "rule_only_loops"

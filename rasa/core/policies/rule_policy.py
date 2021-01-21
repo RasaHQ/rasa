@@ -42,6 +42,8 @@ from rasa.shared.core.constants import (
     LOOP_NAME,
     SLOTS,
     ACTIVE_LOOP,
+    RULE_ONLY_SLOTS,
+    RULE_ONLY_LOOPS,
 )
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
@@ -64,8 +66,6 @@ DEFAULT_ACTION_MAPPINGS = {
 RULES = "rules"
 RULES_FOR_LOOP_UNHAPPY_PATH = "rules_for_loop_unhappy_path"
 RULES_NOT_IN_STORIES = "rules_not_in_stories"
-ONLY_RULE_SLOTS = "only_rule_slots"
-ONLY_RULE_LOOPS = "only_rule_loops"
 
 LOOP_WAS_INTERRUPTED = "loop_was_interrupted"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
@@ -426,7 +426,7 @@ class RulePolicy(MemoizationPolicy):
                     loops.add(active_loop)
         return slots, loops
 
-    def _find_only_rule_slots_loops(
+    def _find_rule_only_slots_loops(
         self,
         rule_trackers_as_states: List[List[State]],
         story_trackers_as_states: List[List[State]],
@@ -681,9 +681,9 @@ class RulePolicy(MemoizationPolicy):
 
         if self._check_for_contradictions:
             (
-                self.lookup[ONLY_RULE_SLOTS],
-                self.lookup[ONLY_RULE_LOOPS],
-            ) = self._find_only_rule_slots_loops(
+                self.lookup[RULE_ONLY_SLOTS],
+                self.lookup[RULE_ONLY_LOOPS],
+            ) = self._find_rule_only_slots_loops(
                 rule_trackers_as_states, story_trackers_as_states
             )
 
@@ -1086,7 +1086,7 @@ class RulePolicy(MemoizationPolicy):
         if self._prediction_source in self.lookup.get(RULES_NOT_IN_STORIES, []):
             # the prediction is based on rules that are not present in the stories
             optional_events = [
-                HideRuleTurn(self.lookup[ONLY_RULE_SLOTS], self.lookup[ONLY_RULE_LOOPS])
+                HideRuleTurn(self.lookup[RULE_ONLY_SLOTS], self.lookup[RULE_ONLY_LOOPS])
             ]
 
         return self._prediction(

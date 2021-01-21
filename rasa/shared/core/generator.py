@@ -108,13 +108,13 @@ class TrackerWithCachedStates(DialogueStateTracker):
         ]
 
     def past_states(
-        self, domain: Domain, for_only_ml_policy: bool = False
+        self, domain: Domain, ignore_rule_only_turns: bool = False
     ) -> List[State]:
         """Generate the past states of this tracker based on the history.
 
         Args:
             domain: a :class:`rasa.shared.core.domain.Domain`.
-            for_only_ml_policy: If True ignore dialogue turns that are present
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
 
         Returns:
