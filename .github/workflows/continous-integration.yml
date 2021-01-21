@@ -347,24 +347,16 @@ jobs:
         BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
         echo "::set-output name=base_image_hash::${BASE_IMAGE_HASH}"
 
-        docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} > /dev/null; EXIT_CODE=$? || true
-        if [[ $EXIT_CODE -eq 0 ]]; then
-          echo "::set-output name=base_exists::true"
-        else
-          echo "::set-output name=base_exists::false"
-        fi
+        BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+        echo "::set-output name=base_exists::${BASE_IMAGE_EXISTS}"
 
         # Base MITIE image
         BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
         MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH}"
+        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH}-${MAKEFILE_MITIE_HASH}"
 
-        docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH}-${MAKEFILE_MITIE_HASH} > /dev/null; EXIT_CODE=$? || true
-        if [[ $EXIT_CODE -eq 0 ]]; then
-          echo "::set-output name=base_mitie_exists::true"
-        else
-          echo "::set-output name=base_mitie_exists::false"
-        fi
+        BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH}-${MAKEFILE_MITIE_HASH} &> /dev/null && echo true || echo false) || true)
+        echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
 
     - name: Build Docker base image and push 🛠 ⬆
       if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
