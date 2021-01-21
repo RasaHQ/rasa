@@ -353,21 +353,21 @@ jobs:
         # Base MITIE image
         BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
         MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:40}-${MAKEFILE_MITIE_HASH:0:40}"
+        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}"
 
-        BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:40}-${MAKEFILE_MITIE_HASH:0:40} &> /dev/null && echo true || echo false) || true)
+        BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
         echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
 
     - name: Build Docker base image and push 🛠 ⬆
       if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
       run: |
-        export IMAGE_TAG=${{ hashFiles('docker/Dockerfile.base') }}
+        export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
         docker buildx bake -f docker/docker-bake.hcl base --push
 
     - name: Build Docker mitie base image and push 🛠 ⬆
       if: steps.check_image.outputs.base_mitie_exists == 'false'
       run: |
-        export IMAGE_TAG=${{ hashFiles('docker/Dockerfile.base-mitie') }}-${{ hashFiles('Makefile') }}
+        export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
         docker buildx bake -f docker/docker-bake.hcl base-mitie --push
 
     # Set environment variables for a pull request
