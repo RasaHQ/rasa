@@ -401,7 +401,7 @@ def _create_augmentation_summary(
     for intent in (
         pooled_intents | changed_intents | {"micro avg", "macro avg", "weighted avg"}
     ):
-        if intent not in classification_report.keys():
+        if intent not in classification_report:
             continue
 
         intent_results_original = classification_report[intent]
