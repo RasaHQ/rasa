@@ -931,14 +931,11 @@ class TED(TransformerRasaModel):
             )
         elif SENTENCE in data_signature:
             sparse_to_dense_layer_options = {
-                "units": self.config[DENSE_DIMENSION][attribute_name],
                 "reg_lambda": self.config[REGULARIZATION_CONSTANT],
-                "name": f"sparse_to_dense.{attribute_name}_{SENTENCE}",
             }
 
             self._tf_layers[
                 f"{attribute_name}_sparse_dense_concat_layer"
-                # ] = rasa_layers.RasaInputLayer(attribute_name, data_signature, self.config)
             ] = rasa_layers.ConcatenateSparseDenseFeatures(
                 attribute=attribute_name,
                 feature_type=SENTENCE,
@@ -946,7 +943,7 @@ class TED(TransformerRasaModel):
                 dropout_rate=self.config[DROP_RATE],
                 sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
                 dense_dropout=self.config[DENSE_INPUT_DROPOUT],
-                dense_concat_dimension=self.config[DENSE_DIMENSION][attribute_name],
+                sparse_to_dense_units=self.config[DENSE_DIMENSION][attribute_name],
                 **sparse_to_dense_layer_options,
             )
         else:
