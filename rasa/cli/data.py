@@ -495,30 +495,19 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         key=operator.itemgetter(1),
     )[: args.num_intents]
     low_precision_intents = sorted(
-        map(
-            lambda k: (k, classification_report[k]["precision"]),
-            nlu_training_data.intents,
-        ),
+        [(intent, classification_report[intent]["precision"]) for intent in nlu_training_data.intents],
         key=operator.itemgetter(1),
     )[: args.num_intents]
     low_recall_intents = sorted(
-        map(
-            lambda k: (k, classification_report[k]["recall"]), nlu_training_data.intents
-        ),
+        [(intent, classification_report[intent]["recall"]) for intent in nlu_training_data.intents],
         key=operator.itemgetter(1),
     )[: args.num_intents]
     low_f1_intents = sorted(
-        map(
-            lambda k: (k, classification_report[k]["f1-score"]),
-            nlu_training_data.intents,
-        ),
+        [(intent, classification_report[intent]["f1-score"]) for intent in nlu_training_data.intents],
         key=operator.itemgetter(1),
     )[: args.num_intents]
     freq_confused_intents = sorted(
-        map(
-            lambda k: (k, sum(classification_report[k]["confused_with"].values())),
-            nlu_training_data.intents,
-        ),
+        [(intent, sum(classification_report[intent]["confused_with"].values())) for intent in nlu_training_data.intents],
         key=operator.itemgetter(1),
         reverse=True,
     )[: args.num_intents]
