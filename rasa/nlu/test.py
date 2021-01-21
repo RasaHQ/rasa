@@ -636,7 +636,8 @@ def evaluate_intents(
         errors: If `True`, incorrect predictions are written to disk.
         disable_plotting: If `True`, no plots are created.
 
-    Returns: dictionary with evaluation results
+    Returns:
+        Dictionary with evaluation results.
     """
     intent_report = create_intent_report(
         intent_results=intent_results,
