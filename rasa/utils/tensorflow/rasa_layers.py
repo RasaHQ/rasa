@@ -86,13 +86,18 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
                 sparse_to_dense_kwargs[
                     "name"
                 ] = f"sparse_to_dense.{attribute}_{feature_type}"
+            # print("DfS")
             self._sparse_to_dense = layers.DenseForSparse(**sparse_to_dense_kwargs)
 
+            # print("SD")
             if self.use_sparse_dropout:
                 self._sparse_dropout = layers.SparseDropout(rate=dropout_rate)
 
         if self.use_dense_dropout:
+            # print("D")
             self._dense_dropout = tf.keras.layers.Dropout(rate=dropout_rate)
+
+        self.identifier = f"{attribute}_{feature_type}"
 
     def call(
         self,
@@ -101,21 +106,42 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
     ) -> tf.Tensor:
         features = inputs[0]
 
+        # print(f"INSIDE sparse+dense layer ({self.identifier})")
+        # print(f"--> indices -> {features[0].indices}")
+        # print(f"--> values -> {features[0].values}")
+
         dense_features = []
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 if self.use_sparse_dropout:
+                    # print("USE DROPOUT")
                     _f = self._sparse_dropout(f, training)
                 else:
+                    # print("DON'T USE DROPOUT")
                     _f = f
 
+                
+                # print(f"sparse before {self.identifier} # {_f.shape} # {_f.indices} # {_f.values}")
                 dense_f = self._sparse_to_dense(_f)
+                # print(f"SPARSE_TO_DENSE: {self._sparse_to_dense.name} {self._sparse_to_dense.units}")
+                
+                # weights = self._sparse_to_dense.get_weights()
+                # weights_new = [np.full(w.shape, 0.3) for w in weights]
+                # self._sparse_to_dense.set_weights(weights_new)
+                # dense_f = self._sparse_to_dense(_f)
+                # print(f"SPARSE_TO_DENSE: {self._sparse_to_dense.name} {self._sparse_to_dense.units}")
+                # for w in weights:
+                #     print(f"w # {w.shape} # {w}")
+                # print(f"sparse after converted into dense {self.identifier} # {dense_f.shape} # {dense_f}")
+
 
                 if self.use_dense_dropout:
                     dense_f = self._dense_dropout(dense_f, training)
 
+                # print(f"sparse after # {dense_f.shape} # {dense_f}")
                 dense_features.append(dense_f)
             else:
+                # print(f"dense before/after # {f.shape} # {f}")
                 dense_features.append(f)
 
         return tf.concat(dense_features, axis=-1)
@@ -145,6 +171,7 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
                         concat_layers_kwargs[
                             "layer_name_suffix"
                         ] = f"unify_dimensions_before_concat.{layer_name_suffix}_{feature_type}"
+                    # print("FFNN")
                     self.unify_dimensions_layers[feature_type] = layers.Ffnn(
                         **concat_layers_kwargs
                     )
@@ -273,6 +300,8 @@ class RasaInputLayer(tf.keras.layers.Layer):
         else:
             self.output_units = self.concat_sparse_dense[SENTENCE].output_units
 
+        self.identifier = name
+
     def call(
         self,
         inputs: Tuple[
@@ -288,18 +317,29 @@ class RasaInputLayer(tf.keras.layers.Layer):
         mask_sequence = inputs[2]
         mask_text = inputs[3]
 
+        # print(f"INSIDE sent+seq layer {self.identifier}")
+        # for (f, t) in [(sequence_features, "sequence"), (sentence_features, "sentence")]:
+        #     print(f"--> {t}.indices -> {f[0].indices}")
+        #     print(f"--> {t}.values -> {f[0].values}")
+        # print(len(sequence_features), len(sentence_features))
+
+
         if self.do_seq_sent_concat:
-            _inputs = (sequence_features,)
-            sequence = self.concat_sparse_dense[SEQUENCE](_inputs, training=training)
+            _inputs1 = (sequence_features,)
+            sequence = self.concat_sparse_dense[SEQUENCE](_inputs1, training=training)
+            # print(f"sequence before mask # {sequence.shape} # {sequence}")
 
             if sequence is not None and mask_sequence is not None:
                 sequence = sequence * mask_sequence
 
-            _inputs = (sentence_features,)
-            sentence = self.concat_sparse_dense[SENTENCE](_inputs, training=training)
+            _inputs2 = (sentence_features,)
+            sentence = self.concat_sparse_dense[SENTENCE](_inputs2, training=training)
+            # print(f"sequence AFTER SPARSE+DENSE # {sequence.shape} # {sequence}")
+            # print(f"sentence AFTER SPARSE+DENSE # {sentence.shape} # {sentence}")
 
-            _inputs = (sequence, sentence, mask_text)
-            sequence_sentence = self.concat_seq_sent(_inputs)
+            # exit(0)
+            _inputs3 = (sequence, sentence, mask_text)
+            sequence_sentence = self.concat_seq_sent(_inputs3)
 
             return sequence_sentence
 
@@ -335,6 +375,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         self.input_layer = RasaInputLayer(name, data_signature, config)
 
         # FFNN
+        # print("FFNN(seqlayer)")
         self.ffnn = layers.Ffnn(
             config[HIDDEN_LAYERS_SIZES][name],
             config[DROP_RATE],
@@ -347,6 +388,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # for sequential text features prepare the logic for producing dense token embeddings
         # to be used as labels in MLM. these will be sampled from for negative sampling.
         if name == TEXT and SEQUENCE in data_signature:
+            # print("InpMask")
             self.input_mask_layer = layers.InputMask()
 
             self.produce_dense_token_ids = True
@@ -359,6 +401,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             # if dense features are present, we use those as unique token-level embeddings,
             # otherwise we create these from the sparse features by using a simple layer.
             if has_sparse and not has_dense:
+                # print("DFS-ids")
                 self.sparse_to_dense_token_ids = layers.DenseForSparse(
                     units=2,
                     use_bias=False,
@@ -444,10 +487,18 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         mask_sequence = inputs[2]
         mask_text = inputs[3]
 
+        # print("INSIDE sequence_layer")
+        # for (f, t) in [(sequence_features, "sequence"), (sentence_features, "sentence")]:
+        #     print(f"--> {t}.indices -> {f[0].indices}")
+        #     print(f"--> {t}.values -> {f[0].values}")
+
+
         _inputs = (sequence_features, sentence_features, mask_sequence, mask_text)
         x = self.input_layer(_inputs)
+        # print(f"x after input layer # {x.shape} # {x}")
 
         x = self.ffnn(x, training)
+        # print(f"x after ffnn # {x.shape} # {x}")
 
         if self.produce_dense_token_ids:
             seq_ids = self._features_as_seq_ids(sequence_features)
@@ -465,7 +516,6 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
         if self.num_transformer_layers > 0:
             outputs = self.transformer(transformer_inputs, 1 - mask_text, training)
-            # apply activation
             outputs = tfa.activations.gelu(outputs)
         else:
             outputs = transformer_inputs

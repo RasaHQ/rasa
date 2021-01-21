@@ -1415,6 +1415,12 @@ class DIET(TransformerRasaModel):
             The loss of the given batch.
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+        # print(tf_batch_data["text"])
+        # for ft in ["sequence", "sentence"]:
+        #     print(f"--> {ft}")
+        #     sparse = tf_batch_data["text"][ft][0]
+        #     print(sparse.indices)
+        #     print(sparse.values)
 
         batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
@@ -1432,6 +1438,9 @@ class DIET(TransformerRasaModel):
         (text_transformed, text_in, text_seq_ids, lm_mask_bool_text) = self._tf_layers[
             f"{self.text_name}_sequence_layer"
         ](_inputs, masked_lm_loss=self.config[MASKED_LM], training=self._training)
+        # print(f"text_transformed # {type(text_transformed)} # {text_transformed.shape} # {text_transformed}")
+        # print(f"text_in # {type(text_in)} # {text_in.shape} # {text_in}")
+        # print(f"text_seq_ids # {type(text_seq_ids)} # {text_seq_ids.shape} # {text_seq_ids}")
 
         losses = []
 
