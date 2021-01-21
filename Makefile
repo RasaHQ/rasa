@@ -139,7 +139,7 @@ endif
 prepare-transformers:
 	CACHE_DIR=$(HOME)/.cache/torch/transformers;\
 	mkdir -p "$$CACHE_DIR";\
-	while read URL; do read -r CACHE_FILE; wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; done < "data/hf_transformers_models.txt"
+	while read URL; do read -r CACHE_FILE; wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; done < "data/test/hf_transformers_models.txt"
 
 prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 
