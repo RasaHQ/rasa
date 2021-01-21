@@ -1,17 +1,12 @@
 language: en
 
 pipeline:
-#   - name: "SpacyNLP"
-#   - name: "SpacyTokenizer"
-#   - name: "SpacyFeaturizer"
-  - name: WhitespaceTokenizer
-  - name: CountVectorsFeaturizer
-  - name: CountVectorsFeaturizer
-    analyzer: char_wb
-    min_ngram: 1
-    max_ngram: 4
-  - name: DIETClassifier
-    epochs: 5
+  - name: "SpacyNLP"
+  - name: "SpacyTokenizer"
+  - name: "SpacyFeaturizer"
+  - name: "DIETClassifier"
+    entity_recognition: False
+    epochs: 50
 
 policies:
   - name: TEDPolicy

@@ -648,9 +648,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # we don't have any intent labels during prediction, just add them during
             # training
             attributes_to_consider.append(label_attribute)
-        if training and self.component_config[ENTITY_RECOGNITION]:
-            # we don't have any entity tags during prediction, just add them during
-            # training
+        if (
+            training
+            and self.component_config[ENTITY_RECOGNITION]
+            and self._entity_tag_specs
+        ):
+            # Consider entities as features during training and only if there was
+            # training data added for entities with DIET configured to predict entities.
             attributes_to_consider.append(ENTITIES)
 
         if training and label_attribute is not None:

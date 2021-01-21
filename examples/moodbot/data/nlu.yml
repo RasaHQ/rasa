@@ -12,10 +12,9 @@ nlu:
     - hey there
     - let's go
     - hey dude
-    - [goodmorning](day)
+    - goodmorning
     - goodevening
-    - good [afternoon](day)
-#    - yo yo yo
+    - good afternoon
 
 - intent: goodbye
   examples: |
@@ -23,12 +22,12 @@ nlu:
     - cu
     - good by
     - cee you later
-    - good [night](day)
+    - good night
     - bye
-    - [goodbye](greet)
+    - goodbye
     - have a nice day
     - see you around
-    - [bye](greet) bye
+    - bye bye
     - see you later
 
 - intent: affirm
