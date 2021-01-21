@@ -579,8 +579,8 @@ def create_intent_report(
 
     Args:
         intent_results: intent evaluation results
-        add_confused_labels_to_report: add confused label information to the intent_report
-        metrics_as_dict: whether the evaluation metrics should be returned as Dict
+        add_confused_labels_to_report: Add confused label information to `intent_report`.
+        metrics_as_dict: Whether the evaluation metrics should be returned as `dict`.
 
     Returns:
         `IntentReport` `namedtuple` with evaluation results.
