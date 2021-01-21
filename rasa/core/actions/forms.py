@@ -461,14 +461,7 @@ class FormAction(LoopAction):
             # to be filled by the user.
             if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
-        user_rejected_manually = any(
-            isinstance(event, ActionExecutionRejected) for event in validation_events
-        )
-        if (
-            slot_to_fill
-            and not some_slots_were_validated
-            and not user_rejected_manually
-        ):
+        if slot_to_fill and not some_slots_were_validated:
             # reject to execute the form action
             # if some slot was requested but nothing was extracted
             # it will allow other policies to predict another action
