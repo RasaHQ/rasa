@@ -354,7 +354,7 @@ for up to 6 people. In this case you want the *value* of the
 slot to influence the next selected action (and not just whether
 it's been specified). You can do this by defining a custom slot class.
 
-The code below defines a custom slot class called `NumberOfPeopleSlot`.
+The code below defines a custom slot class called `NumberOfPeopleSlot`. 
 The featurization defines how the value of this slot gets converted to a vector
 so Rasa Open Source machine learning model can deal with it.
 The `NumberOfPeopleSlot` has three possible “values”, which can be represented with
@@ -366,7 +366,7 @@ a vector of length `2`.
 |`(1,0)` |between 1 and 6 |
 |`(0,1)` |more than 6     |
 
-```python
+```python title="my_custom_slots.py"
 from rasa.shared.core.slots import Slot
 
 class NumberOfPeopleSlot(Slot):
@@ -384,8 +384,39 @@ class NumberOfPeopleSlot(Slot):
         return r
 ```
 
-Rasa Open Source needs some training stories to learn from how to handle the
-different situations:
+You can implement a custom slot class as an independent python module, 
+separate from custom action code. Save the code for your custom slot in a directory 
+alongside an empty file called "\_\_init\_\_.py" so that it will be recognized as a python module.
+You can then refer to the custom slot class by it's module path.
+
+For example, say you have saved the code above in "addons/my_custom_slots.py", a directory relative to your bot project:
+
+```bash
+└── rasa_bot
+    ├── addons
+    │   ├── __init__.py
+    │   └── my_custom_slots.py
+    ├── config.yml
+    ├── credentials.yml
+    ├── data
+    ├── domain.yml
+    ├── endpoints.yml
+```
+
+Your custom slot type's module path
+is then `addons.my_custom_slots.NumberOfPeopleSlot`.
+Use the module path to refer to the custom slot type in your domain file:
+
+```yaml-rasa title="domain.yaml"
+slots:
+  people:
+    type: addons.my_custom_slots.NumberOfPeopleSlot
+    influence_conversation: true
+```
+
+Now that your custom slot class can be used by Rasa Open Source, add training stories that diverge based on the value of the `people` slot.
+You could write one story for the case where `people` has a value between 1 and 6, and one for a value greater than six. You can choose any value within these ranges to put in your stories, since they are all featurized the same way (see the featurization table above).
+
 
 ```yaml-rasa
 stories:
