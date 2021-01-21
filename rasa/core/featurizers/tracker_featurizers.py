@@ -59,7 +59,7 @@ class TrackerFeaturizer:
         Args:
             tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
             domain: a :class:`rasa.shared.core.domain.Domain`
-            for_only_ml_policy: If True ignore dialogue turns that are present
+            ignore_rule_only_turns: If `True` ignore dialogue turns that are present
                 only in rules.
 
         Returns:
