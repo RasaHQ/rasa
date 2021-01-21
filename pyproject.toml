@@ -1,4 +1,5 @@
 [build-system]
+# keep this in sync with the version in pyproject.toml and Dockerfile.base
 requires = [ "poetry>=1.1.4",]
 build-backend = "poetry.masonry.api"
 
