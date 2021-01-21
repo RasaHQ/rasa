@@ -435,7 +435,7 @@ def _plot_summary_reports(
     changed_intents_random: Set[Text],
     output_directory_diverse: Text,
     output_directory_random: Text,
-):
+) -> None:
 
     for metric in ["precision", "recall", "f1-score"]:
         output_file_diverse = os.path.join(
