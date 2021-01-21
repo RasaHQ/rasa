@@ -582,7 +582,8 @@ def create_intent_report(
         add_confused_labels_to_report: add confused label information to the intent_report
         metrics_as_dict: whether the evaluation metrics should be returned as Dict
 
-    Returns: IntentReport namedtuple with evaluation results
+    Returns:
+        `IntentReport` `namedtuple` with evaluation results.
     """
     import sklearn.metrics
     import sklearn.utils.multiclass
