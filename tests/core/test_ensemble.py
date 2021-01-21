@@ -115,7 +115,7 @@ class ConstantPolicy(Policy):
         priority: Optional[int] = None,
         predict_index: Optional[int] = None,
         confidence: float = 1,
-        is_end_to_end_prediction: bool = False,
+        is_end_to_end_prediction: Optional[bool] = False,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         **kwargs: Any,
@@ -525,6 +525,32 @@ def test_end_to_end_prediction_supersedes_others(default_domain: Domain):
     assert prediction.max_confidence == expected_confidence
     assert prediction.max_confidence_index == expected_action_index
     assert prediction.policy_name == f"policy_1_{ConstantPolicy.__name__}"
+
+
+def test_no_user_prediction_supersedes_others(default_domain: Domain):
+    expected_action_index = 2
+    expected_confidence = 0.5
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(priority=100, predict_index=0),
+            ConstantPolicy(priority=1, predict_index=1, is_end_to_end_prediction=True),
+            ConstantPolicy(
+                priority=1,
+                predict_index=expected_action_index,
+                confidence=expected_confidence,
+                is_end_to_end_prediction=None,
+            ),
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    prediction = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+
+    assert prediction.max_confidence == expected_confidence
+    assert prediction.max_confidence_index == expected_action_index
+    assert prediction.policy_name == f"policy_2_{ConstantPolicy.__name__}"
 
 
 def test_prediction_applies_must_have_policy_events(default_domain: Domain):
