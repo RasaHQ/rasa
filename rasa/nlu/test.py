@@ -651,12 +651,12 @@ def evaluate_intents(
         logger.info(f"Classification report saved to {report_filename}.")
 
     elif isinstance(intent_report.report, str):
-            log_evaluation_table(
-                intent_report.report,
-                intent_report.precision,
-                intent_report.f1,
-                intent_report.accuracy,
-            )
+        log_evaluation_table(
+            intent_report.report,
+            intent_report.precision,
+            intent_report.f1,
+            intent_report.accuracy,
+        )
 
     if successes and output_directory:
         successes_filename = os.path.join(output_directory, "intent_successes.json")

@@ -7,7 +7,7 @@ import random
 import shutil
 from functools import reduce
 from pathlib import Path
-from typing import Dict, List, Set, Text, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -273,16 +273,18 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 
 
 def _create_paraphrase_pool(
-    paraphrases: TrainingData, pooled_intents: Set[Text], paraphrase_quality_threshold: float
+    paraphrases: TrainingData,
+    pooled_intents: Set[Text],
+    paraphrase_quality_threshold: float,
 ) -> Dict[Text, List]:
     paraphrase_pool = collections.defaultdict(list)
     for p in paraphrases.intent_examples:
         if p.data["intent"] not in pooled_intents:
             continue
 
-        paraphrases_for_example = p.data["metadata"]["example"][
-            "paraphrases"
-        ].split("\n")
+        paraphrases_for_example = p.data["metadata"]["example"]["paraphrases"].split(
+            "\n"
+        )
         paraphrase_scores = p.data["metadata"]["example"]["scores"].split("\n")
 
         for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
@@ -340,7 +342,7 @@ def _build_augmentation_training_sets(
     training_data_pool: Dict[Text, List],
     random_expansion: Dict[Text, List],
     max_vocab_expansion: Dict[Text, List],
-    pooled_intents: Set,
+    pooled_intents: Set[Text],
     avg_size: int,
 ) -> Tuple[TrainingData, TrainingData]:
     augmented_training_set_diverse = []
@@ -390,8 +392,8 @@ def _get_intents_with_performance_changes(
 
 
 def _create_augmentation_summary(
-    pooled_intents: Set,
-    changed_intents: Set,
+    pooled_intents: Set[Text],
+    changed_intents: Set[Text],
     classification_report: Dict[Text, Dict[Text, float]],
     intent_report: Dict[Text, float],
 ) -> Tuple[
@@ -429,35 +431,149 @@ def _create_augmentation_summary(
     return (intent_summary, intent_report)
 
 
-def _plot_summary_reports(
-    intent_summary_diverse: Dict[Text, Dict[Text, float]],
-    intent_summary_random: Dict[Text, Dict[Text, float]],
-    changed_intents_diverse: Set[Text],
-    changed_intents_random: Set[Text],
-    output_directory_diverse: Text,
-    output_directory_random: Text,
+def _plot_summary_report(
+    intent_summary: Dict[Text, Dict[Text, float]],
+    changed_intents: Set[Text],
+    output_directory: Text,
 ):
 
     for metric in ["precision", "recall", "f1-score"]:
-        output_file_diverse = os.path.join(
-            output_directory_diverse, f"{metric}_changes.png"
-        )
+        output_file_diverse = os.path.join(output_directory, f"{metric}_changes.png")
         rasa.utils.plotting.plot_intent_augmentation_summary(
-            augmentation_summary=intent_summary_diverse,
-            changed_intents=changed_intents_diverse,
+            augmentation_summary=intent_summary,
+            changed_intents=changed_intents,
             metric=metric,
             output_file=output_file_diverse,
         )
 
-        output_file_random = os.path.join(
-            output_directory_random, f"{metric}_changes.png"
+
+def _collect_intents_for_data_augmentation(
+    nlu_training_data: TrainingData,
+    num_intents_to_augment: int,
+    classification_report: Dict[Text, Dict[Text, Any]],
+) -> Set[Text]:
+
+    # Determine low data, low performing and frequently confused intents
+    low_data_intents = sorted(
+        nlu_training_data.number_of_examples_per_intent.items(),
+        key=operator.itemgetter(1),
+    )[:num_intents_to_augment]
+    low_precision_intents = sorted(
+        [
+            (intent, classification_report[intent]["precision"])
+            for intent in nlu_training_data.intents
+        ],
+        key=operator.itemgetter(1),
+    )[:num_intents_to_augment]
+    low_recall_intents = sorted(
+        [
+            (intent, classification_report[intent]["recall"])
+            for intent in nlu_training_data.intents
+        ],
+        key=operator.itemgetter(1),
+    )[:num_intents_to_augment]
+    low_f1_intents = sorted(
+        [
+            (intent, classification_report[intent]["f1-score"])
+            for intent in nlu_training_data.intents
+        ],
+        key=operator.itemgetter(1),
+    )[:num_intents_to_augment]
+    freq_confused_intents = sorted(
+        [
+            (intent, sum(classification_report[intent]["confused_with"].values()))
+            for intent in nlu_training_data.intents
+        ],
+        key=operator.itemgetter(1),
+        reverse=True,
+    )[:num_intents_to_augment]
+
+    pooled_intents = {
+        tp[0]
+        for tp in low_data_intents
+        + low_precision_intents
+        + low_recall_intents
+        + low_f1_intents
+        + freq_confused_intents
+    }
+
+    return pooled_intents
+
+
+def _train_test_nlu_model(
+    output_directory: Text,
+    out_file_name: Text,
+    augmented_training_data: TrainingData,
+    config: Text,
+    nlu_evaluation_data: TrainingData,
+    domain: Optional[Union[Domain, Text]] = None,
+) -> Dict[Text, float]:
+
+    # Handle I/O business
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    nlu_training_file = os.path.join(output_directory, out_file_name)
+    augmented_training_data.persist_nlu(filename=nlu_training_file)
+
+    # Train NLU model
+    model_path = train_nlu(
+        config=config,
+        nlu_data=nlu_training_file,
+        output=output_directory,
+        domain=domain,
+    )
+
+    # Load and Evaluate NLU Model
+    unpacked_model_path = get_model(model_path)
+    nlu_model_path = os.path.join(unpacked_model_path, "nlu")
+
+    interpreter = Interpreter.load(nlu_model_path)
+    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
+
+    (intent_results, *_) = get_eval_data(interpreter, nlu_evaluation_data)
+    intent_report = create_intent_report(
+        intent_results=intent_results,
+        add_confused_labels_to_report=True,
+        metrics_as_dict=True,
+    )
+    intent_errors = extract_intent_errors_from_results(intent_results=intent_results)
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        os.path.join(output_directory, "intent_errors.json"), intent_errors,
+    )
+
+    return intent_report.report
+
+
+def _create_summary_report(
+    intent_report: Dict[Text, float],
+    classification_report: Dict[Text, Dict[Text, Any]],
+    training_intents: List[Text],
+    pooled_intents: Set[Text],
+    output_directory: Text,
+) -> Tuple[Dict[Text, Dict[Text, float]], Set[Text]]:
+    # Retrieve intents for which performance has changed
+    changed_intents = (
+        _get_intents_with_performance_changes(
+            classification_report, intent_report, training_intents,
         )
-        rasa.utils.plotting.plot_intent_augmentation_summary(
-            augmentation_summary=intent_summary_random,
-            changed_intents=changed_intents_random,
-            metric=metric,
-            output_file=output_file_random,
-        )
+        - pooled_intents
+    )
+
+    # Create and update result reports
+    report_tuple = _create_augmentation_summary(
+        pooled_intents, changed_intents, classification_report, intent_report,
+    )
+
+    intent_summary = report_tuple[0]
+    intent_report.update(report_tuple[1])
+
+    # Store report to file
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        os.path.join(output_directory, "intent_report.json"), intent_report,
+    )
+
+    return (intent_summary, changed_intents)
 
 
 def suggest_nlu_data(args: argparse.Namespace) -> None:
@@ -480,7 +596,14 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
     )
     random.seed(args.random_seed)
 
-    # Determine low data, low performing and frequently confused intents
+    # Determine intents for which to perform data augmentation
+    pooled_intents = _collect_intents_for_data_augmentation(
+        nlu_training_data=nlu_training_data,
+        num_intents_to_augment=args.num_intents,
+        classification_report=classification_report,
+    )
+
+    # Determine average number of examples per intent
     num_intents = len(nlu_training_data.intents)
     avg_size = int(
         reduce(
@@ -489,30 +612,6 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
             0,
         )
     )
-
-    low_data_intents = sorted(
-        nlu_training_data.number_of_examples_per_intent.items(),
-        key=operator.itemgetter(1),
-    )[: args.num_intents]
-    low_precision_intents = sorted(
-        [(intent, classification_report[intent]["precision"]) for intent in nlu_training_data.intents],
-        key=operator.itemgetter(1),
-    )[: args.num_intents]
-    low_recall_intents = sorted(
-        [(intent, classification_report[intent]["recall"]) for intent in nlu_training_data.intents],
-        key=operator.itemgetter(1),
-    )[: args.num_intents]
-    low_f1_intents = sorted(
-        [(intent, classification_report[intent]["f1-score"]) for intent in nlu_training_data.intents],
-        key=operator.itemgetter(1),
-    )[: args.num_intents]
-    freq_confused_intents = sorted(
-        [(intent, sum(classification_report[intent]["confused_with"].values())) for intent in nlu_training_data.intents],
-        key=operator.itemgetter(1),
-        reverse=True,
-    )[: args.num_intents]
-
-    pooled_intents = {tp[0] for tp in low_data_intents + low_precision_intents + low_recall_intents + low_f1_intents + freq_confused_intents}
 
     # Retrieve paraphrase pool and training data pool
     paraphrase_pool = _create_paraphrase_pool(
@@ -538,136 +637,54 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         avg_size,
     )
 
-    # Store training data files
+    # Train/Test NLU model with diverse augmentation, create summary report and plot summary
     output_directory_diverse = os.path.join(args.out, "augmentation_diverse")
-    if not os.path.exists(output_directory_diverse):
-        os.makedirs(output_directory_diverse)
+    intent_report_diverse = _train_test_nlu_model(
+        output_directory=output_directory_diverse,
+        augmented_training_data=augmented_data_diverse,
+        out_file_name="train_augmented_diverse.yml",
+        config=args.config,
+        domain=args.domain,
+        nlu_evaluation_data=nlu_evaluation_data,
+    )
+
+    (intent_summary, changed_intents) = _create_summary_report(
+        intent_report=intent_report_diverse,
+        classification_report=classification_report,
+        training_intents=nlu_training_data.intents,
+        pooled_intents=pooled_intents,
+        output_directory=output_directory_diverse,
+    )
+
+    _plot_summary_report(
+        intent_summary=intent_summary,
+        changed_intents=changed_intents,
+        output_directory=output_directory_diverse,
+    )
+
+    # Train/Test NLU model with random augmentation, create summary report and plot summary
     output_directory_random = os.path.join(args.out, "augmentation_random")
-    if not os.path.exists(output_directory_random):
-        os.makedirs(output_directory_random)
-
-    out_file_diverse = os.path.join(
-        output_directory_diverse, "train_augmented_diverse.yml"
-    )
-    augmented_data_diverse.persist_nlu(filename=out_file_diverse)
-    out_file_random = os.path.join(
-        output_directory_random, "train_augmented_random.yml"
-    )
-    augmented_data_random.persist_nlu(filename=out_file_random)
-
-    # Train NLU models on diverse and random augmentation sets
-    model_path_diverse = train_nlu(
+    intent_report_random = _train_test_nlu_model(
+        output_directory=output_directory_random,
+        augmented_training_data=augmented_data_random,
+        out_file_name="train_augmented_random.yml",
         config=args.config,
-        nlu_data=out_file_diverse,
-        output=output_directory_diverse,
         domain=args.domain,
+        nlu_evaluation_data=nlu_evaluation_data,
     )
 
-    model_path_random = train_nlu(
-        config=args.config,
-        nlu_data=out_file_random,
-        output=output_directory_random,
-        domain=args.domain,
+    (intent_summary, changed_intents) = _create_summary_report(
+        intent_report=intent_report_random,
+        classification_report=classification_report,
+        training_intents=nlu_training_data.intents,
+        pooled_intents=pooled_intents,
+        output_directory=output_directory_random,
     )
 
-    # Evaluate NLU models on NLU evaluation data
-    unpacked_model_path_diverse = get_model(model_path_diverse)
-    nlu_model_path_diverse = os.path.join(unpacked_model_path_diverse, "nlu")
-
-    interpreter = Interpreter.load(nlu_model_path_diverse)
-    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-
-    (intent_results, *_) = get_eval_data(interpreter, nlu_evaluation_data)
-    intent_report_diverse = create_intent_report(
-        intent_results=intent_results,
-        add_confused_labels_to_report=True,
-        metrics_as_dict=True,
-    )
-    intent_errors_diverse = extract_intent_errors_from_results(
-        intent_results=intent_results
-    )
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory_diverse, "intent_errors.json"),
-        intent_errors_diverse,
-    )
-
-    unpacked_model_random = get_model(model_path_random)
-    nlu_model_path_random = os.path.join(unpacked_model_random, "nlu")
-
-    interpreter = Interpreter.load(nlu_model_path_random)
-    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-
-    (intent_results, *_) = get_eval_data(interpreter, nlu_evaluation_data)
-    intent_report_random = create_intent_report(
-        intent_results=intent_results,
-        add_confused_labels_to_report=True,
-        metrics_as_dict=True,
-    )
-    intent_errors_random = extract_intent_errors_from_results(
-        intent_results=intent_results
-    )
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory_random, "intent_errors.json"),
-        intent_errors_random,
-    )
-
-    # Retrieve intents for which performance has changed
-    changed_intents_diverse = (
-        _get_intents_with_performance_changes(
-            classification_report,
-            intent_report_diverse.report,
-            nlu_training_data.intents,
-        )
-        - pooled_intents
-    )
-
-    changed_intents_random = (
-        _get_intents_with_performance_changes(
-            classification_report,
-            intent_report_random.report,
-            nlu_training_data.intents,
-        )
-        - pooled_intents
-    )
-
-    # Create and update result reports
-    report_tuple = _create_augmentation_summary(
-        pooled_intents,
-        changed_intents_diverse,
-        classification_report,
-        intent_report_diverse.report,
-    )
-
-    intent_summary_diverse = report_tuple[0]
-    intent_report_diverse.report.update(report_tuple[1])
-
-    report_tuple = _create_augmentation_summary(
-        pooled_intents,
-        changed_intents_random,
-        classification_report,
-        intent_report_random.report,
-    )
-    intent_summary_random = report_tuple[0]
-    intent_report_random.report.update(report_tuple[1])
-
-    # Store reports to file
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory_diverse, "intent_report.json"),
-        intent_report_diverse.report,
-    )
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory_random, "intent_report.json"),
-        intent_report_random.report,
-    )
-
-    # Plot the summary reports
-    _plot_summary_reports(
-        intent_summary_diverse,
-        intent_summary_random,
-        changed_intents_diverse,
-        changed_intents_random,
-        output_directory_diverse,
-        output_directory_random,
+    _plot_summary_report(
+        intent_summary=intent_summary,
+        changed_intents=changed_intents,
+        output_directory=output_directory_random,
     )
 
     telemetry.track_data_suggest()
