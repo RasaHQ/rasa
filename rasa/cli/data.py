@@ -371,7 +371,7 @@ def _build_augmentation_training_sets(
 
 
 def _get_intents_with_performance_changes(
-    classification_report: Dict[Text, Dict[Text, float]],
+    classification_report: Dict[Text, Dict[Text, Any]],
     intent_report: Dict[Text, float],
     all_intents: List[Text],
     significant_figures: int = 2,
