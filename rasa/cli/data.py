@@ -465,7 +465,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
      examples.
 
     Args:
-        args: Commandline arguments
+        args: Command-line arguments.
     """
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         args.nlu_training_data
