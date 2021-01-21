@@ -264,7 +264,7 @@ class FormAction(LoopAction):
         if they are set by corresponding entities from the user input
         else return `None`.
         """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
 
         entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
             slot_to_fill, domain
@@ -317,13 +317,26 @@ class FormAction(LoopAction):
 
         return slot_values
 
+    def get_slot_to_fill(self, tracker: "DialogueStateTracker") -> Optional[str]:
+        """Get the slot to be filled.
+
+        When switching to another form, the requested slot setting is still from the
+        previous form and must be ignored.
+
+        Returns:
+        The slot name or None
+        """
+        return (
+            tracker.get_slot(REQUESTED_SLOT)
+            if tracker.active_loop_name == self.name()
+            else None
+        )
+
     def extract_requested_slot(
         self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
-        """Extract the value of requested slot from a user input
-        else return `None`.
-        """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        """Extract the value of requested slot from a user input else return `None`."""
+        slot_to_fill = self.get_slot_to_fill(tracker)
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
         # get mapping for requested slot
@@ -446,7 +459,7 @@ class FormAction(LoopAction):
         slot_values = self.extract_other_slots(tracker, domain)
 
         # extract requested slot
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
         if slot_to_fill:
             slot_values.update(self.extract_requested_slot(tracker, domain))
 
