@@ -13,7 +13,7 @@ from rasa.core.actions.action import (
     ActionDefaultFallback,
     ActionExecutionRejection,
     ActionRestart,
-    ActionResponse,
+    ActionBotResponse,
     ActionRetrieveResponse,
     RemoteAction,
     ActionSessionStart,
@@ -63,7 +63,7 @@ from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.fixture(scope="module")
-def response_nlg() -> TemplatedNaturalLanguageGenerator:
+def template_nlg() -> TemplatedNaturalLanguageGenerator:
     responses = {
         "utter_ask_rephrase": [{"text": "can you rephrase that?"}],
         "utter_restart": [{"text": "congrats, you've restarted me!"}],
@@ -452,7 +452,7 @@ async def test_action_utter_retrieved_empty_response(
 
 
 async def test_response(default_channel, default_nlg, default_tracker, default_domain):
-    events = await ActionResponse("utter_channel").run(
+    events = await ActionBotResponse("utter_channel").run(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
@@ -466,7 +466,7 @@ async def test_response(default_channel, default_nlg, default_tracker, default_d
 async def test_response_unknown_response(
     default_channel, default_nlg, default_tracker, default_domain
 ):
-    events = await ActionResponse("utter_unknown").run(
+    events = await ActionBotResponse("utter_unknown").run(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
@@ -474,10 +474,10 @@ async def test_response_unknown_response(
 
 
 async def test_response_with_buttons(
-    default_channel, response_nlg, template_sender_tracker, default_domain
+    default_channel, template_nlg, template_sender_tracker, default_domain
 ):
-    events = await ActionResponse("utter_buttons").run(
-        default_channel, response_nlg, template_sender_tracker, default_domain
+    events = await ActionBotResponse("utter_buttons").run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [
@@ -495,10 +495,10 @@ async def test_response_with_buttons(
 
 
 async def test_response_invalid_response(
-    default_channel, response_nlg, template_sender_tracker, default_domain
+    default_channel, template_nlg, template_sender_tracker, default_domain
 ):
-    events = await ActionResponse("utter_invalid").run(
-        default_channel, response_nlg, template_sender_tracker, default_domain
+    events = await ActionBotResponse("utter_invalid").run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
     assert len(events) == 1
@@ -511,7 +511,7 @@ async def test_response_channel_specific(default_nlg, default_tracker, default_d
 
     output_channel = SlackBot("DummyToken", "General")
 
-    events = await ActionResponse("utter_channel").run(
+    events = await ActionBotResponse("utter_channel").run(
         output_channel, default_nlg, default_tracker, default_domain
     )
 
@@ -524,10 +524,10 @@ async def test_response_channel_specific(default_nlg, default_tracker, default_d
 
 
 async def test_action_back(
-    default_channel, response_nlg, template_sender_tracker, default_domain
+    default_channel, template_nlg, template_sender_tracker, default_domain
 ):
     events = await ActionBack().run(
-        default_channel, response_nlg, template_sender_tracker, default_domain
+        default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [
@@ -538,10 +538,10 @@ async def test_action_back(
 
 
 async def test_action_restart(
-    default_channel, response_nlg, template_sender_tracker, default_domain
+    default_channel, template_nlg, template_sender_tracker, default_domain
 ):
     events = await ActionRestart().run(
-        default_channel, response_nlg, template_sender_tracker, default_domain
+        default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [
@@ -555,12 +555,12 @@ async def test_action_restart(
 
 async def test_action_session_start_without_slots(
     default_channel: CollectingOutputChannel,
-    response_nlg: TemplatedNaturalLanguageGenerator,
+    template_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
     default_domain: Domain,
 ):
     events = await ActionSessionStart().run(
-        default_channel, response_nlg, template_sender_tracker, default_domain
+        default_channel, template_nlg, template_sender_tracker, default_domain
     )
     assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
 
@@ -585,7 +585,7 @@ async def test_action_session_start_without_slots(
 )
 async def test_action_session_start_with_slots(
     default_channel: CollectingOutputChannel,
-    response_nlg: TemplatedNaturalLanguageGenerator,
+    template_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
     default_domain: Domain,
     session_config: SessionConfig,
@@ -600,7 +600,7 @@ async def test_action_session_start_with_slots(
     default_domain.session_config = session_config
 
     events = await ActionSessionStart().run(
-        default_channel, response_nlg, template_sender_tracker, default_domain
+        default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
     assert events == expected_events
@@ -611,7 +611,7 @@ async def test_action_session_start_with_slots(
 
 async def test_applied_events_after_action_session_start(
     default_channel: CollectingOutputChannel,
-    response_nlg: TemplatedNaturalLanguageGenerator,
+    template_nlg: TemplatedNaturalLanguageGenerator,
 ):
     slot_set = SlotSet("my_slot", "value")
     events = [
@@ -627,7 +627,7 @@ async def test_applied_events_after_action_session_start(
 
     # Mapping Policy kicks in and runs the session restart action
     events = await ActionSessionStart().run(
-        default_channel, response_nlg, tracker, Domain.empty()
+        default_channel, template_nlg, tracker, Domain.empty()
     )
     for event in events:
         tracker.update(event)
@@ -673,10 +673,10 @@ async def test_action_default_ask_affirmation(
 
 
 async def test_action_default_ask_rephrase(
-    default_channel, response_nlg, template_sender_tracker, default_domain
+    default_channel, template_nlg, template_sender_tracker, default_domain
 ):
     events = await ActionDefaultAskRephrase().run(
-        default_channel, response_nlg, template_sender_tracker, default_domain
+        default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
     assert events == [

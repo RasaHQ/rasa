@@ -372,8 +372,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Update NLU data with responses for retrieval intents defined in the domain"""
-
+        """Update NLU data with responses for retrieval intents defined in the domain."""
         existing_nlu_data = await self._importer.get_nlu_data(language)
         existing_domain = await self._importer.get_domain()
 
@@ -396,12 +395,12 @@ class ResponsesSyncImporter(TrainingDataImporter):
         Returns: TrainingData object with responses.
 
         """
-
         return TrainingData(responses=responses)
 
 
 class E2EImporter(TrainingDataImporter):
     """Importer which
+
     - enhances the NLU training data with actions / user messages from the stories.
     - adds potential end-to-end bot messages from stories as actions to the domain
     """

@@ -156,8 +156,8 @@ class Validator:
         """Verifies usage of utterances in stories.
 
         Checks whether utterances used in the stories are valid,
-        and whether all valid utterances are used in stories."""
-
+        and whether all valid utterances are used in stories.
+        """
         everything_is_alright = True
 
         utterance_actions = self._gather_utterance_actions()

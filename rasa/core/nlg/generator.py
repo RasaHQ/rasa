@@ -23,7 +23,8 @@ class NaturalLanguageGenerator:
 
         There are a lot of different methods to implement this, e.g. the
         generation can be based on responses or be fully ML based by feeding
-        the dialogue state into a machine learning NLG model."""
+        the dialogue state into a machine learning NLG model.
+        """
         raise NotImplementedError
 
     @staticmethod

@@ -65,7 +65,6 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 
     loaded = Interpreter.load(persisted_path, component_builder)
     parsed = loaded.parse("hello")
-
     assert loaded.pipeline
     assert parsed is not None
     assert (parsed.get("response_selector").get("all_retrieval_intents")) == [

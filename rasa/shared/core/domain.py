@@ -698,9 +698,20 @@ class Domain:
         return len(self.input_states)
 
     @rasa.shared.utils.common.lazy_property
-    def retrieval_intent_responses(self) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Return only the responses which are defined for retrieval intents"""
+    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the responses which are defined for retrieval intents."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed in the future."
+        )
+        return dict(
+            filter(
+                lambda x: self.is_retrieval_intent_response(x), self.responses.items()
+            )
+        )
 
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intent_responses(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the responses which are defined for retrieval intents."""
         return dict(
             filter(
                 lambda x: self.is_retrieval_intent_response(x), self.responses.items()
@@ -832,7 +843,7 @@ class Domain:
             f"Available actions are: \n{action_names}"
         )
 
-    def random_response_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
+    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
         """Returns a random response for an action name.
 
         Args:
@@ -849,7 +860,7 @@ class Domain:
         # about this warning except making their developers change any custom code
         # which calls this.
         rasa.shared.utils.io.raise_warning(
-            f"'{Domain.__name__}.{Domain.random_response_for.__class__}' "
+            f"'{Domain.__name__}.{Domain.random_template_for.__class__}' "
             f"is deprecated and will be removed version 3.0.0.",
             category=DeprecationWarning,
         )
@@ -1449,7 +1460,6 @@ class Domain:
 
         def get_duplicates(my_items):
             """Returns a list of duplicate items in my_items."""
-
             return [
                 item
                 for item, count in collections.Counter(my_items).items()
@@ -1537,7 +1547,6 @@ class Domain:
 
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
-
         utterances = [
             a
             for a in self.action_names_or_texts

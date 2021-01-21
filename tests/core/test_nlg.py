@@ -5,10 +5,7 @@ import jsonschema
 import pytest
 from sanic import Sanic, response
 
-from rasa.core.nlg.callback import (
-    nlg_request_format_spec,
-    CallbackNaturalLanguageGenerator,
-)
+from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from rasa.core.agent import Agent
@@ -24,9 +21,32 @@ def nlg_app(base_url="/"):
         """Simple HTTP NLG generator, checks that the incoming request
         is format according to the spec."""
 
+        nlg_request_format_spec = {
+            "type": "object",
+            "properties": {
+                "response": {"type": "string"},
+                "arguments": {"type": "object"},
+                "tracker": {
+                    "type": "object",
+                    "properties": {
+                        "sender_id": {"type": "string"},
+                        "slots": {"type": "object"},
+                        "latest_message": {"type": "object"},
+                        "latest_event_time": {"type": "number"},
+                        "paused": {"type": "boolean"},
+                        "events": {"type": "array"},
+                    },
+                },
+                "channel": {
+                    "type": "object",
+                    "properties": {"name": {"type": "string"}},
+                },
+            },
+        }
+
         nlg_call = request.json
 
-        jsonschema.validate(nlg_call, nlg_request_format_spec())
+        jsonschema.validate(nlg_call, nlg_request_format_spec)
 
         if nlg_call.get("response") == "utter_greet":
             response_dict = {"text": "Hey there!"}

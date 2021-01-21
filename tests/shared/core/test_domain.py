@@ -210,7 +210,7 @@ def test_responses():
             {"title": "super sad", "payload": "/mood_unhappy"},
         ],
     }
-    assert domain.random_response_for("utter_greet") == expected_response
+    assert domain.random_template_for("utter_greet") == expected_response
 
 
 def test_custom_slot_type(tmpdir: Path):

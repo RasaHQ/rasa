@@ -22,7 +22,6 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
     Returns:
         The piece of text with any replacements made.
     """
-
     try:
         text = re.sub(r"{([^\n{}]+?)}", r"{0[\1]}", response)
         text = text.format(values)

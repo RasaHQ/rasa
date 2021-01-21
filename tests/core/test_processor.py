@@ -12,7 +12,7 @@ from unittest.mock import patch, Mock
 
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.actions.action import (
-    ActionResponse,
+    ActionBotResponse,
     ActionListen,
     ActionExecutionRejection,
 )
@@ -934,7 +934,7 @@ async def test_handle_message_if_action_manually_rejects(
     async def mocked_run(self, *args: Any, **kwargs: Any) -> List[Event]:
         return rejection_events
 
-    monkeypatch.setattr(ActionResponse, ActionResponse.run.__name__, mocked_run)
+    monkeypatch.setattr(ActionBotResponse, ActionBotResponse.run.__name__, mocked_run)
     await default_processor.handle_message(message)
 
     tracker = default_processor.tracker_store.retrieve(conversation_id)

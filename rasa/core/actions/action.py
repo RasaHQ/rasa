@@ -163,7 +163,7 @@ def action_for_name_or_text(
         return ActionEndToEndResponse(action_name_or_text)
 
     if action_name_or_text.startswith(UTTER_PREFIX):
-        return ActionResponse(action_name_or_text)
+        return ActionBotResponse(action_name_or_text)
 
     is_form = action_name_or_text in domain.form_names
     # Users can override the form by defining an action with the same name as the form
@@ -253,12 +253,8 @@ class Action:
         )
 
 
-class ActionResponse(Action):
-    """An action which only effect is to utter a response when it is run.
-
-    Both, name and response, need to be specified using
-    the `name` method.
-    """
+class ActionBotResponse(Action):
+    """An action which only effect is to utter a response when it is run."""
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False) -> None:
         """Creates action.
@@ -279,7 +275,6 @@ class ActionResponse(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) response."""
-
         message = await nlg.generate(self.utter_action, tracker, output_channel.name())
         if message is None:
             if not self.silent_fail:
@@ -343,7 +338,7 @@ class ActionEndToEndResponse(Action):
         )
 
 
-class ActionRetrieveResponse(ActionResponse):
+class ActionRetrieveResponse(ActionBotResponse):
     """An action which queries the Response Selector for the appropriate response."""
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False) -> None:
@@ -393,7 +388,7 @@ class ActionRetrieveResponse(ActionResponse):
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
 
-        # Override utter action of ActionResponse
+        # Override utter action of ActionBotResponse
         # with the complete utter action retrieved from
         # the output of response selector.
         self.utter_action = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
@@ -407,7 +402,7 @@ class ActionRetrieveResponse(ActionResponse):
         return self.action_name
 
 
-class ActionBack(ActionResponse):
+class ActionBack(ActionBotResponse):
     """Revert the tracker state by two user utterances."""
 
     def name(self) -> Text:
@@ -448,7 +443,7 @@ class ActionListen(Action):
         return []
 
 
-class ActionRestart(ActionResponse):
+class ActionRestart(ActionBotResponse):
     """Resets the tracker to its initial state.
 
     Utters the restart response if available."""
@@ -514,7 +509,7 @@ class ActionSessionStart(Action):
         return _events
 
 
-class ActionDefaultFallback(ActionResponse):
+class ActionDefaultFallback(ActionBotResponse):
     """Executes the fallback action and goes back to the previous state
     of the dialogue"""
 
@@ -856,7 +851,7 @@ class ActionDefaultAskAffirmation(Action):
         return [create_bot_utterance(message)]
 
 
-class ActionDefaultAskRephrase(ActionResponse):
+class ActionDefaultAskRephrase(ActionBotResponse):
     """Default implementation which asks the user to rephrase his intent."""
 
     def name(self) -> Text:

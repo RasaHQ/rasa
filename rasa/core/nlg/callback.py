@@ -27,30 +27,6 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
     }
 
 
-def nlg_request_format_spec() -> Dict[Text, Any]:
-    """Expected request schema for requests sent to an NLG endpoint."""
-
-    return {
-        "type": "object",
-        "properties": {
-            "response": {"type": "string"},
-            "arguments": {"type": "object"},
-            "tracker": {
-                "type": "object",
-                "properties": {
-                    "sender_id": {"type": "string"},
-                    "slots": {"type": "object"},
-                    "latest_message": {"type": "object"},
-                    "latest_event_time": {"type": "number"},
-                    "paused": {"type": "boolean"},
-                    "events": {"type": "array"},
-                },
-            },
-            "channel": {"type": "object", "properties": {"name": {"type": "string"}}},
-        },
-    }
-
-
 def nlg_request_format(
     utter_action: Text,
     tracker: DialogueStateTracker,
@@ -58,11 +34,12 @@ def nlg_request_format(
     **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
-
     tracker_state = tracker.current_state(EventVerbosity.ALL)
 
+    # Template is deprecated, please use response instead.
     return {
         "response": utter_action,
+        "template": utter_action,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},
@@ -89,7 +66,6 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         **kwargs: Any,
     ) -> Dict[Text, Any]:
         """Retrieve a named response from the domain using an endpoint."""
-
         body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
 
         logger.debug(

@@ -14,7 +14,8 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     """Natural language generator that generates messages based on responses.
 
     The responses can use variables to customize the utterances based on the
-    state of the dialogue."""
+    state of the dialogue.
+    """
 
     def __init__(self, responses: Dict[Text, List[Dict[Text, Any]]]) -> None:
         self.responses = responses
@@ -23,7 +24,6 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self, utter_action: Text, output_channel: Text
     ) -> List[Dict[Text, Any]]:
         """Return array of responses that fit the channel and action."""
-
         channel_responses = []
         default_responses = []
 
@@ -70,7 +70,6 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
-
         filled_slots = tracker.current_slot_values()
         return self.generate_from_slots(
             utter_action, filled_slots, output_channel, **kwargs
@@ -84,7 +83,6 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
-
         # Fetching a random response for the passed utter action
         r = copy.deepcopy(self._random_response_for(utter_action, output_channel))
         # Filling the slots in the response with placeholders and returning the response
@@ -99,8 +97,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         filled_slots: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> Dict[Text, Any]:
-        """Combine slot values and key word arguments to fill templates."""
-
+        """Combine slot values and key word arguments to fill responses."""
         # Getting the slot values in the response variables
         response_vars = self._response_variables(filled_slots, kwargs)
 
@@ -125,7 +122,6 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         filled_slots: Dict[Text, Any], kwargs: Dict[Text, Any]
     ) -> Dict[Text, Any]:
         """Combine slot values and key word arguments to fill responses."""
-
         if filled_slots is None:
             filled_slots = {}
 
