@@ -4,6 +4,8 @@ import os
 
 import numpy as np
 from typing import Dict, List, Set, Text, Optional, Union, Any
+
+from matplotlib.axes import Axes
 import matplotlib
 
 import rasa.shared.utils.io
@@ -252,7 +254,7 @@ def plot_intent_augmentation_summary(
     plt.savefig(output_file, bbox_inches="tight")
 
 
-def _autolabel(rects):
+def _autolabel(rects: Axes.bar):
     """Attach a text label above each bar in *rects*, displaying its height."""
     import matplotlib.pyplot as plt
 

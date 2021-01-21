@@ -512,13 +512,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         reverse=True,
     )[: args.num_intents]
 
-    pooled_intents = (
-        set(map(lambda tp: tp[0], low_data_intents))
-        | set(map(lambda tp: tp[0], low_precision_intents))
-        | set(map(lambda tp: tp[0], low_recall_intents))
-        | set(map(lambda tp: tp[0], low_f1_intents))
-        | set(map(lambda tp: tp[0], freq_confused_intents))
-    )
+    pooled_intents = {tp[0] for tp in low_data_intents + low_precision_intents + low_recall_intents + low_f1_intents + freq_confused_intents}
 
     # Retrieve paraphrase pool and training data pool
     paraphrase_pool = _create_paraphrase_pool(

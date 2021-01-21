@@ -650,8 +650,7 @@ def evaluate_intents(
         )
         logger.info(f"Classification report saved to {report_filename}.")
 
-    else:
-        if isinstance(intent_report.report, str):
+    elif isinstance(intent_report.report, str):
             log_evaluation_table(
                 intent_report.report,
                 intent_report.precision,
