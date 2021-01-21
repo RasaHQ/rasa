@@ -353,9 +353,9 @@ jobs:
         # Base MITIE image
         BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
         MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}"
+        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:40}-${MAKEFILE_MITIE_HASH:0:40}"
 
-        BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
+        BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:40}-${MAKEFILE_MITIE_HASH:0:40} &> /dev/null && echo true || echo false) || true)
         echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
 
     - name: Build Docker base image and push 🛠 ⬆
