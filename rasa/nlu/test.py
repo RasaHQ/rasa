@@ -630,11 +630,11 @@ def evaluate_intents(
     Returns a dictionary of containing the evaluation result.
 
     Args:
-        intent_results: intent evaluation results
-        output_directory: directory to store files to
-        successes: if True correct predictions are written to disk
-        errors: if True incorrect predictions are written to disk
-        disable_plotting: if True no plots are created
+        intent_results: Intent evaluation results.
+        output_directory: Directory to store files to.
+        successes: If `True`, correct predictions are written to disk.
+        errors: If `True`, incorrect predictions are written to disk.
+        disable_plotting: If `True`, no plots are created.
 
     Returns: dictionary with evaluation results
     """
