@@ -229,7 +229,6 @@ def _add_data_suggest_parsers(
         parents=parents,
         help="Suggests data to be added to the training data.",
     )
-    # suggest_parser.set_defaults(func=???)
     arguments.set_suggest_arguments(suggest_parser)
 
     suggest_subparsers = suggest_parser.add_subparsers()
@@ -274,23 +273,25 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 
 
 def _create_paraphrase_pool(
-    paraphrases: TrainingData, pooled_intents: Set, paraphrase_quality_threshold: float
+    paraphrases: TrainingData, pooled_intents: Set[Text], paraphrase_quality_threshold: float
 ) -> Dict[Text, List]:
     paraphrase_pool = collections.defaultdict(list)
     for p in paraphrases.intent_examples:
-        if p.data["intent"] in pooled_intents:
-            paraphrases_for_example = p.data["metadata"]["example"][
-                "paraphrases"
-            ].split("\n")
-            paraphrase_scores = p.data["metadata"]["example"]["scores"].split("\n")
+        if p.data["intent"] not in pooled_intents:
+            continue
 
-            for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
-                if paraphrase == "" or float(score) < paraphrase_quality_threshold:
-                    continue
+        paraphrases_for_example = p.data["metadata"]["example"][
+            "paraphrases"
+        ].split("\n")
+        paraphrase_scores = p.data["metadata"]["example"]["scores"].split("\n")
 
-                paraphrase_pool[p.data["intent"]].append(
-                    (p, set(paraphrase.lower().split()), paraphrase)
-                )
+        for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
+            if paraphrase == "" or float(score) < paraphrase_quality_threshold:
+                continue
+
+            paraphrase_pool[p.data["intent"]].append(
+                (p, set(paraphrase.lower().split()), paraphrase)
+            )
 
     return paraphrase_pool
 
