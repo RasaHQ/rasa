@@ -198,7 +198,7 @@ class Policy:
         domain: Domain,
         use_text_for_last_user_input: bool = False,
     ) -> List[State]:
-        """Transforms list of trackers to lists of states for prediction.
+        """Transforms tracker to states for prediction.
 
         Args:
             tracker: The tracker to be featurized.
