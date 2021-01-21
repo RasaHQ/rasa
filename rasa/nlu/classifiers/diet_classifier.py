@@ -653,7 +653,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             and self.component_config[ENTITY_RECOGNITION]
             and self._entity_tag_specs
         ):
-            # Consider entities as features during training and only if there was
+            # Add entities as labels only during training and only if there was
             # training data added for entities with DIET configured to predict entities.
             attributes_to_consider.append(ENTITIES)
 
