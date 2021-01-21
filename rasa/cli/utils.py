@@ -217,7 +217,8 @@ def get_valid_config(
         mandatory_keys: The keys that have to be specified in the config file.
         default_config: default config to use if the file at `config` doesn't exist.
 
-    Returns: The path to the config file if the config is valid.
+    Returns:
+        The path to the config file if the config is valid.
     """
     config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 

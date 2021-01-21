@@ -404,7 +404,7 @@ def _create_augmentation_summary(
     for intent in (
         pooled_intents | changed_intents | {"micro avg", "macro avg", "weighted avg"}
     ):
-        if intent not in classification_report.keys():
+        if intent not in classification_report:
             continue
 
         intent_results_original = classification_report[intent]
@@ -582,7 +582,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
      examples.
 
     Args:
-        args: Commandline arguments
+        args: Command-line arguments.
     """
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         args.nlu_training_data
