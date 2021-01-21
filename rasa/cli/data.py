@@ -573,7 +573,7 @@ def _create_summary_report(
         os.path.join(output_directory, "intent_report.json"), intent_report,
     )
 
-    return (intent_summary, changed_intents)
+    return intent_summary, changed_intents
 
 
 def suggest_nlu_data(args: argparse.Namespace) -> None:
