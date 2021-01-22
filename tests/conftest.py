@@ -45,7 +45,7 @@ from tests.core.conftest import (
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
 )
-from rasa.shared.exceptions import FileNotFoundException
+from rasa.shared.exceptions import RasaException
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -398,7 +398,7 @@ async def trained_responseselectorbot_path(trained_async: Callable) -> Path:
     )
 
     if not zipped_model:
-        raise FileNotFoundException(f"Could not find model {zipped_model}")
+        raise RasaException(f"Model training for responseselectorbot failed.")
 
     return Path(zipped_model)
 
