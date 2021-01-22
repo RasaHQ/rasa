@@ -299,7 +299,6 @@ async def test_action_rejection():
                 ActionExecutionRejected("my form"),
                 SlotSet("num_tables", 5),
                 SlotSet("num_people", "hi"),
-                SlotSet(REQUESTED_SLOT, None),
             ],
         ),
     ],
