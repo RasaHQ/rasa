@@ -265,9 +265,8 @@ class RasaInputLayer(tf.keras.layers.Layer):
                     dropout_rate=config[DROP_RATE],
                     sparse_dropout=config[SPARSE_INPUT_DROPOUT],
                     dense_dropout=config[DENSE_INPUT_DROPOUT],
-                    sparse_to_dense_units=config[DENSE_DIMENSION][name]
-                    # dense_concat_dimension=config[DENSE_DIMENSION][name],
-                    ** sparse_to_dense_layer_options,
+                    sparse_to_dense_units=config[DENSE_DIMENSION][name],
+                    **sparse_to_dense_layer_options,
                 )
             else:
                 self.concat_sparse_dense[feature_type] = None
