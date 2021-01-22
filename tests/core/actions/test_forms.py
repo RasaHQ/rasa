@@ -512,6 +512,7 @@ def test_extract_requested_slot_default():
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop("some form"),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla", entities=[{"entity": "some_slot", "value": "some_value"}]
@@ -552,6 +553,7 @@ def test_extract_requested_slot_when_mapping_applies(
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla",
@@ -842,6 +844,7 @@ def test_extract_requested_slot_from_entity(
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla", intent={"name": intent, "confidence": 1.0}, entities=entities
