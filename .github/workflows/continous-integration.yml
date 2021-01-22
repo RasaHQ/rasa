@@ -396,15 +396,15 @@ jobs:
 
     # Set environment variables for a branch
     #
-    # In this scenario, we've pushed changes into the master branch
+    # In this scenario, we've pushed changes into the main branch
     #
     # Example output:
-    # IMAGE_TAG=master
+    # IMAGE_TAG=main
     - name: Set environment variables - push - branch
       if: github.event_name == 'push' && env.IS_TAG_BUILD == 'false'
       run: |
         BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        SAFE_BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\./-/g')
+        SAFE_BRANCH_NAME="$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\\*+.$\#\-\/]/-/g')"
         echo "IMAGE_TAG=${BRANCH_NAME}" >> $GITHUB_ENV
 
     - name: Set output
