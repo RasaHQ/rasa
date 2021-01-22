@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import Mock
 from typing import List, Text, Dict, Any
 
-import rasa
+import rasa.model
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
