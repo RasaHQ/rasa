@@ -6,8 +6,8 @@ from collections import defaultdict
 
 import rasa.shared.utils.io
 from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
-
-from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES, apply_bilou_schema_to_message
+from rasa.nlu.utils import bilou_utils
+from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
@@ -26,8 +26,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
-from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN, get_tag_ids
-from rasa.utils.tensorflow.constants import IDS
+from rasa.utils.tensorflow import model_data_utils
 
 logger = logging.getLogger(__name__)
 
@@ -333,10 +332,14 @@ class SingleStateFeaturizer:
             return {}
 
         if bilou_tagging:
-            apply_bilou_schema_to_message(message)
+            bilou_utils.apply_bilou_schema_to_message(message)
 
         return {
-            ENTITY_TAGS: [get_tag_ids(message, self.entity_tag_specs[0], bilou_tagging)]
+            ENTITY_TAGS: [
+                model_data_utils.get_tag_ids(
+                    message, self.entity_tag_specs[0], bilou_tagging
+                )
+            ]
         }
 
     def _encode_action(
