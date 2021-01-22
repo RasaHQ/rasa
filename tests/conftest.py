@@ -398,7 +398,7 @@ async def trained_responseselectorbot_path(trained_async: Callable) -> Path:
     )
 
     if not zipped_model:
-        raise RasaException(f"Model training for responseselectorbot failed.")
+        raise RasaException("Model training for responseselectorbot failed.")
 
     return Path(zipped_model)
 
