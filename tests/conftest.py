@@ -386,7 +386,7 @@ def blank_config() -> RasaNLUModelConfig:
 
 
 @pytest.fixture(scope="session")
-async def trained_responseselectorbot_path(trained_async: Callable) -> Path:
+async def trained_response_selector_bot(trained_async: Callable) -> Path:
     zipped_model = await trained_async(
         domain="examples/responseselectorbot/domain.yml",
         config="examples/responseselectorbot/config.yml",
@@ -405,9 +405,9 @@ async def trained_responseselectorbot_path(trained_async: Callable) -> Path:
 
 @pytest.fixture(scope="session")
 async def response_selector_agent(
-    trained_responseselectorbot_path: Optional[Path],
+    trained_response_selector_bot: Optional[Path],
 ) -> Agent:
-    return Agent.load_local_model(trained_responseselectorbot_path)
+    return Agent.load_local_model(trained_response_selector_bot)
 
 
 def write_endpoint_config_to_yaml(

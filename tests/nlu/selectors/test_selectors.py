@@ -288,11 +288,11 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
-async def test_process_gives_diagnostic_data(trained_responseselectorbot_path: Path,):
+async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
     """Tests if processing a message returns attention weights as numpy array."""
 
     with rasa.model.unpack_model(
-        trained_responseselectorbot_path
+        trained_response_selector_bot
     ) as unpacked_model_directory:
         _, nlu_model_directory = rasa.model.get_model_subdirectories(
             unpacked_model_directory
