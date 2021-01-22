@@ -4,8 +4,8 @@ The template reads an issue/a PR comment and transforms a YAML code block into J
 
 */ -}}
 {{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
-{{- $dataset_branch := "master" -}}
-{{- /* if a branch name for dataset repository is not defined use the master branch */ -}}
+{{- $dataset_branch := "main" -}}
+{{- /* if a branch name for dataset repository is not defined use the main branch */ -}}
 {{- if has $config "dataset_branch" -}}
 {{- $dataset_branch = $config.dataset_branch -}}
 {{- end -}}

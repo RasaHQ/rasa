@@ -74,8 +74,8 @@ lint:
 	poetry run black --check rasa tests
 	make lint-docstrings
 
-# Compare against `master` if no branch was provided
-BRANCH ?= master
+# Compare against `main` if no branch was provided
+BRANCH ?= main
 lint-docstrings:
 # Lint docstrings only against the the diff to avoid too many errors.
 # Check only production code. Ignore other flake errors which are captured by `lint`
