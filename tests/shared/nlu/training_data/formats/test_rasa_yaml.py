@@ -195,6 +195,17 @@ def test_metadata_roundtrip():
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
 
 
+def test_write_metadata_stripped():
+    reader = RasaYAMLReader()
+    result = reader.reads(INTENT_EXAMPLES_WITH_METADATA)
+
+    # Add strippable characters to first example text
+    result.training_examples[0].data["text"] += "    \r\n "
+
+    dumped = RasaYAMLWriter().dumps(result)
+    assert dumped == INTENT_EXAMPLES_WITH_METADATA
+
+
 # This test would work only with examples that have a `version` key specified
 @pytest.mark.parametrize(
     "example",

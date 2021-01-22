@@ -507,7 +507,11 @@ class RasaYAMLWriter(TrainingDataWriter):
         intent_metadata = None
 
         for example in training_examples:
-            converted = {KEY_INTENT_TEXT: example_extraction_predicate(example)}
+            converted = {
+                KEY_INTENT_TEXT: example_extraction_predicate(example).strip(
+                    STRIP_SYMBOLS
+                )
+            }
 
             if isinstance(example, dict) and KEY_METADATA in example:
                 metadata = example[KEY_METADATA]
@@ -536,8 +540,6 @@ class RasaYAMLWriter(TrainingDataWriter):
     @staticmethod
     def _render_training_examples_as_text(examples: List[Dict]) -> List[Text]:
         def render(example: Dict) -> Text:
-            return TrainingDataWriter.generate_list_item(
-                example[KEY_INTENT_TEXT].strip(STRIP_SYMBOLS)
-            )
+            return TrainingDataWriter.generate_list_item(example[KEY_INTENT_TEXT])
 
         return LiteralScalarString("".join([render(example) for example in examples]))
