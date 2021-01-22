@@ -1,7 +1,7 @@
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
+from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional, Callable
 
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
@@ -470,39 +470,40 @@ class RasaYAMLWriter(TrainingDataWriter):
         training_examples: Dict,
         key_name: Text,
         key_examples: Text,
-        example_extraction_predicate=lambda x: x,
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
     ) -> List[OrderedDict]:
-        result = []
+        intents = []
 
-        for entity_key, examples in training_examples.items():
+        for intent_name, examples in training_examples.items():
             converted, intent_metadata = RasaYAMLWriter._convert_training_examples(
                 examples, example_extraction_predicate
             )
 
-            next_item = OrderedDict()
-            next_item[key_name] = entity_key
+            intent = OrderedDict()
+            intent[key_name] = intent_name
             if intent_metadata:
-                next_item[KEY_METADATA] = intent_metadata
+                intent[KEY_METADATA] = intent_metadata
 
-            render_as_objects = True in [KEY_METADATA in ex for ex in converted]
+            render_as_objects = any(KEY_METADATA in ex for ex in converted)
             if render_as_objects:
                 rendered = RasaYAMLWriter._render_training_examples_as_objects(
                     converted
                 )
             else:
                 rendered = RasaYAMLWriter._render_training_examples_as_text(converted)
-            next_item[key_examples] = rendered
+            intent[key_examples] = rendered
 
-            result.append(next_item)
+            intents.append(intent)
 
-        return result
+        return intents
 
     @staticmethod
     def _convert_training_examples(
-        training_examples: List[Dict], example_extraction_predicate=lambda x: x
+        training_examples: List[Dict],
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
     ) -> Tuple[List[Dict], Optional[Dict]]:
         """Returns converted training examples and potential intent metadata."""
-        result = []
+        converted_examples = []
         intent_metadata = None
 
         for example in training_examples:
@@ -521,16 +522,27 @@ class RasaYAMLWriter(TrainingDataWriter):
                 if intent_metadata is None and METADATA_INTENT in metadata:
                     intent_metadata = metadata[METADATA_INTENT]
 
-            result.append(converted)
+            converted_examples.append(converted)
 
-        return result, intent_metadata
+        return converted_examples, intent_metadata
 
     @staticmethod
     def _render_training_examples_as_objects(examples: List[Dict]) -> List[Dict]:
+        """Renders training examples as objects with its `text` item as a literal scalar string.
+
+        Given the input of a single example:
+            {'text': 'how much CO2 will that use?'}
+        Its return value is a dictionary that will be rendered in YAML as:
+        ```
+            text: |
+              how much CO2 will that use?
+        ```
+        """
+
         def render(example: Dict) -> Dict:
-            value = example[KEY_INTENT_TEXT]
+            text = example[KEY_INTENT_TEXT]
             example[KEY_INTENT_TEXT] = LiteralScalarString(
-                TrainingDataWriter.generate_string_item(value)
+                TrainingDataWriter.generate_string_item(text)
             )
             return example
 

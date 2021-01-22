@@ -28,6 +28,8 @@ nlu:
     - what's the carbon footprint of a flight from london to new york?
     - how much co2 to new york?
     - how much co2 is produced on a return flight from london to new york?
+    - what's the co2 usage of a return flight to new york?
+    - can you calculate the co2 footprint of a flight to london?
 """
 
 MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = """
@@ -65,6 +67,14 @@ nlu:
   examples: |
     - Hi
     - Hello
+- intent: goodbye
+  examples:
+  - text: |
+      bye
+    metadata: positive-sentiment
+  - text: |
+      goodbye
+    metadata: positive-sentiment
 """
 
 
@@ -152,7 +162,7 @@ def test_multiline_intent_is_parsed(example: Text):
 
     assert not len(record)
 
-    assert len(training_data.training_examples) == 5
+    assert len(training_data.training_examples) == 7
     assert training_data.training_examples[0].get(
         INTENT
     ) == training_data.training_examples[1].get(INTENT)
@@ -167,7 +177,7 @@ def test_intent_with_metadata_is_parsed():
 
     assert not len(record)
 
-    assert len(training_data.training_examples) == 5
+    assert len(training_data.training_examples) == 7
     example_1, example_2, *other_examples = training_data.training_examples
     assert example_1.get(METADATA) == {
         METADATA_INTENT: ["johnny"],
