@@ -201,9 +201,6 @@ def test_metadata_roundtrip():
 
     assert dumped_result.training_examples == result.training_examples
 
-    # dumping again should also not change the format
-    assert dumped == RasaYAMLWriter().dumps(dumped_result)
-
 
 def test_write_metadata_stripped():
     reader = RasaYAMLReader()
