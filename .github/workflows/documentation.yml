@@ -50,7 +50,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.6-non-full-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.6-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-3.6-non-full
 
     - name: Load Yarn Cached Packages ⬇
