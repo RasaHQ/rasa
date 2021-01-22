@@ -14,6 +14,7 @@ from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
+from rasa.shared.nlu.constants import METADATA_INTENT, METADATA_EXAMPLE
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -37,8 +38,6 @@ KEY_REGEX_EXAMPLES = "examples"
 KEY_LOOKUP = "lookup"
 KEY_LOOKUP_EXAMPLES = "examples"
 KEY_METADATA = "metadata"
-KEY_METADATA_INTENT = "intent"
-KEY_METADATA_EXAMPLE = "example"
 
 MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
 
@@ -516,11 +515,11 @@ class RasaYAMLWriter(TrainingDataWriter):
             if isinstance(example, dict) and KEY_METADATA in example:
                 metadata = example[KEY_METADATA]
 
-                if KEY_METADATA_EXAMPLE in metadata:
-                    converted[KEY_METADATA] = metadata[KEY_METADATA_EXAMPLE]
+                if METADATA_EXAMPLE in metadata:
+                    converted[KEY_METADATA] = metadata[METADATA_EXAMPLE]
 
-                if intent_metadata is None and KEY_METADATA_INTENT in metadata:
-                    intent_metadata = metadata[KEY_METADATA_INTENT]
+                if intent_metadata is None and METADATA_INTENT in metadata:
+                    intent_metadata = metadata[METADATA_INTENT]
 
             result.append(converted)
 
