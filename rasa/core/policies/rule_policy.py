@@ -1006,7 +1006,7 @@ class RulePolicy(MemoizationPolicy):
         """Predicts the next action (see parent class for more information)."""
         (
             rules_action_name_from_text,
-            self._prediction_source,
+            prediction_source,
             returning_from_unhappy_path_from_text,
         ) = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=True
@@ -1017,12 +1017,13 @@ class RulePolicy(MemoizationPolicy):
         # accordingly.
         (
             default_action_name,
-            self._prediction_source,
+            prediction_source,
         ) = self._find_action_from_default_actions(tracker)
 
         # text has priority over intents including default,
         # however loop happy path has priority over rules prediction
         if default_action_name and not rules_action_name_from_text:
+            self._prediction_source = prediction_source
             return self._rule_prediction(
                 self._prediction_result(default_action_name, tracker, domain)
             )
@@ -1033,9 +1034,10 @@ class RulePolicy(MemoizationPolicy):
         # simply force predict the loop.
         (
             loop_happy_path_action_name,
-            self._prediction_source,
+            prediction_source,
         ) = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
+            self._prediction_source = prediction_source
             # this prediction doesn't use user input
             # and happy user input anyhow should be ignored during featurization
             return self._rule_prediction(
@@ -1044,6 +1046,7 @@ class RulePolicy(MemoizationPolicy):
 
         # predict rules from text first
         if rules_action_name_from_text:
+            self._prediction_source = prediction_source
             return self._rule_prediction(
                 self._prediction_result(rules_action_name_from_text, tracker, domain),
                 returning_from_unhappy_path=returning_from_unhappy_path_from_text,
