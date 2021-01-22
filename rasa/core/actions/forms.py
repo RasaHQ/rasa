@@ -441,6 +441,12 @@ class FormAction(LoopAction):
             slots=domain.slots,
         )
 
+    async def user_rejected_manually(self, validation_events: List[Event]) -> bool:
+        """Returns True if user return ActionExecutionRejected event, else False."""
+        return any(
+            isinstance(event, ActionExecutionRejected) for event in validation_events
+        )
+
     async def validate(
         self,
         tracker: "DialogueStateTracker",
@@ -474,10 +480,19 @@ class FormAction(LoopAction):
             # to be filled by the user.
             if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
-        if slot_to_fill and not some_slots_were_validated:
+
+        if (
+            slot_to_fill
+            and not some_slots_were_validated
+            and not await self.user_rejected_manually(validation_events)
+        ):
             # reject to execute the form action
             # if some slot was requested but nothing was extracted
             # it will allow other policies to predict another action
+            #
+            # don't raise it here if the user rejected manually, to allow slots other
+            # than the requested slot to be filled.
+            #
             raise ActionExecutionRejection(
                 self.name(),
                 f"Failed to extract slot {slot_to_fill} with action {self.name()}",
@@ -685,9 +700,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-        events += await self.request_next_slot(
-            tracker, domain, output_channel, nlg, events_so_far + events
-        )
+        if not await self.user_rejected_manually(events):
+            events += await self.request_next_slot(
+                tracker, domain, output_channel, nlg, events_so_far + events
+            )
 
         return events
 
