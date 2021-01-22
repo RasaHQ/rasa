@@ -352,6 +352,69 @@ async def test_validate_slots(
         assert events == expected_events
 
 
+async def test_request_correct_slots_from_unhappy_path_with_custom_required_slots():
+    form_name = "some_form"
+    slot_name_1 = "slot_1"
+    slot_name_2 = "slot_2"
+
+    domain = f"""
+        slots:
+          {slot_name_1}:
+            type: any
+          {slot_name_2}:
+            type: any
+        forms:
+          {form_name}:
+            {slot_name_1}:
+            - type: from_intent
+              intent: some_intent
+              value: some_value
+            {slot_name_2}:
+            - type: from_intent
+              intent: some_intent
+              value: some_value
+        actions:
+        - validate_{form_name}
+        """
+    domain = Domain.from_yaml(domain)
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActiveLoop(form_name),
+            SlotSet(REQUESTED_SLOT, "slot_2"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hello", intent={"name": "greet", "confidence": 1.0},),
+            ActionExecutionRejected(form_name),
+            ActionExecuted("utter_greet"),
+        ],
+    )
+
+    action_server_url = "http://my-action-server:5055/webhook"
+
+    # Custom form validation action changes the order of the requested slots
+    validate_return_events = [
+        {"event": "slot", "name": REQUESTED_SLOT, "value": slot_name_2},
+    ]
+
+    # The form should ask the same slot again when coming back after unhappy path
+    expected_events = [SlotSet(REQUESTED_SLOT, slot_name_2)]
+
+    with aioresponses() as mocked:
+        mocked.post(action_server_url, payload={"events": validate_return_events})
+
+        action_server = EndpointConfig(action_server_url)
+        action = FormAction(form_name, action_server)
+
+        events = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.templates),
+            tracker,
+            domain,
+        )
+        assert events == expected_events
+
+
 @pytest.mark.parametrize(
     "custom_events",
     [
