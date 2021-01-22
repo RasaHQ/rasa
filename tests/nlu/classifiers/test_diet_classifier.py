@@ -508,15 +508,13 @@ async def test_train_persist_load_with_composite_entities(
     assert loaded.parse(text) == trained.parse(text)
 
 
-async def test_process_gives_diagnostic_data(
-    component_builder: ComponentBuilder, trained_nlu_moodbot_path: Text,
-):
+async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
     """Tests if processing a message returns attention weights as numpy array."""
     with rasa.model.unpack_model(trained_nlu_moodbot_path) as unpacked_model_directory:
         _, nlu_model_directory = rasa.model.get_model_subdirectories(
             unpacked_model_directory
         )
-        interpreter = Interpreter.load(nlu_model_directory, component_builder)
+        interpreter = Interpreter.load(nlu_model_directory)
 
     message = Message(data={TEXT: "hello"})
     for component in interpreter.pipeline:

@@ -45,6 +45,7 @@ from tests.core.conftest import (
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
 )
+from rasa.shared.exceptions import FileNotFoundException
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -382,6 +383,31 @@ def spacy_nlp(component_builder: ComponentBuilder, blank_config: RasaNLUModelCon
 @pytest.fixture(scope="session")
 def blank_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
+
+
+@pytest.fixture(scope="session")
+async def trained_responseselectorbot_path(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="examples/responseselectorbot/domain.yml",
+        config="examples/responseselectorbot/config.yml",
+        training_files=[
+            "examples/responseselectorbot/data/rules.yml",
+            "examples/responseselectorbot/data/stories.yml",
+            "examples/responseselectorbot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise FileNotFoundException(f"Could not find model {zipped_model}")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="session")
+async def response_selector_agent(
+    trained_responseselectorbot_path: Optional[Path],
+) -> Agent:
+    return Agent.load_local_model(trained_responseselectorbot_path)
 
 
 def write_endpoint_config_to_yaml(
