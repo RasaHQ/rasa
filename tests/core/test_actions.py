@@ -125,7 +125,7 @@ async def test_remote_action_runs(
 ):
 
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    remote_action = action.RemoteAction("my_action", endpoint)
+    remote_action = action.RemoteAction(ACTION_SESSION_START_NAME, endpoint)
 
     with aioresponses() as mocked:
         mocked.post(
@@ -143,7 +143,7 @@ async def test_remote_action_runs(
 
         assert json_of_latest_request(r) == {
             "domain": default_domain.as_dict(),
-            "next_action": "my_action",
+            "next_action": ACTION_SESSION_START_NAME,
             "sender_id": "my-sender",
             "version": rasa.__version__,
             "tracker": {
@@ -165,6 +165,57 @@ async def test_remote_action_runs(
                 "events": [],
                 "latest_input_channel": None,
             },
+        }
+
+
+async def test_remote_action_start_with_metadata_runs(
+    default_channel, default_nlg, default_tracker, default_domain
+):
+
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction(ACTION_SESSION_START_NAME, endpoint)
+    metadata_dict = {"name": "GOKU"}
+    remote_action.metadata = metadata_dict
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload={"events": [], "responses": []},
+        )
+
+        await remote_action.run(
+            default_channel, default_nlg, default_tracker, default_domain
+        )
+
+        r = latest_request(mocked, "post", "https://example.com/webhooks/actions")
+
+        assert r
+
+        assert json_of_latest_request(r) == {
+            "domain": default_domain.as_dict(),
+            "next_action": ACTION_SESSION_START_NAME,
+            "sender_id": "my-sender",
+            "version": rasa.__version__,
+            "tracker": {
+                "latest_message": {
+                    "entities": [],
+                    "intent": {},
+                    "text": None,
+                    "message_id": None,
+                    "metadata": {},
+                },
+                ACTIVE_LOOP: {},
+                "latest_action": {},
+                "latest_action_name": None,
+                "sender_id": "my-sender",
+                "paused": False,
+                "latest_event_time": None,
+                FOLLOWUP_ACTION: "action_listen",
+                "slots": {"name": None, REQUESTED_SLOT: None},
+                "events": [],
+                "latest_input_channel": None,
+            },
+            "metadata": metadata_dict,
         }
 
 

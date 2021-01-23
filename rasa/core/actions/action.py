@@ -566,14 +566,17 @@ class RemoteAction(Action):
         from rasa.shared.core.trackers import EventVerbosity
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
-
-        return {
+        value = {
             "next_action": self._name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
             "domain": domain.as_dict(),
             "version": rasa.__version__,
         }
+
+        if self._name == ACTION_SESSION_START_NAME and hasattr(self, "metadata"):
+            value["metadata"] = self.__getattribute__("metadata")
+        return value
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
