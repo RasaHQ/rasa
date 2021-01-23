@@ -69,15 +69,19 @@ class EntityExtractor(Component):
 
         return entity
 
-    def init_split_entities(self):
-        """Initialises the behaviour for splitting entities by comma (or not)."""
+    def init_split_entities(self) -> Dict[Text, bool]:
+        """Initialises the behaviour for splitting entities by comma (or not).
+
+        Returns:
+            Defines desired behaviour for splitting specific entity types and
+            default behaviour for splitting any entity types for which no
+            behaviour is defined.
+        """
         split_entities_config = self.component_config.get(
             SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-        default_value = (
-            self.defaults[SPLIT_ENTITIES_BY_COMMA]
-            if SPLIT_ENTITIES_BY_COMMA in self.defaults
-            else SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        default_value = self.defaults.get(
+            SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
         return rasa.utils.train_utils.init_split_entities(
             split_entities_config, default_value
