@@ -12,18 +12,6 @@ from rasa.nlu.utils.hugging_face.registry import (
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 
-@pytest.fixture(scope="session", autouse=True)
-def download_and_cache_models():
-    for model_name in model_class_dict:
-        model_weights = model_weights_defaults[model_name]
-        model_tokenizer_dict[model_name].from_pretrained(
-            model_weights, output_loading_info=True, resume_download=True
-        )
-        model_class_dict[model_name].from_pretrained(
-            model_weights, output_loading_info=True, resume_download=True
-        )
-
-
 @pytest.fixture(scope="session")
 def spacy_nlp_component(component_builder, blank_config):
     spacy_nlp_config = {"name": "SpacyNLP"}
