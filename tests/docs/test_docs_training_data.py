@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Text
+from typing import List, Text, Tuple
 import re
 
 import pytest
@@ -28,7 +28,7 @@ def test_docs_training_data(mdx_file_path: Path):
         mdx_content = handle.read()
 
     matches = TRAINING_DATA_CODEBLOCK_RE.finditer(mdx_content)
-    lines_with_errors: List[Text] = []
+    lines_with_errors: List[Tuple[Text, Text]] = []
 
     for match in matches:
         yaml_path = match.group("yaml_path")
@@ -46,11 +46,14 @@ def test_docs_training_data(mdx_file_path: Path):
         for schema in schemas_to_try:
             try:
                 rasa.shared.utils.validation.validate_yaml_schema(codeblock, schema)
-            except ValueError:
-                lines_with_errors.append(str(line_number))
+            except ValueError as error:
+                lines_with_errors.append((str(line_number), str(error)))
 
     if lines_with_errors:
+        error_details = "\n\n" + "\n".join(
+            f" - At line {line}: {error} " for line, error in lines_with_errors
+        )
         raise AssertionError(
             f"({mdx_file_path}): Invalid training data found "
-            f"at line{'s' if len(lines_with_errors) > 1 else ''} {', '.join(lines_with_errors)}"
+            f"at line{'s' if len(lines_with_errors) > 1 else ''}: {error_details}"
         )

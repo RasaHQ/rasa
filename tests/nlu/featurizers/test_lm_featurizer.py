@@ -566,3 +566,33 @@ def test_preserve_sentence_and_sequence_features_old_config():
     assert not (message.features[1].features == lm_docs[SENTENCE_FEATURES]).any()
     assert (message.features[0].features == hf_docs[SEQUENCE_FEATURES]).all()
     assert (message.features[1].features == hf_docs[SENTENCE_FEATURES]).all()
+
+
+@pytest.mark.parametrize(
+    "text, tokens, expected_feature_tokens",
+    [
+        (
+            "购买 iPhone 12",  # whitespace ' ' is expected to be removed
+            [("购买", 0), (" ", 2), ("iPhone", 3), (" ", 9), ("12", 10)],
+            [("购买", 0), ("iPhone", 3), ("12", 10)],
+        )
+    ],
+)
+def test_lm_featurizer_correctly_handle_whitespace_token(
+    text, tokens, expected_feature_tokens
+):
+    from rasa.nlu.tokenizers.tokenizer import Token
+
+    config = {
+        "model_name": "bert",
+        "model_weights": "bert-base-chinese",
+    }
+
+    lm_featurizer = LanguageModelFeaturizer(config)
+
+    message = Message.build(text=text)
+    message.set(TOKENS_NAMES[TEXT], [Token(word, start) for (word, start) in tokens])
+
+    result, _ = lm_featurizer._tokenize_example(message, TEXT)
+
+    assert [(token.text, token.start) for token in result] == expected_feature_tokens

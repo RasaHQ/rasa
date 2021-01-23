@@ -1,0 +1,38 @@
+version: "2.0"
+
+stories:
+- story: accepts suggestion
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - intent: affirm
+  - action: utter_search_restaurants
+
+- story: accepts 3rd suggestion
+  steps:
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - intent: deny
+  - action: utter_suggest_cuisine
+  - intent: deny
+  - action: utter_suggest_cuisine
+  - intent: affirm
+  - action: utter_search_restaurants
+
+- story: accepts suggestion, indirectly
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: "I can always go for sushi"
+  - action: utter_search_restaurants
+
+- story: rejects suggestion, indirectly
+  steps:
+  - intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: "I had that yesterday"
+  - action: utter_suggest_cuisine

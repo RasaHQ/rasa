@@ -1,12 +1,13 @@
 import importlib
 import json
 import logging
+import math
 import os
 import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, NamedTuple, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union
 
 import rasa.core
 import rasa.core.training.training
@@ -21,6 +22,8 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     DOCS_URL_MIGRATION_GUIDE,
     DEFAULT_CONFIG_PATH,
+    DOCS_URL_ACTIONS,
+    DOCS_URL_DEFAULT_ACTIONS,
 )
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
@@ -30,7 +33,11 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.shared.core.events import ActionExecutionRejected, ActionExecuted
+from rasa.shared.core.events import (
+    ActionExecutionRejected,
+    ActionExecuted,
+    DefinePrevUserUtteredFeaturization,
+)
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -41,6 +48,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
+from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +75,13 @@ class PolicyEnsemble:
         if not any(
             isinstance(policy, (MappingPolicy, RulePolicy)) for policy in self.policies
         ):
-            logger.info(
-                f"MappingPolicy not included in policy ensemble. Default intents "
-                f"'{USER_INTENT_RESTART} and {USER_INTENT_BACK} will not trigger "
-                f"actions '{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'."
+            rasa.shared.utils.io.raise_warning(
+                f"Neither '{RulePolicy.__name__}' nor '{MappingPolicy.__name__}' "
+                f"(deprecated) are included in the model's policy configuration. "
+                f"Default intents such as '{USER_INTENT_RESTART}' and "
+                f"'{USER_INTENT_BACK}' will not trigger actions "
+                f"'{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'.",
+                docs=DOCS_URL_DEFAULT_ACTIONS,
             )
 
     @staticmethod
@@ -302,10 +313,29 @@ class PolicyEnsemble:
                 "".format(policy_name)
             )
 
-    @classmethod
-    def load(cls, path: Union[Text, Path]) -> "PolicyEnsemble":
-        """Loads policy and domain specification from storage"""
+    @staticmethod
+    def _get_updated_epochs(
+        policy_cls: Type[Policy],
+        config_for_policy: Dict[Text, Any],
+        finetuning_epoch_fraction: float,
+    ) -> Optional[int]:
+        if EPOCHS in config_for_policy:
+            epochs = config_for_policy[EPOCHS]
+        else:
+            try:
+                epochs = policy_cls.defaults[EPOCHS]
+            except (KeyError, AttributeError):
+                return None
+        return math.ceil(epochs * finetuning_epoch_fraction)
 
+    @classmethod
+    def load(
+        cls,
+        path: Union[Text, Path],
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
+    ) -> "PolicyEnsemble":
+        """Loads policy and domain specification from disk."""
         metadata = cls.load_metadata(path)
         cls.ensure_model_compatibility(metadata)
         policies = []
@@ -313,9 +343,38 @@ class PolicyEnsemble:
             policy_cls = registry.policy_from_module_path(policy_name)
             dir_name = f"policy_{i}_{policy_cls.__name__}"
             policy_path = os.path.join(path, dir_name)
-            policy = policy_cls.load(policy_path)
+
+            context = {}
+            if new_config:
+                context["should_finetune"] = True
+
+                config_for_policy = new_config["policies"][i]
+                epochs = cls._get_updated_epochs(
+                    policy_cls, config_for_policy, finetuning_epoch_fraction
+                )
+                if epochs:
+                    context["epoch_override"] = epochs
+
+            if "kwargs" not in rasa.shared.utils.common.arguments_of(policy_cls.load):
+                if context:
+                    raise UnsupportedDialogueModelError(
+                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
+                        f"accept `**kwargs`. Attempting to pass {context} to the "
+                        f"policy. `**kwargs` should be added to all policies by "
+                        f"Rasa Open Source 3.0.0."
+                    )
+                else:
+                    rasa.shared.utils.io.raise_deprecation_warning(
+                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
+                        f"accept `**kwargs`. `**kwargs` are required for contextual "
+                        f"information e.g. the flag `should_finetune`.",
+                        warn_until_version="3.0.0",
+                    )
+
+            policy = policy_cls.load(policy_path, **context)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
+
         ensemble_cls = rasa.shared.utils.common.class_from_module_path(
             metadata["ensemble_name"]
         )
@@ -715,8 +774,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 additional features.
 
         Returns:
-            best_probabilities: the list of probabilities for the next actions
-            best_policy_name: the name of the picked policy
+            The best policy prediction.
         """
         winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
 
@@ -730,6 +788,20 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             )
         ):
             winning_prediction = self._fallback_after_listen(domain, winning_prediction)
+
+        if tracker.latest_action_name == ACTION_LISTEN_NAME:
+            if winning_prediction.is_end_to_end_prediction:
+                logger.debug("Made e2e prediction using user text.")
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+                winning_prediction.events.append(
+                    DefinePrevUserUtteredFeaturization(True)
+                )
+            else:
+                logger.debug("Made prediction using user intent.")
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+                winning_prediction.events.append(
+                    DefinePrevUserUtteredFeaturization(False)
+                )
 
         logger.debug(f"Predicted next action using {winning_prediction.policy_name}.")
         return winning_prediction
@@ -751,10 +823,10 @@ def _check_policy_for_forms_available(
 
     if domain.form_names and not has_policy_for_forms:
         raise InvalidDomain(
-            "You have defined a form action, but haven't added the "
-            "FormPolicy to your policy ensemble. Either remove all "
-            "forms from your domain or exclude the FormPolicy from your "
-            "policy configuration."
+            "You have defined a form action, but have neither added the "
+            f"'{RulePolicy.__name__}' nor the '{FormPolicy.__name__}' (deprecated) to "
+            f"your policy ensemble. Either remove all forms from your domain or add "
+            f"the missing policy to your policy configuration."
         )
 
 

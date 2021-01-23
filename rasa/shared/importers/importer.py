@@ -100,8 +100,7 @@ class TrainingDataImporter:
         importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths, TrainingType.CORE
         )
-
-        return CoreDataImporter(importer)
+        return importer
 
     @staticmethod
     def load_nlu_importer_from_config(
@@ -127,8 +126,8 @@ class TrainingDataImporter:
 
     @staticmethod
     def load_from_dict(
-        config: Optional[Dict],
-        config_path: Text,
+        config: Optional[Dict] = None,
+        config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         training_type: Optional[TrainingType] = TrainingType.BOTH,
@@ -153,7 +152,7 @@ class TrainingDataImporter:
                 )
             ]
 
-        return E2EImporter(RetrievalModelsDataImporter(CombinedDataImporter(importers)))
+        return E2EImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
 
     @staticmethod
     def _importer_from_dict(
@@ -215,34 +214,9 @@ class NluDataImporter(TrainingDataImporter):
         return await self._importer.get_nlu_data(language)
 
 
-class CoreDataImporter(TrainingDataImporter):
-    """Importer that skips any NLU related file reading."""
-
-    def __init__(self, actual_importer: TrainingDataImporter):
-        self._importer = actual_importer
-
-    async def get_domain(self) -> Domain:
-        return await self._importer.get_domain()
-
-    async def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
-        return await self._importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
-        )
-
-    async def get_config(self) -> Dict:
-        return await self._importer.get_config()
-
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        return TrainingData()
-
-
 class CombinedDataImporter(TrainingDataImporter):
     """A `TrainingDataImporter` that combines multiple importers.
+
     Uses multiple `TrainingDataImporter` instances
     to load the data as if they were a single instance.
     """
@@ -293,8 +267,8 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
 
-class RetrievalModelsDataImporter(TrainingDataImporter):
-    """A `TrainingDataImporter` that sets up the data for training retrieval models.
+class ResponsesSyncImporter(TrainingDataImporter):
+    """Importer that syncs `responses` between Domain and NLU training data.
 
     Synchronizes response templates between Domain and NLU
     and adds retrieval intent properties from the NLU training data
@@ -314,19 +288,18 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         existing_domain = await self._importer.get_domain()
         existing_nlu_data = await self._importer.get_nlu_data()
 
-        # Check if NLU data has any retrieval intents, if yes
-        # add corresponding retrieval actions with `utter_` prefix automatically
-        # to an empty domain, update the properties of existing retrieval intents
-        # and merge response templates
-        if existing_nlu_data.retrieval_intents:
+        # Merge responses from NLU data with responses in the domain.
+        # If NLU data has any retrieval intents, then add corresponding
+        # retrieval actions with `utter_` prefix automatically to the
+        # final domain, update the properties of existing retrieval intents.
+        domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
+            existing_nlu_data.retrieval_intents,
+            existing_nlu_data.responses,
+            existing_domain,
+        )
 
-            domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
-                existing_nlu_data.retrieval_intents,
-                existing_nlu_data.responses,
-                existing_domain,
-            )
-
-            existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain.check_missing_templates()
 
         return existing_domain
 
@@ -351,16 +324,19 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         response_templates: Dict[Text, List[Dict[Text, Any]]],
         existing_domain: Domain,
     ) -> Domain:
-        """Construct a domain consisting of retrieval intents listed in the NLU training data.
+        """Construct a domain consisting of retrieval intents.
+
+         The result domain will have retrieval intents that are listed
+         in the NLU training data.
 
         Args:
             retrieval_intents: Set of retrieval intents defined in NLU training data.
+            response_templates: Response templates defined in NLU training data.
             existing_domain: Domain which is already loaded from the domain file.
 
         Returns: Domain with retrieval actions added to action names and properties
-        for retrieval intents updated.
+          for retrieval intents updated.
         """
-
         # Get all the properties already defined
         # for each retrieval intent in other domains
         # and add the retrieval intent property to them
@@ -379,9 +355,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             [],
             [],
             response_templates,
-            RetrievalModelsDataImporter._construct_retrieval_action_names(
-                retrieval_intents
-            ),
+            ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
             {},
         )
 
@@ -459,7 +433,13 @@ class E2EImporter(TrainingDataImporter):
         additional_e2e_action_names = list(additional_e2e_action_names)
 
         return Domain(
-            [], [], [], {}, action_names=additional_e2e_action_names, forms={}
+            [],
+            [],
+            [],
+            {},
+            action_names=[],
+            forms={},
+            action_texts=additional_e2e_action_names,
         )
 
     async def get_stories(
@@ -469,6 +449,10 @@ class E2EImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
+        """Retrieves the stories that should be used for training.
+
+        See parent class for details.
+        """
         return await self.importer.get_stories(
             template_variables, use_e2e, exclusion_percentage
         )

@@ -597,8 +597,8 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
 
     interactive._write_domain_to_file(domain_path, events, old_domain)
 
-    assert set(Domain.from_path(domain_path).action_names) == set(
-        old_domain.action_names
+    assert set(Domain.from_path(domain_path).action_names_or_texts) == set(
+        old_domain.action_names_or_texts
     )
 
 

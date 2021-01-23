@@ -17,7 +17,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - name: Checkout master
+    - name: Checkout main
       uses: actions/checkout@v2
 
     - name: Download yq
@@ -150,7 +150,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-3.8-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -206,6 +206,7 @@ jobs:
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           PR_URL: ""
+          DATASET_REPOSITORY_BRANCH: "main"
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
