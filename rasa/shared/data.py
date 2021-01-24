@@ -147,7 +147,7 @@ def get_data_files(
 
         if is_valid_filetype(path):
             if filter_predicate(path):
-                data_files.add(os.path.abspath(path))
+                data_files.add(path)
         else:
             new_data_files = _find_data_files_in_directory(path, filter_predicate)
             data_files.update(new_data_files)

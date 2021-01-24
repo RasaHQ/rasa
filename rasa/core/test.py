@@ -340,9 +340,7 @@ async def _create_data_generator(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name]
     )
-    story_graph = await test_data_importer.get_stories(
-        resource_name, agent.domain, use_e2e
-    )
+    story_graph = await test_data_importer.get_stories(use_e2e)
 
     return TrainingDataGenerator(
         story_graph,
