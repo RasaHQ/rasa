@@ -21,7 +21,6 @@ from typing import (
 )
 
 from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -42,6 +41,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
+from rasa.shared.exceptions import ConnectionException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
@@ -65,7 +65,7 @@ DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 
 class TrackerStore:
-    """Class to hold all of the TrackerStore classes"""
+    """Represents common behavior and interface for all `TrackerStore`s."""
 
     def __init__(
         self,
@@ -115,7 +115,18 @@ class TrackerStore:
         if isinstance(obj, TrackerStore):
             return obj
 
-        return _create_from_endpoint_config(obj, domain, event_broker)
+        from botocore.exceptions import BotoCoreError
+        import pymongo.errors
+        import sqlalchemy.exc
+
+        try:
+            return _create_from_endpoint_config(obj, domain, event_broker)
+        except (
+            BotoCoreError,
+            pymongo.errors.ConnectionFailure,
+            sqlalchemy.exc.OperationalError,
+        ) as error:
+            raise ConnectionException("Cannot connect to tracker store.") from error
 
     def get_or_create_tracker(
         self,
@@ -407,7 +418,7 @@ class DynamoTrackerStore(TrackerStore):
     def get_or_create_table(
         self, table_name: Text
     ) -> "boto3.resources.factory.dynamodb.Table":
-        """Returns table or creates one if the table name is not in the table list"""
+        """Returns table or creates one if the table name is not in the table list."""
         import boto3
 
         dynamo = boto3.resource("dynamodb", region_name=self.region)
@@ -442,7 +453,9 @@ class DynamoTrackerStore(TrackerStore):
         return table
 
     def save(self, tracker):
-        """Saves the current conversation state"""
+        """Saves the current conversation state."""
+        from botocore.exceptions import ClientError
+
         if self.event_broker:
             self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
@@ -475,7 +488,7 @@ class DynamoTrackerStore(TrackerStore):
         return dialogues[0].get("session_date")
 
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
-        """Serializes the tracker, returns object with decimal types"""
+        """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
         d.update(
             {"sender_id": tracker.sender_id,}
@@ -505,7 +518,7 @@ class DynamoTrackerStore(TrackerStore):
         )
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the DynamoTrackerStore"""
+        """Returns sender_ids of the `DynamoTrackerStore`."""
         return [
             i["sender_id"]
             for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
@@ -513,8 +526,7 @@ class DynamoTrackerStore(TrackerStore):
 
 
 class MongoTrackerStore(TrackerStore):
-    """
-    Stores conversation history in Mongo
+    """Stores conversation history in Mongo.
 
     Property methods:
         conversations: returns the current conversation
@@ -552,11 +564,11 @@ class MongoTrackerStore(TrackerStore):
 
     @property
     def conversations(self):
-        """Returns the current conversation"""
+        """Returns the current conversation."""
         return self.db[self.collection]
 
     def _ensure_indices(self):
-        """Create an index on the sender_id"""
+        """Create an index on the sender_id."""
         self.conversations.create_index("sender_id")
 
     @staticmethod
@@ -569,7 +581,7 @@ class MongoTrackerStore(TrackerStore):
         return state
 
     def save(self, tracker, timeout=None):
-        """Saves the current conversation state"""
+        """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -684,7 +696,7 @@ class MongoTrackerStore(TrackerStore):
         )
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the Mongo Tracker Store"""
+        """Returns sender_ids of the Mongo Tracker Store."""
         return [c["sender_id"] for c in self.conversations.find()]
 
 
@@ -917,33 +929,44 @@ class SQLTrackerStore(TrackerStore):
         )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
-        """Create databse `db` and update engine to reflect the updated `engine_url`."""
-
+        """Creates database `db` and updates engine accordingly."""
         from sqlalchemy import create_engine
+
+        if not self.engine.dialect.name == "postgresql":
+            rasa.shared.utils.io.raise_warning(
+                "The parameter 'login_db' can only be used with a postgres database.",
+            )
+            return
 
         self._create_database(self.engine, db)
         engine_url.database = db
         self.engine = create_engine(engine_url)
 
     @staticmethod
-    def _create_database(engine: "Engine", db: Text):
+    def _create_database(engine: "Engine", database_name: Text) -> None:
         """Create database `db` on `engine` if it does not exist."""
-
         import psycopg2
 
         conn = engine.connect()
 
-        cursor = conn.connection.cursor()
-        cursor.execute("COMMIT")
-        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", (db,))
-        exists = cursor.fetchone()
-        if not exists:
-            try:
-                cursor.execute(f"CREATE DATABASE {db}")
-            except psycopg2.IntegrityError as e:
-                logger.error(f"Could not create database '{db}': {e}")
+        matching_rows = (
+            conn.execution_options(isolation_level="AUTOCOMMIT")
+            .execute(
+                sa.text(
+                    "SELECT 1 FROM pg_catalog.pg_database "
+                    "WHERE datname = :database_name"
+                ),
+                database_name=database_name,
+            )
+            .rowcount
+        )
 
-        cursor.close()
+        if not matching_rows:
+            try:
+                conn.execute(f"CREATE DATABASE {database_name}")
+            except psycopg2.IntegrityError as e:
+                logger.error(f"Could not create database '{database_name}': {e}")
+
         conn.close()
 
     @contextlib.contextmanager
