@@ -38,6 +38,9 @@ help:
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
+	@echo "    test-integration"
+	@echo "        Run integration tests using pytest."
+	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
 	@echo "    release"
@@ -164,7 +167,8 @@ test: clean
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
 
 test-integration:
-	poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS)
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
