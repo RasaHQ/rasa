@@ -405,7 +405,7 @@ jobs:
       run: |
         BRANCH_NAME=${GITHUB_REF#refs/heads/}
         SAFE_BRANCH_NAME="$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\\*+.$\#\-\/]/-/g')"
-        echo "IMAGE_TAG=${BRANCH_NAME}" >> $GITHUB_ENV
+        echo "IMAGE_TAG=${SAFE_BRANCH_NAME}" >> $GITHUB_ENV
 
     - name: Set output
       id: set_output
@@ -498,8 +498,6 @@ jobs:
           docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
           docker push rasa/rasa:${LATEST_TAG}
         fi
-
-
 
   deploy:
     name: Deploy to PyPI
