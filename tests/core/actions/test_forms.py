@@ -352,7 +352,7 @@ async def test_validate_slots(
         assert events == expected_events
 
 
-async def test_request_correct_slots_from_unhappy_path_with_custom_required_slots():
+async def test_request_correct_slots_after_unhappy_path_with_custom_required_slots():
     form_name = "some_form"
     slot_name_1 = "slot_1"
     slot_name_2 = "slot_2"
