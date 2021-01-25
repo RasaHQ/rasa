@@ -1020,7 +1020,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         meta = train_utils.update_similarity_type(meta)
         meta = train_utils.update_loss_type(meta)
-        # meta[RELATIVE_CONFIDENCE] = True
 
         model = cls._load_model(
             entity_tag_specs,
