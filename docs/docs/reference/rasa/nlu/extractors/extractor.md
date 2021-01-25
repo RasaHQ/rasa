@@ -9,13 +9,58 @@ title: rasa.nlu.extractors.extractor
 class EntityExtractor(Component)
 ```
 
+Entity extractors are components which extract entities.
+
+They can be placed in the pipeline like other components, and can extract
+entities like a person&#x27;s name, or a location.
+
+#### add\_extractor\_name
+
+```python
+ | add_extractor_name(entities: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+```
+
+Adds this extractor&#x27;s name to a list of entities.
+
+**Arguments**:
+
+- `entities` - the extracted entities.
+  
+
+**Returns**:
+
+  the modified entities.
+
+#### add\_processor\_name
+
+```python
+ | add_processor_name(entity: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Adds this extractor&#x27;s name to the list of processors for this entity.
+
+**Arguments**:
+
+- `entity` - the extracted entity and its metadata.
+  
+
+**Returns**:
+
+  the modified entity.
+
 #### init\_split\_entities
 
 ```python
- | init_split_entities()
+ | init_split_entities() -> Dict[Text, bool]
 ```
 
-Initialise the behaviour for splitting entities by comma (or not).
+Initialises the behaviour for splitting entities by comma (or not).
+
+**Returns**:
+
+  Defines desired behaviour for splitting specific entity types and
+  default behaviour for splitting any entity types for which no
+  behaviour is defined.
 
 #### filter\_irrelevant\_entities
 

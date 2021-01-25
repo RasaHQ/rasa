@@ -148,3 +148,17 @@ We cannot use `dict.update` method because configs contain nested dicts.
 
   updated config
 
+#### init\_split\_entities
+
+```python
+init_split_entities(split_entities_config, default_split_entity) -> Dict[Text, bool]
+```
+
+Initialise the behaviour for splitting entities by comma (or not).
+
+**Returns**:
+
+  Defines desired behaviour for splitting specific entity types and
+  default behaviour for splitting any entity types for which no behaviour
+  is defined.
+
