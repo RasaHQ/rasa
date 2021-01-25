@@ -4,7 +4,7 @@
 [![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa.svg)](https://pypi.python.org/pypi/rasa)
 [![Build Status](https://github.com/RasaHQ/rasa/workflows/Continuous%20Integration/badge.svg)](https://github.com/RasaHQ/rasa/actions)
-[![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa/badge.svg?branch=main)](https://coveralls.io/github/RasaHQ/rasa?branch=main)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
 ![Documentation Build](https://img.shields.io/netlify/d2e447e4-5a5e-4dc7-be5d-7c04ae7ff706?label=Documentation%20Build)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
@@ -240,10 +240,10 @@ make types
 
 ### Deploying documentation updates
 
-We use `Docusaurus v2` to build docs for tagged versions and for the master branch.
+We use `Docusaurus v2` to build docs for tagged versions and for the `main` branch.
 The static site that gets built is pushed to the `documentation` branch of this repo.
 
-We host the site on netlify. On master branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
+We host the site on netlify. On `main` branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
 the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 ## Releases
@@ -301,12 +301,12 @@ Releasing a new version is quite simple, as the packages are build and distribut
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for micro releases)
+2. Switch to the branch you want to cut the release from (`main` in case of a major / minor, the current feature branch for micro releases)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 3. Run `make release`
-4. Create a PR against master or the release branch (e.g. `1.2.x`)
-5. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
+4. Create a PR against `main` or the release branch (e.g. `1.2.x`)
+5. Once your PR is merged, tag a new release (this SHOULD always happen on `main` or release branches), e.g. using
     ```bash
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0

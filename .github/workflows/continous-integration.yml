@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
     branches:
-    - master
+    - main
     tags:
     - '*'
   pull_request:
@@ -473,8 +473,8 @@ jobs:
       run: |
         docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }}
 
-    - name: Push image with master tag 📦
-      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'RasaHQ/rasa'
+    - name: Push image with main tag 📦
+      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
       run: |
         docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
