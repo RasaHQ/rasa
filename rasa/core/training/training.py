@@ -14,13 +14,13 @@ if TYPE_CHECKING:
 def _find_events_after_actions(
     trackers: List["DialogueStateTracker"],
 ) -> Dict[Text, Set["Event"]]:
-    """Creates a dictionary of action names and events that follow these actions.
+    """Creates a mapping of action names / texts and events that follow these actions.
 
     Args:
         trackers: the list of trackers
 
     Returns:
-        a dictionary of action names and events that follow these actions
+        A mapping of action names / texts and events that follow these actions.
     """
     events_after_actions = defaultdict(set)
 

@@ -18,6 +18,8 @@ help:
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
 	@echo "        Check for type errors using mypy."
+	@echo "    static-checks"
+	@echo "        Run all python static checks."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -30,6 +32,8 @@ help:
 	@echo "        Download all additional resources needed to use spacy as part of Rasa."
 	@echo "    prepare-mitie"
 	@echo "        Download all additional resources needed to use mitie as part of Rasa."
+	@echo "    prepare-transformers:"
+	@echo "        Download all models needed for testing LanguageModelFeaturizer."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
@@ -70,8 +74,8 @@ lint:
 	poetry run black --check rasa tests
 	make lint-docstrings
 
-# Compare against `master` if no branch was provided
-BRANCH ?= master
+# Compare against `main` if no branch was provided
+BRANCH ?= main
 lint-docstrings:
 # Lint docstrings only against the the diff to avoid too many errors.
 # Check only production code. Ignore other flake errors which are captured by `lint`
@@ -82,6 +86,9 @@ endif
 
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
+
+lint-security:
+	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
 types:
 	# FIXME: working our way towards removing these
@@ -107,6 +114,8 @@ types:
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 
+static-checks: lint lint-security types
+
 prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
@@ -127,7 +136,12 @@ else
 endif
 	rm data/MITIE*.bz2
 
-prepare-tests-files: prepare-spacy prepare-mitie
+prepare-transformers:
+	CACHE_DIR=$(HOME)/.cache/torch/transformers;\
+	mkdir -p "$$CACHE_DIR";\
+	while read URL; do read -r CACHE_FILE; wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; done < "data/test/hf_transformers_models.txt"
+
+prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 
 prepare-wget-macos:
 	brew install wget || true

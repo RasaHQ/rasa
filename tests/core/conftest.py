@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+from rasa.utils.endpoints import EndpointConfig
 from sanic.request import Request
 import uuid
 from datetime import datetime
@@ -24,13 +25,15 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
-DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
-    "data/test_domains/default_with_slots_and_no_actions.yml"
-)
+DOMAIN_WITH_CATEGORICAL_SLOT = "data/test_domains/domain_with_categorical_slot.yml"
 
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
-DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
+DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
+
+DEFAULT_E2E_STORIES_FILE = "data/test_yaml_stories/stories_e2e.yml"
+
+SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
@@ -58,7 +61,6 @@ TEST_DIALOGUES = [
 
 EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
@@ -72,8 +74,8 @@ class CustomSlot(Slot):
 
 # noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
-    def __init__(self, example_arg):
-        super(ExamplePolicy, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(ExamplePolicy, self).__init__(*args, **kwargs)
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
@@ -190,13 +192,6 @@ def tracker_with_six_scheduled_reminders(
     return tracker
 
 
-@pytest.fixture(scope="session")
-def moodbot_metadata(unpacked_trained_moodbot_path: Text) -> PolicyEnsemble:
-    return PolicyEnsemble.load_metadata(
-        os.path.join(unpacked_trained_moodbot_path, "core")
-    )
-
-
 @pytest.fixture
 def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
@@ -207,8 +202,10 @@ def default_tracker(default_domain: Domain) -> DialogueStateTracker:
     return DialogueStateTracker("my-sender", default_domain.slots)
 
 
-@pytest.fixture
-async def form_bot_agent(trained_async) -> Agent:
+@pytest.fixture(scope="session")
+async def form_bot_agent(trained_async: Callable) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
@@ -218,7 +215,7 @@ async def form_bot_agent(trained_async) -> Agent:
         ],
     )
 
-    return Agent.load_local_model(zipped_model)
+    return Agent.load_local_model(zipped_model, action_endpoint=endpoint)
 
 
 @pytest.fixture(scope="session")

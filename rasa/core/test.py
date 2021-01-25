@@ -240,14 +240,26 @@ class WronglyPredictedAction(ActionExecuted):
     def __init__(
         self,
         action_name_target: Text,
+        action_text_target: Text,
         action_name_prediction: Text,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ) -> None:
+        """Creates event for a successful event execution.
+
+        See the docstring of the parent class `ActionExecuted` for more information.
+        """
         self.action_name_prediction = action_name_prediction
-        super().__init__(action_name_target, policy, confidence, timestamp, metadata)
+        super().__init__(
+            action_name_target,
+            policy,
+            confidence,
+            timestamp,
+            metadata,
+            action_text=action_text_target,
+        )
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
@@ -296,17 +308,18 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
-        from rasa.shared.core.events import md_format_message
+        from rasa.shared.core.events import format_message
 
-        predicted_message = md_format_message(
+        predicted_message = format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
-        from rasa.shared.core.events import md_format_message
+        """Returns text representation of event."""
+        from rasa.shared.core.events import format_message
 
-        correct_message = md_format_message(
+        correct_message = format_message(
             self.text, self.intent.get("name"), self.entities
         )
         return (
@@ -480,7 +493,9 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold = event.action_name or event.action_text
+    gold_action_name = event.action_name
+    gold_action_text = event.action_text
+    gold = gold_action_name or gold_action_text
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
@@ -514,7 +529,8 @@ def _collect_action_executed_predictions(
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
-                gold,
+                gold_action_name,
+                gold_action_text,
                 predicted,
                 prediction.policy_name,
                 prediction.max_confidence,

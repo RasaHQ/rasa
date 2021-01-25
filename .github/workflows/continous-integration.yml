@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
     branches:
-    - master
+    - main
     tags:
     - '*'
   pull_request:
@@ -52,6 +52,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
@@ -80,15 +81,15 @@ jobs:
 
     - name: Load Poetry Cached Libraries ⬇
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Load Yarn Cached Packages ⬇
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: docs/node_modules
         key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
@@ -118,6 +119,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
@@ -140,10 +142,10 @@ jobs:
 
     - name: Load Poetry Cached Libraries ⬇
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Install Dependencies 📦
@@ -192,6 +194,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
@@ -212,25 +215,34 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
+    - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v2
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+      run: rm -r .venv
+
+      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+      # The virtualenv simply doesn't work on Windows with our setup,
+      # that's why we use venv to create virtual environment
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+      run: python -m venv create .venv
+
     - name: Set up virtual environment
       if: needs.changes.outputs.backend == 'true'
       # Poetry on Windows cannot pick up the virtual environments directory properly,
       # and it creates a new one every time the pipeline runs.
-      # We want to  allow Poetry to create a venv directory if it doesn't
-      # exist, but also pick it up if it's already there.
       # This step solves this problem — it tells poetry to always use `.venv` directory inside
       # the project itself, which also makes it easier for us to determine the correct directory
       # that needs to be cached.
-      run: |
-        poetry config virtualenvs.in-project true
+      run: poetry config virtualenvs.in-project true
 
-    - name: Load Poetry Cached Libraries ⬇
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -257,7 +269,7 @@ jobs:
         make prepare-tests-windows
 
     - name: Test Code 🔍
-      if: needs.changes.outputs.backend == 'true'
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
@@ -290,6 +302,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docker == 'true'
       uses: actions/checkout@v2
 
     - name: Free disk space
@@ -324,7 +337,7 @@ jobs:
       run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
 
     - name: Push image with latest tag 📦
-      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'RasaHQ/rasa'
+      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
       run: docker push rasa/rasa:latest${{ matrix.image.tag_ext }}
 
     - name: Push image with ${{github.ref}} tag 📦
