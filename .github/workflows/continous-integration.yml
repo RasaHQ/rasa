@@ -298,6 +298,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
     - name: Checkout git repository 🕝
@@ -364,7 +366,7 @@ jobs:
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
-        REDIS_HOST: redis
+        REDIS_HOST: localhost
         REDIS_PORT: 6379
       run: |
         make test-integration
