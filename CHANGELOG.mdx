@@ -16,6 +16,28 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.2.7] - 2021-01-25
+                       
+
+### Improvements
+- [#7731](https://github.com/rasahq/rasa/issues/7731): Add support for in `RasaYAMLWriter` for writing intent and example metadata back
+  into NLU YAML files.
+
+### Bugfixes
+- [#4311](https://github.com/rasahq/rasa/issues/4311): Fixed a bug with `Domain.is_domain_file()` that could raise an Exception in case the potential domain file is not a valid YAML.
+
+
+## [2.2.6] - 2021-01-21
+                       
+
+### Bugfixes
+- [#7717](https://github.com/rasahq/rasa/issues/7717): Fix wrong warning `The method 'EventBroker.close' was changed to be asynchronous` when
+  the `EventBroker.close` was actually asynchronous.
+- [#7720](https://github.com/rasahq/rasa/issues/7720): Fix incremental training for cases when training data does not contain entities but `DIETClassifier` is configured to perform entity recognition also.
+
+  Now, the instance of `RasaModelData` inside `DIETClassifier` does not contain `entities` as a feature for training if there is no training data present for entity recognition.
+
+
 ## [2.2.5] - 2021-01-12
                        
 
