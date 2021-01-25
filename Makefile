@@ -1,6 +1,7 @@
 .PHONY: clean test lint init docs
 
 JOBS ?= 1
+INTEGRATION_TEST_FOLDER = tests/integration_tests/
 
 help:
 	@echo "make"
@@ -160,7 +161,10 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+
+test-integration:
+	poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
