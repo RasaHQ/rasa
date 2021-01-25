@@ -96,15 +96,15 @@ python-versions = "*"
 
 [[package]]
 name = "apscheduler"
-version = "3.6.3"
+version = "3.7.0"
 description = "In-process task scheduler with Cron-like capabilities"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
 [package.dependencies]
 pytz = "*"
-tzlocal = ">=1.2"
+tzlocal = ">=2.0,<3.0"
 six = ">=1.4.0"
 
 [package.extras]
@@ -112,12 +112,12 @@ rethinkdb = ["rethinkdb (>=2.4.0)"]
 sqlalchemy = ["sqlalchemy (>=0.8)"]
 tornado = ["tornado (>=4.3)"]
 doc = ["sphinx", "sphinx-rtd-theme"]
-testing = ["pytest", "pytest-cov", "pytest-tornado5", "mock", "pytest-asyncio (<0.6)", "pytest-asyncio"]
+testing = ["pytest (<6)", "pytest-cov", "pytest-tornado5", "mock", "pytest-asyncio (<0.6)", "pytest-asyncio"]
 redis = ["redis (>=3.0)"]
 twisted = ["twisted"]
 gevent = ["gevent"]
 zookeeper = ["kazoo"]
-mongodb = ["pymongo (>=2.8)"]
+mongodb = ["pymongo (>=3.0)"]
 asyncio = ["trollius"]
 
 [[package]]
@@ -280,7 +280,7 @@ python-versions = "*"
 
 [[package]]
 name = "boto3"
-version = "1.16.57"
+version = "1.16.59"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
@@ -288,12 +288,12 @@ python-versions = "*"
 
 [package.dependencies]
 jmespath = ">=0.7.1,<1.0.0"
-botocore = ">=1.19.57,<1.20.0"
+botocore = ">=1.19.59,<1.20.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
 [[package]]
 name = "botocore"
-version = "1.19.57"
+version = "1.19.59"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -306,7 +306,7 @@ urllib3 = {version = ">=1.25.4,<1.27", markers = "python_version != \"3.4\""}
 
 [[package]]
 name = "cachetools"
-version = "4.2.0"
+version = "4.2.1"
 description = "Extensible memoizing collections and decorators"
 category = "main"
 optional = false
@@ -1143,7 +1143,7 @@ jsonpointer = ">=1.9"
 
 [[package]]
 name = "jsonpickle"
-version = "1.4.2"
+version = "1.5.0"
 description = "Python library for serializing any arbitrary object graph into JSON"
 category = "main"
 optional = false
@@ -1539,7 +1539,7 @@ python-versions = "*"
 
 [[package]]
 name = "nr.parsing.date"
-version = "0.4.3"
+version = "0.4.4"
 description = "A simple and fast date parsing library. Uses dateutil for timezone offset support."
 category = "dev"
 optional = false
@@ -2412,7 +2412,7 @@ sanic = ">=18.12.0,<21"
 
 [[package]]
 name = "scikit-learn"
-version = "0.23.2"
+version = "0.24.1"
 description = "A set of python modules for machine learning and data mining"
 category = "main"
 optional = false
@@ -2425,10 +2425,10 @@ scipy = ">=0.19.1"
 numpy = ">=1.13.3"
 
 [package.extras]
-benchmark = ["matplotlib (>=2.1.1)", "pandas (>=0.25.0)", "memory-profiler (>=0.57.0)"]
 docs = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)", "memory-profiler (>=0.57.0)", "sphinx (>=3.2.0)", "sphinx-gallery (>=0.7.0)", "numpydoc (>=1.0.0)", "Pillow (>=7.1.2)", "sphinx-prompt (>=1.3.0)"]
-examples = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)"]
 tests = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "pytest (>=5.0.1)", "pytest-cov (>=2.9.0)", "flake8 (>=3.8.2)", "mypy (>=0.770)", "pyamg (>=4.0.0)"]
+benchmark = ["matplotlib (>=2.1.1)", "pandas (>=0.25.0)", "memory-profiler (>=0.57.0)"]
+examples = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)"]
 
 [[package]]
 name = "scipy"
@@ -2523,7 +2523,7 @@ optional = ["aiodns (>1.0)"]
 
 [[package]]
 name = "smmap"
-version = "3.0.4"
+version = "3.0.5"
 description = "A pure Python implementation of a sliding window memory map manager"
 category = "dev"
 optional = false
@@ -2904,7 +2904,7 @@ sklearn = ["scikit-learn"]
 
 [[package]]
 name = "twilio"
-version = "6.45.4"
+version = "6.50.1"
 description = "Twilio API client and TwiML generator"
 category = "main"
 optional = false
@@ -2994,7 +2994,7 @@ python-versions = "*"
 
 [[package]]
 name = "wasabi"
-version = "0.8.0"
+version = "0.8.1"
 description = "A lightweight console printing and formatting toolkit"
 category = "main"
 optional = true
@@ -3115,7 +3115,7 @@ spacy = ["spacy"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "d5807469d90a8eca2ecf292deddfad482315bfb0b71f5f7b58dfa3077834f19e"
+content-hash = "3aceb2ff2ba7ccee4e1c46e675cfbe3acf5ef5b40b7577dbb42a8979d1877268"
 
 [metadata.files]
 absl-py = [
@@ -3233,16 +3233,16 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.16.57-py2.py3-none-any.whl", hash = "sha256:2fd3c2f42006988dc8ddae43c988aea481d11e2af7ab1deb83b293640357986c"},
-    {file = "boto3-1.16.57.tar.gz", hash = "sha256:4a499cc2f53dd557a88c6db6a552748a2abd83ffeda70ceb71dc8db39a027314"},
+    {file = "boto3-1.16.59-py2.py3-none-any.whl", hash = "sha256:f8a2f0bf929af92c4d254d1e495f6642dd335818cc7172e1bdc3dfe28655fb94"},
+    {file = "boto3-1.16.59.tar.gz", hash = "sha256:550a513315194292651bb6cc96e94185bfc4dc6b299c3cf1594882bdd16b3905"},
 ]
 botocore = [
-    {file = "botocore-1.19.57-py2.py3-none-any.whl", hash = "sha256:cf7d108a4d67a0fe670379111927b5d9e0ff1160146c81c326bb9e54c2b8cb19"},
-    {file = "botocore-1.19.57.tar.gz", hash = "sha256:c756d65ffa989c5c0e92178175e41abf7b18ad19b2fe2e82e192f085e264e03a"},
+    {file = "botocore-1.19.59-py2.py3-none-any.whl", hash = "sha256:67d273b5dcc5033edb2def244ecab51ca24351becf5c1644de279e5653e4e932"},
+    {file = "botocore-1.19.59.tar.gz", hash = "sha256:33959aa19cb6d336c47495c871b00d8670de0023b53bbbbd25790ba0bc5cefe9"},
 ]
 cachetools = [
-    {file = "cachetools-4.2.0-py3-none-any.whl", hash = "sha256:c6b07a6ded8c78bf36730b3dc452dfff7d95f2a12a2fed856b1a0cb13ca78c61"},
-    {file = "cachetools-4.2.0.tar.gz", hash = "sha256:3796e1de094f0eaca982441c92ce96c68c89cced4cd97721ab297ea4b16db90e"},
+    {file = "cachetools-4.2.1-py3-none-any.whl", hash = "sha256:1d9d5f567be80f7c07d765e21b814326d78c61eb0c3a637dffc0e5d1796cb2e2"},
+    {file = "cachetools-4.2.1.tar.gz", hash = "sha256:f469e29e7aa4cff64d8de4aad95ce76de8ea1125a16c68e0d93f65c3c3dc92e9"},
 ]
 catalogue = [
     {file = "catalogue-1.0.0-py2.py3-none-any.whl", hash = "sha256:584d78e7f4c3c6e2fd498eb56dfc8ef1f4ff738480237de2ccd26cbe2cf47172"},
@@ -4002,8 +4002,8 @@ networkx = [
     {file = "nr.metaclass-0.0.6.tar.gz", hash = "sha256:3d52f8e603e3c2944b9135e5a09593c3c36191f26cf1c29a7c71efb192552b10"},
 ]
 "nr.parsing.date" = [
-    {file = "nr.parsing.date-0.4.3-py3-none-any.whl", hash = "sha256:899ee068883ce43cd6502915121b6667470b9cad10d4753f74db6d7ca23ac5b3"},
-    {file = "nr.parsing.date-0.4.3.tar.gz", hash = "sha256:540b926a6e9b5d0f2b042b614c094ca08d6445227e2769d0ca5581fb459b3cd3"},
+    {file = "nr.parsing.date-0.4.4-py3-none-any.whl", hash = "sha256:047404978517d892b961bf065d3373ba5e53b6207af978b2c08b2e49498e7bb0"},
+    {file = "nr.parsing.date-0.4.4.tar.gz", hash = "sha256:1c4d25f8f7141676cce03728153f4216d2170adc537aefb2f535a4bad78e3d5d"},
 ]
 "nr.pylang.utils" = [
     {file = "nr.pylang.utils-0.0.4-py3-none-any.whl", hash = "sha256:cf8c88b9e7821a256e31e83e16dcd506d1fb33ea3cf37578eb163526ab044a27"},
@@ -4590,21 +4590,29 @@ sanic-plugins-framework = [
 scikit-learn = [
     {file = "scikit-learn-0.24.1.tar.gz", hash = "sha256:a0334a1802e64d656022c3bfab56a73fbd6bf4b1298343f3688af2151810bbdf"},
     {file = "scikit_learn-0.24.1-cp36-cp36m-macosx_10_13_x86_64.whl", hash = "sha256:9bed8a1ef133c8e2f13966a542cb8125eac7f4b67dcd234197c827ba9c7dd3e0"},
+    {file = "scikit_learn-0.24.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:a36e159a0521e13bbe15ca8c8d038b3a1dd4c7dad18d276d76992e03b92cf643"},
+    {file = "scikit_learn-0.24.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:c658432d8a20e95398f6bb95ff9731ce9dfa343fdf21eea7ec6a7edfacd4b4d9"},
     {file = "scikit_learn-0.24.1-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:9dfa564ef27e8e674aa1cc74378416d580ac4ede1136c13dd555a87996e13422"},
     {file = "scikit_learn-0.24.1-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:9c6097b6a9b2bafc5e0f31f659e6ab5e131383209c30c9e978c5b8abdac5ed2a"},
     {file = "scikit_learn-0.24.1-cp36-cp36m-win32.whl", hash = "sha256:7b04691eb2f41d2c68dbda8d1bd3cb4ef421bdc43aaa56aeb6c762224552dfb6"},
     {file = "scikit_learn-0.24.1-cp36-cp36m-win_amd64.whl", hash = "sha256:1adf483e91007a87171d7ce58c34b058eb5dab01b5fee6052f15841778a8ecd8"},
     {file = "scikit_learn-0.24.1-cp37-cp37m-macosx_10_13_x86_64.whl", hash = "sha256:ddb52d088889f5596bc4d1de981f2eca106b58243b6679e4782f3ba5096fd645"},
+    {file = "scikit_learn-0.24.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:a29460499c1e62b7a830bb57ca42e615375a6ab1bcad053cd25b493588348ea8"},
+    {file = "scikit_learn-0.24.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:0567a2d29ad08af98653300c623bd8477b448fe66ced7198bef4ed195925f082"},
     {file = "scikit_learn-0.24.1-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:99349d77f54e11f962d608d94dfda08f0c9e5720d97132233ebdf35be2858b2d"},
     {file = "scikit_learn-0.24.1-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:83b21ff053b1ff1c018a2d24db6dd3ea339b1acfbaa4d9c881731f43748d8b3b"},
     {file = "scikit_learn-0.24.1-cp37-cp37m-win32.whl", hash = "sha256:c3deb3b19dd9806acf00cf0d400e84562c227723013c33abefbbc3cf906596e9"},
     {file = "scikit_learn-0.24.1-cp37-cp37m-win_amd64.whl", hash = "sha256:d54dbaadeb1425b7d6a66bf44bee2bb2b899fe3e8850b8e94cfb9c904dcb46d0"},
     {file = "scikit_learn-0.24.1-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:3c4f07f47c04e81b134424d53c3f5e16dfd7f494e44fd7584ba9ce9de2c5e6c1"},
+    {file = "scikit_learn-0.24.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:c13ebac42236b1c46397162471ea1c46af68413000e28b9309f8c05722c65a09"},
+    {file = "scikit_learn-0.24.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:4ddd2b6f7449a5d539ff754fa92d75da22de261fd8fdcfb3596799fadf255101"},
     {file = "scikit_learn-0.24.1-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:826b92bf45b8ad80444814e5f4ac032156dd481e48d7da33d611f8fe96d5f08b"},
     {file = "scikit_learn-0.24.1-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:259ec35201e82e2db1ae2496f229e63f46d7f1695ae68eef9350b00dc74ba52f"},
     {file = "scikit_learn-0.24.1-cp38-cp38-win32.whl", hash = "sha256:8772b99d683be8f67fcc04789032f1b949022a0e6880ee7b75a7ec97dbbb5d0b"},
     {file = "scikit_learn-0.24.1-cp38-cp38-win_amd64.whl", hash = "sha256:ed9d65594948678827f4ff0e7ae23344e2f2b4cabbca057ccaed3118fdc392ca"},
     {file = "scikit_learn-0.24.1-cp39-cp39-macosx_10_13_x86_64.whl", hash = "sha256:8aa1b3ac46b80eaa552b637eeadbbce3be5931e4b5002b964698e33a1b589e1e"},
+    {file = "scikit_learn-0.24.1-cp39-cp39-manylinux1_i686.whl", hash = "sha256:c7f4eb77504ac586d8ac1bde1b0c04b504487210f95297235311a0ab7edd7e38"},
+    {file = "scikit_learn-0.24.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:087dfede39efb06ab30618f9ab55a0397f29c38d63cd0ab88d12b500b7d65fd7"},
     {file = "scikit_learn-0.24.1-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:895dbf2030aa7337649e36a83a007df3c9811396b4e2fa672a851160f36ce90c"},
     {file = "scikit_learn-0.24.1-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:9a24d1ccec2a34d4cd3f2a1f86409f3f5954cc23d4d2270ba0d03cf018aa4780"},
     {file = "scikit_learn-0.24.1-cp39-cp39-win32.whl", hash = "sha256:fab31f48282ebf54dd69f6663cd2d9800096bad1bb67bbc9c9ac84eb77b41972"},
@@ -4698,8 +4706,8 @@ slackclient = [
     {file = "slackclient-2.9.3.tar.gz", hash = "sha256:07ec8fa76f6aa64852210ae235ff9e637ba78124e06c0b07a7eeea4abb955965"},
 ]
 smmap = [
-    {file = "smmap-3.0.4-py2.py3-none-any.whl", hash = "sha256:54c44c197c819d5ef1991799a7e30b662d1e520f2ac75c9efbeb54a742214cf4"},
-    {file = "smmap-3.0.4.tar.gz", hash = "sha256:9c98bbd1f9786d22f14b3d4126894d56befb835ec90cef151af566c7e19b5d24"},
+    {file = "smmap-3.0.5-py2.py3-none-any.whl", hash = "sha256:7bfcf367828031dc893530a29cb35eb8c8f2d7c8f2d0989354d75d24c8573714"},
+    {file = "smmap-3.0.5.tar.gz", hash = "sha256:84c2751ef3072d4f6b2785ec7ee40244c6f45eb934d9e543e2c51f1bd3d54c50"},
 ]
 sniffio = [
     {file = "sniffio-1.2.0-py3-none-any.whl", hash = "sha256:471b71698eac1c2112a40ce2752bb2f4a4814c22a54a3eed3676bc0f5ca9f663"},
@@ -4985,8 +4993,8 @@ uvloop = [
     {file = "uvloop-0.14.0.tar.gz", hash = "sha256:123ac9c0c7dd71464f58f1b4ee0bbd81285d96cdda8bc3519281b8973e3a461e"},
 ]
 wasabi = [
-    {file = "wasabi-0.8.0-py3-none-any.whl", hash = "sha256:98bc9c492c6aa8628303a02961a5cfa7b0c7fa6d2b397abdeb0adc4b39397c49"},
-    {file = "wasabi-0.8.0.tar.gz", hash = "sha256:75fec6db6193c8615d7f398ae4aa2c4ad294e6e3e81c6a6dbbbd3864ee2223c3"},
+    {file = "wasabi-0.8.1-py3-none-any.whl", hash = "sha256:62284f46cac06607508395aa75fb716eb61944f79b39bc894891e3c7351f3e09"},
+    {file = "wasabi-0.8.1.tar.gz", hash = "sha256:6e5228a51f5550844ef5080e74759e7ecb6e344241989d018686ba968f0b4f5a"},
 ]
 watchdog = [
     {file = "watchdog-1.0.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:e2a531e71be7b5cc3499ae2d1494d51b6a26684bcc7c3146f63c810c00e8a3cc"},
