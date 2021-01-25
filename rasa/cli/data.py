@@ -21,6 +21,7 @@ from rasa.core.training.converters.responses_prefix_converter import (
 )
 from rasa.model import get_model
 import rasa.nlu.convert
+from rasa.nlu.data_augmentation import paraphraser
 from rasa.nlu.model import Interpreter
 import rasa.nlu.test
 from rasa.nlu.test import (
@@ -272,310 +273,6 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     telemetry.track_data_split(args.training_fraction, "nlu")
 
 
-def _create_paraphrase_pool(
-    paraphrases: TrainingData,
-    pooled_intents: Set[Text],
-    paraphrase_quality_threshold: float,
-) -> Dict[Text, List]:
-    paraphrase_pool = collections.defaultdict(list)
-    for p in paraphrases.intent_examples:
-        if p.data["intent"] not in pooled_intents:
-            continue
-
-        paraphrases_for_example = p.data["metadata"]["example"]["paraphrases"].split(
-            "\n"
-        )
-        paraphrase_scores = p.data["metadata"]["example"]["scores"].split("\n")
-
-        for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
-            if paraphrase == "" or float(score) < paraphrase_quality_threshold:
-                continue
-
-            paraphrase_pool[p.data["intent"]].append(
-                (p, set(paraphrase.lower().split()), paraphrase)
-            )
-
-    return paraphrase_pool
-
-
-def _create_training_data_pool(
-    nlu_training_data: TrainingData, pooled_intents: Set
-) -> Tuple[Dict[Text, List], Dict[Text, Set]]:
-    training_data_pool = collections.defaultdict(list)
-    training_data_vocab_per_intent = collections.defaultdict(set)
-    for m in nlu_training_data.intent_examples:
-        training_data_pool[m.data["intent"]].append(m)
-        if m.data["intent"] in pooled_intents:
-            training_data_vocab_per_intent[m.data["intent"]] |= set(
-                m.data["text"].lower().split()
-            )
-    return training_data_pool, training_data_vocab_per_intent
-
-
-def _build_diverse_augmentation_pool(
-    paraphrase_pool: Dict[Text, List], training_data_vocab_per_intent: Dict[Text, Set]
-) -> Dict[Text, List]:
-    max_vocab_expansion = collections.defaultdict(list)
-    for intent in paraphrase_pool.keys():
-        for p, vocab, paraphrase in paraphrase_pool[intent]:
-            num_new_words = len(vocab - training_data_vocab_per_intent[intent])
-            max_vocab_expansion[intent].append((num_new_words, p, paraphrase))
-        max_vocab_expansion[intent] = sorted(
-            max_vocab_expansion[intent], key=operator.itemgetter(0), reverse=True
-        )
-    return max_vocab_expansion
-
-
-def _build_random_augmentation_pool(
-    paraphrase_pool: Dict[Text, List]
-) -> Dict[Text, List]:
-    shuffled_paraphrases = {}
-    for intent in paraphrase_pool.keys():
-        shuffled_paraphrases[intent] = random.sample(
-            paraphrase_pool[intent], len(paraphrase_pool[intent])
-        )
-    return shuffled_paraphrases
-
-
-def _build_augmentation_training_sets(
-    nlu_training_data: TrainingData,
-    training_data_pool: Dict[Text, List],
-    random_expansion: Dict[Text, List],
-    max_vocab_expansion: Dict[Text, List],
-    pooled_intents: Set[Text],
-    avg_size: int,
-) -> Tuple[TrainingData, TrainingData]:
-    augmented_training_set_diverse = []
-    augmented_training_set_random = []
-    for intent in nlu_training_data.intents:
-        augmented_training_set_diverse.extend(training_data_pool[intent])
-        augmented_training_set_random.extend(training_data_pool[intent])
-        if intent in pooled_intents:
-            # Handle augmentation based on random sampling
-            augmented_training_set_random.extend(
-                list(map(lambda item: item[0], random_expansion[intent]))
-            )
-
-            # Handle augmentation based on the diversity criterion (maximum vocabulary expansion)
-            diff = avg_size - nlu_training_data.number_of_examples_per_intent[intent]
-            if diff > 0:
-                augmentation_examples = list(
-                    map(lambda item: item[1], max_vocab_expansion[intent][:diff])
-                )
-                augmented_training_set_diverse.extend(augmentation_examples)
-
-    return (
-        TrainingData(training_examples=augmented_training_set_diverse),
-        TrainingData(training_examples=augmented_training_set_random),
-    )
-
-
-def _get_intents_with_performance_changes(
-    classification_report: Dict[Text, Dict[Text, Any]],
-    intent_report: Dict[Text, float],
-    all_intents: List[Text],
-    significant_figures: int = 2,
-) -> Set[Text]:
-    changed_intents = set()
-    for intent_key in all_intents:
-        for metric in ["precision", "recall", "f1-score"]:
-            rounded_original = round(
-                classification_report[intent_key][metric], significant_figures
-            )
-            rounded_augmented = round(
-                intent_report[intent_key][metric], significant_figures
-            )
-            if rounded_original != rounded_augmented:
-                changed_intents.add(intent_key)
-
-    return changed_intents
-
-
-def _create_augmentation_summary(
-    pooled_intents: Set[Text],
-    changed_intents: Set[Text],
-    classification_report: Dict[Text, Dict[Text, float]],
-    intent_report: Dict[Text, float],
-) -> Tuple[
-    Dict[Text, Dict[Text, float]], Dict[Text, float],
-]:
-
-    intent_summary = collections.defaultdict(dict)
-    for intent in (
-        pooled_intents | changed_intents | {"micro avg", "macro avg", "weighted avg"}
-    ):
-        if intent not in classification_report:
-            continue
-
-        intent_results_original = classification_report[intent]
-        intent_results = intent_report[intent]
-
-        # Record performance changes for augmentation based on the diversity criterion
-        precision_change = (
-            intent_results["precision"] - intent_results_original["precision"]
-        )
-        recall_change = intent_results["recall"] - intent_results_original["recall"]
-        f1_change = intent_results["f1-score"] - intent_results_original["f1-score"]
-
-        intent_results["precision_change"] = intent_summary[intent][
-            "precision_change"
-        ] = precision_change
-        intent_results["recall_change"] = intent_summary[intent][
-            "recall_change"
-        ] = recall_change
-        intent_results["f1-score_change"] = intent_summary[intent][
-            "f1-score_change"
-        ] = f1_change
-        intent_report[intent] = intent_results
-
-    return (intent_summary, intent_report)
-
-
-def _plot_summary_report(
-    intent_summary: Dict[Text, Dict[Text, float]],
-    changed_intents: Set[Text],
-    output_directory: Text,
-):
-
-    for metric in ["precision", "recall", "f1-score"]:
-        output_file_diverse = os.path.join(output_directory, f"{metric}_changes.png")
-        rasa.utils.plotting.plot_intent_augmentation_summary(
-            augmentation_summary=intent_summary,
-            changed_intents=changed_intents,
-            metric=metric,
-            output_file=output_file_diverse,
-        )
-
-
-def _collect_intents_for_data_augmentation(
-    nlu_training_data: TrainingData,
-    num_intents_to_augment: int,
-    classification_report: Dict[Text, Dict[Text, Any]],
-) -> Set[Text]:
-
-    # Determine low data, low performing and frequently confused intents
-    low_data_intents = sorted(
-        nlu_training_data.number_of_examples_per_intent.items(),
-        key=operator.itemgetter(1),
-    )[:num_intents_to_augment]
-    low_precision_intents = sorted(
-        [
-            (intent, classification_report[intent]["precision"])
-            for intent in nlu_training_data.intents
-        ],
-        key=operator.itemgetter(1),
-    )[:num_intents_to_augment]
-    low_recall_intents = sorted(
-        [
-            (intent, classification_report[intent]["recall"])
-            for intent in nlu_training_data.intents
-        ],
-        key=operator.itemgetter(1),
-    )[:num_intents_to_augment]
-    low_f1_intents = sorted(
-        [
-            (intent, classification_report[intent]["f1-score"])
-            for intent in nlu_training_data.intents
-        ],
-        key=operator.itemgetter(1),
-    )[:num_intents_to_augment]
-    freq_confused_intents = sorted(
-        [
-            (intent, sum(classification_report[intent]["confused_with"].values()))
-            for intent in nlu_training_data.intents
-        ],
-        key=operator.itemgetter(1),
-        reverse=True,
-    )[:num_intents_to_augment]
-
-    pooled_intents = {
-        tp[0]
-        for tp in low_data_intents
-        + low_precision_intents
-        + low_recall_intents
-        + low_f1_intents
-        + freq_confused_intents
-    }
-
-    return pooled_intents
-
-
-def _train_test_nlu_model(
-    output_directory: Text,
-    out_file_name: Text,
-    augmented_training_data: TrainingData,
-    config: Text,
-    nlu_evaluation_data: TrainingData,
-    domain: Optional[Union[Domain, Text]] = None,
-) -> Dict[Text, float]:
-
-    # Handle I/O business
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
-    nlu_training_file = os.path.join(output_directory, out_file_name)
-    augmented_training_data.persist_nlu(filename=nlu_training_file)
-
-    # Train NLU model
-    model_path = train_nlu(
-        config=config,
-        nlu_data=nlu_training_file,
-        output=output_directory,
-        domain=domain,
-    )
-
-    # Load and Evaluate NLU Model
-    unpacked_model_path = get_model(model_path)
-    nlu_model_path = os.path.join(unpacked_model_path, "nlu")
-
-    interpreter = Interpreter.load(nlu_model_path)
-    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-
-    (intent_results, *_) = get_eval_data(interpreter, nlu_evaluation_data)
-    intent_report = create_intent_report(
-        intent_results=intent_results,
-        add_confused_labels_to_report=True,
-        metrics_as_dict=True,
-    )
-    intent_errors = extract_intent_errors_from_results(intent_results=intent_results)
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory, "intent_errors.json"), intent_errors,
-    )
-
-    return intent_report.report
-
-
-def _create_summary_report(
-    intent_report: Dict[Text, float],
-    classification_report: Dict[Text, Dict[Text, Any]],
-    training_intents: List[Text],
-    pooled_intents: Set[Text],
-    output_directory: Text,
-) -> Tuple[Dict[Text, Dict[Text, float]], Set[Text]]:
-    # Retrieve intents for which performance has changed
-    changed_intents = (
-        _get_intents_with_performance_changes(
-            classification_report, intent_report, training_intents,
-        )
-        - pooled_intents
-    )
-
-    # Create and update result reports
-    report_tuple = _create_augmentation_summary(
-        pooled_intents, changed_intents, classification_report, intent_report,
-    )
-
-    intent_summary = report_tuple[0]
-    intent_report.update(report_tuple[1])
-
-    # Store report to file
-    rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory, "intent_report.json"), intent_report,
-    )
-
-    return intent_summary, changed_intents
-
-
 def suggest_nlu_data(args: argparse.Namespace) -> None:
     """Load NLU training & evaluation data, paraphrases, an existing classification report, its corresponding config
     file and suggest additional training
@@ -597,95 +294,27 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
     random.seed(args.random_seed)
 
     # Determine intents for which to perform data augmentation
-    pooled_intents = _collect_intents_for_data_augmentation(
+    pooled_intents = paraphraser.collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
         num_intents_to_augment=args.num_intents,
         classification_report=classification_report,
     )
 
-    # Determine average number of examples per intent
-    num_intents = len(nlu_training_data.intents)
-    avg_size = int(
-        reduce(
-            lambda acc, num: acc + (num / num_intents),
-            nlu_training_data.number_of_examples_per_intent.values(),
-            0,
-        )
-    )
-
     # Retrieve paraphrase pool and training data pool
-    paraphrase_pool = _create_paraphrase_pool(
+    paraphrase_pool = paraphraser.create_paraphrase_pool(
         paraphrases, pooled_intents, args.paraphrase_score_threshold
     )
-    training_data_pool, training_data_vocab_per_intent = _create_training_data_pool(
+    training_data_pool, training_data_vocab_per_intent = paraphraser.create_training_data_pool(
         nlu_training_data, pooled_intents
     )
 
-    # Build augmentation pools based on the maximum vocabulary expansion criterion ("diverse") and random sampling
-    max_vocab_expansion = _build_diverse_augmentation_pool(
-        paraphrase_pool, training_data_vocab_per_intent
-    )
-    random_expansion = _build_random_augmentation_pool(paraphrase_pool)
-
-    # Build augmentation training set
-    augmented_data_diverse, augmented_data_random = _build_augmentation_training_sets(
-        nlu_training_data,
-        training_data_pool,
-        random_expansion,
-        max_vocab_expansion,
-        pooled_intents,
-        avg_size,
-    )
-
-    # Train/Test NLU model with diverse augmentation, create summary report and plot summary
+    # Run data augmentation with diverse augmentation
     output_directory_diverse = os.path.join(args.out, "augmentation_diverse")
-    intent_report_diverse = _train_test_nlu_model(
-        output_directory=output_directory_diverse,
-        augmented_training_data=augmented_data_diverse,
-        out_file_name="train_augmented_diverse.yml",
-        config=args.config,
-        domain=args.domain,
-        nlu_evaluation_data=nlu_evaluation_data,
-    )
+    paraphraser.run_data_augmentation_max_vocab_expansion(nlu_training_data=nlu_training_data, nlu_evaluation_data=nlu_evaluation_data, paraphrase_pool=paraphrase_pool, training_data_vocab_per_intent=training_data_vocab_per_intent, training_data_pool=training_data_pool, pooled_intents=pooled_intents, output_directory=output_directory_diverse)
 
-    (intent_summary, changed_intents) = _create_summary_report(
-        intent_report=intent_report_diverse,
-        classification_report=classification_report,
-        training_intents=nlu_training_data.intents,
-        pooled_intents=pooled_intents,
-        output_directory=output_directory_diverse,
-    )
-
-    _plot_summary_report(
-        intent_summary=intent_summary,
-        changed_intents=changed_intents,
-        output_directory=output_directory_diverse,
-    )
-
-    # Train/Test NLU model with random augmentation, create summary report and plot summary
+    # Run data augmentation with random sampling augmentation
     output_directory_random = os.path.join(args.out, "augmentation_random")
-    intent_report_random = _train_test_nlu_model(
-        output_directory=output_directory_random,
-        augmented_training_data=augmented_data_random,
-        out_file_name="train_augmented_random.yml",
-        config=args.config,
-        domain=args.domain,
-        nlu_evaluation_data=nlu_evaluation_data,
-    )
-
-    (intent_summary, changed_intents) = _create_summary_report(
-        intent_report=intent_report_random,
-        classification_report=classification_report,
-        training_intents=nlu_training_data.intents,
-        pooled_intents=pooled_intents,
-        output_directory=output_directory_random,
-    )
-
-    _plot_summary_report(
-        intent_summary=intent_summary,
-        changed_intents=changed_intents,
-        output_directory=output_directory_random,
-    )
+    paraphraser.run_data_augmentation_random_sampling(nlu_training_data=nlu_training_data, nlu_evaluation_data=nlu_evaluation_data, paraphrase_pool=paraphrase_pool, training_data_pool=training_data_pool, pooled_intents=pooled_intents, output_directory=output_directory_random)
 
     telemetry.track_data_suggest()
 
