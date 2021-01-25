@@ -620,8 +620,9 @@ class FormAction(LoopAction):
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
-            # Needed to determine which slots to request although there are no slots to actually validate
-            # which happens when coming back to the form from an unhappy paths
+            # Needed to determine which slots to request although there are no slots
+            # to actually validate, which happens when coming back to the form from
+            # an unhappy paths
             return await self.validate_slots({}, tracker, domain, output_channel, nlg)
 
     @staticmethod
