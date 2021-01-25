@@ -301,6 +301,17 @@ jobs:
         ports:
           - 6379:6379
 
+      postgres:
+        image: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
@@ -368,6 +379,8 @@ jobs:
         PYTHONIOENCODING: "utf-8"
         REDIS_HOST: localhost
         REDIS_PORT: 6379
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
       run: |
         make test-integration
 
