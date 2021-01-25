@@ -10,7 +10,6 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
-from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
@@ -340,9 +339,7 @@ async def _create_data_generator(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name]
     )
-    story_graph = await test_data_importer.get_stories(
-        resource_name, agent.domain, use_e2e
-    )
+    story_graph = await test_data_importer.get_stories(use_e2e=use_e2e)
     return TrainingDataGenerator(
         story_graph,
         agent.domain,
