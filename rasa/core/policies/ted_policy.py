@@ -522,6 +522,7 @@ class TEDPolicy(Policy):
             model_data,
             self.config[EPOCHS],
             self.config[BATCH_SIZES],
+            # self.config[BATCH_SIZES][0], # here
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],

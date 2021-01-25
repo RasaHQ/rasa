@@ -288,6 +288,8 @@ class RasaModel(tf.keras.models.Model):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> None:
         """Train on batch."""
+        prediction_loss = self.batch_loss(batch_in)
+        return
         # calculate supervision and regularization losses separately
         with tf.GradientTape(persistent=True) as tape:
             prediction_loss = self.batch_loss(batch_in)

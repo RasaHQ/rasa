@@ -601,45 +601,64 @@ class DotProductLoss(tf.keras.layers.Layer):
     def _random_indices(
         self, batch_size: tf.Tensor, total_candidates: tf.Tensor
     ) -> tf.Tensor:
-        def rand_idxs() -> tf.Tensor:
-            """Create random tensor of indices"""
 
-            # (1, num_neg)
-            return tf.expand_dims(
-                tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
-            )
-
-        if self.same_sampling:
-            return tf.tile(rand_idxs(), (batch_size, 1))
-
-        def cond(idx: tf.Tensor, out: tf.Tensor) -> tf.Tensor:
-            """Condition for while loop"""
-            return idx < batch_size
-
-        def body(idx: tf.Tensor, out: tf.Tensor) -> List[tf.Tensor]:
-            """Body of the while loop"""
-            return [
-                # increment counter
-                idx + 1,
-                # add random indices
-                tf.concat([out, rand_idxs()], 0),
-            ]
-
-        # first tensor already created
-        idx1 = tf.constant(1)
-        # create first random array of indices
-        out1 = rand_idxs()  # (1, num_neg)
-
-        return tf.nest.map_structure(
-            tf.stop_gradient,
-            tf.while_loop(
-                cond,
-                body,
-                loop_vars=[idx1, out1],
-                shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
-                parallel_iterations=self.parallel_iterations,
-            ),
-        )[1]
+        return tf.transpose(tf.random.shuffle(tf.transpose(tf.repeat(tf.range(total_candidates), batch_size)))[ :self.num_neg, :])
+        # def rand_idxs() -> tf.Tensor:
+        #     """Create random tensor of indices"""
+        #
+        #     # (1, num_neg)
+        #     return tf.expand_dims(
+        #         tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
+        #     )
+        #
+        # if self.same_sampling:
+        #     return tf.tile(rand_idxs(), (batch_size, 1))
+        #
+        # def cond(idx: tf.Tensor, out: tf.Tensor) -> tf.Tensor:
+        #     """Condition for while loop"""
+        #     return idx < batch_size
+        #
+        # ixs = tf.expand_dims(
+        #     tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
+        # )
+        #
+        # def body(idx: tf.Tensor, out: tf.Tensor) -> List[tf.Tensor]:
+        #     """Body of the while loop"""
+        #     out2 = tf.expand_dims(
+        #         tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
+        #     )
+        #     return [
+        #         # increment counter
+        #         idx + 1,
+        #         # add random indices
+        #         tf.concat([out, out2], 0),
+        #         # tf.concat([out, out], 0),
+        #     ]
+        #
+        # # first tensor already created
+        # idx1 = tf.constant(1)
+        # # create first random array of indices
+        # out1 = rand_idxs()  # (1, num_neg)
+        #
+        # return tf.while_loop(
+        #     cond,
+        #     body,
+        #     loop_vars=[idx1, out1],
+        #     shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
+        #     parallel_iterations=self.parallel_iterations,
+        #     back_prop=False,
+        #     # swap_memory=True,
+        # )[1]
+        # return tf.nest.map_structure(
+        #     tf.stop_gradient,
+        #     tf.while_loop(
+        #         cond,
+        #         body,
+        #         loop_vars=[idx1, out1],
+        #         shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
+        #         parallel_iterations=self.parallel_iterations,
+        #     ),
+        # )[1]
 
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
@@ -676,22 +695,22 @@ class DotProductLoss(tf.keras.layers.Layer):
         total_candidates = tf.shape(embeds_flat)[0]
         target_size = tf.shape(target_labels_flat)[0]
 
-        neg_ids = self._random_indices(target_size, total_candidates)
+        self._random_indices(target_size, total_candidates)
 
-        neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
-        bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
-
-        # check if inputs have sequence dimension
-        if len(target_labels.shape) == 3:
-            # tensors were flattened for sampling, reshape back
-            # add sequence dimension if it was present in the inputs
-            target_shape = tf.shape(target_labels)
-            neg_embeds = tf.reshape(
-                neg_embeds, (target_shape[0], target_shape[1], -1, embeds.shape[-1])
-            )
-            bad_negs = tf.reshape(bad_negs, (target_shape[0], target_shape[1], -1))
-
-        return neg_embeds, bad_negs
+        # neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
+        # bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
+        #
+        # # check if inputs have sequence dimension
+        # if len(target_labels.shape) == 3:
+        #     # tensors were flattened for sampling, reshape back
+        #     # add sequence dimension if it was present in the inputs
+        #     target_shape = tf.shape(target_labels)
+        #     neg_embeds = tf.reshape(
+        #         neg_embeds, (target_shape[0], target_shape[1], -1, embeds.shape[-1])
+        #     )
+        #     bad_negs = tf.reshape(bad_negs, (target_shape[0], target_shape[1], -1))
+        #
+        # return neg_embeds, bad_negs
 
     def _sample_negatives(
         self,
@@ -707,19 +726,19 @@ class DotProductLoss(tf.keras.layers.Layer):
         pos_labels_embed = tf.expand_dims(labels_embed, axis=-2)
 
         # sample negative inputs
-        neg_inputs_embed, inputs_bad_negs = self._get_negs(inputs_embed, labels, labels)
+        self._get_negs(inputs_embed, labels, labels)
         # sample negative labels
-        neg_labels_embed, labels_bad_negs = self._get_negs(
-            all_labels_embed, all_labels, labels
-        )
-        return (
-            pos_inputs_embed,
-            pos_labels_embed,
-            neg_inputs_embed,
-            neg_labels_embed,
-            inputs_bad_negs,
-            labels_bad_negs,
-        )
+        # neg_labels_embed, labels_bad_negs = self._get_negs(
+        #     all_labels_embed, all_labels, labels
+        # )
+        # return (
+        #     pos_inputs_embed,
+        #     pos_labels_embed,
+        #     neg_inputs_embed,
+        #     neg_labels_embed,
+        #     inputs_bad_negs,
+        #     labels_bad_negs,
+        # )
 
     @staticmethod
     def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor:
@@ -920,32 +939,26 @@ class DotProductLoss(tf.keras.layers.Layer):
             loss: Total loss.
             accuracy: Training accuracy.
         """
-        (
-            pos_inputs_embed,
-            pos_labels_embed,
-            neg_inputs_embed,
-            neg_labels_embed,
-            inputs_bad_negs,
-            labels_bad_negs,
-        ) = self._sample_negatives(
+        # return 1,1
+        self._sample_negatives(
             inputs_embed, labels_embed, labels, all_labels_embed, all_labels
         )
 
         # calculate similarities
-        sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li = self._train_sim(
-            pos_inputs_embed,
-            pos_labels_embed,
-            neg_inputs_embed,
-            neg_labels_embed,
-            inputs_bad_negs,
-            labels_bad_negs,
-            mask,
-        )
+        # sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li = self._train_sim(
+        #     pos_inputs_embed,
+        #     pos_labels_embed,
+        #     neg_inputs_embed,
+        #     neg_labels_embed,
+        #     inputs_bad_negs,
+        #     labels_bad_negs,
+        #     mask,
+        # )
 
-        accuracy = self._calc_accuracy(sim_pos, sim_neg_il)
+        # accuracy = self._calc_accuracy(sim_pos, sim_neg_il)
+        #
+        # loss = self._chosen_loss(
+        #     sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li, mask
+        # )
 
-        loss = self._chosen_loss(
-            sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li, mask
-        )
-
-        return loss, accuracy
+        return 1, 1
