@@ -25,10 +25,10 @@ def read_endpoint_config(
     try:
         content = rasa.shared.utils.io.read_config_file(filename)
 
-        if endpoint_type in content:
-            return EndpointConfig.from_dict(content[endpoint_type])
-        else:
+        if content.get(endpoint_type) is None:
             return None
+
+        return EndpointConfig.from_dict(content[endpoint_type])
     except FileNotFoundError:
         logger.error(
             "Failed to read endpoint configuration "

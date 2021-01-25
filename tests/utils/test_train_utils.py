@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import numpy as np
 import pytest
 from typing import List
@@ -5,6 +7,10 @@ from typing import List
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.constants import (
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    SPLIT_ENTITIES_BY_COMMA,
+)
 
 
 def test_align_token_features():
@@ -47,3 +53,31 @@ def test_sort_and_rank(
 ):
     ranked_values = train_utils.sort_and_rank(np.array(input_values), ranking_length)
     assert np.array_equal(ranked_values, output_values)
+
+
+@pytest.mark.parametrize(
+    "split_entities_config, expected_initialized_config",
+    [
+        (
+            SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+            {SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE},
+        ),
+        (
+            {"address": False, "ingredients": True},
+            {
+                "address": False,
+                "ingredients": True,
+                SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+            },
+        ),
+    ],
+)
+def test_init_split_entities_config(
+    split_entities_config: Any, expected_initialized_config: Dict[(str, bool)],
+):
+    assert (
+        train_utils.init_split_entities(
+            split_entities_config, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        == expected_initialized_config
+    )
