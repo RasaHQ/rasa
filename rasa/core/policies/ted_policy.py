@@ -639,7 +639,10 @@ class TEDPolicy(Policy):
             predicted_tags,
             confidence_values,
         ) = rasa.utils.train_utils.entity_label_to_tags(
-            prediction_output, self._entity_tag_specs, prediction_index=-1
+            prediction_output,
+            self._entity_tag_specs,
+            self.config[BILOU_FLAG],
+            prediction_index=-1,
         )
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:

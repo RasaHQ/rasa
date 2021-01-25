@@ -164,6 +164,11 @@ def apply_bilou_schema(training_data: "TrainingData") -> None:
 
 
 def apply_bilou_schema_to_message(message: "Message") -> None:
+    """Get a list of BILOU entity tags and set them on the given message.
+
+    Args:
+        message: the message
+    """
     entities = message.get(ENTITIES)
 
     if not entities:
