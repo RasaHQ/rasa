@@ -539,7 +539,7 @@ class TEDPolicy(Policy):
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self.featurize_for_prediction(
-            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
+            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -548,7 +548,7 @@ class TEDPolicy(Policy):
             and not self.only_e2e
         ):
             tracker_state_features += self.featurize_for_prediction(
-                tracker, domain, interpreter, use_text_for_last_user_input=True,
+                tracker, domain, interpreter, use_text_for_last_user_input=True
             )
         return tracker_state_features
 

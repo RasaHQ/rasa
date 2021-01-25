@@ -60,6 +60,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     EntitiesAdded,
     HideRuleTurn,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -564,7 +565,15 @@ class DialogueStateTracker:
             if isinstance(e, ActionExecuted) and e.action_name == loop_action_name:
                 break
 
-            if isinstance(e, (ActionExecuted, UserUttered)):
+            if isinstance(
+                e,
+                (
+                    ActionExecuted,
+                    UserUttered,
+                    HideRuleTurn,
+                    DefinePrevUserUtteredFeaturization,
+                ),
+            ):
                 del done_events[-1 - offset]
             else:
                 # Remember events which aren't unfeaturized to get the index right
