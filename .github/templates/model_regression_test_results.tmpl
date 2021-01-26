@@ -11,14 +11,14 @@ The print_result template returns data depends on available fields.
 
 */ -}}
 {{ define "print_result" -}}
-{{- if and (has (index .branch "micro avg") "f1-score") (has (index .master "micro avg") "f1-score") -}}
-{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index .master "micro avg") "f1-score") | math.Sub (index (index .branch "micro avg") "f1-score")) }})
-{{- else if and (has .branch "accuracy") (has .master "accuracy") -}}
-{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.master.accuracy | math.Sub .branch.accuracy) }})
-{{- else if and (has .branch "accuracy") (has (index .master "micro avg") "f1-score") -}}
-{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" ((index (index .master "micro avg") "f1-score") | math.Sub .branch.accuracy) }})
-{{- else if and (has (index .branch "micro avg") "f1-score") (has .master "accuracy") -}}
-{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" (.master.accuracy | math.Sub (index (index .branch "micro avg") "f1-score")) }})
+{{- if and (has (index .branch "micro avg") "f1-score") (has (index .main "micro avg") "f1-score") -}}
+{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index .main "micro avg") "f1-score") | math.Sub (index (index .branch "micro avg") "f1-score")) }})
+{{- else if and (has .branch "accuracy") (has .main "accuracy") -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.main.accuracy | math.Sub .branch.accuracy) }})
+{{- else if and (has .branch "accuracy") (has (index .main "micro avg") "f1-score") -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" ((index (index .main "micro avg") "f1-score") | math.Sub .branch.accuracy) }})
+{{- else if and (has (index .branch "micro avg") "f1-score") (has .main "accuracy") -}}
+{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" (.main.accuracy | math.Sub (index (index .branch "micro avg") "f1-score")) }})
 {{- else if (has .branch "accuracy") -}}
 {{ printf "%.4f" .branch.accuracy }} (`no data`)
 {{- else if has (index .branch "micro avg") "f1-score" -}}
@@ -28,9 +28,9 @@ The print_result template returns data depends on available fields.
 {{- end -}}
 {{- end -}}
 
-{{- $results_master := (datasource "results_master") -}}
+{{- $results_main := (datasource "results_main") -}}
 {{ range $dataset, $config := (datasource "data")}}
-{{- $dataset_master := (index $results_master $dataset) -}}
+{{- $dataset_main := (index $results_main $dataset) -}}
 Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}`
 
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
@@ -39,34 +39,34 @@ Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (k
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}`|
 {{- if has $config_data "intent_classification" -}}
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $intent_class_master := $config_data.intent_classification -}}
-{{- if has $dataset_master $config_name -}}
-{{- $intent_class_master = (index $dataset_master $config_name).intent_classification -}}
+{{- $intent_class_main := $config_data.intent_classification -}}
+{{- if has $dataset_main $config_name -}}
+{{- $intent_class_main = (index $dataset_main $config_name).intent_classification -}}
 {{- end -}}
 {{- $intent_class := index $config_data.intent_classification -}}
-{{ template "print_result" (dict "branch" $intent_class "master" $intent_class_master) }}|
+{{ template "print_result" (dict "branch" $intent_class "main" $intent_class_main) }}|
 {{- else -}}
 `no data`|
 {{- end -}}
 {{- if has $config_data "entity_prediction" -}}
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $entity_class_master := index $config_data.entity_prediction -}}
-{{- if has $dataset_master $config_name -}}
-{{- $entity_class_master = (index $dataset_master $config_name).entity_prediction -}}
+{{- $entity_class_main := index $config_data.entity_prediction -}}
+{{- if has $dataset_main $config_name -}}
+{{- $entity_class_main = (index $dataset_main $config_name).entity_prediction -}}
 {{- end -}}
 {{- $entity_class := $config_data.entity_prediction -}}
-{{ template "print_result" (dict "branch" $entity_class "master" $entity_class_master) }}|
+{{ template "print_result" (dict "branch" $entity_class "main" $entity_class_main) }}|
 {{- else -}}
 `no data`|
 {{- end -}}
 {{- if has $config_data "response_selection" -}}
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $response_class_master := index $config_data.response_selection -}}
-{{- if has $dataset_master $config_name -}}
-{{- $response_class_master = (index $dataset_master $config_name).response_selection -}}
+{{- $response_class_main := index $config_data.response_selection -}}
+{{- if has $dataset_main $config_name -}}
+{{- $response_class_main = (index $dataset_main $config_name).response_selection -}}
 {{- end -}}
 {{- $response_class := $config_data.response_selection -}}
-{{ template "print_result" (dict "branch" $response_class "master" $response_class_master) }}|
+{{ template "print_result" (dict "branch" $response_class "main" $response_class_main) }}|
 {{- else -}}
 `no data`|
 {{- end }}
