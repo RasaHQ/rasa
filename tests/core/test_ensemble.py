@@ -115,7 +115,8 @@ class ConstantPolicy(Policy):
         priority: Optional[int] = None,
         predict_index: Optional[int] = None,
         confidence: float = 1,
-        is_end_to_end_prediction: Optional[bool] = False,
+        is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         **kwargs: Any,
@@ -124,6 +125,7 @@ class ConstantPolicy(Policy):
         self.predict_index = predict_index
         self.confidence = confidence
         self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.is_no_user_prediction = is_no_user_prediction
         self.events = events or []
         self.optional_events = optional_events or []
 
@@ -158,6 +160,7 @@ class ConstantPolicy(Policy):
             self.__class__.__name__,
             policy_priority=self.priority,
             is_end_to_end_prediction=self.is_end_to_end_prediction,
+            is_no_user_prediction=self.is_no_user_prediction,
             events=self.events,
             optional_events=self.optional_events,
         )
@@ -538,7 +541,7 @@ def test_no_user_prediction_supersedes_others(default_domain: Domain):
                 priority=1,
                 predict_index=expected_action_index,
                 confidence=expected_confidence,
-                is_end_to_end_prediction=None,
+                is_no_user_prediction=True,
             ),
         ]
     )

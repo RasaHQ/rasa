@@ -556,20 +556,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         return policy_name.endswith("_" + FormPolicy.__name__)
 
-    @staticmethod
-    def _prediction_type(predictions: Dict[Text, PolicyPrediction]) -> Optional[bool]:
-        # No user input prediction overrule all other predictions.
-        if any(
-            prediction.is_end_to_end_prediction is None
-            for prediction in predictions.values()
-        ):
-            return
-
-        # End-to-end predictions overrule all other predictions.
-        return any(
-            prediction.is_end_to_end_prediction for prediction in predictions.values()
-        )
-
     def _pick_best_policy(
         self, predictions: Dict[Text, PolicyPrediction]
     ) -> PolicyPrediction:
@@ -593,13 +579,28 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         form_confidence = None
         form_policy_name = None
         # different type of predictions have different priorities
-        use_only_end_to_end = self._prediction_type(predictions)
+        # No user predictions overrule all other predictions.
+        is_no_user_prediction = any(
+            prediction.is_no_user_prediction for prediction in predictions.values()
+        )
+        # End-to-end predictions overrule all other predictions based on user input.
+        is_end_to_end_prediction = any(
+            prediction.is_end_to_end_prediction for prediction in predictions.values()
+        )
 
         policy_events = []
         for policy_name, prediction in predictions.items():
             policy_events += prediction.events
 
-            if prediction.is_end_to_end_prediction != use_only_end_to_end:
+            # No user predictions overrule all other predictions.
+            if prediction.is_no_user_prediction != is_no_user_prediction:
+                continue
+
+            # End-to-end predictions overrule all other predictions based on user input.
+            if (
+                not is_no_user_prediction
+                and prediction.is_end_to_end_prediction != is_end_to_end_prediction
+            ):
                 continue
 
             confidence = (prediction.max_confidence, prediction.policy_priority)

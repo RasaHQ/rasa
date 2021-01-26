@@ -917,7 +917,7 @@ class RulePolicy(MemoizationPolicy):
             # and happy user input anyhow should be ignored during featurization
             return self._prediction(
                 self._prediction_result(loop_happy_path_action_name, tracker, domain),
-                is_end_to_end_prediction=None,
+                is_no_user_prediction=True,
             )
 
         # predict rules from text first

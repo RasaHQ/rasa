@@ -767,13 +767,15 @@ def assert_predicted_action(
     domain: Domain,
     expected_action_name: Text,
     confidence: float = 1.0,
-    is_end_to_end_prediction: Optional[bool] = False,
+    is_end_to_end_prediction: bool = False,
+    is_no_user_prediction: bool = False,
 ) -> None:
     assert prediction.max_confidence == confidence
     index_of_predicted_action = prediction.max_confidence_index
     prediction_action_name = domain.action_names_or_texts[index_of_predicted_action]
     assert prediction_action_name == expected_action_name
     assert prediction.is_end_to_end_prediction == is_end_to_end_prediction
+    assert prediction.is_no_user_prediction == is_no_user_prediction
 
 
 async def test_predict_form_action_if_in_form():
@@ -815,9 +817,7 @@ async def test_predict_form_action_if_in_form():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(
-        prediction, domain, form_name, is_end_to_end_prediction=None
-    )
+    assert_predicted_action(prediction, domain, form_name, is_no_user_prediction=True)
 
 
 async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
@@ -870,9 +870,7 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
     prediction = policy.predict_action_probabilities(
         loop_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(
-        prediction, domain, loop_name, is_end_to_end_prediction=None
-    )
+    assert_predicted_action(prediction, domain, loop_name, is_no_user_prediction=True)
 
 
 async def test_predict_form_action_if_multiple_turns():
@@ -921,9 +919,7 @@ async def test_predict_form_action_if_multiple_turns():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(
-        prediction, domain, form_name, is_end_to_end_prediction=None
-    )
+    assert_predicted_action(prediction, domain, form_name, is_no_user_prediction=True)
 
 
 async def test_predict_action_listen_after_form():
@@ -968,7 +964,7 @@ async def test_predict_action_listen_after_form():
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(
-        prediction, domain, ACTION_LISTEN_NAME, is_end_to_end_prediction=None
+        prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
 
 
