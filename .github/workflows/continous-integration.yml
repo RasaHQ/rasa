@@ -310,7 +310,6 @@ jobs:
       if: github.event_name != 'pull_request'
 
     - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
@@ -468,7 +467,6 @@ jobs:
         df -h
 
     - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
