@@ -28,9 +28,14 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
+
+  IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
+  DOCKERHUB_USERNAME: tmbo
+
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
   WAIT_INTERVAL_SECS: 60
+
 
 jobs:
   changes:
@@ -242,27 +247,159 @@ jobs:
         COVERALLS_SERVICE_NAME: github
       run: poetry run coveralls
 
+  build_docker_base_images_and_set_env:
+    name: Build Docker base images and setup environment
+    runs-on: ubuntu-20.04
+    outputs:
+      base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
+      base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
+      # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
+      image_tag: ${{ steps.set_output.outputs.image_tag }}
+      # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+      is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
+    steps:
+      # Due to an issue with checking out a wrong commit, we make sure
+      # to checkout HEAD commit for a pull request.
+      # More details: https://github.com/actions/checkout/issues/299
+    - name: Checkout pull request HEAD commit instead of merge commit 🕝
+      uses: actions/checkout@v2
+      if: github.event_name == 'pull_request'
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+      if: github.event_name != 'pull_request'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+      with:
+        version: v0.5.1
+        driver: docker
+
+    - name: Login to DockerHub Registry 🔢
+      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+
+    - name: Check if tag version is equal or higher than the latest tagged Rasa version
+      id: rasa_get_version
+      if: env.IS_TAG_BUILD == 'true'
+      run: |
+        # Get latest tagged Rasa version
+        git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
+        # Fetch branch history
+        git fetch --prune --unshallow
+        LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
+        CURRENT_TAG=${GITHUB_TAG/refs\/tags\//}
+        # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+        IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
+          | sort -V -C && echo true || echo false) || true)
+        # Avoid that the script gets released for alphas or release candidates
+        if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
+          echo "::set-output name=is_newest_version::true"
+        else
+          echo "::set-output name=is_newest_version::false"
+        fi
+
+    - name: Check if a base image exists
+      id: check_image
+      env:
+        DOCKER_CLI_EXPERIMENTAL: enabled
+      run: |
+        # Base image
+        BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
+        echo "::set-output name=base_image_hash::${BASE_IMAGE_HASH}"
+
+        BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+        echo "::set-output name=base_exists::${BASE_IMAGE_EXISTS}"
+
+        # Base MITIE image
+        BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
+        MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
+        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}"
+
+        BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
+        echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
+
+    - name: Build Docker base image and push 🛠 ⬆
+      if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
+      run: |
+        export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+        docker buildx bake -f docker/docker-bake.hcl base --push
+
+    - name: Build Docker mitie base image and push 🛠 ⬆
+      if: steps.check_image.outputs.base_mitie_exists == 'false'
+      run: |
+        export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
+        docker buildx bake -f docker/docker-bake.hcl base-mitie --push
+
+    # Set environment variables for a pull request
+    #
+    # In this scenario, we've created a PR #1234
+    #
+    # Example output:
+    # IMAGE_TAG=1234
+    - name: Set environment variables - pull_request
+      if: github.event_name == 'pull_request' && env.IS_TAG_BUILD == 'false'
+      run: |
+        echo "IMAGE_TAG=${{ github.event.number }}" >> $GITHUB_ENV
+
+    # Set environment variables for a tag
+    #
+    # In this scenario, we've pushed the '2.0.6' tag
+    #
+    # Example output:
+    # TAG_NAME=2.0.6
+    # IMAGE_TAG=2.0.6
+    - name: Set environment variables - push - tag
+      if: github.event_name == 'push' && env.IS_TAG_BUILD == 'true'
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "IMAGE_TAG=${TAG_NAME}" >> $GITHUB_ENV
+
+    # Set environment variables for a branch
+    #
+    # In this scenario, we've pushed changes into the main branch
+    #
+    # Example output:
+    # IMAGE_TAG=main
+    - name: Set environment variables - push - branch
+      if: github.event_name == 'push' && env.IS_TAG_BUILD == 'false'
+      run: |
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        SAFE_BRANCH_NAME="$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\\*+.$\#\-\/]/-/g')"
+        echo "IMAGE_TAG=${SAFE_BRANCH_NAME}" >> $GITHUB_ENV
+
+    - name: Set output
+      id: set_output
+      run: |
+        echo "::set-output name=image_tag::${{ env.IMAGE_TAG }}"
+
   docker:
     name: Build Docker
     runs-on: ubuntu-latest
-    needs: [changes]
+    needs: [changes, build_docker_base_images_and_set_env]
+    env:
+      IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
+      BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
+      BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
 
     strategy:
       matrix:
-        image:
-          - {"file": "Dockerfile", "tag_ext": ""}
-          - {"file": "docker/Dockerfile_full", "tag_ext": "-full"}
-          - {"file": "docker/Dockerfile_pretrained_embeddings_mitie_en", "tag_ext": "-mitie-en"}
-          - {"file": "docker/Dockerfile_pretrained_embeddings_spacy_de", "tag_ext": "-spacy-de"}
-          - {"file": "docker/Dockerfile_pretrained_embeddings_spacy_en", "tag_ext": "-spacy-en"}
-
-    env:
-      DOCKERHUB_USERNAME: tmbo
+        image: [default, full, mitie-en, spacy-de, spacy-en]
 
     steps:
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.docker == 'true'
+      # Due to an issue with checking out a wrong commit, we make sure
+      # to checkout HEAD commit for a pull request.
+      # More details: https://github.com/actions/checkout/issues/299
+    - name: Checkout pull request HEAD commit instead of merge commit 🕝
       uses: actions/checkout@v2
+      if: github.event_name == 'pull_request'
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+      if: github.event_name != 'pull_request'
 
     - name: Free disk space
       if: needs.changes.outputs.docker == 'true'
@@ -275,13 +412,15 @@ jobs:
         docker rmi $(docker image ls -aq)
         df -h
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+      with:
+        version: v0.5.1
+        driver: docker
+
     - name: Login to DockerHub Registry 🔢
       if: needs.changes.outputs.docker == 'true'
       run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
-
-    - name: Pull latest${{ matrix.image.tag_ext }} Docker image for caching
-      if: needs.changes.outputs.docker == 'true'
-      run: docker pull rasa/rasa:latest${{ matrix.image.tag_ext }} || true
 
     - name: Copy Segment write key to the package
       if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
@@ -291,22 +430,36 @@ jobs:
       run: |
         ./scripts/write_keys_file.sh
 
-    - name: Build latest${{ matrix.image.tag_ext }} Docker image
+    - name: Build Docker image
       if: needs.changes.outputs.docker == 'true'
-      run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
+      run: |
+        docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }}
 
-    - name: Push image with latest tag 📦
+    - name: Push image with main tag 📦
       if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
-      run: docker push rasa/rasa:latest${{ matrix.image.tag_ext }}
+      run: |
+        docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
     - name: Push image with ${{github.ref}} tag 📦
-      env:
-        GITHUB_TAG: ${{ github.ref }}
-      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
       run: |
-        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-        docker tag rasa/rasa:latest${{ matrix.image.tag_ext }} rasa/rasa:${GITHUB_TAG}${{ matrix.image.tag_ext }}
-        docker push rasa/rasa:${GITHUB_TAG}${{ matrix.image.tag_ext }}
+        IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
+
+        docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+
+        # Tag the image as latest
+        if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
+          if [[ "${{ matrix.image }}" == "default" ]]; then
+            RELEASE_TAG="${IMAGE_TAG}"
+          else
+            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
+          fi
+
+          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$GITHUB_TAG'/latest/g')
+
+          docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
+          docker push rasa/rasa:${LATEST_TAG}
+        fi
 
   deploy:
     name: Deploy to PyPI
