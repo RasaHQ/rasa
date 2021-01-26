@@ -442,7 +442,12 @@ class FormAction(LoopAction):
         )
 
     async def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
-        """Returns True if user return ActionExecutionRejected event, else False."""
+        """Returns True if slot validation rejected the form execution, else False.
+        
+        A custom action for slot validation can return an ActionExecutionRejected event.
+        This will allow the bot to predict another action for the latest user utterance
+        before continuing with the currently active form.
+        """
         return any(
             isinstance(event, ActionExecutionRejected) for event in validation_events
         )
@@ -484,7 +489,7 @@ class FormAction(LoopAction):
         if (
             slot_to_fill
             and not some_slots_were_validated
-            and not await self.user_rejected_manually(validation_events)
+            and not await self._user_rejected_manually(validation_events)
         ):
             # reject to execute the form action
             # if some slot was requested but nothing was extracted
@@ -700,7 +705,7 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-        if not await self.user_rejected_manually(events):
+        if not await self._user_rejected_manually(events):
             events += await self.request_next_slot(
                 tracker, domain, output_channel, nlg, events_so_far + events
             )
