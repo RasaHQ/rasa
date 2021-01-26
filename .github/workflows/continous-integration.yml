@@ -59,7 +59,6 @@ jobs:
     # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
     name: Wait for docs tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (startsWith(github.event.ref, 'refs/tags') || github.ref == 'refs/heads/main')
 
     steps:
       - name: Checkout git repository 🕝
