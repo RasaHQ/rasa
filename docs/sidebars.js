@@ -115,6 +115,7 @@ module.exports = {
       collapsed: true,
       items: [
         'http-api',
+        'nlu-only-server'
         // 'jupyter-notebooks',
       ],
     },
