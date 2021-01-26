@@ -13,6 +13,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
+    ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
 )
@@ -32,9 +33,11 @@ from rasa.utils.tensorflow.constants import (
     INTENT_CLASSIFICATION,
 )
 from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from tests.conftest import DEFAULT_NLU_DATA
@@ -111,6 +114,56 @@ def test_check_labels_features_exist(messages, expected):
     attribute = TEXT
     classifier = DIETClassifier()
     assert classifier._check_labels_features_exist(messages, attribute) == expected
+
+
+@pytest.mark.parametrize(
+    "messages, entity_expected",
+    [
+        (
+            [
+                Message(
+                    data={
+                        TEXT: "test a",
+                        INTENT: "intent a",
+                        ENTITIES: [
+                            {"start": 0, "end": 4, "value": "test", "entity": "test"}
+                        ],
+                    },
+                ),
+                Message(
+                    data={
+                        TEXT: "test b",
+                        INTENT: "intent b",
+                        ENTITIES: [
+                            {"start": 0, "end": 4, "value": "test", "entity": "test"}
+                        ],
+                    },
+                ),
+            ],
+            True,
+        ),
+        (
+            [
+                Message(data={TEXT: "test a", INTENT: "intent a"},),
+                Message(data={TEXT: "test b", INTENT: "intent b"},),
+            ],
+            False,
+        ),
+    ],
+)
+def test_model_data_signature_with_entities(
+    messages: List[Message], entity_expected: bool
+):
+    classifier = DIETClassifier({"BILOU_flag": False})
+    training_data = TrainingData(messages)
+
+    # create tokens for entity parsing inside DIET
+    tokenizer = WhitespaceTokenizer()
+    tokenizer.train(training_data)
+
+    model_data = classifier.preprocess_train_data(training_data)
+    entity_exists = "entities" in model_data.get_signature().keys()
+    assert entity_exists == entity_expected
 
 
 async def _train_persist_load_with_different_settings(

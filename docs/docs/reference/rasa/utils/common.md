@@ -172,3 +172,21 @@ in this case, this function will never return.
 
   return value from the function
 
+#### call\_potential\_coroutine
+
+```python
+async call_potential_coroutine(coroutine_or_return_value: Union[Any, Coroutine]) -> Any
+```
+
+Awaits coroutine or returns value directly if it&#x27;s not a coroutine.
+
+**Arguments**:
+
+- `coroutine_or_return_value` - Either the return value of a synchronous function
+  call or a coroutine which needs to be await first.
+  
+
+**Returns**:
+
+  The return value of the function.
+
