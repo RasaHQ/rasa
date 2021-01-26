@@ -14,6 +14,11 @@ variable "BASE_MITIE_IMAGE_HASH" {
   default = "localdev"
 }
 
+# keep this in sync with the version in pyproject.toml
+variable "POETRY_VERSION" {
+  default = "1.1.4"
+}
+
 group "base-images" {
   targets = ["base", "base-mitie"]
 }
@@ -37,6 +42,7 @@ target "default" {
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
     BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -55,6 +61,7 @@ target "full" {
     IMAGE_BASE_NAME       = "${IMAGE_NAME}"
     BASE_IMAGE_HASH       = "${BASE_IMAGE_HASH}"
     BASE_MITIE_IMAGE_HASH = "${BASE_MITIE_IMAGE_HASH}"
+    POETRY_VERSION        = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -73,6 +80,7 @@ target "mitie-en" {
     IMAGE_BASE_NAME       = "${IMAGE_NAME}"
     BASE_IMAGE_HASH       = "${BASE_IMAGE_HASH}"
     BASE_MITIE_IMAGE_HASH = "${BASE_MITIE_IMAGE_HASH}"
+    POETRY_VERSION        = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -91,6 +99,7 @@ target "spacy-de" {
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
     BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -108,6 +117,7 @@ target "spacy-en" {
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
     BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
