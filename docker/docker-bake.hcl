@@ -14,8 +14,14 @@ variable "BASE_MITIE_IMAGE_HASH" {
   default = "localdev"
 }
 
+# keep this in sync with the version in pyproject.toml
+# the variable is set automatically for builds in CI
+variable "POETRY_VERSION" {
+  default = "1.1.4"
+}
+
 group "base-images" {
-  targets = ["base", "base-mitie"]
+  targets = ["base", "base-poetry", "base-mitie"]
 }
 
 target "base" {
@@ -30,6 +36,23 @@ target "base-mitie" {
   cache-to   = ["type=inline"]
 }
 
+target "base-poetry" {
+  dockerfile = "docker/Dockerfile.base-poetry"
+  tags       = ["${IMAGE_NAME}:base-poetry-${POETRY_VERSION}"]
+
+  args = {
+    IMAGE_BASE_NAME = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
+  }
+
+  cache-to = ["type=inline"]
+
+  cache-from = [
+    "type=registry,ref=${IMAGE_NAME}:base-poetry-${POETRY_VERSION}",
+  ]
+}
+
 target "default" {
   dockerfile = "Dockerfile"
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}"]
@@ -37,6 +60,7 @@ target "default" {
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
     BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -55,6 +79,7 @@ target "full" {
     IMAGE_BASE_NAME       = "${IMAGE_NAME}"
     BASE_IMAGE_HASH       = "${BASE_IMAGE_HASH}"
     BASE_MITIE_IMAGE_HASH = "${BASE_MITIE_IMAGE_HASH}"
+    POETRY_VERSION        = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -73,6 +98,7 @@ target "mitie-en" {
     IMAGE_BASE_NAME       = "${IMAGE_NAME}"
     BASE_IMAGE_HASH       = "${BASE_IMAGE_HASH}"
     BASE_MITIE_IMAGE_HASH = "${BASE_MITIE_IMAGE_HASH}"
+    POETRY_VERSION        = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -91,6 +117,7 @@ target "spacy-de" {
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
     BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
@@ -108,6 +135,7 @@ target "spacy-en" {
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
     BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
   }
 
   cache-to = ["type=inline"]
