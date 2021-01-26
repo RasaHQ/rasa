@@ -12,7 +12,7 @@ abstract: You can run an NLU-only server and use the HTTP API to connect to it.
 You can connect a [Rasa NLU-only server](./nlu-only.mdx#running-an-nlu-server) to a separately running Rasa dialogue management only server
 by adding the connection details to the dialogue management server's endpoint configuration file:
 
-```yaml-rasa title="endpoints.yml"
+```yaml title="endpoints.yml"
 nlu:
     url: "http://<your nlu host>:<your nlu port>"
     token: <token>  # [optional]
