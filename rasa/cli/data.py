@@ -4,7 +4,7 @@ import os
 import random
 import shutil
 from pathlib import Path
-from typing import  Dict, List, Text, TYPE_CHECKING
+from typing import Dict, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -320,7 +320,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         output_directory=output_directory_random,
         config=args.config,
         classification_report=classification_report,
-        random_seed=args.random_seed
+        random_seed=args.random_seed,
     )
 
     telemetry.track_data_suggest()

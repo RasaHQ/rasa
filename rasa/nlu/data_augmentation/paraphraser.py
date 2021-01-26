@@ -171,8 +171,7 @@ def _build_diverse_augmentation_pool(
 
 
 def _build_random_augmentation_pool(
-    paraphrase_pool: Dict[Text, List],
-    random_seed: int
+    paraphrase_pool: Dict[Text, List], random_seed: int
 ) -> Dict[Text, List]:
     """Randomly selects paraphrases for data augmentation from the generated pool.
 
@@ -490,7 +489,7 @@ def run_data_augmentation_random_sampling(
     config: Text,
     nlu_evaluation_data: TrainingData,
     classification_report: Dict[Text, Dict[Text, float]],
-    random_seed: int
+    random_seed: int,
 ) -> None:
     """Runs the NLU train/test cycle with data augmentation (random sampling) and generates the reports and plots summarising the impact of data augmentation on model performance.
 
