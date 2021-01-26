@@ -18,8 +18,8 @@ optional = false
 python-versions = ">3.5.*, <4"
 
 [package.dependencies]
-yarl = "*"
 aiormq = ">=3.2.3,<4"
+yarl = "*"
 
 [package.extras]
 develop = ["aiomisc (>=10.1.6,<10.2.0)", "async-generator", "coverage (!=4.3)", "coveralls", "pylava", "pytest", "pytest-cov", "shortuuid", "nox", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
@@ -41,13 +41,13 @@ optional = false
 python-versions = ">=3.5.3"
 
 [package.dependencies]
+async-timeout = ">=3.0,<4.0"
+attrs = ">=17.3.0"
+chardet = ">=2.0,<4.0"
+idna-ssl = {version = ">=1.0", markers = "python_version < \"3.7\""}
+multidict = ">=4.5,<5.0"
 typing-extensions = {version = ">=3.6.5", markers = "python_version < \"3.7\""}
 yarl = ">=1.0,<1.6.0"
-async-timeout = ">=3.0,<4.0"
-idna-ssl = {version = ">=1.0", markers = "python_version < \"3.7\""}
-chardet = ">=2.0,<4.0"
-attrs = ">=17.3.0"
-multidict = ">=4.5,<5.0"
 
 [package.extras]
 speedups = ["aiodns", "brotlipy", "cchardet"]
@@ -72,8 +72,8 @@ optional = false
 python-versions = ">3.5.*"
 
 [package.dependencies]
-yarl = "*"
 pamqp = "2.3.0"
+yarl = "*"
 
 [package.extras]
 develop = ["aiomisc (>=11.0,<12.0)", "async-generator", "coverage (!=4.3)", "coveralls", "pylava", "pytest", "pytest-cov", "tox (>=2.4)"]
@@ -104,21 +104,21 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
 [package.dependencies]
 pytz = "*"
-tzlocal = ">=2.0,<3.0"
 six = ">=1.4.0"
+tzlocal = ">=2.0,<3.0"
 
 [package.extras]
+asyncio = ["trollius"]
+doc = ["sphinx", "sphinx-rtd-theme"]
+gevent = ["gevent"]
+mongodb = ["pymongo (>=3.0)"]
+redis = ["redis (>=3.0)"]
 rethinkdb = ["rethinkdb (>=2.4.0)"]
 sqlalchemy = ["sqlalchemy (>=0.8)"]
-tornado = ["tornado (>=4.3)"]
-doc = ["sphinx", "sphinx-rtd-theme"]
 testing = ["pytest (<6)", "pytest-cov", "pytest-tornado5", "mock", "pytest-asyncio (<0.6)", "pytest-asyncio"]
-redis = ["redis (>=3.0)"]
+tornado = ["tornado (>=4.3)"]
 twisted = ["twisted"]
-gevent = ["gevent"]
 zookeeper = ["kazoo"]
-mongodb = ["pymongo (>=3.0)"]
-asyncio = ["trollius"]
 
 [[package]]
 name = "astunparse"
@@ -164,10 +164,10 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.extras]
+dev = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface", "furo", "sphinx", "pre-commit"]
 docs = ["furo", "sphinx", "zope.interface"]
 tests = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface"]
 tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six"]
-dev = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface", "furo", "sphinx", "pre-commit"]
 
 [[package]]
 name = "aws-sam-translator"
@@ -179,8 +179,8 @@ python-versions = "*"
 
 [package.dependencies]
 boto3 = ">=1.5,<2.0"
-six = ">=1.15,<2.0"
 jsonschema = ">=3.2,<4.0"
+six = ">=1.15,<2.0"
 
 [package.extras]
 dev = ["coverage (>=5.3,<6.0)", "flake8 (>=3.8.4,<3.9.0)", "tox (>=3.20.1,<3.21.0)", "pytest-cov (>=2.10.1,<2.11.0)", "pylint (>=1.7.2,<2.0)", "pyyaml (>=5.3.1,<5.4.0)", "mock (>=3.0.5,<4.0.0)", "parameterized (>=0.7.4,<0.8.0)", "requests (>=2.24.0,<2.25.0)", "docopt (>=0.6.2,<0.7.0)", "pytest (>=4.6.11,<4.7.0)", "pytest (>=6.1.1,<6.2.0)", "black (==20.8b1)"]
@@ -194,8 +194,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-future = "*"
 botocore = ">=1.11.3"
+future = "*"
 jsonpickle = "*"
 wrapt = "*"
 
@@ -220,9 +220,9 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-msrest = ">=0.6.10"
 azure-core = ">=1.6.0,<2.0.0"
 cryptography = ">=2.1.4"
+msrest = ">=0.6.10"
 
 [[package]]
 name = "bandit"
@@ -233,11 +233,11 @@ optional = false
 python-versions = ">=3.5"
 
 [package.dependencies]
-stevedore = ">=1.20.0"
-PyYAML = ">=5.3.1"
-six = ">=1.10.0"
 colorama = {version = ">=0.3.9", markers = "platform_system == \"Windows\""}
 GitPython = ">=1.0.1"
+PyYAML = ">=5.3.1"
+six = ">=1.10.0"
+stevedore = ">=1.20.0"
 
 [[package]]
 name = "black"
@@ -248,13 +248,13 @@ optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-regex = "*"
-typed-ast = ">=1.4.0"
-toml = ">=0.9.4"
-attrs = ">=18.1.0"
-pathspec = ">=0.6,<1"
-click = ">=6.5"
 appdirs = "*"
+attrs = ">=18.1.0"
+click = ">=6.5"
+pathspec = ">=0.6,<1"
+regex = "*"
+toml = ">=0.9.4"
+typed-ast = ">=1.4.0"
 
 [package.extras]
 d = ["aiohttp (>=3.3.2)", "aiohttp-cors"]
@@ -287,8 +287,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-jmespath = ">=0.7.1,<1.0.0"
 botocore = ">=1.19.59,<1.20.0"
+jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
 [[package]]
@@ -300,8 +300,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-python-dateutil = ">=2.1,<3.0.0"
 jmespath = ">=0.7.1,<1.0.0"
+python-dateutil = ">=2.1,<3.0.0"
 urllib3 = {version = ">=1.25.4,<1.27", markers = "python_version != \"3.4\""}
 
 [[package]]
@@ -351,14 +351,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.dependencies]
-pyyaml = {version = "*", markers = "python_version != \"3.4\""}
-importlib-resources = {version = ">=1.4,<4", markers = "python_version < \"3.7\" and python_version != \"3.4\""}
-six = ">=1.11"
-jsonpatch = {version = "*", markers = "python_version != \"3.4\""}
 aws-sam-translator = ">=1.25.0"
+importlib-resources = {version = ">=1.4,<4", markers = "python_version < \"3.7\" and python_version != \"3.4\""}
+jsonpatch = {version = "*", markers = "python_version != \"3.4\""}
 jsonschema = ">=3.0,<4.0"
-networkx = {version = ">=2.4,<3.0", markers = "python_version >= \"3.5\""}
 junit-xml = ">=1.9,<2.0"
+networkx = {version = ">=2.4,<3.0", markers = "python_version >= \"3.5\""}
+pyyaml = {version = "*", markers = "python_version != \"3.4\""}
+six = ">=1.11"
 
 [[package]]
 name = "chardet"
@@ -453,9 +453,9 @@ optional = false
 python-versions = ">= 3.5"
 
 [package.dependencies]
-requests = ">=1.0.0"
-docopt = ">=0.6.1"
 coverage = ">=4.1,<6.0"
+docopt = ">=0.6.1"
+requests = ">=1.0.0"
 
 [package.extras]
 yaml = ["PyYAML (>=3.10)"]
@@ -469,15 +469,15 @@ optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
 
 [package.dependencies]
-six = ">=1.4.1"
 cffi = ">=1.12"
+six = ">=1.4.1"
 
 [package.extras]
-test = ["pytest (>=3.6.0,!=3.9.0,!=3.9.1,!=3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
-pep8test = ["black", "flake8", "flake8-import-order", "pep8-naming"]
-docstest = ["doc8", "pyenchant (>=1.6.11)", "twine (>=1.12.0)", "sphinxcontrib-spelling (>=4.0.1)"]
-ssh = ["bcrypt (>=3.1.5)"]
 docs = ["sphinx (>=1.6.5,!=1.8.0,!=3.1.0,!=3.1.1)", "sphinx-rtd-theme"]
+docstest = ["doc8", "pyenchant (>=1.6.11)", "twine (>=1.12.0)", "sphinxcontrib-spelling (>=4.0.1)"]
+pep8test = ["black", "flake8", "flake8-import-order", "pep8-naming"]
+ssh = ["bcrypt (>=3.1.5)"]
+test = ["pytest (>=3.6.0,!=3.9.0,!=3.9.1,!=3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
 
 [[package]]
 name = "cycler"
@@ -534,8 +534,8 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.extras]
-IDNA = ["idna (>=2.1)"]
 DNSSEC = ["pycryptodome", "ecdsa (>=0.13)"]
+IDNA = ["idna (>=2.1)"]
 
 [[package]]
 name = "docker"
@@ -546,14 +546,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.dependencies]
+pywin32 = {version = "227", markers = "sys_platform == \"win32\""}
 requests = ">=2.14.2,<2.18.0 || >2.18.0"
 six = ">=1.4.0"
-pywin32 = {version = "227", markers = "sys_platform == \"win32\""}
 websocket-client = ">=0.32.0"
 
 [package.extras]
-tls = ["pyOpenSSL (>=17.5.0)", "cryptography (>=1.3.4)", "idna (>=2.0.0)"]
 ssh = ["paramiko (>=2.4.2)"]
+tls = ["pyOpenSSL (>=17.5.0)", "cryptography (>=1.3.4)", "idna (>=2.0.0)"]
 
 [[package]]
 name = "docopt"
@@ -572,8 +572,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-"nr.databind.json" = ">=0.0.9,<0.1.0"
 "nr.databind.core" = ">=0.0.19,<0.1.0"
+"nr.databind.json" = ">=0.0.9,<0.1.0"
 
 [[package]]
 name = "docspec-python"
@@ -621,13 +621,13 @@ optional = false
 python-versions = ">=3.5"
 
 [package.dependencies]
-sortedcontainers = "*"
-six = ">=1.12"
 redis = "<3.6.0"
+six = ">=1.12"
+sortedcontainers = "*"
 
 [package.extras]
-lua = ["lupa"]
 aioredis = ["aioredis"]
+lua = ["lupa"]
 
 [[package]]
 name = "fbmessenger"
@@ -671,8 +671,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-pydocstyle = ">=2.1"
 flake8 = ">=3"
+pydocstyle = ">=2.1"
 
 [[package]]
 name = "freezegun"
@@ -721,14 +721,14 @@ optional = true
 python-versions = "*"
 
 [package.dependencies]
+jwcrypto = ">=0.5.0"
 python-dateutil = ">=2.6.0"
 requests = ">=2.18"
-jwcrypto = ">=0.5.0"
 uritemplate = ">=3.0.0"
 
 [package.extras]
-test = ["betamax (>=0.8.0)", "pytest (>2.3.5)", "betamax-matchers (>=0.1.0)", "unittest2 (==0.5.1)", "mock"]
 sni = ["pyopenssl", "ndg-httpsclient", "pyasn1"]
+test = ["betamax (>=0.8.0)", "pytest (>2.3.5)", "betamax-matchers (>=0.1.0)", "unittest2 (==0.5.1)", "mock"]
 
 [[package]]
 name = "gitpython"
@@ -750,12 +750,12 @@ optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
 
 [package.dependencies]
+google-auth = ">=1.21.1,<2.0dev"
 googleapis-common-protos = ">=1.6.0,<2.0dev"
 protobuf = ">=3.12.0"
-six = ">=1.13.0"
 pytz = "*"
 requests = ">=2.18.0,<3.0.0dev"
-google-auth = ">=1.21.1,<2.0dev"
+six = ">=1.13.0"
 
 [package.extras]
 grpc = ["grpcio (>=1.29.0,<2.0dev)"]
@@ -771,10 +771,10 @@ optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
 
 [package.dependencies]
-six = ">=1.9.0"
-pyasn1-modules = ">=0.2.1"
 cachetools = ">=2.0.0,<5.0"
+pyasn1-modules = ">=0.2.1"
 rsa = {version = ">=3.1.4,<5", markers = "python_version >= \"3.6\""}
+six = ">=1.9.0"
 
 [package.extras]
 aiohttp = ["aiohttp (>=3.6.2,<4.0.0dev)"]
@@ -788,8 +788,8 @@ optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-requests-oauthlib = ">=0.7.0"
 google-auth = "*"
+requests-oauthlib = ">=0.7.0"
 
 [package.extras]
 tool = ["click"]
@@ -803,8 +803,8 @@ optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
 
 [package.dependencies]
-six = ">=1.12.0"
 google-api-core = ">=1.21.0,<2.0.0dev"
+six = ">=1.12.0"
 
 [package.extras]
 grpc = ["grpcio (>=1.8.2,<2.0dev)"]
@@ -818,10 +818,10 @@ optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
 
 [package.dependencies]
-requests = ">=2.18.0,<3.0.0dev"
-google-resumable-media = ">=1.2.0,<2.0dev"
-google-cloud-core = ">=1.4.1,<2.0dev"
 google-auth = ">=1.11.0,<2.0dev"
+google-cloud-core = ">=1.4.1,<2.0dev"
+google-resumable-media = ">=1.2.0,<2.0dev"
+requests = ">=2.18.0,<3.0.0dev"
 
 [[package]]
 name = "google-crc32c"
@@ -861,8 +861,8 @@ google-crc32c = {version = ">=1.0,<2.0dev", markers = "python_version >= \"3.5\"
 six = "*"
 
 [package.extras]
-requests = ["requests (>=2.18.0,<3.0.0dev)"]
 aiohttp = ["aiohttp (>=3.6.2,<4.0.0dev)"]
+requests = ["requests (>=2.18.0,<3.0.0dev)"]
 
 [[package]]
 name = "googleapis-common-protos"
@@ -909,8 +909,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-hyperframe = ">=5.2.0,<6"
 hpack = ">=3.0,<4"
+hyperframe = ">=5.2.0,<6"
 
 [[package]]
 name = "h5py"
@@ -921,8 +921,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-six = "*"
 numpy = ">=1.7"
+six = "*"
 
 [[package]]
 name = "hpack"
@@ -968,15 +968,15 @@ optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-hstspreload = "*"
-h2 = ">=3.0.0,<4.0.0"
-h11 = ">=0.8,<0.10"
-urllib3 = ">=1.0.0,<2.0.0"
-sniffio = ">=1.0.0,<2.0.0"
-chardet = ">=3.0.0,<4.0.0"
-rfc3986 = ">=1.3,<2"
 certifi = "*"
+chardet = ">=3.0.0,<4.0.0"
+h11 = ">=0.8,<0.10"
+h2 = ">=3.0.0,<4.0.0"
+hstspreload = "*"
 idna = ">=2.0.0,<3.0.0"
+rfc3986 = ">=1.3,<2"
+sniffio = ">=1.0.0,<2.0.0"
+urllib3 = ">=1.0.0,<2.0.0"
 
 [[package]]
 name = "humanfriendly"
@@ -1154,8 +1154,8 @@ importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
-"testing.libs" = ["demjson", "simplejson", "ujson", "yajl"]
 testing = ["coverage (<5)", "pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-black-multipy", "pytest-cov", "ecdsa", "feedparser", "numpy", "pandas", "pymongo", "sqlalchemy", "enum34", "jsonlib"]
+"testing.libs" = ["demjson", "simplejson", "ujson", "yajl"]
 
 [[package]]
 name = "jsonpointer"
@@ -1174,14 +1174,14 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
+attrs = ">=17.4.0"
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 pyrsistent = ">=0.14.0"
 six = ">=1.11.0"
-attrs = ">=17.4.0"
 
 [package.extras]
-format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator (>0.1.0)", "rfc3339-validator"]
 format = ["idna", "jsonpointer (>1.13)", "rfc3987", "strict-rfc3339", "webcolors"]
+format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator (>0.1.0)", "rfc3339-validator"]
 
 [[package]]
 name = "junit-xml"
@@ -1225,12 +1225,12 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-six = ">=1.9.0"
 numpy = ">=1.9.1"
+six = ">=1.9.0"
 
 [package.extras]
-pep8 = ["flake8"]
 image = ["scipy (>=0.14)", "Pillow (>=5.2.0)"]
+pep8 = ["flake8"]
 tests = ["pandas", "pillow", "tensorflow", "keras", "pytest", "pytest-xdist", "pytest-cov"]
 
 [[package]]
@@ -1272,12 +1272,12 @@ optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-pillow = ">=6.2.0"
-python-dateutil = ">=2.1"
-pyparsing = ">=2.0.3,<2.0.4 || >2.0.4,<2.1.2 || >2.1.2,<2.1.6 || >2.1.6"
-numpy = ">=1.15"
 cycler = ">=0.10"
 kiwisolver = ">=1.0.1"
+numpy = ">=1.15"
+pillow = ">=6.2.0"
+pyparsing = ">=2.0.3,<2.0.4 || >2.0.4,<2.1.2 || >2.1.2,<2.1.6 || >2.1.6"
+python-dateutil = ">=2.1"
 
 [[package]]
 name = "mattermostwrapper"
@@ -1307,9 +1307,9 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-test = ["pytest (<5.4)", "pytest-cov"]
-docs = ["sphinx"]
 build = ["twine", "wheel", "blurb"]
+docs = ["sphinx"]
+test = ["pytest (<5.4)", "pytest-cov"]
 
 [[package]]
 name = "mongomock"
@@ -1340,44 +1340,44 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-more-itertools = "*"
-jsondiff = ">=1.1.2"
+aws-xray-sdk = ">=0.93,<0.96 || >0.96"
+boto = ">=2.36.0"
 boto3 = ">=1.9.201"
 botocore = ">=1.12.201"
-python-jose = {version = ">=3.1.0,<4.0.0", extras = ["cryptography"]}
-six = ">1.9"
-Jinja2 = ">=2.10.1"
-werkzeug = "*"
-ecdsa = "<0.15"
-mock = "*"
-PyYAML = ">=5.1"
 cfn-lint = ">=0.4.0"
-responses = ">=0.9.0"
 cryptography = ">=2.3.0"
-MarkupSafe = "<2.0"
-pytz = "*"
-python-dateutil = ">=2.1,<3.0.0"
-zipp = "*"
 docker = ">=2.5.1"
-boto = ">=2.36.0"
-aws-xray-sdk = ">=0.93,<0.96 || >0.96"
-xmltodict = "*"
-requests = ">=2.5"
+ecdsa = "<0.15"
 idna = ">=2.5,<3"
+Jinja2 = ">=2.10.1"
+jsondiff = ">=1.1.2"
+MarkupSafe = "<2.0"
+mock = "*"
+more-itertools = "*"
+python-dateutil = ">=2.1,<3.0.0"
+python-jose = {version = ">=3.1.0,<4.0.0", extras = ["cryptography"]}
+pytz = "*"
+PyYAML = ">=5.1"
+requests = ">=2.5"
+responses = ">=0.9.0"
+six = ">1.9"
+werkzeug = "*"
+xmltodict = "*"
+zipp = "*"
 
 [package.extras]
-iam = ["cryptography (>=2.3.0)"]
+acm = ["cryptography (>=2.3.0)"]
 all = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
-iotdata = ["jsondiff (>=1.1.2)"]
-s3 = ["cryptography (>=2.3.0)"]
+awslambda = ["docker (>=2.5.1)"]
 batch = ["docker (>=2.5.1)"]
 cloudformation = ["PyYAML (>=5.1)", "cfn-lint (>=0.4.0)"]
-awslambda = ["docker (>=2.5.1)"]
-xray = ["aws-xray-sdk (>=0.93,!=0.96)"]
 cognitoidp = ["python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)"]
-acm = ["cryptography (>=2.3.0)"]
-server = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "flask", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
 ec2 = ["cryptography (>=2.3.0)", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
+iam = ["cryptography (>=2.3.0)"]
+iotdata = ["jsondiff (>=1.1.2)"]
+s3 = ["cryptography (>=2.3.0)"]
+server = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "flask", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
+xray = ["aws-xray-sdk (>=0.93,!=0.96)"]
 
 [[package]]
 name = "msrest"
@@ -1388,10 +1388,10 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-requests-oauthlib = ">=0.5.0"
-requests = ">=2.16,<3.0"
 certifi = ">=2017.4.17"
 isodate = ">=0.6.0"
+requests = ">=2.16,<3.0"
+requests-oauthlib = ">=0.5.0"
 
 [package.extras]
 async = ["aiohttp (>=3.0)", "aiodns"]
@@ -1449,16 +1449,16 @@ decorator = ">=4.3.0"
 
 [package.extras]
 all = ["numpy", "scipy", "pandas", "matplotlib", "pygraphviz", "pydot", "pyyaml", "lxml", "pytest"]
-lxml = ["lxml"]
-pydot = ["pydot"]
-numpy = ["numpy"]
-pyyaml = ["pyyaml"]
-matplotlib = ["matplotlib"]
-scipy = ["scipy"]
-pytest = ["pytest"]
-pygraphviz = ["pygraphviz"]
-pandas = ["pandas"]
 gdal = ["gdal"]
+lxml = ["lxml"]
+matplotlib = ["matplotlib"]
+numpy = ["numpy"]
+pandas = ["pandas"]
+pydot = ["pydot"]
+pygraphviz = ["pygraphviz"]
+pytest = ["pytest"]
+pyyaml = ["pyyaml"]
+scipy = ["scipy"]
 
 [[package]]
 name = "nr.collections"
@@ -1469,8 +1469,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-six = ">=1.11.0,<2.0.0"
 "nr.metaclass" = ">=0.0.1,<0.1.0"
+six = ">=1.11.0,<2.0.0"
 
 [package.extras]
 test = ["nr.fs (>=1.5.0,<2.0.0)"]
@@ -1484,10 +1484,10 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-"nr.pylang.utils" = ">=0.0.3,<0.1.0"
-"nr.interface" = ">=0.0.1,<0.1.0"
-"nr.stream" = ">=0.0.1,<0.1.0"
 "nr.collections" = ">=0.0.1,<1.0.0"
+"nr.interface" = ">=0.0.1,<0.1.0"
+"nr.pylang.utils" = ">=0.0.3,<0.1.0"
+"nr.stream" = ">=0.0.1,<0.1.0"
 
 [[package]]
 name = "nr.databind.json"
@@ -1498,11 +1498,11 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-"nr.pylang.utils" = ">=0.0.1,<0.1.0"
+"nr.collections" = ">=0.0.1,<1.0.0"
 "nr.databind.core" = ">=0.0.21,<0.1.0"
 "nr.interface" = ">=0.0.1,<0.1.0"
 "nr.parsing.date" = ">=0.1.0,<1.0.0"
-"nr.collections" = ">=0.0.1,<1.0.0"
+"nr.pylang.utils" = ">=0.0.1,<0.1.0"
 
 [[package]]
 name = "nr.fs"
@@ -1524,10 +1524,10 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-"nr.pylang.utils" = ">=0.0.1,<0.1.0"
-"nr.metaclass" = ">=0.0.1,<0.1.0"
-six = ">=1.11.0,<2.0.0"
 "nr.collections" = ">=0.0.1,<1.0.0"
+"nr.metaclass" = ">=0.0.1,<0.1.0"
+"nr.pylang.utils" = ">=0.0.1,<0.1.0"
+six = ">=1.11.0,<2.0.0"
 
 [[package]]
 name = "nr.metaclass"
@@ -1568,9 +1568,9 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
+"nr.collections" = ">=0.0.1,<1.0.0"
 "nr.pylang.utils" = ">=0.0.1,<1.0.0"
 six = ">=1.11.0,<2.0.0"
-"nr.collections" = ">=0.0.1,<1.0.0"
 
 [[package]]
 name = "nr.sumtype"
@@ -1581,8 +1581,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-"nr.stream" = ">=0.0.2,<1.0.0"
 "nr.metaclass" = ">=0.0.4,<1.0.0"
+"nr.stream" = ">=0.0.2,<1.0.0"
 
 [[package]]
 name = "nr.utils.re"
@@ -1609,11 +1609,11 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-pyasn1-modules = ">=0.0.5"
-six = ">=1.6.1"
-pyasn1 = ">=0.1.7"
 httplib2 = ">=0.9.1"
+pyasn1 = ">=0.1.7"
+pyasn1-modules = ">=0.0.5"
 rsa = ">=3.1.4"
+six = ">=1.6.1"
 
 [[package]]
 name = "oauthlib"
@@ -1624,9 +1624,9 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.extras]
+rsa = ["cryptography"]
 signals = ["blinker"]
 signedtoken = ["cryptography", "pyjwt (>=1.0.0)"]
-rsa = ["cryptography"]
 
 [[package]]
 name = "opt-einsum"
@@ -1731,8 +1731,8 @@ optional = true
 python-versions = "*"
 
 [package.dependencies]
-murmurhash = ">=0.28.0,<1.1.0"
 cymem = ">=2.0.2,<2.1.0"
+murmurhash = ">=0.28.0,<1.1.0"
 
 [[package]]
 name = "prompt-toolkit"
@@ -1817,19 +1817,19 @@ optional = false
 python-versions = ">=3.5.0,<4.0.0"
 
 [package.dependencies]
-PyYAML = ">=5.3.0,<6.0.0"
+click = ">=7.0.0,<8.0.0"
 docspec = ">=0.2.0,<0.3.0"
-"nr.fs" = ">=1.6.0,<2.0.0"
-six = ">=1.11.0,<2.0.0"
+docspec-python = ">=0.0.7,<0.1.0"
 "nr.collections" = ">=0.0.1,<0.1.0"
 "nr.databind.core" = ">=0.0.18,<0.1.0"
-docspec-python = ">=0.0.7,<0.1.0"
+"nr.databind.json" = ">=0.0.9,<0.1.0"
+"nr.fs" = ">=1.6.0,<2.0.0"
+"nr.interface" = ">=0.0.3,<0.1.0"
+PyYAML = ">=5.3.0,<6.0.0"
+requests = ">=2.23.0,<3.0.0"
+six = ">=1.11.0,<2.0.0"
 toml = ">=0.10.1,<1.0.0"
 watchdog = ">=1.0.0,<2.0.0"
-"nr.databind.json" = ">=0.0.9,<0.1.0"
-requests = ">=2.23.0,<3.0.0"
-click = ">=7.0.0,<8.0.0"
-"nr.interface" = ">=0.0.3,<0.1.0"
 
 [[package]]
 name = "pydocstyle"
@@ -1863,7 +1863,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pyjwt"
-version = "2.0.1"
+version = "2.0.0"
 description = "JSON Web Token implementation in Python"
 category = "main"
 optional = false
@@ -1873,10 +1873,10 @@ python-versions = ">=3.6"
 cryptography = {version = ">=3.3.1,<4.0.0", optional = true, markers = "extra == \"crypto\""}
 
 [package.extras]
-docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
-tests = ["pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)"]
 crypto = ["cryptography (>=3.3.1,<4.0.0)"]
 dev = ["sphinx", "sphinx-rtd-theme", "zope.interface", "cryptography (>=3.3.1,<4.0.0)", "pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)", "mypy", "pre-commit"]
+docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
+tests = ["pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)"]
 
 [[package]]
 name = "pykwalify"
@@ -1887,8 +1887,8 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-python-dateutil = ">=2.8.0"
 docopt = ">=0.6.2"
+python-dateutil = ">=2.8.0"
 "ruamel.yaml" = ">=0.16.0"
 
 [[package]]
@@ -1904,11 +1904,11 @@ dnspython = {version = ">=1.16.0,<1.17.0", optional = true, markers = "extra == 
 ipaddress = {version = "*", optional = true, markers = "extra == \"tls\""}
 
 [package.extras]
-tls = ["ipaddress"]
 encryption = ["pymongocrypt (<2.0.0)"]
 gssapi = ["pykerberos"]
 snappy = ["python-snappy"]
 srv = ["dnspython (>=1.16.0,<1.17.0)"]
+tls = ["ipaddress"]
 zstd = ["zstandard"]
 
 [[package]]
@@ -1959,15 +1959,15 @@ optional = false
 python-versions = ">=3.5"
 
 [package.dependencies]
+atomicwrites = {version = ">=1.0", markers = "sys_platform == \"win32\""}
+attrs = ">=17.4.0"
+colorama = {version = "*", markers = "sys_platform == \"win32\""}
+importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 more-itertools = ">=4.0.0"
+packaging = "*"
+pluggy = ">=0.12,<1.0"
 py = ">=1.5.0"
 wcwidth = "*"
-packaging = "*"
-importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
-colorama = {version = "*", markers = "sys_platform == \"win32\""}
-attrs = ">=17.4.0"
-pluggy = ">=0.12,<1.0"
-atomicwrites = {version = ">=1.0", markers = "sys_platform == \"win32\""}
 
 [package.extras]
 checkqa-mypy = ["mypy (==v0.761)"]
@@ -1996,8 +1996,8 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.dependencies]
-pytest = ">=4.6"
 coverage = ">=5.2.1"
+pytest = ">=4.6"
 
 [package.extras]
 testing = ["fields", "hunter", "process-tests (==2.0.2)", "six", "pytest-xdist", "virtualenv"]
@@ -2034,9 +2034,9 @@ optional = false
 python-versions = ">=3.6,<4.0"
 
 [package.dependencies]
-pytest = ">=5.2"
-async_generator = ">=1.10,<2.0"
 aiohttp = ">=3.6.2,<4.0.0"
+async_generator = ">=1.10,<2.0"
+pytest = ">=5.2"
 
 [[package]]
 name = "pytest-timeout"
@@ -2058,10 +2058,10 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.dependencies]
-six = "*"
 execnet = ">=1.1"
-pytest-forked = "*"
 pytest = ">=4.4.0"
+pytest-forked = "*"
+six = "*"
 
 [package.extras]
 testing = ["filelock"]
@@ -2097,8 +2097,8 @@ python-versions = "*"
 six = ">=1.9.0"
 
 [package.extras]
-client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 asyncio_client = ["aiohttp (>=3.4)"]
+client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "python-jose"
@@ -2109,11 +2109,11 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-six = "<2.0"
-pyasn1 = "*"
-ecdsa = "<0.15"
 cryptography = {version = "*", optional = true, markers = "extra == \"cryptography\""}
+ecdsa = "<0.15"
+pyasn1 = "*"
 rsa = "*"
+six = "<2.0"
 
 [package.extras]
 cryptography = ["cryptography"]
@@ -2129,12 +2129,12 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-six = ">=1.9.0"
 python-engineio = ">=3.13.0,<4"
+six = ">=1.9.0"
 
 [package.extras]
-client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 asyncio_client = ["aiohttp (>=3.4)", "websockets (>=7.0)"]
+client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "pytz"
@@ -2183,10 +2183,10 @@ optional = false
 python-versions = ">=3.6,<3.9"
 
 [package.dependencies]
-requests = ">=2.23,<3.0"
 coloredlogs = ">=10,<15"
-sanic-cors = ">=0.10.0,<0.11.0"
+requests = ">=2.23,<3.0"
 sanic = ">=19.12.2,<21.0.0"
+sanic-cors = ">=0.10.0,<0.11.0"
 
 [[package]]
 name = "redis"
@@ -2216,9 +2216,9 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.dependencies]
-idna = ">=2.5,<3"
 certifi = ">=2017.4.17"
 chardet = ">=3.0.2,<5"
+idna = ">=2.5,<3"
 urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
@@ -2343,11 +2343,11 @@ optional = true
 python-versions = "*"
 
 [package.dependencies]
+click = "*"
 joblib = "*"
 regex = "*"
 six = "*"
 tqdm = "*"
-click = "*"
 
 [[package]]
 name = "sanic"
@@ -2358,19 +2358,19 @@ optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-uvloop = {version = ">=0.5.3", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
-ujson = {version = ">=1.35", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
-httptools = ">=0.0.10"
 aiofiles = ">=0.3.0"
-multidict = ">=4.0,<5.0"
+httptools = ">=0.0.10"
 httpx = "0.11.1"
+multidict = ">=4.0,<5.0"
+ujson = {version = ">=1.35", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
+uvloop = {version = ">=0.5.3", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
 websockets = ">=7.0,<9.0"
 
 [package.extras]
-test = ["pytest (==5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (==0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
-docs = ["sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments"]
 all = ["pytest (==5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (==0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
 dev = ["pytest (==5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (==0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
+docs = ["sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments"]
+test = ["pytest (==5.2.1)", "multidict (>=4.0,<5.0)", "gunicorn", "pytest-cov", "httpcore (==0.3.0)", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
 
 [[package]]
 name = "sanic-cors"
@@ -2381,23 +2381,23 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-sanic-plugins-framework = ">=0.9.0"
 sanic = ">=18.12.0"
+sanic-plugins-framework = ">=0.9.0"
 
 [[package]]
 name = "sanic-jwt"
-version = "1.4.1"
+version = "1.6.0"
 description = "JWT oauth flow for Sanic"
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-pyjwt = "*"
+pyjwt = "2.0.0"
 
 [package.extras]
-docs = ["sphinx"]
 all = ["sphinx", "sphinx"]
+docs = ["sphinx"]
 
 [[package]]
 name = "sanic-plugins-framework"
@@ -2420,15 +2420,15 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 joblib = ">=0.11"
-threadpoolctl = ">=2.0.0"
-scipy = ">=0.19.1"
 numpy = ">=1.13.3"
+scipy = ">=0.19.1"
+threadpoolctl = ">=2.0.0"
 
 [package.extras]
-docs = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)", "memory-profiler (>=0.57.0)", "sphinx (>=3.2.0)", "sphinx-gallery (>=0.7.0)", "numpydoc (>=1.0.0)", "Pillow (>=7.1.2)", "sphinx-prompt (>=1.3.0)"]
-tests = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "pytest (>=5.0.1)", "pytest-cov (>=2.9.0)", "flake8 (>=3.8.2)", "mypy (>=0.770)", "pyamg (>=4.0.0)"]
 benchmark = ["matplotlib (>=2.1.1)", "pandas (>=0.25.0)", "memory-profiler (>=0.57.0)"]
+docs = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)", "memory-profiler (>=0.57.0)", "sphinx (>=3.2.0)", "sphinx-gallery (>=0.7.0)", "numpydoc (>=1.0.0)", "Pillow (>=7.1.2)", "sphinx-prompt (>=1.3.0)"]
 examples = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "seaborn (>=0.9.0)"]
+tests = ["matplotlib (>=2.1.1)", "scikit-image (>=0.13)", "pandas (>=0.25.0)", "pytest (>=5.0.1)", "pytest-cov (>=2.9.0)", "flake8 (>=3.8.2)", "mypy (>=0.770)", "pyamg (>=4.0.0)"]
 
 [[package]]
 name = "scipy"
@@ -2470,20 +2470,20 @@ certifi = "*"
 urllib3 = ">=1.10.0"
 
 [package.extras]
-celery = ["celery (>=3)"]
-sqlalchemy = ["sqlalchemy (>=1.2)"]
-rq = ["rq (>=0.6)"]
 aiohttp = ["aiohttp (>=3.5)"]
-pyspark = ["pyspark (>=2.4.4)"]
+beam = ["apache-beam (>=2.12)"]
+bottle = ["bottle (>=0.12.13)"]
+celery = ["celery (>=3)"]
+chalice = ["chalice (>=1.16.0)"]
+django = ["django (>=1.8)"]
+falcon = ["falcon (>=1.4)"]
 flask = ["flask (>=0.11)", "blinker (>=1.1)"]
 pure_eval = ["pure-eval", "executing", "asttokens"]
-django = ["django (>=1.8)"]
-chalice = ["chalice (>=1.16.0)"]
-beam = ["apache-beam (>=2.12)"]
-tornado = ["tornado (>=5)"]
-bottle = ["bottle (>=0.12.13)"]
+pyspark = ["pyspark (>=2.4.4)"]
+rq = ["rq (>=0.6)"]
 sanic = ["sanic (>=0.8)"]
-falcon = ["falcon (>=1.4)"]
+sqlalchemy = ["sqlalchemy (>=1.2)"]
+tornado = ["tornado (>=5)"]
 
 [[package]]
 name = "six"
@@ -2502,10 +2502,10 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-tqdm = ">=2.0"
-six = "*"
 python-crfsuite = ">=0.8.3"
+six = "*"
 tabulate = "*"
+tqdm = ">=2.0"
 
 [[package]]
 name = "slackclient"
@@ -2565,30 +2565,30 @@ optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 
 [package.dependencies]
-tqdm = ">=4.38.0,<5.0.0"
-preshed = ">=3.0.2,<3.1.0"
-catalogue = ">=0.0.7,<1.1.0"
-wasabi = ">=0.4.0,<1.1.0"
 blis = ">=0.4.0,<0.5.0"
-srsly = ">=1.0.2,<1.1.0"
-thinc = "7.4.0"
-plac = ">=0.9.6,<1.2.0"
+catalogue = ">=0.0.7,<1.1.0"
+cymem = ">=2.0.2,<2.1.0"
 murmurhash = ">=0.28.0,<1.1.0"
 numpy = ">=1.15.0"
+plac = ">=0.9.6,<1.2.0"
+preshed = ">=3.0.2,<3.1.0"
 requests = ">=2.13.0,<3.0.0"
-cymem = ">=2.0.2,<2.1.0"
+srsly = ">=1.0.2,<1.1.0"
+thinc = "7.4.0"
+tqdm = ">=4.38.0,<5.0.0"
+wasabi = ">=0.4.0,<1.1.0"
 
 [package.extras]
-lookups = ["spacy-lookups-data (>=0.0.5,<0.2.0)"]
+cuda = ["cupy (>=5.0.0b4)"]
+cuda100 = ["cupy-cuda100 (>=5.0.0b4)"]
+cuda80 = ["cupy-cuda80 (>=5.0.0b4)"]
 cuda90 = ["cupy-cuda90 (>=5.0.0b4)"]
 cuda91 = ["cupy-cuda91 (>=5.0.0b4)"]
 cuda92 = ["cupy-cuda92 (>=5.0.0b4)"]
-ko = ["natto-py (==0.9.0)"]
-cuda = ["cupy (>=5.0.0b4)"]
-th = ["pythainlp (>=2.0)"]
-cuda80 = ["cupy-cuda80 (>=5.0.0b4)"]
 ja = ["fugashi (>=0.1.3)"]
-cuda100 = ["cupy-cuda100 (>=5.0.0b4)"]
+ko = ["natto-py (==0.9.0)"]
+lookups = ["spacy-lookups-data (>=0.0.5,<0.2.0)"]
+th = ["pythainlp (>=2.0)"]
 
 [[package]]
 name = "sqlalchemy"
@@ -2599,16 +2599,16 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.extras]
-postgresql_pg8000 = ["pg8000"]
-postgresql = ["psycopg2"]
-postgresql_psycopg2cffi = ["psycopg2cffi"]
-pymysql = ["pymysql"]
+mssql = ["pyodbc"]
 mssql_pymssql = ["pymssql"]
-postgresql_psycopg2binary = ["psycopg2-binary"]
+mssql_pyodbc = ["pyodbc"]
 mysql = ["mysqlclient"]
 oracle = ["cx-oracle"]
-mssql = ["pyodbc"]
-mssql_pyodbc = ["pyodbc"]
+postgresql = ["psycopg2"]
+postgresql_pg8000 = ["pg8000"]
+postgresql_psycopg2binary = ["psycopg2-binary"]
+postgresql_psycopg2cffi = ["psycopg2cffi"]
+pymysql = ["pymysql"]
 
 [[package]]
 name = "srsly"
@@ -2650,17 +2650,17 @@ optional = false
 python-versions = ">= 2.7, != 3.0.*, != 3.1.*"
 
 [package.dependencies]
-markdown = ">=2.6.8"
-protobuf = ">=3.6.0"
-tensorboard-plugin-wit = ">=1.6.0"
-six = ">=1.10.0"
-grpcio = ">=1.24.3"
 absl-py = ">=0.4"
-werkzeug = ">=0.11.15"
-requests = ">=2.21.0,<3"
 google-auth = ">=1.6.3,<2"
-numpy = ">=1.12.0"
 google-auth-oauthlib = ">=0.4.1,<0.5"
+grpcio = ">=1.24.3"
+markdown = ">=2.6.8"
+numpy = ">=1.12.0"
+protobuf = ">=3.6.0"
+requests = ">=2.21.0,<3"
+six = ">=1.10.0"
+tensorboard-plugin-wit = ">=1.6.0"
+werkzeug = ">=0.11.15"
 
 [[package]]
 name = "tensorboard-plugin-wit"
@@ -2679,20 +2679,20 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-keras-preprocessing = ">=1.1.1,<1.2"
-google-pasta = ">=0.1.8"
-protobuf = ">=3.9.2"
-tensorflow-estimator = ">=2.3.0,<2.4.0"
-opt-einsum = ">=2.3.2"
-astunparse = "1.6.3"
-grpcio = ">=1.8.6"
 absl-py = ">=0.7.0"
-six = ">=1.12.0"
-termcolor = ">=1.1.0"
-tensorboard = ">=2.3.0,<3"
-h5py = ">=2.10.0,<2.11.0"
-numpy = ">=1.16.0,<1.19.0"
+astunparse = "1.6.3"
 gast = "0.3.3"
+google-pasta = ">=0.1.8"
+grpcio = ">=1.8.6"
+h5py = ">=2.10.0,<2.11.0"
+keras-preprocessing = ">=1.1.1,<1.2"
+numpy = ">=1.16.0,<1.19.0"
+opt-einsum = ">=2.3.2"
+protobuf = ">=3.9.2"
+six = ">=1.12.0"
+tensorboard = ">=2.3.0,<3"
+tensorflow-estimator = ">=2.3.0,<2.4.0"
+termcolor = ">=1.1.0"
 wrapt = ">=1.11.1"
 
 [[package]]
@@ -2707,9 +2707,9 @@ python-versions = "*"
 typeguard = ">=2.7"
 
 [package.extras]
-tensorflow-gpu = ["tensorflow-gpu (>=2.3.0,<2.5.0)"]
 tensorflow = ["tensorflow (>=2.3.0,<2.5.0)"]
 tensorflow-cpu = ["tensorflow-cpu (>=2.3.0,<2.5.0)"]
+tensorflow-gpu = ["tensorflow-gpu (>=2.3.0,<2.5.0)"]
 
 [[package]]
 name = "tensorflow-estimator"
@@ -2728,13 +2728,13 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-six = ">=1.12.0"
 numpy = ">=1.12.0"
 protobuf = ">=3.8.0"
+six = ">=1.12.0"
 
 [package.extras]
-make_nearest_neighbour_index = ["apache-beam", "annoy"]
 make_image_classifier = ["keras-preprocessing"]
+make_nearest_neighbour_index = ["apache-beam", "annoy"]
 
 [[package]]
 name = "tensorflow-probability"
@@ -2746,15 +2746,15 @@ python-versions = "*"
 
 [package.dependencies]
 cloudpickle = ">=1.3"
-six = ">=1.10.0"
-dm-tree = "*"
-numpy = ">=1.13.3"
-gast = ">=0.3.2"
 decorator = "*"
+dm-tree = "*"
+gast = ">=0.3.2"
+numpy = ">=1.13.3"
+six = ">=1.10.0"
 
 [package.extras]
-tfds = ["tensorflow-datasets (>=2.2.0)"]
 jax = ["jax (==0.1.74)", "jaxlib (==0.1.52)"]
+tfds = ["tensorflow-datasets (>=2.2.0)"]
 
 [[package]]
 name = "tensorflow-text"
@@ -2768,8 +2768,8 @@ python-versions = "*"
 tensorflow = ">=2.3.0,<2.4"
 
 [package.extras]
-tests = ["absl-py", "pytest"]
 tensorflow_gpu = ["tensorflow-gpu (>=2.1.0,<2.2)"]
+tests = ["absl-py", "pytest"]
 
 [[package]]
 name = "termcolor"
@@ -2796,25 +2796,25 @@ optional = true
 python-versions = "*"
 
 [package.dependencies]
-tqdm = ">=4.10.0,<5.0.0"
-preshed = ">=1.0.1,<3.1.0"
-catalogue = ">=0.0.7,<1.1.0"
-wasabi = ">=0.0.9,<1.1.0"
 blis = ">=0.4.0,<0.5.0"
-srsly = ">=0.0.6,<1.1.0"
-plac = ">=0.9.6,<1.2.0"
+catalogue = ">=0.0.7,<1.1.0"
+cymem = ">=2.0.2,<2.1.0"
 murmurhash = ">=0.28.0,<1.1.0"
 numpy = ">=1.7.0"
-cymem = ">=2.0.2,<2.1.0"
+plac = ">=0.9.6,<1.2.0"
+preshed = ">=1.0.1,<3.1.0"
+srsly = ">=0.0.6,<1.1.0"
+tqdm = ">=4.10.0,<5.0.0"
+wasabi = ">=0.0.9,<1.1.0"
 
 [package.extras]
+cuda = ["cupy (>=5.0.0b4)"]
+cuda100 = ["cupy-cuda100 (>=5.0.0b4)"]
+cuda101 = ["cupy-cuda101 (>=5.0.0b4)"]
+cuda80 = ["cupy-cuda80 (>=5.0.0b4)"]
 cuda90 = ["cupy-cuda90 (>=5.0.0b4)"]
 cuda91 = ["cupy-cuda91 (>=5.0.0b4)"]
 cuda92 = ["cupy-cuda92 (>=5.0.0b4)"]
-cuda101 = ["cupy-cuda101 (>=5.0.0b4)"]
-cuda = ["cupy (>=5.0.0b4)"]
-cuda80 = ["cupy-cuda80 (>=5.0.0b4)"]
-cuda100 = ["cupy-cuda100 (>=5.0.0b4)"]
 
 [[package]]
 name = "threadpoolctl"
@@ -2852,10 +2852,10 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-toml = "*"
+Click = "*"
 incremental = "*"
 jinja2 = "*"
-Click = "*"
+toml = "*"
 
 [[package]]
 name = "tqdm"
@@ -2866,8 +2866,8 @@ optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 
 [package.extras]
-telegram = ["requests"]
 dev = ["py-make (>=0.1.0)", "twine", "wheel"]
+telegram = ["requests"]
 
 [[package]]
 name = "transformers"
@@ -2878,29 +2878,29 @@ optional = true
 python-versions = ">=3.6.0"
 
 [package.dependencies]
-regex = "!=2019.12.17"
-tqdm = ">=4.27"
-filelock = "*"
 dataclasses = {version = "*", markers = "python_version < \"3.7\""}
+filelock = "*"
+numpy = "*"
 packaging = "*"
+regex = "!=2019.12.17"
+requests = "*"
 sacremoses = "*"
 sentencepiece = "*"
 tokenizers = "0.7.0"
-requests = "*"
-numpy = "*"
+tqdm = ">=4.27"
 
 [package.extras]
 all = ["pydantic", "uvicorn", "fastapi", "starlette", "tensorflow", "torch"]
-serving = ["pydantic", "uvicorn", "fastapi", "starlette"]
-docs = ["recommonmark", "sphinx", "sphinx-markdown-tables", "sphinx-rtd-theme"]
-torch = ["torch"]
-mecab = ["mecab-python3"]
 dev = ["pytest", "pytest-xdist", "timeout-decorator", "black", "isort", "flake8", "mecab-python3", "scikit-learn", "tensorflow", "torch"]
+docs = ["recommonmark", "sphinx", "sphinx-markdown-tables", "sphinx-rtd-theme"]
+mecab = ["mecab-python3"]
+quality = ["black", "isort", "flake8"]
+serving = ["pydantic", "uvicorn", "fastapi", "starlette"]
+sklearn = ["scikit-learn"]
 testing = ["pytest", "pytest-xdist", "timeout-decorator"]
 tf = ["tensorflow", "onnxconverter-common", "keras2onnx"]
 tf-cpu = ["tensorflow-cpu", "onnxconverter-common", "keras2onnx"]
-quality = ["black", "isort", "flake8"]
-sklearn = ["scikit-learn"]
+torch = ["torch"]
 
 [[package]]
 name = "twilio"
@@ -2911,10 +2911,10 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-six = "*"
-requests = {version = ">=2.0.0", markers = "python_version >= \"3.0\""}
-pytz = "*"
 PyJWT = ">=1.4.2"
+pytz = "*"
+requests = {version = ">=2.0.0", markers = "python_version >= \"3.0\""}
+six = "*"
 
 [[package]]
 name = "typed-ast"
@@ -2933,8 +2933,8 @@ optional = false
 python-versions = ">=3.5.3"
 
 [package.extras]
-test = ["pytest", "typing-extensions"]
 doc = ["sphinx-rtd-theme", "sphinx-autodoc-typehints (>=1.2.0)"]
+test = ["pytest", "typing-extensions"]
 
 [[package]]
 name = "typing-extensions"
@@ -3028,9 +3028,9 @@ optional = false
 python-versions = "*"
 
 [package.dependencies]
-requests = ">=2.4.2"
 future = "*"
 PyJWT = "*"
+requests = ">=2.4.2"
 requests-toolbelt = "*"
 
 [[package]]
@@ -3061,8 +3061,8 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.extras]
-watchdog = ["watchdog"]
 dev = ["pytest", "pytest-timeout", "coverage", "tox", "sphinx", "pallets-sphinx-themes", "sphinx-issues"]
+watchdog = ["watchdog"]
 
 [[package]]
 name = "wrapt"
@@ -3089,9 +3089,9 @@ optional = false
 python-versions = ">=3.5"
 
 [package.dependencies]
-typing-extensions = {version = ">=3.7.4", markers = "python_version < \"3.8\""}
-multidict = ">=4.0"
 idna = ">=2.0"
+multidict = ">=4.0"
+typing-extensions = {version = ">=3.7.4", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "zipp"
@@ -3106,16 +3106,16 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
+full = ["spacy", "transformers", "jieba"]
 gh-release-notes = ["github3.py"]
 jieba = ["jieba"]
-full = ["spacy", "transformers", "jieba"]
-transformers = ["transformers"]
 spacy = ["spacy"]
+transformers = ["transformers"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "3aceb2ff2ba7ccee4e1c46e675cfbe3acf5ef5b40b7577dbb42a8979d1877268"
+content-hash = "8adedd9dd0578f6094a7fa20e7659850ed291e5b6971e3c23da042143030da3d"
 
 [metadata.files]
 absl-py = [
@@ -4080,25 +4080,21 @@ pillow = [
     {file = "Pillow-8.1.0-cp36-cp36m-macosx_10_10_x86_64.whl", hash = "sha256:d355502dce85ade85a2511b40b4c61a128902f246504f7de29bbeec1ae27933a"},
     {file = "Pillow-8.1.0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:93a473b53cc6e0b3ce6bf51b1b95b7b1e7e6084be3a07e40f79b42e83503fbf2"},
     {file = "Pillow-8.1.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:2353834b2c49b95e1313fb34edf18fca4d57446675d05298bb694bca4b194174"},
-    {file = "Pillow-8.1.0-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:1d208e670abfeb41b6143537a681299ef86e92d2a3dac299d3cd6830d5c7bded"},
     {file = "Pillow-8.1.0-cp36-cp36m-win32.whl", hash = "sha256:dd9eef866c70d2cbbea1ae58134eaffda0d4bfea403025f4db6859724b18ab3d"},
     {file = "Pillow-8.1.0-cp36-cp36m-win_amd64.whl", hash = "sha256:b09e10ec453de97f9a23a5aa5e30b334195e8d2ddd1ce76cc32e52ba63c8b31d"},
     {file = "Pillow-8.1.0-cp37-cp37m-macosx_10_10_x86_64.whl", hash = "sha256:b02a0b9f332086657852b1f7cb380f6a42403a6d9c42a4c34a561aa4530d5234"},
     {file = "Pillow-8.1.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:ca20739e303254287138234485579b28cb0d524401f83d5129b5ff9d606cb0a8"},
     {file = "Pillow-8.1.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:604815c55fd92e735f9738f65dabf4edc3e79f88541c221d292faec1904a4b17"},
-    {file = "Pillow-8.1.0-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:cf6e33d92b1526190a1de904df21663c46a456758c0424e4f947ae9aa6088bf7"},
     {file = "Pillow-8.1.0-cp37-cp37m-win32.whl", hash = "sha256:47c0d93ee9c8b181f353dbead6530b26980fe4f5485aa18be8f1fd3c3cbc685e"},
     {file = "Pillow-8.1.0-cp37-cp37m-win_amd64.whl", hash = "sha256:96d4dc103d1a0fa6d47c6c55a47de5f5dafd5ef0114fa10c85a1fd8e0216284b"},
     {file = "Pillow-8.1.0-cp38-cp38-macosx_10_10_x86_64.whl", hash = "sha256:7916cbc94f1c6b1301ac04510d0881b9e9feb20ae34094d3615a8a7c3db0dcc0"},
     {file = "Pillow-8.1.0-cp38-cp38-manylinux1_i686.whl", hash = "sha256:3de6b2ee4f78c6b3d89d184ade5d8fa68af0848f9b6b6da2b9ab7943ec46971a"},
     {file = "Pillow-8.1.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:cdbbe7dff4a677fb555a54f9bc0450f2a21a93c5ba2b44e09e54fcb72d2bd13d"},
-    {file = "Pillow-8.1.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:f50e7a98b0453f39000619d845be8b06e611e56ee6e8186f7f60c3b1e2f0feae"},
     {file = "Pillow-8.1.0-cp38-cp38-win32.whl", hash = "sha256:cb192176b477d49b0a327b2a5a4979552b7a58cd42037034316b8018ac3ebb59"},
     {file = "Pillow-8.1.0-cp38-cp38-win_amd64.whl", hash = "sha256:6c5275bd82711cd3dcd0af8ce0bb99113ae8911fc2952805f1d012de7d600a4c"},
     {file = "Pillow-8.1.0-cp39-cp39-macosx_10_10_x86_64.whl", hash = "sha256:165c88bc9d8dba670110c689e3cc5c71dbe4bfb984ffa7cbebf1fac9554071d6"},
     {file = "Pillow-8.1.0-cp39-cp39-manylinux1_i686.whl", hash = "sha256:5e2fe3bb2363b862671eba632537cd3a823847db4d98be95690b7e382f3d6378"},
     {file = "Pillow-8.1.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:7612520e5e1a371d77e1d1ca3a3ee6227eef00d0a9cddb4ef7ecb0b7396eddf7"},
-    {file = "Pillow-8.1.0-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:d673c4990acd016229a5c1c4ee8a9e6d8f481b27ade5fc3d95938697fa443ce0"},
     {file = "Pillow-8.1.0-cp39-cp39-win32.whl", hash = "sha256:dc577f4cfdda354db3ae37a572428a90ffdbe4e51eda7849bf442fb803f09c9b"},
     {file = "Pillow-8.1.0-cp39-cp39-win_amd64.whl", hash = "sha256:22d070ca2e60c99929ef274cfced04294d2368193e935c5d6febfd8b601bf865"},
     {file = "Pillow-8.1.0-pp36-pypy36_pp73-macosx_10_10_x86_64.whl", hash = "sha256:a3d3e086474ef12ef13d42e5f9b7bbf09d39cf6bd4940f982263d6954b13f6a9"},
@@ -4258,8 +4254,8 @@ pyflakes = [
     {file = "pyflakes-2.2.0.tar.gz", hash = "sha256:35b2d75ee967ea93b55750aa9edbbf72813e06a66ba54438df2cfac9e3c27fc8"},
 ]
 pyjwt = [
-    {file = "PyJWT-2.0.1-py3-none-any.whl", hash = "sha256:b70b15f89dc69b993d8a8d32c299032d5355c82f9b5b7e851d1a6d706dffe847"},
-    {file = "PyJWT-2.0.1.tar.gz", hash = "sha256:a5c70a06e1f33d81ef25eecd50d50bd30e34de1ca8b2b9fa3fe0daaabcf69bf7"},
+    {file = "PyJWT-2.0.0-py3-none-any.whl", hash = "sha256:5c2ff2eb27d7e342dfc3cafcc16412781f06db2690fbef81922b0172598f085b"},
+    {file = "PyJWT-2.0.0.tar.gz", hash = "sha256:7a2b271c6dac2fda9e0c33d176c4253faba2c6c6b3a99c7f28a32c3c97522779"},
 ]
 pykwalify = [
     {file = "pykwalify-1.8.0-py2.py3-none-any.whl", hash = "sha256:731dfa87338cca9f559d1fca2bdea37299116e3139b73f78ca90a543722d6651"},
@@ -4581,7 +4577,7 @@ sanic-cors = [
     {file = "Sanic_Cors-0.10.0.post3-py2.py3-none-any.whl", hash = "sha256:b919d65643de810ed1ed15657b8bc75c310fa1ac8eb491d59deaa9404756b745"},
 ]
 sanic-jwt = [
-    {file = "sanic-jwt-1.4.1.tar.gz", hash = "sha256:f55b8c50735340cf943af642cbdfedcf774ca3f9028e60d6784d26cd9be9246b"},
+    {file = "sanic-jwt-1.6.0.tar.gz", hash = "sha256:704d5638bcaf4afcdc9a8b356b651d1ed881ebbd35d919950c51a1c904424a6d"},
 ]
 sanic-plugins-framework = [
     {file = "Sanic-Plugins-Framework-0.9.5.tar.gz", hash = "sha256:0e9fad57f223818cbc286419be2a9ae7b3e89cf0fd50f818f63e33365325acd8"},
