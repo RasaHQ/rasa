@@ -192,6 +192,7 @@ build-docker:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl default
 
 build-docker-full:
@@ -210,10 +211,12 @@ build-docker-spacy-en:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-en
 
 build-docker-spacy-de:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
