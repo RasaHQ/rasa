@@ -421,7 +421,7 @@ class PolicyPrediction:
                 you return as they can potentially influence the conversation flow.
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
-            is_no_user_prediction: `True` if the prediction didn't use neither the text
+            is_no_user_prediction: `True` if the prediction uses neither the text
                 of the user message nor the intent.
         """
         self.probabilities = probabilities
