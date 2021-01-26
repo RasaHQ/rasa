@@ -2,15 +2,7 @@ import pytest
 import tensorflow as tf
 import numpy as np
 import rasa.utils.tensorflow.numpy
-import json
 from typing import Optional, Dict, Any
-
-
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
 
 
 @pytest.mark.parametrize(
@@ -32,6 +24,8 @@ def test_values_to_numpy(
         type(value) for value in sorted(actual_result.values())
     ]
     assert actual_result_value_types == expected_result_value_types
-    assert json.dumps(actual_result, sort_keys=True, cls=NumpyEncoder) == json.dumps(
-        expected_result, sort_keys=True, cls=NumpyEncoder
-    )
+    for key, value in actual_result.items():
+        if isinstance(expected_result.get(key), np.ndarray):
+            np.testing.assert_equal(value, expected_result.get(key))
+        else:
+            assert value == expected_result.get(key)
