@@ -24,8 +24,4 @@ def test_values_to_numpy(
         type(value) for value in sorted(actual_result.values())
     ]
     assert actual_result_value_types == expected_result_value_types
-    for key, value in actual_result.items():
-        if isinstance(expected_result.get(key), np.ndarray):
-            np.testing.assert_equal(value, expected_result.get(key))
-        else:
-            assert value == expected_result.get(key)
+    np.testing.assert_equal(actual_result, expected_result)
