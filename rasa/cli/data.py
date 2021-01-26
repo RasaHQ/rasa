@@ -79,7 +79,7 @@ def add_subparser(
     _add_data_convert_parsers(data_subparsers, parents)
     _add_data_split_parsers(data_subparsers, parents)
     _add_data_validate_parsers(data_subparsers, parents)
-    _add_data_suggest_parsers(data_subparsers, parents)
+    _add_data_augment_parsers(data_subparsers, parents)
 
 
 def _add_data_convert_parsers(
@@ -208,27 +208,27 @@ def _add_data_validate_parsers(
     arguments.set_validator_arguments(story_structure_parser)
 
 
-def _add_data_suggest_parsers(
+def _add_data_augment_parsers(
     data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
-    suggest_parser = data_subparsers.add_parser(
-        "suggest",
+    augment_parser = data_subparsers.add_parser(
+        "augment",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Suggests data to be added to the training data.",
+        help="Performs data augmentation.",
     )
-    arguments.set_suggest_arguments(suggest_parser)
+    arguments.set_augment_arguments(augment_parser)
 
-    suggest_subparsers = suggest_parser.add_subparsers()
-    nlu_suggest_parser = suggest_subparsers.add_parser(
+    augment_subparsers = augment_parser.add_subparsers()
+    nlu_augment_parser = augment_subparsers.add_parser(
         "nlu",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Suggests data to be added to your NLU training data.",
+        help="Augments your existing NLU training data and evaluates its efficiency.",
     )
-    nlu_suggest_parser.set_defaults(func=suggest_nlu_data)
+    nlu_augment_parser.set_defaults(func=augment_nlu_data)
 
-    arguments.set_suggest_arguments(nlu_suggest_parser)
+    arguments.set_augment_arguments(nlu_augment_parser)
 
 
 def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
@@ -260,7 +260,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     telemetry.track_data_split(args.training_fraction, "nlu")
 
 
-def suggest_nlu_data(args: argparse.Namespace) -> None:
+def augment_nlu_data(args: argparse.Namespace) -> None:
     """Load NLU training & evaluation data, paraphrases, an existing classification report, its corresponding config
     file and suggest additional training
      examples.
@@ -323,7 +323,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         random_seed=args.random_seed,
     )
 
-    telemetry.track_data_suggest()
+    telemetry.track_data_augment()
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:

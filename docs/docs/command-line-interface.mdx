@@ -365,7 +365,7 @@ domain files:
 You can perform data augmentation by first [generating paraphrases](https://github.com/RasaHQ/paraphraser) and subsequently running the following command in order to get data suggestions that can be added to the training data:
 
 ```bash
-rasa data suggest nlu
+rasa data augment nlu
 ```
 
 Data augmentation is one strategy that can help produce more training data for intents that currently have little data, are frequently confused, or exhibit low performance in general. Our data augmentation strategy works by generating paraphrases for existing training examples and then evaluating whether adding a subset of these can improve intent classification performance.
@@ -375,17 +375,17 @@ We are evaluating two strategies for selecting paraphrases, firstly by simply ra
 The paraphrases should be pre-processed and supplied with similarity scores in order to ensure that noise is minimised (see the [paraphraser repository](https://github.com/RasaHQ/paraphraser) for more details).
 
 :::note
-Usage of `rasa data suggest nlu` requires a set of generated paraphrases from [https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser).
+Usage of `rasa data augment nlu` requires a set of generated paraphrases from [https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser).
 :::
 
 :::caution check results
 While data augmentation can substantially improve performance for some intents (and therefore also overall NLU performance), it can also degrade the performance of other intents. We therefore recommend you carefully check the generated reports.
 :::
 
-You need to specify additional arguments for `rasa data suggest nlu`, e.g. the location of your generated paraphrases, your training and evaluation data, as well as an `intent_report.json` from a trained model (without data augmentation) and its config file:
+You need to specify additional arguments for `rasa data augment nlu`, e.g. the location of your generated paraphrases, your training and evaluation data, as well as an `intent_report.json` from a trained model (without data augmentation) and its config file:
 
 ```bash
-rasa data suggest nlu --help
+rasa data augment nlu --help
 ```
 
 ## rasa export

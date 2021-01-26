@@ -151,7 +151,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
         data.validate_files(args)
 
 
-def test_rasa_data_suggest_nlu(
+def test_rasa_data_augment_nlu(
         run: Callable[..., RunResult],
 ):
 
@@ -162,7 +162,7 @@ def test_rasa_data_suggest_nlu(
 
     run(
         "data",
-        "suggest",
+        "augment",
         "nlu",
         "--nlu-training-data",
         os.path.join(data_root, "data/test_nlu_paraphrasing/nlu_train.yml"),

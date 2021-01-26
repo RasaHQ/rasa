@@ -70,7 +70,7 @@ def set_validator_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
 
 
-def set_suggest_arguments(parser: argparse.ArgumentParser):
+def set_augment_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
 
     parser.add_argument(
@@ -97,7 +97,7 @@ def set_suggest_arguments(parser: argparse.ArgumentParser):
         "--num-intents",
         type=int,
         default=5,
-        help="Number of intents per criterion for which to suggest paraphrases for.",
+        help="Number of intents per criterion for which to perform data augmentation.",
     )
 
     parser.add_argument(
@@ -110,7 +110,7 @@ def set_suggest_arguments(parser: argparse.ArgumentParser):
 
     add_out_param(
         parser,
-        default="nlu_suggest",
+        default="nlu_augment",
         help_text="Directory where the augmented training data and the reports from model runs with data augmentation "
         "should be stored.",
     )
