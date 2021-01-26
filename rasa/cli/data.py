@@ -278,7 +278,6 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
     classification_report = rasa.shared.utils.io.read_json_file(
         args.nlu_classification_report
     )
-    random.seed(args.random_seed)
 
     # Determine intents for which to perform data augmentation
     pooled_intents = paraphraser.collect_intents_for_data_augmentation(
@@ -321,6 +320,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         output_directory=output_directory_random,
         config=args.config,
         classification_report=classification_report,
+        random_seed=args.random_seed
     )
 
     telemetry.track_data_suggest()

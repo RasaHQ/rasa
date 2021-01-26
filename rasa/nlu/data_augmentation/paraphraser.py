@@ -171,16 +171,20 @@ def _build_diverse_augmentation_pool(
 
 
 def _build_random_augmentation_pool(
-    paraphrase_pool: Dict[Text, List]
+    paraphrase_pool: Dict[Text, List],
+    random_seed: int
 ) -> Dict[Text, List]:
     """Randomly selects paraphrases for data augmentation from the generated pool.
 
     Args:
         paraphrase_pool: Paraphrases for intents that should be augmented.
+        random_seed: Random seed for sampling paraphrases.
 
     Returns:
         Paraphrases for data augmentation.
     """
+
+    random.seed(random_seed)
     shuffled_paraphrases = {}
     for intent in paraphrase_pool.keys():
         shuffled_paraphrases[intent] = random.sample(
@@ -486,6 +490,7 @@ def run_data_augmentation_random_sampling(
     config: Text,
     nlu_evaluation_data: TrainingData,
     classification_report: Dict[Text, Dict[Text, float]],
+    random_seed: int
 ) -> None:
     """Runs the NLU train/test cycle with data augmentation (random sampling) and generates the reports and plots summarising the impact of data augmentation on model performance.
 
@@ -498,6 +503,7 @@ def run_data_augmentation_random_sampling(
         config: NLU model config.
         nlu_evaluation_data: NLU evaluation data.
         classification_report: Classification report of the model run *without* data augmentation.
+        random_seed: Random seed for sampling the paraphrases.
     """
     # Build augmentation pools based on random sampling
     random_expansion = _build_random_augmentation_pool(paraphrase_pool)
