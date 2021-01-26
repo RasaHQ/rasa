@@ -441,7 +441,7 @@ class FormAction(LoopAction):
             slots=domain.slots,
         )
 
-    async def user_rejected_manually(self, validation_events: List[Event]) -> bool:
+    async def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
         """Returns True if user return ActionExecutionRejected event, else False."""
         return any(
             isinstance(event, ActionExecutionRejected) for event in validation_events
