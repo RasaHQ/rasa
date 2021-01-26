@@ -26,6 +26,7 @@
                 "reference/rasa/utils/tensorflow/environment",
                 "reference/rasa/utils/tensorflow/model_data",
                 "reference/rasa/utils/tensorflow/model_data_utils",
+                "reference/rasa/utils/tensorflow/numpy",
                 "reference/rasa/utils/tensorflow/models",
                 "reference/rasa/utils/tensorflow/transformer",
                 "reference/rasa/utils/tensorflow/crf"

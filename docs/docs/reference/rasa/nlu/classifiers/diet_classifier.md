@@ -78,7 +78,7 @@ Train the embedding intent classifier on a data set.
  | process(message: Message, **kwargs: Any) -> None
 ```
 
-Return the most likely label and its similarity to the input.
+Augments the message with intents, entities, and diagnostic data.
 
 #### persist
 

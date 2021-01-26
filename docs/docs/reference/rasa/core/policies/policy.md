@@ -196,7 +196,7 @@ Stores information about the prediction of a `Policy`.
 #### \_\_init\_\_
 
 ```python
- | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False) -> None
+ | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a `PolicyPrediction`.
@@ -216,6 +216,9 @@ Creates a `PolicyPrediction`.
   you return as they can potentially influence the conversation flow.
 - `is_end_to_end_prediction` - `True` if the prediction used the text of the
   user message instead of the intent.
+- `diagnostic_data` - Intermediate results or other information that is not
+  necessary for Rasa to function, but intended for debugging and
+  fine-tuning purposes.
 
 #### for\_action\_name
 
