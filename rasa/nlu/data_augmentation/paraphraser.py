@@ -505,7 +505,9 @@ def run_data_augmentation_random_sampling(
         random_seed: Random seed for sampling the paraphrases.
     """
     # Build augmentation pools based on random sampling
-    random_expansion = _build_random_augmentation_pool(paraphrase_pool)
+    random_expansion = _build_random_augmentation_pool(
+        paraphrase_pool, random_seed=random_seed
+    )
 
     # Build new augmented training data
     augmented_training_data = _build_augmented_training_data(
