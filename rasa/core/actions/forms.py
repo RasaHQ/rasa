@@ -318,7 +318,7 @@ class FormAction(LoopAction):
         return slot_values
 
     def get_slot_to_fill(self, tracker: "DialogueStateTracker") -> Optional[str]:
-        """Get the slot to be filled.
+        """Gets the name of the slot which should be filled next.
 
         When switching to another form, the requested slot setting is still from the
         previous form and must be ignored.
