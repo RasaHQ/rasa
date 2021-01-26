@@ -304,17 +304,37 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
     paraphrase_pool = paraphraser.create_paraphrase_pool(
         paraphrases, pooled_intents, args.paraphrase_score_threshold
     )
-    training_data_pool, training_data_vocab_per_intent = paraphraser.create_training_data_pool(
-        nlu_training_data, pooled_intents
-    )
+    (
+        training_data_pool,
+        training_data_vocab_per_intent,
+    ) = paraphraser.create_training_data_pool(nlu_training_data, pooled_intents)
 
     # Run data augmentation with diverse augmentation
     output_directory_diverse = os.path.join(args.out, "augmentation_diverse")
-    paraphraser.run_data_augmentation_max_vocab_expansion(nlu_training_data=nlu_training_data, nlu_evaluation_data=nlu_evaluation_data, paraphrase_pool=paraphrase_pool, training_data_vocab_per_intent=training_data_vocab_per_intent, training_data_pool=training_data_pool, pooled_intents=pooled_intents, output_directory=output_directory_diverse)
+    paraphraser.run_data_augmentation_max_vocab_expansion(
+        nlu_training_data=nlu_training_data,
+        nlu_evaluation_data=nlu_evaluation_data,
+        paraphrase_pool=paraphrase_pool,
+        training_data_vocab_per_intent=training_data_vocab_per_intent,
+        training_data_pool=training_data_pool,
+        pooled_intents=pooled_intents,
+        output_directory=output_directory_diverse,
+        config=args.config,
+        classification_report=classification_report
+    )
 
     # Run data augmentation with random sampling augmentation
     output_directory_random = os.path.join(args.out, "augmentation_random")
-    paraphraser.run_data_augmentation_random_sampling(nlu_training_data=nlu_training_data, nlu_evaluation_data=nlu_evaluation_data, paraphrase_pool=paraphrase_pool, training_data_pool=training_data_pool, pooled_intents=pooled_intents, output_directory=output_directory_random)
+    paraphraser.run_data_augmentation_random_sampling(
+        nlu_training_data=nlu_training_data,
+        nlu_evaluation_data=nlu_evaluation_data,
+        paraphrase_pool=paraphrase_pool,
+        training_data_pool=training_data_pool,
+        pooled_intents=pooled_intents,
+        output_directory=output_directory_random,
+        config=args.config,
+        classification_report=classification_report
+    )
 
     telemetry.track_data_suggest()
 
