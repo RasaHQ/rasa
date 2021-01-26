@@ -237,6 +237,7 @@ class Policy:
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -246,6 +247,7 @@ class Policy:
             optional_events,
             is_end_to_end_prediction,
             is_no_user_prediction,
+            diagnostic_data,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
@@ -404,6 +406,7 @@ class PolicyPrediction:
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -423,6 +426,9 @@ class PolicyPrediction:
                 user message instead of the intent.
             is_no_user_prediction: `True` if the prediction uses neither the text
                 of the user message nor the intent.
+            diagnostic_data: Intermediate results or other information that is not
+                necessary for Rasa to function, but intended for debugging and
+                fine-tuning purposes.
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -431,6 +437,7 @@ class PolicyPrediction:
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
         self.is_no_user_prediction = is_no_user_prediction
+        self.diagnostic_data = diagnostic_data or {}
 
     @staticmethod
     def for_action_name(
@@ -474,6 +481,8 @@ class PolicyPrediction:
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
+            # We do not compare `diagnostic_data`, because it has no effect on the
+            # action prediction.
         )
 
     @property

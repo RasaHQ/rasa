@@ -38,6 +38,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -50,6 +51,7 @@ from rasa.utils.tensorflow.model_data import (
     Data,
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
+import rasa.utils.tensorflow.numpy
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
@@ -632,6 +634,9 @@ class TEDPolicy(Policy):
             confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
             optional_events=optional_events,
+            diagnostic_data=rasa.utils.tensorflow.numpy.values_to_numpy(
+                output.get(DIAGNOSTIC_DATA)
+            ),
         )
 
     def _create_optional_event_for_entities(
@@ -1050,14 +1055,23 @@ class TED(TransformerRasaModel):
         self,
         dialogue_in: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        """Create dialogue level embedding and mask."""
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, Optional[tf.Tensor]]:
+        """Creates dialogue level embedding and mask.
+
+        Args:
+            dialogue_in: The encoded dialogue.
+            tf_batch_data: Batch in model data format.
+
+        Returns:
+            The dialogue embedding, the mask, and (for diagnostic purposes)
+            also the attention weights.
+        """
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         mask = self._compute_mask(dialogue_lengths)
 
-        dialogue_transformed = self._tf_layers[f"transformer.{DIALOGUE}"](
-            dialogue_in, 1 - mask, self._training
-        )
+        dialogue_transformed, attention_weights = self._tf_layers[
+            f"transformer.{DIALOGUE}"
+        ](dialogue_in, 1 - mask, self._training)
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.use_only_last_dialogue_turns:
@@ -1069,7 +1083,7 @@ class TED(TransformerRasaModel):
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
-        return dialogue_embed, mask, dialogue_transformed
+        return dialogue_embed, mask, dialogue_transformed, attention_weights
 
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
@@ -1615,6 +1629,7 @@ class TED(TransformerRasaModel):
             dialogue_embed,
             dialogue_mask,
             dialogue_transformer_output,
+            _,
         ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
@@ -1686,6 +1701,7 @@ class TED(TransformerRasaModel):
             dialogue_embed,
             dialogue_mask,
             dialogue_transformer_output,
+            attention_weights,
         ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
@@ -1698,7 +1714,11 @@ class TED(TransformerRasaModel):
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
-        predictions = {"action_scores": scores, "similarities": sim_all}
+        predictions = {
+            "action_scores": scores,
+            "similarities": sim_all,
+            DIAGNOSTIC_DATA: {"attention_weights": attention_weights},
+        }
 
         if (
             self.config[ENTITY_RECOGNITION]
