@@ -1,8 +1,9 @@
 import os
-from typing import Type
+from typing import Iterator, Type
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
+import sqlalchemy as sa
 
 from rasa.core.agent import Agent
 from rasa.core.lock_store import LockStore, RedisLockStore
@@ -14,6 +15,10 @@ from rasa.shared.core.domain import SessionConfig
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", 5432)
+POSTGRES_DEFAULT_DB = os.getenv("POSTGRES_DEFAULT_DB", "postgres")
+POSTGRES_LOGIN_DB = "login_db"
 
 DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
 
@@ -44,3 +49,28 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
     agent.tracker_store = InMemoryTrackerStore(agent.domain)
     agent.domain.session_config = SessionConfig.default()
     return agent
+
+
+@pytest.fixture
+def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
+    engine = sa.create_engine(
+        sa.engine.url.URL(
+            "postgresql",
+            host=POSTGRES_HOST,
+            port=POSTGRES_PORT,
+            database=POSTGRES_DEFAULT_DB,
+        )
+    )
+
+    conn = engine.connect()
+    _drop_login_db(conn)
+    try:
+        yield conn
+    finally:
+        _drop_login_db(conn)
+
+
+def _drop_login_db(connection: sa.engine.Connection):
+    connection.execution_options(isolation_level="AUTOCOMMIT").execute(
+        f"DROP DATABASE IF EXISTS {POSTGRES_LOGIN_DB}"
+    )
