@@ -15,12 +15,13 @@ variable "BASE_MITIE_IMAGE_HASH" {
 }
 
 # keep this in sync with the version in pyproject.toml
+# the variable is set automatically for builds in CI
 variable "POETRY_VERSION" {
   default = "1.1.4"
 }
 
 group "base-images" {
-  targets = ["base", "base-mitie"]
+  targets = ["base", "base-poetry", "base-mitie"]
 }
 
 target "base" {
@@ -33,6 +34,23 @@ target "base-mitie" {
   dockerfile = "docker/Dockerfile.base-mitie"
   tags       = ["${IMAGE_NAME}:base-mitie-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
+}
+
+target "base-poetry" {
+  dockerfile = "docker/Dockerfile.base-poetry"
+  tags       = ["${IMAGE_NAME}:base-poetry-${POETRY_VERSION}"]
+
+  args = {
+    IMAGE_BASE_NAME = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
+  }
+
+  cache-to = ["type=inline"]
+
+  cache-from = [
+    "type=registry,ref=${IMAGE_NAME}:base-poetry-${POETRY_VERSION}",
+  ]
 }
 
 target "default" {
