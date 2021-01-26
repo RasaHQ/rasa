@@ -1,8 +1,6 @@
 # The base builder image used for all images
-# The image tagged with the 'full' suffix
 ARG IMAGE_BASE_NAME
 ARG POETRY_VERSION
-
 
 FROM ${IMAGE_BASE_NAME}:base-poetry-${POETRY_VERSION}
 
