@@ -32,6 +32,8 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
     EXTRACTOR,
+    SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
@@ -274,6 +276,10 @@ class TEDPolicy(Policy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: True,
+        # Split entities by comma, this makes sense e.g. for a list of
+        # ingredients in a recipe, but it doesn't make sense for the parts of
+        # an address
+        SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     }
 
     @staticmethod
@@ -294,6 +300,11 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
+        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
+            kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
+            self.defaults[SPLIT_ENTITIES_BY_COMMA],
+        )
+
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
@@ -667,7 +678,11 @@ class TEDPolicy(Policy):
         parsed_message = interpreter.featurize_message(Message(data={TEXT: text}))
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
         entities = EntityExtractor.convert_predictions_into_entities(
-            text, tokens, predicted_tags, confidences=confidence_values
+            text,
+            tokens,
+            predicted_tags,
+            self.split_entities_config,
+            confidences=confidence_values,
         )
 
         # add the extractor name
