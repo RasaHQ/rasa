@@ -40,10 +40,6 @@ class KafkaEventBroker(EventBroker):
                 to servers and can be used to identify specific server-side log entries
                 that correspond to this client. Also submitted to `GroupCoordinator` for
                 logging with respect to producer group administration.
-            group_id: The name of the producer group to join for dynamic partition
-                assignment (if enabled), and to use for fetching and committing offsets.
-                If None, auto-partition assignment (via group coordinator) and offset
-                commits are disabled.
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
             ssl_cafile: Optional filename of ca file to use in certificate
