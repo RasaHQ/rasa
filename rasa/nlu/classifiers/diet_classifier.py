@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTup
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
+import rasa.utils.tensorflow.numpy
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
@@ -914,7 +916,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return entities
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely label and its similarity to the input."""
+        """Augments the message with intents, entities, and diagnostic data."""
         out = self._predict(message)
 
         if self.component_config[INTENT_CLASSIFICATION]:
@@ -928,12 +930,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             message.set(ENTITIES, entities, add_to_output=True)
 
+        if out and DIAGNOSTIC_DATA in out:
+            message.add_diagnostic_data(
+                self.unique_name,
+                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
+            )
+
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
         """
-
         if self.model is None:
             return {"file": None}
 
@@ -1420,6 +1427,7 @@ class DIET(TransformerRasaModel):
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
+            _,
         ) = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
@@ -1569,7 +1577,7 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, _, _, _, attention_weights = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             mask_sequence_text,
@@ -1578,6 +1586,11 @@ class DIET(TransformerRasaModel):
         )
 
         predictions: Dict[Text, tf.Tensor] = {}
+
+        predictions[DIAGNOSTIC_DATA] = {
+            "attention_weights": attention_weights,
+            "text_transformed": text_transformed,
+        }
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(
