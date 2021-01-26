@@ -583,7 +583,8 @@ class RemoteAction(Action):
         """Expected response schema for an Action endpoint.
 
         Used for validation of the response returned from the
-        Action endpoint."""
+        Action endpoint.
+        """
         return {
             "type": "object",
             "properties": {
