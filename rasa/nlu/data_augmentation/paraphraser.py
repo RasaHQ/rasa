@@ -448,9 +448,7 @@ def run_data_augmentation_max_vocab_expansion(
     )
 
     # Store augmented training data to file
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
+    rasa.shared.utils.io.create_directory(output_directory)
     nlu_training_file = os.path.join(output_directory, "train_augmented_diverse.yml")
     augmented_training_data.persist_nlu(filename=nlu_training_file)
 
@@ -512,9 +510,7 @@ def run_data_augmentation_random_sampling(
     )
 
     # Store augmented training data to file
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
+    rasa.shared.utils.io.create_directory(output_directory)
     nlu_training_file = os.path.join(output_directory, "train_augmented_random.yml")
     augmented_training_data.persist_nlu(filename=nlu_training_file)
 
