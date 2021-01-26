@@ -320,7 +320,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         pooled_intents=pooled_intents,
         output_directory=output_directory_diverse,
         config=args.config,
-        classification_report=classification_report
+        classification_report=classification_report,
     )
 
     # Run data augmentation with random sampling augmentation
@@ -333,7 +333,7 @@ def suggest_nlu_data(args: argparse.Namespace) -> None:
         pooled_intents=pooled_intents,
         output_directory=output_directory_random,
         config=args.config,
-        classification_report=classification_report
+        classification_report=classification_report,
     )
 
     telemetry.track_data_suggest()

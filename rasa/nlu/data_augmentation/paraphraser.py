@@ -192,7 +192,7 @@ def _build_random_augmentation_pool(
 def _build_augmented_training_data(
     nlu_training_data: TrainingData,
     training_data_pool: Dict[Text, List],
-    data_augmentation_pool: Dict[Text, List]
+    data_augmentation_pool: Dict[Text, List],
 ) -> TrainingData:
     """Creates a TrainingData object from the existing training data and the data augmentation pool.
 
@@ -217,26 +217,25 @@ def _build_augmented_training_data(
 
 def _train_test_nlu_model(
     output_directory: Text,
-    out_file_name: Text,
-    augmented_training_data: TrainingData,
+    nlu_training_file: Text,
     config: Text,
     nlu_evaluation_data: TrainingData,
-    domain: Optional[Union[Domain, Text]] = None,
 ) -> Dict[Text, float]:
+    """Runs the NLU train/test loop using the given augmented training data.
 
-    # Handle I/O business
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+    Args:
+         output_directory: Directory to store the evaluation reports and augmented training data in.
+         nlu_training_file: Augmented NLU training data file.
+         config: NLU model config.
+         nlu_evaluation_data: NLU evaluation data.
 
-    nlu_training_file = os.path.join(output_directory, out_file_name)
-    augmented_training_data.persist_nlu(filename=nlu_training_file)
+    Returns:
+        Classification report of the NLU model trained on the augmented training data.
+    """
 
     # Train NLU model
     model_path = train_nlu(
-        config=config,
-        nlu_data=nlu_training_file,
-        output=output_directory,
-        domain=domain,
+        config=config, nlu_data=nlu_training_file, output=output_directory
     )
 
     # Load and Evaluate NLU Model
@@ -268,6 +267,17 @@ def _create_augmentation_summary(
 ) -> Tuple[
     Dict[Text, Dict[Text, float]], Dict[Text, float],
 ]:
+    """Creates a summary report of the effect of data augmentation and modifies the original classification report with that information.
+
+    Args:
+        pooled_intents: The intents that have been selected for data augmentation.
+        changed_intents: The intents that have been affected by data augmentation.
+        classification_report: Classification report of the model run *without* data augmentation.
+        intent_report: Report of the model run *with* data augmentation.
+
+    Returns:
+        A tuple representing a summary of the changed intents as well as a modified version of the original classification report with performance changes for all affected intents.
+    """
 
     intent_summary = collections.defaultdict(dict)
     for intent in (
@@ -307,12 +317,25 @@ def _create_summary_report(
     pooled_intents: Set[Text],
     output_directory: Text,
 ) -> Tuple[Dict[Text, Dict[Text, float]], Set[Text]]:
+    """Creates a summary of the effect of data augmentation.
+
+    Args:
+        intent_report: Report of the model run *with* data augmentation.
+        classification_report: Classification report of the model run *without* data augmentation.
+        training_intents: All intents in the training data (non-augmented).
+        pooled_intents: The intents that have been selected for data augmentation.
+        output_directory: Directory to store the output reports in.
+
+    Returns:
+        Tuple representing the data augmentation summary as well as the set of changed intents.
+    """
+
     # Retrieve intents for which performance has changed
     changed_intents = (
-            _get_intents_with_performance_changes(
+        _get_intents_with_performance_changes(
             classification_report, intent_report, training_intents,
         )
-            - pooled_intents
+        - pooled_intents
     )
 
     # Create and update result reports
@@ -335,8 +358,15 @@ def _plot_summary_report(
     intent_summary: Dict[Text, Dict[Text, float]],
     changed_intents: Set[Text],
     output_directory: Text,
-):
+) -> None:
+    """
+    Plots the data augmentation summary.
 
+    Args:
+        intent_summary: Summary report of the effect of data augmentation.
+        changed_intents: Set of intents that were affected by data augmentation.
+        output_directory: Directory to store the summary plot in.
+    """
     for metric in ["precision", "recall", "f1-score"]:
         output_file_diverse = os.path.join(output_directory, f"{metric}_changes.png")
         rasa.utils.plotting.plot_intent_augmentation_summary(
@@ -353,6 +383,18 @@ def _get_intents_with_performance_changes(
     all_intents: List[Text],
     significant_figures: int = 2,
 ) -> Set[Text]:
+    """
+    Extracts the intents whose performance has changed.
+
+    Args:
+        classification_report: Classification report of the model run *without* data augmentation.
+        intent_report: Report of the model run *with* data augmentation.
+        all_intents: List of all intents.
+        significant_figures: Significant figures to be taken into account when assessing whether the performance of an intent has changed.
+
+    Returns:
+        Set of intents that have changed - i.e. that were affected by data augmentation.
+    """
     changed_intents = set()
     for intent_key in all_intents:
         for metric in ["precision", "recall", "f1-score"]:
@@ -377,8 +419,22 @@ def run_data_augmentation_max_vocab_expansion(
     output_directory: Text,
     config: Text,
     nlu_evaluation_data: TrainingData,
-    classification_report: Dict[Text, Dict[Text, float]]
-):
+    classification_report: Dict[Text, Dict[Text, float]],
+) -> None:
+    """
+    Runs the NLU train/test cycle with data augmentation (maximum vocabulary expansion criterion) and generates the reports and plots summarising the impact of data augmentation on model performance.
+
+    Args:
+        nlu_training_data: NLU training data (without data augmentation).
+        paraphrase_pool: Available paraphrases for data augmentation.
+        training_data_pool: Training examples grouped by intent.
+        pooled_intents: The intents that have been selected for data augmentation.
+        training_data_vocab_per_intent: Training data vocabulary per intent.
+        output_directory: Directory to store the output files in.
+        config: NLU model config.
+        nlu_evaluation_data: NLU evaluation data.
+        classification_report: Classification report of the model run *without* data augmentation.
+    """
     # Build augmentation pool based on the maximum vocabulary expansion criterion ("diverse")
     max_vocab_expansion = _build_diverse_augmentation_pool(
         paraphrase_pool, training_data_vocab_per_intent
@@ -388,26 +444,34 @@ def run_data_augmentation_max_vocab_expansion(
     augmented_training_data = _build_augmented_training_data(
         nlu_training_data=nlu_training_data,
         training_data_pool=training_data_pool,
-        data_augmentation_pool=max_vocab_expansion
+        data_augmentation_pool=max_vocab_expansion,
     )
 
-    # Train/Test NLU model with diverse augmentation, create summary report and plot summary
-    intent_report_diverse = _train_test_nlu_model(
+    # Store augmented training data to file
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    nlu_training_file = os.path.join(output_directory, "train_augmented_diverse.yml")
+    augmented_training_data.persist_nlu(filename=nlu_training_file)
+
+    # Run NLU train/test loop
+    intent_report = _train_test_nlu_model(
         output_directory=output_directory,
-        augmented_training_data=augmented_training_data,
-        out_file_name="train_augmented_diverse.yml",
+        nlu_training_file=nlu_training_file,
         config=config,
         nlu_evaluation_data=nlu_evaluation_data,
     )
 
+    # Create data augmentation summary
     (intent_summary, changed_intents) = _create_summary_report(
-        intent_report=intent_report_diverse,
+        intent_report=intent_report,
         classification_report=classification_report,
         training_intents=nlu_training_data.intents,
         pooled_intents=pooled_intents,
         output_directory=output_directory,
     )
 
+    # Plot data augmentation summary
     _plot_summary_report(
         intent_summary=intent_summary,
         changed_intents=changed_intents,
@@ -423,11 +487,20 @@ def run_data_augmentation_random_sampling(
     output_directory: Text,
     config: Text,
     nlu_evaluation_data: TrainingData,
-    classification_report: Dict[Text, Dict[Text, float]]
-):
-    print(f'Pooled intents: {pooled_intents}')
-    print(f'paraphrase_pool.keys()={paraphrase_pool.keys()}')
+    classification_report: Dict[Text, Dict[Text, float]],
+) -> None:
+    """Runs the NLU train/test cycle with data augmentation (random sampling) and generates the reports and plots summarising the impact of data augmentation on model performance.
 
+    Args:
+        nlu_training_data: NLU training data (without data augmentation).
+        paraphrase_pool: Available paraphrases for data augmentation.
+        training_data_pool: Training examples grouped by intent.
+        pooled_intents: The intents that have been selected for data augmentation.
+        output_directory: Directory to store the output files in.
+        config: NLU model config.
+        nlu_evaluation_data: NLU evaluation data.
+        classification_report: Classification report of the model run *without* data augmentation.
+    """
     # Build augmentation pools based on random sampling
     random_expansion = _build_random_augmentation_pool(paraphrase_pool)
 
@@ -435,25 +508,34 @@ def run_data_augmentation_random_sampling(
     augmented_training_data = _build_augmented_training_data(
         nlu_training_data=nlu_training_data,
         training_data_pool=training_data_pool,
-        data_augmentation_pool=random_expansion
+        data_augmentation_pool=random_expansion,
     )
 
-    intent_report_random = _train_test_nlu_model(
+    # Store augmented training data to file
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    nlu_training_file = os.path.join(output_directory, "train_augmented_random.yml")
+    augmented_training_data.persist_nlu(filename=nlu_training_file)
+
+    # Run NLU train/test loop
+    intent_report = _train_test_nlu_model(
         output_directory=output_directory,
-        augmented_training_data=augmented_training_data,
-        out_file_name="train_augmented_random.yml",
+        nlu_training_file=nlu_training_file,
         config=config,
         nlu_evaluation_data=nlu_evaluation_data,
     )
 
+    # Create data augmentation summary
     (intent_summary, changed_intents) = _create_summary_report(
-        intent_report=intent_report_random,
+        intent_report=intent_report,
         classification_report=classification_report,
         training_intents=nlu_training_data.intents,
         pooled_intents=pooled_intents,
         output_directory=output_directory,
     )
 
+    # Plot data augmentation summary
     _plot_summary_report(
         intent_summary=intent_summary,
         changed_intents=changed_intents,
