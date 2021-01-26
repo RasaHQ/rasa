@@ -1,18 +1,20 @@
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
+from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional, Callable
 
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import YamlException
 from rasa.shared.utils import validation
 from ruamel.yaml import StringIO
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
+from rasa.shared.nlu.constants import METADATA_INTENT, METADATA_EXAMPLE
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -468,23 +470,87 @@ class RasaYAMLWriter(TrainingDataWriter):
         training_examples: Dict,
         key_name: Text,
         key_examples: Text,
-        example_extraction_predicate=lambda x: x,
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
     ) -> List[OrderedDict]:
-        from ruamel.yaml.scalarstring import LiteralScalarString
+        intents = []
 
-        result = []
-        for entity_key, examples in training_examples.items():
+        for intent_name, examples in training_examples.items():
+            converted, intent_metadata = RasaYAMLWriter._convert_training_examples(
+                examples, example_extraction_predicate
+            )
 
-            converted_examples = [
-                TrainingDataWriter.generate_list_item(
-                    example_extraction_predicate(example).strip(STRIP_SYMBOLS)
+            intent = OrderedDict()
+            intent[key_name] = intent_name
+            if intent_metadata:
+                intent[KEY_METADATA] = intent_metadata
+
+            render_as_objects = any(KEY_METADATA in ex for ex in converted)
+            if render_as_objects:
+                rendered = RasaYAMLWriter._render_training_examples_as_objects(
+                    converted
                 )
-                for example in examples
-            ]
+            else:
+                rendered = RasaYAMLWriter._render_training_examples_as_text(converted)
+            intent[key_examples] = rendered
 
-            next_item = OrderedDict()
-            next_item[key_name] = entity_key
-            next_item[key_examples] = LiteralScalarString("".join(converted_examples))
-            result.append(next_item)
+            intents.append(intent)
 
-        return result
+        return intents
+
+    @staticmethod
+    def _convert_training_examples(
+        training_examples: List[Dict],
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
+    ) -> Tuple[List[Dict], Optional[Dict]]:
+        """Returns converted training examples and potential intent metadata."""
+        converted_examples = []
+        intent_metadata = None
+
+        for example in training_examples:
+            converted = {
+                KEY_INTENT_TEXT: example_extraction_predicate(example).strip(
+                    STRIP_SYMBOLS
+                )
+            }
+
+            if isinstance(example, dict) and KEY_METADATA in example:
+                metadata = example[KEY_METADATA]
+
+                if METADATA_EXAMPLE in metadata:
+                    converted[KEY_METADATA] = metadata[METADATA_EXAMPLE]
+
+                if intent_metadata is None and METADATA_INTENT in metadata:
+                    intent_metadata = metadata[METADATA_INTENT]
+
+            converted_examples.append(converted)
+
+        return converted_examples, intent_metadata
+
+    @staticmethod
+    def _render_training_examples_as_objects(examples: List[Dict]) -> List[Dict]:
+        """Renders training examples as objects with its `text` item as a literal scalar string.
+
+        Given the input of a single example:
+            {'text': 'how much CO2 will that use?'}
+        Its return value is a dictionary that will be rendered in YAML as:
+        ```
+            text: |
+              how much CO2 will that use?
+        ```
+        """
+
+        def render(example: Dict) -> Dict:
+            text = example[KEY_INTENT_TEXT]
+            example[KEY_INTENT_TEXT] = LiteralScalarString(
+                TrainingDataWriter.generate_string_item(text)
+            )
+            return example
+
+        return [render(ex) for ex in examples]
+
+    @staticmethod
+    def _render_training_examples_as_text(examples: List[Dict]) -> List[Text]:
+        def render(example: Dict) -> Text:
+            return TrainingDataWriter.generate_list_item(example[KEY_INTENT_TEXT])
+
+        return LiteralScalarString("".join([render(example) for example in examples]))
