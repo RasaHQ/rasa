@@ -1,13 +1,10 @@
 import argparse
-import collections
 import logging
-import operator
 import os
 import random
 import shutil
-from functools import reduce
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union, TYPE_CHECKING
+from typing import  Dict, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -19,17 +16,9 @@ from rasa.core.training.converters.responses_prefix_converter import (
     DomainResponsePrefixConverter,
     StoryResponsePrefixConverter,
 )
-from rasa.model import get_model
 import rasa.nlu.convert
 from rasa.nlu.data_augmentation import paraphraser
-from rasa.nlu.model import Interpreter
 import rasa.nlu.test
-from rasa.nlu.test import (
-    create_intent_report,
-    get_eval_data,
-    remove_pretrained_extractors,
-    extract_intent_errors_from_results,
-)
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DOCS_URL_MIGRATION_GUIDE,
@@ -48,9 +37,7 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
-from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.cli
-from rasa.train import train_nlu
 import rasa.utils.common
 import rasa.utils.plotting
 from rasa.utils.converter import TrainingDataConverter

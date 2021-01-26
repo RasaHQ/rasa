@@ -2,7 +2,7 @@ import collections
 import operator
 import os
 import random
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Set, Text, Tuple
 
 from rasa.model import get_model
 from rasa.shared.core.domain import Domain
