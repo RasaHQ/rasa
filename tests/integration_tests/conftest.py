@@ -17,6 +17,8 @@ REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", 5432)
+POSTGRES_USER = os.getenv("POSTGRES_USER", "")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
 POSTGRES_DEFAULT_DB = os.getenv("POSTGRES_DEFAULT_DB", "postgres")
 POSTGRES_TRACKER_STORE_DB = "tracker_store_db"
 POSTGRES_LOGIN_DB = "login_db"
@@ -59,6 +61,8 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
             "postgresql",
             host=POSTGRES_HOST,
             port=POSTGRES_PORT,
+            username=POSTGRES_USER,
+            password=POSTGRES_PASSWORD,
             database=POSTGRES_DEFAULT_DB,
         )
     )

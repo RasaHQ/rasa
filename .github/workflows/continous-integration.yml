@@ -295,6 +295,8 @@ jobs:
       REDIS_PORT: 6379
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
 
     services:
       redis:
@@ -318,6 +320,9 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
         ports:
           # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
           # mapping container ports to the host
