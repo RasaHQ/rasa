@@ -344,7 +344,7 @@ def _apply_tokenizer_to_states(tokenizer: Tokenizer, states: List[State]) -> Non
         states: The states to be tokenized.
     """
     for state in states:
-        if USER in state:
+        if USER in state and TEXT in state[USER]:
             state[USER][TEXT] = " ".join(
                 token.text
                 for token in tokenizer.tokenize(
