@@ -1,5 +1,5 @@
 import os
-from typing import Iterator, Type
+from typing import Iterator, Text, Type
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -18,6 +18,7 @@ REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", 5432)
 POSTGRES_DEFAULT_DB = os.getenv("POSTGRES_DEFAULT_DB", "postgres")
+POSTGRES_TRACKER_STORE_DB = "tracker_store_db"
 POSTGRES_LOGIN_DB = "login_db"
 
 DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
@@ -63,14 +64,23 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
     )
 
     conn = engine.connect()
-    _drop_login_db(conn)
+    _create_login_db(conn)
     try:
         yield conn
     finally:
-        _drop_login_db(conn)
+        _drop_db(conn, POSTGRES_LOGIN_DB)
+        _drop_db(conn, POSTGRES_TRACKER_STORE_DB)
+        conn.close()
+        engine.dispose()
 
 
-def _drop_login_db(connection: sa.engine.Connection):
+def _create_login_db(connection: sa.engine.Connection):
     connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-        f"DROP DATABASE IF EXISTS {POSTGRES_LOGIN_DB}"
+        f"CREATE DATABASE {POSTGRES_LOGIN_DB}"
+    )
+
+
+def _drop_db(connection: sa.engine.Connection, database_name: Text):
+    connection.execution_options(isolation_level="AUTOCOMMIT").execute(
+        f"DROP DATABASE IF EXISTS {database_name}"
     )
