@@ -64,7 +64,7 @@ async def test_formbot_example(form_bot_agent: Agent):
             "action_name": "restaurant_form",
         }
         with aioresponses() as mocked:
-            # Request which rejects form form execution
+            # Request which rejects form execution
             mocked.post(
                 "https://example.com/webhooks/actions",
                 repeat=False,
