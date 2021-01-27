@@ -543,7 +543,13 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         ],
         masked_lm_loss: bool = False,
         training: Optional[Union[tf.Tensor, bool]] = None,
-    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+    ) -> Tuple[
+        tf.Tensor,
+        tf.Tensor,
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+    ]:
         sequence_features = inputs[0]
         sentence_features = inputs[1]
         mask_sequence = inputs[2]
@@ -569,9 +575,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             lm_mask_bool = None
 
         if self.num_transformer_layers > 0:
-            outputs = self.transformer(transformer_inputs, 1 - mask_text, training)
+            outputs, attention_weights = self.transformer(
+                transformer_inputs, 1 - mask_text, training
+            )
             outputs = tfa.activations.gelu(outputs)
         else:
-            outputs = transformer_inputs
+            outputs, attention_weights = transformer_inputs, None
 
-        return outputs, x, seq_ids, lm_mask_bool
+        return outputs, x, seq_ids, lm_mask_bool, attention_weights

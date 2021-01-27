@@ -570,9 +570,9 @@ class RasaModel(tf.keras.models.Model):
         """Convert input batch tensors into batch data format.
 
         Batch contains any number of batch data. The order is equal to the
-        key-value pairs in session data. As sparse data were converted into indices,
-        data, shape before, this methods converts them into sparse tensors. Dense data
-        is kept.
+        key-value pairs in session data. As sparse data were converted into (indices,
+        data, shape) before, this method converts them into sparse tensors. Dense
+        data is kept.
         """
         batch_data = defaultdict(lambda: defaultdict(list))
 
@@ -775,7 +775,7 @@ class TransformerRasaModel(RasaModel):
             )
         else:
             # create lambda so that it can be used later without the check
-            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: x
+            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: (x, None)
 
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
