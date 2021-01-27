@@ -87,9 +87,9 @@ class Exporter:
                 logger.exception(e)
                 raise PublishingError(current_timestamp)
 
-        if asyncio.iscoroutinefunction(self.event_broker.close):
+        if not asyncio.iscoroutinefunction(self.event_broker.close):
             rasa.shared.utils.io.raise_deprecation_warning(
-                f"The method '{EventBroker.__name__}.{EventBroker.close.__name__} was "
+                f"The method '{EventBroker.__name__}.{EventBroker.close.__name__}' was "
                 f"changed to be asynchronous. Please adapt your custom event broker "
                 f"accordingly. Support for synchronous implementations will be removed "
                 f"in Rasa Open Source 3.0.0."
