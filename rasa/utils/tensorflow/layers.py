@@ -881,7 +881,7 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> tf.Tensor:
         """Define softmax loss."""
 
-        constrain_similarities = False
+        constrain_similarities = True
         softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
 
         if not constrain_similarities:
@@ -911,7 +911,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             # Constrain similarity values in a range by applying sigmoid
             # on them individually so that they saturate at extreme values.
             sigmoid_logits = tf.concat(
-                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_li], axis=-1
+                [sim_pos, sim_neg_il, sim_neg_li], axis=-1
             )
             sigmoid_labels = tf.concat(
                 [
@@ -923,15 +923,24 @@ class DotProductLoss(tf.keras.layers.Layer):
             sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 labels=sigmoid_labels, logits=sigmoid_logits
             )
+            mean_sigmoid_loss = tf.reduce_mean(sigmoid_loss)
 
             neg_ii_loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 labels=tf.zeros_like(sim_neg_ii), logits=sim_neg_ii
             )
-
             sigmoid_loss = tf.cond(
-                tf.reduce_mean(sigmoid_loss) > tf.reduce_mean(neg_ii_loss),
-                lambda: sigmoid_loss,
+                mean_sigmoid_loss < tf.reduce_mean(neg_ii_loss),
                 lambda: tf.concat([sigmoid_loss, neg_ii_loss], axis=-1),
+                lambda: sigmoid_loss,
+            )
+
+            neg_ll_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                labels=tf.zeros_like(sim_neg_ll), logits=sim_neg_ll
+            )
+            sigmoid_loss = tf.cond(
+                mean_sigmoid_loss < tf.reduce_mean(neg_ll_loss),
+                lambda: tf.concat([sigmoid_loss, neg_ll_loss], axis=-1),
+                lambda: sigmoid_loss,
             )
 
             # average over logits axis
