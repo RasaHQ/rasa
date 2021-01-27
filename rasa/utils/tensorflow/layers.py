@@ -905,21 +905,29 @@ class DotProductLoss(tf.keras.layers.Layer):
             # Constrain similarity values in a range by applying sigmoid
             # on them individually so that they saturate at extreme values.
             sigmoid_logits = tf.concat(
-                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_li], axis=-1
             )
-
             sigmoid_labels = tf.concat(
                 [
-                    tf.expand_dims(
-                        tf.ones_like(sigmoid_logits[..., 0], tf.float32), -1
-                    ),
-                    tf.zeros_like(sigmoid_logits[..., 1:], tf.float32),
+                    tf.ones_like(sigmoid_logits[..., :1]),
+                    tf.zeros_like(sigmoid_logits[..., 1:]),
                 ],
                 axis=-1,
             )
-
             sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 labels=sigmoid_labels, logits=sigmoid_logits
+            )
+
+            neg_ii_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                labels=tf.zeros_like(sim_neg_ii), logits=sim_neg_ii
+            )
+
+            sigmoid_mean = tf.reduce_mean(sigmoid_loss)
+            neg_ii_mean = tf.reduce_mean(neg_ii_loss)
+            sigmoid_loss = tf.cond(
+                sigmoid_mean > neg_ii_mean,
+                lambda: sigmoid_loss,
+                lambda: tf.concat([sigmoid_loss, neg_ii_loss], axis=-1),
             )
 
             # average over logits axis
