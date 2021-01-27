@@ -17,7 +17,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - name: Checkout master
+    - name: Checkout main
       uses: actions/checkout@v2
 
     - name: Download yq
@@ -206,7 +206,7 @@ jobs:
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           PR_URL: ""
-          DATASET_REPOSITORY_BRANCH: "master"
+          DATASET_REPOSITORY_BRANCH: "main"
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
