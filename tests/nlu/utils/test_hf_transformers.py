@@ -6,7 +6,7 @@ import logging
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import LANGUAGE_MODEL_DOCS
+from rasa.nlu.constants import LANGUAGE_MODEL_DOCS, HF_TEST_CACHE_DIR
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
@@ -99,6 +99,7 @@ def test_log_longer_sequence(
     transformers_config = {
         "model_name": model_name,
         "model_weights": "bert-base-uncased",
+        "cache_dir": HF_TEST_CACHE_DIR,
     }
 
     transformers_nlp = HFTransformersNLP(transformers_config)
@@ -299,7 +300,7 @@ def test_attention_mask(
 def test_hf_transformers_shape_values(
     model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
 ):
-    config = {"model_name": model_name}
+    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
 
     whitespace_tokenizer = WhitespaceTokenizer()
     hf_transformer = HFTransformersNLP(config)

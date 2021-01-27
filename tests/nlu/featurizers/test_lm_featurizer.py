@@ -12,6 +12,7 @@ from rasa.nlu.constants import (
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
     LANGUAGE_MODEL_DOCS,
+    HF_TEST_CACHE_DIR,
 )
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -186,7 +187,7 @@ from rasa.shared.nlu.constants import TEXT, INTENT
 def test_lm_featurizer_shape_values(
     model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
 ):
-    config = {"model_name": model_name}
+    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
 
     whitespace_tokenizer = WhitespaceTokenizer()
     lm_featurizer = LanguageModelFeaturizer(config)
@@ -331,7 +332,11 @@ def test_log_longer_sequence(
     should_overflow: bool,
     caplog,
 ):
-    config = {"model_name": model_name, "model_weights": model_weights}
+    config = {
+        "model_name": model_name,
+        "model_weights": model_weights,
+        "cache_dir": HF_TEST_CACHE_DIR,
+    }
 
     featurizer = LanguageModelFeaturizer(config)
 
@@ -469,7 +474,11 @@ def test_lm_featurizer_edge_cases(
         model_weights_config = {}
     else:
         model_weights_config = {"model_weights": model_weights}
-    transformers_config = {**{"model_name": model_name}, **model_weights_config}
+    transformers_config = {
+        **{"model_name": model_name},
+        **model_weights_config,
+        "cache_dir": HF_TEST_CACHE_DIR,
+    }
 
     lm_featurizer = LanguageModelFeaturizer(transformers_config)
     whitespace_tokenizer = WhitespaceTokenizer()
@@ -500,9 +509,7 @@ def test_lm_featurizer_edge_cases(
 def test_lm_featurizer_number_of_sub_tokens(
     model_name, text, expected_number_of_sub_tokens
 ):
-    config = {
-        "model_name": model_name,
-    }
+    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
 
     lm_featurizer = LanguageModelFeaturizer(config)
     whitespace_tokenizer = WhitespaceTokenizer()
@@ -546,7 +553,11 @@ def test_preserve_sentence_and_sequence_features_old_config():
     message = Message.build("hi there")
 
     transformers_nlp = HFTransformersNLP(
-        {"model_name": "bert", "model_weights": "bert-base-uncased"}
+        {
+            "model_name": "bert",
+            "model_weights": "bert-base-uncased",
+            "cache_dir": HF_TEST_CACHE_DIR,
+        }
     )
     transformers_nlp.process(message)
     lm_tokenizer = LanguageModelTokenizer()
@@ -586,6 +597,7 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     config = {
         "model_name": "bert",
         "model_weights": "bert-base-chinese",
+        "cache_dir": HF_TEST_CACHE_DIR,
     }
 
     lm_featurizer = LanguageModelFeaturizer(config)

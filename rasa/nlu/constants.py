@@ -1,4 +1,5 @@
 import rasa.shared.nlu.constants
+import os
 
 
 BILOU_ENTITIES = "bilou_entities"
@@ -80,3 +81,5 @@ FEATURIZER_CLASS_ALIAS = "alias"
 NO_LENGTH_RESTRICTION = -1
 MIN_ADDITIONAL_REGEX_PATTERNS = 10
 MIN_ADDITIONAL_CVF_VOCABULARY = 1000
+
+HF_TEST_CACHE_DIR = f"{os.environ['HOME']}/.cache/torch/transformers"
