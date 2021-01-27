@@ -302,9 +302,9 @@ class RasaModel(TmpKerasModel):
         """Convert input batch tensors into batch data format.
 
         Batch contains any number of batch data. The order is equal to the
-        key-value pairs in session data. As sparse data were converted into indices,
-        data, shape before, this methods converts them into sparse tensors. Dense data
-        is kept.
+        key-value pairs in session data. As sparse data were converted into (indices,
+        data, shape) before, this method converts them into sparse tensors. Dense
+        data is kept.
         """
         # during training batch is a tuple of input and target data
         # as our target data is inside the input data, we are just interested in the
@@ -480,7 +480,7 @@ class TransformerRasaModel(RasaModel):
             )
         else:
             # create lambda so that it can be used later without the check
-            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: x
+            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: (x, None)
 
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
@@ -737,7 +737,13 @@ class TransformerRasaModel(RasaModel):
         dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
-    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+    ) -> Tuple[
+        tf.Tensor,
+        tf.Tensor,
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+    ]:
         if sequence_ids:
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
@@ -762,7 +768,7 @@ class TransformerRasaModel(RasaModel):
             transformer_inputs = inputs
             lm_mask_bool = None
 
-        outputs = self._tf_layers[f"transformer.{name}"](
+        outputs, attention_weights = self._tf_layers[f"transformer.{name}"](
             transformer_inputs, 1 - mask, self._training
         )
 
@@ -775,7 +781,7 @@ class TransformerRasaModel(RasaModel):
             # apply activation
             outputs = tfa.activations.gelu(outputs)
 
-        return outputs, inputs, seq_ids, lm_mask_bool
+        return outputs, inputs, seq_ids, lm_mask_bool, attention_weights
 
     @staticmethod
     def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
