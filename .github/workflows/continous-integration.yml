@@ -288,6 +288,11 @@ jobs:
     name: Run Integration Tests
     runs-on: ubuntu-latest
     needs: [changes]
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
 
     services:
       redis:
@@ -299,7 +304,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 6379:6379
+          - 6379:${{ env.REDIS_PORT }}
 
       postgres:
         image: postgres
@@ -310,7 +315,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 5432:${{ env.POSTGRES_PORT }}
 
     steps:
     - name: Checkout git repository 🕝
@@ -377,10 +382,6 @@ jobs:
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
-        REDIS_HOST: localhost
-        REDIS_PORT: 6379
-        POSTGRES_HOST: localhost
-        POSTGRES_PORT: 5432
       run: |
         make test-integration
 
