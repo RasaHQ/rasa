@@ -425,7 +425,7 @@ class PolicyPrediction:
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
             is_no_user_prediction: `True` if the prediction uses neither the text
-                of the user message nor the intent.
+                of the user message nor the intent. This is for the example the case for happy loop paths.
             diagnostic_data: Intermediate results or other information that is not
                 necessary for Rasa to function, but intended for debugging and
                 fine-tuning purposes.
