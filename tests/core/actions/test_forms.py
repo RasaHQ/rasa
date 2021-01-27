@@ -90,6 +90,80 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
+async def test_switch_forms_with_same_slot():
+    """Tests switching of forms, where the first slot is the same in both forms.
+
+    Tests the fix for issue 7710"""
+
+    # Define two forms in the domain, with same first slot
+    slot_a = "my_slot_a"
+
+    form_1 = "my_form_1"
+    text_1a = f"Please provide the value for {slot_a} of form 1"
+
+    form_2 = "my_form_2"
+    text_2a = f"Please provide the value for {slot_a} of form 2"
+
+    domain = f"""
+forms:
+  {form_1}:
+    {slot_a}:
+    - type: from_entity
+      entity: number
+  {form_2}:
+    {slot_a}:
+    - type: from_entity
+      entity: number
+responses:
+    utter_ask_{form_1}_{slot_a}:
+    - text: {text_1a}
+    utter_ask_{form_2}_{slot_a}:
+    - text: {text_2a}
+"""
+    domain = Domain.from_yaml(domain)
+
+    # Driving it like rasa/core/processor._run_py
+    # and making sure the events returned by action.run() are correct.
+
+    # activate the first form
+    action_1 = FormAction(form_1, None)
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
+    events = await action_1.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain)  # _log_action_on_tracker in processor.py
+    # verify that `form_1` asks for `slot_a` using the correct response
+    assert events[:-1] == [ActiveLoop(form_1), SlotSet(REQUESTED_SLOT, slot_a)]
+    assert isinstance(events[-1], BotUttered)
+    assert events[-1].text == text_1a
+
+    # Next, bot predicts action_listen
+    tracker.update_with_events([ActionExecuted(action_name="action_listen")], domain)
+
+    # User utters something, with the intent to switch to form_2
+    #
+    # form_1 is still active, and bot will first validate if the user utterance
+    #  provides valid data for the requested slot
+    #  -> if slot is not extracted, then the action execution is rejected
+    tracker.update(ActionExecutionRejected(action_name=form_1))  # processor._run_action
+    #
+    # bot then predicts form_2 as the next action
+    action_2 = FormAction(form_2, None)
+    events = await action_2.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        tracker,
+        domain,
+    )
+    # verify that `form_2` asks for `slot_a` using the correct response
+    assert events[:-1] == [ActiveLoop(form_2), SlotSet(REQUESTED_SLOT, slot_a)]
+    assert isinstance(events[-1], BotUttered)
+    assert events[-1].text == text_2a
+
+
 async def test_activate_and_immediate_deactivate():
     slot_name = "num_people"
     slot_value = 5
