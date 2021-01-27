@@ -6,6 +6,8 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.shared.constants import DIAGNOSTIC_DATA
+import rasa.utils.tensorflow.numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
@@ -381,7 +383,6 @@ class ResponseSelector(DIETClassifier):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
-
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
@@ -438,6 +439,12 @@ class ResponseSelector(DIETClassifier):
         }
 
         self._set_message_property(message, prediction_dict, selector_key)
+
+        if out and DIAGNOSTIC_DATA in out:
+            message.add_diagnostic_data(
+                self.unique_name,
+                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
+            )
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -623,7 +630,7 @@ class DIET2DIET(DIET):
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
-        label_transformed, _, _, _ = self._create_sequence(
+        label_transformed, _, _, _, _ = self._create_sequence(
             self.tf_label_data[LABEL][SEQUENCE],
             self.tf_label_data[LABEL][SENTENCE],
             sequence_mask_label,
@@ -653,6 +660,7 @@ class DIET2DIET(DIET):
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
+            _,
         ) = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
@@ -673,7 +681,7 @@ class DIET2DIET(DIET):
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
-        label_transformed, _, _, _ = self._create_sequence(
+        label_transformed, _, _, _, _ = self._create_sequence(
             tf_batch_data[LABEL][SEQUENCE],
             tf_batch_data[LABEL][SENTENCE],
             sequence_mask_label,
@@ -725,7 +733,7 @@ class DIET2DIET(DIET):
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, _, _, _, attention_weights = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             sequence_mask_text,
@@ -734,6 +742,11 @@ class DIET2DIET(DIET):
         )
 
         out = {}
+
+        out[DIAGNOSTIC_DATA] = {
+            "attention_weights": attention_weights,
+            "text_transformed": text_transformed,
+        }
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()
