@@ -306,7 +306,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 6379:${{ env.REDIS_PORT }}
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
 
       postgres:
         image: postgres
@@ -317,7 +319,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:${{ env.POSTGRES_PORT }}
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
 
     steps:
     - name: Checkout git repository 🕝
