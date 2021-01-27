@@ -631,6 +631,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_prediction.policy_priority,
             policy_events,
             is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
+            is_no_user_prediction=best_prediction.is_no_user_prediction,
+            diagnostic_data=best_prediction.diagnostic_data,
         )
 
     def _best_policy_prediction(
