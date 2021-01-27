@@ -922,10 +922,8 @@ class DotProductLoss(tf.keras.layers.Layer):
                 labels=tf.zeros_like(sim_neg_ii), logits=sim_neg_ii
             )
 
-            sigmoid_mean = tf.reduce_mean(sigmoid_loss)
-            neg_ii_mean = tf.reduce_mean(neg_ii_loss)
             sigmoid_loss = tf.cond(
-                sigmoid_mean > neg_ii_mean,
+                tf.reduce_mean(sigmoid_loss) > tf.reduce_mean(neg_ii_loss),
                 lambda: sigmoid_loss,
                 lambda: tf.concat([sigmoid_loss, neg_ii_loss], axis=-1),
             )

@@ -864,21 +864,21 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         label_ids = message_sim.argsort()[::-1]
 
-        if (
-            self.component_config[LOSS_TYPE] == CROSS_ENTROPY
-            and self.component_config[RANKING_LENGTH] > 0
-        ):
-            message_sim = train_utils.sort_and_rank(
-                message_sim, self.component_config[RANKING_LENGTH]
-            )
-
-            if (
-                self.component_config[SIMILARITY_TYPE] == INNER
-                and self.component_config[RELATIVE_CONFIDENCE]
-            ):
-                # Normalize the values if returned probabilities are from
-                # softmax(hence relative to each other).
-                message_sim = train_utils.normalize(message_sim)
+        # if (
+        #     self.component_config[LOSS_TYPE] == CROSS_ENTROPY
+        #     and self.component_config[RANKING_LENGTH] > 0
+        # ):
+        #     message_sim = train_utils.sort_and_rank(
+        #         message_sim, self.component_config[RANKING_LENGTH]
+        #     )
+        #
+        #     if (
+        #         self.component_config[SIMILARITY_TYPE] == INNER
+        #         and self.component_config[RELATIVE_CONFIDENCE]
+        #     ):
+        #         # Normalize the values if returned probabilities are from
+        #         # softmax(hence relative to each other).
+        #         message_sim = train_utils.normalize(message_sim)
 
         message_sim[::-1].sort()
         message_sim = message_sim.tolist()
@@ -1672,4 +1672,4 @@ class DIET(TransformerRasaModel):
             sim_all, self.config[SIMILARITY_TYPE]
         )
 
-        return {"i_scores": scores}
+        return {"i_scores": sim_all}
