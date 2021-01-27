@@ -240,6 +240,21 @@ six = ">=1.10.0"
 stevedore = ">=1.20.0"
 
 [[package]]
+name = "bidict"
+version = "0.21.2"
+description = "The bidirectional mapping library for Python."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.extras]
+coverage = ["coverage (<6)", "pytest-cov (<3)"]
+dev = ["setuptools-scm", "hypothesis (<6)", "py (<2)", "pytest (<7)", "pytest-benchmark (>=3.2.0,<4)", "sortedcollections (<2)", "sortedcontainers (<3)", "Sphinx (<4)", "sphinx-autodoc-typehints (<2)", "coverage (<6)", "pytest-cov (<3)", "pre-commit (<3)", "tox (<4)"]
+docs = ["Sphinx (<4)", "sphinx-autodoc-typehints (<2)"]
+precommit = ["pre-commit (<3)"]
+test = ["hypothesis (<6)", "py (<2)", "pytest (<7)", "pytest-benchmark (>=3.2.0,<4)", "sortedcollections (<2)", "sortedcontainers (<3)", "Sphinx (<4)", "sphinx-autodoc-typehints (<2)"]
+
+[[package]]
 name = "black"
 version = "19.10b0"
 description = "The uncompromising code formatter."
@@ -378,7 +393,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "cloudpickle"
-version = "1.4.1"
+version = "1.6.0"
 description = "Extended pickling support for Python objects"
 category = "main"
 optional = false
@@ -2122,15 +2137,15 @@ pycryptodome = ["pycryptodome (>=3.3.1,<4.0.0)", "pyasn1"]
 
 [[package]]
 name = "python-socketio"
-version = "4.6.1"
+version = "5.0.0"
 description = "Socket.IO server"
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
+bidict = ">=0.21.0"
 python-engineio = ">=3.13.0,<4"
-six = ">=1.9.0"
 
 [package.extras]
 asyncio_client = ["aiohttp (>=3.4)", "websockets (>=7.0)"]
@@ -2253,11 +2268,11 @@ requests = ">=2.0.1,<3.0.0"
 
 [[package]]
 name = "responses"
-version = "0.10.16"
+version = "0.12.1"
 description = "A utility library for mocking out the `requests` Python library."
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.dependencies]
 requests = ">=2.0"
@@ -2265,7 +2280,7 @@ six = "*"
 urllib3 = ">=1.25.10"
 
 [package.extras]
-tests = ["coverage (>=3.7.1,<5.0.0)", "pytest-cov", "pytest-localserver", "flake8", "pytest (>=4.6,<5.0)", "pytest (>=4.6)"]
+tests = ["coverage (>=3.7.1,<6.0.0)", "pytest-cov", "pytest-localserver", "flake8", "pytest (>=4.6,<5.0)", "pytest (>=4.6)"]
 
 [[package]]
 name = "rfc3986"
@@ -2721,7 +2736,7 @@ python-versions = "*"
 
 [[package]]
 name = "tensorflow-hub"
-version = "0.9.0"
+version = "0.10.0"
 description = "TensorFlow Hub is a library to foster the publication, discovery, and consumption of reusable parts of machine learning models."
 category = "main"
 optional = false
@@ -2730,7 +2745,6 @@ python-versions = "*"
 [package.dependencies]
 numpy = ">=1.12.0"
 protobuf = ">=3.8.0"
-six = ">=1.12.0"
 
 [package.extras]
 make_image_classifier = ["keras-preprocessing"]
@@ -2957,11 +2971,11 @@ pytz = "*"
 
 [[package]]
 name = "ujson"
-version = "3.2.0"
+version = "4.0.2"
 description = "Ultra fast JSON encoder and decoder for Python"
 category = "main"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.6"
 
 [[package]]
 name = "uritemplate"
@@ -3115,7 +3129,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "8adedd9dd0578f6094a7fa20e7659850ed291e5b6971e3c23da042143030da3d"
+content-hash = "21d7beab8bee0044dd93217a4af994526af1041cc28a0cee267cb0692a3b6b8a"
 
 [metadata.files]
 absl-py = [
@@ -3205,6 +3219,10 @@ azure-storage-blob = [
 bandit = [
     {file = "bandit-1.7.0-py3-none-any.whl", hash = "sha256:216be4d044209fa06cf2a3e51b319769a51be8318140659719aa7a115c35ed07"},
     {file = "bandit-1.7.0.tar.gz", hash = "sha256:8a4c7415254d75df8ff3c3b15cfe9042ecee628a1e40b44c15a98890fbfc2608"},
+]
+bidict = [
+    {file = "bidict-0.21.2-py2.py3-none-any.whl", hash = "sha256:929d056e8d0d9b17ceda20ba5b24ac388e2a4d39802b87f9f4d3f45ecba070bf"},
+    {file = "bidict-0.21.2.tar.gz", hash = "sha256:4fa46f7ff96dc244abfc437383d987404ae861df797e2fd5b190e233c302be09"},
 ]
 black = [
     {file = "black-19.10b0-py36-none-any.whl", hash = "sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b"},
@@ -3303,8 +3321,8 @@ click = [
     {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
 ]
 cloudpickle = [
-    {file = "cloudpickle-1.4.1-py3-none-any.whl", hash = "sha256:ff31298eca781315e097bc1f222d8045208c14063a0102cc89bd5899adb4abef"},
-    {file = "cloudpickle-1.4.1.tar.gz", hash = "sha256:0b6258a20a143603d53b037a20983016d4e978f554ec4f36b3d0895b947099ae"},
+    {file = "cloudpickle-1.6.0-py3-none-any.whl", hash = "sha256:3a32d0eb0bc6f4d0c57fbc4f3e3780f7a81e6fee0fa935072884d58ae8e1cc7c"},
+    {file = "cloudpickle-1.6.0.tar.gz", hash = "sha256:9bc994f9e9447593bd0a45371f0e7ac7333710fcf64a4eb9834bf149f4ef2f32"},
 ]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
@@ -4415,8 +4433,8 @@ python-jose = [
     {file = "python_jose-3.2.0-py2.py3-none-any.whl", hash = "sha256:67d7dfff599df676b04a996520d9be90d6cdb7e6dd10b4c7cacc0c3e2e92f2be"},
 ]
 python-socketio = [
-    {file = "python-socketio-4.6.1.tar.gz", hash = "sha256:cd1f5aa492c1eb2be77838e837a495f117e17f686029ebc03d62c09e33f4fa10"},
-    {file = "python_socketio-4.6.1-py2.py3-none-any.whl", hash = "sha256:5a21da53fdbdc6bb6c8071f40e13d100e0b279ad997681c2492478e06f370523"},
+    {file = "python-socketio-5.0.0.tar.gz", hash = "sha256:d5a641dbbb9171743c92f00aebadf7a0cb7bfefd3f86e79ea44618d6913ac03d"},
+    {file = "python_socketio-5.0.0-py2.py3-none-any.whl", hash = "sha256:d5dda689f154f18e689bf241d85e3f38167960f2d7bc0905ba2e8890eeb4c517"},
 ]
 pytz = [
     {file = "pytz-2020.5-py2.py3-none-any.whl", hash = "sha256:16962c5fb8db4a8f63a26646d8886e9d769b6c511543557bc84e9569fb9a9cb4"},
@@ -4514,8 +4532,8 @@ requests-toolbelt = [
     {file = "requests_toolbelt-0.9.1-py2.py3-none-any.whl", hash = "sha256:380606e1d10dc85c3bd47bf5a6095f815ec007be7a8b69c878507068df059e6f"},
 ]
 responses = [
-    {file = "responses-0.10.16-py2.py3-none-any.whl", hash = "sha256:cf55b7c89fc77b9ebbc5e5924210b6d0ef437061b80f1273d7e202069e43493c"},
-    {file = "responses-0.10.16.tar.gz", hash = "sha256:fa125311607ab3e57d8fcc4da20587f041b4485bdfb06dd6bdf19d8b66f870c1"},
+    {file = "responses-0.12.1-py2.py3-none-any.whl", hash = "sha256:ef265bd3200bdef5ec17912fc64a23570ba23597fd54ca75c18650fa1699213d"},
+    {file = "responses-0.12.1.tar.gz", hash = "sha256:2e5764325c6b624e42b428688f2111fea166af46623cb0127c05f6afb14d3457"},
 ]
 rfc3986 = [
     {file = "rfc3986-1.4.0-py2.py3-none-any.whl", hash = "sha256:af9147e9aceda37c91a05f4deb128d4b4b49d6b199775fd2d2927768abdc8f50"},
@@ -4820,7 +4838,7 @@ tensorflow-estimator = [
     {file = "tensorflow_estimator-2.3.0-py2.py3-none-any.whl", hash = "sha256:b75e034300ccb169403cf2695adf3368da68863aeb0c14c3760064c713d5c486"},
 ]
 tensorflow-hub = [
-    {file = "tensorflow_hub-0.9.0-py2.py3-none-any.whl", hash = "sha256:9f8820291397a17c67a93266ba8d5f53fce71339f10344eeb4fc484307137c88"},
+    {file = "tensorflow_hub-0.10.0-py2.py3-none-any.whl", hash = "sha256:6b0f4a5e4250445de352e4b171eaf1230df8d7be256f72cce0e5ce1268b4c335"},
 ]
 tensorflow-probability = [
     {file = "tensorflow_probability-0.11.1-py2.py3-none-any.whl", hash = "sha256:e9ce5288ccdb80b6e311d1a2904b5af618a7cd5791d79d6fd051a628087ec0ae"},
@@ -4943,27 +4961,27 @@ tzlocal = [
     {file = "tzlocal-2.1.tar.gz", hash = "sha256:643c97c5294aedc737780a49d9df30889321cbe1204eac2c2ec6134035a92e44"},
 ]
 ujson = [
-    {file = "ujson-3.2.0-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:437e051a3e292ddbd5b4682f9b6c3e2ea4cd059d0d75bc9f8314349d63cbb015"},
-    {file = "ujson-3.2.0-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:a27ea44406100a97fb0fcc0b18dcdaf324824e722a00856a2992fafc65779351"},
-    {file = "ujson-3.2.0-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:6f7c24dabb0ff0ff43744d18211af6035ef37197f530c13edf704e627da7251d"},
-    {file = "ujson-3.2.0-cp35-cp35m-manylinux2014_aarch64.whl", hash = "sha256:5ae6f599ef7c01ef626697f9e15e9d4e2a186ab4c0593ddb529b86866b562efb"},
-    {file = "ujson-3.2.0-cp35-cp35m-win_amd64.whl", hash = "sha256:59048958793e0b0489449a414e2fbe54644457be1dd882b99a4fe16158632af1"},
-    {file = "ujson-3.2.0-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:a476525862a394018a7a3438c86596815b84518b2744184444fc6f8b0e3e4aee"},
-    {file = "ujson-3.2.0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:2050c7f1ce72055f1b6fba29e4694ccf4509917d3be3ed6f3543ef3ff00eec4a"},
-    {file = "ujson-3.2.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:fda324ca055e671eae46e8fc32b46fab20eb251d3e6e22beb67f71f1d240b0b4"},
-    {file = "ujson-3.2.0-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:0bdc62a1543d697e9c649ac0ac41e0d076a7b886d6b45f9f21971e25b90a2b27"},
-    {file = "ujson-3.2.0-cp36-cp36m-win_amd64.whl", hash = "sha256:d0ad63fc88d4e4cb7630f59aacd742256804a4cee447e9589e55957107a469b7"},
-    {file = "ujson-3.2.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:66d47eabb4f0e12b5784b1a49c59bc6f32e91e18e02f2a43c5e91e2f6ad9cc60"},
-    {file = "ujson-3.2.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:253edfe274538bb1060ab8877d51fc75e416047d5fab5340454a48b971f30612"},
-    {file = "ujson-3.2.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:6ee651c0210a67e3a72367de53ccac83b623913214e7c75015caadfad2b7e0dc"},
-    {file = "ujson-3.2.0-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:0784f35f2ace41ed55c435ee11f9d9877cf3e6ff03c8850f87504cb93e9a9469"},
-    {file = "ujson-3.2.0-cp37-cp37m-win_amd64.whl", hash = "sha256:812748c8de041f1ef5e9b37f33121c0c7390055fa5f12215b3d06a63b1c055a2"},
-    {file = "ujson-3.2.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:17460d88dd4b9630e449e5d29b97301e6dbbbedbf46a6f95f3b2cb7e1333e6ea"},
-    {file = "ujson-3.2.0-cp38-cp38-manylinux1_i686.whl", hash = "sha256:2d50cb3d87d4aabe6dbeb6ef79025bf9fdf350c4355c24819dc5c5cc38bad3dc"},
-    {file = "ujson-3.2.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:7060105de892cada2f01bd072d33b2421b4eefd32536207c1c9f2ade18656139"},
-    {file = "ujson-3.2.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:7b6496b3e2bc396628f114fd96ec41655b10c84adececc0ef8cf1c2329dae36c"},
-    {file = "ujson-3.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:782bdf016da793a3bf138e50ed973428e59006b8d73a9e1911bc6207c6b79fff"},
-    {file = "ujson-3.2.0.tar.gz", hash = "sha256:abb1996ba1c1d2faf5b1e38efa97da7f64e5373a31f705b96fe0587f5f778db4"},
+    {file = "ujson-4.0.2-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:e390df0dcc7897ffb98e17eae1f4c442c39c91814c298ad84d935a3c5c7a32fa"},
+    {file = "ujson-4.0.2-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:84b1dca0d53b0a8d58835f72ea2894e4d6cf7a5dd8f520ab4cbd698c81e49737"},
+    {file = "ujson-4.0.2-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:91396a585ba51f84dc71c8da60cdc86de6b60ba0272c389b6482020a1fac9394"},
+    {file = "ujson-4.0.2-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:eb6b25a7670c7537a5998e695fa62ff13c7f9c33faf82927adf4daa460d5f62e"},
+    {file = "ujson-4.0.2-cp36-cp36m-win_amd64.whl", hash = "sha256:f8aded54c2bc554ce20b397f72101737dd61ee7b81c771684a7dd7805e6cca0c"},
+    {file = "ujson-4.0.2-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:30962467c36ff6de6161d784cd2a6aac1097f0128b522d6e9291678e34fb2b47"},
+    {file = "ujson-4.0.2-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:fc51e545d65689c398161f07fd405104956ec27f22453de85898fa088b2cd4bb"},
+    {file = "ujson-4.0.2-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:e6e90330670c78e727d6637bb5a215d3e093d8e3570d439fd4922942f88da361"},
+    {file = "ujson-4.0.2-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:5e1636b94c7f1f59a8ead4c8a7bab1b12cc52d4c21ababa295ffec56b445fd2a"},
+    {file = "ujson-4.0.2-cp37-cp37m-win_amd64.whl", hash = "sha256:e2cadeb0ddc98e3963bea266cc5b884e5d77d73adf807f0bda9eca64d1c509d5"},
+    {file = "ujson-4.0.2-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:a214ba5a21dad71a43c0f5aef917cd56a2d70bc974d845be211c66b6742a471c"},
+    {file = "ujson-4.0.2-cp38-cp38-manylinux1_i686.whl", hash = "sha256:0190d26c0e990c17ad072ec8593647218fe1c675d11089cd3d1440175b568967"},
+    {file = "ujson-4.0.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:f273a875c0b42c2a019c337631bc1907f6fdfbc84210cc0d1fff0e2019bbfaec"},
+    {file = "ujson-4.0.2-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:d3a87888c40b5bfcf69b4030427cd666893e826e82cc8608d1ba8b4b5e04ea99"},
+    {file = "ujson-4.0.2-cp38-cp38-win_amd64.whl", hash = "sha256:7333e8bc45ea28c74ae26157eacaed5e5629dbada32e0103c23eb368f93af108"},
+    {file = "ujson-4.0.2-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:b3a6dcc660220539aa718bcc9dbd6dedf2a01d19c875d1033f028f212e36d6bb"},
+    {file = "ujson-4.0.2-cp39-cp39-manylinux1_i686.whl", hash = "sha256:0ea07fe57f9157118ca689e7f6db72759395b99121c0ff038d2e38649c626fb1"},
+    {file = "ujson-4.0.2-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:4d6d061563470cac889c0a9fd367013a5dbd8efc36ad01ab3e67a57e56cad720"},
+    {file = "ujson-4.0.2-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:b5c70704962cf93ec6ea3271a47d952b75ae1980d6c56b8496cec2a722075939"},
+    {file = "ujson-4.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:aad6d92f4d71e37ea70e966500f1951ecd065edca3a70d3861b37b176dd6702c"},
+    {file = "ujson-4.0.2.tar.gz", hash = "sha256:c615a9e9e378a7383b756b7e7a73c38b22aeb8967a8bfbffd4741f7ffd043c4d"},
 ]
 uritemplate = [
     {file = "uritemplate-3.0.1-py2.py3-none-any.whl", hash = "sha256:07620c3f3f8eed1f12600845892b0e036a2420acf513c53f7de0abd911a5894f"},
