@@ -286,7 +286,6 @@ jobs:
         COVERALLS_SERVICE_NAME: github
       run: poetry run coveralls
 
-<<<<<<< HEAD
   integration_test:
     name: Run Integration Tests
     runs-on: ubuntu-latest
@@ -333,38 +332,10 @@ jobs:
 
     - name: Read Poetry Version 🔢
       if: needs.changes.outputs.backend == 'true'
-=======
-  build_docker_base_images_and_set_env:
-    name: Build Docker base images and setup environment
-    runs-on: ubuntu-20.04
-    outputs:
-      base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
-      base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
-      # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
-      image_tag: ${{ steps.set_output.outputs.image_tag }}
-      # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
-      is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
-    steps:
-      # Due to an issue with checking out a wrong commit, we make sure
-      # to checkout HEAD commit for a pull request.
-      # More details: https://github.com/actions/checkout/issues/299
-    - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v2
-      if: github.event_name == 'pull_request'
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
-
-    - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
-      if: github.event_name != 'pull_request'
-
-    - name: Read Poetry Version 🔢
->>>>>>> main
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
-<<<<<<< HEAD
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
       uses: Gr1N/setup-poetry@v4
@@ -415,7 +386,36 @@ jobs:
         PYTHONIOENCODING: "utf-8"
       run: |
         make test-integration
-=======
+
+  build_docker_base_images_and_set_env:
+    name: Build Docker base images and setup environment
+    runs-on: ubuntu-20.04
+    outputs:
+      base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
+      base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
+      # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
+      image_tag: ${{ steps.set_output.outputs.image_tag }}
+      # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+      is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
+    steps:
+      # Due to an issue with checking out a wrong commit, we make sure
+      # to checkout HEAD commit for a pull request.
+      # More details: https://github.com/actions/checkout/issues/299
+    - name: Checkout pull request HEAD commit instead of merge commit 🕝
+      uses: actions/checkout@v2
+      if: github.event_name == 'pull_request'
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+      if: github.event_name != 'pull_request'
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
       with:
@@ -529,7 +529,6 @@ jobs:
       id: set_output
       run: |
         echo "::set-output name=image_tag::${{ env.IMAGE_TAG }}"
->>>>>>> main
 
   docker:
     name: Build Docker
