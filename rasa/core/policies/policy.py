@@ -236,6 +236,7 @@ class Policy:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
@@ -245,6 +246,7 @@ class Policy:
             events,
             optional_events,
             is_end_to_end_prediction,
+            is_no_user_prediction,
             diagnostic_data,
         )
 
@@ -343,7 +345,8 @@ class Policy:
         """
         return [0.0] * domain.num_actions
 
-    def format_tracker_states(self, states: List[Dict]) -> Text:
+    @staticmethod
+    def format_tracker_states(states: List[Dict]) -> Text:
         """Format tracker states to human readable format on debug log.
 
         Args:
@@ -402,6 +405,7 @@ class PolicyPrediction:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
@@ -420,6 +424,9 @@ class PolicyPrediction:
                 you return as they can potentially influence the conversation flow.
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
+            is_no_user_prediction: `True` if the prediction uses neither the text
+                of the user message nor the intent. This is for the example the case
+                for happy loop paths.
             diagnostic_data: Intermediate results or other information that is not
                 necessary for Rasa to function, but intended for debugging and
                 fine-tuning purposes.
@@ -430,6 +437,7 @@ class PolicyPrediction:
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.is_no_user_prediction = is_no_user_prediction
         self.diagnostic_data = diagnostic_data or {}
 
     @staticmethod
@@ -473,6 +481,7 @@ class PolicyPrediction:
             and self.events == other.events
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+            and self.is_no_user_prediction == other.is_no_user_prediction
             # We do not compare `diagnostic_data`, because it has no effect on the
             # action prediction.
         )
