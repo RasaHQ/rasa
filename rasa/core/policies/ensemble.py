@@ -592,7 +592,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         for policy_name, prediction in predictions.items():
             policy_events += prediction.events
 
-            # No user predictions overrule all other predictions.
+            # No user predictions (e.g. loop predictions) overrule all other predictions.
             if prediction.is_no_user_prediction != is_no_user_prediction:
                 continue
 
