@@ -33,6 +33,7 @@ from rasa.shared.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
+    SessionStarted,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.constants import (
@@ -183,6 +184,9 @@ class MessageProcessor:
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
+
+            if metadata:
+                tracker.events.append(SessionStarted(metadata=metadata))
 
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
