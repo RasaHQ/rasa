@@ -69,8 +69,12 @@ class TrainingDataWriter:
     @staticmethod
     def generate_list_item(text: Text) -> Text:
         """Generates text for a list item."""
+        return f"- {TrainingDataWriter.generate_string_item(text)}"
 
-        return f"- {rasa.shared.nlu.training_data.util.encode_string(text)}\n"
+    @staticmethod
+    def generate_string_item(text: Text) -> Text:
+        """Generates text for a string item."""
+        return f"{rasa.shared.nlu.training_data.util.encode_string(text)}\n"
 
     @staticmethod
     def generate_message(message: Dict[Text, Any]) -> Text:

@@ -4,7 +4,7 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar
+from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar, Union
 
 import rasa.core.utils
 import rasa.utils.io
@@ -312,3 +312,21 @@ def run_in_loop(
     loop.run_until_complete(asyncio.gather(*pending))
 
     return result
+
+
+async def call_potential_coroutine(
+    coroutine_or_return_value: Union[Any, Coroutine]
+) -> Any:
+    """Awaits coroutine or returns value directly if it's not a coroutine.
+
+    Args:
+        coroutine_or_return_value: Either the return value of a synchronous function
+            call or a coroutine which needs to be await first.
+
+    Returns:
+        The return value of the function.
+    """
+    if asyncio.iscoroutine(coroutine_or_return_value):
+        return await coroutine_or_return_value
+
+    return coroutine_or_return_value
