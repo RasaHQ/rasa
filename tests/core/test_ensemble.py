@@ -554,6 +554,8 @@ def test_no_user_prediction_supersedes_others(default_domain: Domain):
     assert prediction.max_confidence == expected_confidence
     assert prediction.max_confidence_index == expected_action_index
     assert prediction.policy_name == f"policy_2_{ConstantPolicy.__name__}"
+    assert prediction.is_no_user_prediction
+    assert not prediction.is_end_to_end_prediction
 
 
 def test_prediction_applies_must_have_policy_events(default_domain: Domain):
