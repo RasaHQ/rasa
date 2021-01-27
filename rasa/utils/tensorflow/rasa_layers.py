@@ -85,7 +85,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         sparse_dropout: bool,
         dense_dropout: bool,
         sparse_to_dense_units: int,
-        **sparse_to_dense_kwargs: Any,
+        **sparse_to_dense_kwargs: Dict[Text, Any],
     ) -> None:
         super().__init__(
             name=f"concatenate_sparse_dense_features_{attribute}_{feature_type}"
@@ -108,7 +108,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         self.output_units = output_units_from_dense + output_units_from_sparse
 
         # prepare dropout and sparse-to-dense layers if any sparse tensors are expected
-        if self.output_units_from_sparse > 0:
+        if any([signature.is_sparse for signature in data_signature]):
             sparse_to_dense_kwargs[
                 "name"
             ] = f"sparse_to_dense.{attribute}_{feature_type}"
@@ -146,12 +146,12 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         dense_features = []
         for f in features:
             if isinstance(f, tf.SparseTensor):
-                if self._sparse_dropout:
+                if hasattr(self, "_sparse_dropout"):
                     f = self._sparse_dropout(f, training)
 
                 f = self._sparse_to_dense(f)
 
-                if self._dense_dropout:
+                if hasattr(self, "_dense_dropout"):
                     f = self._dense_dropout(f, training)
 
             dense_features.append(f)
@@ -160,45 +160,99 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
 
 
 class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
-    # TODO add docstring
+    """Combines two tensors (sentence-level and sequence level features) into one.
+
+    This layer concatenates sentence- and sequence-level (token-level) features (each
+    feature type represented by a single dense tensor) into a single feature tensor.
+    When expanded to the same shape, sentence-level features can be viewed as sequence-
+    level ones, but with the sequence length being 1 for all examples. Hence, features
+    of the two types can be concatenated along the sequence (token) dimension,
+    effectively increasing the sequence length of each example by 1. Because sequence-
+    level features are all padded to the same max. sequence length, the concatenation is
+    done in the following steps:
+    1. Optional: If the last dimension size of sequence- and sentence-level feature
+        differs, it's unified by applying a dense layer to each feature types.
+    1. sentence-level features are masked out everywhere except at the first available
+        position (`sequence_length+1`, where the length varies across input examples)
+    2. the padding of sequence-level features is increased by 1 to prepare empty space
+        for sentence-level features
+    3. sentence-level features are added just after the sequence-level ones
+
+    Arguments:
+        attribute: Name of attribute (e.g. `text` or `label`) whose features will be
+            processed.
+        concat_dimension: A positive integer -- number of output units of the dense
+            layers used to unify the last dimension of each feature type.
+        data_signature_sequence: Feature signature describing the sequence-level features.
+        data_signature_sentence: Feature signature describing the sentence-level features.
+        **unify_concat_dimension_kwargs: Additional arguments to pass to the constructor
+            of the dense Ffnn layers for unifying the features' last dimension size.
+
+    Input shape:
+        List of three 3-D dense tensors, with shapes:
+            sequence: `(batch_size, max_sequence_length, input_dim_seq)`
+            sentence: `(batch_size, 1, input_dim_sent)`
+            mask_text: `(batch_size, max_sequence_length+1, 1)`
+
+    Output shape:
+        3-D tensor with shape: `(batch_size, max_sequence_length, output_dim)` where
+        `output_dim` matches `input_dim_seq` if that is the same as `input_dim_sent`,
+        otherwise `output_dim` = `concat_dimension`.
+    """
+
     def __init__(
         self,
-        layer_name_suffix: Text,
+        attribute: Text,
         concat_dimension: int,
-        sequence_signature: FeatureSignature,
-        sentence_signature: FeatureSignature,
-        concat_layers_kwargs: Dict[Text, Any] = {},
+        data_signature_sequence: FeatureSignature,
+        data_signature_sentence: FeatureSignature,
+        **unify_concat_dimension_kwargs: Dict[Text, Any],
     ) -> None:
-        super().__init__(
-            name=f"concatenate_sequence_sentence_features_{layer_name_suffix}"
-        )
-        if sequence_signature and sentence_signature:
+        super().__init__(name=f"concatenate_sequence_sentence_features_{attribute}")
+
+        # main use case: both sequence and sentence features are expected
+        if data_signature_sequence and data_signature_sentence:
             self.do_concatenation = True
-            if sequence_signature.units != sentence_signature.units:
+
+            # prepare dimension unifying layers if needed
+            if data_signature_sequence.units != data_signature_sentence.units:
                 self.unify_dimensions_before_concat = True
                 self.output_units = concat_dimension
                 self.unify_dimensions_layers = {}
+
                 for feature_type in [SEQUENCE, SENTENCE]:
-                    if "layer_name_suffix" not in concat_layers_kwargs:
-                        concat_layers_kwargs[
+                    if "layer_name_suffix" not in unify_concat_dimension_kwargs:
+                        unify_concat_dimension_kwargs[
                             "layer_name_suffix"
-                        ] = f"unify_dimensions_before_concat.{layer_name_suffix}_{feature_type}"
+                        ] = f"unify_dim_before_seq_sent_concat.{attribute}_{feature_type}"
                     self.unify_dimensions_layers[feature_type] = layers.Ffnn(
-                        **concat_layers_kwargs
+                        **unify_concat_dimension_kwargs
                     )
             else:
                 self.unify_dimensions_before_concat = False
-                self.output_units = sequence_signature.units
+                self.output_units = data_signature_sequence.units
+
+        # edge cases where only sequence or only sentence features are expected
         else:
             self.do_concatenation = False
-            if sequence_signature and not sentence_signature:
-                self.return_just = SEQUENCE
-                self.output_units = sequence_signature.units
-            elif sentence_signature and not sequence_signature:
-                self.return_just = SENTENCE
-                self.output_units = sentence_signature.units
+            if data_signature_sequence and not data_signature_sentence:
+                self.only_return = SEQUENCE
+                self.output_units = data_signature_sequence.units
+            elif data_signature_sentence and not data_signature_sequence:
+                self.only_return = SENTENCE
+                self.output_units = data_signature_sentence.units
 
     def call(self, inputs: Tuple[tf.Tensor, tf.Tensor, tf.Tensor]) -> tf.Tensor:
+        """Concatenate sequence- and sentence-level feature tensors into one tensor.
+
+        Arguments:
+            inputs: Tuple containing three dense 3-D tensors.
+
+        Returns:
+            Single dense 3-D tensor containing the concatenated sequence- and sentence-
+            level features.
+        """
+
         sequence = inputs[0]
         sentence = inputs[1]
         mask_text = inputs[2]
@@ -208,26 +262,37 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
                 sequence = self.unify_dimensions_layers[SEQUENCE](sequence)
                 sentence = self.unify_dimensions_layers[SENTENCE](sentence)
 
-            # we need to concatenate the sequence features with the sentence features
-            # we cannot use tf.concat as the sequence features are padded
-
-            # (1) get position of sentence features in mask
+            # mask_text has 1s that mean real tokens and 0s that mean padded fake tokens.
+            # Here mask_text is turned into a mask that has 0s everywhere and 1 only at
+            # the immediate next position after the last real token's position for given
+            # input example. Example (batch size 2, sequence lengths [1, 2]):
+            # [[[1], [0], [0]],     ___\   [[[0], [1], [0]],
+            #  [[1], [1], [0]]]        /    [[0], [0], [1]]]
             last = mask_text * tf.math.cumprod(
                 1 - mask_text, axis=1, exclusive=True, reverse=True
             )
-            # (2) multiply by sentence features so that we get a matrix of
-            #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
-            #     for the sentence features
+
+            # The new mask is used to distribute the sentence features at the sequence
+            # positions marked by 1s. The sentence features' dimensionality effectively
+            # changes from `(batch_size, 1, feature_dim)` to `(batch_size, max_seq_length+1,
+            # feature_dim)`, but the array is sparse, with real features present only at
+            # positions determined by 1s in the mask.
             sentence = last * sentence
 
-            # (3) add a zero to the end of sequence matrix to match the final shape
+            # Padding of sequence-level features is increased by 1 in the sequence
+            # dimension to match the shape of modified sentence-level features.
             sequence = tf.pad(sequence, [[0, 0], [0, 1], [0, 0]])
 
-            # (4) sum up sequence features and sentence features
+            # Sequence- and sentence-level features effectively get concatenated by
+            # summing the two padded feature arrays like this (batch size  = 1):
+            # [[seq1, seq2, seq3, 0, 0]] + [[0, 0, 0, sent1, 0]] =
+            # = [[seq1, seq2, seq3, sent1, 0]]
             return sequence + sentence
-        elif self.return_just == SEQUENCE:
+
+        elif self.only_return == SEQUENCE:
             return sequence
-        elif self.return_just == SENTENCE:
+
+        else:
             return sentence
 
 
@@ -289,7 +354,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
                 )
                 seq_sent_data_signatures[feature_type] = signature_new
 
-            concat_layers_kwargs = {
+            unify_concat_dimension_kwargs = {
                 "layer_sizes": [config[CONCAT_DIMENSION][name]],
                 "dropout_rate": config[DROP_RATE],
                 "reg_lambda": config[REGULARIZATION_CONSTANT],
@@ -297,11 +362,11 @@ class RasaInputLayer(tf.keras.layers.Layer):
             }
 
             self.concat_seq_sent = ConcatenateSequenceSentenceFeatures(
-                sequence_signature=seq_sent_data_signatures[SEQUENCE],
-                sentence_signature=seq_sent_data_signatures[SENTENCE],
+                data_signature_sequence=seq_sent_data_signatures[SEQUENCE],
+                data_signature_sentence=seq_sent_data_signatures[SENTENCE],
                 concat_dimension=config[CONCAT_DIMENSION].get(name, None),
-                concat_layers_kwargs=concat_layers_kwargs,
-                layer_name_suffix=name,
+                unify_concat_dimension_kwargs=unify_concat_dimension_kwargs,
+                attribute=name,
             )
 
         if self.do_seq_sent_concat:
