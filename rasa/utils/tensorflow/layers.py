@@ -721,11 +721,17 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels_bad_negs,
         )
 
-    @staticmethod
-    def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor:
+    def sim(
+        self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None, cosine=False
+    ) -> tf.Tensor:
         """Calculate similarity between given tensors."""
 
         sim = tf.reduce_sum(a * b, axis=-1)
+
+        if cosine:
+            len_a = self._compute_vector_length(a)
+            len_b = self._compute_vector_length(b)
+            sim /= len_a * len_b
         if mask is not None:
             sim *= tf.expand_dims(mask, 2)
 
@@ -757,10 +763,23 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_inf = tf.constant(-1e9)
 
         sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
+
+        cosine_sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask, cosine=True)
+        tf.summary.histogram("cosine_sim_pos", cosine_sim_pos)
+
         sim_neg_il = (
             self.sim(pos_inputs_embed, neg_labels_embed, mask)
             + neg_inf * labels_bad_negs
         )
+
+        cosine_sim_neg_il = (
+            self.sim(pos_inputs_embed, neg_labels_embed, mask, cosine=True)
+            + neg_inf * labels_bad_negs
+        )
+        tf.summary.histogram(
+            "cosine_sim_neg_il", tf.clip_by_value(cosine_sim_neg_il, -2, 2)
+        )
+
         sim_neg_ll = (
             self.sim(pos_labels_embed, neg_labels_embed, mask)
             + neg_inf * labels_bad_negs
@@ -769,6 +788,15 @@ class DotProductLoss(tf.keras.layers.Layer):
             self.sim(pos_inputs_embed, neg_inputs_embed, mask)
             + neg_inf * inputs_bad_negs
         )
+
+        cosine_sim_neg_ii = (
+            self.sim(pos_inputs_embed, neg_inputs_embed, mask, cosine=True)
+            + neg_inf * inputs_bad_negs
+        )
+        tf.summary.histogram(
+            "cosine_sim_neg_ii", tf.clip_by_value(cosine_sim_neg_ii, -2, 2)
+        )
+
         sim_neg_li = (
             self.sim(pos_labels_embed, neg_inputs_embed, mask)
             + neg_inf * inputs_bad_negs
@@ -853,16 +881,55 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> tf.Tensor:
         """Define softmax loss."""
 
-        logits = tf.concat(
-            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
-        )
+        constrain_similarities = False
+        softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
+
+        if not constrain_similarities:
+            # Concatenate other similarity terms as well. Due to this,
+            # similarity values between input and label may not be
+            # approximately bounded in a defined range.
+            softmax_logits = tf.concat(
+                [softmax_logits, sim_neg_ii, sim_neg_ll], axis=-1
+            )
 
         # create label_ids for softmax
-        label_ids = tf.zeros_like(logits[..., 0], tf.int32)
+        softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
 
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=label_ids, logits=logits
+        softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=softmax_label_ids, logits=softmax_logits
         )
+
+        tf.summary.histogram("sim_pos", sim_pos)
+        tf.summary.histogram("sim_neg_il", tf.clip_by_value(sim_neg_il, -25, 100))
+        tf.summary.histogram("sim_neg_li", tf.clip_by_value(sim_neg_li, -25, 100))
+        tf.summary.histogram("sim_neg_ii", tf.clip_by_value(sim_neg_ii, -25, 100))
+        tf.summary.histogram("sim_neg_ll", tf.clip_by_value(sim_neg_ll, -25, 100))
+
+        loss = softmax_loss
+
+        if constrain_similarities:
+            # Constrain similarity values in a range by applying sigmoid
+            # on them individually so that they saturate at extreme values.
+            sigmoid_logits = tf.concat(
+                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li,], axis=-1
+            )
+
+            sigmoid_labels = tf.concat(
+                [
+                    tf.expand_dims(
+                        tf.ones_like(sigmoid_logits[..., 0], tf.float32), -1
+                    ),
+                    tf.zeros_like(sigmoid_logits[..., 1:], tf.float32),
+                ],
+                axis=-1,
+            )
+
+            sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                labels=sigmoid_labels, logits=sigmoid_logits
+            )
+
+            # average over logits axis
+            loss += tf.reduce_mean(sigmoid_loss, axis=-1)
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -895,6 +962,10 @@ class DotProductLoss(tf.keras.layers.Layer):
                 f"should be '{MARGIN}' or '{SOFTMAX}'"
             )
 
+    def _compute_vector_length(self, embedding):
+        norm = tf.norm(embedding, axis=-1)
+        return norm
+
     # noinspection PyMethodOverriding
     def call(
         self,
@@ -920,6 +991,13 @@ class DotProductLoss(tf.keras.layers.Layer):
             loss: Total loss.
             accuracy: Training accuracy.
         """
+        tf.summary.histogram(
+            "input_embed_norms", self._compute_vector_length(inputs_embed)
+        )
+        tf.summary.histogram(
+            "label_embed_norms", self._compute_vector_length(labels_embed)
+        )
+
         (
             pos_inputs_embed,
             pos_labels_embed,
