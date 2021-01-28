@@ -362,11 +362,11 @@ class RasaInputLayer(tf.keras.layers.Layer):
             }
 
             self.concat_seq_sent = ConcatenateSequenceSentenceFeatures(
+                attribute=name,
                 data_signature_sequence=seq_sent_data_signatures[SEQUENCE],
                 data_signature_sentence=seq_sent_data_signatures[SENTENCE],
                 concat_dimension=config[CONCAT_DIMENSION].get(name, None),
-                unify_concat_dimension_kwargs=unify_concat_dimension_kwargs,
-                attribute=name,
+                **unify_concat_dimension_kwargs,
             )
 
         if self.do_seq_sent_concat:
