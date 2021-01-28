@@ -297,6 +297,10 @@ jobs:
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      RABBITMQ_HOST: localhost
+      RABBITMQ_USER: rabbitmq
+      RABBITMQ_PASSWORD: rabbitmq
+      RABBITMQ_PORT: 5672
 
     services:
       redis:
@@ -327,6 +331,14 @@ jobs:
           # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
           # mapping container ports to the host
           - 5432:5432
+
+      rabbitmq:
+        image: rabbitmq
+        env:
+          RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+          RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+        ports:
+          - 5672:5672
 
     steps:
     - name: Checkout git repository 🕝

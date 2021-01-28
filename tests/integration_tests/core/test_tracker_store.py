@@ -6,7 +6,7 @@ from _pytest.logging import LogCaptureFixture
 import sqlalchemy as sa
 
 from rasa.core.tracker_store import SQLTrackerStore
-from tests.integration_tests.conftest import (
+from .conftest import (
     POSTGRES_HOST,
     POSTGRES_PORT,
     POSTGRES_LOGIN_DB,
