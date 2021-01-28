@@ -1039,7 +1039,8 @@ class RulePolicy(MemoizationPolicy):
             # this prediction doesn't use user input
             # and happy user input anyhow should be ignored during featurization
             return self._rule_prediction(
-                self._prediction_result(loop_happy_path_action_name, tracker, domain)
+                self._prediction_result(loop_happy_path_action_name, tracker, domain),
+                is_no_user_prediction=True,
             )
 
         # predict rules from text first
@@ -1082,6 +1083,7 @@ class RulePolicy(MemoizationPolicy):
         probabilities: List[float],
         returning_from_unhappy_path: bool = False,
         is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
     ) -> "PolicyPrediction":
         optional_events = []
         if self._prediction_source in self.lookup.get(RULES_NOT_IN_STORIES, []):
@@ -1095,6 +1097,7 @@ class RulePolicy(MemoizationPolicy):
             events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
             optional_events=optional_events,
             is_end_to_end_prediction=is_end_to_end_prediction,
+            is_no_user_prediction=is_no_user_prediction,
         )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
