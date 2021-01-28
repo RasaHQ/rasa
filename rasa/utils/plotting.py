@@ -226,10 +226,10 @@ def plot_intent_augmentation_summary(
         list(map(lambda d: d[f"{metric}_change"], augmentation_summary.values()))
     )
 
-    plt.figure(figsize=(10, 6))
-    plt.ylabel(f"Performance Change ({metric})", fontsize=16)
-    plt.xlabel("Intent", fontsize=16)
-    perf_bar = plt.bar(ind, performance)
+    plt.figure(figsize=(10, 10))
+    plt.xlabel(f"Performance Change ({metric})", fontsize=16)
+    plt.ylabel("Intent", fontsize=16)
+    perf_bar = plt.barh(ind, performance)
 
     for idx in range(num_intents):
         if intents[idx] in totals_keys:
@@ -242,10 +242,10 @@ def plot_intent_augmentation_summary(
             perf_bar[idx].set_label("augmented")
 
     _autolabel(perf_bar)
-    plt.xlim((-1, num_intents))
-    plt.ylim((np.min(performance) - 0.2, np.max(performance) + 0.2))
+    plt.ylim((-1, num_intents))
+    plt.xlim((np.min(performance) - 0.2, np.max(performance) + 0.2))
     plt.grid(True)
-    plt.xticks(ind, intents, rotation=90, fontsize=14)
+    plt.yticks(ind, intents, fontsize=14)
 
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
@@ -254,20 +254,24 @@ def plot_intent_augmentation_summary(
     plt.savefig(output_file, bbox_inches="tight")
 
 
-def _autolabel(rects: Axes.bar):
+def _autolabel(rects: Axes.bar) -> None:
     """Attach a text label above each bar in *rects*, displaying its height."""
     import matplotlib.pyplot as plt
 
     for rect in rects:
-        height = rect.get_height()
+        width = rect.get_width()
+        offset = 0.
+        if width > 0.:
+            offset = 0.045
+        elif width < 0.:
+            offset = -0.045
 
         plt.annotate(
-            f"{height:.2f}",
-            xy=(rect.get_x() + rect.get_width() / 2, height),
-            xytext=(0, 1),  # 3 points vertical offset
+            f"{width:.2f}",
+            xy=(width + offset, rect.get_y() + (rect.get_height() / 5)),
+            xytext=(0, 1),  # horizontal offset
             textcoords="offset points",
             ha="center",
             va="bottom",
-            fontsize=14,
-            rotation=90,
+            fontsize=14
         )
