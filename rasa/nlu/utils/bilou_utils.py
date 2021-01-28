@@ -1,10 +1,7 @@
 import logging
 from collections import defaultdict, Counter
-from typing import List, Tuple, Text, Optional, Dict, Any
+from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
 
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     BILOU_ENTITIES,
@@ -21,6 +18,11 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
 )
+
+if TYPE_CHECKING:
+    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ def tag_without_prefix(tag: Text) -> Text:
 
 
 def bilou_tags_to_ids(
-    message: Message,
+    message: "Message",
     tag_id_dict: Dict[Text, int],
     tag_name: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> List[int]:
@@ -115,7 +117,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
 
 
 def build_tag_id_dict(
-    training_data: TrainingData, tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+    training_data: "TrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
@@ -151,7 +153,7 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: TrainingData) -> None:
+def apply_bilou_schema(training_data: "TrainingData") -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:
@@ -176,7 +178,7 @@ def apply_bilou_schema(training_data: TrainingData) -> None:
 
 
 def map_message_entities(
-    message: Message, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
+    message: "Message", attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values.
 
@@ -203,7 +205,7 @@ def map_message_entities(
 
 
 def bilou_tags_from_offsets(
-    tokens: List[Token], entities: List[Tuple[int, int, Text]]
+    tokens: List["Token"], entities: List[Tuple[int, int, Text]]
 ) -> List[Text]:
     """Creates BILOU tags for the given tokens and entities.
 

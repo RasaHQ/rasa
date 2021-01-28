@@ -6,6 +6,7 @@ import pytest
 from rasa.shared.exceptions import FileNotFoundException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core import training
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
@@ -375,6 +376,43 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     assert not len(record)
 
 
+async def test_parsing_of_e2e_stories(default_domain: Domain):
+    yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
+    tracker = await training.load_data(
+        yaml_file,
+        default_domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert len(tracker) == 1
+
+    actual = list(tracker[0].events)
+
+    expected = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": "simple"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "I am looking for a Kenyan restaurant",
+            {"name": None},
+            entities=[{"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}],
+        ),
+        ActionExecuted("", action_text="good for you"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("One more thing", {"name": None}),
+        ActionExecuted("", action_text="What?"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+    assert actual == expected
+
+
 async def test_active_loop_is_parsed(default_domain: Domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
@@ -431,8 +469,7 @@ stories:
     """
 
     story_as_yaml = rasa.shared.utils.io.read_yaml(story)
-
-    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
+    steps = YAMLStoryReader(use_e2e=True).read_from_parsed_yaml(story_as_yaml)
     user_uttered = steps[0].events[0]
 
     assert user_uttered == UserUttered(
@@ -527,3 +564,27 @@ async def test_story_with_retrieval_intent_warns(
         reader.read_from_file(file)
 
     assert len(record) == (1 if warning else 0)
+
+
+@pytest.mark.parametrize("is_conversation_test", [True, False])
+def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
+    stories = """
+    stories:
+    - story: hello world
+      steps:
+      - user: Hi
+      - bot: Hello?
+      - user: Well...
+        intent: suspicion
+    """
+
+    reader = YAMLStoryReader(use_e2e=is_conversation_test)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    events = steps[0].events
+    assert len(events) == 3
+    assert events[0].text == "Hi"
+    assert events[1].action_text == "Hello?"
+    assert events[2].text == "Well..."

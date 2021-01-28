@@ -28,17 +28,40 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
+import rasa.utils.train_utils
 
 
 class EntityExtractor(Component):
+    """Entity extractors are components which extract entities.
+
+    They can be placed in the pipeline like other components, and can extract
+    entities like a person's name, or a location.
+    """
+
     def add_extractor_name(
         self, entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
+        """Adds this extractor's name to a list of entities.
+
+        Args:
+            entities: the extracted entities.
+
+        Returns:
+            the modified entities.
+        """
         for entity in entities:
             entity[EXTRACTOR] = self.name
         return entities
 
     def add_processor_name(self, entity: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Adds this extractor's name to the list of processors for this entity.
+
+        Args:
+            entity: the extracted entity and its metadata.
+
+        Returns:
+            the modified entity.
+        """
         if "processors" in entity:
             entity["processors"].append(self.name)
         else:
@@ -46,18 +69,23 @@ class EntityExtractor(Component):
 
         return entity
 
-    def init_split_entities(self):
-        """Initialise the behaviour for splitting entities by comma (or not)."""
+    def init_split_entities(self) -> Dict[Text, bool]:
+        """Initialises the behaviour for splitting entities by comma (or not).
+
+        Returns:
+            Defines desired behaviour for splitting specific entity types and
+            default behaviour for splitting any entity types for which no
+            behaviour is defined.
+        """
         split_entities_config = self.component_config.get(
             SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-        if isinstance(split_entities_config, bool):
-            split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
-        else:
-            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[
-                SPLIT_ENTITIES_BY_COMMA
-            ]
-        return split_entities_config
+        default_value = self.defaults.get(
+            SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        return rasa.utils.train_utils.init_split_entities(
+            split_entities_config, default_value
+        )
 
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
@@ -128,8 +156,8 @@ class EntityExtractor(Component):
 
         return filtered
 
+    @staticmethod
     def convert_predictions_into_entities(
-        self,
         text: Text,
         tokens: List[Token],
         tags: Dict[Text, List[Text]],
@@ -158,16 +186,22 @@ class EntityExtractor(Component):
         last_token_end = -1
 
         for idx, token in enumerate(tokens):
-            current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
+            current_entity_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_TYPE, idx
+            )
 
             if current_entity_tag == NO_ENTITY_TAG:
                 last_entity_tag = NO_ENTITY_TAG
                 last_token_end = token.end
                 continue
 
-            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_group_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_GROUP, idx
+            )
             current_group_tag = bilou_utils.tag_without_prefix(current_group_tag)
-            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            current_role_tag = EntityExtractor.get_tag_for(
+                tags, ENTITY_ATTRIBUTE_ROLE, idx
+            )
             current_role_tag = bilou_utils.tag_without_prefix(current_role_tag)
 
             group_or_role_changed = (
@@ -207,7 +241,7 @@ class EntityExtractor(Component):
 
             if new_tag_found:
                 # new entity found
-                entity = self._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,
@@ -217,7 +251,7 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
-            elif self._check_is_single_entity(
+            elif EntityExtractor._check_is_single_entity(
                 text, token, last_token_end, split_entities_config, current_entity_tag
             ):
                 # current token has the same entity tag as the token before and
@@ -226,14 +260,16 @@ class EntityExtractor(Component):
                 # and a whitespace.
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
-                    self._update_confidence_values(entities, confidences, idx)
+                    EntityExtractor._update_confidence_values(
+                        entities, confidences, idx
+                    )
 
             else:
                 # the token has the same entity tag as the token before but the two
                 # tokens are separated by at least 2 symbols (e.g. multiple spaces,
                 # a comma and a space, etc.) and also shouldn't be represented as a
                 # single entity
-                entity = self._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,

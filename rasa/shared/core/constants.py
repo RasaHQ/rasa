@@ -77,4 +77,5 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 USER = "user"
 SLOTS = "slots"
 
+USE_TEXT_FOR_FEATURIZATION = "use_text_for_featurization"
 ENTITY_LABEL_SEPARATOR = "#"

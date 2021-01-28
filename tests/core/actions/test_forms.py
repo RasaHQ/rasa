@@ -1,5 +1,5 @@
 from typing import Dict, Text, List, Optional, Any
-from unittest.mock import Mock, ANY
+from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -10,7 +10,7 @@ from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
@@ -352,7 +352,18 @@ async def test_validate_slots(
         assert events == expected_events
 
 
-async def test_no_slots_extracted_with_custom_slot_mappings():
+@pytest.mark.parametrize(
+    "custom_events",
+    [
+        # Custom action returned no events
+        [],
+        # Custom action returned events but no `SlotSet` events
+        [BotUttered("some text").as_dict()],
+        # Custom action returned only `SlotSet` event for `required_slot`
+        [SlotSet(REQUESTED_SLOT, "some value").as_dict()],
+    ],
+)
+async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[Event]):
     form_name = "my form"
     events = [
         ActiveLoop(form_name),
@@ -378,7 +389,7 @@ async def test_no_slots_extracted_with_custom_slot_mappings():
     action_server_url = "http:/my-action-server:5055/webhook"
 
     with aioresponses() as mocked:
-        mocked.post(action_server_url, payload={"events": []})
+        mocked.post(action_server_url, payload={"events": custom_events})
 
         action_server = EndpointConfig(action_server_url)
         action = FormAction(form_name, action_server)
@@ -446,10 +457,12 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
     ]
 
 
-def test_name_of_utterance():
-    form_name = "another_form"
+@pytest.mark.parametrize(
+    "utterance_name", ["utter_ask_my_form_num_people", "utter_ask_num_people"],
+)
+def test_name_of_utterance(utterance_name: Text):
+    form_name = "my_form"
     slot_name = "num_people"
-    full_utterance_name = f"utter_ask_{form_name}_{slot_name}"
 
     domain = f"""
     forms:
@@ -457,22 +470,14 @@ def test_name_of_utterance():
         {slot_name}:
         - type: from_text
     responses:
-        {full_utterance_name}:
+        {utterance_name}:
         - text: "How many people?"
     """
     domain = Domain.from_yaml(domain)
 
-    action_server_url = "http:/my-action-server:5055/webhook"
+    action = FormAction(form_name, None)
 
-    with aioresponses():
-        action_server = EndpointConfig(action_server_url)
-        action = FormAction(form_name, action_server)
-
-        assert action._name_of_utterance(domain, slot_name) == full_utterance_name
-        assert (
-            action._name_of_utterance(domain, "another_slot")
-            == "utter_ask_another_slot"
-        )
+    assert action._name_of_utterance(domain, slot_name) == utterance_name
 
 
 def test_temporary_tracker():
@@ -1044,7 +1049,6 @@ def test_extract_other_slots_with_entity(
 @pytest.mark.parametrize(
     "domain, expected_action",
     [
-        ({}, "utter_ask_sun"),
         (
             {
                 "actions": ["action_ask_my_form_sun", "action_ask_sun"],
@@ -1076,18 +1080,49 @@ def test_extract_other_slots_with_entity(
     ],
 )
 async def test_ask_for_slot(
-    domain: Dict, expected_action: Text, monkeypatch: MonkeyPatch
+    domain: Dict,
+    expected_action: Text,
+    monkeypatch: MonkeyPatch,
+    default_nlg: TemplatedNaturalLanguageGenerator,
 ):
     slot_name = "sun"
 
     action_from_name = Mock(return_value=action.ActionListen())
     endpoint_config = Mock()
-    monkeypatch.setattr(action, action.action_from_name.__name__, action_from_name)
+    monkeypatch.setattr(
+        action, action.action_for_name_or_text.__name__, action_from_name
+    )
 
     form = FormAction("my_form", endpoint_config)
     domain = Domain.from_dict(domain)
     await form._ask_for_slot(
-        domain, None, None, slot_name, DialogueStateTracker.from_events("dasd", [])
+        domain,
+        default_nlg,
+        CollectingOutputChannel(),
+        slot_name,
+        DialogueStateTracker.from_events("dasd", []),
     )
 
     action_from_name.assert_called_once_with(expected_action, domain, endpoint_config)
+
+
+async def test_ask_for_slot_if_not_utter_ask(
+    monkeypatch: MonkeyPatch, default_nlg: TemplatedNaturalLanguageGenerator
+):
+    action_from_name = Mock(return_value=action.ActionListen())
+    endpoint_config = Mock()
+    monkeypatch.setattr(
+        action, action.action_for_name_or_text.__name__, action_from_name
+    )
+
+    form = FormAction("my_form", endpoint_config)
+    events = await form._ask_for_slot(
+        Domain.empty(),
+        default_nlg,
+        CollectingOutputChannel(),
+        "some slot",
+        DialogueStateTracker.from_events("dasd", []),
+    )
+
+    assert not events
+    action_from_name.assert_not_called()

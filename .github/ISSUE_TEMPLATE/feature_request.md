@@ -28,5 +28,5 @@ Or might there be any potential blockers on the way? -->
 <!-- What needs to be there to consider this feature as done?
 - [ ] Tests are added
 - [ ] Feature described the docs
-- [ ] Feature mentioned in the changlog
+- [ ] Feature mentioned in the changelog
 - [ ] ... -->
