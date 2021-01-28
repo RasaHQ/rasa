@@ -289,11 +289,10 @@ class Interpreter:
         model_version = metadata.get("rasa_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
-                "The model version is too old to be "
-                "loaded by this Rasa NLU instance. "
-                "Either retrain the model, or run with "
-                "an older version. "
-                "Model version: {} Instance version: {}"
+                "The model version is trained using Rasa {}"
+                "and is not compatible with your current installation ({}) "
+                "This means that you probably want to retrain your model "
+                "to ensure that the versions match up again."
                 "".format(model_version, rasa.__version__)
             )
 
