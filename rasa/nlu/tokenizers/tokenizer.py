@@ -61,6 +61,9 @@ class Token:
             other.lemma,
         )
 
+    def __repr__(self):
+        return f"<Token object value='{self.text}' start={self.start} end={self.end} at {hex(id(self))}>"
+
 
 class Tokenizer(Component):
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
