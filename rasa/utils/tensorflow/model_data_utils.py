@@ -19,8 +19,7 @@ from rasa.shared.nlu.constants import (
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
-    from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
-
+    from rasa.nlu.extractors.extractor import EntityTagSpec
 
 TAG_ID_ORIGIN = "tag_id_origin"
 

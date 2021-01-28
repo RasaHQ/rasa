@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Text, Set, Any
 from collections import defaultdict
 
 import rasa.shared.utils.io
-from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.utils import bilou_utils
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.shared.core.domain import SubState, State, Domain
@@ -19,7 +19,6 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     INTENT,
-    TEXT,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,

@@ -8,7 +8,7 @@ import os
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
@@ -18,7 +18,7 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
@@ -108,15 +108,6 @@ LABEL_KEY = LABEL
 LABEL_SUB_KEY = IDS
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
-
-
-class EntityTagSpec(NamedTuple):
-    """Specification of an entity tag present in the training data."""
-
-    tag_name: Text
-    ids_to_tags: Dict[int, Text]
-    tags_to_ids: Dict[Text, int]
-    num_tags: int
 
 
 class DIETClassifier(IntentClassifier, EntityExtractor):
