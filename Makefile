@@ -170,7 +170,11 @@ test: clean
 
 test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+ifeq (,$(wildcard deployment/.env))
 	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS)
+else
+	set -o allexport; source deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) && set +o allexport
+endif
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
@@ -228,3 +232,15 @@ build-docker-spacy-de:
 	docker buildx bake -f docker/docker-bake.hcl base && \
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
+
+build-deployment-env: ## Create environment files (.env) for docker-compose.
+	cd deployment && \
+	test -f .env || cat .env.example >> .env
+
+run-integration-containers: build-deployment-env ## Run the integration test containers.
+	cd deployment && \
+	docker-compose -f docker-compose.integration.yml up &
+
+stop-integration-containers: ## Stop the integration test containers.
+	cd deployment && \
+	docker-compose -f docker-compose.integration.yml down

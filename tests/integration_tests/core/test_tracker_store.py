@@ -11,6 +11,8 @@ from tests.integration_tests.conftest import (
     POSTGRES_PORT,
     POSTGRES_LOGIN_DB,
     POSTGRES_TRACKER_STORE_DB,
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
 )
 
 # NOTE about the timeouts in this file. We want to fail fast
@@ -27,6 +29,8 @@ def test_sql_tracker_store_with_login_db(
         dialect="postgresql",
         host=POSTGRES_HOST,
         port=POSTGRES_PORT,
+        username=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
         db=POSTGRES_TRACKER_STORE_DB,
         login_db=POSTGRES_LOGIN_DB,
     )
@@ -58,6 +62,8 @@ def test_sql_tracker_store_with_login_db_db_already_exists(
         dialect="postgresql",
         host=POSTGRES_HOST,
         port=POSTGRES_PORT,
+        username=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
         db=POSTGRES_TRACKER_STORE_DB,
         login_db=POSTGRES_LOGIN_DB,
     )
@@ -99,6 +105,8 @@ def test_sql_tracker_store_with_login_db_race_condition(
                 dialect="postgresql",
                 host=POSTGRES_HOST,
                 port=POSTGRES_PORT,
+                username=POSTGRES_USER,
+                password=POSTGRES_PASSWORD,
                 db=POSTGRES_TRACKER_STORE_DB,
                 login_db=POSTGRES_LOGIN_DB,
             )

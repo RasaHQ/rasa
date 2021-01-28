@@ -1,0 +1,30 @@
+version: "3.4"
+
+services:
+  redis:
+    image: redis
+    # Set health checks to wait until redis has started
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    ports:
+      - 6379:6379
+
+  postgres:
+    image: postgres
+    # Set health checks to wait until postgres has started
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      # postgres image requires password to be set
+      PGUSER: ${PGUSER}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - 5432:5432
