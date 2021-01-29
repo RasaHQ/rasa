@@ -1086,7 +1086,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
 
         sigmoid_logits = tf.concat(
-            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_li], axis=-1
+            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
         )
 
         # sigmoid_logits = tf.concat(
@@ -1115,11 +1115,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels=tf.zeros_like(sim_neg_ii), logits=sim_neg_ii
         )
 
-        loss = (
-            softmax_loss
-            + tf.reduce_mean(sigmoid_loss, axis=-1)
-            + 0.01 * tf.reduce_mean(ii_loss, axis=-1)
-        )
+        loss = softmax_loss + tf.reduce_mean(sigmoid_loss, axis=-1)
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
