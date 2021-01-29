@@ -1,5 +1,6 @@
 from typing import Text, Set, Optional, Dict, List, BinaryIO, Tuple, Any
 from scipy.sparse import csr_matrix, coo_matrix
+import scipy.sparse
 import json
 import numpy as np
 import re
@@ -29,6 +30,10 @@ class SemanticFingerprint:
 
     def __len__(self):
         return len(self.activations)
+
+    @property
+    def oov_feature(self) -> int:
+        return 1 if len(self.activations) == 0 else 0
 
     @property
     def num_cells(self):
@@ -62,8 +67,16 @@ class SemanticFingerprint:
             dtype=np.float32,
         )
 
-    def as_coo_row_vector(self, boost: Optional[float] = None) -> coo_matrix:
-        return self.as_csr_matrix(boost).reshape((1, -1)).tocoo()
+    def as_coo_row_vector(
+        self, boost: Optional[float] = None, append_oov_feature: bool = False
+    ) -> coo_matrix:
+        fingerprint_features = self.as_csr_matrix(boost).reshape((1, -1))
+        if append_oov_feature:
+            return scipy.sparse.hstack(
+                [fingerprint_features, [self.oov_feature]]
+            ).tocoo()
+        else:
+            return fingerprint_features.tocoo()
 
     def as_dense_vector(self, boost: Optional[float] = None) -> np.array:
         return np.reshape(

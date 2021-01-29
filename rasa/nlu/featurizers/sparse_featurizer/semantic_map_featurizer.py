@@ -54,7 +54,7 @@ class SemanticMapFeaturizer(SparseFeaturizer):
         "pooling": "sum",
         # if no map name is given, the following parameters are relevant:
         # path to the semantic map training executable
-        "executable": "/home/jem-mosig/rasa/semantic-map/build/smap",
+        "executable": "/home/jem-mosig/projects/semantic-map/build/smap",
         # map size
         "height": 8,
         "width": 8,
@@ -278,12 +278,13 @@ class SemanticMapFeaturizer(SparseFeaturizer):
             ]
 
         sequence_features = scipy.sparse.vstack(
-            [fp.as_coo_row_vector() for fp in fingerprints], "coo"
+            [fp.as_coo_row_vector(append_oov_feature=True) for fp in fingerprints],
+            "coo",
         )
         if self.pooling == "semantic_merge":
             sentence_features = self.semantic_map.semantic_merge(
                 *fingerprints
-            ).as_coo_row_vector()
+            ).as_coo_row_vector(append_oov_feature=True)
         elif self.pooling == "mean":
             sentence_features = np.mean(sequence_features, axis=0)
         elif self.pooling == "sum":
@@ -295,8 +296,8 @@ class SemanticMapFeaturizer(SparseFeaturizer):
 
         assert sequence_features.shape == (
             len(fingerprints),
-            self.semantic_map.num_cells,
+            self.semantic_map.num_cells + 1,
         )
-        assert sentence_features.shape == (1, self.semantic_map.num_cells)
+        assert sentence_features.shape == (1, self.semantic_map.num_cells + 1)
 
         return sequence_features, sentence_features
