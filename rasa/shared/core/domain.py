@@ -537,6 +537,7 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
+        self._templates = responses
         self.action_texts = action_texts or []
         self.session_config = session_config
 
@@ -717,6 +718,13 @@ class Domain:
                 lambda x: self.is_retrieval_intent_response(x), self.responses.items()
             )
         )
+
+    @rasa.shared.utils.common.lazy_property
+    def templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed in the future."
+        )
+        return self._templates
 
     @staticmethod
     def is_retrieval_intent_response(
