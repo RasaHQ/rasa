@@ -298,9 +298,9 @@ jobs:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       RABBITMQ_HOST: localhost
+      RABBITMQ_PORT: 5672
       RABBITMQ_USER: rabbitmq
       RABBITMQ_PASSWORD: rabbitmq
-      RABBITMQ_PORT: 5672
 
     services:
       redis:
@@ -333,7 +333,8 @@ jobs:
           - 5432:5432
 
       rabbitmq:
-        image: rabbitmq
+        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
+        image: healthcheck/rabbitmq
         env:
           RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
           RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
