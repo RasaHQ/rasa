@@ -73,7 +73,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         contributing `sparse_to_dense_units` units each.
 
     Raises:
-        A ValueError if not feature signatures are provided.
+        A ValueError if no feature signatures are provided.
     """
 
     def __init__(
@@ -131,7 +131,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         """Combine sparse and dense feature tensors into one tensor.
 
         Arguments:
-            inputs: Tuple containing one list of tensors of any rank.
+            inputs: Tuple containing one list of tensors, all of the same rank.
             training: Python boolean indicating whether the layer should behave in
                 training mode (applying dropout to sparse tensors if applicable) or in
                 inference mode (not applying dropout).
@@ -189,15 +189,17 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             of the dense Ffnn layers for unifying the features' last dimension size.
 
     Input shape:
-        List of three 3-D dense tensors, with shapes:
+        Tuple of three 3-D dense tensors, with shapes:
             sequence: `(batch_size, max_sequence_length, input_dim_seq)`
             sentence: `(batch_size, 1, input_dim_sent)`
-            mask_text: `(batch_size, max_sequence_length+1, 1)`
+            mask: `(batch_size, max_sequence_length+1, 1)`
 
     Output shape:
-        3-D tensor with shape: `(batch_size, max_sequence_length, output_dim)` where
-        `output_dim` matches `input_dim_seq` if that is the same as `input_dim_sent`,
-        otherwise `output_dim` = `concat_dimension`.
+        3-D tensor with shape: `(batch_size, sequence_length, output_dim)` where:
+        - `output_dim` matches `input_dim_seq` if that is the same as `input_dim_sent`,
+            otherwise `output_dim` = `concat_dimension`.
+        - `sequence_length` is the sum of 2nd dimension sizes of arguments `sequence`
+            and`sentence`.
     """
 
     def __init__(
@@ -255,21 +257,23 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
 
         sequence = inputs[0]
         sentence = inputs[1]
-        mask_text = inputs[2]
+        mask = inputs[2]
 
         if self.do_concatenation:
             if self.unify_dimensions_before_concat:
                 sequence = self.unify_dimensions_layers[SEQUENCE](sequence)
                 sentence = self.unify_dimensions_layers[SENTENCE](sentence)
 
-            # mask_text has 1s that mean real tokens and 0s that mean padded fake tokens.
-            # Here mask_text is turned into a mask that has 0s everywhere and 1 only at
+            # mask has for each input example a sequence of 1s of length seq_length+1,
+            # where seq_length is the number of real tokens. The rest is 0s which form
+            # a padding up to the max. sequence length + 1 (max. # of real tokens + 1).
+            # Here the mask is turned into a mask that has 0s everywhere and 1 only at
             # the immediate next position after the last real token's position for given
             # input example. Example (batch size 2, sequence lengths [1, 2]):
             # [[[1], [0], [0]],     ___\   [[[0], [1], [0]],
             #  [[1], [1], [0]]]        /    [[0], [0], [1]]]
-            last = mask_text * tf.math.cumprod(
-                1 - mask_text, axis=1, exclusive=True, reverse=True
+            last = mask * tf.math.cumprod(
+                1 - mask, axis=1, exclusive=True, reverse=True
             )
 
             # The new mask is used to distribute the sentence features at the sequence
@@ -296,14 +300,50 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             return sentence
 
 
-# does:
-# 1. sparse+dense
-# 2. seq+sent
 class RasaInputLayer(tf.keras.layers.Layer):
-    # TODO add docstring
+    """Combines multiple dense or sparse feature tensors into one.
+
+    This layer combines features by following these steps:
+    1. Apply a `ConcatenateSparseDenseFeatures` layer separately to sequence- and
+        sentence-level features, yielding two tensors (one for each feature type).
+    2. Apply a `ConcatenateSequenceSentenceFeatures` layer to the two tensors to combine
+        sequence- and sentence-level features into one tensor.
+
+    Arguments:
+        attribute: Name of attribute (e.g. `text` or `label`) whose features will be
+            processed.
+        data_signature: A dictionary containing two lists of `FeatureSignature`s, one
+            for each feature type of the given attribute.
+        config: A model config used for correctly parametrising the `ConcatenateSparse
+            DenseFeatures` and `ConcatenateSequenceSentenceFeatures` layers.
+
+    Input shape:
+        Tuple of four tensor inputs:
+            sequence_features: List of 3-D dense or sparse tensors, each with shape
+                `(batch_size, max_sequence_length, input_dim)` where `input_dim` can be
+                different for sparse vs dense tensors.
+            sentence_features: List of 3-D dense or sparse tensors, each with shape
+                `(batch_size, 1, input_dim)` where `input_dim` can be different for
+                sparse vs dense tensors, and can differ from that in `sequence_features`.
+            mask_sequence: dense 3-D tensor with the shape `(batch_size, max_sequence_
+                length, 1)`.
+            mask_sequence_sentence: dense 3-D tensor with the shape `(batch_size, max_
+                sequence_length+1, 1)`, i.e. with the 2nd dimension combining the lengths
+                of sequence- and sentence-level features.
+
+    Output shape:
+        3-D tensor with shape: `(batch_size, sequence_length, output_dim)` where
+        `output_dim` is completely  determined by the internally applied
+        `ConcatenateSparseDenseFeatures` layer and `sequence_length` is completely
+        determined by the internally applied `ConcatenateSequenceSentenceFeatures` layer.
+
+    Raises:
+        A ValueError if no feature signatures are provided.
+    """
+
     def __init__(
         self,
-        name: Text,
+        attribute: Text,
         data_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
     ) -> None:
@@ -313,70 +353,82 @@ class RasaInputLayer(tf.keras.layers.Layer):
         ):
             raise ValueError("The data signature must contain some features.")
 
-        super().__init__(name=f"rasa_input_layer_{name}")
-        # SPARSE + DENSE
-        self.concat_sparse_dense = {}
+        super().__init__(name=f"rasa_input_layer_{attribute}")
+
+        # 1. prepare layers for combining sparse and dense features
+        self.layers_sparse_dense = {}
         for feature_type in [SENTENCE, SEQUENCE]:
+            # prepare the layer only if some feature signature are present for this
+            # feature type
             if feature_type in data_signature and data_signature[feature_type]:
                 sparse_to_dense_layer_options = {
-                    # "units": config[DENSE_DIMENSION][name],
                     "reg_lambda": config[REGULARIZATION_CONSTANT],
-                    # "name": f"sparse_to_dense.{name}_{feature_type}",
                 }
-                self.concat_sparse_dense[feature_type] = ConcatenateSparseDenseFeatures(
-                    attribute=name,
+                self.layers_sparse_dense[feature_type] = ConcatenateSparseDenseFeatures(
+                    attribute=attribute,
                     feature_type=feature_type,
                     data_signature=data_signature.get(feature_type, []),
                     dropout_rate=config[DROP_RATE],
                     sparse_dropout=config[SPARSE_INPUT_DROPOUT],
                     dense_dropout=config[DENSE_INPUT_DROPOUT],
-                    sparse_to_dense_units=config[DENSE_DIMENSION][name],
+                    sparse_to_dense_units=config[DENSE_DIMENSION][attribute],
                     **sparse_to_dense_layer_options,
                 )
             else:
-                self.concat_sparse_dense[feature_type] = None
+                self.layers_sparse_dense[feature_type] = None
 
-        # SEQUENCE + SENTENCE
-        self.do_seq_sent_concat = all(
+        # 2. prepare layer for combining sequence- and sentence-level features
+        self.have_all_feature_types = all(
             [
                 len(data_signature.get(feature_type, [])) > 0
                 for feature_type in [SEQUENCE, SENTENCE]
             ]
         )
-        if self.do_seq_sent_concat:
-            seq_sent_data_signatures = {}
-            for feature_type in [SEQUENCE, SENTENCE]:
-                signature_existing = data_signature[feature_type][0]
-                signature_new = FeatureSignature(
-                    is_sparse=False,
-                    units=self.concat_sparse_dense[feature_type].output_units,
-                    number_of_dimensions=signature_existing.number_of_dimensions,
-                )
-                seq_sent_data_signatures[feature_type] = signature_new
+        # prepare the combining layer only if all two feature types are expected, otherwise
+        # there's nothing to combine
+        if self.have_all_feature_types:
 
+            # Construct new feature signatures to be consumed by the combining layer.
+            # These differ from the originally received signatures: the new ones reflect
+            # that the sparse+dense combining layer will have been applied to features.
+            new_signatures = {}
+            for feature_type in [SEQUENCE, SENTENCE]:
+                # it's enough to take any signature for the given feature type, we take
+                # the first one
+                original_signature = data_signature[feature_type][0]
+
+                # update attributes to take into account the effect of the sparse+dense
+                # combining layer
+                new_signature = FeatureSignature(
+                    is_sparse=False,
+                    units=self.layers_sparse_dense[feature_type].output_units,
+                    number_of_dimensions=original_signature.number_of_dimensions,
+                )
+                new_signatures[feature_type] = new_signature
+
+            # prepare the combining layer itself
             unify_concat_dimension_kwargs = {
-                "layer_sizes": [config[CONCAT_DIMENSION][name]],
+                "layer_sizes": [config[CONCAT_DIMENSION][attribute]],
                 "dropout_rate": config[DROP_RATE],
                 "reg_lambda": config[REGULARIZATION_CONSTANT],
                 "sparsity": config[WEIGHT_SPARSITY],
             }
-
             self.concat_seq_sent = ConcatenateSequenceSentenceFeatures(
-                attribute=name,
-                data_signature_sequence=seq_sent_data_signatures[SEQUENCE],
-                data_signature_sentence=seq_sent_data_signatures[SENTENCE],
-                concat_dimension=config[CONCAT_DIMENSION].get(name, None),
+                attribute=attribute,
+                data_signature_sequence=new_signatures[SEQUENCE],
+                data_signature_sentence=new_signatures[SENTENCE],
+                concat_dimension=config[CONCAT_DIMENSION].get(attribute, None),
                 **unify_concat_dimension_kwargs,
             )
 
-        if self.do_seq_sent_concat:
+        # if only one feature type is present, prepare for only combining sparse & dense
+        # features
+        if self.have_all_feature_types:
             self.output_units = self.concat_seq_sent.output_units
-        elif self.concat_sparse_dense[SEQUENCE]:
-            self.output_units = self.concat_sparse_dense[SEQUENCE].output_units
+        elif self.layers_sparse_dense[SEQUENCE]:
+            self.output_units = self.layers_sparse_dense[SEQUENCE].output_units
         else:
-            self.output_units = self.concat_sparse_dense[SENTENCE].output_units
-
-        self.identifier = name
+            self.output_units = self.layers_sparse_dense[SENTENCE].output_units
 
     def call(
         self,
@@ -388,34 +440,54 @@ class RasaInputLayer(tf.keras.layers.Layer):
         ],
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> tf.Tensor:
+        """Combine multiple 3-D dense/sparse feature tensors into one.
+
+        Arguments:
+            inputs: Tuple containing four dense 3-D tensors.
+            training: Python boolean indicating whether the layer should behave in
+                training mode (applying dropout to sparse tensors if applicable) or in
+                inference mode (not applying dropout).
+
+        Returns:
+            Single dense 3-D tensor containing the combined sequence- and sentence-
+            level, sparse & dense features.
+        """
         sequence_features = inputs[0]
         sentence_features = inputs[1]
         mask_sequence = inputs[2]
-        mask_text = inputs[3]
+        mask_sequence_sentence = inputs[3]
 
-        if self.do_seq_sent_concat:
+        # different feature types are present, combine them
+        if self.have_all_feature_types:
             _inputs = (sequence_features,)
-            sequence = self.concat_sparse_dense[SEQUENCE](_inputs, training=training)
+            sequence = self.layers_sparse_dense[SEQUENCE](_inputs, training=training)
 
-            if sequence is not None and mask_sequence is not None:
+            # apply mask which has 1s at positions of real tokens and 0s at all padded
+            # token positions. This is needed because the sparse+dense combining layer
+            # might've turned some fake (padded) features (i.e. 0s) into non-zero numbers
+            # and we want those to become zeros again.
+            # This step isn't needed for sentence-level features because those are never
+            # padded -- the effective sequence length in their case is always 1.
+            if mask_sequence is not None:
                 sequence = sequence * mask_sequence
 
             _inputs = (sentence_features,)
-            sentence = self.concat_sparse_dense[SENTENCE](_inputs, training=training)
+            sentence = self.layers_sparse_dense[SENTENCE](_inputs, training=training)
 
-            _inputs = (sequence, sentence, mask_text)
+            _inputs = (sequence, sentence, mask_sequence_sentence)
             sequence_sentence = self.concat_seq_sent(_inputs)
 
             return sequence_sentence
 
-        elif self.concat_sparse_dense[SEQUENCE]:
+        # only one feature type is present - skip combining different types
+        elif self.layers_sparse_dense[SEQUENCE]:
             _inputs = (sequence_features,)
-            sequence = self.concat_sparse_dense[SEQUENCE](_inputs, training=training)
+            sequence = self.layers_sparse_dense[SEQUENCE](_inputs, training=training)
 
             return sequence
         else:
             _inputs = (sentence_features,)
-            sentence = self.concat_sparse_dense[SENTENCE](_inputs, training=training)
+            sentence = self.layers_sparse_dense[SENTENCE](_inputs, training=training)
 
             return sentence
 

@@ -1434,11 +1434,13 @@ class DIET(TransformerRasaModel):
         #     print(sparse.values)
 
         batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
-        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
+        mask_sequence_text = self._get_mask_for(
+            tf_batch_data, TEXT, SEQUENCE_LENGTH
+        )  # possibly None
         sequence_lengths = self._get_sequence_lengths(
             tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
         )
-        mask_text = self._compute_mask(sequence_lengths)
+        mask_text = self._compute_mask(sequence_lengths)  # never None
 
         _inputs = (
             tf_batch_data[TEXT][SEQUENCE],

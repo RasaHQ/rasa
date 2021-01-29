@@ -845,6 +845,7 @@ class TransformerRasaModel(RasaModel):
         # sentence features have a sequence lengths of 1
         # if sequence features are present we add the sequence lengths of those
 
+        # TODO: check this unused code
         sequence_lengths = tf.ones([batch_dim], dtype=tf.int32)
         if key in tf_batch_data and sub_key in tf_batch_data[key]:
             sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
