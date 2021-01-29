@@ -652,6 +652,43 @@ async def test_action_default_fallback(
 
 
 async def test_action_default_ask_affirmation(
+    default_channel, default_nlg, default_domain
+):
+    initial_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        # User triggers a restart manually by triggering the intent
+        UserUttered(
+            text="/foobar",
+            intent={"name": "foobar"},
+            parse_data={
+                "intent_ranking": [
+                    {"confidence": 0.9, "name": "foobar"},
+                    {"confidence": 0.1, "name": "baz"},
+                ]
+            },
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events("🕵️‍♀️", initial_events)
+
+    events = await ActionDefaultAskAffirmation().run(
+        default_channel, default_nlg, tracker, default_domain
+    )
+
+    assert events == [
+        BotUttered(
+            "Did you mean 'foobar'?",
+            {
+                "buttons": [
+                    {"title": "Yes", "payload": "/foobar"},
+                    {"title": "No", "payload": "/out_of_scope"},
+                ]
+            },
+            {"template_name": "action_default_ask_affirmation"},
+        )
+    ]
+
+
+async def test_action_default_ask_affirmation_on_empty_conversation(
     default_channel, default_nlg, default_tracker, default_domain
 ):
     events = await ActionDefaultAskAffirmation().run(

@@ -101,5 +101,5 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                 f"your response from the NLG endpoint is valid. "
                 f"For more information about the format please consult the "
                 f"`nlg_response_format_spec` function from this same module: "
-                f"https://github.com/RasaHQ/rasa/blob/master/rasa/core/nlg/callback.py"
+                f"https://github.com/RasaHQ/rasa/blob/main/rasa/core/nlg/callback.py"
             )

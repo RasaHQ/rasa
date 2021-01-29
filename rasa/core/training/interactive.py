@@ -1428,7 +1428,7 @@ def _print_help(skip_visualization: bool) -> None:
     rasa.shared.utils.cli.print_success(
         f"Bot loaded. {visualization_help}\n"
         f"Type a message and press enter "
-        f"(press 'Ctr-c' to exit)."
+        f"(press 'Ctrl-c' to exit)."
     )
 
 

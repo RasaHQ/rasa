@@ -126,8 +126,8 @@ class TrainingDataImporter:
 
     @staticmethod
     def load_from_dict(
-        config: Optional[Dict],
-        config_path: Text,
+        config: Optional[Dict] = None,
+        config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         training_type: Optional[TrainingType] = TrainingType.BOTH,

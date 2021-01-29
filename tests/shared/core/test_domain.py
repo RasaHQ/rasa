@@ -1287,3 +1287,36 @@ responses:
 
     domain = Domain.from_yaml(test_yaml)
     assert domain.as_yaml(clean_before_dump=True) == test_yaml
+
+
+def test_is_valid_domain_doesnt_raise_with_valid_domain(tmpdir: Path):
+    domain_path = str(tmpdir / "domain.yml")
+    rasa.shared.utils.io.write_text_file(
+        """
+       responses:
+         utter_greet:
+           - text: hey there! """,
+        domain_path,
+    )
+    assert Domain.is_domain_file(domain_path)
+
+
+def test_is_valid_domain_doesnt_raise_with_invalid_domain(tmpdir: Path):
+    domain_path = str(tmpdir / "domain.yml")
+    rasa.shared.utils.io.write_text_file(
+        """
+       invalid""",
+        domain_path,
+    )
+    assert not Domain.is_domain_file(domain_path)
+
+
+def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
+    potential_domain_path = str(tmpdir / "domain.yml")
+    rasa.shared.utils.io.write_text_file(
+        """
+       script:
+        - echo "Latest SDK version is ${RASA_SDK_VERSION}""",
+        potential_domain_path,
+    )
+    assert not Domain.is_domain_file(potential_domain_path)
