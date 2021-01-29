@@ -683,7 +683,7 @@ async def test_action_default_ask_affirmation(
                     {"title": "No", "payload": "/out_of_scope"},
                 ]
             },
-            {"template_name": "action_default_ask_affirmation"},
+            {"utter_action": "action_default_ask_affirmation"},
         )
     ]
 
