@@ -133,22 +133,32 @@ def plot_histogram(
     # Wine-ish colour for the confidences of hits.
     # Blue-ish colour for the confidences of misses.
     colors = ["#009292", "#920000"]
-    bins = [0.025 * i for i in range(1, 42)]
-    # bins = [1 * i for i in range(1, 31)]
+    n_bins = 25
+    max_value = max(max(hist_data[0]), max(hist_data[1]))
+    min_value = min(min(hist_data[0]), min(hist_data[1]))
+    bin_width = (max_value - min_value) / n_bins
+    bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
     max_xlims = [max(binned_data_set) for binned_data_set in binned_data_sets]
     max_xlims = [xlim + np.ceil(0.25 * xlim) for xlim in max_xlims]  # padding
 
-    min_ylim = bins[
-        min(
-            [
-                (binned_data_set != 0).argmax(axis=0)
-                for binned_data_set in binned_data_sets
-            ]
-        )
-    ]
+    min_ylim = (
+        bins[
+            min(
+                [
+                    (binned_data_set != 0).argmax(axis=0)
+                    for binned_data_set in binned_data_sets
+                ]
+            )
+        ]
+        - bin_width
+    )
+
+    max_ylim = max(bins) + bin_width
+
+    yticks = [float("{:.2f}".format(x)) for x in bins]
 
     centers = 0.5 * (0.05 + (bins + np.roll(bins, 0))[:-1])
     heights = 0.75 * np.diff(bins)
@@ -173,14 +183,14 @@ def plot_histogram(
     )
     axes[1].set(title="Wrong")
 
-    # axes[0].set(yticks=bins, xlim=(0, max_xlims[0]), ylim=(min_ylim, 1.0))
-    # axes[1].set(yticks=bins, xlim=(0, max_xlims[1]), ylim=(min_ylim, 1.0))
+    axes[0].set(yticks=yticks, xlim=(0, max_xlims[0]), ylim=(min_ylim, max_ylim))
+    axes[1].set(yticks=yticks, xlim=(0, max_xlims[1]), ylim=(min_ylim, max_ylim))
 
     axes[0].invert_xaxis()
     axes[0].yaxis.tick_right()
 
     fig.subplots_adjust(
-        wspace=0.14
+        wspace=0.17
     )  # get the graphs exactly far enough apart for yaxis labels
     fig.suptitle(title, fontsize="x-large", fontweight="bold")
 

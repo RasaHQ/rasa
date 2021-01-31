@@ -551,7 +551,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         same_sampling: bool = False,
         similarity_type: Optional[Text] = None,
         constrain_similarities: bool = True,
-        model_confidence: bool = True,
+        model_confidence: Text = SOFTMAX,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -716,18 +716,18 @@ class DotProductLoss(tf.keras.layers.Layer):
         """Computes model's prediction confidences from input and label embeddings.
 
         First compute the similarity from embeddings and then apply an activation
-        function as needed.
+        function if needed.
 
         Args:
             input_embeddings: Embeddings of input
             label_embeddings: Embeddings of labels
 
         Returns:
-            model confidence during prediction.
+            model's prediction confidence
         """
         # If model's prediction confidence is configured to be cosine similarity,
         # then normalize embeddings to unit vectors.
-        if self.model_confidence == COSINE or self.similarity_type == COSINE:
+        if self.model_confidence == COSINE:
             input_embeddings = tf.nn.l2_normalize(input_embeddings, axis=-1)
             label_embeddings = tf.nn.l2_normalize(label_embeddings, axis=-1)
 

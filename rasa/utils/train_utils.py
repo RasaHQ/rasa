@@ -389,7 +389,7 @@ def _check_confidence_setting(component_config) -> None:
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
             f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
-            f"to set it to `cosine`. It will be set to `cosine` by default "
+            f"to set it to `cosine`. It will be set to `cosine` by default, "
             f"Rasa Open Source 3.0 onwards.",
             category=UserWarning,
         )

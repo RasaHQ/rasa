@@ -370,14 +370,31 @@ async def test_softmax_normalization(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: False}, LABEL_RANKING_LENGTH)],
+    "classifier_params, prediction_min, prediction_max, output_length",
+    [
+        (
+            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"},
+            -1,
+            1,
+            LABEL_RANKING_LENGTH,
+        )
+    ],
+    [
+        (
+            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"},
+            -1e9,
+            1e9,
+            LABEL_RANKING_LENGTH,
+        )
+    ],
 )
-async def test_softmax_with_absolute_confidence(
-    component_builder,
-    tmp_path,
-    classifier_params,
-    output_length,
+async def test_cross_entropy_without_normalization(
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    classifier_params: Dict[Text, Any],
+    prediction_min: float,
+    prediction_max: float,
+    output_length: int,
     monkeypatch: MonkeyPatch,
 ):
     pipeline = as_pipeline(
@@ -408,7 +425,8 @@ async def test_softmax_with_absolute_confidence(
 
     # check each confidence is in range
     confidence_in_range = [
-        0.0 <= confidence <= 1.0 for confidence in intent_confidences
+        prediction_min <= confidence <= prediction_max
+        for confidence in intent_confidences
     ]
     assert all(confidence_in_range)
 

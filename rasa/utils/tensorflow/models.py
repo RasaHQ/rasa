@@ -732,7 +732,6 @@ class TransformerRasaModel(RasaModel):
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             name,
-            self.config[SIMILARITY_TYPE],
         )
 
     def _prepare_ffnn_layer(
@@ -792,6 +791,7 @@ class TransformerRasaModel(RasaModel):
             scale_loss,
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
+            similarity_type=self.config[SIMILARITY_TYPE],
             constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
             model_confidence=self.config[MODEL_CONFIDENCE],
         )

@@ -1620,13 +1620,19 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | it to the loss function to ensure that similarity values are |
 |                                 |                  | approximately bounded. Used only when `loss_type=softmax`    |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| relative_confidence             | True             | If `True`, applies softmax on all similarity values for pairs|
-|                                 |                  | of input and labels. This means that output confidences      |
-|                                 |                  | will always add up to 1.                                     |
-|                                 |                  | If `False`, applies sigmoid on all similarity values for     |
-|                                 |                  | pairs of input and labels. This means that confidence for    |
-|                                 |                  | each label will be between 0 and 1 but all of them won't add |
-|                                 |                  | up to 1.                                                     |
+| model_confidence                | "softmax"        | Affects how model's confidence for each intent               |
+|                                 |                  | is computed. It can take three values -                      |
+|                                 |                  | 1. `softmax` - Similarities between input and intent         |
+|                                 |                  | embeddings are post-processed with a softmax function,       |
+|                                 |                  | as a result of which confidence for all intents sum up to 1. |
+|                                 |                  | 2. `cosine` - Cosine similarity between input and intent     |
+|                                 |                  | embeddings. Confidence for each intent is in the             |
+|                                 |                  | range `[-1,1]`.                                              |
+|                                 |                  | 3. `inner` - Dot product similarity between input and intent |
+|                                 |                  | embeddings. Confidence for each intent is in an unbounded    |
+|                                 |                  | range.                                                       |
+|                                 |                  | This parameter does not affect the confidence for entity     |
+|                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 ```
 
@@ -2821,18 +2827,22 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | Requires `evaluate_on_number_of_examples > 0` and            |
 |                                 |                   | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| constrain_similarities          | True             | If `True`, applies sigmoid on all similarity terms and adds  |
-|                                 |                  | it to the loss function to ensure that similarity values are |
-|                                 |                  | approximately bounded. Used only when `loss_type=softmax`    |
-+---------------------------------+------------------+--------------------------------------------------------------+
-| relative_confidence             | True             | If `True`, applies softmax on all similarity values for pairs|
-|                                 |                  | of input and labels. This means that output confidences      |
-|                                 |                  | will always add up to 1.                                     |
-|                                 |                  | If `False`, applies sigmoid on all similarity values for     |
-|                                 |                  | pairs of input and labels. This means that confidence for    |
-|                                 |                  | each label will be between 0 and 1 but all of them won't add |
-|                                 |                  | up to 1.                                                     |
-+---------------------------------+------------------+--------------------------------------------------------------+
+| constrain_similarities          | True             | If `True`, applies sigmoid on all similarity terms and adds   |
+|                                 |                  | it to the loss function to ensure that similarity values are  |
+|                                 |                  | approximately bounded. Used only when `loss_type=softmax`     |
++---------------------------------+------------------+---------------------------------------------------------------+
+| model_confidence                | "softmax"        | Affects how model's confidence for each response label        |
+|                                 |                  | is computed. It can take three values -                       |
+|                                 |                  | 1. `softmax` - Similarities between input and response label  |
+|                                 |                  | embeddings are post-processed with a softmax function,        |
+|                                 |                  | as a result of which confidence for all labels sum up to 1.   |
+|                                 |                  | 2. `cosine` - Cosine similarity between input and response    |
+|                                 |                  | label embeddings. Confidence for each label is in the         |
+|                                 |                  | range `[-1,1]`.                                               |
+|                                 |                  | 3. `inner` - Dot product similarity between input and response|
+|                                 |                  | label embeddings. Confidence for each label is in an          |
+|                                 |                  | unbounded range.                                              |
++---------------------------------+------------------+---------------------------------------------------------------+
 ```
 
 :::note
