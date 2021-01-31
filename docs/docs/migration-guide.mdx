@@ -28,6 +28,8 @@ Also, a new option `model_confidence` has been added to each ML component. It af
 The default value is `softmax`, but we recommend using `cosine` as that will be the default value, Rasa Open Source 3.0 onwards.
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
 
+You should tune fallback confidence thresholds to adapt to these changes.
+
 ## Rasa 2.1 to Rasa 2.2
 
 ### General
