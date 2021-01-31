@@ -74,7 +74,8 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
-    RELATIVE_CONFIDENCE,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -235,8 +236,8 @@ class ResponseSelector(DIETClassifier):
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
-        # Return softmax based probabilities during prediction.
-        RELATIVE_CONFIDENCE: True,
+        # Model confidence to be returned during inference. Possible values - softmax, cosine, inner.
+        MODEL_CONFIDENCE: SOFTMAX,
     }
 
     def __init__(
@@ -749,12 +750,9 @@ class DIET2DIET(DIET):
         sentence_vector = self._last_token(text_transformed, sequence_lengths_text)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        scores = self._tf_layers[f"loss.{LABEL}"]._confidence_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
-        )
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
         )
         out["i_scores"] = scores
 

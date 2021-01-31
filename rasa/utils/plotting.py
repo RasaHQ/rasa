@@ -133,7 +133,8 @@ def plot_histogram(
     # Wine-ish colour for the confidences of hits.
     # Blue-ish colour for the confidences of misses.
     colors = ["#009292", "#920000"]
-    bins = [0.05 * i for i in range(1, 21)]
+    bins = [0.025 * i for i in range(1, 42)]
+    # bins = [1 * i for i in range(1, 31)]
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
@@ -172,8 +173,8 @@ def plot_histogram(
     )
     axes[1].set(title="Wrong")
 
-    axes[0].set(yticks=bins, xlim=(0, max_xlims[0]), ylim=(min_ylim, 1.0))
-    axes[1].set(yticks=bins, xlim=(0, max_xlims[1]), ylim=(min_ylim, 1.0))
+    # axes[0].set(yticks=bins, xlim=(0, max_xlims[0]), ylim=(min_ylim, 1.0))
+    # axes[1].set(yticks=bins, xlim=(0, max_xlims[1]), ylim=(min_ylim, 1.0))
 
     axes[0].invert_xaxis()
     axes[0].yaxis.tick_right()

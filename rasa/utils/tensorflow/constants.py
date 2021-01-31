@@ -53,7 +53,7 @@ SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
-RELATIVE_CONFIDENCE = "relative_confidence"
+MODEL_CONFIDENCE = "model_confidence"
 
 BILOU_FLAG = "BILOU_flag"
 

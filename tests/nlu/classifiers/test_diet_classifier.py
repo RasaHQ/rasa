@@ -30,7 +30,7 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
-    RELATIVE_CONFIDENCE,
+    MODEL_CONFIDENCE,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -315,7 +315,7 @@ async def test_softmax_normalization(
 
 @pytest.mark.parametrize(
     "classifier_params, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, RELATIVE_CONFIDENCE: False}, LABEL_RANKING_LENGTH)],
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: False}, LABEL_RANKING_LENGTH)],
 )
 async def test_softmax_with_absolute_confidence(
     component_builder,

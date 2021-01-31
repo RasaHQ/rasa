@@ -97,7 +97,8 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     MASK,
     CONSTRAIN_SIMILARITIES,
-    RELATIVE_CONFIDENCE,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
 )
 
 logger = logging.getLogger(__name__)
@@ -258,8 +259,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
-        # Return softmax based probabilities during prediction.
-        RELATIVE_CONFIDENCE: True,
+        # Model confidence to be returned during inference. Possible values - softmax, cosine, inner.
+        MODEL_CONFIDENCE: SOFTMAX,
     }
 
     # init helpers
@@ -300,7 +301,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_share_hidden_layers_sizes()
 
         train_utils._check_confidence_setting(self.component_config)
-        train_utils._check_similarity_confidence_setting(self.component_config)
         train_utils._check_similarity_loss_setting(self.component_config)
 
         self.component_config = train_utils.update_loss_type(self.component_config)
@@ -868,15 +868,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[LOSS_TYPE] == CROSS_ENTROPY
             and self.component_config[RANKING_LENGTH] > 0
         ):
-            message_sim = train_utils.sort_and_rank(
+            message_sim = train_utils.filter_top_k(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
 
             if (
                 self.component_config[SIMILARITY_TYPE] == INNER
-                and self.component_config[RELATIVE_CONFIDENCE]
+                and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
             ):
-                # Normalize the values if returned probabilities are from
+                # TODO: This should be removed in 3.0 when softmax as
+                #  model confidence is completely deprecated.
+                # Normalize the values if returned confidences are from
                 # softmax(hence relative to each other).
                 message_sim = train_utils.normalize(message_sim)
 
@@ -1664,12 +1666,9 @@ class DIET(TransformerRasaModel):
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        scores = self._tf_layers[f"loss.{LABEL}"]._confidence_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
-        )
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
         )
 
         return {"i_scores": scores}

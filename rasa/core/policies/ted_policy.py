@@ -103,7 +103,8 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
     CONSTRAIN_SIMILARITIES,
-    RELATIVE_CONFIDENCE,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -281,7 +282,7 @@ class TEDPolicy(Policy):
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: True,
         # Return softmax based probabilities during prediction.
-        RELATIVE_CONFIDENCE: True,
+        MODEL_CONFIDENCE: SOFTMAX,
         # Split entities by comma, this makes sense e.g. for a list of
         # ingredients in a recipe, but it doesn't make sense for the parts of
         # an address
@@ -342,7 +343,6 @@ class TEDPolicy(Policy):
             self.defaults, new_config
         )
         rasa.utils.train_utils._check_confidence_setting(self.config)
-        rasa.utils.train_utils._check_similarity_confidence_setting(self.config)
         rasa.utils.train_utils._check_similarity_loss_setting(self.config)
         self.config = rasa.utils.train_utils.update_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
@@ -632,14 +632,16 @@ class TEDPolicy(Policy):
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
         if self.config[LOSS_TYPE] == CROSS_ENTROPY and self.config[RANKING_LENGTH] > 0:
-            confidence = rasa.utils.train_utils.sort_and_rank(
+            confidence = rasa.utils.train_utils.filter_top_k(
                 confidence, self.config[RANKING_LENGTH]
             )
 
             if (
                 self.config[SIMILARITY_TYPE] == INNER
-                and self.config[RELATIVE_CONFIDENCE]
+                and self.config[MODEL_CONFIDENCE] == SOFTMAX
             ):
+                # TODO: This should be removed in 3.0 when softmax as
+                #  model confidence is completely deprecated.
                 # Normalize the values if returned probabilities are from softmax.
                 confidence = rasa.utils.train_utils.normalize(confidence)
 

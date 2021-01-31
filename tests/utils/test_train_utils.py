@@ -51,7 +51,7 @@ def test_normalize():
 def test_sort_and_rank(
     input_values: List[float], ranking_length: int, output_values: List[float]
 ):
-    ranked_values = train_utils.sort_and_rank(np.array(input_values), ranking_length)
+    ranked_values = train_utils.filter_top_k(np.array(input_values), ranking_length)
     assert np.array_equal(ranked_values, output_values)
 
 

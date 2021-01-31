@@ -24,7 +24,7 @@ from rasa.utils.tensorflow.constants import (
     NUM_TRANSFORMER_LAYERS,
     DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
-    RELATIVE_CONFIDENCE,
+    MODEL_CONFIDENCE,
 )
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
@@ -57,8 +57,8 @@ def normalize(values: np.ndarray) -> np.ndarray:
     return new_values
 
 
-def sort_and_rank(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
-    """Sorts the values in descending order and keep only top `ranking_length` values.
+def filter_top_k(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
+    """Sorts the values in descending order and keeps only top `ranking_length` values.
 
     Other values will be set to 0.
     Args:
@@ -386,26 +386,12 @@ def override_defaults(
 
 
 def _check_confidence_setting(component_config) -> None:
-    if component_config[RELATIVE_CONFIDENCE]:
+    if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
-            f"{RELATIVE_CONFIDENCE} is set to `True`. It is recommended "
-            f"to set it to `False`. It will be set to `False` by default "
+            f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
+            f"to set it to `cosine`. It will be set to `cosine` by default "
             f"Rasa Open Source 3.0 onwards.",
             category=UserWarning,
-        )
-
-
-def _check_similarity_confidence_setting(component_config) -> None:
-    if (
-        not component_config[CONSTRAIN_SIMILARITIES]
-        and not component_config[RELATIVE_CONFIDENCE]
-    ):
-        raise ValueError(
-            f"If {CONSTRAIN_SIMILARITIES} is set to False, "
-            f"{RELATIVE_CONFIDENCE} cannot be set to False as "
-            f"similarities need to be constrained during training "
-            f"time as well in order to correctly compute confidence values "
-            f"for each label at inference time."
         )
 
 

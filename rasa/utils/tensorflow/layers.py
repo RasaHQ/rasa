@@ -275,13 +275,6 @@ class Ffnn(tf.keras.layers.Layer):
 class Embed(tf.keras.layers.Layer):
     """Dense embedding layer.
 
-    Arguments:
-        embed_dim: Positive integer, dimensionality of the output space.
-        reg_lambda: Float; regularization factor.
-        layer_name_suffix: Text added to the name of the layers.
-        similarity_type: Optional type of similarity measure to use,
-            either 'cosine' or 'inner'.
-
     Input shape:
         N-D tensor with shape: `(batch_size, ..., input_dim)`.
         The most common situation would be
@@ -294,20 +287,16 @@ class Embed(tf.keras.layers.Layer):
     """
 
     def __init__(
-        self,
-        embed_dim: int,
-        reg_lambda: float,
-        layer_name_suffix: Text,
-        similarity_type: Optional[Text] = None,
+        self, embed_dim: int, reg_lambda: float, layer_name_suffix: Text,
     ) -> None:
-        super().__init__(name=f"embed_{layer_name_suffix}")
+        """Initialize layer.
 
-        self.similarity_type = similarity_type
-        if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
-            raise ValueError(
-                f"Wrong similarity type '{self.similarity_type}', "
-                f"should be '{COSINE}' or '{INNER}'."
-            )
+        Args:
+            embed_dim: Dimensionality of the output space.
+            reg_lambda: Regularization factor.
+            layer_name_suffix: Text added to the name of the layers.
+        """
+        super().__init__(name=f"embed_{layer_name_suffix}")
 
         regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._dense = tf.keras.layers.Dense(
@@ -319,10 +308,8 @@ class Embed(tf.keras.layers.Layer):
 
     # noinspection PyMethodOverriding
     def call(self, x: tf.Tensor) -> tf.Tensor:
+        """Apply dense layer."""
         x = self._dense(x)
-        if self.similarity_type == COSINE:
-            x = tf.nn.l2_normalize(x, axis=-1)
-
         return x
 
 
@@ -562,8 +549,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         name: Optional[Text] = None,
         parallel_iterations: int = 1000,
         same_sampling: bool = False,
+        similarity_type: Optional[Text] = None,
         constrain_similarities: bool = True,
-        relative_confidence: bool = True,
+        model_confidence: bool = True,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -589,12 +577,13 @@ class DotProductLoss(tf.keras.layers.Layer):
                 to run in parallel.
             same_sampling: Boolean, if 'True' sample same negative labels
                 for the whole batch.
+            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
             constrain_similarities: Boolean, if 'True' applies sigmoid on all
                 similarity terms and adds to the loss function to
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
-            relative_confidence: Boolean, if 'True' confidence is calculated by applying
-                softmax over similarities, else sigmoid is applied on individual similarities.
+            model_confidence: Model confidence to be returned during inference.
+                Possible values - softmax, cosine, inner.
         """
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -607,7 +596,13 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.parallel_iterations = parallel_iterations
         self.same_sampling = same_sampling
         self.constrain_similarities = constrain_similarities
-        self.relative_confidence = relative_confidence
+        self.model_confidence = model_confidence
+        self.similarity_type = similarity_type
+        if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
+            raise ValueError(
+                f"Wrong similarity type '{self.similarity_type}', "
+                f"should be '{COSINE}' or '{INNER}'."
+            )
 
     @staticmethod
     def _make_flat(x: tf.Tensor) -> tf.Tensor:
@@ -738,35 +733,44 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels_bad_negs,
         )
 
-    @staticmethod
-    def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor:
+    def sim(
+        self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
+    ) -> tf.Tensor:
         """Calculate similarity between given tensors."""
-
+        if self.similarity_type == COSINE:
+            a = tf.nn.l2_normalize(a, axis=-1)
+            b = tf.nn.l2_normalize(b, axis=-1)
         sim = tf.reduce_sum(a * b, axis=-1)
         if mask is not None:
             sim *= tf.expand_dims(mask, 2)
 
         return sim
 
-    def confidence_from_sim(self, sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
-        """Computes model confidence/probability from computed similarities.
+    def _confidence_from_embeddings(
+        self, input_embeddings: tf.Tensor, label_embeddings: tf.Tensor
+    ) -> tf.Tensor:
+        """Computes model's prediction confidences from input and label embeddings.
+
+        First compute the similarity from embeddings and then apply an activation
+        function as needed.
 
         Args:
-            sim: Computed similarities
-            similarity_type: Similarity function to use - COSINE, INNER, AUTO.
+            input_embeddings: Embeddings of input
+            label_embeddings: Embeddings of labels
 
         Returns:
-            Confidences corresponding to each similarity value.
+            model confidence during prediction.
         """
-        if similarity_type == COSINE:
-            # clip negative values to zero
-            return tf.nn.relu(sim)
-        elif self.relative_confidence:
-            # normalize result to [0, 1] with softmax
-            return tf.nn.softmax(sim)
+        # If model's prediction confidence is configured to be cosine similarity,
+        # then normalize embeddings to unit vectors.
+        if self.model_confidence == COSINE or self.similarity_type == COSINE:
+            input_embeddings = tf.nn.l2_normalize(input_embeddings, axis=-1)
+            label_embeddings = tf.nn.l2_normalize(label_embeddings, axis=-1)
 
-        # In other cases convert each individual similarity to probability
-        return tf.nn.sigmoid(sim)
+        similarities = self.sim(input_embeddings, label_embeddings)
+        if self.model_confidence == SOFTMAX:
+            return tf.nn.softmax(similarities)
+        return similarities
 
     def _train_sim(
         self,
