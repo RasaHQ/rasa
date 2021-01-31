@@ -134,8 +134,12 @@ def plot_histogram(
     # Blue-ish colour for the confidences of misses.
     colors = ["#009292", "#920000"]
     n_bins = 25
-    max_value = max(max(hist_data[0]), max(hist_data[1]))
-    min_value = min(min(hist_data[0]), min(hist_data[1]))
+    max_value = max(
+        [max(hist_data[0], default=0), max(hist_data[1], default=0)], default=0
+    )
+    min_value = min(
+        [min(hist_data[0], default=0), min(hist_data[1], default=0)], default=0
+    )
     bin_width = (max_value - min_value) / n_bins
     bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
 
