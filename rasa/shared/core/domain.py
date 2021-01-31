@@ -21,7 +21,7 @@ from pathlib import Path
 
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException, YamlException
+from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 from rasa.shared.utils.validation import YamlValidationException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
@@ -1579,7 +1579,11 @@ class Domain:
         if not is_likely_yaml_file(filename):
             return False
 
-        content = rasa.shared.utils.io.read_yaml_file(filename)
+        try:
+            content = rasa.shared.utils.io.read_yaml_file(filename)
+        except (ValueError, YamlSyntaxException):
+            return False
+
         return any(key in content for key in ALL_DOMAIN_KEYS)
 
     def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
