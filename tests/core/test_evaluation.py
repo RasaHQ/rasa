@@ -107,6 +107,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
+@pytest.mark.trains_model
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
         "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
@@ -252,6 +253,7 @@ def test_event_has_proper_implementation(
         ("data/test_yaml_stories/test_base_retrieval_intent_story.yml"),
     ],
 )
+@pytest.mark.trains_model
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = await _create_data_generator(
         test_file, response_selector_agent, use_e2e=True,
@@ -272,6 +274,7 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
         ("data/test_yaml_stories/test_base_retrieval_intent_wrong_prediction.yml"),
     ],
 )
+@pytest.mark.trains_model
 async def test_retrieval_intent_wrong_prediction(
     tmpdir: Path, response_selector_agent: Agent, test_file: Text
 ):

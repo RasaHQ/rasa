@@ -373,6 +373,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
 
 class TestTEDPolicy(PolicyTestCollection):
+    @pytest.mark.trains_model
     def test_train_model_checkpointing(self, tmp_path: Path):
         model_name = "core-checkpointed-model"
         best_model_file = tmp_path / (model_name + ".tar.gz")

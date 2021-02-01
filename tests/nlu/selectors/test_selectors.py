@@ -194,6 +194,7 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
+@pytest.mark.trains_model
 async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path
 ):
@@ -270,6 +271,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
+@pytest.mark.trains_model
 async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path):
     pipeline = [
         {"name": "WhitespaceTokenizer"},

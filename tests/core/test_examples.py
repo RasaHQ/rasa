@@ -8,6 +8,7 @@ from rasa.core.agent import Agent
 from rasa.utils.endpoints import ClientResponseError
 
 
+@pytest.mark.trains_model
 async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     agent = Agent.load(unpacked_trained_moodbot_path)
 
@@ -22,6 +23,7 @@ async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
 
 
 @pytest.mark.timeout(300)
+@pytest.mark.trains_model
 async def test_formbot_example(form_bot_agent: Agent):
     async def mock_form_happy_path(
         input_text: Text, output_text: Text, slot: Optional[Text] = None

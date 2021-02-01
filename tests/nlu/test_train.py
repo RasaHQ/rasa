@@ -134,6 +134,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 
 @pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
+@pytest.mark.trains_model
 async def test_train_persist_load_parse(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
@@ -155,6 +156,7 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
 @pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
+@pytest.mark.trains_model
 async def test_train_persist_load_parse_non_windows(
     language, pipeline, component_builder, tmpdir
 ):
@@ -207,6 +209,7 @@ def test_load_and_persist_without_train_non_windows(
     test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir)
 
 
+@pytest.mark.trains_model
 async def test_train_model_empty_pipeline(component_builder):
     _config = RasaNLUModelConfig({"pipeline": None, "language": "en"})
 
@@ -216,6 +219,7 @@ async def test_train_model_empty_pipeline(component_builder):
         )
 
 
+@pytest.mark.trains_model
 async def test_train_named_model(component_builder, tmpdir):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
@@ -235,6 +239,7 @@ async def test_train_named_model(component_builder, tmpdir):
     assert normalized_path == tmpdir.strpath
 
 
+@pytest.mark.trains_model
 async def test_handles_pipeline_with_non_existing_component(
     component_builder, pretrained_embeddings_spacy_config
 ):
@@ -249,6 +254,7 @@ async def test_handles_pipeline_with_non_existing_component(
     assert "Cannot find class" in str(execinfo.value)
 
 
+@pytest.mark.trains_model
 async def test_train_model_training_data_persisted(component_builder, tmpdir):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
@@ -270,6 +276,7 @@ async def test_train_model_training_data_persisted(component_builder, tmpdir):
     assert loaded.model_metadata.get("training_data") is not None
 
 
+@pytest.mark.trains_model
 async def test_train_model_no_training_data_persisted(component_builder, tmpdir):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}

@@ -146,6 +146,7 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
+@pytest.mark.trains_model
 async def test_interpreter_passed_to_agent(
     monkeypatch: MonkeyPatch, trained_rasa_model: Text
 ):
@@ -155,6 +156,7 @@ async def test_interpreter_passed_to_agent(
     assert isinstance(agent.interpreter, RasaNLUInterpreter)
 
 
+@pytest.mark.trains_model
 def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):

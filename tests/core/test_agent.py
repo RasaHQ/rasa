@@ -74,6 +74,7 @@ async def test_training_data_is_reproducible():
         assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
 
 
+@pytest.mark.trains_model
 async def test_agent_train(trained_moodbot_path: Text):
     moodbot_domain = Domain.load("examples/moodbot/domain.yml")
     loaded = Agent.load(trained_moodbot_path)
@@ -157,6 +158,7 @@ def test_agent_wrong_use_of_load():
         agent.load(training_data_file)
 
 
+@pytest.mark.trains_model
 async def test_agent_with_model_server_in_thread(
     model_server: TestClient, default_domain: Domain, unpacked_trained_rasa_model: Text
 ):
@@ -187,6 +189,7 @@ async def test_agent_with_model_server_in_thread(
     jobs.kill_scheduler()
 
 
+@pytest.mark.trains_model
 async def test_wait_time_between_pulls_without_interval(
     model_server: TestClient, monkeypatch: MonkeyPatch
 ):
@@ -203,6 +206,7 @@ async def test_wait_time_between_pulls_without_interval(
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
 
 
+@pytest.mark.trains_model
 async def test_pull_model_with_invalid_domain(
     model_server: TestClient, monkeypatch: MonkeyPatch, caplog: LogCaptureFixture
 ):
@@ -369,6 +373,7 @@ def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, An
     )
 
 
+@pytest.mark.trains_model
 async def test_agent_update_model_none_domain(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
     agent.update_model(
@@ -385,6 +390,7 @@ async def test_agent_update_model_none_domain(trained_rasa_model: Text):
     assert tracker.events[3].intent["name"] == "greet"
 
 
+@pytest.mark.trains_model
 async def test_load_agent_on_not_existing_path():
     agent = await load_agent(model_path="some-random-path")
 

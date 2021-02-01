@@ -139,6 +139,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
+@pytest.mark.trains_model
 async def test_train_persist_load_with_different_settings_non_windows(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
@@ -159,6 +160,7 @@ async def test_train_persist_load_with_different_settings_non_windows(
     )
 
 
+@pytest.mark.trains_model
 async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -173,6 +175,7 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
     )
 
 
+@pytest.mark.trains_model
 async def test_train_persist_load_with_only_entity_recognition(
     component_builder, tmpdir
 ):
@@ -194,6 +197,7 @@ async def test_train_persist_load_with_only_entity_recognition(
     )
 
 
+@pytest.mark.trains_model
 async def test_train_persist_load_with_only_intent_classification(
     component_builder, tmpdir
 ):
@@ -215,6 +219,7 @@ async def test_train_persist_load_with_only_intent_classification(
     )
 
 
+@pytest.mark.trains_model
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Path):
     _config = RasaNLUModelConfig(
         {
@@ -276,6 +281,7 @@ def as_pipeline(*components):
         ),  # less intents than default ranking_length
     ],
 )
+@pytest.mark.trains_model
 async def test_softmax_normalization(
     component_builder,
     tmp_path,
@@ -315,6 +321,7 @@ async def test_softmax_normalization(
     "classifier_params, output_length",
     [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1}, LABEL_RANKING_LENGTH)],
 )
+@pytest.mark.trains_model
 async def test_margin_loss_is_not_normalized(
     monkeypatch, component_builder, tmpdir, classifier_params, output_length
 ):
@@ -349,6 +356,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
+@pytest.mark.trains_model
 async def test_set_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
@@ -387,6 +395,7 @@ async def test_set_random_seed(component_builder, tmpdir):
     assert result_a == result_b
 
 
+@pytest.mark.trains_model
 async def test_train_tensorboard_logging(component_builder, tmpdir):
     from pathlib import Path
 
@@ -425,6 +434,7 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
     assert len(all_files) == 3
 
 
+@pytest.mark.trains_model
 async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path
 ):
@@ -477,6 +487,7 @@ async def test_train_model_checkpointing(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
+@pytest.mark.trains_model
 async def test_train_persist_load_with_composite_entities(
     classifier_params, component_builder, tmpdir
 ):

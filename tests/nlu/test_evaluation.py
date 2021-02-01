@@ -357,6 +357,7 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
+@pytest.mark.trains_model
 async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     result = await run_evaluation(
         DEFAULT_DATA_PATH,
@@ -369,6 +370,7 @@ async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     assert result.get("intent_evaluation")
 
 
+@pytest.mark.trains_model
 async def test_eval_data(
     component_builder: ComponentBuilder, tmp_path: Path, project: Text
 ):
@@ -919,6 +921,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
+@pytest.mark.trains_model
 async def test_nlu_comparison(tmp_path: Path):
     config = {
         "language": "en",
