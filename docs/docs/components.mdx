@@ -2335,6 +2335,9 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
       set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
       to learn.
 
+    * `BILOU_flag`:
+      This parameter determines whether to use BILOU tagging or not. Default `True`.
+
   The above configuration parameters are the ones you should configure to fit your model to your data.
   However, additional parameters exist that can be adapted.
 
@@ -2445,6 +2448,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   |                                 |                  | and the model has to predict those tokens. It acts like a    |
   |                                 |                  | regularizer and should help to learn a better contextual     |
   |                                 |                  | representation of the input.                                 |
+  +---------------------------------+------------------+--------------------------------------------------------------+
+  | BILOU_flag                      | True             | If 'True', additional BILOU tags are added to entity labels. |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
   |                                 |                  | metrics, set this option to a valid output directory. You    |
