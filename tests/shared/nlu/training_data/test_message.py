@@ -266,3 +266,10 @@ def test_is_core_or_domain_message(
     message: Message, result: bool,
 ):
     assert result == message.is_core_or_domain_message()
+
+
+def test_add_diagnostic_data_with_repeated_component_raises_warning():
+    message = Message()
+    message.add_diagnostic_data("a", {})
+    with pytest.warns(UserWarning):
+        message.add_diagnostic_data("a", {})

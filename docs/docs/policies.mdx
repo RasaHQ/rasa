@@ -176,6 +176,27 @@ If you want to fine-tune your model, start by modifying the following parameters
   set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
   to learn.
 
+* `split_entities_by_comma`:
+  This parameter defines whether adjacent entities separated by a comma should be treated as one, or split. For example,
+  entities with the type `ingredients`, like "apple, banana" can be split into "apple" and "banana". An entity with type
+  `address`, like "Schönhauser Allee 175, 10119 Berlin" should be treated as one.
+
+  Can either be
+  `True`/`False` globally:
+  ```yaml-rasa title="config.yml"
+  policies:
+    - name: TEDPolicy
+      split_entities_by_comma: True
+  ```
+  or set per entity type, such as:
+  ```yaml-rasa title="config.yml"
+  policies:
+    - name: TEDPolicy
+      split_entities_by_comma:
+        address: False
+        ingredients: True
+  ```
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -319,6 +340,17 @@ However, additional parameters exist that can be adapted.
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | entity_recognition                    | True                   | If 'True' entity recognition is trained and entities are     |
 |                                       |                        | extracted.                                                   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| BILOU_flag                            | True                   | If 'True', additional BILOU tags are added to entity labels. |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| split_entities_by_comma               | True                   | Splits a list of extracted entities by comma to treat each   |
+|                                       |                        | one of them as a single entity. Can either be `True`/`False` |
+|                                       |                        | globally, or set per entity type, such as:                   |
+|                                       |                        | ```                                                          |
+|                                       |                        | - name: TEDPolicy                                            |
+|                                       |                        |   split_entities_by_comma:                                   |
+|                                       |                        |     address: True                                            |
+|                                       |                        | ```                                                          |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 ```
 
