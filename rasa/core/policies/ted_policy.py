@@ -1062,6 +1062,9 @@ class TED(TransformerRasaModel):
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         mask = self._compute_mask(dialogue_lengths)
 
+        if self.use_only_last_dialogue_turns:
+            dialogue_in = tf.reverse_sequence(dialogue_in, dialogue_lengths, seq_axis=1)
+
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
         ](dialogue_in, 1 - mask, self._training)
@@ -1070,7 +1073,7 @@ class TED(TransformerRasaModel):
         if self.use_only_last_dialogue_turns:
             # pick last vector if max history featurizer is used
             dialogue_transformed = dialogue_transformed[:, :1, :]
-            mask = mask[:, :1, :]
+            mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
@@ -1208,7 +1211,13 @@ class TED(TransformerRasaModel):
         # length 2, the second 1 and the third 3.
         last_dialogue_turn_mask = tf.math.logical_not(
             tf.cast(
-                tf_batch_data[DIALOGUE][INDICES][0],
+                tf.concat(
+                    [
+                        tf_batch_data[DIALOGUE][INDICES][0],
+                        tf.zeros((1,), dtype=tf.int32),
+                    ],
+                    axis=0,
+                )[1:],
                 dtype=tf.bool,
             )
         )
@@ -1477,8 +1486,9 @@ class TED(TransformerRasaModel):
 
         if self.use_only_last_dialogue_turns:
             # pick outputs that correspond to the last dialogue turns
-            attribute_mask = attribute_mask[:, :1, :]
-
+            attribute_mask = tf.expand_dims(
+                self._last_token(attribute_mask, dialogue_lengths), axis=1
+            )
         dialogue_transformer_output = tf.boolean_mask(
             dialogue_transformer_output, tf.squeeze(attribute_mask, axis=-1)
         )

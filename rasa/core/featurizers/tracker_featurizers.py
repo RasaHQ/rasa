@@ -471,10 +471,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
-    @staticmethod
-    def _invert_time(list_of_lists: List[List[Any]]) -> List[List[Any]]:
-        return [list(reversed(time_list)) for time_list in list_of_lists]
-
     def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
@@ -553,7 +549,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
-        return self._invert_time(trackers_as_states), trackers_as_actions, self._invert_time(trackers_as_entities)
+        return trackers_as_states, trackers_as_actions, trackers_as_entities
 
     def prediction_states(
         self,
@@ -581,4 +577,4 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
-        return self._invert_time(trackers_as_states)
+        return trackers_as_states
