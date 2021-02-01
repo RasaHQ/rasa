@@ -444,7 +444,7 @@ jobs:
 
   docker:
     name: Build Docker
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [changes, build_docker_base_images_and_set_env]
     env:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
