@@ -17,6 +17,20 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.21] - 2021-02-01
+^^^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#7439 <https://github.com/rasahq/rasa/issues/7439>`_: The `url` option now supports a list of servers `url: ['10.0.0.158:32803','10.0.0.158:32804']`. 
+  Removed `group_id` because it is not a valid Kafka producer parameter.
+
+Bugfixes
+--------
+- `#7638 <https://github.com/rasahq/rasa/issues/7638>`_: Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](lock-stores.mdx). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](lock-stores.mdx#redislockstore).
+- `#7722 <https://github.com/rasahq/rasa/issues/7722>`_: Fix a bug where, if a user injects an intent using the HTTP API, slot auto-filling is not performed on the entities provided.
+
+
 [1.10.20] - 2020-12-18
 ^^^^^^^^^^^^^^^^^^^^^^
 
