@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTup
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
-import rasa.utils.tensorflow.numpy
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
@@ -849,7 +848,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     # process helpers
-    def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
+    def _predict(
+        self, message: Message
+    ) -> Optional[Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]]:
         if self.model is None:
             logger.debug(
                 f"There is no trained model for '{self.__class__.__name__}': The "
@@ -860,9 +861,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
-
-        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
-        return self.model.predict(data_generator)
+        return self.model.rasa_predict(model_data)
 
     def _predict_label(
         self, predict_out: Optional[Dict[Text, tf.Tensor]]
@@ -960,10 +959,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.set(ENTITIES, entities, add_to_output=True)
 
         if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(
-                self.unique_name,
-                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
-            )
+            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -1608,10 +1604,12 @@ class DIET(TransformerRasaModel):
             mask,
             self.text_name,
         )
-        predictions = {DIAGNOSTIC_DATA: {
-            "attention_weights": attention_weights,
-            "text_transformed": text_transformed,
-        }}
+        predictions = {
+            DIAGNOSTIC_DATA: {
+                "attention_weights": attention_weights,
+                "text_transformed": text_transformed,
+            }
+        }
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(

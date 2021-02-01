@@ -7,7 +7,6 @@ import tensorflow as tf
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
-import rasa.utils.tensorflow.numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
@@ -441,10 +440,7 @@ class ResponseSelector(DIETClassifier):
         self._set_message_property(message, prediction_dict, selector_key)
 
         if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(
-                self.unique_name,
-                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
-            )
+            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -731,7 +727,7 @@ class DIET2DIET(DIET):
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
@@ -750,11 +746,11 @@ class DIET2DIET(DIET):
             self.text_name,
         )
 
-        out = {}
-
-        out[DIAGNOSTIC_DATA] = {
-            "attention_weights": attention_weights,
-            "text_transformed": text_transformed,
+        predictions = {
+            DIAGNOSTIC_DATA: {
+                "attention_weights": attention_weights,
+                "text_transformed": text_transformed,
+            }
         }
 
         if self.all_labels_embed is None:
@@ -771,6 +767,6 @@ class DIET2DIET(DIET):
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
-        out["i_scores"] = scores
+        predictions["i_scores"] = scores
 
-        return out
+        return predictions

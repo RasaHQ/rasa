@@ -51,6 +51,7 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
+from tensorflow.python.keras.utils import tf_utils
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ class RasaModel(TmpKerasModel):
         self.random_seed = random_seed
         self._set_random_seed()
 
+        self._tf_predict_step = None
         self.prepared_for_prediction = False
 
     def _set_random_seed(self):
@@ -117,7 +119,7 @@ class RasaModel(TmpKerasModel):
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
         Args:
@@ -222,6 +224,49 @@ class RasaModel(TmpKerasModel):
 
         return self.batch_predict(batch_in)
 
+    @staticmethod
+    def _dynamic_signature(
+        batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> List[List[tf.TensorSpec]]:
+        element_spec = []
+        for tensor in batch_in:
+            if len(tensor.shape) > 1:
+                shape = [None] * (len(tensor.shape) - 1) + [tensor.shape[-1]]
+            else:
+                shape = [None]
+            element_spec.append(tf.TensorSpec(shape, tensor.dtype))
+        # batch_in is a list of tensors, therefore we need to wrap element_spec into
+        # the list
+        return [element_spec]
+
+    def rasa_predict(self, model_data: RasaModelData) -> Dict[Text, tf.Tensor]:
+        """Custom prediction method that builds tf graph on the first call.
+
+        Args:
+            model_data: The model data to use for prediction.
+
+        Return:
+            Prediction output.
+        """
+        self._training = False
+        if not self.prepared_for_prediction:
+            # in case the model is used for prediction without loading, e.g. directly
+            # after training, we need to prepare the model for prediction once
+            self.prepare_for_predict()
+            self.prepared_for_prediction = True
+
+        batch_in = RasaBatchDataGenerator.prepare_batch(model_data.data)
+
+        if self._run_eagerly:
+            return tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
+
+        if self._tf_predict_step is None:
+            self._tf_predict_step = tf.function(
+                self.predict_step, input_signature=self._dynamic_signature(batch_in)
+            )
+
+        return tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
+
     def _get_metric_results(self, prefix: Optional[Text] = "") -> Dict[Text, float]:
         return {
             f"{prefix}{metric.name}": metric.result()
@@ -277,19 +322,10 @@ class RasaModel(TmpKerasModel):
         # load trained weights
         model.load_weights(model_file_name)
 
-        if not finetune_mode:
-            # prepare the model for prediction
-            model._training = False
-            model.prepare_for_predict()
-            model.prepared_for_prediction = True
-
-            # predict on one data example to speed up prediction during inference
-            # the first prediction always takes a bit longer
-            if predict_data_example:
-                predict_data_generator = RasaBatchDataGenerator(
-                    predict_data_example, batch_size=1
-                )
-                model.predict(predict_data_generator)
+        # predict on one data example to speed up prediction during inference
+        # the first prediction always takes a bit longer to trace tf function
+        if not finetune_mode and predict_data_example:
+            model.rasa_predict(predict_data_example)
 
         logger.debug("Finished loading the model.")
         return model
@@ -875,7 +911,7 @@ class TransformerRasaModel(RasaModel):
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
         Args:

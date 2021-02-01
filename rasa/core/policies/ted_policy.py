@@ -53,7 +53,6 @@ from rasa.utils.tensorflow.model_data import (
     Data,
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
-import rasa.utils.tensorflow.numpy
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
@@ -107,7 +106,6 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     ENTITY_RECOGNITION,
 )
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 
@@ -644,11 +642,7 @@ class TEDPolicy(Policy):
             tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
-
-        data_generator = RasaBatchDataGenerator(
-            model_data, batch_size=len(tracker_state_features)
-        )
-        output = self.model.predict(data_generator)
+        output = self.model.rasa_predict(model_data)
 
         # take the last prediction in the sequence
         similarities = output["similarities"][:, -1, :]
@@ -669,9 +663,7 @@ class TEDPolicy(Policy):
             confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
             optional_events=optional_events,
-            diagnostic_data=rasa.utils.tensorflow.numpy.values_to_numpy(
-                output.get(DIAGNOSTIC_DATA)
-            ),
+            diagnostic_data=output.get(DIAGNOSTIC_DATA),
         )
 
     def _create_optional_event_for_entities(
@@ -1297,7 +1289,7 @@ class TED(TransformerRasaModel):
             sequence_lengths += 1
             mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
-            attribute_features, _, _, _ = self._create_sequence(
+            attribute_features, _, _, _, _ = self._create_sequence(
                 tf_batch_data[attribute][SEQUENCE],
                 tf_batch_data[attribute][SENTENCE],
                 mask_sequence_text,
@@ -1700,7 +1692,7 @@ class TED(TransformerRasaModel):
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
         Args:
