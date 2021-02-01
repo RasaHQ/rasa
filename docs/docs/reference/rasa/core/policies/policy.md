@@ -72,7 +72,7 @@ Returns the policy&#x27;s featurizer.
 #### featurize\_for\_training
 
 ```python
- | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[
+ | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False, **kwargs: Any, ,) -> Tuple[
  |         List[List[Dict[Text, List["Features"]]]],
  |         np.ndarray,
  |         List[List[Dict[Text, List["Features"]]]],
@@ -90,6 +90,7 @@ into a float vector which can be used by a ML model.
   the list of the :class:`rasa.core.trackers.DialogueStateTracker`
 - `domain` - the :class:`rasa.shared.core.domain.Domain`
 - `interpreter` - the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
   
 
 **Returns**:

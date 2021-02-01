@@ -108,6 +108,18 @@ Get a list of BILOU entity tags and set them on the given messages.
 
 - `training_data` - the training data
 
+#### apply\_bilou\_schema\_to\_message
+
+```python
+apply_bilou_schema_to_message(message: "Message") -> None
+```
+
+Get a list of BILOU entity tags and set them on the given message.
+
+**Arguments**:
+
+- `message` - the message
+
 #### map\_message\_entities
 
 ```python

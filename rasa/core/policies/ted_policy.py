@@ -12,8 +12,7 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
@@ -103,6 +102,7 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     FEATURIZERS,
     ENTITY_RECOGNITION,
+    BILOU_FLAG,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -276,6 +276,11 @@ class TEDPolicy(Policy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: True,
+        # 'BILOU_flag' determines whether to use BILOU tagging or not.
+        # If set to 'True' labelling is more rigorous, however more
+        # examples per entity are required.
+        # Rule of thumb: you should have more than 100 examples per entity.
+        BILOU_FLAG: True,
         # Split entities by comma, this makes sense e.g. for a list of
         # ingredients in a recipe, but it doesn't make sense for the parts of
         # an address
@@ -337,26 +342,6 @@ class TEDPolicy(Policy):
         )
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
-
-    def _create_entity_tag_specs(self) -> List[EntityTagSpec]:
-        """Create entity tag specifications with their respective tag id mappings."""
-        _tag_specs = []
-
-        tag_id_index_mapping = self.featurizer.state_featurizer.get_entity_tag_ids()
-
-        if tag_id_index_mapping:
-            _tag_specs.append(
-                EntityTagSpec(
-                    tag_name=ENTITY_ATTRIBUTE_TYPE,
-                    tags_to_ids=tag_id_index_mapping,
-                    ids_to_tags={
-                        value: key for key, value in tag_id_index_mapping.items()
-                    },
-                    num_tags=len(tag_id_index_mapping),
-                )
-            )
-
-        return _tag_specs
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
@@ -495,7 +480,11 @@ class TEDPolicy(Policy):
 
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self.featurize_for_training(
-            training_trackers, domain, interpreter, **kwargs
+            training_trackers,
+            domain,
+            interpreter,
+            bilou_tagging=self.config[BILOU_FLAG],
+            **kwargs,
         )
 
         self._label_data, encoded_all_labels = self._create_label_data(
@@ -514,7 +503,7 @@ class TEDPolicy(Policy):
             return
 
         if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self._create_entity_tag_specs()
+            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
@@ -665,7 +654,10 @@ class TEDPolicy(Policy):
             predicted_tags,
             confidence_values,
         ) = rasa.utils.train_utils.entity_label_to_tags(
-            prediction_output, self._entity_tag_specs, prediction_index=-1
+            prediction_output,
+            self._entity_tag_specs,
+            self.config[BILOU_FLAG],
+            prediction_index=-1,
         )
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:

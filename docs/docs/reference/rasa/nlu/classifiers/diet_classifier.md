@@ -3,23 +3,15 @@ sidebar_label: diet_classifier
 title: rasa.nlu.classifiers.diet_classifier
 ---
 
-## EntityTagSpec Objects
-
-```python
-class EntityTagSpec(NamedTuple)
-```
-
-Specification of an entity tag present in the training data.
-
 ## DIETClassifier Objects
 
 ```python
 class DIETClassifier(IntentClassifier,  EntityExtractor)
 ```
 
-DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
-intent classification and entity recognition.
+A multi-task model for intent classification and entity extraction.
 
+DIET is Dual Intent and Entity Transformer.
 The architecture is based on a transformer which is shared for both tasks.
 A sequence of entity labels is predicted through a Conditional Random Field (CRF)
 tagging layer on top of the transformer output sequence corresponding to the

@@ -3,6 +3,14 @@ sidebar_label: extractor
 title: rasa.nlu.extractors.extractor
 ---
 
+## EntityTagSpec Objects
+
+```python
+class EntityTagSpec(NamedTuple)
+```
+
+Specification of an entity tag present in the training data.
+
 ## EntityExtractor Objects
 
 ```python

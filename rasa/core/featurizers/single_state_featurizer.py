@@ -5,7 +5,9 @@ from typing import List, Optional, Dict, Text, Set, Any
 from collections import defaultdict
 
 import rasa.shared.utils.io
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.nlu.utils import bilou_utils
+from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
@@ -17,15 +19,13 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     INTENT,
-    TEXT,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
-from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
-from rasa.utils.tensorflow.constants import IDS
+from rasa.utils.tensorflow import model_data_utils
 
 logger = logging.getLogger(__name__)
 
@@ -49,32 +49,61 @@ class SingleStateFeaturizer:
         self._use_regex_interpreter = False
         self._default_feature_states = {}
         self.action_texts = []
-        self.entity_tag_id_mapping = {}
+        self.entity_tag_specs = []
 
-    def get_entity_tag_ids(self) -> Dict[Text, int]:
+    def _create_entity_tag_specs(
+        self, bilou_tagging: bool = False
+    ) -> List[EntityTagSpec]:
         """Returns the tag to index mapping for entities.
 
         Returns:
             Tag to index mapping.
         """
         if ENTITIES not in self._default_feature_states:
-            return {}
+            return []
 
-        tag_ids = {
-            tag: idx + 1  # +1 to keep 0 for the NO_ENTITY_TAG
-            for tag, idx in self._default_feature_states[ENTITIES].items()
-        }
-        tag_ids[NO_ENTITY_TAG] = 0
-        return tag_ids
+        if bilou_tagging:
+            tag_id_index_mapping = {
+                f"{prefix}{tag}": idx_1 * len(BILOU_PREFIXES) + idx_2 + 1
+                for tag, idx_1 in self._default_feature_states[ENTITIES].items()
+                for idx_2, prefix in enumerate(BILOU_PREFIXES)
+            }
+        else:
+            tag_id_index_mapping = {
+                tag: idx + 1  # +1 to keep 0 for the NO_ENTITY_TAG
+                for tag, idx in self._default_feature_states[ENTITIES].items()
+            }
+
+        # NO_ENTITY_TAG corresponds to non-entity which should correspond to 0 index
+        # needed for correct prediction for padding
+        tag_id_index_mapping[NO_ENTITY_TAG] = 0
+
+        # TODO
+        #  The entity states used to create the tag-idx-mapping contains the
+        #  entities and the concatenated entity and roles/groups. We do not
+        #  distinguish between entities and roles/groups right now.
+        #  we return a list to anticipate that
+        return [
+            EntityTagSpec(
+                tag_name=ENTITY_ATTRIBUTE_TYPE,
+                tags_to_ids=tag_id_index_mapping,
+                ids_to_tags={value: key for key, value in tag_id_index_mapping.items()},
+                num_tags=len(tag_id_index_mapping),
+            )
+        ]
 
     def prepare_for_training(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
     ) -> None:
         """Gets necessary information for featurization from domain.
 
         Args:
             domain: An instance of :class:`rasa.shared.core.domain.Domain`.
             interpreter: The interpreter used to encode the state
+            bilou_tagging: indicates whether BILOU tagging should be used or not
         """
         if isinstance(interpreter, RegexInterpreter):
             # this method is called during training,
@@ -95,7 +124,7 @@ class SingleStateFeaturizer:
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.action_texts = domain.action_texts
-        self.entity_tag_id_mapping = self.get_entity_tag_ids()
+        self.entity_tag_specs = self._create_entity_tag_specs(bilou_tagging)
 
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
@@ -134,10 +163,11 @@ class SingleStateFeaturizer:
         if sparse:
             features = scipy.sparse.coo_matrix(features)
 
-        features = Features(
-            features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
-        )
-        return [features]
+        return [
+            Features(
+                features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
+            )
+        ]
 
     @staticmethod
     def _to_sparse_sentence_features(
@@ -266,7 +296,10 @@ class SingleStateFeaturizer:
         return state_features
 
     def encode_entities(
-        self, entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter
+        self,
+        entity_data: Dict[Text, Any],
+        interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
     ) -> Dict[Text, List["Features"]]:
         """Encode the given entity data with the help of the given interpreter.
 
@@ -275,40 +308,36 @@ class SingleStateFeaturizer:
         Args:
             entity_data: The dict containing the text and entity labels and locations
             interpreter: The interpreter used to encode the state
+            bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
             A dictionary of entity type to list of features.
         """
-        from rasa.nlu.test import determine_token_labels
-
         # TODO
         #  The entity states used to create the tag-idx-mapping contains the
         #  entities and the concatenated entity and roles/groups. We do not
         #  distinguish between entities and roles/groups right now.
-        # TODO
-        #  Should we support BILOU tagging?
-
-        if TEXT not in entity_data or len(self.entity_tag_id_mapping) < 2:
+        if (
+            not entity_data
+            or not self.entity_tag_specs
+            or self.entity_tag_specs[0].num_tags < 2
+        ):
             # we cannot build a classifier with fewer than 2 classes
             return {}
 
-        parsed_text = interpreter.featurize_message(Message({TEXT: entity_data[TEXT]}))
-        if not parsed_text:
+        message = interpreter.featurize_message(Message(entity_data))
+
+        if not message:
             return {}
-        entities = entity_data.get(ENTITIES, [])
 
-        _tags = []
-        for token in parsed_text.get(TOKENS_NAMES[TEXT], []):
-            _tag = determine_token_labels(
-                token, entities, attribute_key=ENTITY_ATTRIBUTE_TYPE
-            )
-            # TODO handle if tag is not in mapping
-            _tags.append(self.entity_tag_id_mapping[_tag])
+        if bilou_tagging:
+            bilou_utils.apply_bilou_schema_to_message(message)
 
-        # transpose to have seq_len x 1
         return {
             ENTITY_TAGS: [
-                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN)
+                model_data_utils.get_tag_ids(
+                    message, self.entity_tag_specs[0], bilou_tagging
+                )
             ]
         }
 
