@@ -1249,7 +1249,7 @@ class TED(TransformerRasaModel):
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
             attribute: the attribute we will encode features for
-            (e.g., ACTION_NAME, INTENT)
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             A tensor combining  all features for `attribute`
@@ -1349,10 +1349,9 @@ class TED(TransformerRasaModel):
 
         Args:
             attribute_features: the "real" features to convert
-            attribute_mask:  the tensor containing the position of "real" features
-                in the dialogue, shape is (batch-size x dialogue_len x 1)
-            dialogue_lengths: the tensor containing the actual dialogue length,
-                shape is (batch-size,)
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+            attribute: the attribute we will encode features for
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             The converted attribute features
