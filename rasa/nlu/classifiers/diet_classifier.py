@@ -1390,7 +1390,10 @@ class DIET(TransformerRasaModel):
         )
 
         lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
-        # pick elements that were masked
+
+        # Pick elements that were masked, throwing away the sequence dimension and
+        # effectively switching from shape (batch_size, sequence_length, units) to
+        # (num_masked_elements, units).
         outputs = tf.boolean_mask(outputs, lm_mask_bool)
         inputs = tf.boolean_mask(inputs, lm_mask_bool)
         ids = tf.boolean_mask(seq_ids, lm_mask_bool)
@@ -1398,8 +1401,19 @@ class DIET(TransformerRasaModel):
         outputs_embed = self._tf_layers[f"embed.{name}_lm_mask"](outputs)
         inputs_embed = self._tf_layers[f"embed.{name}_golden_token"](inputs)
 
+        # To constrain the otherwise computationally expensive loss calculation, we
+        # constrain the label space in MLM (i.e. token space) to only those tokens that
+        # were masked in this batch. Hence the reduced list of token embeddings
+        # (inputs_embed) and the reduced list of labels (ids) are passed as
+        # all_labels_embed and all_labels, respectively. In the future, we could be less
+        # restrictive and construct a slightly bigger label space which could include
+        # tokens not masked in the current batch too.
         return self._tf_layers[f"loss.{name}_mask"](
-            outputs_embed, inputs_embed, ids, inputs_embed, ids
+            inputs_embed=outputs_embed,
+            labels_embed=inputs_embed,
+            labels=ids,
+            all_labels_embed=inputs_embed,
+            all_labels=ids,
         )
 
     def _calculate_label_loss(

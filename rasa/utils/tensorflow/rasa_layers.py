@@ -457,7 +457,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
         mask_sequence = inputs[2]
         mask_sequence_sentence = inputs[3]
 
-        # different feature types are present, combine them
+        # different feature types are present, make them dense & combine them
         if self.have_all_feature_types:
             _inputs = (sequence_features,)
             sequence = self.layers_sparse_dense[SEQUENCE](_inputs, training=training)
@@ -479,7 +479,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
 
             return sequence_sentence
 
-        # only one feature type is present - skip combining different types
+        # only one feature type is present - make it dense but skip combining
         elif self.layers_sparse_dense[SEQUENCE]:
             _inputs = (sequence_features,)
             sequence = self.layers_sparse_dense[SEQUENCE](_inputs, training=training)
@@ -524,18 +524,19 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # for sequential text features prepare the logic for producing dense token embeddings
         # to be used as labels in MLM. these will be sampled from for negative sampling.
         if name == TEXT and SEQUENCE in data_signature:
+            self.enables_mlm = True
             self.input_mask_layer = layers.InputMask()
 
-            self.produce_dense_token_ids = True
-            has_sparse = any(
+            # self.produce_dense_token_ids = True
+            expect_sparse_seq_features = any(
                 [signature.is_sparse for signature in data_signature[SEQUENCE]]
             )
-            has_dense = any(
+            expect_dense_seq_features = any(
                 [not signature.is_sparse for signature in data_signature[SEQUENCE]]
             )
             # if dense features are present, we use those as unique token-level embeddings,
             # otherwise we create these from the sparse features by using a simple layer.
-            if has_sparse and not has_dense:
+            if expect_sparse_seq_features and not expect_dense_seq_features:
                 self.sparse_to_dense_token_ids = layers.DenseForSparse(
                     units=2,
                     use_bias=False,
@@ -543,7 +544,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                     name=f"sparse_to_dense_token_ids.{name}",
                 )
         else:
-            self.produce_dense_token_ids = False
+            self.enables_mlm = False
+            # self.produce_dense_token_ids = False
 
         # TRANSFORMER
         num_layers = config[NUM_TRANSFORMER_LAYERS]
@@ -611,7 +613,6 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             List[Union[tf.Tensor, tf.SparseTensor]],
             tf.Tensor,
             tf.Tensor,
-            # bool,
         ],
         masked_lm_loss: bool = False,
         training: Optional[Union[tf.Tensor, bool]] = None,
@@ -622,6 +623,12 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         Optional[tf.Tensor],
         Optional[tf.Tensor],
     ]:
+        if masked_lm_loss and not self.enables_mlm:
+            raise ValueError(
+                "This layer wasn't prepared to do MLM, hence you cannot\
+                call it with masked_lm_loss=True."
+            )
+
         sequence_features = inputs[0]
         sentence_features = inputs[1]
         mask_sequence = inputs[2]
@@ -629,29 +636,44 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
         _inputs = (sequence_features, sentence_features, mask_sequence, mask_text)
         x = self.input_layer(_inputs)
+        print(f"after input: {x.shape}")
 
         x = self.ffnn(x, training)
 
-        if self.produce_dense_token_ids:
+        if self.enables_mlm and masked_lm_loss:
+            # seq_ids are embeddings with the same shape as the first dense sequence feature
+            # or alternatively the last dimension will have size 2 if there are only sparse
+            # sequence features present. In any case, these embeddings can be viewed as
+            # labels/unique IDs of all input tokens (to be used later) because these embeddings
+            # aren't affected by dropout or masking and are effectively always unique for
+            # different input tokens (and same for the same tokens).
             seq_ids = self._features_as_seq_ids(sequence_features)
-        else:
-            seq_ids = None
 
-        # TODO unify this with self.produce_dense_token_ids?
-        if masked_lm_loss:
+            # lm_mask_bool has the same shape as mask_text, with True meaning the token
+            # is masked and False meaning the token isn't masked or it's a fake (padded)
+            # token.
             transformer_inputs, lm_mask_bool = self.input_mask_layer(
                 x, mask_text, training
             )
         else:
+            seq_ids = None
             transformer_inputs = x
             lm_mask_bool = None
 
         if self.num_transformer_layers > 0:
+            mask_padding = 1 - mask_text
             outputs, attention_weights = self.transformer(
-                transformer_inputs, 1 - mask_text, training
+                transformer_inputs, 1 - mask_padding, training
             )
             outputs = tfa.activations.gelu(outputs)
         else:
             outputs, attention_weights = transformer_inputs, None
 
+        """
+        outputs: same as TransformerEncoder: (batch_size, msl, transformer_size) -- if no transformer, then last dimension is determined by FFNN (config[HIDDEN_LAYERS_SIZES][name])
+        x: (batch_size, msl, hidden_dim), last dimension determined by FFNN, for msl check underlying RasaInputLayer
+        seq_ids: (batch_size, msl, id_dim) where id_dim is 2 if only sparse sequence features are present and the last dimension size of the first dense sequence feature otherwise. It can also be None if not doing MLM.
+        lm_mask_bool: (batch_size, msl, 1) or None if not doing MLM.
+        attention_weights: (num_layers, batch_size, num_heads, msl, msl) or None if no transformer
+        """
         return outputs, x, seq_ids, lm_mask_bool, attention_weights
