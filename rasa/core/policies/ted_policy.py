@@ -191,7 +191,7 @@ class TEDPolicy(Policy):
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
         # Use a unidirectional or bidirectional encoder.
-        UNIDIRECTIONAL_ENCODER: True,
+        UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
@@ -802,9 +802,9 @@ class TEDPolicy(Policy):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
-            # during prediction we don't care about previous dialogue turns,
-            # so to save computation time, use only the last one
-            use_only_last_dialogue_turns=True,
+            use_only_last_dialogue_turns=isinstance(
+                featurizer, MaxHistoryTrackerFeaturizer
+            ),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,
@@ -924,6 +924,10 @@ class TED(TransformerRasaModel):
             self.config[TRANSFORMER_SIZE][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[DROP_RATE_ATTENTION],
+            # use bidirectional transformer, because
+            # we will invert dialogue sequence so that the last turn is located
+            # at the first position and would always have
+            # exactly the same positional encoding
             unidirectional=not self.use_only_last_dialogue_turns,
         )
 
@@ -1063,6 +1067,8 @@ class TED(TransformerRasaModel):
         mask = self._compute_mask(dialogue_lengths)
 
         if self.use_only_last_dialogue_turns:
+            # invert dialogue sequence so that the last turn would always have
+            # exactly the same positional encoding
             dialogue_in = tf.reverse_sequence(dialogue_in, dialogue_lengths, seq_axis=1)
 
         dialogue_transformed, attention_weights = self._tf_layers[
@@ -1071,8 +1077,16 @@ class TED(TransformerRasaModel):
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.use_only_last_dialogue_turns:
-            # pick last vector if max history featurizer is used
+            # pick last vector if max history featurizer is used, since we inverted
+            # dialogue sequence, the last vector is actually the first one
             dialogue_transformed = dialogue_transformed[:, :1, :]
+            mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
+        elif not self._training:
+            # during prediction we don't care about previous dialogue turns,
+            # so to save computation time, use only the last one
+            dialogue_transformed = tf.expand_dims(
+                self._last_token(dialogue_transformed, dialogue_lengths), 1
+            )
             mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
