@@ -1139,7 +1139,7 @@ def create_app(
     async def _evaluate_model_using_test_set(
         model_path: Text, test_data_file: Text
     ) -> Dict:
-        logger.info(f"Starting model evaluation using test set.")
+        logger.info("Starting model evaluation using test set.")
 
         eval_agent = app.agent
 
