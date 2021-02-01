@@ -43,6 +43,12 @@ recommended that you set the number of workers to the number of available CPU co
 for more details). This will only work in combination with the
 `RedisLockStore` (see [Lock Stores](./lock-stores.mdx).
 
+:::caution
+Using multiple worker processes does not work when using the 
+[SocketIO channel](https://rasa.com/docs/rasa/reference/rasa/core/channels/socketio). Instead, use multiple 
+containers or pods with a single Sanic worker to scale up.
+
+:::
 
 ## Security Considerations
 
