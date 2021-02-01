@@ -601,45 +601,9 @@ class DotProductLoss(tf.keras.layers.Layer):
     def _random_indices(
         self, batch_size: tf.Tensor, total_candidates: tf.Tensor
     ) -> tf.Tensor:
-        def rand_idxs() -> tf.Tensor:
-            """Create random tensor of indices"""
-
-            # (1, num_neg)
-            return tf.expand_dims(
-                tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
-            )
-
-        if self.same_sampling:
-            return tf.tile(rand_idxs(), (batch_size, 1))
-
-        def cond(idx: tf.Tensor, out: tf.Tensor) -> tf.Tensor:
-            """Condition for while loop"""
-            return idx < batch_size
-
-        def body(idx: tf.Tensor, out: tf.Tensor) -> List[tf.Tensor]:
-            """Body of the while loop"""
-            return [
-                # increment counter
-                idx + 1,
-                # add random indices
-                tf.concat([out, rand_idxs()], 0),
-            ]
-
-        # first tensor already created
-        idx1 = tf.constant(1)
-        # create first random array of indices
-        out1 = rand_idxs()  # (1, num_neg)
-
-        return tf.nest.map_structure(
-            tf.stop_gradient,
-            tf.while_loop(
-                cond,
-                body,
-                loop_vars=[idx1, out1],
-                shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
-                parallel_iterations=self.parallel_iterations,
-            ),
-        )[1]
+        return tf.random.uniform(
+            shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
+        )
 
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:

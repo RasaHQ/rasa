@@ -2,3 +2,4 @@
 # such as Rasa X. Hence, changes within this package require double checking.
 /rasa/shared/ @RasaHQ/backend
 /docs/docs/prototype-an-assistant.mdx @ricwo @alwx
+/.github/workflows/ @RasaHQ/infrastructure

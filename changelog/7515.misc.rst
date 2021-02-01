@@ -1,0 +1,1 @@
+Use `RasaHQ/dependabot-batch-updater` to submit batch dependency updates once a week.
