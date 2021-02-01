@@ -1727,15 +1727,14 @@ class TED(TransformerRasaModel):
         ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        sim_all, scores = self._tf_layers[
+            f"loss.{LABEL}"
+        ]._similarity_confidence_from_embeddings(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             dialogue_mask,
         )
 
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
-        )
         predictions = {
             "action_scores": scores,
             "similarities": sim_all,

@@ -29,6 +29,8 @@ The default value is `softmax`, but we recommend using `cosine` as that will be 
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
 
 You should tune fallback confidence thresholds to adapt to these changes.
+To maintain the behaviour of older minor versions of Rasa Open Source 2.x, set `constrain_similarities=False`
+and `model_confidence=softmax` to the respective ML component.
 
 ## Rasa 2.1 to Rasa 2.2
 

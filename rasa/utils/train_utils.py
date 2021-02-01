@@ -94,12 +94,13 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
 
 def update_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """
-    If LOSS_TYPE is set to 'softmax', update it to 'cross_entropy' since former is deprecated.
+    """If LOSS_TYPE is set to 'softmax', update it to 'cross_entropy' since former is deprecated.
+
     Args:
         config: model configuration
 
-    Returns: updated model configuration
+    Returns:
+        updated model configuration
     """
     # TODO: Completely deprecate this with 3.0
     if config.get(LOSS_TYPE) == SOFTMAX:

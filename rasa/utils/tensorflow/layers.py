@@ -535,7 +535,7 @@ class CRF(tf.keras.layers.Layer):
 
 
 class DotProductLoss(tf.keras.layers.Layer):
-    """Dot-product loss layer"""
+    """Dot-product loss layer."""
 
     def __init__(
         self,
@@ -710,20 +710,24 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return sim
 
-    def _confidence_from_embeddings(
-        self, input_embeddings: tf.Tensor, label_embeddings: tf.Tensor
-    ) -> tf.Tensor:
-        """Computes model's prediction confidences from input and label embeddings.
+    def _similarity_confidence_from_embeddings(
+        self,
+        input_embeddings: tf.Tensor,
+        label_embeddings: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Computes similarity between input and label embeddings and model's confidence.
 
         First compute the similarity from embeddings and then apply an activation
-        function if needed.
+        function if needed to get the confidence.
 
         Args:
-            input_embeddings: Embeddings of input
-            label_embeddings: Embeddings of labels
+            input_embeddings: Embeddings of input.
+            label_embeddings: Embeddings of labels.
+            mask: Mask over input and output sequence.
 
         Returns:
-            model's prediction confidence
+            similarity between input and label embeddings and model's prediction confidence for each label.
         """
         # If model's prediction confidence is configured to be cosine similarity,
         # then normalize embeddings to unit vectors.
@@ -731,10 +735,11 @@ class DotProductLoss(tf.keras.layers.Layer):
             input_embeddings = tf.nn.l2_normalize(input_embeddings, axis=-1)
             label_embeddings = tf.nn.l2_normalize(label_embeddings, axis=-1)
 
-        similarities = self.sim(input_embeddings, label_embeddings)
+        similarities = self.sim(input_embeddings, label_embeddings, mask)
+        confidences = similarities
         if self.model_confidence == SOFTMAX:
-            return tf.nn.softmax(similarities)
-        return similarities
+            confidences = tf.nn.softmax(similarities)
+        return similarities, confidences
 
     def _train_sim(
         self,

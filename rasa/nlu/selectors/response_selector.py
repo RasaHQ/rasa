@@ -763,7 +763,9 @@ class DIET2DIET(DIET):
         sentence_vector = self._last_token(text_transformed, sequence_lengths_text)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        scores = self._tf_layers[f"loss.{LABEL}"]._confidence_from_embeddings(
+        _, scores = self._tf_layers[
+            f"loss.{LABEL}"
+        ]._similarity_confidence_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
         )
