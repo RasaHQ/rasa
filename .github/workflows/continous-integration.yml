@@ -309,6 +309,11 @@ jobs:
       uses: actions/checkout@v2
       if: github.event_name != 'pull_request'
 
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
       with:
@@ -358,6 +363,10 @@ jobs:
         BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
         echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
 
+        # Base poetry image
+        BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
+        echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
+
     - name: Build Docker base image and push 🛠 ⬆
       if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
       run: |
@@ -369,6 +378,13 @@ jobs:
       run: |
         export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
         docker buildx bake -f docker/docker-bake.hcl base-mitie --push
+
+    - name: Build Docker poetry base image and push 🛠 ⬆
+      if: steps.check_image.outputs.base_poetry_exists == 'false'
+      run: |
+        export IMAGE_TAG=${{ env.POETRY_VERSION }}
+        export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+        docker buildx bake -f docker/docker-bake.hcl base-poetry --push
 
     # Set environment variables for a pull request
     #
@@ -414,7 +430,7 @@ jobs:
 
   docker:
     name: Build Docker
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [changes, build_docker_base_images_and_set_env]
     env:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
@@ -449,6 +465,11 @@ jobs:
         sudo apt clean
         docker rmi $(docker image ls -aq)
         df -h
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1

@@ -1,5 +1,5 @@
 import json
-from typing import Text, Optional
+from typing import Text, Optional, Dict, Any
 
 import pytest
 from aioresponses import aioresponses
@@ -25,16 +25,15 @@ async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
 @pytest.mark.timeout(300)
 @pytest.mark.trains_model
 async def test_formbot_example(form_bot_agent: Agent):
-    async def mock_form_happy_path(
-        input_text: Text, output_text: Text, slot: Optional[Text] = None
-    ) -> None:
+    def response_for_slot(slot: Text) -> Dict[Text, Any]:
         if slot:
             form = "restaurant_form"
             template = f"utter_ask_{slot}"
         else:
             form = None
             template = "utter_submit"
-        response = {
+
+        return {
             "events": [
                 {"event": "form", "name": form, "timestamp": None},
                 {
@@ -46,9 +45,15 @@ async def test_formbot_example(form_bot_agent: Agent):
             ],
             "responses": [{"template": template}],
         }
+
+    async def mock_form_happy_path(
+        input_text: Text, output_text: Text, slot: Optional[Text] = None
+    ) -> None:
         with aioresponses() as mocked:
             mocked.post(
-                "https://example.com/webhooks/actions", payload=response, repeat=True
+                "https://example.com/webhooks/actions",
+                payload=response_for_slot(slot),
+                repeat=True,
             )
             responses = await form_bot_agent.handle_text(input_text)
             assert responses[0]["text"] == output_text
@@ -61,11 +66,17 @@ async def test_formbot_example(form_bot_agent: Agent):
             "action_name": "restaurant_form",
         }
         with aioresponses() as mocked:
-            # noinspection PyTypeChecker
+            # Request which rejects form execution
             mocked.post(
                 "https://example.com/webhooks/actions",
-                repeat=True,
+                repeat=False,
                 exception=ClientResponseError(400, "", json.dumps(response_error)),
+            )
+            # Request after returning from unhappy path which sets next requested slot
+            mocked.post(
+                "https://example.com/webhooks/actions",
+                payload=response_for_slot(slot),
+                repeat=True,
             )
             responses = await form_bot_agent.handle_text(input_text)
             assert responses[0]["text"] == output_text
