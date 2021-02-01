@@ -924,6 +924,7 @@ class TED(TransformerRasaModel):
             self.config[TRANSFORMER_SIZE][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[DROP_RATE_ATTENTION],
+            unidirectional=not self.use_only_last_dialogue_turns,
         )
 
         self._prepare_embed_layers(DIALOGUE)
@@ -1068,10 +1069,8 @@ class TED(TransformerRasaModel):
 
         if self.use_only_last_dialogue_turns:
             # pick last vector if max history featurizer is used
-            dialogue_transformed = tf.expand_dims(
-                self._last_token(dialogue_transformed, dialogue_lengths), 1
-            )
-            mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
+            dialogue_transformed = dialogue_transformed[:, :1, :]
+            mask = mask[:, :1, :]
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
@@ -1209,13 +1208,7 @@ class TED(TransformerRasaModel):
         # length 2, the second 1 and the third 3.
         last_dialogue_turn_mask = tf.math.logical_not(
             tf.cast(
-                tf.concat(
-                    [
-                        tf_batch_data[DIALOGUE][INDICES][0],
-                        tf.zeros((1,), dtype=tf.int32),
-                    ],
-                    axis=0,
-                )[1:],
+                tf_batch_data[DIALOGUE][INDICES][0],
                 dtype=tf.bool,
             )
         )
@@ -1260,7 +1253,7 @@ class TED(TransformerRasaModel):
             sequence_lengths += 1
             mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
-            attribute_features, _, _, _ = self._create_sequence(
+            attribute_features, _, _, _, _ = self._create_sequence(
                 tf_batch_data[attribute][SEQUENCE],
                 tf_batch_data[attribute][SENTENCE],
                 mask_sequence_text,
@@ -1484,9 +1477,8 @@ class TED(TransformerRasaModel):
 
         if self.use_only_last_dialogue_turns:
             # pick outputs that correspond to the last dialogue turns
-            attribute_mask = tf.expand_dims(
-                self._last_token(attribute_mask, dialogue_lengths), axis=1
-            )
+            attribute_mask = attribute_mask[:, :1, :]
+
         dialogue_transformer_output = tf.boolean_mask(
             dialogue_transformer_output, tf.squeeze(attribute_mask, axis=-1)
         )
