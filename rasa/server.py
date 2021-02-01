@@ -536,7 +536,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
                     )
                 # If an error happens, we send the error payload to the `callback_url`
                 payload = dict(json=e.error_info)
-                logger.debug(
+                logger.error(
                     "Error happened when processing request asynchronously. "
                     "Sending error to callback URL."
                 )
@@ -1139,6 +1139,8 @@ def create_app(
     async def _evaluate_model_using_test_set(
         model_path: Text, test_data_file: Text
     ) -> Dict:
+        logger.info(f"Starting model evaluation using test set.")
+
         eval_agent = app.agent
 
         if model_path:
@@ -1170,6 +1172,7 @@ def create_app(
         )
 
     async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
+        logger.info(f"Starting cross-validation with {folds} folds.")
         importer = TrainingDataImporter.load_from_dict(
             config=None, config_path=config_file, training_data_paths=[data_file]
         )
