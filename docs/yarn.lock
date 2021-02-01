@@ -7227,6 +7227,11 @@ hmac-drbg@^1.0.0:
     minimalistic-assert "^1.0.0"
     minimalistic-crypto-utils "^1.0.1"
 
+hoist-non-react-statics@^2.3.1:
+  version "2.5.5"
+  resolved "https://registry.yarnpkg.com/hoist-non-react-statics/-/hoist-non-react-statics-2.5.5.tgz#c5903cf409c0dfd908f388e619d86b9c1174cb47"
+  integrity sha512-rqcy4pJo55FTTLWt+bU8ukscqHeE/e9KWvsOW2b/a3afxQZhwkQdT1rPPCJ0rYXdj4vNcasY8zHTH+jF/qStxw==
+
 hoist-non-react-statics@^3.1.0:
   version "3.3.2"
   resolved "https://registry.yarnpkg.com/hoist-non-react-statics/-/hoist-non-react-statics-3.3.2.tgz#ece0acaf71d62c2969c2ec59feff42a4b1a85b45"
@@ -11983,6 +11988,14 @@ react-router@5.2.0, react-router@^5.1.2:
     react-is "^16.6.0"
     tiny-invariant "^1.0.2"
     tiny-warning "^1.0.0"
+
+react-script-loader-hoc@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/react-script-loader-hoc/-/react-script-loader-hoc-1.2.2.tgz#0b9b4c92f83ce020ca9f771e7181ddca46823d4a"
+  integrity sha512-Nk1elrPWa2+Tw2YUHTs8/mp0JTXeof6OW8BCIJsItTvWDcN//PXaFSSrmiKlEkzvcynLJEZ3qX6WQgDnfDzhDQ==
+  dependencies:
+    hoist-non-react-statics "^2.3.1"
+    react "^16.8.4"
 
 react-side-effect@^2.1.0:
   version "2.1.0"

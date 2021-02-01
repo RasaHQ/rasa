@@ -58,6 +58,7 @@
     "react-live": "^2.2.2",
     "react-promise": "^3.0.2",
     "react-router-dom": "^5.2.0",
+    "react-script-loader-hoc": "^1.2.2",
     "redoc": "^2.0.0-rc.31",
     "remark": "^12.0.0",
     "remark-collapse": "^0.1.2",
