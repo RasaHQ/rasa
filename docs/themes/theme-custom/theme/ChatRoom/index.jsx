@@ -11,17 +11,20 @@ export const ChatLoader = ScriptLoader(
 export const ChatBot = () => {
   const chatRef = useRef(null);
   useEffect(() => {
-    return window.setTimeout(() => {
-      var chatroom = new window.Chatroom({
-        host: 'http://localhost:3000',
-        title: 'Chat with Mike',
-        container: chatRef.current,
-        welcomeMessage: 'Hi, I am Mike. How may I help you?',
-        speechRecognition: 'en-US',
-        voiceLang: 'en-US',
-      });
-      chatroom.openChat();
-    }, 500); // seems to need a timeout or it doesn't find window.Chatroom
+    const poll = window.setInterval(() => {
+      if (window.Chatroom) {
+        window.clearInterval(poll);
+        var chatroom = new window.Chatroom({
+          host: 'http://localhost:3000',
+          title: 'Chat with Mike',
+          container: chatRef.current,
+          welcomeMessage: 'Hi, I am Mike. How may I help you?',
+          speechRecognition: 'en-US',
+          voiceLang: 'en-US',
+        });
+        chatroom.openChat();
+      }
+    }, 250);
   }, [chatRef]);
   return (
     <>
