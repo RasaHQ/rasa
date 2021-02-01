@@ -21,11 +21,11 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_KEY,
     LABEL_SUB_KEY,
-    EntityTagSpec,
     SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE,
 )
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,

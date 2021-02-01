@@ -36,7 +36,7 @@ from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.core.constants import DIALOGUE
 
 if TYPE_CHECKING:
-    from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+    from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
 
 

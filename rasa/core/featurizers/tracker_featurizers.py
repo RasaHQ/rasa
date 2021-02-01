@@ -95,10 +95,14 @@ class TrackerFeaturizer:
         self,
         trackers_as_entities: List[List[Dict[Text, Any]]],
         interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
+
         return [
             [
-                self.state_featurizer.encode_entities(entity_data, interpreter)
+                self.state_featurizer.encode_entities(
+                    entity_data, interpreter, bilou_tagging
+                )
                 for entity_data in trackers_entities
             ]
             for trackers_entities in trackers_as_entities
@@ -162,6 +166,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
         np.ndarray,
@@ -173,6 +178,7 @@ class TrackerFeaturizer:
             trackers: list of training trackers
             domain: the domain
             interpreter: the interpreter
+            bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
             - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -192,7 +198,7 @@ class TrackerFeaturizer:
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_for_training(domain, interpreter)
+        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
 
         (
             trackers_as_states,
@@ -202,7 +208,9 @@ class TrackerFeaturizer:
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
-        entity_tags = self._create_entity_tags(trackers_as_entities, interpreter)
+        entity_tags = self._create_entity_tags(
+            trackers_as_entities, interpreter, bilou_tagging
+        )
 
         return tracker_state_features, label_ids, entity_tags
 

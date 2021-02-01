@@ -8,7 +8,7 @@ import os
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
@@ -18,7 +18,7 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
@@ -114,19 +114,10 @@ LABEL_SUB_KEY = IDS
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
 
-class EntityTagSpec(NamedTuple):
-    """Specification of an entity tag present in the training data."""
-
-    tag_name: Text
-    ids_to_tags: Dict[int, Text]
-    tags_to_ids: Dict[Text, int]
-    num_tags: int
-
-
 class DIETClassifier(IntentClassifier, EntityExtractor):
-    """DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
-    intent classification and entity recognition.
+    """A multi-task model for intent classification and entity extraction.
 
+    DIET is Dual Intent and Entity Transformer.
     The architecture is based on a transformer which is shared for both tasks.
     A sequence of entity labels is predicted through a Conditional Random Field (CRF)
     tagging layer on top of the transformer output sequence corresponding to the
@@ -487,7 +478,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sequence features "
-                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
                 )
         if dense_sentence_features is not None and sparse_sentence_features is not None:
             if (
@@ -496,7 +488,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sentence features "
-                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
                 )
 
         # If we don't use the transformer and we don't want to do entity recognition,
