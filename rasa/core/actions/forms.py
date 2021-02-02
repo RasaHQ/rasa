@@ -644,12 +644,15 @@ class FormAction(LoopAction):
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
+
         if needs_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
-
-        logger.debug("Skipping validation.")
-        return []
+        else:
+            # Needed to determine which slots to request although there are no slots
+            # to actually validate, which happens when coming back to the form after
+            # an unhappy path
+            return await self.validate_slots({}, tracker, domain, output_channel, nlg)
 
     @staticmethod
     def _should_request_slot(tracker: "DialogueStateTracker", slot_name: Text) -> bool:
