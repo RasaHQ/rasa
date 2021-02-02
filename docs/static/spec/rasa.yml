@@ -1273,7 +1273,7 @@ components:
           description: ID of the conversation
           example: default
         slots:
-          type: array
+          type: object
           description: Slot values
           items:
             $ref: '#/components/schemas/Slot'
@@ -1788,7 +1788,7 @@ components:
       required: ['type', 'auto_fill']
 
     TemplateDescription:
-      type: object
+      type: array
       properties:
         text:
           type: string
