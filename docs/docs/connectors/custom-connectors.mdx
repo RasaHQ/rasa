@@ -17,7 +17,7 @@ and implement at least a `blueprint` and `name` method.
 
 The `name` method defines the url prefix for the connector's webhook. It also defines the channel name you should use 
 in any [channel specific response variations](../responses.mdx#channel-specific-response-variations) and the name you
-should pass to the `output_channel` query parameter on the [trigger intent endpoint](https://www.rasa.com/docs/rasa/pages/http-api#operation/triggerConversationIntent)
+should pass to the `output_channel` query parameter on the [trigger intent endpoint](https://www.rasa.com/docs/rasa/pages/http-api#operation/triggerConversationIntent).
 
 For example, if your custom channel is named `myio`, you would define the `name` method as:
 
@@ -51,10 +51,10 @@ The `blueprint` method
 needs to create a [sanic blueprint](https://sanic.readthedocs.io/en/v20.3.0/sanic/blueprints.html#blueprints)
 that can be attached to a sanic server. 
 Your blueprint should have at least the two routes: `health` on the route `/`,
-and `receive` on the route `/webhook`.
+and `receive` on the route `/webhook` (see example custom channel below).
 
 As part of your implementation of the `receive` endpoint, you will need to tell
-Rasa core to handle the user message. You do this by calling
+Rasa to handle the user message. You do this by calling 
 
 ```python
     on_new_message(
@@ -66,7 +66,9 @@ Rasa core to handle the user message. You do this by calling
     )
 ```
 
-See more details on the `UserMessage` object [here](https://www.rasa.com/docs/rasa/reference/rasa/core/channels/channel#usermessage-objects)
+Calling `on_new_message` will send the user message to the [`handle_message`](https://github.com/RasaHQ/rasa/blob/c922253fe890bb4903329d4ade764e0711d384ec/rasa/core/agent.py#L511_) method.
+
+See more details on the `UserMessage` object [here](https://www.rasa.com/docs/rasa/reference/rasa/core/channels/channel#usermessage-objects).
 
 The `output_channel` argument refers to an output channel implementing the 
 [`OutputChannel`](https://www.rasa.com/docs/rasa/reference/rasa/core/channels/channel#outputchannel-objects) class. You can
@@ -119,7 +121,7 @@ class MyIO(InputChannel):
             sender_id = request.json.get("sender") # method to get sender_id 
             text = request.json.get("text") # method to fetch text
             input_channel = self.name() # method to fetch input channel
-            metadata = self.get_metadata(request)
+            metadata = self.get_metadata(request) # method to get metadata
 
             collector = CollectingOutputChannel()
             
@@ -149,10 +151,9 @@ server into the action server when applicable, where you can find it stored in
 the `tracker`. Message metadata will not directly affect NLU classification
 or action prediction. 
 
-The `InputChannel` class provides a default implementation of the method `get_metadata`.
-If you want to change the way metadata is extracted for an
-existing channel, you can overwrite the `get_metadata` method. 
-
+The `InputChannel` class's default implementation of `get_metadata` **ignores all metadata**.
+To extract metadata in a custom connector, implement the `get_metadata` method.
+The `SlackInput` channel provides one example of a `get_metadata` method that extracts metadata according to the channel's response format.
 
 ## Credentials for Custom Channels
 
