@@ -291,7 +291,7 @@ class Interpreter:
             raise UnsupportedModelError(
                 "The model version is trained using Rasa Open Source {} "
                 "and is not compatible with your current installation ({}). "
-                "This means that you probably want to retrain your model "
+                "This means that you either need to retrain your model "
                 "to ensure that the versions match up again."
                 "".format(model_version, rasa.__version__)
             )
