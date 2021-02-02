@@ -140,7 +140,6 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
             Single tensor of the same shape as the input tensors, except the last
             dimension.
         """
-
         features = inputs[0]
 
         dense_features = []
@@ -190,9 +189,9 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
 
     Input shape:
         Tuple of three 3-D dense tensors, with shapes:
-            sequence: `(batch_size, max_sequence_length, input_dim_seq)`
+            sequence: `(batch_size, max_seq_length, input_dim_seq)`
             sentence: `(batch_size, 1, input_dim_sent)`
-            mask: `(batch_size, max_sequence_length+1, 1)`
+            mask: `(batch_size, max_seq_length+1, 1)`
 
     Output shape:
         3-D tensor with shape: `(batch_size, sequence_length, output_dim)` where:
@@ -254,7 +253,6 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             Single dense 3-D tensor containing the concatenated sequence- and sentence-
             level features.
         """
-
         sequence = inputs[0]
         sentence = inputs[1]
         mask = inputs[2]
@@ -320,7 +318,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
     Input shape:
         Tuple of four tensor inputs:
             sequence_features: List of 3-D dense or sparse tensors, each with shape
-                `(batch_size, max_sequence_length, input_dim)` where `input_dim` can be
+                `(batch_size, max_seq_length, input_dim)` where `input_dim` can be
                 different for sparse vs dense tensors.
             sentence_features: List of 3-D dense or sparse tensors, each with shape
                 `(batch_size, 1, input_dim)` where `input_dim` can be different for
@@ -443,7 +441,16 @@ class RasaInputLayer(tf.keras.layers.Layer):
         """Combine multiple 3-D dense/sparse feature tensors into one.
 
         Arguments:
-            inputs: Tuple containing four dense 3-D tensors.
+            inputs: Tuple containing:
+                sequence_features: List of 3-D dense or sparse tensors with token-level
+                    features.
+                sentence_features: List of 3-D dense or sparse tensors with sentence-level
+                    features.
+                mask_sequence: a 3-D tensor mask that has 1s at real and 0s at padded
+                    positions corresponding to tokens in `sequence_features`.
+                mask_sequence_sentence: a 3-D tensor mask similar to `mask_sequence` but
+                    having each sequence of 1s longer by 1 to account for sequence 
+                    lengths of sequence- and sentence-level features being combined.
             training: Python boolean indicating whether the layer should behave in
                 training mode (applying dropout to sparse tensors if applicable) or in
                 inference mode (not applying dropout).
@@ -492,77 +499,124 @@ class RasaInputLayer(tf.keras.layers.Layer):
             return sentence
 
 
-# does:
-# 1. input_layer
-# 2. ffnn
-# [3. MLM: masking & creating dense labels to sample from]
-# 4. transformer
 class RasaSequenceLayer(tf.keras.layers.Layer):
-    # TODO add docstring
+    """Creates an embedding from all features for a sequence attribute; facilitates MLM.
+
+    This layer combines all features for an attribute and embeds them using a 
+    transformer. The layer is meant only for attributes with sequence-level features,
+    such as `text` and `action_text`.
+
+    Internally, this layer extends RasaInputLayer and goes through the following steps:
+    1. Combine features using RasaInputLayer.
+    2. Apply a dense layer(s) to the combined features.
+    3. Optionally (during training for the `text` attribute), apply masking to the
+        features and create further helper variables for masked language modeling.
+    4. Embed the features using a transformer, effectively going from variable-length
+        sequences of features to fixed-size input example embeddings.
+
+    Arguments:
+        attribute: Name of attribute (e.g. `text` or `label`) whose features will be
+            processed.
+        data_signature: A dictionary containing two lists of `FeatureSignature`s, one
+            for each feature type of the given attribute.
+        config: A model config used for correctly parametrising the underlying layers.
+
+    Input shape:
+        Tuple of four tensor inputs:
+            sequence_features: List of 3-D dense or sparse tensors, each with shape
+                `(batch_size, max_seq_length, input_dim)` where `input_dim` can be
+                different for sparse vs dense tensors.
+            sentence_features: List of 3-D dense or sparse tensors, each with shape
+                `(batch_size, 1, input_dim)` where `input_dim` can be different for
+                sparse vs dense tensors, and can differ from that in `sequence_features`.
+            mask_sequence: dense 3-D tensor with the shape `(batch_size, max_sequence_
+                length, 1)`.
+            mask_sequence_sentence: dense 3-D tensor with the shape `(batch_size, max_
+                sequence_length+1, 1)`, i.e. with the 2nd dimension combining the lengths
+                of sequence- and sentence-level features.
+
+    Output shape:
+        outputs: `(batch_size, max_seq_length+1, output_size)` where `output_size` matches
+            the underlying transformer's output size if the transformer has some layers,
+            otherwise `output_size` matches that of the Ffnn block applied to the
+            combined features, or it's the output size of the underlying `RasaInputLayer`
+            the Ffnn block has 0 layers. `max_seq_length` is the length of the longest
+            sequence of tokens in the given batch.
+        seq_sent_features: `(batch_size, max_seq_length+1, hidden_dim)`, where 
+            `hidden_dim` is the output size of the underlying Ffnn block, or the output
+            size of the underlying `RasaInputLayer` if the Ffnn block has 0 layers.
+        token_ids: `(batch_size, max_seq_length+1, id_dim)` where id_dim is unimportant
+            and it's the last-dimension size of the first sequence-level dense feature
+            if any is present, and 2 otherwise. `None` if not doing MLM.
+        mlm_mask_bool: `(batch_size, max_seq_length+1, 1)`, `None` if not doing MLM.
+        attention_weights: `(num_transformer_layers, batch_size, num_transformer_heads, 
+            max_seq_length+1, max_seq_length+1)`, `None` if the transformer has 0 layers.
+
+    Raises:
+        A ValueError if no feature signatures for sequence-level features are provided.
+    """
+
     def __init__(
         self,
-        name: Text,
+        attribute: Text,
         data_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
     ) -> None:
-        super().__init__(name=f"rasa_input_layer_{name}")
-        self.config = config
+        if not data_signature or len(data_signature.get(SEQUENCE, [])) == 0:
+            raise ValueError(
+                "The data signature must contain some sequence-level features but none\
+                were found."
+            )
 
-        # RASA INPUT LAYER
-        self.input_layer = RasaInputLayer(name, data_signature, config)
+        super().__init__(name=f"rasa_input_layer_{attribute}")
 
-        # FFNN
+        self.input_layer = RasaInputLayer(attribute, data_signature, config)
+
         self.ffnn = layers.Ffnn(
-            config[HIDDEN_LAYERS_SIZES][name],
+            config[HIDDEN_LAYERS_SIZES][attribute],
             config[DROP_RATE],
             config[REGULARIZATION_CONSTANT],
             config[WEIGHT_SPARSITY],
-            layer_name_suffix=name,
+            layer_name_suffix=attribute,
         )
 
-        # MLM
-        # for sequential text features prepare the logic for producing dense token embeddings
-        # to be used as labels in MLM. these will be sampled from for negative sampling.
-        if name == TEXT and SEQUENCE in data_signature:
+        # Prepare masking and computing helper variables for masked language modeling.
+        # This is only done for the text attribute and only if sequence-level (token-
+        # level) features are present (MLM requires token-level information).
+        if attribute == TEXT and SEQUENCE in data_signature:
             self.enables_mlm = True
-            self.input_mask_layer = layers.InputMask()
+            self.mlm_input_mask_layer = layers.InputMask()
 
-            # self.produce_dense_token_ids = True
-            expect_sparse_seq_features = any(
-                [signature.is_sparse for signature in data_signature[SEQUENCE]]
-            )
+            # Unique IDs of different token types are needed to construct the possible
+            # label space for MLM. If dense features are present, they're used as such
+            # IDs, othwerise sparse features are embedded by a non-trainable
+            # DenseForSparse layer to create small embeddings that serve as IDs.
             expect_dense_seq_features = any(
                 [not signature.is_sparse for signature in data_signature[SEQUENCE]]
             )
-            # if dense features are present, we use those as unique token-level embeddings,
-            # otherwise we create these from the sparse features by using a simple layer.
-            if expect_sparse_seq_features and not expect_dense_seq_features:
+            if not expect_dense_seq_features:
                 self.sparse_to_dense_token_ids = layers.DenseForSparse(
                     units=2,
                     use_bias=False,
                     trainable=False,
-                    name=f"sparse_to_dense_token_ids.{name}",
+                    name=f"sparse_to_dense_token_ids.{attribute}",
                 )
         else:
             self.enables_mlm = False
-            # self.produce_dense_token_ids = False
 
-        # TRANSFORMER
-        num_layers = config[NUM_TRANSFORMER_LAYERS]
-        if isinstance(num_layers, dict):
-            num_layers = num_layers[name]
-        size = config[TRANSFORMER_SIZE]
-        if isinstance(size, dict):
-            size = size[name]
-        self.num_transformer_layers = num_layers
-        self.transformer_size = size
-
+        # Prepare the transformer
+        self.num_transformer_layers = config[NUM_TRANSFORMER_LAYERS]
+        if isinstance(self.num_transformer_layers, dict):
+            self.num_transformer_layers = self.num_transformer_layers[attribute]
+        self.transformer_size = config[TRANSFORMER_SIZE]
+        if isinstance(self.transformer_size, dict):
+            self.transformer_size = self.transformer_size[attribute]
         if self.num_transformer_layers > 0:
             self.transformer = TransformerEncoder(
                 num_layers=self.num_transformer_layers,
                 units=self.transformer_size,
                 num_heads=config[NUM_HEADS],
-                filter_units=size * 4,
+                filter_units=self.transformer_size * 4,
                 reg_lambda=config[REGULARIZATION_CONSTANT],
                 dropout_rate=config[DROP_RATE],
                 attention_dropout_rate=config[DROP_RATE_ATTENTION],
@@ -571,40 +625,35 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 use_key_relative_position=config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=config[VALUE_RELATIVE_ATTENTION],
                 max_relative_position=config[MAX_RELATIVE_POSITION],
-                name=f"{name}_encoder",
+                name=f"{attribute}_encoder",
             )
 
-        # TODO: should this simply use NUM_TRANSFORMER_LAYERS?
-        # if config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
+        # The output size of this layer depends on which component is the last one in
+        # the pipeline because not all components (e.g. the transformer) are necessarily
+        # created.
         if self.num_transformer_layers > 0:
             self.output_units = self.transformer_size
-        elif config[HIDDEN_LAYERS_SIZES][name]:
-            self.output_units = config[HIDDEN_LAYERS_SIZES][name][-1]
+        elif len(config[HIDDEN_LAYERS_SIZES][attribute]) > 0:
+            # this is the output size of (the last layer of) the Ffnn block
+            self.output_units = config[HIDDEN_LAYERS_SIZES][attribute][-1]
         else:
             self.output_units = self.input_layer.output_units
 
-    def _features_as_seq_ids(
+    def _features_as_token_ids(
         self, features: List[Union[tf.Tensor, tf.SparseTensor]]
     ) -> Optional[tf.Tensor]:
-        """Creates dense labels for negative sampling."""
-
-        # if there are dense features - we can use them
+        """Creates dense labels (token IDs) used for negative sampling in MLM."""
+        # If there are dense features, we use them as labels - taking the first dense
+        # feature in the list because any dense feature will do the job.
         for f in features:
             if not isinstance(f, tf.SparseTensor):
-                seq_ids = tf.stop_gradient(f)
-                # add a zero to the seq dimension for the sentence features
-                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
-                return seq_ids
+                return tf.stop_gradient(f)
 
-        # use additional sparse to dense layer
+        # If no dense features are found, use a sparse feature but convert it into
+        # a dense one first.
         for f in features:
             if isinstance(f, tf.SparseTensor):
-                seq_ids = tf.stop_gradient(self.sparse_to_dense_token_ids(f))
-                # add a zero to the seq dimension for the sentence features
-                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
-                return seq_ids
-
-        return None
+                return tf.stop_gradient(self.sparse_to_dense_token_ids(f))
 
     def call(
         self,
@@ -623,45 +672,94 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         Optional[tf.Tensor],
         Optional[tf.Tensor],
     ]:
+        """Combine all features for an attribute into one and embed using a transformer.
+
+        Arguments:
+            inputs: Tuple containing:
+                sequence_features: List of 3-D dense or sparse tensors with token-level
+                    features.
+                sentence_features: List of 3-D dense or sparse tensors with sentence-level
+                    features.
+                mask_sequence: a 3-D tensor mask that has 1s at real and 0s at padded
+                    positions corresponding to tokens in `sequence_features`.
+                mask_sequence_sentence: a 3-D tensor mask similar to `mask_sequence` but
+                    having each sequence of 1s longer by 1 to account for sequence 
+                    lengths of sequence- and sentence-level features being combined.
+            masked_lm_loss: Boolean, using True means doing masked language modeling.
+            training: Python boolean indicating whether the layer should behave in
+                training mode (applying dropout to sparse tensors if applicable) or in
+                inference mode (not applying dropout).
+
+        Returns:
+            outputs: 3-D tensor with all features combined, optionally masked (when doing
+                MLM) and embedded by a transformer.
+            seq_sent_features: 3-D tensor, like `outputs`, but without masking and 
+                transformer applied.
+            token_ids: 3-D tensor with dense token-level features which can serve as
+                unique embeddings/IDs of all the different tokens found in the batch.
+                `None` if not doing MLM.
+            mlm_mask_bool: 3-D tensor mask that has 1s where real tokens in `outputs` 
+                were masked and 0s elsewhere. `None` if not doing MLM.
+            attention_weights: 5-D tensor containing self-attention weights received 
+                from the underlying transformer. `None` if the transformer has 0 layers.
+
+        Raises:
+            ValueError if the layer wasn't prepared for MLM but masked_lm_loss is True.
+        """
         if masked_lm_loss and not self.enables_mlm:
             raise ValueError(
-                "This layer wasn't prepared to do MLM, hence you cannot\
-                call it with masked_lm_loss=True."
+                f"This layer wasn't prepared to do masked language modeling, hence you\
+                cannot call it with masked_lm_loss=True. MLM is currently supported only\
+                with sequence-level features for the '{TEXT}' attribute."
             )
 
         sequence_features = inputs[0]
         sentence_features = inputs[1]
         mask_sequence = inputs[2]
-        mask_text = inputs[3]
+        mask_sequence_sentence = inputs[3]
 
-        _inputs = (sequence_features, sentence_features, mask_sequence, mask_text)
-        x = self.input_layer(_inputs)
-        print(f"after input: {x.shape}")
+        # Combine all features (sparse/dense, sequence-/sentence-level) into one tensor
+        _inputs = (
+            sequence_features,
+            sentence_features,
+            mask_sequence,
+            mask_sequence_sentence,
+        )
+        seq_sent_features = self.input_layer(_inputs)
 
-        x = self.ffnn(x, training)
+        seq_sent_features = self.ffnn(seq_sent_features, training)
 
+        # Produce helper variables for masked language modelling if needed
         if self.enables_mlm and masked_lm_loss:
-            # seq_ids are embeddings with the same shape as the first dense sequence feature
-            # or alternatively the last dimension will have size 2 if there are only sparse
-            # sequence features present. In any case, these embeddings can be viewed as
-            # labels/unique IDs of all input tokens (to be used later) because these embeddings
-            # aren't affected by dropout or masking and are effectively always unique for
-            # different input tokens (and same for the same tokens).
-            seq_ids = self._features_as_seq_ids(sequence_features)
+            # token_ids are embeddings with the same shape as the first dense sequence
+            # feature or alternatively the last dimension will have size 2 if there are
+            # only sparse sequence features present. In any case, these embeddings can
+            # be viewed as labels/unique IDs of all input tokens (to be used later)
+            # because these embeddings aren't affected by dropout or masking and are
+            # effectively always unique for different input tokens (and same for the
+            # same tokens).
+            token_ids = self._features_as_token_ids(sequence_features)
+            # Pad in the sequence dimension to match the shape of combined sequence- and
+            # sentence-level features (sentence-level features effectively have sequence
+            # length of 1).
+            token_ids = tf.pad(token_ids, [[0, 0], [0, 1], [0, 0]])
 
-            # lm_mask_bool has the same shape as mask_text, with True meaning the token
-            # is masked and False meaning the token isn't masked or it's a fake (padded)
-            # token.
-            transformer_inputs, lm_mask_bool = self.input_mask_layer(
-                x, mask_text, training
+            # mlm_mask_bool has the same shape as mask_sequence_sentence (i.e. as the
+            # tensor with all combined features), with True meaning tokens that are
+            # masked and False meaning tokens that aren't masked or that are fake
+            # (padded) tokens.
+            transformer_inputs, mlm_mask_bool = self.mlm_input_mask_layer(
+                seq_sent_features, mask_sequence_sentence, training
             )
         else:
-            seq_ids = None
-            transformer_inputs = x
-            lm_mask_bool = None
+            token_ids = None
+            transformer_inputs = seq_sent_features
+            mlm_mask_bool = None
 
+        # Apply the transformer (if present), hence reducing a sequences of features per
+        # input example into a simple fixed-size embeddings.
         if self.num_transformer_layers > 0:
-            mask_padding = 1 - mask_text
+            mask_padding = 1 - mask_sequence_sentence
             outputs, attention_weights = self.transformer(
                 transformer_inputs, 1 - mask_padding, training
             )
@@ -669,11 +767,4 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         else:
             outputs, attention_weights = transformer_inputs, None
 
-        """
-        outputs: same as TransformerEncoder: (batch_size, msl, transformer_size) -- if no transformer, then last dimension is determined by FFNN (config[HIDDEN_LAYERS_SIZES][name])
-        x: (batch_size, msl, hidden_dim), last dimension determined by FFNN, for msl check underlying RasaInputLayer
-        seq_ids: (batch_size, msl, id_dim) where id_dim is 2 if only sparse sequence features are present and the last dimension size of the first dense sequence feature otherwise. It can also be None if not doing MLM.
-        lm_mask_bool: (batch_size, msl, 1) or None if not doing MLM.
-        attention_weights: (num_layers, batch_size, num_heads, msl, msl) or None if no transformer
-        """
-        return outputs, x, seq_ids, lm_mask_bool, attention_weights
+        return outputs, seq_sent_features, token_ids, mlm_mask_bool, attention_weights
