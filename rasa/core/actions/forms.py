@@ -441,7 +441,7 @@ class FormAction(LoopAction):
             slots=domain.slots,
         )
 
-    async def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
+    def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
         """Returns True if slot validation rejected the form execution, else False.
 
         A custom action for slot validation can return an ActionExecutionRejected event.
