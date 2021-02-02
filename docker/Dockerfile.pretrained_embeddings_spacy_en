@@ -1,9 +1,9 @@
 # The image tagged with the 'spacy-en' suffix
 ARG IMAGE_BASE_NAME
 ARG BASE_IMAGE_HASH
-ARG POETRY_VERSION
+ARG BASE_BUILDER_IMAGE_HASH
 
-FROM ${IMAGE_BASE_NAME}:base-poetry-${POETRY_VERSION} as builder
+FROM ${IMAGE_BASE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH} as builder
 
 # copy files
 COPY . /build/
