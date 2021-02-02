@@ -2,8 +2,6 @@ import asyncio
 import copy
 import os
 import random
-
-import mock
 import pytest
 import sys
 import uuid
@@ -19,6 +17,8 @@ from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
 import rasa.shared.utils.io
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
@@ -33,16 +33,19 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import TrainingResult, train_async, _train_nlu_async
+from rasa.train import train_async, train_nlu_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_E2E_STORIES_FILE,
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
     DOMAIN_WITH_CATEGORICAL_SLOT,
     END_TO_END_STORY_FILE,
     INCORRECT_NLU_DATA,
+    SIMPLE_STORIES_FILE,
 )
+from rasa.shared.exceptions import RasaException
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -160,6 +163,16 @@ def default_stories_file() -> Text:
 
 
 @pytest.fixture(scope="session")
+def default_e2e_stories_file() -> Text:
+    return DEFAULT_E2E_STORIES_FILE
+
+
+@pytest.fixture(scope="session")
+def simple_stories_file() -> Text:
+    return SIMPLE_STORIES_FILE
+
+
+@pytest.fixture(scope="session")
 def default_stack_config() -> Text:
     return DEFAULT_STACK_CONFIG
 
@@ -175,7 +188,7 @@ def incorrect_nlu_data() -> Text:
 
 
 @pytest.fixture(scope="session")
-def end_to_end_story_file() -> Text:
+def end_to_end_test_story_file() -> Text:
     return END_TO_END_STORY_FILE
 
 
@@ -211,7 +224,7 @@ def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 
-        return await _train_nlu_async(*args, output=output_path, **kwargs)
+        return await train_nlu_async(*args, output=output_path, **kwargs)
 
     return _train_nlu
 
@@ -227,6 +240,22 @@ async def trained_rasa_model(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data, default_stories_file],
+    )
+
+    return trained_stack_model_path
+
+
+@pytest.fixture(scope="session")
+async def trained_simple_rasa_model(
+    trained_async: Callable,
+    default_domain_path: Text,
+    default_nlu_data: Text,
+    simple_stories_file: Text,
+) -> Text:
+    trained_stack_model_path = await trained_async(
+        domain=default_domain_path,
+        config=DEFAULT_STACK_CONFIG,
+        training_files=[default_nlu_data, simple_stories_file],
     )
 
     return trained_stack_model_path
@@ -271,6 +300,21 @@ async def trained_nlu_model(
     )
 
     return trained_nlu_model_path
+
+
+@pytest.fixture(scope="session")
+async def trained_e2e_model(
+    trained_async,
+    default_domain_path,
+    default_stack_config,
+    default_nlu_data,
+    default_e2e_stories_file,
+) -> Text:
+    return await trained_async(
+        domain=default_domain_path,
+        config=default_stack_config,
+        training_files=[default_nlu_data, default_e2e_stories_file],
+    )
 
 
 @pytest.fixture(scope="session")
@@ -323,6 +367,47 @@ def project() -> Text:
     create_initial_project(directory)
 
     return directory
+
+
+@pytest.fixture(scope="session")
+def component_builder():
+    return ComponentBuilder()
+
+
+@pytest.fixture(scope="session")
+def spacy_nlp(component_builder: ComponentBuilder, blank_config: RasaNLUModelConfig):
+    spacy_nlp_config = {"name": "SpacyNLP"}
+    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
+
+
+@pytest.fixture(scope="session")
+def blank_config() -> RasaNLUModelConfig:
+    return RasaNLUModelConfig({"language": "en", "pipeline": []})
+
+
+@pytest.fixture(scope="session")
+async def trained_response_selector_bot(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="examples/responseselectorbot/domain.yml",
+        config="examples/responseselectorbot/config.yml",
+        training_files=[
+            "examples/responseselectorbot/data/rules.yml",
+            "examples/responseselectorbot/data/stories.yml",
+            "examples/responseselectorbot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for responseselectorbot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="session")
+async def response_selector_agent(
+    trained_response_selector_bot: Optional[Path],
+) -> Agent:
+    return Agent.load_local_model(trained_response_selector_bot)
 
 
 def write_endpoint_config_to_yaml(

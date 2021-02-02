@@ -631,7 +631,15 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
+        ignore_errors=[
+            # std lib errors
+            KeyboardInterrupt,  # user hit the interrupt key (Ctrl+C)
+            MemoryError,  # machine is running out of memory
+            NotImplementedError,  # user is using a feature that is not implemented
+            asyncio.CancelledError,  # an async operation has been cancelled by the user
+            # expected Rasa errors
+            RasaException,
+        ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
@@ -694,7 +702,7 @@ async def track_model_training(
             "policies": config.get("policies"),
             "num_intent_examples": len(nlu_data.intent_examples),
             "num_entity_examples": len(nlu_data.entity_examples),
-            "num_actions": len(domain.action_names),
+            "num_actions": len(domain.action_names_or_texts),
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
             "num_templates": len(domain.templates),
@@ -872,7 +880,7 @@ def track_project_init(path: Text) -> None:
         path: Location of the project
     """
     _track(
-        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)},
+        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)}
     )
 
 
