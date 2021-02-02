@@ -295,7 +295,8 @@ class TrackerFeaturizer:
         rasa.shared.utils.io.create_directory_for_file(featurizer_file)
 
         # entity tags are persisted in TED policy, they are not needed for prediction
-        self.state_featurizer.entity_tag_specs = None
+        if self.state_featurizer is not None:
+            self.state_featurizer.entity_tag_specs = None
 
         # noinspection PyTypeChecker
         rasa.shared.utils.io.write_text_file(
