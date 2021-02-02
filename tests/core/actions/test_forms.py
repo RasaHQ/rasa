@@ -102,7 +102,7 @@ async def test_switch_forms_with_same_slot():
     utter_ask_form_1 = f"Please provide the value for {slot_a} of form 1"
 
     form_2 = "my_form_2"
-    text_2a = f"Please provide the value for {slot_a} of form 2"
+    utter_ask_form_2 = f"Please provide the value for {slot_a} of form 2"
 
     domain = f"""
 forms:
@@ -116,9 +116,9 @@ forms:
       entity: number
 responses:
     utter_ask_{form_1}_{slot_a}:
-    - text: {text_1a}
+    - text: {utter_ask_form_1}
     utter_ask_{form_2}_{slot_a}:
-    - text: {text_2a}
+    - text: {utter_ask_form_2}
 """
     domain = Domain.from_yaml(domain)
 
@@ -138,7 +138,7 @@ responses:
     # verify that `form_1` asks for `slot_a` using the correct response
     assert events[:-1] == [ActiveLoop(form_1), SlotSet(REQUESTED_SLOT, slot_a)]
     assert isinstance(events[-1], BotUttered)
-    assert events[-1].text == text_1a
+    assert events[-1].text == utter_ask_form_1
 
     # Next, bot predicts action_listen
     tracker.update_with_events([ActionExecuted(action_name=ACTION_LISTEN_NAME)], domain)
@@ -161,7 +161,7 @@ responses:
     # verify that `form_2` asks for `slot_a` using the correct response
     assert events[:-1] == [ActiveLoop(form_2), SlotSet(REQUESTED_SLOT, slot_a)]
     assert isinstance(events[-1], BotUttered)
-    assert events[-1].text == text_2a
+    assert events[-1].text == utter_ask_form_2
 
 
 async def test_activate_and_immediate_deactivate():
