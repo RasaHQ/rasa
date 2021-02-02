@@ -12,7 +12,7 @@ DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 @pytest.fixture(scope="session")
 def spacy_nlp_component(component_builder, blank_config):
-    spacy_nlp_config = {"name": "SpacyNLP"}
+    spacy_nlp_config = {"name": "SpacyNLP", "model": "en_core_web_md"}
     return component_builder.create_component(spacy_nlp_config, blank_config)
 
 
@@ -33,7 +33,7 @@ def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
         {
             "language": "en",
             "pipeline": [
-                {"name": "SpacyNLP"},
+                {"name": "SpacyNLP", "model": "en_core_web_md"},
                 {"name": "SpacyTokenizer"},
                 {"name": "SpacyFeaturizer"},
                 {"name": "RegexFeaturizer"},

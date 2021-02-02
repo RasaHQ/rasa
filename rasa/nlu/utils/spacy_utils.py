@@ -21,9 +21,7 @@ if typing.TYPE_CHECKING:
 class SpacyNLP(Component):
 
     defaults = {
-        # name of the language model to load - if it is not set
-        # we will be looking for a language model that is named
-        # after the language of the model, e.g. `en`
+        # name of the language model to load
         "model": None,
         # when retrieving word vectors, this will decide if the casing
         # of the word is relevant. E.g. `hello` and `Hello` will
@@ -49,11 +47,9 @@ class SpacyNLP(Component):
             return spacy.load(spacy_model_name, disable=["parser"])
         except OSError:
             raise InvalidModelError(
-                "Model '{}' is not a linked spaCy model.  "
-                "Please download and/or link a spaCy model, "
-                "e.g. by running:\npython -m spacy download "
-                "en_core_web_md\npython -m spacy link "
-                "en_core_web_md en".format(spacy_model_name)
+                "Please confirm that {} is an available spaCy model. "
+                "You may need to download one upfront. For example:\npython -m spacy download "
+                "en_core_web_md".format(spacy_model_name)
             )
 
     @classmethod
