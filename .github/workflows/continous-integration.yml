@@ -291,6 +291,7 @@ jobs:
     outputs:
       base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
       base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
+      base_builder_image_hash: ${{ steps.check_image.outputs.base_builder_image_hash }}
       # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
       image_tag: ${{ steps.set_output.outputs.image_tag }}
       # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
@@ -367,6 +368,13 @@ jobs:
         BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
         echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
 
+        # Base builder image
+        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
+        echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
+
+        BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
+        echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
+
     - name: Build Docker base image and push 🛠 ⬆
       if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
       run: |
@@ -385,6 +393,12 @@ jobs:
         export IMAGE_TAG=${{ env.POETRY_VERSION }}
         export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
         docker buildx bake -f docker/docker-bake.hcl base-poetry --push
+
+    - name: Build Docker builder base image and push 🛠 ⬆
+      if: steps.check_image.outputs.base_builder_exists == 'false'
+      run: |
+        export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+        docker buildx bake -f docker/docker-bake.hcl base-builder --push
 
     # Set environment variables for a pull request
     #
@@ -436,6 +450,7 @@ jobs:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
+      BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
 
     strategy:
       matrix:
