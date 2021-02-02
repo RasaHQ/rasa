@@ -185,6 +185,29 @@ JOBS=[n] make test
 
 Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
 
+
+### Running the Integration Tests
+
+In order to run the integration tests, make sure that you have the development requirements installed:
+
+```bash
+make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
+make prepare-tests-macos  # Only on macOS
+```
+
+Then, you'll need to start services with the following command which uses Docker Compose:
+
+```bash
+make run-integration-containers
+```
+
+Finally, you can run the integration tests like this:
+
+```bash
+make test-integration
+```
+
+
 ### Resolving merge conflicts
 
 Poetry doesn't include any solution that can help to resolve merge conflicts in

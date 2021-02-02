@@ -33,7 +33,7 @@ help:
 	@echo "        Download all additional resources needed to use spacy as part of Rasa."
 	@echo "    prepare-mitie"
 	@echo "        Download all additional resources needed to use mitie as part of Rasa."
-	@echo "    prepare-transformers:"
+	@echo "    prepare-transformers"
 	@echo "        Download all models needed for testing LanguageModelFeaturizer."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
@@ -47,6 +47,10 @@ help:
 	@echo "        Prepare a release."
 	@echo "    build-docker"
 	@echo "        Build Rasa Open Source Docker image."
+	@echo "    run-integration-containers"
+	@echo "        Run the integration test containers."
+	@echo "    stop-integration-containers"
+	@echo "        Stop the integration test containers."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
