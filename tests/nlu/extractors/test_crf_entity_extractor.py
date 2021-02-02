@@ -16,14 +16,10 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
 
-def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
-    return [{"name": c} for c in components]
-
-
 async def test_train_persist_load_with_composite_entities(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
-    pipeline = pipeline_from_components("WhitespaceTokenizer", "CRFEntityExtractor")
+    pipeline = [{"name": "WhitespaceTokenizer"}, {"name": "CRFEntityExtractor"}]
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
@@ -90,9 +86,11 @@ async def test_train_persist_load_with_composite_entities(
 async def test_train_persist_with_different_configurations(
     config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmp_path: Path
 ):
-    pipeline = [{"name": "SpacyNLP", "model": "en_core_web_md"},
-                {"name": "SpacyTokenizer"},
-                {"name": "CRFEntityExtractor"}]
+    pipeline = [
+        {"name": "SpacyNLP", "model": "en_core_web_md"},
+        {"name": "SpacyTokenizer"},
+        {"name": "CRFEntityExtractor"},
+    ]
     pipeline[2].update(config_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
