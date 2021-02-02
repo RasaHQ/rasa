@@ -141,7 +141,7 @@ responses:
     assert events[-1].text == text_1a
 
     # Next, bot predicts action_listen
-    tracker.update_with_events([ActionExecuted(action_name="action_listen")], domain)
+    tracker.update_with_events([ActionExecuted(action_name=ACTION_LISTEN_NAME)], domain)
 
     # User utters something, with the intent to switch to form_2
     #
