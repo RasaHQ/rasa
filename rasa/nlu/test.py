@@ -665,7 +665,7 @@ def _calculate_report(
             labels,
             exclude_labels=[exclude_label] if exclude_label else [],
         )
-    else:
+    elif not output_directory:
         log_evaluation_table(report, precision, f1, accuracy)
 
     return report, precision, f1, accuracy, confusion_matrix, labels
