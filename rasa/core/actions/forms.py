@@ -324,7 +324,7 @@ class FormAction(LoopAction):
         previous form and must be ignored.
 
         Returns:
-        The slot name or `None`
+            The slot name or `None`
         """
         return (
             tracker.get_slot(REQUESTED_SLOT)
