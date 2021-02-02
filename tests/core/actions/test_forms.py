@@ -99,7 +99,7 @@ async def test_switch_forms_with_same_slot():
     slot_a = "my_slot_a"
 
     form_1 = "my_form_1"
-    text_1a = f"Please provide the value for {slot_a} of form 1"
+    utter_ask_form_1 = f"Please provide the value for {slot_a} of form 1"
 
     form_2 = "my_form_2"
     text_2a = f"Please provide the value for {slot_a} of form 2"
@@ -141,7 +141,7 @@ responses:
     assert events[-1].text == text_1a
 
     # Next, bot predicts action_listen
-    tracker.update_with_events([ActionExecuted(action_name="action_listen")], domain)
+    tracker.update_with_events([ActionExecuted(action_name=ACTION_LISTEN_NAME)], domain)
 
     # User utters something, with the intent to switch to form_2
     #
