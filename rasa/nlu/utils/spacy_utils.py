@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
 
 
 class SpacyNLP(Component):
+    """This component is the core component that links spaCy to related components in the pipeline."""
 
     defaults = {
         # name of the language model to load
