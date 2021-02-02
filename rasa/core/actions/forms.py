@@ -442,11 +442,14 @@ class FormAction(LoopAction):
         )
 
     def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
-        """Returns True if slot validation rejected the form execution, else False.
+        """Checks if user rejected the form execution during a slot_validation.
 
-        A custom action for slot validation can return an ActionExecutionRejected event.
-        This will allow the bot to predict another action for the latest user utterance
-        before continuing with the currently active form.
+        Args:
+            validation_events: Events returned by the custom slot_validation action
+
+        Returns:
+            True if the validation_events include an ActionExecutionRejected event,
+            else False.
         """
         return any(
             isinstance(event, ActionExecutionRejected) for event in validation_events
