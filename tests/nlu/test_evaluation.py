@@ -438,7 +438,8 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
     assert len(intent_results.test["F1-score"]) == n_folds
     assert all(key in intent_results.evaluation for key in ["errors", "report"])
     assert any(
-        isinstance(intent_report, dict) and intent_report.get("confused_with")
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
         for intent_report in intent_results.evaluation["report"].values()
     )
 
@@ -493,7 +494,8 @@ def test_run_cv_evaluation_with_response_selector():
     assert len(intent_results.test["F1-score"]) == n_folds
     assert all(key in intent_results.evaluation for key in ["errors", "report"])
     assert any(
-        isinstance(intent_report, dict) and intent_report.get("confused_with")
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
         for intent_report in intent_results.evaluation["report"].values()
     )
 
@@ -507,7 +509,8 @@ def test_run_cv_evaluation_with_response_selector():
         key in response_selection_results.evaluation for key in ["errors", "report"]
     )
     assert any(
-        isinstance(intent_report, dict) and intent_report.get("confused_with")
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
