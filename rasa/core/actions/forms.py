@@ -708,7 +708,7 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-        if not await self._user_rejected_manually(events):
+        if not self._user_rejected_manually(events):
             events += await self.request_next_slot(
                 tracker, domain, output_channel, nlg, events_so_far + events
             )
