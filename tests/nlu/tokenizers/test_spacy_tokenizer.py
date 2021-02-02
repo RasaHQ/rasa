@@ -38,7 +38,7 @@ def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):
 @pytest.mark.parametrize(
     "text, expected_pos_tags",
     [
-        ("I like dogs", ['PRP', 'VBP', 'NNS']),
+        ("I like dogs", ["PRP", "VBP", "NNS"]),
         ("Hello, how are you?", ["UH", ",", "WRB", "VBP", "PRP", "."]),
     ],
 )
