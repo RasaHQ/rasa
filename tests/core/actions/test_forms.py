@@ -5,6 +5,10 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
+from rasa.core.agent import Agent
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.processor import MessageProcessor
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
@@ -20,6 +24,7 @@ from rasa.shared.core.events import (
     Restarted,
     Event,
     ActionExecutionRejected,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -90,7 +95,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
-async def test_switch_forms_with_same_slot():
+async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
     Tests the fix for issue 7710"""
@@ -105,6 +110,16 @@ async def test_switch_forms_with_same_slot():
     utter_ask_form_2 = f"Please provide the value for {slot_a} of form 2"
 
     domain = f"""
+version: "2.0"
+nlu:
+- intent: order_status
+  examples: |
+    - check status of my order
+    - when are my shoes coming in
+- intent: return
+  examples: |
+    - start a return
+    - I don't want my shoes anymore
 forms:
   {form_1}:
     {slot_a}:
@@ -120,46 +135,106 @@ responses:
     utter_ask_{form_2}_{slot_a}:
     - text: {utter_ask_form_2}
 """
+
     domain = Domain.from_yaml(domain)
 
-    # Driving it like rasa/core/processor._run_py
-    # and making sure the events returned by action.run() are correct.
+    # Driving it like rasa/core/processor
+    processor = MessageProcessor(
+        default_agent.interpreter,
+        default_agent.policy_ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+    )
 
     # activate the first form
+    tracker = DialogueStateTracker.from_events(
+        "some-sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("order status", {"name": "form_1", "confidence": 1.0}),
+            DefinePrevUserUtteredFeaturization(False),
+        ],
+    )
+    # rasa/core/processor.predict_next_action
+    probabilities = []
+    policy_name = "policy_2_RulePolicy"
+    policy_priority = (6,)
+    policy_events = []
+    prediction = PolicyPrediction(
+        probabilities,
+        policy_name,
+        policy_priority,
+        policy_events,
+        is_end_to_end_prediction=False,
+        is_no_user_prediction=False,
+        diagnostic_data={},
+    )
     action_1 = FormAction(form_1, None)
-    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
-    events = await action_1.run(
+
+    #
+    await processor._run_action(
+        action_1,
+        tracker,
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.templates),
-        tracker,
-        domain,
+        prediction,
     )
-    tracker.update_with_events(events, domain)  # _log_action_on_tracker in processor.py
+    events = tracker.applied_events()
+
     # verify that `form_1` asks for `slot_a` using the correct response
-    assert events[:-1] == [ActiveLoop(form_1), SlotSet(REQUESTED_SLOT, slot_a)]
+    assert events[:-1] == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("order status", {"name": "form_1", "confidence": 1.0}),
+        DefinePrevUserUtteredFeaturization(False),
+        ActionExecuted(form_1),
+        ActiveLoop(form_1),
+        SlotSet(REQUESTED_SLOT, slot_a),
+    ]
     assert isinstance(events[-1], BotUttered)
     assert events[-1].text == utter_ask_form_1
 
-    # Next, bot predicts action_listen
-    tracker.update_with_events([ActionExecuted(action_name=ACTION_LISTEN_NAME)], domain)
+    # Next, bot predicts action_listen and User utters something, with the intent to
+    # switch to form_2
+    tracker.update_with_events(
+        [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("return my shoes", {"name": "form_2", "confidence": 1.0}),
+            DefinePrevUserUtteredFeaturization(False),
+        ],
+        domain,
+    )
 
-    # User utters something, with the intent to switch to form_2
-    #
     # form_1 is still active, and bot will first validate if the user utterance
     #  provides valid data for the requested slot
     #  -> if slot is not extracted, then the action execution is rejected
-    tracker.update(ActionExecutionRejected(action_name=form_1))  # processor._run_action
-    #
-    # bot then predicts form_2 as the next action
-    action_2 = FormAction(form_2, None)
-    events = await action_2.run(
+    # tracker.update(ActionExecutionRejected(action_name=form_1))  # processor._run_action
+    await processor._run_action(
+        action_1,
+        tracker,
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.templates),
-        tracker,
-        domain,
+        prediction,
     )
+    events = tracker.applied_events()
+    assert events[-1] == ActionExecutionRejected(action_name=form_1)
+
+    # bot then predicts form_2 as the next action
+    action_2 = FormAction(form_2, None)
+    await processor._run_action(
+        action_2,
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        prediction,
+    )
+    events = tracker.applied_events()
     # verify that `form_2` asks for `slot_a` using the correct response
-    assert events[:-1] == [ActiveLoop(form_2), SlotSet(REQUESTED_SLOT, slot_a)]
+    assert events[-4:-1] == [
+        ActionExecuted(form_2),
+        ActiveLoop(form_2),
+        SlotSet(REQUESTED_SLOT, slot_a),
+    ]
     assert isinstance(events[-1], BotUttered)
     assert events[-1].text == utter_ask_form_2
 
