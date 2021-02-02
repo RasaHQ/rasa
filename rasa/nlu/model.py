@@ -289,7 +289,7 @@ class Interpreter:
         model_version = metadata.get("rasa_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
-                "The model version is trained using Rasa {}"
+                "The model version is trained using Rasa Open Source {} "
                 "and is not compatible with your current installation ({}). "
                 "This means that you probably want to retrain your model "
                 "to ensure that the versions match up again."
