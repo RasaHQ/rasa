@@ -16,6 +16,9 @@ WORKDIR /build
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && pip install --no-cache-dir -U 'pip<20'
 RUN . /opt/venv/bin/activate && poetry install --extras spacy --no-dev --no-root --no-interaction
+RUN . /opt/venv/bin/activate && poetry build -f wheel -n && \
+  pip install --no-deps dist/*.whl && \
+  rm -rf dist *.egg-info
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
