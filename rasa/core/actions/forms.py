@@ -489,7 +489,7 @@ class FormAction(LoopAction):
         if (
             slot_to_fill
             and not some_slots_were_validated
-            and not await self._user_rejected_manually(validation_events)
+            and not self._user_rejected_manually(validation_events)
         ):
             # reject to execute the form action
             # if some slot was requested but nothing was extracted
