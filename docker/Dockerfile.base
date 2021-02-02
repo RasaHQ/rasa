@@ -9,17 +9,6 @@ RUN apt-get update -qq && \
   python3-venv \
   python3-pip \
   python3-dev \
-  build-essential \
-  wget \
-  openssh-client \
-  graphviz-dev \
-  pkg-config \
-  git-core \
-  openssl \
-  libssl-dev \
-  libffi7 \
-  libffi-dev \
-  libpng-dev \
   # required by psycopg2 at build and runtime
   libpq-dev \
   # required for health check
