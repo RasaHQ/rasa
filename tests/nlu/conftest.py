@@ -1,11 +1,8 @@
-from typing import Text
-
 import pytest
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-from tests.nlu.utilities import write_file_config
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
