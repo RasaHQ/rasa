@@ -2,7 +2,8 @@ import json
 import logging
 import time
 from asyncio import AbstractEventLoop
-from typing import Any, Text, List, Optional, Union, Dict
+from typing import Any, Text, List, Optional, Union
+import time
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
@@ -86,6 +87,7 @@ class KafkaEventBroker(EventBroker):
         return cls(broker_config.url, **broker_config.kwargs)
 
     def publish(self, event, retries=60, retry_delay_in_seconds=5) -> None:
+        """Publishes events."""
         if self.producer is None:
             self._create_producer()
             connected = self.producer.bootstrap_connected()
@@ -170,6 +172,7 @@ class KafkaEventBroker(EventBroker):
             )
 
     def _publish(self, event) -> None:
+        logger.debug(f"Calling kafka send({self.topic}, {event})")
         self.producer.send(self.topic, event)
 
     def _close(self) -> None:
