@@ -359,9 +359,6 @@ class RasaInputLayer(tf.keras.layers.Layer):
             # prepare the layer only if some feature signature are present for this
             # feature type
             if feature_type in data_signature and data_signature[feature_type]:
-                sparse_to_dense_layer_options = {
-                    "reg_lambda": config[REGULARIZATION_CONSTANT],
-                }
                 self.layers_sparse_dense[feature_type] = ConcatenateSparseDenseFeatures(
                     attribute=attribute,
                     feature_type=feature_type,
@@ -370,7 +367,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
                     sparse_dropout=config[SPARSE_INPUT_DROPOUT],
                     dense_dropout=config[DENSE_INPUT_DROPOUT],
                     sparse_to_dense_units=config[DENSE_DIMENSION][attribute],
-                    **sparse_to_dense_layer_options,
+                    reg_lambda=config[REGULARIZATION_CONSTANT],
                 )
             else:
                 self.layers_sparse_dense[feature_type] = None
