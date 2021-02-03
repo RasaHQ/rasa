@@ -50,10 +50,6 @@ class MultiProjectImporter(TrainingDataImporter):
             "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))
         )
 
-        self._cached_domain = None
-        self._cached_stories = None
-        self._cached_nlu_data = None
-
         mark_as_experimental_feature(feature_name="MultiProjectImporter")
 
     def _init_from_path(self, path: Text) -> None:
@@ -206,15 +202,15 @@ class MultiProjectImporter(TrainingDataImporter):
         merges = self._collect_paths_for_each_property(domains)
         self._log_properties_with_multiple_paths(merges)
 
+    @rasa.shared.utils.common.cached_method
     async def get_domain(self) -> Domain:
-        if self._cached_domain is None:
-            domains = [Domain.load(path) for path in self._domain_paths]
-            self._log_merge_infos(domains)
-            self._cached_domain = reduce(
-                lambda merged, other: merged.merge(other), domains, Domain.empty()
-            )
-        return self._cached_domain
+        domains = [Domain.load(path) for path in self._domain_paths]
+        self._log_merge_infos(domains)
+        return reduce(
+            lambda merged, other: merged.merge(other), domains, Domain.empty()
+        )
 
+    @rasa.shared.utils.common.cached_method
     async def get_stories(
         self,
         template_variables: Optional[Dict] = None,
@@ -234,9 +230,6 @@ class MultiProjectImporter(TrainingDataImporter):
     async def get_config(self) -> Dict:
         return self.config
 
+    @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        if self._cached_nlu_data is None:
-            self._cached_nlu_data = utils.training_data_from_paths(
-                self._nlu_paths, language
-            )
-        return self._cached_nlu_data
+        return utils.training_data_from_paths(self._nlu_paths, language)
