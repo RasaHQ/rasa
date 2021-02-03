@@ -3,11 +3,7 @@ import pytest
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-from rasa.nlu.utils.hugging_face.registry import (
-    model_tokenizer_dict,
-    model_class_dict,
-    model_weights_defaults,
-)
+
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
