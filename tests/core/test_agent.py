@@ -229,6 +229,7 @@ async def test_pull_model_with_invalid_domain(
     assert error_message in caplog.text
 
 
+@pytest.mark.trains_model
 async def test_load_agent(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
 
@@ -390,7 +391,6 @@ async def test_agent_update_model_none_domain(trained_rasa_model: Text):
     assert tracker.events[3].intent["name"] == "greet"
 
 
-@pytest.mark.trains_model
 async def test_load_agent_on_not_existing_path():
     agent = await load_agent(model_path="some-random-path")
 

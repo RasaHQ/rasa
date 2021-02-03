@@ -572,6 +572,7 @@ async def test_train_persist_load_with_composite_entities(
     assert loaded.parse(text) == trained.parse(text)
 
 
+@pytest.mark.trains_model
 async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
     """Tests if processing a message returns attention weights as numpy array."""
     with rasa.model.unpack_model(trained_nlu_moodbot_path) as unpacked_model_directory:
