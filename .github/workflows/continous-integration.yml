@@ -59,6 +59,8 @@ jobs:
     # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
     name: Wait for docs tests
     runs-on: ubuntu-latest
+    needs: [ changes ]
+    if: needs.changes.outputs.docs == 'true'
 
     steps:
       - name: Checkout git repository 🕝
