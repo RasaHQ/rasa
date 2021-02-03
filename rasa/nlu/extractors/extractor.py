@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text, Tuple, Optional
+from typing import Any, Dict, List, Text, Tuple, Optional, NamedTuple
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -29,6 +29,15 @@ from rasa.shared.nlu.constants import (
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
 import rasa.utils.train_utils
+
+
+class EntityTagSpec(NamedTuple):
+    """Specification of an entity tag present in the training data."""
+
+    tag_name: Text
+    ids_to_tags: Dict[int, Text]
+    tags_to_ids: Dict[Text, int]
+    num_tags: int
 
 
 class EntityExtractor(Component):
