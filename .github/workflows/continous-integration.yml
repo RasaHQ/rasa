@@ -70,8 +70,8 @@ jobs:
         id: wait-for-doc-tests
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Docs Tests
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          checkName: Test Documentation
+          ref: ${{ github.head_ref }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
 
