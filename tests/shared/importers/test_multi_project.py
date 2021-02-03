@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Text
+from typing import Dict, Text, Callable
 
 import pytest
 import os
@@ -319,49 +319,84 @@ def test_single_additional_file(tmp_path: Path):
     assert selector.is_imported(str(additional_file))
 
 
-async def test_multi_project_training(trained_async):
-    example_directory = "data/test_multi_domain"
-    config_file = os.path.join(example_directory, "config.yml")
-    domain_file = os.path.join(example_directory, "domain.yml")
-    files_of_root_project = os.path.join(example_directory, "data")
+async def test_multi_project_training(trained_async: Callable):
+    example_directory = Path("data/test_multi_domain")
+    config_file = example_directory / "config.yml"
+    domain_file = example_directory / "domain.yml"
+    files_of_root_project = example_directory / "data"
 
     trained_stack_model_path = await trained_async(
-        config=config_file,
-        domain=domain_file,
-        training_files=files_of_root_project,
+        config=str(config_file),
+        domain=str(domain_file),
+        training_files=str(files_of_root_project),
         force_training=True,
         persist_nlu_training_data=True,
     )
 
-    unpacked = model.unpack_model(trained_stack_model_path)
+    with model.unpack_model(trained_stack_model_path) as unpacked:
+        domain_file = (
+            Path(unpacked) / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH
+        )
 
-    domain_file = os.path.join(
-        unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
-    )
-    domain = Domain.load(domain_file)
+        domain = Domain.load(domain_file)
 
-    expected_intents = {
-        "greet",
-        "goodbye",
-        "affirm",
-        "deny",
-        "mood_great",
-        "mood_unhappy",
+    assert domain.cleaned_domain() == {
+        "session_config": {
+            "session_expiration_time": 60,
+            "carry_over_slots_to_new_session": True,
+        },
+        "intents": ["affirm", "deny", "mood_great", "mood_unhappy", "greet", "goodbye"],
+        "entities": ["cuisine", "name", "number"],
+        "slots": {
+            "name": {
+                "type": "float",
+                "influence_conversation": False,
+                "max_value": 1.0,
+                "min_value": 0.0,
+            },
+            "cuisine": {"type": "text", "influence_conversation": False},
+            "num_people": {
+                "type": "float",
+                "influence_conversation": False,
+                "max_value": 1.0,
+                "min_value": 0.0,
+            },
+        },
+        "responses": {
+            "utter_greet": [
+                {
+                    "text": "Hey! How are you?",
+                    "buttons": [
+                        {"title": "great", "payload": "/mood_great"},
+                        {"title": "super sad", "payload": "/mood_unhappy"},
+                    ],
+                }
+            ],
+            "utter_goodbye": [{"text": "Bye"}],
+            "utter_cheer_up": [
+                {
+                    "text": "Here is something to cheer you up:",
+                    "image": "https://i.imgur.com/nGF1K8f.jpg",
+                }
+            ],
+            "utter_did_that_help": [{"text": "Did that help you?"}],
+            "utter_happy": [{"text": "Great carry on!"}],
+        },
+        "actions": ["action_ask_name", "action_custom_utter", "action_utter_mood"],
+        "forms": {
+            "name_form": {
+                "name": [
+                    {"type": "from_entity", "entity": "name", "not_intent": "chitchat"}
+                ]
+            },
+            "restaurant_form": {
+                "cuisine": [
+                    {
+                        "type": "from_entity",
+                        "entity": "cuisine",
+                        "not_intent": "chitchat",
+                    }
+                ]
+            },
+        },
     }
-
-    assert all([i in domain.intents for i in expected_intents])
-
-    nlu_training_data_file = os.path.join(unpacked, "nlu", "training_data.yml")
-    nlu_training_data = RasaYAMLReader().read(nlu_training_data_file)
-
-    assert expected_intents == nlu_training_data.intents
-
-    expected_actions = [
-        "utter_greet",
-        "utter_cheer_up",
-        "utter_did_that_help",
-        "utter_happy",
-        "utter_goodbye",
-    ]
-
-    assert all([a in domain.action_names_or_texts for a in expected_actions])

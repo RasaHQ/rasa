@@ -4,7 +4,7 @@ pipeline:
   - name: "KeywordIntentClassifier"
 
 policies:
-  - name: MemoizationPolicy
+  - name: RulePolicy
 
 importers:
   - name: MultiProjectImporter

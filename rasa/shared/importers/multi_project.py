@@ -1,11 +1,20 @@
 import logging
+from collections import defaultdict
 from functools import reduce
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
 import rasa.shared.data
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_ENTITIES,
+    KEY_ACTIONS,
+    KEY_FORMS,
+    KEY_SLOTS,
+    KEY_INTENTS,
+    KEY_RESPONSES,
+)
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers import utils
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -173,19 +182,22 @@ class MultiProjectImporter(TrainingDataImporter):
 
     def _collect_paths_for_each_property(self, domains: List[Domain]) -> Dict:
         merges = {
-            "actions": {},
-            "entities": {},
-            "forms": {},
-            "intents": {},
-            "slots": {},
+            KEY_ACTIONS: {},
+            KEY_ENTITIES: {},
+            KEY_FORMS: {},
+            KEY_INTENTS: {},
+            KEY_SLOTS: {},
+            KEY_RESPONSES: {},
         }
         domain_dicts = [domain.as_dict() for domain in domains]
         for i, domain_dict in enumerate(domain_dicts):
             domain_path = self._domain_paths[i]
-            for k, v in merges.items():
-                for e in domain_dict.get(k, []):
-                    name = e if isinstance(e, str) else next(iter(e.keys()))
-                    v[name] = v.get(name, []) + [domain_path]
+            for domain_section, property_path_mappings in merges.items():
+                for item in domain_dict.get(domain_section, {}):
+                    name = item if isinstance(item, str) else next(iter(item.keys()))
+                    property_path_mappings[name] = property_path_mappings.get(
+                        name, []
+                    ) + [domain_path]
         return merges
 
     @staticmethod

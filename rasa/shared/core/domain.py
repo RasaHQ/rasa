@@ -679,7 +679,7 @@ class Domain:
         # about this warning except making their developers change any custom code
         # which calls this.
         rasa.shared.utils.io.raise_warning(
-            f"{Domain.__name__}.{Domain.action_names.__name__} "
+            f"{Domain.__name__}.action_names "
             f"is deprecated and will be removed version 3.0.0.",
             category=DeprecationWarning,
         )

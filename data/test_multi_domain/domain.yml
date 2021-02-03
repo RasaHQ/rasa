@@ -1,6 +1,27 @@
 intents:
-  - goodbye
+- goodbye
+
+entities:
+- cuisine
+
+slots:
+  cuisine:
+    type: text
+    influence_conversation: false
+  num_people:
+    type: float
+    influence_conversation: false
+
+actions:
+- action_custom_utter
 
 responses:
   utter_goodbye:
-    - text: "Bye"
+  - text: "Bye"
+
+forms:
+  restaurant_form:
+    cuisine:
+    - type: from_entity
+      entity: cuisine
+      not_intent: chitchat
