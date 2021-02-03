@@ -1471,8 +1471,6 @@ async def test_execute(rasa_app: SanicASGITestClient):
 
 
 async def test_execute_without_conversation_id(rasa_app: SanicASGITestClient):
-    # await _create_tracker_for_sender(rasa_app, "test_execute")
-
     data = {INTENT_NAME_KEY: "utter_greet"}
     _, response = await rasa_app.post(
         "/conversations/non_existent_id/execute", json=data
@@ -1770,9 +1768,6 @@ async def test_get_story(
 async def test_get_story_without_conversation_id(
     rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
 ):
-    tracker_store = InMemoryTrackerStore(Domain.empty())
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-
     conversation_id = "some-conversation-ID"
     url = f"/conversations/{conversation_id}/story?"
 
