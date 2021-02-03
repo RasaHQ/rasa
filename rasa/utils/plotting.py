@@ -232,14 +232,15 @@ def plot_intent_augmentation_summary(
     perf_bar = plt.barh(ind, performance)
 
     for idx in range(num_intents):
-        if intents[idx] in totals_keys:
-            perf_bar[idx].set_color("lightgreen")
-            perf_bar[idx].set_label("total")
-        elif intents[idx] in changed_intents:
+        if performance[idx] < 0.0:
             perf_bar[idx].set_color("lightcoral")
-            perf_bar[idx].set_label("affected")
         else:
-            perf_bar[idx].set_label("augmented")
+            perf_bar[idx].set_color("lightgreen")
+        if intents[idx] in totals_keys:
+            perf_bar[idx].set_hatch("*")
+            # The colour of the hatch is determined by the edge colour property, so in order to make the hatch visible,
+            # we need ot set the edge colour explicitly
+            perf_bar[idx].set_edgecolor("black")
 
     _autolabel(perf_bar)
     plt.ylim((-1, num_intents))
@@ -259,10 +260,10 @@ def _autolabel(rects: Axes.bar) -> None:
 
     for rect in rects:
         width = rect.get_width()
-        offset = 0.
-        if width > 0.:
+        offset = 0.0
+        if width > 0.0:
             offset = 0.045
-        elif width < 0.:
+        elif width < 0.0:
             offset = -0.045
 
         plt.annotate(
@@ -272,5 +273,5 @@ def _autolabel(rects: Axes.bar) -> None:
             textcoords="offset points",
             ha="center",
             va="bottom",
-            fontsize=14
+            fontsize=14,
         )
