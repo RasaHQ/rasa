@@ -291,9 +291,9 @@ class Interpreter:
             raise UnsupportedModelError(
                 f"The model version is trained using Rasa Open Source {model_version} "
                 f"and is not compatible with your current installation ({rasa.__version__}). "
-                "This means that you either need to retrain your model "
-                "or revert back to the Rasa version that trained the model "
-                "to ensure that the versions match up again."
+                f"This means that you either need to retrain your model "
+                f"or revert back to the Rasa version that trained the model "
+                f"to ensure that the versions match up again."
             )
 
     @staticmethod
