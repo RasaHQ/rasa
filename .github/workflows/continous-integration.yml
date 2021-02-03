@@ -60,7 +60,6 @@ jobs:
     name: Wait for docs tests
     runs-on: ubuntu-latest
     needs: [ changes ]
-    if: needs.changes.outputs.docs == 'true'
 
     steps:
       - name: Checkout git repository 🕝
@@ -568,7 +567,7 @@ jobs:
 
   mergepal-merge: # run merge pal in the end
     runs-on: ubuntu-latest
-    needs: [quality, test,  wait_for_docs_tests, docker]
+    needs: [quality, test, wait_for_docs_tests, docker]
     steps:
       - uses: actions/checkout@v1
       - name: Make sure there is a github token
