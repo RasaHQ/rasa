@@ -33,6 +33,7 @@ from sanic_jwt import Initialize, exceptions
 
 import rasa
 import rasa.core.utils
+import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.endpoints
@@ -190,8 +191,14 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
             except ValueError:
                 return None
 
-        def sufficient_scope(request, *args: Any, **kwargs: Any) -> Optional[bool]:
-            jwt_data = request.app.auth.extract_payload(request)
+        async def sufficient_scope(
+            request, *args: Any, **kwargs: Any
+        ) -> Optional[bool]:
+            # This is a coroutine since `sanic-jwt==1.6`
+            jwt_data = await rasa.utils.common.call_potential_coroutine(
+                request.app.auth.extract_payload(request)
+            )
+
             user = jwt_data.get("user", {})
 
             username = user.get("username", None)
@@ -216,10 +223,13 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 if isawaitable(result):
                     result = await result
                 return result
-            elif app.config.get("USE_JWT") and request.app.auth.is_authenticated(
-                request
+            elif app.config.get(
+                "USE_JWT"
+            ) and await rasa.utils.common.call_potential_coroutine(
+                # This is a coroutine since `sanic-jwt==1.6`
+                request.app.auth.is_authenticated(request)
             ):
-                if sufficient_scope(request, *args, **kwargs):
+                if await sufficient_scope(request, *args, **kwargs):
                     result = f(request, *args, **kwargs)
                     if isawaitable(result):
                         result = await result

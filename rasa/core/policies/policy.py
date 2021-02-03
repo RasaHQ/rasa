@@ -150,6 +150,7 @@ class Policy:
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
         **kwargs: Any,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
@@ -166,6 +167,7 @@ class Policy:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+            bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
             - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -178,7 +180,7 @@ class Policy:
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter
+            training_trackers, domain, interpreter, bilou_tagging
         )
 
         max_training_samples = kwargs.get("max_training_samples")
@@ -236,6 +238,8 @@ class Policy:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -244,6 +248,8 @@ class Policy:
             events,
             optional_events,
             is_end_to_end_prediction,
+            is_no_user_prediction,
+            diagnostic_data,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
@@ -341,7 +347,8 @@ class Policy:
         """
         return [0.0] * domain.num_actions
 
-    def format_tracker_states(self, states: List[Dict]) -> Text:
+    @staticmethod
+    def format_tracker_states(states: List[Dict]) -> Text:
         """Format tracker states to human readable format on debug log.
 
         Args:
@@ -400,6 +407,8 @@ class PolicyPrediction:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -417,6 +426,12 @@ class PolicyPrediction:
                 you return as they can potentially influence the conversation flow.
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
+            is_no_user_prediction: `True` if the prediction uses neither the text
+                of the user message nor the intent. This is for the example the case
+                for happy loop paths.
+            diagnostic_data: Intermediate results or other information that is not
+                necessary for Rasa to function, but intended for debugging and
+                fine-tuning purposes.
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -424,6 +439,8 @@ class PolicyPrediction:
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.is_no_user_prediction = is_no_user_prediction
+        self.diagnostic_data = diagnostic_data or {}
 
     @staticmethod
     def for_action_name(
@@ -466,6 +483,9 @@ class PolicyPrediction:
             and self.events == other.events
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+            and self.is_no_user_prediction == other.is_no_user_prediction
+            # We do not compare `diagnostic_data`, because it has no effect on the
+            # action prediction.
         )
 
     @property
