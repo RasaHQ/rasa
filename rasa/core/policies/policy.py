@@ -149,6 +149,7 @@ class Policy:
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
         **kwargs: Any,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
@@ -165,6 +166,7 @@ class Policy:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+            bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
             - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -177,7 +179,7 @@ class Policy:
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter
+            training_trackers, domain, interpreter, bilou_tagging
         )
 
         max_training_samples = kwargs.get("max_training_samples")
