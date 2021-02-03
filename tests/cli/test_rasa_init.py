@@ -33,6 +33,16 @@ def test_not_found_init_path(run: Callable[..., RunResult]):
     assert "Project init path './workspace' not found" in output.outlines[-1]
 
 
+def test_expand_init_path(run: Callable[..., RunResult]):
+    expandable_path = "~/workspace"
+    output = run("init", "--no-prompt", "--quiet", "--init-dir", expandable_path)
+    expanded_path = os.path.realpath(os.path.expanduser(expandable_path))
+
+    assert os.path.isfile(expanded_path)
+
+    assert "not found" in output.outlines[-1].lower()
+
+
 def test_init_help(run: Callable[..., RunResult]):
     output = run("init", "--help")
 
