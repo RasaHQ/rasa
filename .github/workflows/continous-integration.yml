@@ -71,7 +71,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.sha }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
 
