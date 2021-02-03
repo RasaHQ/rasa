@@ -283,6 +283,18 @@ def _create_augmentation_summary(
     """
 
     intent_summary = collections.defaultdict(dict)
+
+    # accuracy is the only non-dict like thing in the classification report, so it receives extra treatment
+    if "accuracy" in classification_report:
+        accuracy_change = intent_report["accuracy"] - classification_report["accuracy"]
+        acc_dict = {
+            "accuracy_change": accuracy_change,
+            "accuracy": intent_report["accuracy"],
+        }
+
+        intent_report["accuracy"] = acc_dict
+        intent_summary["accuracy"] = {"accuracy_change": accuracy_change}
+
     for intent in (
         pooled_intents | changed_intents | {"micro avg", "macro avg", "weighted avg"}
     ):

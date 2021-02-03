@@ -97,7 +97,7 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
         "--num-intents",
         type=int,
         default=5,
-        help="Number of intents per criterion for which to perform data augmentation.",
+        help="Number of intents per performance criterion for which to perform data augmentation.",
     )
 
     parser.add_argument(

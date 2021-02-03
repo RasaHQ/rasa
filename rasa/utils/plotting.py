@@ -217,30 +217,39 @@ def plot_intent_augmentation_summary(
     """
     import matplotlib.pyplot as plt
 
-    totals_keys = {"weighted avg", "micro avg", "macro avg"}
-    intents = list(augmentation_summary.keys())
-    num_intents = len(intents)
+    accuracy = augmentation_summary.get("accuracy", None)
 
-    ind = np.arange(num_intents)
+    totals_keys = {"weighted avg", "micro avg", "macro avg", "accuracy"}
+    intents = list(augmentation_summary.keys())
+
+    metric_key = f"{metric}_change"
     performance = np.array(
-        list(map(lambda d: d[f"{metric}_change"], augmentation_summary.values()))
+        [d[metric_key] for d in augmentation_summary.values() if metric_key in d]
     )
+
+    if accuracy is not None:
+        acc_idx = intents.index("accuracy")
+        performance = np.insert(performance, acc_idx, accuracy["accuracy_change"])
+
+    num_intents = len(intents)
+    ind = np.arange(num_intents)
 
     plt.figure(figsize=(10, 10))
     plt.xlabel(f"Performance Change ({metric})", fontsize=16)
     plt.ylabel("Intent", fontsize=16)
+    plt.title("NLU Data Augmentation Summary")
     perf_bar = plt.barh(ind, performance)
 
     for idx in range(num_intents):
         if performance[idx] < 0.0:
-            perf_bar[idx].set_color("lightcoral")
+            perf_bar[idx].set_color("#920000")
         else:
-            perf_bar[idx].set_color("lightgreen")
+            perf_bar[idx].set_color("#009292")
         if intents[idx] in totals_keys:
             perf_bar[idx].set_hatch("*")
             # The colour of the hatch is determined by the edge colour property, so in order to make the hatch visible,
             # we need ot set the edge colour explicitly
-            perf_bar[idx].set_edgecolor("black")
+            perf_bar[idx].set_edgecolor("white")
 
     _autolabel(perf_bar)
     plt.ylim((-1, num_intents))
@@ -262,9 +271,9 @@ def _autolabel(rects: Axes.bar) -> None:
         width = rect.get_width()
         offset = 0.0
         if width > 0.0:
-            offset = 0.045
+            offset = 0.05
         elif width < 0.0:
-            offset = -0.045
+            offset = -0.055
 
         plt.annotate(
             f"{width:.2f}",
