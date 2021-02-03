@@ -244,7 +244,6 @@ def plot_intent_augmentation_summary(
     _autolabel(perf_bar)
     plt.ylim((-1, num_intents))
     plt.xlim((np.min(performance) - 0.2, np.max(performance) + 0.2))
-    plt.grid(True)
     plt.yticks(ind, intents, fontsize=14)
 
     handles, labels = plt.gca().get_legend_handles_labels()
