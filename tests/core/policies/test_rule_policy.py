@@ -2288,7 +2288,9 @@ def test_hide_rule_turn_with_loops():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    assert_predicted_action(
+        prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
+    )
     assert isinstance(prediction.optional_events[0], HideRuleTurn)
     assert form_name in prediction.optional_events[0].rule_only_loops
     assert another_form_name not in prediction.optional_events[0].rule_only_loops
