@@ -1295,7 +1295,7 @@ class DIET(TransformerRasaModel):
         # everything using a transformer and optionally also do masked language modeling.
         self.text_name = TEXT
         self._tf_layers[
-            f"{self.text_name}_sequence_layer"
+            f"sequence_layer.{self.text_name}"
         ] = rasa_layers.RasaSequenceLayer(
             self.text_name, self.data_signature[self.text_name], self.config
         )
@@ -1307,7 +1307,7 @@ class DIET(TransformerRasaModel):
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
             self._tf_layers[
-                f"{self.label_name}_input_layer"
+                f"input_layer.{self.label_name}"
             ] = rasa_layers.RasaInputLayer(
                 self.label_name, self.label_signature[self.label_name], self.config
             )
@@ -1350,8 +1350,10 @@ class DIET(TransformerRasaModel):
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
     ) -> tf.Tensor:
-        _inputs = (sequence_features, sentence_features, sequence_mask, text_mask)
-        x = self._tf_layers[f"{name}_input_layer"](_inputs, training=self._training)
+        x = self._tf_layers[f"input_layer.{name}"](
+            (sequence_features, sentence_features, sequence_mask, text_mask),
+            training=self._training,
+        )
 
         # convert to bag-of-words by summing along the sequence dimension
         x = tf.reduce_sum(x, axis=1)
@@ -1460,20 +1462,20 @@ class DIET(TransformerRasaModel):
         )
         mask_text = self._compute_mask(sequence_lengths)
 
-        _inputs = (
-            tf_batch_data[TEXT][SEQUENCE],
-            tf_batch_data[TEXT][SENTENCE],
-            mask_sequence_text,
-            mask_text,
-        )
         (
             text_transformed,
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
             _,
-        ) = self._tf_layers[f"{self.text_name}_sequence_layer"](
-            _inputs, masked_lm_loss=self.config[MASKED_LM], training=self._training
+        ) = self._tf_layers[f"sequence_layer.{self.text_name}"](
+            (
+                tf_batch_data[TEXT][SEQUENCE],
+                tf_batch_data[TEXT][SENTENCE],
+                mask_sequence_text,
+                mask_text,
+            ),
+            training=self._training,
         )
 
         losses = []
@@ -1612,15 +1614,17 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        _inputs = (
-            tf_batch_data[TEXT][SEQUENCE],
-            tf_batch_data[TEXT][SENTENCE],
-            mask_sequence_text,
-            mask,
-        )
         text_transformed, _, _, _, attention_weights = self._tf_layers[
-            f"{self.text_name}_sequence_layer"
-        ](_inputs, masked_lm_loss=False, training=self._training)
+            f"sequence_layer.{self.text_name}"
+        ](
+            (
+                tf_batch_data[TEXT][SEQUENCE],
+                tf_batch_data[TEXT][SENTENCE],
+                mask_sequence_text,
+                mask,
+            ),
+            training=self._training,
+        )
 
         predictions: Dict[Text, tf.Tensor] = {}
 
