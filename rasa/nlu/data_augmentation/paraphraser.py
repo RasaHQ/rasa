@@ -476,7 +476,7 @@ def run_data_augmentation_max_vocab_expansion(
     )
 
     # Create data augmentation summary
-    (intent_summary, changed_intents) = _create_summary_report(
+    (intent_summary, _) = _create_summary_report(
         intent_report=intent_report,
         classification_report=classification_report,
         training_intents=nlu_training_data.intents,
@@ -486,9 +486,7 @@ def run_data_augmentation_max_vocab_expansion(
 
     # Plot data augmentation summary
     _plot_summary_report(
-        intent_summary=intent_summary,
-        changed_intents=changed_intents,
-        output_directory=output_directory,
+        intent_summary=intent_summary, output_directory=output_directory,
     )
 
 
@@ -542,7 +540,7 @@ def run_data_augmentation_random_sampling(
     )
 
     # Create data augmentation summary
-    (intent_summary, changed_intents) = _create_summary_report(
+    (intent_summary, _) = _create_summary_report(
         intent_report=intent_report,
         classification_report=classification_report,
         training_intents=nlu_training_data.intents,
@@ -552,7 +550,5 @@ def run_data_augmentation_random_sampling(
 
     # Plot data augmentation summary
     _plot_summary_report(
-        intent_summary=intent_summary,
-        changed_intents=changed_intents,
-        output_directory=output_directory,
+        intent_summary=intent_summary, output_directory=output_directory,
     )
