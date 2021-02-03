@@ -5,6 +5,8 @@ from unittest.mock import Mock
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 import pytest
+from _pytest.logging import LogCaptureFixture
+import logging
 import copy
 
 from rasa.core.exceptions import UnsupportedDialogueModelError
@@ -368,13 +370,18 @@ class LoadReturnsNonePolicy(Policy):
         pass
 
 
-def test_policy_loading_load_returns_none(tmp_path: Path):
+def test_policy_loading_load_returns_none(tmp_path: Path, caplog: LogCaptureFixture):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsNonePolicy()])
     original_policy_ensemble.train([], None, RegexInterpreter())
     original_policy_ensemble.persist(str(tmp_path))
 
-    with pytest.raises(Exception):
-        PolicyEnsemble.load(str(tmp_path))
+    with caplog.at_level(logging.WARNING):
+        ensemble = PolicyEnsemble.load(str(tmp_path))
+        assert (
+            caplog.records.pop().msg
+            == "Failed to load policy tests.core.test_ensemble.LoadReturnsNonePolicy: load returned None"
+        )
+        assert len(ensemble.policies) == 0
 
 
 class LoadReturnsWrongTypePolicy(Policy):
