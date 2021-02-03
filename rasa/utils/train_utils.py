@@ -396,6 +396,19 @@ def _check_confidence_setting(component_config) -> None:
         )
 
 
+def _check_loss_setting(component_config) -> None:
+    if not component_config[CONSTRAIN_SIMILARITIES] and component_config[LOSS_TYPE] in [
+        SOFTMAX,
+        CROSS_ENTROPY,
+    ]:
+        rasa.shared.utils.io.raise_warning(
+            f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
+            f"to set it to `True` when using cross-entropy loss. It will be set to `True` by default, "
+            f"Rasa Open Source 3.0 onwards.",
+            category=UserWarning,
+        )
+
+
 def _check_similarity_loss_setting(component_config) -> None:
     if (
         component_config[SIMILARITY_TYPE] == COSINE

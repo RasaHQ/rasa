@@ -176,7 +176,7 @@ class ResponseSelector(DIETClassifier):
         SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'cross_entropy' or 'margin'.
         LOSS_TYPE: CROSS_ENTROPY,
-        # Number of top actions to normalize scores for loss type 'softmax'.
+        # Number of top actions to normalize scores for. Applicable with loss type 'cross_entropy'.
         # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
@@ -237,7 +237,7 @@ class ResponseSelector(DIETClassifier):
         CHECKPOINT_MODEL: False,
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
-        CONSTRAIN_SIMILARITIES: True,
+        CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values - softmax, cosine, inner.
         MODEL_CONFIDENCE: SOFTMAX,
     }

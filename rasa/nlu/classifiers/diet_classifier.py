@@ -181,7 +181,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'cross_entropy' or 'margin'.
         LOSS_TYPE: CROSS_ENTROPY,
-        # Number of top actions to normalize scores for loss type 'softmax'.
+        # Number of top intents to normalize scores for. Applicable with loss type 'cross_entropy'.
         # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
@@ -251,7 +251,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         SPLIT_ENTITIES_BY_COMMA: True,
         # If 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
-        CONSTRAIN_SIMILARITIES: True,
+        CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values - softmax, cosine, inner.
         MODEL_CONFIDENCE: SOFTMAX,
     }
@@ -293,6 +293,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
 
+        train_utils._check_loss_setting(self.component_config)
         train_utils._check_confidence_setting(self.component_config)
         train_utils._check_similarity_loss_setting(self.component_config)
 
