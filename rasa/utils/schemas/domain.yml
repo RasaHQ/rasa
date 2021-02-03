@@ -1,0 +1,64 @@
+allowempty: True
+mapping:
+  version:
+    type: "str"
+    required: False
+    allowempty: False
+  intents:
+    type: "seq"
+    sequence:
+    - type: "map"
+      mapping:
+        use_entities:
+          type: "any"
+        ignore_entities:
+          type: "any"
+      allowempty: True
+    - type: "str"
+  entities:
+    type: "seq"
+    matching: "any"
+    sequence:
+      - type: "map"
+        mapping:
+          roles:
+            type: "seq"
+            sequence:
+              - type: "str"
+          groups:
+            type: "seq"
+            sequence:
+            - type: "str"
+        allowempty: True
+      - type: "str"
+  actions:
+    type: "seq"
+    sequence:
+    - type: "str"
+      required: True
+  responses:
+    # see utils/schemas/responses.yml
+    include: responses
+
+  slots:
+    type: "map"
+    allowempty: True
+  forms:
+    type: "any"
+    required: False
+  config:
+    type: "map"
+    allowempty: True
+    mapping:
+      store_entities_as_slots:
+        type: "bool"
+  session_config:
+    type: "map"
+    allowempty: True
+    mapping:
+      session_expiration_time:
+        type: "number"
+        range:
+          min: 0
+      carry_over_slots_to_new_session:
+        type: "bool"

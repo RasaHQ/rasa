@@ -1,14 +1,14 @@
 import typing
 from typing import Any, Dict, List, Text, Optional, Type
 
-from rasa.nlu.constants import ENTITIES
+from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
-    from spacy.tokens.doc import Doc  # pytype: disable=import-error
+    from spacy.tokens.doc import Doc
 
 
 class SpacyEntityExtractor(EntityExtractor):
@@ -30,15 +30,13 @@ class SpacyEntityExtractor(EntityExtractor):
         # can't use the existing doc here (spacy_doc on the message)
         # because tokens are lower cased which is bad for NER
         spacy_nlp = kwargs.get("spacy_nlp", None)
-        doc = spacy_nlp(message.text)
+        doc = spacy_nlp(message.get(TEXT))
         all_extracted = self.add_extractor_name(self.extract_entities(doc))
         dimensions = self.component_config["dimensions"]
         extracted = SpacyEntityExtractor.filter_irrelevant_entities(
             all_extracted, dimensions
         )
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
-        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @staticmethod
     def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:

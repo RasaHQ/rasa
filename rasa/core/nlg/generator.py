@@ -1,10 +1,10 @@
 import logging
 from typing import Optional, Union, Text, Any, Dict
 
-from rasa.core.domain import Domain
-from rasa.utils import common
+import rasa.shared.utils.common
+from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -47,33 +47,27 @@ def _create_from_endpoint_config(
     domain = domain or Domain.empty()
 
     if endpoint_config is None:
-        from rasa.core.nlg import (  # pytype: disable=pyi-error
-            TemplatedNaturalLanguageGenerator,
-        )
+        from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         # this is the default type if no endpoint config is set
         nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     elif endpoint_config.type is None or endpoint_config.type.lower() == "callback":
-        from rasa.core.nlg import (  # pytype: disable=pyi-error
-            CallbackNaturalLanguageGenerator,
-        )
+        from rasa.core.nlg import CallbackNaturalLanguageGenerator
 
         # this is the default type if no nlg type is set
         nlg = CallbackNaturalLanguageGenerator(endpoint_config=endpoint_config)
     elif endpoint_config.type.lower() == "template":
-        from rasa.core.nlg import (  # pytype: disable=pyi-error
-            TemplatedNaturalLanguageGenerator,
-        )
+        from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     else:
-        nlg = _load_from_module_string(endpoint_config, domain)
+        nlg = _load_from_module_name_in_endpoint_config(endpoint_config, domain)
 
     logger.debug(f"Instantiated NLG to '{nlg.__class__.__name__}'.")
     return nlg
 
 
-def _load_from_module_string(
+def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig, domain: Domain
 ) -> "NaturalLanguageGenerator":
     """Initializes a custom natural language generator.
@@ -84,7 +78,9 @@ def _load_from_module_string(
     """
 
     try:
-        nlg_class = common.class_from_module_path(endpoint_config.type)
+        nlg_class = rasa.shared.utils.common.class_from_module_path(
+            endpoint_config.type
+        )
         return nlg_class(endpoint_config=endpoint_config, domain=domain)
     except (AttributeError, ImportError) as e:
         raise Exception(

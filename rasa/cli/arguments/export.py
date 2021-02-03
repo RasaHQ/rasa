@@ -1,7 +1,7 @@
 import argparse
 
 from rasa.cli.arguments import default_arguments
-from rasa.constants import DEFAULT_ENDPOINTS_PATH
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 
 def set_export_arguments(parser: argparse.ArgumentParser) -> None:

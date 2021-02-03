@@ -14,5 +14,5 @@ pipeline:
   - name: DIETClassifier
   - name: EntitySynonymMapper
   - name: ResponseSelector
-  - name: DucklingHTTPExtractor
+  - name: DucklingEntityExtractor
     url: "http://duckling:8000"

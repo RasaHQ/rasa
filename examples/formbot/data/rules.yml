@@ -1,0 +1,36 @@
+version: "2.0"
+rules:
+  - rule: Greet user
+    steps:
+      - intent: greet
+      - action: utter_greet
+
+  - rule: Thank you
+    steps:
+      - intent: thankyou
+      - action: utter_noworries
+
+  - rule: Bot challenge
+    steps:
+      - intent: bot_challenge
+      - action: utter_iamabot
+
+  - rule: Chitchat
+    steps:
+      - intent: chitchat
+      - action: utter_chitchat
+
+  - rule: activate restaurant form
+    steps:
+      - intent: request_restaurant
+      - action: restaurant_form
+      - active_loop: restaurant_form
+
+  - rule: submit form
+    condition:
+    - active_loop: restaurant_form
+    steps:
+      - action: restaurant_form
+      - active_loop: null
+      - action: utter_submit
+      - action: utter_slots_values

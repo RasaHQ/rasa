@@ -1,3 +1,5 @@
+version: "2.0"
+
 intents:
   - greet
   - goodbye
@@ -15,19 +17,26 @@ entities:
 
 slots:
   object_type:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   mention:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   attribute:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   hotel:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   restaurant:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   city:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   cuisine:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 
 actions:
 - action_query_knowledge_base
@@ -47,3 +56,8 @@ responses:
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
+
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

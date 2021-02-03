@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: 'type:bug :bug:'
+labels: 'area:rasa-oss :ferris_wheel:,type:bug :bug:'
 assignees: ''
 
 ---

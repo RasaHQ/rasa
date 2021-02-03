@@ -1,25 +1,38 @@
 import copy
 import datetime
 import logging
+from math import ceil
 import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.nlu import components, utils  # pytype: disable=pyi-error
-from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
+from rasa.nlu import components, utils
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
-from rasa.nlu.persistor import Persistor
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.utils import write_json_to_file
+from rasa.nlu.extractors.extractor import EntityExtractor
 
-MODEL_NAME_PREFIX = "nlu_"
+from rasa.nlu.persistor import Persistor
+from rasa.shared.nlu.constants import (
+    TEXT,
+    ENTITIES,
+    INTENT,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+)
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.utils import write_json_to_file
+from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
 
 
-class InvalidModelError(Exception):
+class InvalidModelError(RasaException):
     """Raised when a model failed to load.
 
     Attributes:
@@ -28,12 +41,13 @@ class InvalidModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(InvalidModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
 
 
-class UnsupportedModelError(Exception):
+class UnsupportedModelError(RasaException):
     """Raised when a model is too old to be loaded.
 
     Attributes:
@@ -42,6 +56,7 @@ class UnsupportedModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(UnsupportedModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -61,7 +76,7 @@ class Metadata:
         """
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
-            data = rasa.utils.io.read_json_file(metadata_file)
+            data = rasa.shared.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
@@ -125,7 +140,8 @@ class Trainer:
         cfg: RasaNLUModelConfig,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
-    ):
+        model_to_finetune: Optional["Interpreter"] = None,
+    ) -> None:
 
         self.config = cfg
         self.skip_validation = skip_validation
@@ -141,20 +157,22 @@ class Trainer:
         if not self.skip_validation:
             components.validate_requirements(cfg.component_names)
 
-        # build pipeline
-        self.pipeline = self._build_pipeline(cfg, component_builder)
+        if model_to_finetune:
+            self.pipeline = model_to_finetune.pipeline
+        else:
+            self.pipeline = self._build_pipeline(cfg, component_builder)
 
     def _build_pipeline(
         self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
     ) -> List[Component]:
         """Transform the passed names of the pipeline components into classes."""
-
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
-        for i in range(len(cfg.pipeline)):
-            component_cfg = cfg.for_component(i)
+        for index, pipeline_component in enumerate(cfg.pipeline):
+            component_cfg = cfg.for_component(index)
             component = component_builder.create_component(component_cfg, cfg)
+            components.validate_component_keys(component, pipeline_component)
             pipeline.append(component)
 
         if not self.skip_validation:
@@ -183,7 +201,7 @@ class Trainer:
             )
 
         # data gets modified internally during the training - hence the copy
-        working_data = copy.deepcopy(data)
+        working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")
@@ -216,12 +234,12 @@ class Trainer:
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = MODEL_NAME_PREFIX + timestamp
+            model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
-        rasa.utils.io.create_directory(dir_name)
+        rasa.shared.utils.io.create_directory(dir_name)
 
         if self.training_data and persist_nlu_training_data:
             metadata.update(self.training_data.persist(dir_name))
@@ -253,7 +271,11 @@ class Interpreter:
     # that will be returned by `parse`
     @staticmethod
     def default_output_attributes() -> Dict[Text, Any]:
-        return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
+        return {
+            TEXT: "",
+            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+            ENTITIES: [],
+        }
 
     @staticmethod
     def ensure_model_compatibility(
@@ -280,35 +302,88 @@ class Interpreter:
         model_dir: Text,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Interpreter":
         """Create an interpreter based on a persisted model.
 
         Args:
-            skip_validation: If set to `True`, tries to check that all
+            skip_validation: If set to `True`, does not check that all
                 required packages for the components are installed
                 before loading them.
             model_dir: The path of the model to load
             component_builder: The
                 :class:`rasa.nlu.components.ComponentBuilder` to use.
+            new_config: Optional new config to use for the new epochs.
+            finetuning_epoch_fraction: Value to multiply all epochs by.
 
         Returns:
             An interpreter that uses the loaded model.
         """
-
         model_metadata = Metadata.load(model_dir)
 
+        if new_config:
+            Interpreter._update_metadata_epochs(
+                model_metadata, new_config, finetuning_epoch_fraction
+            )
+
         Interpreter.ensure_model_compatibility(model_metadata)
-        return Interpreter.create(model_metadata, component_builder, skip_validation)
+        return Interpreter.create(
+            model_metadata,
+            component_builder,
+            skip_validation,
+            should_finetune=new_config is not None,
+        )
+
+    @staticmethod
+    def _get_default_value_for_component(name: Text, key: Text) -> Any:
+        from rasa.nlu.registry import get_component_class
+
+        return get_component_class(name).defaults[key]
+
+    @staticmethod
+    def _update_metadata_epochs(
+        model_metadata: Metadata,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
+    ) -> Metadata:
+        for old_component_config, new_component_config in zip(
+            model_metadata.metadata["pipeline"], new_config["pipeline"]
+        ):
+            if EPOCHS in old_component_config:
+                new_epochs = new_component_config.get(
+                    EPOCHS,
+                    Interpreter._get_default_value_for_component(
+                        old_component_config["class"], EPOCHS
+                    ),
+                )
+                old_component_config[EPOCHS] = ceil(
+                    new_epochs * finetuning_epoch_fraction
+                )
+        return model_metadata
 
     @staticmethod
     def create(
         model_metadata: Metadata,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        should_finetune: bool = False,
     ) -> "Interpreter":
-        """Load stored model and components defined by the provided metadata."""
+        """Create model and components defined by the provided metadata.
 
-        context = {}
+        Args:
+            model_metadata: The metadata describing each component.
+            component_builder: The
+                :class:`rasa.nlu.components.ComponentBuilder` to use.
+            skip_validation: If set to `True`, does not check that all
+                required packages for the components are installed
+                before loading them.
+            should_finetune: Indicates if the model components will be fine-tuned.
+
+        Returns:
+            An interpreter that uses the created model.
+        """
+        context = {"should_finetune": should_finetune}
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result
@@ -370,7 +445,10 @@ class Interpreter:
             output["text"] = ""
             return output
 
-        message = Message(text, self.default_output_attributes(), time=time)
+        data = self.default_output_attributes()
+        data[TEXT] = text
+
+        message = Message(data=data, time=time)
 
         for component in self.pipeline:
             component.process(message, **self.context)
@@ -378,3 +456,17 @@ class Interpreter:
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
+
+    def featurize_message(self, message: Message) -> Message:
+        """
+        Tokenize and featurize the input message
+        Args:
+            message: message storing text to process;
+        Returns:
+            message: it contains the tokens and features which are the output of the NLU pipeline;
+        """
+
+        for component in self.pipeline:
+            if not isinstance(component, (EntityExtractor, IntentClassifier)):
+                component.process(message, **self.context)
+        return message

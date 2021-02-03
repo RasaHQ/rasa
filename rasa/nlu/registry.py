@@ -5,21 +5,21 @@ Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
 
 import logging
+import traceback
 import typing
-from typing import Any, Dict, List, Optional, Text, Type
-
-from rasa.constants import DOCS_URL_COMPONENTS
+from typing import Any, Dict, Optional, Text, Type
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
+from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
@@ -42,16 +42,15 @@ from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.utils.common import class_from_module_path, raise_warning
-from rasa.utils.tensorflow.constants import (
-    INTENT_CLASSIFICATION,
-    ENTITY_RECOGNITION,
-    NUM_TRANSFORMER_LAYERS,
-)
+from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+import rasa.utils.io
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
-    from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+    from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +73,9 @@ component_classes = [
     SpacyEntityExtractor,
     MitieEntityExtractor,
     CRFEntityExtractor,
-    DucklingHTTPExtractor,
+    DucklingEntityExtractor,
     EntitySynonymMapper,
+    RegexEntityExtractor,
     # featurizers
     SpacyFeaturizer,
     MitieFeaturizer,
@@ -89,7 +89,7 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     DIETClassifier,
-    EmbeddingIntentClassifier,
+    FallbackClassifier,
     # selectors
     ResponseSelector,
 ]
@@ -97,117 +97,64 @@ component_classes = [
 # Mapping from a components name to its class to allow name based lookup.
 registered_components = {c.name: c for c in component_classes}
 
-# DEPRECATED ensures compatibility, will be remove in future versions
-old_style_names = {
-    "nlp_spacy": "SpacyNLP",
-    "nlp_mitie": "MitieNLP",
-    "ner_spacy": "SpacyEntityExtractor",
-    "ner_mitie": "MitieEntityExtractor",
-    "ner_crf": "CRFEntityExtractor",
-    "ner_duckling_http": "DucklingHTTPExtractor",
-    "ner_synonyms": "EntitySynonymMapper",
-    "intent_featurizer_spacy": "SpacyFeaturizer",
-    "intent_featurizer_mitie": "MitieFeaturizer",
-    "intent_featurizer_ngrams": "NGramFeaturizer",
-    "intent_entity_featurizer_regex": "RegexFeaturizer",
-    "intent_featurizer_count_vectors": "CountVectorsFeaturizer",
-    "tokenizer_mitie": "MitieTokenizer",
-    "tokenizer_spacy": "SpacyTokenizer",
-    "tokenizer_whitespace": "WhitespaceTokenizer",
-    "tokenizer_jieba": "JiebaTokenizer",
-    "intent_classifier_sklearn": "SklearnIntentClassifier",
-    "intent_classifier_mitie": "MitieIntentClassifier",
-    "intent_classifier_keyword": "KeywordIntentClassifier",
-    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
-}
 
-# To simplify usage, there are a couple of model templates, that already add
-# necessary components in the right order. They also implement
-# the preexisting `backends`.
-registered_pipeline_templates = {
-    "pretrained_embeddings_spacy": [
-        {"name": "SpacyNLP"},
-        {"name": "SpacyTokenizer"},
-        {"name": "SpacyFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
-        {"name": "EntitySynonymMapper"},
-        {"name": "SklearnIntentClassifier"},
-    ],
-    "keyword": [{"name": "KeywordIntentClassifier"}],
-    "supervised_embeddings": [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
-        {"name": "EntitySynonymMapper"},
-        {"name": "CountVectorsFeaturizer"},
-        {
-            "name": "CountVectorsFeaturizer",
-            "analyzer": "char_wb",
-            "min_ngram": 1,
-            "max_ngram": 4,
-        },
-        {"name": "EmbeddingIntentClassifier"},
-    ],
-    "pretrained_embeddings_convert": [
-        {"name": "ConveRTTokenizer"},
-        {"name": "ConveRTFeaturizer"},
-        {"name": "EmbeddingIntentClassifier"},
-    ],
-}
+class ComponentNotFoundException(ModuleNotFoundError, RasaException):
+    """Raised if a module referenced by name can not be imported."""
 
-
-def pipeline_template(s: Text) -> Optional[List[Dict[Text, Any]]]:
-    import copy
-
-    # do a deepcopy to avoid changing the template configurations
-    return copy.deepcopy(registered_pipeline_templates.get(s))
+    pass
 
 
 def get_component_class(component_name: Text) -> Type["Component"]:
     """Resolve component name to a registered components class."""
 
+    if component_name == "DucklingHTTPExtractor":
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The component 'DucklingHTTPExtractor' has been renamed to "
+            "'DucklingEntityExtractor'. Update your pipeline to use "
+            "'DucklingEntityExtractor'.",
+            docs=DOCS_URL_COMPONENTS,
+        )
+        component_name = "DucklingEntityExtractor"
+
     if component_name not in registered_components:
-        if component_name not in old_style_names:
-            try:
-                return class_from_module_path(component_name)
+        try:
+            return rasa.shared.utils.common.class_from_module_path(component_name)
 
-            except AttributeError:
-                # when component_name is a path to a class but the path does not contain
-                # that class
+        except (ImportError, AttributeError) as e:
+            # when component_name is a path to a class but that path is invalid or
+            # when component_name is a class name and not part of old_style_names
+
+            is_path = "." in component_name
+
+            if is_path:
                 module_name, _, class_name = component_name.rpartition(".")
-                raise Exception(
-                    f"Failed to find class '{class_name}' in module '{module_name}'.\n"
-                )
-            except ImportError as e:
-                # when component_name is a path to a class but that path is invalid or
-                # when component_name is a class name and not part of old_style_names
-
-                is_path = "." in component_name
-
-                if is_path:
-                    module_name, _, _ = component_name.rpartition(".")
-                    exception_message = f"Failed to find module '{module_name}'. \n{e}"
+                if isinstance(e, ImportError):
+                    exception_message = f"Failed to find module '{module_name}'."
                 else:
+                    # when component_name is a path to a class but the path does
+                    # not contain that class
                     exception_message = (
-                        f"Cannot find class '{component_name}' from global namespace. "
-                        f"Please check that there is no typo in the class "
-                        f"name and that you have imported the class into the global "
-                        f"namespace."
+                        f"The class '{class_name}' could not be "
+                        f"found in module '{module_name}'."
                     )
+            else:
+                exception_message = (
+                    f"Cannot find class '{component_name}' in global namespace. "
+                    f"Please check that there is no typo in the class "
+                    f"name and that you have imported the class into the global "
+                    f"namespace."
+                )
 
-                raise ModuleNotFoundError(exception_message)
-        else:
-            # DEPRECATED ensures compatibility, remove in future versions
-            raise_warning(
-                f"Your nlu config file "
-                f"contains old style component name `{component_name}`, "
-                f"you should change it to its new class name: "
-                f"`{old_style_names[component_name]}`.",
-                FutureWarning,
-                docs=DOCS_URL_COMPONENTS,
+            raise ComponentNotFoundException(
+                f"Failed to load the component "
+                f"'{component_name}'. "
+                f"{exception_message} Either your "
+                f"pipeline configuration contains an error "
+                f"or the module you are trying to import "
+                f"is broken (e.g. the module is trying "
+                f"to import a package that is not "
+                f"installed). {traceback.format_exc()}"
             )
-            component_name = old_style_names[component_name]
 
     return registered_components[component_name]
 

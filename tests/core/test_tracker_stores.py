@@ -1,22 +1,28 @@
 import logging
-import tempfile
+from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
+import sqlalchemy
 import uuid
+
+from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
-from typing import Tuple, Text, Type, Dict, List
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from sqlalchemy.dialects.postgresql.base import PGDialect
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.dialects.oracle.base import OracleDialect
+from sqlalchemy.engine.url import URL
+from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
 from unittest.mock import Mock
 
 import rasa.core.tracker_store
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-)
-from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.core.constants import POSTGRESQL_SCHEMA
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     SlotSet,
     ActionExecuted,
     Restarted,
@@ -25,15 +31,17 @@ from rasa.core.events import (
     BotUttered,
     Event,
 )
+from rasa.shared.exceptions import ConnectionException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
     RedisTrackerStore,
+    DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE, MockedMongoTrackerStore
 
@@ -44,14 +52,14 @@ def get_or_create_tracker_store(store: TrackerStore) -> None:
     slot_key = "location"
     slot_val = "Easter Island"
 
-    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    tracker = store.get_or_create_tracker(DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
     assert tracker.get_slot(slot_key) == slot_val
 
     store.save(tracker)
 
-    again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    again = store.get_or_create_tracker(DEFAULT_SENDER_ID)
     assert again.get_slot(slot_key) == slot_val
 
 
@@ -142,6 +150,42 @@ def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
     assert isinstance(tracker_store, type(TrackerStore.create(store, default_domain)))
 
 
+def test_redis_tracker_store_invalid_key_prefix(default_domain: Domain):
+
+    test_invalid_key_prefix = "$$ &!"
+
+    tracker_store = RedisTrackerStore(
+        domain=default_domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        password="password",
+        key_prefix=test_invalid_key_prefix,
+        record_exp=3000,
+    )
+
+    assert tracker_store._get_key_prefix() == DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+
+
+def test_redis_tracker_store_valid_key_prefix(default_domain: Domain):
+    test_valid_key_prefix = "spanish"
+
+    tracker_store = RedisTrackerStore(
+        domain=default_domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        password="password",
+        key_prefix=test_valid_key_prefix,
+        record_exp=3000,
+    )
+
+    assert (
+        tracker_store._get_key_prefix()
+        == f"{test_valid_key_prefix}:{DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX}"
+    )
+
+
 def test_exception_tracker_store_from_endpoint_config(
     default_domain: Domain, monkeypatch: MonkeyPatch
 ):
@@ -183,10 +227,8 @@ def test_tracker_store_deprecated_url_argument_from_string(default_domain: Domai
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
 
-    with pytest.warns(DeprecationWarning):
-        tracker_store = TrackerStore.create(store_config, default_domain)
-
-    assert isinstance(tracker_store, URLExampleTrackerStore)
+    with pytest.raises(Exception):
+        TrackerStore.create(store_config, default_domain)
 
 
 def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
@@ -233,7 +275,7 @@ def _tracker_store_and_tracker_with_slot_set() -> Tuple[
     slot_val = "French"
 
     store = InMemoryTrackerStore(domain)
-    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    tracker = store.get_or_create_tracker(DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
 
@@ -244,12 +286,10 @@ def test_tracker_serialisation():
     store, tracker = _tracker_store_and_tracker_with_slot_set()
     serialised = store.serialise_tracker(tracker)
 
-    assert tracker == store.deserialise_tracker(
-        UserMessage.DEFAULT_SENDER_ID, serialised
-    )
+    assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
 
 
-def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
+def test_deprecated_pickle_deserialisation():
     def pickle_serialise_tracker(_tracker):
         # mocked version of TrackerStore.serialise_tracker() that uses
         # the deprecated pickle serialisation
@@ -265,13 +305,12 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
 
     # deprecation warning should be emitted
 
-    caplog.clear()  # avoid counting debug messages
-    with caplog.at_level(logging.WARNING):
-        assert tracker == store.deserialise_tracker(
-            UserMessage.DEFAULT_SENDER_ID, serialised
-        )
-    assert len(caplog.records) == 1
-    assert "Deserialisation of pickled trackers will be deprecated" in caplog.text
+    with pytest.warns(FutureWarning) as record:
+        assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
+    assert len(record) == 1
+    assert (
+        "Deserialization of pickled trackers is deprecated" in record[0].message.args[0]
+    )
 
 
 @pytest.mark.parametrize(
@@ -334,7 +373,25 @@ def test_get_db_url_with_query():
     )
 
 
-def test_db_url_with_query_from_endpoint_config():
+def test_sql_tracker_store_logs_do_not_show_password(caplog: LogCaptureFixture):
+    dialect = "postgresql"
+    host = "localhost"
+    port = 9901
+    db = "some-database"
+    username = "db-user"
+    password = "some-password"
+
+    with caplog.at_level(logging.DEBUG):
+        _ = SQLTrackerStore(None, dialect, host, port, db, username, password)
+
+    # the URL in the logs does not contain the password
+    assert password not in caplog.text
+
+    # instead the password is displayed as '***'
+    assert f"postgresql://{username}:***@{host}:{port}/{db}" in caplog.text
+
+
+def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
     endpoint_config = """
     tracker_store:
       dialect: postgresql
@@ -347,11 +404,9 @@ def test_db_url_with_query_from_endpoint_config():
         driver: my-driver
         another: query
     """
-
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.yml") as f:
-        f.write(endpoint_config)
-        f.flush()
-        store_config = read_endpoint_config(f.name, "tracker_store")
+    f = tmp_path / "tmp_config_file.yml"
+    f.write_text(endpoint_config)
+    store_config = read_endpoint_config(str(f), "tracker_store")
 
     url = SQLTrackerStore.get_db_url(**store_config.kwargs)
 
@@ -550,10 +605,10 @@ def test_tracker_store_retrieve_with_session_started_events(
 ):
     tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
     events = [
-        UserUttered("Hola", {"name": "greet"}),
-        BotUttered("Hi"),
-        SessionStarted(),
-        UserUttered("Ciao", {"name": "greet"}),
+        UserUttered("Hola", {"name": "greet"}, timestamp=1),
+        BotUttered("Hi", timestamp=2),
+        SessionStarted(timestamp=3),
+        UserUttered("Ciao", {"name": "greet"}, timestamp=4),
     ]
     sender_id = "test_sql_tracker_store_with_session_events"
     tracker = DialogueStateTracker.from_events(sender_id, events)
@@ -603,6 +658,220 @@ def test_tracker_store_retrieve_without_session_started_events(
     assert all(event == tracker.events[i] for i, event in enumerate(events))
 
 
+@pytest.mark.parametrize(
+    "tracker_store_type,tracker_store_kwargs",
+    [
+        (MockedMongoTrackerStore, {}),
+        (SQLTrackerStore, {"host": "sqlite:///"}),
+        (InMemoryTrackerStore, {}),
+    ],
+)
+def test_tracker_store_retrieve_with_events_from_previous_sessions(
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
+):
+    tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+        ],
+    )
+    tracker_store.save(tracker)
+
+    actual = tracker_store.retrieve_full_tracker(conversation_id)
+
+    assert len(actual.events) == len(tracker.events)
+
+
+def test_tracker_store_deprecated_session_retrieval_kwarg():
+    tracker_store = SQLTrackerStore(
+        Domain.empty(), retrieve_events_from_previous_conversation_sessions=True
+    )
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+        ],
+    )
+
+    mocked_retrieve_full_tracker = Mock()
+    tracker_store.retrieve_full_tracker = mocked_retrieve_full_tracker
+
+    tracker_store.save(tracker)
+
+    _ = tracker_store.retrieve(conversation_id)
+
+    mocked_retrieve_full_tracker.assert_called_once()
+
+
+def test_session_scope_error(
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture, default_domain: Domain
+):
+    tracker_store = SQLTrackerStore(default_domain)
+    tracker_store.sessionmaker = Mock()
+
+    requested_schema = uuid.uuid4().hex
+
+    # `ensure_schema_exists()` raises `ValueError`
+    mocked_ensure_schema_exists = Mock(side_effect=ValueError(requested_schema))
+    monkeypatch.setattr(
+        rasa.core.tracker_store, "ensure_schema_exists", mocked_ensure_schema_exists
+    )
+
+    # `SystemExit` is triggered by failing `ensure_schema_exists()`
+    with pytest.raises(SystemExit):
+        with tracker_store.session_scope() as _:
+            pass
+
+    # error message is printed
+    assert (
+        f"Requested PostgreSQL schema '{requested_schema}' was not found in the "
+        f"database." in capsys.readouterr()[0]
+    )
+
+
+@pytest.mark.parametrize(
+    "url,is_postgres_url",
+    [
+        (f"{PGDialect.name}://admin:pw@localhost:5432/rasa", True),
+        (f"{SQLiteDialect.name}:///", False),
+        (URL(PGDialect.name), True),
+        (URL(SQLiteDialect.name), False),
+    ],
+)
+def test_is_postgres_url(url: Union[Text, URL], is_postgres_url: bool):
+    assert rasa.core.tracker_store.is_postgresql_url(url) == is_postgres_url
+
+
+def set_or_delete_postgresql_schema_env_var(
+    monkeypatch: MonkeyPatch, value: Optional[Text]
+) -> None:
+    """Set `POSTGRESQL_SCHEMA` environment variable using `MonkeyPatch`.
+
+    Args:
+        monkeypatch: Instance of `MonkeyPatch` to use for patching.
+        value: Value of the `POSTGRESQL_SCHEMA` environment variable to set.
+    """
+    if value is None:
+        monkeypatch.delenv(POSTGRESQL_SCHEMA, raising=False)
+    else:
+        monkeypatch.setenv(POSTGRESQL_SCHEMA, value)
+
+
+@pytest.mark.parametrize(
+    "url,schema_env,kwargs",
+    [
+        # postgres without schema
+        (
+            f"{PGDialect.name}://admin:pw@localhost:5432/rasa",
+            None,
+            {
+                "pool_size": rasa.core.tracker_store.POSTGRESQL_DEFAULT_POOL_SIZE,
+                "max_overflow": rasa.core.tracker_store.POSTGRESQL_DEFAULT_MAX_OVERFLOW,
+            },
+        ),
+        # postgres with schema
+        (
+            f"{PGDialect.name}://admin:pw@localhost:5432/rasa",
+            "schema1",
+            {
+                "connect_args": {"options": "-csearch_path=schema1"},
+                "pool_size": rasa.core.tracker_store.POSTGRESQL_DEFAULT_POOL_SIZE,
+                "max_overflow": rasa.core.tracker_store.POSTGRESQL_DEFAULT_MAX_OVERFLOW,
+            },
+        ),
+        # oracle without schema
+        (f"{OracleDialect.name}://admin:pw@localhost:5432/rasa", None, {}),
+        # oracle with schema
+        (f"{OracleDialect.name}://admin:pw@localhost:5432/rasa", "schema1", {}),
+        # sqlite
+        (f"{SQLiteDialect.name}:///", None, {}),
+    ],
+)
+def test_create_engine_kwargs(
+    monkeypatch: MonkeyPatch,
+    url: Union[Text, URL],
+    schema_env: Optional[Text],
+    kwargs: Dict[Text, Dict[Text, Union[Text, int]]],
+):
+    set_or_delete_postgresql_schema_env_var(monkeypatch, schema_env)
+
+    assert rasa.core.tracker_store.create_engine_kwargs(url) == kwargs
+
+
+@contextmanager
+def does_not_raise():
+    """Contextmanager to be used when an expression is not expected to raise an
+    exception.
+
+    This contextmanager can be used in parametrized tests, where some input objects
+    are expected to raise and others are not.
+
+    Example:
+
+        @pytest.mark.parametrize(
+            "a,b,raises_context",
+            [
+                # 5/6 is a legal divison
+                (5, 6, does_not_raise()),
+                # 5/0 raises a `ZeroDivisionError`
+                (5, 0, pytest.raises(ZeroDivisionError)),
+            ],
+        )
+        def test_divide(
+            a: int, b: int, raises_context: ContextManager,
+        ):
+            with raises_context:
+                _ = a / b
+
+    """
+    yield
+
+
+@pytest.mark.parametrize(
+    "is_postgres,schema_env,schema_exists,raises_context",
+    [
+        (True, "schema1", True, does_not_raise()),
+        (True, "schema1", False, pytest.raises(ValueError)),
+        (False, "schema1", False, does_not_raise()),
+        (True, None, False, does_not_raise()),
+        (False, None, False, does_not_raise()),
+    ],
+)
+def test_ensure_schema_exists(
+    monkeypatch: MonkeyPatch,
+    is_postgres: bool,
+    schema_env: Optional[Text],
+    schema_exists: bool,
+    raises_context: ContextManager,
+):
+    set_or_delete_postgresql_schema_env_var(monkeypatch, schema_env)
+    monkeypatch.setattr(
+        rasa.core.tracker_store, "is_postgresql_url", lambda _: is_postgres
+    )
+    monkeypatch.setattr(sqlalchemy, "exists", Mock())
+
+    # mock the `session.query().scalar()` query which returns whether the schema
+    # exists in the db
+    scalar = Mock(return_value=schema_exists)
+    query = Mock(scalar=scalar)
+    session = Mock()
+    session.query = Mock(return_value=query)
+
+    with raises_context:
+        rasa.core.tracker_store.ensure_schema_exists(session)
+
+
 def test_current_state_without_events(default_domain: Domain):
     tracker_store = MockedMongoTrackerStore(default_domain)
 
@@ -623,3 +892,18 @@ def test_current_state_without_events(default_domain: Domain):
 
     # `events` key should not be in there
     assert state and "events" not in state
+
+
+def test_login_db_with_no_postgresql(tmp_path: Path):
+    with pytest.warns(UserWarning):
+        SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db="other")
+
+
+@pytest.mark.parametrize(
+    "config", [{"type": "mongod", "url": "mongodb://0.0.0.0:42",}, {"type": "dynamo",}],
+)
+def test_tracker_store_connection_error(config: Dict, default_domain: Domain):
+    store = EndpointConfig.from_dict(config)
+
+    with pytest.raises(ConnectionException):
+        TrackerStore.create(store, default_domain)

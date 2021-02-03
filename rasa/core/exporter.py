@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import logging
 import uuid
@@ -5,12 +6,13 @@ from typing import Text, Optional, List, Set, Dict, Any
 
 from tqdm import tqdm
 
-import rasa.cli.utils as cli_utils
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import EventVerbosity
+from rasa.shared.core.trackers import EventVerbosity
 from rasa.exceptions import (
     NoEventsToMigrateError,
     NoConversationsInTrackerStoreError,
@@ -49,12 +51,13 @@ class Exporter:
     ) -> None:
         self.endpoints_path = endpoints_path
         self.tracker_store = tracker_store
+
         self.event_broker = event_broker
         self.requested_conversation_ids = requested_conversation_ids
         self.minimum_timestamp = minimum_timestamp
         self.maximum_timestamp = maximum_timestamp
 
-    def publish_events(self) -> int:
+    async def publish_events(self) -> int:
         """Publish events in a tracker store using an event broker.
 
         Exits if the publishing of events is interrupted due to an error. In that case,
@@ -62,11 +65,10 @@ class Exporter:
 
         Returns:
             The number of successfully published events.
-
         """
         events = self._fetch_events_within_time_range()
 
-        cli_utils.print_info(
+        rasa.shared.utils.cli.print_info(
             f"Selected {len(events)} events for publishing. Ready to go 🚀"
         )
 
@@ -85,7 +87,17 @@ class Exporter:
                 logger.exception(e)
                 raise PublishingError(current_timestamp)
 
-        self.event_broker.close()
+        if not asyncio.iscoroutinefunction(self.event_broker.close):
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The method '{EventBroker.__name__}.{EventBroker.close.__name__}' was "
+                f"changed to be asynchronous. Please adapt your custom event broker "
+                f"accordingly. Support for synchronous implementations will be removed "
+                f"in Rasa Open Source 3.0.0."
+            )
+            # noinspection PyAsyncCall
+            self.event_broker.close()
+        else:
+            await self.event_broker.close()
 
         return published_events
 
@@ -136,13 +148,13 @@ class Exporter:
             return conversation_ids_in_tracker_store
 
         raise NoConversationsInTrackerStoreError(
-            f"Could not find any conversations in connected tracker store. "
-            f"Please validate your `endpoints.yml` and make sure the defined "
-            f"tracker store exists. Exiting."
+            "Could not find any conversations in connected tracker store. "
+            "Please validate your `endpoints.yml` and make sure the defined "
+            "tracker store exists. Exiting."
         )
 
     def _validate_all_requested_ids_exist(
-        self, conversation_ids_in_tracker_store: Set[Text],
+        self, conversation_ids_in_tracker_store: Set[Text]
     ) -> None:
         """Warn user if `self.requested_conversation_ids` contains IDs not found in
         `conversation_ids_in_tracker_store`
@@ -156,7 +168,7 @@ class Exporter:
             set(self.requested_conversation_ids) - conversation_ids_in_tracker_store
         )
         if missing_ids_in_tracker_store:
-            cli_utils.print_warning(
+            rasa.shared.utils.cli.print_warning(
                 f"Could not find the following requested "
                 f"conversation IDs in connected tracker store: "
                 f"{', '.join(sorted(missing_ids_in_tracker_store))}"
@@ -202,7 +214,7 @@ class Exporter:
         """
         conversation_ids_to_process = self._get_conversation_ids_to_process()
 
-        cli_utils.print_info(
+        rasa.shared.utils.cli.print_info(
             f"Fetching events for {len(conversation_ids_to_process)} "
             f"conversation IDs:"
         )
@@ -210,7 +222,7 @@ class Exporter:
         events = []
 
         for conversation_id in tqdm(conversation_ids_to_process, "conversation IDs"):
-            tracker = self.tracker_store.retrieve(conversation_id)
+            tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
             if not tracker:
                 logger.info(
                     f"Could not retrieve tracker for conversation ID "

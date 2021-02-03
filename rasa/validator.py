@@ -1,17 +1,24 @@
 import logging
 from collections import defaultdict
-from typing import Set, Text, Optional
-from rasa.core.domain import Domain
-from rasa.core.training.generator import TrainingDataGenerator
-from rasa.importers.importer import TrainingDataImporter
-from rasa.nlu.training_data import TrainingData
-from rasa.core.training.structures import StoryGraph
-from rasa.core.training.dsl import UserUttered
-from rasa.core.training.dsl import ActionExecuted
-from rasa.core.constants import UTTER_PREFIX
+from typing import Set, Text, Optional, Dict, Any
+
 import rasa.core.training.story_conflict
-from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_ACTIONS
-from rasa.utils.common import raise_warning
+import rasa.shared.nlu.constants
+from rasa.shared.constants import (
+    DOCS_BASE_URL,
+    DOCS_URL_DOMAINS,
+    UTTER_PREFIX,
+    DOCS_URL_ACTIONS,
+)
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import UserUttered
+from rasa.shared.core.generator import TrainingDataGenerator
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.config import RasaNLUModelConfig
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -20,27 +27,37 @@ class Validator:
     """A class used to verify usage of intents and utterances."""
 
     def __init__(
-        self, domain: Domain, intents: TrainingData, story_graph: StoryGraph
+        self,
+        domain: Domain,
+        intents: TrainingData,
+        story_graph: StoryGraph,
+        config: Optional[Dict[Text, Any]],
     ) -> None:
-        """Initializes the Validator object. """
+        """Initializes the Validator object.
 
+        Args:
+            domain: The domain.
+            intents: Training data.
+            story_graph: The story graph.
+            config: The configuration.
+        """
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
+        self.nlu_config = RasaNLUModelConfig(config)
 
     @classmethod
     async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
-
         domain = await importer.get_domain()
         story_graph = await importer.get_stories()
         intents = await importer.get_nlu_data()
+        config = await importer.get_config()
 
-        return cls(domain, intents, story_graph)
+        return cls(domain, intents, story_graph, config)
 
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
-
         everything_is_alright = True
 
         nlu_data_intents = {e.data["intent"] for e in self.intents.intent_examples}
@@ -55,8 +72,8 @@ class Validator:
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                raise_warning(
-                    f"There is a message in the training data labelled with intent "
+                rasa.shared.utils.io.raise_warning(
+                    f"There is a message in the training data labeled with intent "
                     f"'{intent}'. This intent is not listed in your domain. You "
                     f"should need to add that intent to your domain file!",
                     docs=DOCS_URL_DOMAINS,
@@ -74,7 +91,7 @@ class Validator:
 
         duplication_hash = defaultdict(set)
         for example in self.intents.intent_examples:
-            text = example.text
+            text = example.get(rasa.shared.nlu.constants.TEXT)
             duplication_hash[text].add(example.get("intent"))
 
         for text, intents in duplication_hash.items():
@@ -82,7 +99,7 @@ class Validator:
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings and everything_is_alright
                 intents_string = ", ".join(sorted(intents))
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The example '{text}' was found labeled with multiple "
                     f"different intents in the training data. Each annotated message "
                     f"should only appear with one intent. You should fix that "
@@ -107,7 +124,7 @@ class Validator:
 
         for story_intent in stories_intents:
             if story_intent not in self.domain.intents:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The intent '{story_intent}' is used in your stories, but it "
                     f"is not listed in the domain file. You should add it to your "
                     f"domain file!",
@@ -124,16 +141,20 @@ class Validator:
 
     def _gather_utterance_actions(self) -> Set[Text]:
         """Return all utterances which are actions."""
-        return {
+
+        responses = {
+            response.split(rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER)[0]
+            for response in self.intents.responses.keys()
+        }
+        return responses | {
             utterance
             for utterance in self.domain.templates.keys()
-            if utterance in self.domain.action_names
+            if utterance in self.domain.action_names_or_texts
         }
 
     def verify_utterances(self, ignore_warnings: bool = True) -> bool:
         """Compares list of utterances in actions with utterances in responses."""
-
-        actions = self.domain.action_names
+        actions = self.domain.action_names_or_texts
         utterance_templates = set(self.domain.templates)
         everything_is_alright = True
 
@@ -148,7 +169,7 @@ class Validator:
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"There is no template for the utterance action '{action}'. "
                         f"The action is listed in your domains action list, but "
                         f"there is no template defined with this name. You should "
@@ -183,7 +204,7 @@ class Validator:
                     continue
 
                 if event.action_name not in utterance_actions:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"The action '{event.action_name}' is used in the stories, "
                         f"but is not a valid utterance action. Please make sure "
                         f"the action is listed in your domain and there is a "
@@ -221,11 +242,11 @@ class Validator:
             domain=self.domain,
             remove_duplicates=False,
             augmentation_factor=0,
-        ).generate()
+        ).generate_story_trackers()
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(
-            trackers, self.domain, max_history
+            trackers, self.domain, max_history, self.nlu_config
         )
 
         if not conflicts:

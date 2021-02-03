@@ -1,0 +1,25 @@
+.buttonContainer {
+    display: flex;
+    align-items: center;
+}
+
+.button {
+    background-color: var(--ifm-color-primary);
+    border: 1px solid transparent;
+    color: var(--ifm-color-white);
+    border-radius: 8px;
+    padding: 8px 24px;
+    font-size: 15px !important;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.button[disabled] {
+    background-color: var(--ifm-color-gray-500);
+    cursor: default;
+}
+
+.buttonSpinner {
+    margin: 8px;
+    color: var(--ifm-color-gray-500);
+}

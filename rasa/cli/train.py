@@ -1,23 +1,33 @@
 import argparse
 import os
+import sys
 from typing import List, Optional, Text, Dict
+
+from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
-from rasa.cli.utils import get_validated_path, missing_config_keys, print_error
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATH,
-    CONFIG_MANDATORY_KEYS_NLU,
+import rasa.cli.utils
+from rasa.shared.utils.cli import print_error
+from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
 )
+import rasa.utils.common
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all training parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     train_parser = subparsers.add_parser(
         "train",
         help="Trains a Rasa model using your NLU data and stories.",
@@ -45,54 +55,89 @@ def add_subparser(
     )
     train_nlu_parser.set_defaults(func=train_nlu)
 
-    train_parser.set_defaults(func=train)
+    train_parser.set_defaults(func=lambda args: train(args, can_exit=True))
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
-def train(args: argparse.Namespace) -> Optional[Text]:
+def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
+    """Trains a model.
+
+    Args:
+        args: Namespace arguments.
+        can_exit: If `True`, the operation can send `sys.exit` in the case
+            training was not successful.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     import rasa
 
-    domain = get_validated_path(
+    domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
+        rasa.cli.utils.get_validated_path(
+            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
+        )
         for f in args.data
     ]
 
-    return rasa.train(
+    training_result = rasa.train(
         domain=domain,
         config=config,
         training_files=training_files,
         output=args.out,
+        dry_run=args.dry_run,
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
-        additional_arguments=extract_additional_arguments(args),
+        core_additional_arguments=extract_core_additional_arguments(args),
+        nlu_additional_arguments=extract_nlu_additional_arguments(args),
+        model_to_finetune=_model_for_finetuning(args),
+        finetuning_epoch_fraction=args.epoch_fraction,
     )
+    if training_result.code != 0 and can_exit:
+        sys.exit(training_result.code)
+
+    return training_result.model
+
+
+def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
+    if args.finetune == train_arguments.USE_LATEST_MODEL_FOR_FINE_TUNING:
+        # We use this constant to signal that the user specified `--finetune` but
+        # didn't provide a path to a model. In this case we try to load the latest
+        # model from the output directory (that's usually models/).
+        return args.out
 
 
 def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
-    from rasa.train import train_core
-    import asyncio
+    """Trains a Rasa Core model only.
 
-    loop = asyncio.get_event_loop()
+    Args:
+        args: Command-line arguments to configure training.
+        train_path: Path where trained model but not unzipped model should be stored.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
+    from rasa.train import train_core
+
     output = train_path or args.out
 
-    args.domain = get_validated_path(
+    args.domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    story_file = get_validated_path(
+    story_file = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
-    additional_arguments = extract_additional_arguments(args)
+    additional_arguments = extract_core_additional_arguments(args)
 
     # Policies might be a list for the compare training. Do normal training
     # if only list item was passed.
@@ -110,11 +155,13 @@ def train_core(
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
             additional_arguments=additional_arguments,
+            model_to_finetune=_model_for_finetuning(args),
+            finetuning_epoch_fraction=args.epoch_fraction,
         )
     else:
         from rasa.core.train import do_compare_training
 
-        loop.run_until_complete(
+        rasa.utils.common.run_in_loop(
             do_compare_training(args, story_file, additional_arguments)
         )
 
@@ -122,14 +169,28 @@ def train_core(
 def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
+    """Trains an NLU model.
+
+    Args:
+        args: Namespace arguments.
+        train_path: Directory where models should be stored.
+
+    Returns:
+        Path to a trained model or `None` if training was not successful.
+    """
     from rasa.train import train_nlu
 
     output = train_path or args.out
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
-    nlu_data = get_validated_path(
+    nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
+
+    if args.domain:
+        args.domain = rasa.cli.utils.get_validated_path(
+            args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+        )
 
     return train_nlu(
         config=config,
@@ -138,10 +199,14 @@ def train_nlu(
         train_path=train_path,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
+        additional_arguments=extract_nlu_additional_arguments(args),
+        domain=args.domain,
+        model_to_finetune=_model_for_finetuning(args),
+        finetuning_epoch_fraction=args.epoch_fraction,
     )
 
 
-def extract_additional_arguments(args: argparse.Namespace) -> Dict:
+def extract_core_additional_arguments(args: argparse.Namespace) -> Dict:
     arguments = {}
 
     if "augmentation" in args:
@@ -152,12 +217,32 @@ def extract_additional_arguments(args: argparse.Namespace) -> Dict:
     return arguments
 
 
+def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
+    arguments = {}
+
+    if "num_threads" in args:
+        arguments["num_threads"] = args.num_threads
+
+    return arguments
+
+
 def _get_valid_config(
     config: Optional[Text],
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
-    config = get_validated_path(config, "config", default_config)
+    """Get a config from a config file and check if it is valid.
+
+    Exit if the config isn't valid.
+
+    Args:
+        config: Path to the config file.
+        mandatory_keys: The keys that have to be specified in the config file.
+        default_config: default config to use if the file at `config` doesn't exist.
+
+    Returns: The path to the config file if the config is valid.
+    """
+    config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 
     if not os.path.exists(config):
         print_error(
@@ -165,15 +250,15 @@ def _get_valid_config(
             "valid config file."
             "".format(config)
         )
-        exit(1)
+        sys.exit(1)
 
-    missing_keys = missing_config_keys(config, mandatory_keys)
+    missing_keys = rasa.cli.utils.missing_config_keys(config, mandatory_keys)
     if missing_keys:
         print_error(
             "The config file '{}' is missing mandatory parameters: "
             "'{}'. Add missing parameters to config file and try again."
             "".format(config, "', '".join(missing_keys))
         )
-        exit(1)
+        sys.exit(1)
 
-    return config  # pytype: disable=bad-return-type
+    return config

@@ -1,0 +1,20 @@
+stories:
+- story: simple_story_without_checkpoint
+  steps:
+  - intent: simple
+  - action: utter_default
+  - action: utter_greet
+
+- story: simple_story_with_only_start
+  steps:
+  - checkpoint: check_greet # checkpoints at the start define entry points
+  - intent: simple
+  - action: utter_default
+
+- story: simple_story_with_only_end
+  steps:
+  - intent: hello
+  - action: utter_greet
+  - slot_was_set:
+    - name: peter
+  - checkpoint: check_greet # checkpoint defining the end of this turn

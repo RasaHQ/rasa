@@ -1,30 +1,40 @@
 import asyncio
-from typing import Text
+from pathlib import Path
+from typing import Any, Dict, Text, List, Callable, Optional
+from unittest.mock import Mock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
+from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import StreamingHTTPResponse
 
 import rasa.core
+from rasa.exceptions import ModelNotFound
+import rasa.shared.utils.common
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.mapping_policy import MappingPolicy
 import rasa.utils.io
-from rasa.core import jobs, utils
+from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
-def model_server_app(model_path: Text, model_hash: Text = "somehash"):
+def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
     app = Sanic(__name__)
     app.number_of_model_requests = 0
 
     @app.route("/model", methods=["GET"])
-    async def model(request):
+    async def model(request: Request) -> StreamingHTTPResponse:
         """Simple HTTP model server responding with a trained model."""
 
         if model_hash == request.headers.get("If-None-Match"):
@@ -42,13 +52,15 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 
 @pytest.fixture()
-def model_server(loop, sanic_client, trained_moodbot_path):
-    app = model_server_app(trained_moodbot_path, model_hash="somehash")
+def model_server(
+    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_rasa_model: Text
+) -> TestClient:
+    app = model_server_app(trained_rasa_model, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))
 
 
-async def test_training_data_is_reproducible(tmpdir, default_domain):
-    training_data_file = "examples/moodbot/data/stories.md"
+async def test_training_data_is_reproducible():
+    training_data_file = "examples/moodbot/data/stories.yml"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
@@ -67,7 +79,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     loaded = Agent.load(trained_moodbot_path)
 
     # test domain
-    assert loaded.domain.action_names == moodbot_domain.action_names
+    assert loaded.domain.action_names_or_texts == moodbot_domain.action_names_or_texts
     assert loaded.domain.intents == moodbot_domain.intents
     assert loaded.domain.entities == moodbot_domain.entities
     assert loaded.domain.templates == moodbot_domain.templates
@@ -80,7 +92,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
         TEDPolicy,
         MemoizationPolicy,
-        MappingPolicy,
+        RulePolicy,
     ]
 
 
@@ -110,7 +122,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     ],
 )
 async def test_agent_parse_message_using_nlu_interpreter(
-    default_agent, text_message_data, expected
+    default_agent: Agent, text_message_data: Text, expected: Dict[Text, Any]
 ):
     result = await default_agent.parse_message_using_nlu_interpreter(text_message_data)
     assert result == expected
@@ -133,20 +145,20 @@ async def test_agent_handle_message(default_agent: Agent):
     ]
 
 
-def test_agent_wrong_use_of_load(tmpdir, default_domain):
-    training_data_file = "examples/moodbot/data/stories.md"
+def test_agent_wrong_use_of_load():
+    training_data_file = "examples/moodbot/data/stories.yml"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ModelNotFound):
         # try to load a model file from a data path, which is nonsense and
         # should fail properly
         agent.load(training_data_file)
 
 
 async def test_agent_with_model_server_in_thread(
-    model_server, moodbot_domain, moodbot_metadata
+    model_server: TestClient, default_domain: Domain, unpacked_trained_rasa_model: Text
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}
@@ -160,18 +172,24 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
-    assert hash(agent.domain) == hash(moodbot_domain)
+    assert agent.domain.as_dict() == default_domain.as_dict()
+
+    expected_policies = PolicyEnsemble.load_metadata(
+        str(Path(unpacked_trained_rasa_model, "core"))
+    )["policy_names"]
 
     agent_policies = {
-        utils.module_path_from_instance(p) for p in agent.policy_ensemble.policies
+        rasa.shared.utils.common.module_path_from_instance(p)
+        for p in agent.policy_ensemble.policies
     }
-    moodbot_policies = set(moodbot_metadata["policy_names"])
-    assert agent_policies == moodbot_policies
+    assert agent_policies == set(expected_policies)
     assert model_server.app.number_of_model_requests == 1
     jobs.kill_scheduler()
 
 
-async def test_wait_time_between_pulls_without_interval(model_server, monkeypatch):
+async def test_wait_time_between_pulls_without_interval(
+    model_server: TestClient, monkeypatch: MonkeyPatch
+):
     monkeypatch.setattr(
         "rasa.core.agent.schedule_model_pulling", lambda *args: 1 / 0
     )  # will raise an exception
@@ -181,12 +199,33 @@ async def test_wait_time_between_pulls_without_interval(model_server, monkeypatc
     )
 
     agent = Agent()
-    # schould not call schedule_model_pulling, if it does, this will raise
+    # should not call schedule_model_pulling, if it does, this will raise
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
-    jobs.kill_scheduler()
 
 
-async def test_load_agent(trained_rasa_model: str):
+async def test_pull_model_with_invalid_domain(
+    model_server: TestClient, monkeypatch: MonkeyPatch, caplog: LogCaptureFixture
+):
+    # mock `Domain.load()` as if the domain contains invalid YAML
+    error_message = "domain is invalid"
+    mock_load = Mock(side_effect=InvalidDomain(error_message))
+
+    monkeypatch.setattr(Domain, "load", mock_load)
+    model_endpoint_config = EndpointConfig.from_dict(
+        {"url": model_server.make_url("/model"), "wait_time_between_pulls": None}
+    )
+
+    agent = Agent()
+    await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
+
+    # `Domain.load()` was called
+    mock_load.assert_called_once()
+
+    # error was logged
+    assert error_message in caplog.text
+
+
+async def test_load_agent(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
 
     assert agent.tracker_store is not None
@@ -195,16 +234,30 @@ async def test_load_agent(trained_rasa_model: str):
 
 
 @pytest.mark.parametrize(
-    "domain, policy_config",
-    [({"forms": ["restaurant_form"]}, {"policies": [{"name": "MemoizationPolicy"}]})],
+    "policy_config", [{"policies": [{"name": "MemoizationPolicy"}]}]
 )
-def test_form_without_form_policy(domain, policy_config):
+def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=Domain.from_dict(domain),
+            domain=Domain.from_dict({"forms": ["restaurant_form"]}),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "haven't added the FormPolicy" in str(execinfo.value)
+    assert "neither added the 'RulePolicy' nor the 'FormPolicy'" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "policy_config",
+    [
+        {"policies": [{"name": FormPolicy.__name__}]},
+        {"policies": [{"name": RulePolicy.__name__}]},
+    ],
+)
+def test_forms_with_suited_policy(policy_config: Dict[Text, List[Text]]):
+    # Doesn't raise
+    Agent(
+        domain=Domain.from_dict({"forms": ["restaurant_form"]}),
+        policies=PolicyEnsemble.from_dict(policy_config),
+    )
 
 
 @pytest.mark.parametrize(
@@ -219,7 +272,9 @@ def test_form_without_form_policy(domain, policy_config):
         )
     ],
 )
-def test_trigger_without_mapping_policy(domain, policy_config):
+def test_trigger_without_mapping_policy(
+    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
+):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
             domain=Domain.from_dict(domain),
@@ -230,15 +285,88 @@ def test_trigger_without_mapping_policy(domain, policy_config):
 
 @pytest.mark.parametrize(
     "domain, policy_config",
-    [({"intents": ["affirm"]}, {"policies": [{"name": "TwoStageFallbackPolicy"}]})],
+    [
+        (
+            {"intents": ["affirm"]},
+            {
+                "policies": [
+                    {
+                        "name": "TwoStageFallbackPolicy",
+                        "deny_suggestion_intent_name": "deny",
+                    }
+                ]
+            },
+        )
+    ],
 )
-def test_two_stage_fallback_without_deny_suggestion(domain, policy_config):
+def test_two_stage_fallback_without_deny_suggestion(
+    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
+):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
             domain=Domain.from_dict(domain),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
+    assert "The intent 'deny' must be present" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my_fallback"}
+                ]
+            },
+        )
+    ],
+)
+def test_rule_policy_without_fallback_action_present(
+    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
+):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+
+    assert RulePolicy.__name__ in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {
+                        "name": "RulePolicy",
+                        "core_fallback_action_name": "my_fallback",
+                        "enable_fallback_prediction": False,
+                    }
+                ]
+            },
+        ),
+        (
+            {"actions": ["my-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my-action"}
+                ]
+            },
+        ),
+        ({}, {"policies": [{"name": "MemoizationPolicy"}]}),
+    ],
+)
+def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, Any]):
+    # no exception should be thrown
+    Agent(
+        domain=Domain.from_dict(domain),
+        policies=PolicyEnsemble.from_dict(policy_config),
+    )
 
 
 async def test_agent_update_model_none_domain(trained_rasa_model: Text):
@@ -272,6 +400,6 @@ async def test_load_agent_on_not_existing_path():
         None,
     ],
 )
-async def test_agent_load_on_invalid_model_path(model_path):
-    with pytest.raises(ValueError):
+async def test_agent_load_on_invalid_model_path(model_path: Optional[Text]):
+    with pytest.raises(ModelNotFound):
         Agent.load(model_path)

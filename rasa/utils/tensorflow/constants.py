@@ -1,6 +1,7 @@
 # constants for configuration parameters of our tensorflow models
 
 LABEL = "label"
+IDS = "ids"
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 
@@ -19,7 +20,9 @@ RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"
 
 DENSE_DIMENSION = "dense_dimension"
+CONCAT_DIMENSION = "concat_dimension"
 EMBEDDING_DIMENSION = "embedding_dimension"
+ENCODING_DIMENSION = "encoding_dimension"
 
 SIMILARITY_TYPE = "similarity_type"
 LOSS_TYPE = "loss_type"
@@ -46,12 +49,15 @@ ENTITY_RECOGNITION = "entity_recognition"
 MASKED_LM = "use_masked_language_model"
 
 SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
+DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
 
 BILOU_FLAG = "BILOU_flag"
 
 RETRIEVAL_INTENT = "retrieval_intent"
+
+USE_TEXT_AS_LABEL = "use_text_as_label"
 
 SOFTMAX = "softmax"
 MARGIN = "margin"
@@ -60,7 +66,10 @@ INNER = "inner"
 COSINE = "cosine"
 
 BALANCED = "balanced"
+
 SEQUENCE = "sequence"
+SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
+SENTENCE = "sentence"
 
 POOLING = "pooling"
 MAX_POOLING = "max"
@@ -68,3 +77,11 @@ MEAN_POOLING = "mean"
 
 TENSORBOARD_LOG_DIR = "tensorboard_log_directory"
 TENSORBOARD_LOG_LEVEL = "tensorboard_log_level"
+
+SEQUENCE_FEATURES = "sequence_features"
+SENTENCE_FEATURES = "sentence_features"
+
+FEATURIZERS = "featurizers"
+CHECKPOINT_MODEL = "checkpoint_model"
+
+MASK = "mask"

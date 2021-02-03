@@ -1,16 +1,14 @@
-import sys
-
 import json
-import os
+from typing import Text, Optional, Dict, Any
+
+import pytest
 from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
-from rasa.core.train import train
-from rasa.core.utils import AvailableEndpoints
-from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa.utils.endpoints import ClientResponseError
 
 
-async def test_moodbot_example(unpacked_trained_moodbot_path):
+async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     agent = Agent.load(unpacked_trained_moodbot_path)
 
     responses = await agent.handle_text("/greet")
@@ -23,29 +21,17 @@ async def test_moodbot_example(unpacked_trained_moodbot_path):
     assert len(responses) == 4
 
 
-async def test_formbot_example():
-    sys.path.append("examples/formbot/")
-
-    p = "examples/formbot/"
-    stories = os.path.join(p, "data", "stories.md")
-    endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    endpoints = AvailableEndpoints(action=endpoint)
-    agent = await train(
-        os.path.join(p, "domain.yml"),
-        stories,
-        os.path.join(p, "models", "dialogue"),
-        endpoints=endpoints,
-        policy_config="examples/formbot/config.yml",
-    )
-
-    async def mock_form_happy_path(input_text, output_text, slot=None):
+@pytest.mark.timeout(300)
+async def test_formbot_example(form_bot_agent: Agent):
+    def response_for_slot(slot: Text) -> Dict[Text, Any]:
         if slot:
             form = "restaurant_form"
             template = f"utter_ask_{slot}"
         else:
             form = None
             template = "utter_submit"
-        response = {
+
+        return {
             "events": [
                 {"event": "form", "name": form, "timestamp": None},
                 {
@@ -57,88 +43,83 @@ async def test_formbot_example():
             ],
             "responses": [{"template": template}],
         }
+
+    async def mock_form_happy_path(
+        input_text: Text, output_text: Text, slot: Optional[Text] = None
+    ) -> None:
         with aioresponses() as mocked:
             mocked.post(
-                "https://example.com/webhooks/actions", payload=response, repeat=True,
+                "https://example.com/webhooks/actions",
+                payload=response_for_slot(slot),
+                repeat=True,
             )
-            responses = await agent.handle_text(input_text)
+            responses = await form_bot_agent.handle_text(input_text)
             assert responses[0]["text"] == output_text
 
-    async def mock_form_unhappy_path(input_text, output_text, slot):
+    async def mock_form_unhappy_path(
+        input_text: Text, output_text: Text, slot: Optional[Text]
+    ) -> None:
         response_error = {
             "error": f"Failed to extract slot {slot} with action restaurant_form",
             "action_name": "restaurant_form",
         }
         with aioresponses() as mocked:
-            # noinspection PyTypeChecker
+            # Request which rejects form execution
             mocked.post(
                 "https://example.com/webhooks/actions",
-                repeat=True,
+                repeat=False,
                 exception=ClientResponseError(400, "", json.dumps(response_error)),
             )
-            responses = await agent.handle_text(input_text)
+            # Request after returning from unhappy path which sets next requested slot
+            mocked.post(
+                "https://example.com/webhooks/actions",
+                payload=response_for_slot(slot),
+                repeat=True,
+            )
+            responses = await form_bot_agent.handle_text(input_text)
             assert responses[0]["text"] == output_text
 
-    await mock_form_happy_path("/request_restaurant", "what cuisine?", slot="cuisine")
+    await mock_form_happy_path("/request_restaurant", "What cuisine?", slot="cuisine")
     await mock_form_unhappy_path("/chitchat", "chitchat", slot="cuisine")
     await mock_form_happy_path(
-        '/inform{"cuisine": "mexican"}', "how many people?", slot="num_people"
+        '/inform{"cuisine": "mexican"}', "How many people?", slot="num_people"
     )
     await mock_form_happy_path(
-        '/inform{"number": "2"}', "do you want to seat outside?", slot="outdoor_seating"
+        '/inform{"number": "2"}', "Do you want to sit outside?", slot="outdoor_seating"
     )
     await mock_form_happy_path(
-        "/affirm", "please provide additional preferences", slot="preferences"
+        "/affirm", "Please provide additional preferences", slot="preferences"
     )
 
-    responses = await agent.handle_text("/restart")
+    responses = await form_bot_agent.handle_text("/restart")
     assert responses[0]["text"] == "restarted"
 
-    responses = await agent.handle_text("/greet")
+    responses = await form_bot_agent.handle_text("/greet")
     assert (
         responses[0]["text"]
         == "Hello! I am restaurant search assistant! How can I help?"
     )
 
-    await mock_form_happy_path("/request_restaurant", "what cuisine?", slot="cuisine")
+    await mock_form_happy_path("/request_restaurant", "What cuisine?", slot="cuisine")
     await mock_form_happy_path(
-        '/inform{"cuisine": "mexican"}', "how many people?", slot="num_people"
+        '/inform{"cuisine": "mexican"}', "How many people?", slot="num_people"
     )
     await mock_form_happy_path(
-        '/inform{"number": "2"}', "do you want to seat outside?", slot="outdoor_seating"
+        '/inform{"number": "2"}', "Do you want to sit outside?", slot="outdoor_seating"
     )
     await mock_form_unhappy_path(
-        "/stop", "do you want to continue?", slot="outdoor_seating"
+        "/stop", "Do you want to continue?", slot="outdoor_seating"
     )
     await mock_form_happy_path(
-        "/affirm", "do you want to seat outside?", slot="outdoor_seating"
+        "/affirm", "Do you want to sit outside?", slot="outdoor_seating"
     )
     await mock_form_happy_path(
-        "/affirm", "please provide additional preferences", slot="preferences"
+        "/affirm", "Please provide additional preferences", slot="preferences"
     )
     await mock_form_happy_path(
-        "/deny", "please give your feedback on your experience so far", slot="feedback"
+        "/deny", "Please give your feedback on your experience so far", slot="feedback"
     )
     await mock_form_happy_path('/inform{"feedback": "great"}', "All done!")
 
-    responses = await agent.handle_text("/thankyou")
-    assert responses[0]["text"] == "you are welcome :)"
-
-
-async def test_restaurantbot_example():
-    sys.path.append("examples/restaurantbot/")
-    from run import train_core, train_nlu, parse
-
-    p = "examples/restaurantbot/"
-    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    nlu_data = os.path.join(p, "data", "nlu.md")
-    await train_core(
-        os.path.join(p, "domain.yml"), os.path.join(p, "models"), "current", stories
-    )
-    train_nlu(
-        os.path.join(p, "config.yml"), os.path.join(p, "models"), "current", nlu_data
-    )
-
-    responses = await parse("hello", os.path.join(p, "models", "current"))
-
-    assert responses[0]["text"] == "how can I help you?"
+    responses = await form_bot_agent.handle_text("/thankyou")
+    assert responses[0]["text"] == "You are welcome :)"

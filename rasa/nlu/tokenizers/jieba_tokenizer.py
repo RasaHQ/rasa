@@ -7,9 +7,7 @@ from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.training_data import Message
-
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +17,9 @@ if typing.TYPE_CHECKING:
 
 
 class JiebaTokenizer(Tokenizer):
+    """This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba)."""
 
-    language_list = ["zh"]
+    supported_language_list = ["zh"]
 
     defaults = {
         "dictionary_path": None,
@@ -28,6 +27,8 @@ class JiebaTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -69,7 +70,7 @@ class JiebaTokenizer(Tokenizer):
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
 
-        return tokens
+        return self._apply_token_pattern(tokens)
 
     @classmethod
     def load(

@@ -1,0 +1,196 @@
+# This is a sample .typo-ci.yml file, it's used to configure how Typo CI will behave.
+# Add it to the root of your project and push it to github.
+---
+
+# What language dictionaries should it use? Currently Typo CI supports:
+# de
+# en
+# en_GB
+# es
+# fr
+# it
+# pt
+# pt_BR
+dictionaries:
+  - en
+
+# # Any files/folders we should ignore?
+excluded_files:
+  - "*.py"
+  - "*.css"
+  - "*.scss"
+  - "*.yml"
+  - "*.yaml"
+  - "*.html"
+  - "*.json"
+  - "*.lock"
+  - "*.js"
+  - "*.jsx"
+  - "*.ts"
+  - "*.tsx"
+  - "*.md"
+  - "CHANGELOG.mdx"
+  - "CODE_OF_CONDUCT.md"
+  - "CONTRIBUTING.md"
+  - "Dockerfile"
+  - "LICENSE.txt"
+  - "Makefile"
+  - "NOTICE"
+  - "README.md"
+  - "cloudbuild.yaml"
+  - "pyproject.toml"
+  - "secrets.tar.enc"
+  - "setup.cfg"
+  - ".codeclimate.yml"
+  - ".coveragerc"
+  - ".deepsource.toml"
+  - ".dockerignore"
+  - ".env"
+  - ".git"
+  - ".gitattributes"
+  - ".gitignore"
+  - ".pre-commit-config.yaml"
+  - ".typo-ci.yml"
+  - ".github/**/*"
+  - "binder/**/*"
+  - "data/**/*"
+  - "docker/**/*"
+  - "examples/**/*"
+  - "rasa/**/*"
+  - "scripts/**/*"
+  - "tests/**/*"
+
+# # Any typos we should ignore?
+excluded_words:
+  - analytics
+  - asyncio
+  - bot
+  - bot's
+  - cdd
+  - CDD
+  - cmdline
+  - conveRT
+  - ConveRTFeaturizer
+  - ConveRTTokenizer
+  - crfsuite
+  - custom-nlg-service
+  - daksh
+  - db's
+  - deque
+  - docusaurus
+  - non-latin
+  - deduplicate
+  - deduplication
+  - donath
+  - matplotlib
+  - extractor
+  - fbmessenger
+  - featurization
+  - featurized
+  - featurizer
+  - featurizers
+  - featurizes
+  - featurizing
+  - forni
+  - gzip
+  - gzipped
+  - hftransformersnlp
+  - initializer
+  - instaclient
+  - jwt
+  - jwt's
+  - jupyter
+  - jupyterhub
+  - karpathy
+  - keras
+  - knowledgebase
+  - knowledgebasebot
+  - linenos
+  - luis
+  - matmul
+  - mattermost
+  - memoization
+  - miniconda
+  - mitie
+  - mitiefeaturizer
+  - mitie's
+  - mitienlp
+  - dataset
+  - mongod
+  - mrkdown
+  - mrkdwn
+  - myio
+  - mymodelname
+  - myuser
+  - numpy
+  - networkx
+  - nlu
+  - nlu's
+  - perceptron
+  - pika
+  - pika's
+  - jieba
+  - pretrained
+  - prototyper
+  - pycodestyle
+  - pykwalify
+  - pymessenger
+  - pyobject
+  - python-engineio
+  - pre
+  - customizable
+  - quickstart
+  - rasa
+  - rasa's
+  - readthedocs
+  - regularizer
+  - repo
+  - rst
+  - sanic
+  - sanitization
+  - scipy
+  - sklearn
+  - socketio
+  - spacy
+  - spacyfeaturizer
+  - spacynlp
+  - ish
+  - spaCy
+  - spaCy's
+  - README
+  - crf
+  - backends
+  - whitespaced
+  - ngram
+  - subsampled
+  - testagent
+  - tokenize
+  - tokenized
+  - tokenization
+  - tokenizer
+  - tokenizers
+  - tokenizing
+  - typoci
+  - unfeaturized
+  - unschedule
+  - wsgi
+  - ruamel
+  - prototyper
+  - hallo
+  - crypto
+  - regexes
+  - walkthroughs
+  - webexteams
+  - venv
+  - regexfeaturizer
+  - crfentityextractor
+  - Comerica
+  - entitysynonymmapper
+  - memoizationpolicy
+  - NLG
+  - nlg
+  - Juste
+  - Tanja
+  - Vova
+
+spellcheck_filenames: false

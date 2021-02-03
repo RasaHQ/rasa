@@ -1,11 +1,10 @@
 import contextlib
 import json
 import logging
+from asyncio import AbstractEventLoop
 from typing import Any, Dict, Optional, Text
 
-from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -53,7 +52,12 @@ class SQLEventBroker(EventBroker):
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "SQLEventBroker":
+    async def from_endpoint_config(
+        cls,
+        broker_config: EndpointConfig,
+        event_loop: Optional[AbstractEventLoop] = None,
+    ) -> "SQLEventBroker":
+        """Creates broker. See the parent class for more information."""
         return cls(host=broker_config.url, **broker_config.kwargs)
 
     @contextlib.contextmanager
@@ -74,23 +78,3 @@ class SQLEventBroker(EventBroker):
                 )
             )
             session.commit()
-
-
-class SQLProducer(SQLEventBroker):
-    def __init__(
-        self,
-        dialect: Text = "sqlite",
-        host: Optional[Text] = None,
-        port: Optional[int] = None,
-        db: Text = "events.db",
-        username: Optional[Text] = None,
-        password: Optional[Text] = None,
-    ):
-        raise_warning(
-            "The `SQLProducer` class is deprecated, please inherit "
-            "from `SQLEventBroker` instead. `SQLProducer` will be "
-            "removed in future Rasa versions.",
-            FutureWarning,
-            docs=DOCS_URL_EVENT_BROKERS,
-        )
-        super(SQLProducer, self).__init__(dialect, host, port, db, username, password)

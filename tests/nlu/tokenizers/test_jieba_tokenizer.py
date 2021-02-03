@@ -1,11 +1,14 @@
+from pathlib import Path
 from unittest.mock import patch
 
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 
 import pytest
 
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT
 
 
 @pytest.mark.parametrize(
@@ -26,15 +29,15 @@ from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
 def test_jieba(text, expected_tokens, expected_indices):
     tk = JiebaTokenizer()
 
-    tokens = tk.tokenize(Message(text), attribute=TEXT)
+    tokens = tk.tokenize(Message(data={TEXT: text}), attribute=TEXT)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
 
-def test_jieba_load_dictionary(tmpdir_factory):
-    dictionary_path = tmpdir_factory.mktemp("jieba_custom_dictionary").strpath
+def test_jieba_load_dictionary(tmp_path: Path):
+    dictionary_path = str(tmp_path)
 
     component_config = {"dictionary_path": dictionary_path}
 
@@ -42,7 +45,7 @@ def test_jieba_load_dictionary(tmpdir_factory):
         JiebaTokenizer, "load_custom_dictionary", return_value=None
     ) as mock_method:
         tk = JiebaTokenizer(component_config)
-        tk.tokenize(Message(""), attribute=TEXT)
+        tk.tokenize(Message(data={TEXT: ""}), attribute=TEXT)
 
     mock_method.assert_called_once_with(dictionary_path)
 
@@ -59,7 +62,7 @@ def test_custom_intent_symbol(text, expected_tokens):
 
     tk = JiebaTokenizer(component_config)
 
-    message = Message(text)
+    message = Message(data={TEXT: text})
     message.set(INTENT, text)
 
     tk.train(TrainingData([message]))

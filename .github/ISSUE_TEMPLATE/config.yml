@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://forum.rasa.com/
+    about: If you have a "How do I?" question please ask in the forum https://forum.rasa.com

@@ -3,7 +3,8 @@ from typing import Text, Any, Dict, Optional
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
             "elements": {"type": ["array", "null"], "items": {"type": "object"}},
             "attachment": {"type": ["object", "null"]},
             "image": {"type": ["string", "null"]},
+            "custom": {"type": "object"},
         },
     }
 
@@ -102,12 +104,11 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         if self.validate_response(response):
             return response
         else:
-            raise Exception("NLG web endpoint returned an invalid response.")
+            raise RasaException("NLG web endpoint returned an invalid response.")
 
     @staticmethod
     def validate_response(content: Optional[Dict[Text, Any]]) -> bool:
         """Validate the NLG response. Raises exception on failure."""
-
         from jsonschema import validate
         from jsonschema import ValidationError
 
@@ -119,11 +120,10 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                 validate(content, nlg_response_format_spec())
                 return True
         except ValidationError as e:
-            e.message += (
-                ". Failed to validate NLG response from API, make sure your "
-                "response from the NLG endpoint is valid. "
-                "For more information about the format please consult the "
-                "`nlg_response_format_spec` function from this same module: "
-                "https://github.com/RasaHQ/rasa/blob/master/rasa/core/nlg/callback.py#L12"
+            raise RasaException(
+                f"{e.message}. Failed to validate NLG response from API, make sure "
+                f"your response from the NLG endpoint is valid. "
+                f"For more information about the format please consult the "
+                f"`nlg_response_format_spec` function from this same module: "
+                f"https://github.com/RasaHQ/rasa/blob/main/rasa/core/nlg/callback.py"
             )
-            raise e

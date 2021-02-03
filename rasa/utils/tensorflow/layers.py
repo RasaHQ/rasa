@@ -2,11 +2,15 @@ import logging
 from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
+import rasa.utils.tensorflow.crf
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
 
 logger = logging.getLogger(__name__)
+
+# https://github.com/tensorflow/addons#gpu-and-cpu-custom-ops-1
+tfa.options.TF_ADDONS_PY_OPS = True
 
 
 class SparseDropout(tf.keras.layers.Dropout):
@@ -22,7 +26,7 @@ class SparseDropout(tf.keras.layers.Dropout):
 
     def call(
         self, inputs: tf.SparseTensor, training: Optional[Union[tf.Tensor, bool]] = None
-    ) -> tf.Tensor:
+    ) -> tf.SparseTensor:
         """Apply dropout to sparse inputs.
 
         Arguments:
@@ -36,13 +40,14 @@ class SparseDropout(tf.keras.layers.Dropout):
         Raises:
             A ValueError if inputs is not a sparse tensor
         """
+
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
         if training is None:
             training = K.learning_phase()
 
-        def dropped_inputs() -> tf.Tensor:
+        def dropped_inputs() -> tf.SparseTensor:
             to_retain_prob = tf.random.uniform(
                 tf.shape(inputs.values), 0, 1, inputs.values.dtype
             )
@@ -52,11 +57,10 @@ class SparseDropout(tf.keras.layers.Dropout):
         outputs = tf_utils.smart_cond(
             training, dropped_inputs, lambda: tf.identity(inputs)
         )
-        # need to explicitly set shape, because it becomes dynamic after `retain`
+        # need to explicitly recreate sparse tensor, because otherwise the shape
+        # information will be lost after `retain`
         # noinspection PyProtectedMember
-        outputs._dense_shape = inputs._dense_shape
-
-        return outputs
+        return tf.SparseTensor(outputs.indices, outputs.values, inputs._dense_shape)
 
 
 class DenseForSparse(tf.keras.layers.Dense):
@@ -132,7 +136,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         if len(inputs.shape) == 3:
             # reshape back
             outputs = tf.reshape(
-                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
+                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], self.units)
             )
 
         if self.use_bias:
@@ -445,6 +449,10 @@ class CRF(tf.keras.layers.Layer):
         self.num_tags = num_tags
         self.scale_loss = scale_loss
         self.transition_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        self.f1_score_metric = tfa.metrics.F1Score(
+            num_classes=num_tags - 1,  # `0` prediction is not a prediction
+            average="micro",
+        )
 
     def build(self, input_shape: tf.TensorShape) -> None:
         # the weights should be created in `build` to apply random_seed
@@ -456,7 +464,9 @@ class CRF(tf.keras.layers.Layer):
         self.built = True
 
     # noinspection PyMethodOverriding
-    def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
+    def call(
+        self, logits: tf.Tensor, sequence_lengths: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Decodes the highest scoring sequence of tags.
 
         Arguments:
@@ -467,16 +477,23 @@ class CRF(tf.keras.layers.Layer):
         Returns:
             A [batch_size, max_seq_len] matrix, with dtype `tf.int32`.
             Contains the highest scoring tag indices.
+            A [batch_size, max_seq_len] matrix, with dtype `tf.float32`.
+            Contains the confidence values of the highest scoring tag indices.
         """
-        pred_ids, _ = tfa.text.crf.crf_decode(
+        predicted_ids, scores, _ = rasa.utils.tensorflow.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
         # set prediction index for padding to `0`
         mask = tf.sequence_mask(
-            sequence_lengths, maxlen=tf.shape(pred_ids)[1], dtype=pred_ids.dtype
+            sequence_lengths,
+            maxlen=tf.shape(predicted_ids)[1],
+            dtype=predicted_ids.dtype,
         )
 
-        return pred_ids * mask
+        confidence_values = scores * tf.cast(mask, tf.float32)
+        predicted_ids = predicted_ids * mask
+
+        return predicted_ids, confidence_values
 
     def loss(
         self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor
@@ -503,6 +520,25 @@ class CRF(tf.keras.layers.Layer):
             loss *= _scale_loss(log_likelihood)
 
         return tf.reduce_mean(loss)
+
+    def f1_score(
+        self, tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor
+    ) -> tf.Tensor:
+        """Calculates f1 score for train predictions"""
+
+        mask_bool = tf.cast(mask[:, :, 0], tf.bool)
+
+        # pick only non padding values and flatten sequences
+        tag_ids_flat = tf.boolean_mask(tag_ids, mask_bool)
+        pred_ids_flat = tf.boolean_mask(pred_ids, mask_bool)
+
+        # set `0` prediction to not a prediction
+        num_tags = self.num_tags - 1
+
+        tag_ids_flat_one_hot = tf.one_hot(tag_ids_flat - 1, num_tags)
+        pred_ids_flat_one_hot = tf.one_hot(pred_ids_flat - 1, num_tags)
+
+        return self.f1_score_metric(tag_ids_flat_one_hot, pred_ids_flat_one_hot)
 
 
 class DotProductLoss(tf.keras.layers.Layer):
@@ -565,43 +601,9 @@ class DotProductLoss(tf.keras.layers.Layer):
     def _random_indices(
         self, batch_size: tf.Tensor, total_candidates: tf.Tensor
     ) -> tf.Tensor:
-        def rand_idxs() -> tf.Tensor:
-            """Create random tensor of indices"""
-
-            # (1, num_neg)
-            return tf.expand_dims(
-                tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
-            )
-
-        if self.same_sampling:
-            return tf.tile(rand_idxs(), (batch_size, 1))
-
-        def cond(idx: tf.Tensor, out: tf.Tensor) -> tf.Tensor:
-            """Condition for while loop"""
-            return idx < batch_size
-
-        def body(idx: tf.Tensor, out: tf.Tensor) -> List[tf.Tensor]:
-            """Body of the while loop"""
-            return [
-                # increment counter
-                idx + 1,
-                # add random indices
-                tf.concat([out, rand_idxs()], 0),
-            ]
-
-        # first tensor already created
-        idx1 = tf.constant(1)
-        # create first random array of indices
-        out1 = rand_idxs()  # (1, num_neg)
-
-        return tf.while_loop(
-            cond,
-            body,
-            loop_vars=[idx1, out1],
-            shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
-            parallel_iterations=self.parallel_iterations,
-            back_prop=False,
-        )[1]
+        return tf.random.uniform(
+            shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
+        )
 
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:

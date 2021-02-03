@@ -1,7 +1,7 @@
 import argparse
 from typing import Union
 
-from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
+from rasa.shared.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
 
 from rasa.cli.arguments.default_arguments import (
     add_stories_param,
@@ -15,13 +15,20 @@ from rasa.model import get_latest_model
 
 def set_test_arguments(parser: argparse.ArgumentParser):
     add_model_param(parser, add_positional_arg=False)
-    add_no_plot_param(parser)
 
     core_arguments = parser.add_argument_group("Core Test Arguments")
     add_test_core_argument_group(core_arguments)
 
     nlu_arguments = parser.add_argument_group("NLU Test Arguments")
     add_test_nlu_argument_group(nlu_arguments)
+
+    add_no_plot_param(parser)
+    add_errors_success_params(parser)
+    add_out_param(
+        parser,
+        default=DEFAULT_RESULTS_PATH,
+        help_text="Output path for any files created during the evaluation.",
+    )
 
 
 def set_test_core_arguments(parser: argparse.ArgumentParser):
@@ -83,6 +90,7 @@ def add_test_core_argument_group(
         "and compared against each other.",
     )
     add_no_plot_param(parser)
+    add_errors_success_params(parser)
 
 
 def add_test_nlu_argument_group(
@@ -94,33 +102,6 @@ def add_test_nlu_argument_group(
         parser,
         default=DEFAULT_RESULTS_PATH,
         help_text="Output path for any files created during the evaluation.",
-    )
-
-    parser.add_argument(
-        "--successes",
-        action="store_true",
-        default=False,
-        help="If set successful predictions (intent and entities) will be written "
-        "to a file.",
-    )
-    parser.add_argument(
-        "--no-errors",
-        action="store_true",
-        default=False,
-        help="If set incorrect predictions (intent and entities) will NOT be written "
-        "to a file.",
-    )
-    parser.add_argument(
-        "--histogram",
-        required=False,
-        default="hist.png",
-        help="Output path for the confidence histogram.",
-    )
-    parser.add_argument(
-        "--confmat",
-        required=False,
-        default="confmat.png",
-        help="Output path for the confusion matrix plot.",
     )
     parser.add_argument(
         "-c",
@@ -167,6 +148,7 @@ def add_test_nlu_argument_group(
     )
 
     add_no_plot_param(parser)
+    add_errors_success_params(parser)
 
 
 def add_test_core_model_param(parser: argparse.ArgumentParser):
@@ -191,6 +173,21 @@ def add_no_plot_param(
         dest="disable_plotting",
         action="store_true",
         default=default,
-        help=f"Don't render evaluation plots",
+        help="Don't render evaluation plots.",
         required=required,
+    )
+
+
+def add_errors_success_params(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--successes",
+        action="store_true",
+        default=False,
+        help="If set successful predictions will be written to a file.",
+    )
+    parser.add_argument(
+        "--no-errors",
+        action="store_true",
+        default=False,
+        help="If set incorrect predictions will NOT be written to a file.",
     )

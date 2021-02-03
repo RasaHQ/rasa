@@ -1,14 +1,11 @@
-import asyncio
+from typing import Text
 
-import pytest
-
-import rasa.utils.io
 from rasa.core import restore
 from rasa.core.agent import Agent
-from rasa.model import get_model
+from rasa.shared.nlu.constants import ACTION_NAME
 
 
-async def test_restoring_tracker(trained_moodbot_path, recwarn):
+async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
     agent = Agent.load(trained_moodbot_path)
@@ -24,7 +21,7 @@ async def test_restoring_tracker(trained_moodbot_path, recwarn):
     # assert [e for e in recwarn if e._category_name == "UserWarning"] == []
 
     assert len(tracker.events) == 7
-    assert tracker.latest_action_name == "action_listen"
+    assert tracker.latest_action.get(ACTION_NAME) == "action_listen"
     assert not tracker.is_paused()
     assert tracker.sender_id == "mysender"
     assert tracker.events[-1].timestamp == 1517821726.211042

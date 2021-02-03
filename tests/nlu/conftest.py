@@ -11,17 +11,6 @@ DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 
 @pytest.fixture(scope="session")
-def component_builder():
-    return ComponentBuilder()
-
-
-@pytest.fixture(scope="session")
-def spacy_nlp(component_builder, blank_config):
-    spacy_nlp_config = {"name": "SpacyNLP"}
-    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
-
-
-@pytest.fixture(scope="session")
 def spacy_nlp_component(component_builder, blank_config):
     spacy_nlp_config = {"name": "SpacyNLP"}
     return component_builder.create_component(spacy_nlp_config, blank_config)
@@ -36,21 +25,6 @@ def mitie_feature_extractor(component_builder: ComponentBuilder, blank_config):
 @pytest.fixture(scope="session")
 def blank_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
-
-
-@pytest.fixture(scope="session")
-def config_path() -> Text:
-    return write_file_config(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
-            ],
-        }
-    ).name
 
 
 @pytest.fixture()
@@ -88,7 +62,7 @@ def supervised_embeddings_config() -> RasaNLUModelConfig:
                     "min_ngram": 1,
                     "max_ngram": 4,
                 },
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],
         }
     )
@@ -102,7 +76,7 @@ def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
             "pipeline": [
                 {"name": "ConveRTTokenizer"},
                 {"name": "ConveRTFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],
         }
     )

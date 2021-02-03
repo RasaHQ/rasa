@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import Optional
+from asyncio import AbstractEventLoop
+from typing import Any, Text, List, Optional, Union
+import time
 
-from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -13,22 +14,54 @@ logger = logging.getLogger(__name__)
 class KafkaEventBroker(EventBroker):
     def __init__(
         self,
-        host,
-        sasl_username=None,
-        sasl_password=None,
-        ssl_cafile=None,
-        ssl_certfile=None,
-        ssl_keyfile=None,
-        ssl_check_hostname=False,
-        topic="rasa_core_events",
-        security_protocol="SASL_PLAINTEXT",
-        loglevel=logging.ERROR,
+        url: Union[Text, List[Text], None],
+        topic: Text = "rasa_core_events",
+        client_id: Optional[Text] = None,
+        sasl_username: Optional[Text] = None,
+        sasl_password: Optional[Text] = None,
+        ssl_cafile: Optional[Text] = None,
+        ssl_certfile: Optional[Text] = None,
+        ssl_keyfile: Optional[Text] = None,
+        ssl_check_hostname: bool = False,
+        security_protocol: Text = "SASL_PLAINTEXT",
+        loglevel: Union[int, Text] = logging.ERROR,
+        **kwargs: Any,
     ) -> None:
+        """Kafka event broker.
+
+        Args:
+            url: 'url[:port]' string (or list of 'url[:port]'
+                strings) that the producer should contact to bootstrap initial
+                cluster metadata. This does not have to be the full node list.
+                It just needs to have at least one broker that will respond to a
+                Metadata API Request.
+            topic: Topics to subscribe to.
+            client_id: A name for this client. This string is passed in each request
+                to servers and can be used to identify specific server-side log entries
+                that correspond to this client. Also submitted to `GroupCoordinator` for
+                logging with respect to producer group administration.
+            sasl_username: Username for plain authentication.
+            sasl_password: Password for plain authentication.
+            ssl_cafile: Optional filename of ca file to use in certificate
+                verification.
+            ssl_certfile: Optional filename of file in pem format containing
+                the client certificate, as well as any ca certificates needed to
+                establish the certificate's authenticity.
+            ssl_keyfile: Optional filename containing the client private key.
+            ssl_check_hostname: Flag to configure whether ssl handshake
+                should verify that the certificate matches the brokers hostname.
+            security_protocol: Protocol used to communicate with brokers.
+                Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
+            loglevel: Logging level of the kafka logger.
+
+        """
+        import kafka
 
         self.producer = None
-        self.host = host
+        self.url = url
         self.topic = topic
-        self.security_protocol = security_protocol
+        self.client_id = client_id
+        self.security_protocol = security_protocol.upper()
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
         self.ssl_cafile = ssl_cafile
@@ -36,26 +69,70 @@ class KafkaEventBroker(EventBroker):
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
 
+        self.producer: Optional[kafka.KafkaConsumer] = None
+
         logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional["KafkaEventBroker"]:
+    async def from_endpoint_config(
+        cls,
+        broker_config: EndpointConfig,
+        event_loop: Optional[AbstractEventLoop] = None,
+    ) -> Optional["KafkaEventBroker"]:
+        """Creates broker. See the parent class for more information."""
         if broker_config is None:
             return None
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event) -> None:
-        self._create_producer()
-        self._publish(event)
-        self._close()
+    def publish(self, event, retries=60, retry_delay_in_seconds=5) -> None:
+        """Publishes events."""
+        if self.producer is None:
+            self._create_producer()
+            connected = self.producer.bootstrap_connected()
+            if connected:
+                logger.debug("Connection to kafka successful.")
+            else:
+                logger.debug("Failed to connect kafka.")
+                return
+        while retries:
+            try:
+                self._publish(event)
+                return
+            except Exception as e:
+                logger.error(
+                    f"Could not publish message to kafka host '{self.host}'. "
+                    f"Failed with error: {e}"
+                )
+                connected = self.producer.bootstrap_connected()
+                if not connected:
+                    self._close()
+                    logger.debug("Connection to kafka lost, reconnecting...")
+                    self._create_producer()
+                    connected = self.producer.bootstrap_connected()
+                    if connected:
+                        logger.debug("Reconnection to kafka successful")
+                        self._publish(event)
+                retries -= 1
+                time.sleep(retry_delay_in_seconds)
+
+        logger.error("Failed to publish Kafka event.")
 
     def _create_producer(self) -> None:
         import kafka
 
-        if self.security_protocol == "SASL_PLAINTEXT":
+        if self.security_protocol == "PLAINTEXT":
             self.producer = kafka.KafkaProducer(
-                bootstrap_servers=[self.host],
+                client_id=self.client_id,
+                bootstrap_servers=self.url,
+                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+                security_protocol=self.security_protocol,
+                ssl_check_hostname=False,
+            )
+        elif self.security_protocol == "SASL_PLAINTEXT":
+            self.producer = kafka.KafkaProducer(
+                client_id=self.client_id,
+                bootstrap_servers=self.url,
                 value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 sasl_plain_username=self.sasl_username,
                 sasl_plain_password=self.sasl_password,
@@ -64,7 +141,8 @@ class KafkaEventBroker(EventBroker):
             )
         elif self.security_protocol == "SSL":
             self.producer = kafka.KafkaProducer(
-                bootstrap_servers=[self.host],
+                client_id=self.client_id,
+                bootstrap_servers=self.url,
                 value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 ssl_cafile=self.ssl_cafile,
                 ssl_certfile=self.ssl_certfile,
@@ -72,45 +150,29 @@ class KafkaEventBroker(EventBroker):
                 ssl_check_hostname=False,
                 security_protocol=self.security_protocol,
             )
+        elif self.security_protocol == "SASL_SSL":
+            self.producer = kafka.KafkaProducer(
+                client_id=self.client_id,
+                bootstrap_servers=self.url,
+                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
+                ssl_cafile=self.ssl_cafile,
+                ssl_certfile=self.ssl_certfile,
+                ssl_keyfile=self.ssl_keyfile,
+                ssl_check_hostname=self.ssl_check_hostname,
+                security_protocol=self.security_protocol,
+                sasl_mechanism="PLAIN",
+            )
+        else:
+            raise ValueError(
+                f"Cannot initialise `KafkaEventBroker`: "
+                f"Invalid `security_protocol` ('{self.security_protocol}')."
+            )
 
     def _publish(self, event) -> None:
+        logger.debug(f"Calling kafka send({self.topic}, {event})")
         self.producer.send(self.topic, event)
 
     def _close(self) -> None:
         self.producer.close()
-
-
-class KafkaProducer(KafkaEventBroker):
-    def __init__(
-        self,
-        host,
-        sasl_username=None,
-        sasl_password=None,
-        ssl_cafile=None,
-        ssl_certfile=None,
-        ssl_keyfile=None,
-        ssl_check_hostname=False,
-        topic="rasa_core_events",
-        security_protocol="SASL_PLAINTEXT",
-        loglevel=logging.ERROR,
-    ) -> None:
-        raise_warning(
-            "The `KafkaProducer` class is deprecated, please inherit "
-            "from `KafkaEventBroker` instead. `KafkaProducer` will be "
-            "removed in future Rasa versions.",
-            FutureWarning,
-            docs=DOCS_URL_EVENT_BROKERS,
-        )
-
-        super(KafkaProducer, self).__init__(
-            host,
-            sasl_username,
-            sasl_password,
-            ssl_cafile,
-            ssl_certfile,
-            ssl_keyfile,
-            ssl_check_hostname,
-            topic,
-            security_protocol,
-            loglevel,
-        )

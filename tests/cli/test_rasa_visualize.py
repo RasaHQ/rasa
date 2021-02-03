@@ -10,6 +10,7 @@ def test_visualize_help(run: Callable[..., RunResult]):
                       [-u NLU]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help

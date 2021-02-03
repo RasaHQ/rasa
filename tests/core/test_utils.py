@@ -1,5 +1,4 @@
 import os
-import random
 
 from decimal import Decimal
 from typing import Optional, Text, Union, Any
@@ -16,6 +15,10 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 
 
+class CustomRedisLockStore(RedisLockStore):
+    """Test class used to test the behavior of custom lock stores."""
+
+
 def test_is_int():
     assert utils.is_int(1)
     assert utils.is_int(1.0)
@@ -24,44 +27,15 @@ def test_is_int():
     assert not utils.is_int("test")
 
 
-def test_subsample_array_read_only():
-    t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    r = utils.subsample_array(t, 5, can_modify_incoming_array=False)
-
-    assert len(r) == 5
-    assert set(r).issubset(t)
-
-
-def test_subsample_array():
-    t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    # this will modify the original array and shuffle it
-    r = utils.subsample_array(t, 5)
-
-    assert len(r) == 5
-    assert set(r).issubset(t)
-
-
-def test_on_hot():
+def test_one_hot():
     r = utils.one_hot(4, 6)
     assert (r[[0, 1, 2, 3, 5]] == 0).all()
     assert r[4] == 1
 
 
-def test_on_hot_out_of_range():
+def test_one_hot_out_of_range():
     with pytest.raises(ValueError):
         utils.one_hot(4, 3)
-
-
-def test_cap_length():
-    assert utils.cap_length("mystring", 6) == "mys..."
-
-
-def test_cap_length_without_ellipsis():
-    assert utils.cap_length("mystring", 3, append_ellipsis=False) == "mys"
-
-
-def test_cap_length_with_short_string():
-    assert utils.cap_length("my", 3) == "my"
 
 
 def test_read_lines():
@@ -162,8 +136,10 @@ def test_replace_decimals_with_floats(_input: Any, expected: Any):
         (5, "in_memory", 1),
         (2, None, 1),
         (0, "in_memory", 1),
+        (3, "tests/core/test_utils.CustomRedisLockStore", 3),
         (3, RedisLockStore(), 3),
         (2, InMemoryLockStore(), 1),
+        (3, CustomRedisLockStore(), 3),
     ],
 )
 def test_get_number_of_sanic_workers(
@@ -198,27 +174,19 @@ def test_get_number_of_sanic_workers(
         (EndpointConfig(type="redis"), True),
         (RedisLockStore(), True),
         (EndpointConfig(type="in_memory"), False),
-        (EndpointConfig(type="random_store"), False),
+        (EndpointConfig(type="custom_lock_store"), True),
         (None, False),
         (InMemoryLockStore(), False),
+        (CustomRedisLockStore(), True),
     ],
 )
-def test_lock_store_is_redis_lock_store(
+def test_lock_store_is_multi_worker_compatible(
     lock_store: Union[EndpointConfig, LockStore, None], expected: bool
 ):
     # noinspection PyProtectedMember
-    assert rasa.core.utils._lock_store_is_redis_lock_store(lock_store) == expected
-
-
-def test_all_subclasses():
-    num = random.randint(1, 10)
-
-    class TestClass:
-        pass
-
-    classes = [type(f"TestClass{i}", (TestClass,), {}) for i in range(num)]
-
-    assert utils.all_subclasses(TestClass) == classes
+    assert (
+        rasa.core.utils._lock_store_is_multi_worker_compatible(lock_store) == expected
+    )
 
 
 def test_read_endpoints_from_path(tmp_path: Path):

@@ -1,9 +1,14 @@
+import logging
+from typing import Text, List, Optional
+from _pytest.logging import LogCaptureFixture
 import pytest
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.constants import BILOU_ENTITIES, ENTITIES
+from rasa.nlu.constants import BILOU_ENTITIES
+from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(
@@ -17,7 +22,7 @@ from rasa.nlu.training_data import TrainingData, Message
     ],
 )
 def test_entity_name_from_tag(tag, expected):
-    actual = bilou_utils.entity_name_from_tag(tag)
+    actual = bilou_utils.tag_without_prefix(tag)
 
     assert actual == expected
 
@@ -25,11 +30,11 @@ def test_entity_name_from_tag(tag, expected):
 @pytest.mark.parametrize(
     "tag, expected",
     [
-        ("B-person", "B"),
-        ("I-location", "I"),
+        ("B-person", "B-"),
+        ("I-location", "I-"),
         ("location", None),
-        ("U-company", "U"),
-        ("L-company", "L"),
+        ("U-company", "U-"),
+        ("L-company", "L-"),
         ("O-company", None),
     ],
 )
@@ -40,7 +45,7 @@ def test_bilou_from_tag(tag, expected):
 
 
 def test_tags_to_ids():
-    message = Message("Germany is part of the European Union")
+    message = Message.build(text="Germany is part of the European Union")
     message.set(
         BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
@@ -48,7 +53,7 @@ def test_tags_to_ids():
 
     tag_id_dict = {"O": 0, "U-location": 1, "B-organisation": 2, "L-organisation": 3}
 
-    tags = bilou_utils.tags_to_ids(message, tag_id_dict)
+    tags = bilou_utils.bilou_tags_to_ids(message, tag_id_dict)
 
     assert tags == [1, 0, 0, 0, 0, 2, 3]
 
@@ -62,13 +67,15 @@ def test_remove_bilou_prefixes():
 
 
 def test_build_tag_id_dict():
-    message_1 = Message("Germany is part of the European Union")
+    message_1 = Message.build(
+        text="Germany is part of the European Union", intent="inform"
+    )
     message_1.set(
         BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
     )
 
-    message_2 = Message("Berlin is the capital of Germany")
+    message_2 = Message.build(text="Berlin is the capital of Germany", intent="inform")
     message_2.set(BILOU_ENTITIES, ["U-location", "O", "O", "O", "O", "U-location"])
 
     training_data = TrainingData([message_1, message_2])
@@ -79,19 +86,21 @@ def test_build_tag_id_dict():
         "O": 0,
         "B-location": 1,
         "I-location": 2,
-        "U-location": 3,
-        "L-location": 4,
+        "L-location": 3,
+        "U-location": 4,
         "B-organisation": 5,
         "I-organisation": 6,
-        "U-organisation": 7,
-        "L-organisation": 8,
+        "L-organisation": 7,
+        "U-organisation": 8,
     }
 
 
 def test_apply_bilou_schema():
     tokenizer = WhitespaceTokenizer()
 
-    message_1 = Message("Germany is part of the European Union")
+    message_1 = Message.build(
+        text="Germany is part of the European Union", intent="inform"
+    )
     message_1.set(
         ENTITIES,
         [
@@ -105,7 +114,7 @@ def test_apply_bilou_schema():
         ],
     )
 
-    message_2 = Message("Berlin is the capital of Germany")
+    message_2 = Message.build(text="Berlin is the capital of Germany", intent="inform")
     message_2.set(
         ENTITIES,
         [
@@ -128,7 +137,6 @@ def test_apply_bilou_schema():
         "O",
         "B-organisation",
         "L-organisation",
-        "O",
     ]
     assert message_2.get(BILOU_ENTITIES) == [
         "U-location",
@@ -137,5 +145,110 @@ def test_apply_bilou_schema():
         "O",
         "O",
         "U-location",
-        "O",
     ]
+
+
+@pytest.mark.parametrize(
+    "tags, confidences, expected_tags, expected_confidences, debug_message",
+    [
+        (
+            ["O", "B-person", "I-person", "L-person", "O", "U-person", "O"],
+            [0.99, 0.89, 0.93, 0.99, 0.89, 0.97, 0.87],
+            ["O", "B-person", "I-person", "L-person", "O", "U-person", "O"],
+            [0.99, 0.89, 0.93, 0.99, 0.89, 0.97, 0.87],
+            None,
+        ),
+        (
+            ["O", "B-person", "B-location", "I-location", "O"],
+            [0.99, 0.89, 0.93, 0.78, 0.89],
+            ["O", "U-person", "B-location", "L-location", "O"],
+            [0.99, 0.89, 0.93, 0.78, 0.89],
+            "B- tag not closed",
+        ),
+        (
+            ["O", "B-person", "I-location", "L-person"],
+            [0.99, 0.89, 0.77, 0.87],
+            ["O", "B-person", "I-person", "L-person"],
+            [0.99, 0.89, 0.76, 0.87],
+            "B- tag, L- tag pair encloses multiple entity classes",
+        ),
+        (
+            ["O", "B-person", "I-location", "L-location"],
+            [0.99, 0.78, 0.93, 0.96],
+            ["O", "B-location", "I-location", "L-location"],
+            [0.99, 0.79, 0.93, 0.96],
+            "B- tag, L- tag pair encloses multiple entity classes",
+        ),
+        (
+            ["O", "B-person", "I-location", "L-location"],
+            [0.99, 0.99, 0.77, 0.77],
+            ["O", "B-location", "I-location", "L-location"],
+            [0.99, 0.72, 0.77, 0.77],
+            "B- tag, L- tag pair encloses multiple entity classes",
+        ),
+        (
+            ["O", "B-person", "I-location", "L-location", "B-person", "L-person"],
+            [0.99, 0.78, 0.93, 0.96, 0.93, 0.96],
+            ["O", "B-location", "I-location", "L-location", "B-person", "L-person"],
+            [0.99, 0.79, 0.93, 0.96, 0.93, 0.96],
+            "B- tag, L- tag pair encloses multiple entity classes",
+        ),
+        (
+            ["O", "B-person", "O"],
+            [0.99, 0.89, 0.87],
+            ["O", "U-person", "O"],
+            [0.99, 0.89, 0.87],
+            "B- tag not closed",
+        ),
+        (
+            ["O", "B-person"],
+            [0.99, 0.89],
+            ["O", "U-person"],
+            [0.99, 0.89],
+            "B- tag not closed",
+        ),
+        (
+            ["O", "B-person", "I-person"],
+            [0.99, 0.89, 0.87],
+            ["O", "B-person", "L-person"],
+            [0.99, 0.89, 0.87],
+            "B- tag not closed",
+        ),
+        (
+            ["O", "B-person", "I-location"],
+            [0.99, 0.89, 0.78],
+            ["O", "B-person", "L-person"],
+            [0.99, 0.89, 0.64],
+            "B- tag not closed",
+        ),
+        (
+            ["O", "B-person", "B-location"],
+            [0.99, 0.89, 0.89],
+            ["O", "U-person", "U-location"],
+            [0.99, 0.89, 0.89],
+            "B- tag not closed",
+        ),
+    ],
+)
+def test_check_consistent_bilou_tagging(
+    tags: List[Text],
+    confidences: List[float],
+    expected_tags: List[Text],
+    expected_confidences: List[float],
+    debug_message: Optional[Text],
+    caplog: LogCaptureFixture,
+):
+
+    with caplog.at_level(logging.DEBUG):
+        actual_tags, actual_confidences = bilou_utils.ensure_consistent_bilou_tagging(
+            tags, confidences
+        )
+
+    if debug_message:
+        assert len(caplog.records) > 0
+        assert debug_message in caplog.text
+    else:
+        assert len(caplog.records) == 0
+
+    assert actual_tags == expected_tags
+    assert actual_confidences == expected_confidences

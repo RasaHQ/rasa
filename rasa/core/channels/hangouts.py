@@ -14,9 +14,7 @@ from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 logger = logging.getLogger(__name__)
 
 CHANNEL_NAME = "hangouts"
-CERT_URI = (
-    "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com",
-)
+CERT_URI = "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com"
 
 
 class HangoutsOutput(OutputChannel):
@@ -186,7 +184,6 @@ class HangoutsInput(InputChannel):
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
 
         if credentials:
-            # pytype: disable=attribute-error
             return cls(credentials.get("project_id"))
 
         return cls()
@@ -254,7 +251,7 @@ class HangoutsInput(InputChannel):
         # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity
         try:
             token = client.verify_id_token(
-                bot_token, self.project_id, cert_uri=CERT_URI,
+                bot_token, self.project_id, cert_uri=CERT_URI
             )
 
             if token["iss"] != "chat@system.gserviceaccount.com":

@@ -6,10 +6,3 @@
 
 ## lookup:plates
   data/test/lookup_tables/plates.txt
-
-## lookup:drinks
- - mojito
- - lemonade
- - sweet berry wine
- - tea
- - club mate

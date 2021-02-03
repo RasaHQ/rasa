@@ -1,9 +1,11 @@
 import logging
+from typing import Text
 
 import pytest
 from aioresponses import aioresponses
 
 from tests.utilities import latest_request, json_of_latest_request
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 import rasa.utils.endpoints as endpoint_utils
 
 
@@ -15,6 +17,16 @@ import rasa.utils.endpoints as endpoint_utils
         ("https://example.com/", None, "https://example.com/"),
         ("https://example.com/", "test", "https://example.com/test"),
         ("https://example.com/", "test/", "https://example.com/test/"),
+        (
+            "http://duckling.rasa.com:8000",
+            "/parse",
+            "http://duckling.rasa.com:8000/parse",
+        ),
+        (
+            "http://duckling.rasa.com:8000/",
+            "/parse",
+            "http://duckling.rasa.com:8000/parse",
+        ),
     ],
 )
 def test_concat_url(base, subpath, expected_result):
@@ -94,3 +106,41 @@ def test_endpoint_config_custom_token_name():
     actual = endpoint_utils.EndpointConfig.from_dict(test_data)
 
     assert actual.token_name == "test_token"
+
+
+async def test_request_non_json_response():
+    with aioresponses() as mocked:
+        endpoint = endpoint_utils.EndpointConfig("https://example.com/")
+
+        mocked.post(
+            "https://example.com/test",
+            payload="ok",
+            content_type="application/text",
+            status=200,
+        )
+
+        response = await endpoint.request("post", subpath="test")
+
+        assert not response
+
+
+@pytest.mark.parametrize(
+    "filename, endpoint_type", [(DEFAULT_ENDPOINTS_FILE, "tracker_store"),],
+)
+def test_read_endpoint_config(filename: Text, endpoint_type: Text):
+    conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
+    assert isinstance(conf, endpoint_utils.EndpointConfig)
+
+
+@pytest.mark.parametrize(
+    "filename, endpoint_type",
+    [
+        ("", "tracker_store"),
+        (DEFAULT_ENDPOINTS_FILE, "stuff"),
+        (DEFAULT_ENDPOINTS_FILE, "empty"),
+        ("/unknown/path.yml", "tracker_store"),
+    ],
+)
+def test_read_endpoint_config_not_found(filename: Text, endpoint_type: Text):
+    conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
+    assert conf is None

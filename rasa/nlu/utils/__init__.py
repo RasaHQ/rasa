@@ -1,35 +1,16 @@
-import json
 import os
-import re
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Optional, Text
+from pathlib import Path
 
-import rasa.utils.io as io_utils
-
-# backwards compatibility 1.0.x
-# noinspection PyUnresolvedReferences
-from rasa.utils.io import read_json_file
+from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.io
 
 
-def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
+def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
     """Return the path of file relative to `path`."""
-
     if f is not None:
-        return os.path.normpath(os.path.relpath(f, path))
-    else:
-        return None
-
-
-def list_to_str(l: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
-    return delim.join([quote + e + quote for e in l])
-
-
-def ordered(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return sorted((k, ordered(v)) for k, v in obj.items())
-    if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj
+        return Path(os.path.relpath(f, path))
+    return None
 
 
 def module_path_from_object(o: Any) -> Text:
@@ -37,35 +18,16 @@ def module_path_from_object(o: Any) -> Text:
     return o.__class__.__module__ + "." + o.__class__.__name__
 
 
-def json_to_string(obj: Any, **kwargs: Any) -> Text:
-    indent = kwargs.pop("indent", 2)
-    ensure_ascii = kwargs.pop("ensure_ascii", False)
-    return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)
-
-
 def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
     """Write an object as a json string to a file."""
 
-    write_to_file(filename, json_to_string(obj, **kwargs))
+    write_to_file(filename, rasa.shared.utils.io.json_to_string(obj, **kwargs))
 
 
 def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
 
-    io_utils.write_text_file(str(text), filename)
-
-
-def build_entity(
-    start: int, end: int, value: Text, entity_type: Text, **kwargs: Dict[Text, Any]
-) -> Dict[Text, Any]:
-    """Builds a standard entity dictionary.
-
-    Adds additional keyword parameters."""
-
-    entity = {"start": start, "end": end, "value": value, "entity": entity_type}
-
-    entity.update(kwargs)
-    return entity
+    rasa.shared.utils.io.write_text_file(str(text), filename)
 
 
 def is_model_dir(model_dir: Text) -> bool:
@@ -84,12 +46,25 @@ def is_model_dir(model_dir: Text) -> bool:
 
 
 def is_url(resource_name: Text) -> bool:
-    """Return True if string is an http, ftp, or file URL path.
+    """Check whether the url specified is a well formed one.
 
-    This implementation is the same as the one used by matplotlib"""
+    Args:
+        resource_name: Remote URL to validate
 
-    URL_REGEX = re.compile(r"http://|https://|ftp://|file://|file:\\")
-    return URL_REGEX.match(resource_name) is not None
+    Returns:
+        `True` if valid, otherwise `False`.
+    """
+    from urllib import parse
+
+    try:
+        result = parse.urlparse(resource_name)
+    except Exception:
+        return False
+
+    if result.scheme == "file":
+        return bool(result.path)
+
+    return bool(result.scheme in ["http", "https", "ftp", "ftps"] and result.netloc)
 
 
 def remove_model(model_dir: Text) -> bool:
@@ -100,7 +75,8 @@ def remove_model(model_dir: Text) -> bool:
         shutil.rmtree(model_dir)
         return True
     else:
-        raise ValueError(
-            "Cannot remove {}, it seems it is not a model "
-            "directory".format(model_dir)
+        raise RasaException(
+            f"Failed to remove {model_dir}, it seems it is not a model "
+            f"directory. E.g. a directory which contains sub directories "
+            f"is considered unsafe to remove."
         )

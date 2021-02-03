@@ -7,7 +7,8 @@ from sanic.exceptions import abort
 import jwt
 
 from rasa.core import constants
-from rasa.core.channels.channel import RestInput, InputChannel
+from rasa.core.channels.channel import InputChannel
+from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from sanic.request import Request
 
@@ -30,7 +31,7 @@ class RasaChatInput(RestInput):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("url"))  # pytype: disable=attribute-error
+        return cls(credentials.get("url"))
 
     def __init__(self, url: Optional[Text]) -> None:
         self.base_url = url

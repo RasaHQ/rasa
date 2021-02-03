@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea on how to improve Rasa
 title: ''
-labels: 'type:enhancement :sparkles:'
+labels: 'area:rasa-oss :ferris_wheel:,type:enhancement :sparkles:'
 assignees: ''
 
 ---
@@ -28,5 +28,5 @@ Or might there be any potential blockers on the way? -->
 <!-- What needs to be there to consider this feature as done?
 - [ ] Tests are added
 - [ ] Feature described the docs
-- [ ] Feature mentioned in the changlog
+- [ ] Feature mentioned in the changelog
 - [ ] ... -->

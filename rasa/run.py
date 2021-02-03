@@ -2,8 +2,9 @@ import logging
 import typing
 from typing import Dict, Text
 
-from rasa.cli.utils import print_warning
-from rasa.constants import DOCS_BASE_URL
+import rasa.shared.utils.common
+from rasa.shared.utils.cli import print_warning
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core.lock_store import LockStore
 
 logger = logging.getLogger(__name__)
@@ -34,20 +35,20 @@ def run(
     import rasa.core.run
     import rasa.nlu.run
     from rasa.core.utils import AvailableEndpoints
-    import rasa.utils.common as utils
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:
         connector = "rest"
         print_warning(
-            "No chat connector configured, falling back to the "
-            "REST input channel. To connect your bot to another channel, "
-            "read the docs here: {}/user-guide/"
-            "messaging-and-voice-channels".format(DOCS_BASE_URL)
+            f"No chat connector configured, falling back to the "
+            f"REST input channel. To connect your bot to another channel, "
+            f"read the docs here: {DOCS_BASE_URL}/messaging-and-voice-channels"
         )
 
-    kwargs = utils.minimal_kwargs(kwargs, rasa.core.run.serve_application)
+    kwargs = rasa.shared.utils.common.minimal_kwargs(
+        kwargs, rasa.core.run.serve_application
+    )
     rasa.core.run.serve_application(
         model,
         channel=connector,
@@ -62,10 +63,11 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     from rasa.core.utils import AvailableEndpoints
     from rasa.core.agent import Agent
     from rasa.core.brokers.broker import EventBroker
+    import rasa.utils.common
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
-    _broker = EventBroker.create(_endpoints.event_broker)
+    _broker = rasa.utils.common.run_in_loop(EventBroker.create(_endpoints.event_broker))
     _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
     _lock_store = LockStore.create(_endpoints.lock_store)
 

@@ -1,0 +1,21 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: '13:00'
+  pull-request-branch-name:
+    separator: "-"
+  open-pull-requests-limit: 10
+  reviewers:
+  - alwx
+  labels:
+  - type:dependencies
+  ignore:
+  - dependency-name: prompt-toolkit
+    versions:
+    - "> 2.0.10"
+  - dependency-name: pytest-asyncio
+    versions:
+    - "> 0.10.0"

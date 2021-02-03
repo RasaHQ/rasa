@@ -1,17 +1,22 @@
-import json
 import logging
-import os
 from typing import Any, List, Text, Optional, Dict, Tuple
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
 
-import rasa.utils.io
-
-from rasa.core import utils
-from rasa.core.domain import Domain
-from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import FALLBACK_POLICY_PRIORITY
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.core.policies.policy import Policy, PolicyPrediction
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.core.constants import (
+    FALLBACK_POLICY_PRIORITY,
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +26,7 @@ class FallbackPolicy(Policy):
 
     A fallback can be triggered by a low confidence score on a
     NLU prediction or by a low confidence score on an action
-    prediction. """
+    prediction."""
 
     @staticmethod
     def _standard_featurizer() -> None:
@@ -30,14 +35,16 @@ class FallbackPolicy(Policy):
     def __init__(
         self,
         priority: int = FALLBACK_POLICY_PRIORITY,
-        nlu_threshold: float = 0.3,
-        ambiguity_threshold: float = 0.1,
-        core_threshold: float = 0.3,
-        fallback_action_name: Text = "action_default_fallback",
+        nlu_threshold: float = DEFAULT_NLU_FALLBACK_THRESHOLD,
+        ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+        core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
+        fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
+        **kwargs: Any,
     ) -> None:
         """Create a new Fallback policy.
 
         Args:
+            priority: Fallback policy priority.
             core_threshold: if NLU confidence threshold is met,
                 predict fallback action with confidence `core_threshold`.
                 If this is the highest confidence in the ensemble,
@@ -49,17 +56,24 @@ class FallbackPolicy(Policy):
                 between confidences of the top two predictions
             fallback_action_name: name of the action to execute as a fallback
         """
-        super().__init__(priority=priority)
+        super().__init__(priority=priority, **kwargs)
 
         self.nlu_threshold = nlu_threshold
         self.ambiguity_threshold = ambiguity_threshold
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{self.__class__.__name__}' is deprecated and will be removed "
+            "in the future. It is recommended to use the 'RulePolicy' instead.",
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
@@ -134,14 +148,17 @@ class FallbackPolicy(Policy):
         return result
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
-    ) -> List[float]:
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> PolicyPrediction:
         """Predicts a fallback action.
 
         The fallback action is predicted if the NLU confidence is low
         or no other policy has a high-confidence prediction.
         """
-
         nlu_data = tracker.latest_message.parse_data
 
         if (
@@ -173,28 +190,17 @@ class FallbackPolicy(Policy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return result
+        return self._prediction(result)
 
-    def persist(self, path: Text) -> None:
-        """Persists the policy to storage."""
-
-        config_file = os.path.join(path, "fallback_policy.json")
-        meta = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "ambiguity_threshold": self.ambiguity_threshold,
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name,
         }
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
-    def load(cls, path: Text) -> "FallbackPolicy":
-        meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "fallback_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
-
-        return cls(**meta)
+    def _metadata_filename(cls) -> Text:
+        return "fallback_policy.json"

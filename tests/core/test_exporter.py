@@ -5,11 +5,16 @@ from unittest.mock import Mock
 
 import pytest
 
-import rasa.utils.io as io_utils
+import rasa.shared.utils.io
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.domain import Domain
+
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import SessionStarted, ActionExecuted
+from rasa.core.tracker_store import SQLTrackerStore
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.exceptions import (
     NoConversationsInTrackerStoreError,
     NoEventsToMigrateError,
@@ -23,9 +28,7 @@ def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
     endpoints_path = path / "endpoints.yml"
 
     # write endpoints config to file
-    io_utils.write_yaml_file(
-        data, endpoints_path,
-    )
+    rasa.shared.utils.io.write_yaml(data, endpoints_path)
     return endpoints_path
 
 
@@ -83,10 +86,7 @@ def test_fetch_events_within_time_range():
     event_1 = random_user_uttered_event(3)
     event_2 = random_user_uttered_event(2)
     event_3 = random_user_uttered_event(1)
-    events = {
-        conversation_ids[0]: [event_1, event_2],
-        conversation_ids[1]: [event_3],
-    }
+    events = {conversation_ids[0]: [event_1, event_2], conversation_ids[1]: [event_3]}
 
     def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
@@ -95,7 +95,7 @@ def test_fetch_events_within_time_range():
 
     # create mock tracker store
     tracker_store = Mock()
-    tracker_store.retrieve.side_effect = _get_tracker
+    tracker_store.retrieve_full_tracker.side_effect = _get_tracker
     tracker_store.keys.return_value = conversation_ids
 
     exporter = MockExporter(tracker_store)
@@ -115,9 +115,9 @@ def test_fetch_events_within_time_range():
 
 
 def test_fetch_events_within_time_range_tracker_does_not_err():
-    # create mock tracker store that returns `None` on `retrieve()`
+    # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
-    tracker_store.retrieve.return_value = None
+    tracker_store.retrieve_full_tracker.return_value = None
     tracker_store.keys.return_value = [uuid.uuid4()]
 
     exporter = MockExporter(tracker_store)
@@ -129,9 +129,9 @@ def test_fetch_events_within_time_range_tracker_does_not_err():
 
 
 def test_fetch_events_within_time_range_tracker_contains_no_events():
-    # create mock tracker store that returns `None` on `retrieve()`
+    # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
-    tracker_store.retrieve.return_value = DialogueStateTracker.from_events(
+    tracker_store.retrieve_full_tracker.return_value = DialogueStateTracker.from_events(
         "a great ID", []
     )
     tracker_store.keys.return_value = ["a great ID"]
@@ -142,6 +142,32 @@ def test_fetch_events_within_time_range_tracker_contains_no_events():
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
         exporter._fetch_events_within_time_range()
+
+
+def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
+    conversation_id = "test_fetch_events_within_time_range_with_sessions"
+
+    tracker_store = SQLTrackerStore(
+        dialect="sqlite",
+        db=str(tmp_path / f"{uuid.uuid4().hex}.db"),
+        domain=Domain.empty(),
+    )
+
+    events = [
+        random_user_uttered_event(1),
+        SessionStarted(2),
+        ActionExecuted(timestamp=3, action_name=ACTION_SESSION_START_NAME),
+        random_user_uttered_event(4),
+    ]
+    tracker = DialogueStateTracker.from_events(conversation_id, evts=events)
+    tracker_store.save(tracker)
+
+    exporter = MockExporter(tracker_store=tracker_store)
+
+    # noinspection PyProtectedMember
+    fetched_events = exporter._fetch_events_within_time_range()
+
+    assert len(fetched_events) == len(events)
 
 
 # noinspection PyProtectedMember
@@ -247,7 +273,7 @@ def test_publish_with_headers_non_pika_event_broker():
     event_broker.publish.assert_called_with(event)
 
 
-def test_publishing_error():
+async def test_publishing_error():
     # mock event broker so it raises on `publish()`
     event_broker = Mock()
     event_broker.publish.side_effect = ValueError()
@@ -262,5 +288,32 @@ def test_publishing_error():
 
     # run the export function
     with pytest.raises(PublishingError):
-        # noinspection PyProtectedMember
-        exporter.publish_events()
+        await exporter.publish_events()
+
+
+async def test_closing_broker():
+    exporter = MockExporter(event_broker=SQLEventBroker())
+
+    # noinspection PyProtectedMember
+    exporter._fetch_events_within_time_range = Mock(return_value=[])
+
+    # run the export function
+    with pytest.warns(None) as warnings:
+        await exporter.publish_events()
+
+    assert len(warnings) == 0
+
+
+async def test_closing_broker_sync():
+    class TestBroker(SQLEventBroker):
+        def close(self) -> None:
+            pass
+
+    exporter = MockExporter(event_broker=TestBroker())
+
+    # noinspection PyProtectedMember
+    exporter._fetch_events_within_time_range = Mock(return_value=[])
+
+    # run the export function
+    with pytest.warns(FutureWarning):
+        await exporter.publish_events()

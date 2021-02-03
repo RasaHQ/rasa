@@ -1,70 +1,109 @@
 import asyncio
-import functools
+import concurrent.futures
 import logging
 import multiprocessing
 import os
 import tempfile
 import traceback
-import typing
+from collections import defaultdict
 from functools import reduce, wraps
+from http import HTTPStatus
 from inspect import isawaitable
-from typing import Any, Callable, List, Optional, Text, Union
+from pathlib import Path
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    Text,
+    Union,
+    Dict,
+    TYPE_CHECKING,
+    NoReturn,
+    Coroutine,
+)
 
-import rasa
-import rasa.core.utils
-from rasa.utils.common import raise_warning, arguments_of
-import rasa.utils.endpoints
-import rasa.utils.io
-from rasa import model
-from rasa.constants import (
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_RESPONSE_TIMEOUT,
-    DOCS_BASE_URL,
-    MINIMUM_COMPATIBLE_VERSION,
-)
-from rasa.core.agent import Agent, load_agent
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels.channel import (
-    CollectingOutputChannel,
-    OutputChannel,
-    UserMessage,
-)
-from rasa.core.domain import InvalidDomain
-from rasa.core.events import Event
-from rasa.core.lock_store import LockStore
-from rasa.core.test import test
-from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import AvailableEndpoints
-from rasa.nlu.emulators.no_emulator import NoEmulator
-from rasa.nlu.test import run_evaluation
-from rasa.utils.endpoints import EndpointConfig
+import aiohttp
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
-if typing.TYPE_CHECKING:
+import rasa
+import rasa.core.utils
+import rasa.utils.common
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+import rasa.utils.endpoints
+import rasa.utils.io
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa import model
+from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
+from rasa.shared.constants import (
+    DOCS_URL_TRAINING_DATA,
+    DOCS_BASE_URL,
+    DEFAULT_SENDER_ID,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
+)
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.core.agent import Agent
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.channels.channel import (
+    CollectingOutputChannel,
+    OutputChannel,
+    UserMessage,
+)
+import rasa.shared.core.events
+from rasa.shared.core.events import Event
+from rasa.core.lock_store import LockStore
+from rasa.core.test import test
+from rasa.core.tracker_store import TrackerStore
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.utils import AvailableEndpoints
+from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.test import run_evaluation, CVEvaluationResult
+from rasa.utils.endpoints import EndpointConfig
+
+if TYPE_CHECKING:
     from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
 
 logger = logging.getLogger(__name__)
 
+JSON_CONTENT_TYPE = "application/json"
+YAML_CONTENT_TYPE = "application/x-yaml"
+
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
+EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
 
 
 class ErrorResponse(Exception):
+    """Common exception to handle failing API requests."""
+
     def __init__(
         self,
-        status: int,
+        status: Union[int, HTTPStatus],
         reason: Text,
         message: Text,
         details: Any = None,
         help_url: Optional[Text] = None,
     ) -> None:
+        """Creates error.
+
+        Args:
+            status: The HTTP status code to return.
+            reason: Short summary of the error.
+            message: Detailed explanation of the error.
+            details: Additional details which describe the error. Must be serializable.
+            help_url: URL where users can get further help (e.g. docs).
+        """
         self.error_info = {
             "version": rasa.__version__,
             "status": "failure",
@@ -75,6 +114,8 @@ class ErrorResponse(Exception):
             "code": status,
         }
         self.status = status
+        logger.error(message)
+        super(ErrorResponse, self).__init__()
 
 
 def _docs(sub_url: Text) -> Text:
@@ -99,7 +140,7 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
                 else app.agent.is_ready()
             ):
                 raise ErrorResponse(
-                    409,
+                    HTTPStatus.CONFLICT,
                     "Conflict",
                     "No agent loaded. To continue processing, a "
                     "model of a trained agent needs to be loaded.",
@@ -118,7 +159,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = arguments_of(f)
+            argnames = rasa.shared.utils.common.arguments_of(f)
 
             try:
                 sender_id_arg_idx = argnames.index("conversation_id")
@@ -130,8 +171,14 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
             except ValueError:
                 return None
 
-        def sufficient_scope(request, *args: Any, **kwargs: Any) -> Optional[bool]:
-            jwt_data = request.app.auth.extract_payload(request)
+        async def sufficient_scope(
+            request, *args: Any, **kwargs: Any
+        ) -> Optional[bool]:
+            # This is a coroutine since `sanic-jwt==1.6`
+            jwt_data = await rasa.utils.common.call_potential_coroutine(
+                request.app.auth.extract_payload(request)
+            )
+
             user = jwt_data.get("user", {})
 
             username = user.get("username", None)
@@ -156,16 +203,19 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 if isawaitable(result):
                     result = await result
                 return result
-            elif app.config.get("USE_JWT") and request.app.auth.is_authenticated(
-                request
+            elif app.config.get(
+                "USE_JWT"
+            ) and await rasa.utils.common.call_potential_coroutine(
+                # This is a coroutine since `sanic-jwt==1.6`
+                request.app.auth.is_authenticated(request)
             ):
-                if sufficient_scope(request, *args, **kwargs):
+                if await sufficient_scope(request, *args, **kwargs):
                     result = f(request, *args, **kwargs)
                     if isawaitable(result):
                         result = await result
                     return result
                 raise ErrorResponse(
-                    403,
+                    HTTPStatus.FORBIDDEN,
                     "NotAuthorized",
                     "User has insufficient permissions.",
                     help_url=_docs(
@@ -179,7 +229,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                     result = await result
                 return result
             raise ErrorResponse(
-                401,
+                HTTPStatus.UNAUTHORIZED,
                 "NotAuthenticated",
                 "User is not authenticated.",
                 help_url=_docs(
@@ -204,7 +254,7 @@ def event_verbosity_parameter(
     except KeyError:
         enum_values = ", ".join([e.name for e in EventVerbosity])
         raise ErrorResponse(
-            400,
+            HTTPStatus.BAD_REQUEST,
             "BadRequest",
             "Invalid parameter value for 'include_events'. "
             "Should be one of {}".format(enum_values),
@@ -212,36 +262,90 @@ def event_verbosity_parameter(
         )
 
 
-async def get_tracker(
-    processor: "MessageProcessor", conversation_id: Text
+def get_test_stories(
+    processor: "MessageProcessor",
+    conversation_id: Text,
+    until_time: Optional[float],
+    fetch_all_sessions: bool = False,
+) -> Text:
+    """Retrieves test stories from `processor` for all conversation sessions for
+    `conversation_id`.
+
+    Args:
+        processor: An instance of `MessageProcessor`.
+        conversation_id: Conversation ID to fetch stories for.
+        until_time: Timestamp up to which to include events.
+        fetch_all_sessions: Whether to fetch stories for all conversation sessions.
+            If `False`, only the last conversation session is retrieved.
+
+    Returns:
+        The stories for `conversation_id` in test format.
+    """
+    if fetch_all_sessions:
+        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+    else:
+        trackers = [processor.get_tracker(conversation_id)]
+
+    if until_time is not None:
+        trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
+        # keep only non-empty trackers
+        trackers = [tracker for tracker in trackers if len(tracker.events)]
+
+    logger.debug(
+        f"Fetched trackers for {len(trackers)} conversation sessions "
+        f"for conversation ID {conversation_id}."
+    )
+
+    story_steps = []
+
+    more_than_one_story = len(trackers) > 1
+
+    for i, tracker in enumerate(trackers, 1):
+        tracker.sender_id = conversation_id
+
+        if more_than_one_story:
+            tracker.sender_id += f", story {i}"
+
+        story_steps += tracker.as_story().story_steps
+
+    return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
+
+
+async def update_conversation_with_events(
+    conversation_id: Text,
+    processor: "MessageProcessor",
+    domain: Domain,
+    events: List[Event],
 ) -> DialogueStateTracker:
-    """Get tracker object from `MessageProcessor`."""
-    tracker = await processor.get_tracker_with_session_start(conversation_id)
-    _validate_tracker(tracker, conversation_id)
+    """Fetches or creates a tracker for `conversation_id` and appends `events` to it.
 
-    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
-    return tracker  # pytype: disable=bad-return-type
+    Args:
+        conversation_id: The ID of the conversation to update the tracker for.
+        processor: An instance of `MessageProcessor`.
+        domain: The domain associated with the current `Agent`.
+        events: The events to append to the tracker.
+
+    Returns:
+        The tracker for `conversation_id` with the updated events.
+    """
+    if rasa.shared.core.events.do_events_begin_with_session_start(events):
+        tracker = processor.get_tracker(conversation_id)
+    else:
+        tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
+
+    for event in events:
+        tracker.update(event, domain)
+
+    return tracker
 
 
-def _validate_tracker(
-    tracker: Optional[DialogueStateTracker], conversation_id: Text
-) -> None:
-    if not tracker:
-        raise ErrorResponse(
-            409,
-            "Conflict",
-            f"Could not retrieve tracker with ID '{conversation_id}'. Most likely "
-            f"because there is no domain set on the agent.",
-        )
-
-
-def validate_request_body(request: Request, error_message: Text):
+def validate_request_body(request: Request, error_message: Text) -> None:
     """Check if `request` has a body."""
     if not request.body:
-        raise ErrorResponse(400, "BadRequest", error_message)
+        raise ErrorResponse(HTTPStatus.BAD_REQUEST, "BadRequest", error_message)
 
 
-async def authenticate(request: Request):
+async def authenticate(_: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
@@ -303,7 +407,7 @@ def _create_emulator(mode: Optional[Text]) -> NoEmulator:
         return DialogflowEmulator()
     else:
         raise ErrorResponse(
-            400,
+            HTTPStatus.BAD_REQUEST,
             "BadRequest",
             "Invalid parameter value for 'emulation_mode'. "
             "Should be one of 'WIT', 'LUIS', 'DIALOGFLOW'.",
@@ -324,7 +428,7 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            broker = EventBroker.create(endpoints.event_broker)
+            broker = await EventBroker.create(endpoints.event_broker)
             tracker_store = TrackerStore.create(
                 endpoints.tracker_store, event_broker=broker
             )
@@ -333,7 +437,7 @@ async def _load_agent(
             if not lock_store:
                 lock_store = LockStore.create(endpoints.lock_store)
 
-        loaded_agent = await load_agent(
+        loaded_agent = await rasa.core.agent.load_agent(
             model_path,
             model_server,
             remote_storage,
@@ -345,12 +449,14 @@ async def _load_agent(
     except Exception as e:
         logger.debug(traceback.format_exc())
         raise ErrorResponse(
-            500, "LoadingError", f"An unexpected error occurred. Error: {e}"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            "LoadingError",
+            f"An unexpected error occurred. Error: {e}",
         )
 
     if not loaded_agent:
         raise ErrorResponse(
-            400,
+            HTTPStatus.BAD_REQUEST,
             "BadRequest",
             f"Agent with name '{model_path}' could not be loaded.",
             {"parameter": "model", "in": "query"},
@@ -368,6 +474,7 @@ def configure_cors(
     # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
     app.config.CORS_AUTOMATIC_OPTIONS = True
     app.config.CORS_SUPPORTS_CREDENTIALS = True
+    app.config.CORS_EXPOSE_HEADERS = "filename"
 
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
@@ -381,6 +488,124 @@ def add_root_route(app: Sanic):
     async def hello(request: Request):
         """Check if the server is running and responds with the version."""
         return response.text("Hello from Rasa: " + rasa.__version__)
+
+
+def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
+    """Decorator to enable async request handling.
+
+    If the incoming HTTP request specified a `callback_url` query parameter, the request
+    will return immediately with a 204 while the actual request response will
+    be sent to the `callback_url`. If an error happens, the error payload will also
+    be sent to the `callback_url`.
+
+    Args:
+        f: The request handler function which should be decorated.
+
+    Returns:
+        The decorated function.
+    """
+
+    @wraps(f)
+    async def decorated_function(
+        request: Request, *args: Any, **kwargs: Any
+    ) -> HTTPResponse:
+        callback_url = request.args.get("callback_url")
+        # Only process request asynchronously if the user specified a `callback_url`
+        # query parameter.
+        if not callback_url:
+            return await f(request, *args, **kwargs)
+
+        async def wrapped() -> None:
+            try:
+                result: HTTPResponse = await f(request, *args, **kwargs)
+                payload = dict(
+                    data=result.body, headers={"Content-Type": result.content_type}
+                )
+                logger.debug(
+                    "Asynchronous processing of request was successful. "
+                    "Sending result to callback URL."
+                )
+
+            except Exception as e:
+                if not isinstance(e, ErrorResponse):
+                    logger.error(e)
+                    e = ErrorResponse(
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        "UnexpectedError",
+                        f"An unexpected error occurred. Error: {e}",
+                    )
+                # If an error happens, we send the error payload to the `callback_url`
+                payload = dict(json=e.error_info)
+                logger.debug(
+                    "Error happened when processing request asynchronously. "
+                    "Sending error to callback URL."
+                )
+            async with aiohttp.ClientSession() as session:
+                await session.post(callback_url, raise_for_status=True, **payload)
+
+        # Run the request in the background on the event loop
+        request.app.add_task(wrapped())
+
+        # The incoming request will return immediately with a 204
+        return response.empty()
+
+    return decorated_function
+
+
+def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
+    """Decorator which runs request on a separate thread.
+
+    Some requests (e.g. training or cross-validation) are computional intense requests.
+    This means that they will block the event loop and hence the processing of other
+    requests. This decorator can be used to process these requests on a separate thread
+    to avoid blocking the processing of incoming requests.
+
+    Args:
+        f: The request handler function which should be decorated.
+
+    Returns:
+        The decorated function.
+    """
+
+    @wraps(f)
+    async def decorated_function(
+        request: Request, *args: Any, **kwargs: Any
+    ) -> HTTPResponse:
+        # Use a sync wrapper for our `async` function as `run_in_executor` only supports
+        # sync functions
+        def run() -> HTTPResponse:
+            # This is a new thread, so we need to create and set a new event loop
+            thread_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(thread_loop)
+
+            try:
+                return thread_loop.run_until_complete(f(request, *args, **kwargs))
+            finally:
+                thread_loop.close()
+
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            return await request.app.loop.run_in_executor(pool, run)
+
+    return decorated_function
+
+
+def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
+    """Decorator to inject a temporary directory before a request and clean up after.
+
+    Args:
+        f: The request handler function which should be decorated.
+
+    Returns:
+        The decorated function.
+    """
+
+    @wraps(f)
+    async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
+        with tempfile.TemporaryDirectory() as directory:
+            # Decorated request handles need to have a parameter `temporary_directory`
+            return await f(*args, temporary_directory=Path(directory), **kwargs)
+
+    return decorated_function
 
 
 def create_app(
@@ -449,7 +674,7 @@ def create_app(
             }
         )
 
-    @app.get("/conversations/<conversation_id>/tracker")
+    @app.get("/conversations/<conversation_id:path>/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
@@ -458,7 +683,9 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
+        tracker = await app.agent.create_processor().fetch_tracker_with_initial_session(
+            conversation_id
+        )
 
         try:
             if until_time is not None:
@@ -469,10 +696,12 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.post("/conversations/<conversation_id>/tracker/events")
+    @app.post("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text):
@@ -488,20 +717,30 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
-                tracker = processor.get_tracker(conversation_id)
-                _validate_tracker(tracker, conversation_id)
-
                 events = _get_events_from_request_body(request)
 
-                for event in events:
-                    tracker.update(event, app.agent.domain)
+                tracker = await update_conversation_with_events(
+                    conversation_id, processor, app.agent.domain, events
+                )
+
+                output_channel = _get_output_channel(request, tracker)
+
+                if rasa.utils.endpoints.bool_arg(
+                    request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
+                ):
+                    await processor.execute_side_effects(
+                        events, tracker, output_channel
+                    )
+
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
     def _get_events_from_request_body(request: Request) -> List[Event]:
@@ -514,12 +753,12 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )
             raise ErrorResponse(
-                400,
+                HTTPStatus.BAD_REQUEST,
                 "BadRequest",
                 "Couldn't extract a proper event from the request body.",
                 {"parameter": "", "in": "body"},
@@ -527,7 +766,7 @@ def create_app(
 
         return events
 
-    @app.put("/conversations/<conversation_id>/tracker/events")
+    @app.put("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text):
@@ -553,34 +792,38 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.get("/conversations/<conversation_id>/story")
+    @app.get("/conversations/<conversation_id:path>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-
-        # retrieve tracker and set to requested state
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
-
         until_time = rasa.utils.endpoints.float_arg(request, "until")
+        fetch_all_sessions = rasa.utils.endpoints.bool_arg(
+            request, "all_sessions", default=False
+        )
 
         try:
-            if until_time is not None:
-                tracker = tracker.travel_back_in_time(until_time)
-
-            # dump and return tracker
-            state = tracker.export_stories(e2e=True)
-            return response.text(state)
+            stories = get_test_stories(
+                app.agent.create_processor(),
+                conversation_id,
+                until_time,
+                fetch_all_sessions=fetch_all_sessions,
+            )
+            return response.text(stories)
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.post("/conversations/<conversation_id>/execute")
+    @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def execute_action(request: Request, conversation_id: Text):
@@ -590,7 +833,7 @@ def create_app(
 
         if not action_to_execute:
             raise ErrorResponse(
-                400,
+                HTTPStatus.BAD_REQUEST,
                 "BadRequest",
                 "Name of the action not provided in request body.",
                 {"parameter": "name", "in": "body"},
@@ -602,9 +845,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
-                    app.agent.create_processor(), conversation_id
+                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
+                    conversation_id
                 )
+
                 output_channel = _get_output_channel(request, tracker)
                 await app.agent.execute_action(
                     conversation_id,
@@ -617,10 +861,11 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -630,7 +875,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id>/trigger_intent")
+    @app.post("/conversations/<conversation_id:path>/trigger_intent")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def trigger_intent(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -641,7 +886,7 @@ def create_app(
 
         if not intent_to_trigger:
             raise ErrorResponse(
-                400,
+                HTTPStatus.BAD_REQUEST,
                 "BadRequest",
                 "Name of the intent not provided in request body.",
                 {"parameter": "name", "in": "body"},
@@ -651,13 +896,13 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
-                    app.agent.create_processor(), conversation_id
+                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
+                    conversation_id
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
                     raise ErrorResponse(
-                        404,
+                        HTTPStatus.NOT_FOUND,
                         "NotFound",
                         f"The intent {trigger_intent} does not exist in the domain.",
                     )
@@ -672,7 +917,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
         state = tracker.current_state(verbosity)
@@ -684,10 +931,10 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id>/predict")
+    @app.post("/conversations/<conversation_id:path>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def predict(request: Request, conversation_id: Text):
+    async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
             responses = await app.agent.predict_next(conversation_id)
@@ -698,10 +945,12 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.post("/conversations/<conversation_id>/messages")
+    @app.post("/conversations/<conversation_id:path>/messages")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def add_message(request: Request, conversation_id: Text):
@@ -722,7 +971,7 @@ def create_app(
         # TODO: implement for agent / bot
         if sender != "user":
             raise ErrorResponse(
-                400,
+                HTTPStatus.BAD_REQUEST,
                 "BadRequest",
                 "Currently, only user messages can be passed to this endpoint. "
                 "Messages of sender '{}' cannot be handled.".format(sender),
@@ -734,91 +983,68 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = await app.agent.log_message(user_message)
+
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
     @app.post("/model/train")
     @requires_auth(app, auth_token)
-    async def train(request: Request) -> HTTPResponse:
-        """Train a Rasa Model."""
-
+    @async_if_callback_url
+    @run_in_thread
+    @inject_temp_dir
+    async def train(request: Request, temporary_directory: Path) -> HTTPResponse:
         validate_request_body(
             request,
             "You must provide training data in the request body in order to "
             "train your model.",
         )
 
-        rjs = request.json
-        validate_request(rjs)
-
-        # create a temporary directory to store config, domain and
-        # training data
-        temp_dir = tempfile.mkdtemp()
-
-        config_path = os.path.join(temp_dir, "config.yml")
-
-        rasa.utils.io.write_text_file(rjs["config"], config_path)
-
-        if "nlu" in rjs:
-            nlu_path = os.path.join(temp_dir, "nlu.md")
-            rasa.utils.io.write_text_file(rjs["nlu"], nlu_path)
-
-        if "stories" in rjs:
-            stories_path = os.path.join(temp_dir, "stories.md")
-            rasa.utils.io.write_text_file(rjs["stories"], stories_path)
-
-        domain_path = DEFAULT_DOMAIN_PATH
-        if "domain" in rjs:
-            domain_path = os.path.join(temp_dir, "domain.yml")
-            rasa.utils.io.write_text_file(rjs["domain"], domain_path)
-
-        if rjs.get("save_to_default_model_directory", True) is True:
-            model_output_directory = DEFAULT_MODELS_PATH
+        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+            training_payload = _training_payload_from_yaml(request, temporary_directory)
         else:
-            model_output_directory = tempfile.gettempdir()
+            training_payload = _training_payload_from_json(request, temporary_directory)
 
         try:
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            info = dict(
-                domain=domain_path,
-                config=config_path,
-                training_files=temp_dir,
-                output=model_output_directory,
-                force_training=rjs.get("force", False),
-            )
+            from rasa.train import train_async
 
-            loop = asyncio.get_event_loop()
-
-            from rasa import train as train_model
-
-            # Declare `model_path` upfront to avoid pytype `name-error`
-            model_path: Optional[Text] = None
             # pass `None` to run in default executor
-            model_path = await loop.run_in_executor(
-                None, functools.partial(train_model, **info)
-            )
+            training_result = await train_async(**training_payload)
 
-            filename = os.path.basename(model_path) if model_path else None
+            if training_result.model:
+                filename = os.path.basename(training_result.model)
 
-            return await response.file(
-                model_path, filename=filename, headers={"filename": filename}
-            )
+                return await response.file(
+                    training_result.model,
+                    filename=filename,
+                    headers={"filename": filename},
+                )
+            else:
+                raise ErrorResponse(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    "TrainingError",
+                    "Ran training, but it finished without a trained model.",
+                )
+        except ErrorResponse as e:
+            raise e
         except InvalidDomain as e:
             raise ErrorResponse(
-                400,
+                HTTPStatus.BAD_REQUEST,
                 "InvalidDomainError",
                 f"Provided domain file is invalid. Error: {e}",
             )
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
-                500,
+                HTTPStatus.INTERNAL_SERVER_ERROR,
                 "TrainingError",
                 f"An unexpected error occurred during training. Error: {e}",
             )
@@ -826,37 +1052,13 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value -= 1
 
-    def validate_request(rjs):
-        if "config" not in rjs:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "The training request is missing the required key `config`.",
-                {"parameter": "config", "in": "body"},
-            )
-
-        if "nlu" not in rjs and "stories" not in rjs:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "To train a Rasa model you need to specify at least one type of "
-                "training data. Add `nlu` and/or `stories` to the request.",
-                {"parameters": ["nlu", "stories"], "in": "body"},
-            )
-
-        if "stories" in rjs and "domain" not in rjs:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "To train a Rasa model with story training data, you also need to "
-                "specify the `domain`.",
-                {"parameter": "domain", "in": "body"},
-            )
-
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
-    async def evaluate_stories(request: Request):
+    @inject_temp_dir
+    async def evaluate_stories(
+        request: Request, temporary_directory: Path
+    ) -> HTTPResponse:
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
             request,
@@ -864,23 +1066,31 @@ def create_app(
             "evaluate your model.",
         )
 
-        stories = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
+        test_data = _test_data_file_from_payload(request, temporary_directory)
+
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test(
+                test_data, app.agent, e2e=use_e2e, disable_plotting=True
+            )
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
-                500,
+                HTTPStatus.INTERNAL_SERVER_ERROR,
                 "TestingError",
                 f"An unexpected error occurred during evaluation. Error: {e}",
             )
 
     @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
-    async def evaluate_intents(request: Request):
+    @async_if_callback_url
+    @run_in_thread
+    @inject_temp_dir
+    async def evaluate_intents(
+        request: Request, temporary_directory: Path
+    ) -> HTTPResponse:
         """Evaluate intents against a Rasa model."""
         validate_request_body(
             request,
@@ -888,92 +1098,162 @@ def create_app(
             "evaluate your model.",
         )
 
-        eval_agent = app.agent
+        cross_validation_folds = request.args.get("cross_validation_folds")
+        is_yaml_payload = request.headers.get("Content-type") == YAML_CONTENT_TYPE
+        test_coroutine = None
 
-        model_path = request.args.get("model", None)
-        if model_path:
-            model_server = app.agent.model_server
-            if model_server is not None:
-                model_server.url = model_path
-            eval_agent = await _load_agent(
-                model_path, model_server, app.agent.remote_storage
+        if is_yaml_payload:
+            payload = _training_payload_from_yaml(request, temporary_directory)
+            config_file = payload.get("config")
+            test_data = payload.get("training_files")
+
+            if cross_validation_folds:
+                test_coroutine = _cross_validate(
+                    test_data, config_file, int(cross_validation_folds)
+                )
+        else:
+            test_data = _test_data_file_from_payload(request, temporary_directory)
+            if cross_validation_folds:
+                raise ErrorResponse(
+                    HTTPStatus.BAD_REQUEST,
+                    "TestingError",
+                    "Cross-validation is only supported for YAML data.",
+                )
+
+        if not cross_validation_folds:
+            test_coroutine = _evaluate_model_using_test_set(
+                request.args.get("model"), test_data
             )
 
-        nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
-        data_path = os.path.abspath(nlu_data)
-
-        if not os.path.exists(eval_agent.model_directory):
-            raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
-
-        model_directory = eval_agent.model_directory
-        _, nlu_model = model.get_model_subdirectories(model_directory)
-
         try:
-            evaluation = run_evaluation(data_path, nlu_model)
+            evaluation = await test_coroutine
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
-                500,
+                HTTPStatus.INTERNAL_SERVER_ERROR,
                 "TestingError",
                 f"An unexpected error occurred during evaluation. Error: {e}",
             )
 
+    async def _evaluate_model_using_test_set(
+        model_path: Text, test_data_file: Text
+    ) -> Dict:
+        eval_agent = app.agent
+
+        if model_path:
+            model_server = app.agent.model_server
+            if model_server is not None:
+                model_server = model_server.copy()
+                model_server.url = model_path
+                # Set wait time between pulls to `0` so that the agent does not schedule
+                # a job to pull the model from the server
+                model_server.kwargs["wait_time_between_pulls"] = 0
+            eval_agent = await _load_agent(
+                model_path, model_server, app.agent.remote_storage
+            )
+
+        data_path = os.path.abspath(test_data_file)
+
+        if not eval_agent.model_directory or not os.path.exists(
+            eval_agent.model_directory
+        ):
+            raise ErrorResponse(
+                HTTPStatus.CONFLICT, "Conflict", "Loaded model file not found."
+            )
+
+        model_directory = eval_agent.model_directory
+        _, nlu_model = model.get_model_subdirectories(model_directory)
+
+        return await run_evaluation(
+            data_path, nlu_model, disable_plotting=True, report_as_dict=True
+        )
+
+    async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
+        importer = TrainingDataImporter.load_from_dict(
+            config=None, config_path=config_file, training_data_paths=[data_file]
+        )
+        config = await importer.get_config()
+        nlu_data = await importer.get_nlu_data()
+
+        evaluations = rasa.nlu.cross_validate(
+            data=nlu_data,
+            n_folds=folds,
+            nlu_config=config,
+            disable_plotting=True,
+            errors=True,
+            report_as_dict=True,
+        )
+        evaluation_results = _get_evaluation_results(*evaluations)
+
+        return evaluation_results
+
+    def _get_evaluation_results(
+        intent_report: CVEvaluationResult,
+        entity_report: CVEvaluationResult,
+        response_selector_report: CVEvaluationResult,
+    ) -> Dict[Text, Any]:
+        eval_name_mapping = {
+            "intent_evaluation": intent_report,
+            "entity_evaluation": entity_report,
+            "response_selection_evaluation": response_selector_report,
+        }
+
+        result = defaultdict(dict)
+        for evaluation_name, evaluation in eval_name_mapping.items():
+            report = evaluation.evaluation.get("report", {})
+            averages = report.get("weighted avg", {})
+            result[evaluation_name]["report"] = report
+            result[evaluation_name]["precision"] = averages.get("precision")
+            result[evaluation_name]["f1_score"] = averages.get("1-score")
+            result[evaluation_name]["errors"] = evaluation.evaluation.get("errors", [])
+
+        return result
+
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
-    async def tracker_predict(request: Request):
-        """ Given a list of events, predicts the next action"""
+    async def tracker_predict(request: Request) -> HTTPResponse:
+        """Given a list of events, predicts the next action."""
         validate_request_body(
             request,
             "No events defined in request_body. Add events to request body in order to "
             "predict the next action.",
         )
 
-        sender_id = UserMessage.DEFAULT_SENDER_ID
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
         try:
             tracker = DialogueStateTracker.from_dict(
-                sender_id, request_params, app.agent.domain.slots
+                DEFAULT_SENDER_ID, request_params, app.agent.domain.slots
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                400,
+                HTTPStatus.BAD_REQUEST,
                 "BadRequest",
                 f"Supplied events are not valid. {e}",
                 {"parameter": "", "in": "body"},
             )
 
         try:
-            policy_ensemble = app.agent.policy_ensemble
-            probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, app.agent.domain
+            result = app.agent.create_processor().predict_next_with_tracker(
+                tracker, verbosity
             )
 
-            scores = [
-                {"action": a, "score": p}
-                for a, p in zip(app.agent.domain.action_names, probabilities)
-            ]
-
-            return response.json(
-                {
-                    "scores": scores,
-                    "policy": policy,
-                    "tracker": tracker.current_state(verbosity),
-                }
-            )
+            return response.json(result)
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "PredictionError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "PredictionError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def parse(request: Request):
+    async def parse(request: Request) -> HTTPResponse:
         validate_request_body(
             request,
             "No text message defined in request_body. Add text message to request body "
@@ -991,7 +1271,9 @@ def create_app(
             except Exception as e:
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(
-                    400, "ParsingError", f"An unexpected error occurred. Error: {e}"
+                    HTTPStatus.BAD_REQUEST,
+                    "ParsingError",
+                    f"An unexpected error occurred. Error: {e}",
                 )
             response_data = emulator.normalise_response_json(parsed_data)
 
@@ -1000,12 +1282,14 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ParsingError", f"An unexpected error occurred. Error: {e}"
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ParsingError",
+                f"An unexpected error occurred. Error: {e}",
             )
 
     @app.put("/model")
     @requires_auth(app, auth_token)
-    async def load_model(request: Request):
+    async def load_model(request: Request) -> HTTPResponse:
         validate_request_body(request, "No path to model file defined in request_body.")
 
         model_path = request.json.get("model_file", None)
@@ -1018,7 +1302,7 @@ def create_app(
             except TypeError as e:
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(
-                    400,
+                    HTTPStatus.BAD_REQUEST,
                     "BadRequest",
                     f"Supplied 'model_server' is not valid. Error: {e}",
                     {"parameter": "model_server", "in": "body"},
@@ -1029,43 +1313,42 @@ def create_app(
         )
 
         logger.debug(f"Successfully loaded model '{model_path}'.")
-        return response.json(None, status=204)
+        return response.json(None, status=HTTPStatus.NO_CONTENT)
 
     @app.delete("/model")
     @requires_auth(app, auth_token)
-    async def unload_model(request: Request):
+    async def unload_model(request: Request) -> HTTPResponse:
         model_file = app.agent.model_directory
 
         app.agent = Agent(lock_store=app.agent.lock_store)
 
         logger.debug(f"Successfully unloaded model '{model_file}'.")
-        return response.json(None, status=204)
+        return response.json(None, status=HTTPStatus.NO_CONTENT)
 
     @app.get("/domain")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def get_domain(request: Request):
+    async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
-
-        accepts = request.headers.get("Accept", default="application/json")
+        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
             domain = app.agent.domain.as_dict()
             return response.json(domain)
         elif accepts.endswith("yml") or accepts.endswith("yaml"):
             domain_yaml = app.agent.domain.as_yaml()
             return response.text(
-                domain_yaml, status=200, content_type="application/x-yml"
+                domain_yaml, status=HTTPStatus.OK, content_type=YAML_CONTENT_TYPE
             )
         else:
             raise ErrorResponse(
-                406,
+                HTTPStatus.NOT_ACCEPTABLE,
                 "NotAcceptable",
-                "Invalid Accept header. Domain can be "
-                "provided as "
-                'json ("Accept: application/json") or'
-                'yml ("Accept: application/x-yml"). '
-                "Make sure you've set the appropriate Accept "
-                "header.",
+                f"Invalid Accept header. Domain can be "
+                f"provided as "
+                f'json ("Accept: {JSON_CONTENT_TYPE}") or'
+                f'yml ("Accept: {YAML_CONTENT_TYPE}"). '
+                f"Make sure you've set the appropriate Accept "
+                f"header.",
             )
 
     return app
@@ -1109,3 +1392,137 @@ def _get_output_channel(
         matching_channels,
         CollectingOutputChannel(),
     )
+
+
+def _test_data_file_from_payload(request: Request, temporary_directory: Path) -> Text:
+    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+        return str(
+            _training_payload_from_yaml(request, temporary_directory)["training_files"]
+        )
+    else:
+        return rasa.utils.io.create_temporary_file(
+            request.body, mode="w+b", suffix=".md"
+        )
+
+
+def _training_payload_from_json(
+    request: Request, temp_dir: Path
+) -> Dict[Text, Union[Text, bool]]:
+    logger.debug(
+        "Extracting JSON payload with Markdown training data from request body."
+    )
+
+    request_payload = request.json
+    _validate_json_training_payload(request_payload)
+
+    config_path = os.path.join(temp_dir, "config.yml")
+
+    rasa.shared.utils.io.write_text_file(request_payload["config"], config_path)
+
+    if "nlu" in request_payload:
+        nlu_path = os.path.join(temp_dir, "nlu.md")
+        rasa.shared.utils.io.write_text_file(request_payload["nlu"], nlu_path)
+
+    if "stories" in request_payload:
+        stories_path = os.path.join(temp_dir, "stories.md")
+        rasa.shared.utils.io.write_text_file(request_payload["stories"], stories_path)
+
+    if "responses" in request_payload:
+        responses_path = os.path.join(temp_dir, "responses.md")
+        rasa.shared.utils.io.write_text_file(
+            request_payload["responses"], responses_path
+        )
+
+    domain_path = DEFAULT_DOMAIN_PATH
+    if "domain" in request_payload:
+        domain_path = os.path.join(temp_dir, "domain.yml")
+        rasa.shared.utils.io.write_text_file(request_payload["domain"], domain_path)
+
+    model_output_directory = str(temp_dir)
+    if request_payload.get(
+        "save_to_default_model_directory",
+        request.args.get("save_to_default_model_directory", True),
+    ):
+        model_output_directory = DEFAULT_MODELS_PATH
+
+    return dict(
+        domain=domain_path,
+        config=config_path,
+        training_files=str(temp_dir),
+        output=model_output_directory,
+        force_training=request_payload.get(
+            "force", request.args.get("force_training", False)
+        ),
+    )
+
+
+def _validate_json_training_payload(rjs: Dict):
+    if "config" not in rjs:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            "The training request is missing the required key `config`.",
+            {"parameter": "config", "in": "body"},
+        )
+
+    if "nlu" not in rjs and "stories" not in rjs:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            "To train a Rasa model you need to specify at least one type of "
+            "training data. Add `nlu` and/or `stories` to the request.",
+            {"parameters": ["nlu", "stories"], "in": "body"},
+        )
+
+    if "stories" in rjs and "domain" not in rjs:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            "To train a Rasa model with story training data, you also need to "
+            "specify the `domain`.",
+            {"parameter": "domain", "in": "body"},
+        )
+
+    if "force" in rjs or "save_to_default_model_directory" in rjs:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "Specifying 'force' and 'save_to_default_model_directory' as part of the "
+            "JSON payload is deprecated. Please use the header arguments "
+            "'force_training' and 'save_to_default_model_directory'.",
+            docs=_docs("/api/http-api"),
+        )
+
+
+def _training_payload_from_yaml(
+    request: Request, temp_dir: Path
+) -> Dict[Text, Union[Text, bool]]:
+    logger.debug("Extracting YAML training data from request body.")
+
+    decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
+    _validate_yaml_training_payload(decoded)
+
+    training_data = temp_dir / "data.yml"
+    rasa.shared.utils.io.write_text_file(decoded, training_data)
+
+    model_output_directory = str(temp_dir)
+    if request.args.get("save_to_default_model_directory", True):
+        model_output_directory = DEFAULT_MODELS_PATH
+
+    return dict(
+        domain=str(training_data),
+        config=str(training_data),
+        training_files=str(temp_dir),
+        output=model_output_directory,
+        force_training=request.args.get("force_training", False),
+    )
+
+
+def _validate_yaml_training_payload(yaml_text: Text) -> None:
+    try:
+        RasaYAMLReader().validate(yaml_text)
+    except Exception as e:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            f"The request body does not contain valid YAML. Error: {e}",
+            help_url=DOCS_URL_TRAINING_DATA,
+        )

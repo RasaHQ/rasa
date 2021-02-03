@@ -75,6 +75,11 @@ def test_nlg_schema_validation_empty_image():
     assert CallbackNaturalLanguageGenerator.validate_response(content)
 
 
+def test_nlg_schema_validation_empty_custom_dict():
+    content = {"custom": {}}
+    assert CallbackNaturalLanguageGenerator.validate_response(content)
+
+
 @pytest.mark.parametrize(
     "slot_name, slot_value",
     [
@@ -138,6 +143,9 @@ def test_nlg_fill_template_custom(slot_name: Text, slot_value: Any):
         "custom": {
             "field": f"{{{slot_name}}}",
             "properties": {"field_prefixed": f"prefix_{{{slot_name}}}"},
+            "bool_field": True,
+            "int_field:": 42,
+            "empty_field": None,
         }
     }
     t = TemplatedNaturalLanguageGenerator(templates=dict())
@@ -146,7 +154,10 @@ def test_nlg_fill_template_custom(slot_name: Text, slot_value: Any):
     assert result == {
         "custom": {
             "field": str(slot_value),
-            "properties": {"field_prefixed": f"prefix_{str(slot_value)}"},
+            "properties": {"field_prefixed": f"prefix_{slot_value}"},
+            "bool_field": True,
+            "int_field:": 42,
+            "empty_field": None,
         }
     }
 
@@ -260,15 +271,29 @@ def test_nlg_fill_template_attachment(attach_slot_name, attach_slot_value):
 
 
 @pytest.mark.parametrize(
-    "button_slot_name, button_slot_value", [("button_1", "button1")]
+    "button_slot_name, button_slot_value", [("button_1", "button_1")]
 )
 def test_nlg_fill_template_button(button_slot_name, button_slot_value):
-    template = {"button": f"{{{button_slot_name}}}"}
+    template = {
+        "buttons": [
+            {
+                "payload": f'/choose{{{{"some_slot": "{{{button_slot_name}}}"}}}}',
+                "title": f"{{{button_slot_name}}}",
+            }
+        ]
+    }
     t = TemplatedNaturalLanguageGenerator(templates=dict())
     result = t._fill_template(
         template=template, filled_slots={button_slot_name: button_slot_value}
     )
-    assert result == {"button": str(button_slot_value)}
+    assert result == {
+        "buttons": [
+            {
+                "payload": f'/choose{{"some_slot": "{button_slot_value}"}}',
+                "title": f"{button_slot_value}",
+            }
+        ]
+    }
 
 
 @pytest.mark.parametrize(

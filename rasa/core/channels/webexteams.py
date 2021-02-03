@@ -39,7 +39,7 @@ class WebexTeamsBot(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        json_message.setdefault("roomID", recipient_id)
+        json_message.setdefault("roomId", recipient_id)
         return self.api.messages.create(**json_message)
 
 
@@ -55,9 +55,7 @@ class WebexTeamsInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # pytype: disable=attribute-error
         return cls(credentials.get("access_token"), credentials.get("room"))
-        # pytype: enable=attribute-error
 
     def __init__(self, access_token: Text, room: Optional[Text] = None) -> None:
         """Create a Cisco Webex Teams input channel.
@@ -128,7 +126,7 @@ class WebexTeamsInput(InputChannel):
             else:
                 metadata = self.get_metadata(request)
                 await self.process_message(
-                    on_new_message, message.text, message.personId, metadata
+                    on_new_message, message.text, message.roomId, metadata
                 )
                 return response.text("")
 

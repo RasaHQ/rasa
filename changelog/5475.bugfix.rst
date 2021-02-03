@@ -1,5 +1,0 @@
-One word can just have one entity label.
-
-If you are using, for example, ``ConveRTTokenizer`` words can be split into multiple tokens.
-Our entity extractors assign entity labels per token. So, it might happen, that a word, that was split into two tokens,
-got assigned two different entity labels. This is now fixed. One word can just have one entity label at a time.
