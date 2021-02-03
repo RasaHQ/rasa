@@ -528,7 +528,6 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
-            # eager=True,
         )
 
     def _featurize_tracker_for_e2e(
@@ -943,10 +942,6 @@ class TED(TransformerRasaModel):
                 attribute_name, data_signature, self.config
             )
         elif SENTENCE in data_signature:
-            sparse_to_dense_layer_options = {
-                "reg_lambda": self.config[REGULARIZATION_CONSTANT],
-            }
-
             self._tf_layers[
                 f"{attribute_name}_sparse_dense_concat_layer"
             ] = rasa_layers.ConcatenateSparseDenseFeatures(
@@ -957,16 +952,13 @@ class TED(TransformerRasaModel):
                 sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
                 dense_dropout=self.config[DENSE_INPUT_DROPOUT],
                 sparse_to_dense_units=self.config[DENSE_DIMENSION][attribute_name],
-                **sparse_to_dense_layer_options,
+                reg_lambda=self.config[REGULARIZATION_CONSTANT],
             )
         else:
-            logger.debug(
-                f"Creationg no input layers for '{attribute_name}' ({data_signature})"
-            )
+            logger.debug(f"Creating no input layers for attribute '{attribute_name}'.")
 
     def _prepare_encoding_layers(self, name: Text) -> None:
-        """Create ffnn layer for given attribute name. The layer is used just before
-        all dialogue features are combined.
+        """Create Ffnn encoding layer used just before combining all dialogue features.
 
         Args:
             name: attribute name
@@ -1112,29 +1104,33 @@ class TED(TransformerRasaModel):
         # because they are passed to dialogue transformer
         attribute_mask = tf_batch_data[attribute][MASK][0]
 
+        # determine all dimensions so that fake features of the correct shape can be
+        # created
         batch_dim = tf.shape(attribute_mask)[0]
         dialogue_dim = tf.shape(attribute_mask)[1]
         if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
-            units = self.config[ENCODING_DIMENSION]
+            units_dim = self.config[ENCODING_DIMENSION]
         else:
-            # state-level attributes don't get fed into encoding layer, hence use just the
-            # output dimensionality after combining sparse & dense features
-            units = self._tf_layers[
+            # state-level attributes don't use an encoding layer, hence their size is
+            # just the output size of the corresponding sparse+dense feature combining
+            # layer
+            units_dim = self._tf_layers[
                 f"{attribute}_sparse_dense_concat_layer"
             ].output_units
-            # units = self._get_dense_units(tf_batch_data[attribute][SENTENCE], attribute)
 
         attribute_features = tf.zeros(
-            (batch_dim, dialogue_dim, units), dtype=tf.float32
+            (batch_dim, dialogue_dim, units_dim), dtype=tf.float32
         )
+
+        # Only for user text, the transformer output and sequence lengths also have to
+        # be created (here using fake features) to enable entity recognition training
+        # and prediction.
         if attribute == TEXT:
-            # if the input features are fake, we don't process them further,
-            # but we need to calculate correct last dim (units) so that tf could infer
-            # the last shape of the tensors
+            # we just need to get the correct last dimension size from the prepared
+            # transformer
             text_transformer_units = self._tf_layers[
                 f"{attribute}_sequence_layer"
             ].output_units
-
             text_transformer_output = tf.zeros(
                 (0, 0, text_transformer_units), dtype=tf.float32
             )
@@ -1237,6 +1233,8 @@ class TED(TransformerRasaModel):
                 f"{attribute}_sequence_layer"
             ](_inputs, masked_lm_loss=self.config[MASKED_LM], training=self._training,)
 
+            # Only for user text, the transformer output and sequence lengths also have
+            # to be returned to enable entity recognition training and prediction.
             if attribute == TEXT:
                 text_transformer_output = attribute_features
                 text_sequence_lengths = sequence_lengths
@@ -1263,6 +1261,8 @@ class TED(TransformerRasaModel):
                 axis=1,
             )
 
+        # for attributes without sequence-level features, all we need is to combine the
+        # sparse and dense sentence-level features into one
         else:
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units

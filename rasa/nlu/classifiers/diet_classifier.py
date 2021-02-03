@@ -815,7 +815,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
             self.component_config[BATCH_STRATEGY],
-            eager=True,
         )
 
     # process helpers
@@ -1292,6 +1291,8 @@ class DIET(TransformerRasaModel):
             logger.debug(f"  {metric} ({name})")
 
     def _prepare_layers(self) -> None:
+        # For user text, prepare layers that combine different feature types, embed
+        # everything using a transformer and optionally also do masked language modeling.
         self.text_name = TEXT
         self._tf_layers[
             f"{self.text_name}_sequence_layer"
@@ -1300,6 +1301,9 @@ class DIET(TransformerRasaModel):
         )
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_loss(self.text_name)
+
+        # Intent labels are treated similarly to user text but without the transformer
+        # and masked language modelling.
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
             self._tf_layers[
@@ -1315,11 +1319,15 @@ class DIET(TransformerRasaModel):
             )
 
             self._prepare_label_classification_layers()
+
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
     def _prepare_mask_lm_loss(self, name: Text) -> None:
+        # for embedding predicted tokens at masked positions
         self._prepare_embed_layers(f"{name}_lm_mask")
+
+        # for embedding the true tokens that got masked
         self._prepare_embed_layers(f"{name}_golden_token")
 
         # mask loss is additional loss
@@ -1345,7 +1353,8 @@ class DIET(TransformerRasaModel):
         _inputs = (sequence_features, sentence_features, sequence_mask, text_mask)
         x = self._tf_layers[f"{name}_input_layer"](_inputs, training=self._training)
 
-        x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
+        # convert to bag-of-words by summing along the sequence dimension
+        x = tf.reduce_sum(x, axis=1)
 
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
@@ -1384,28 +1393,28 @@ class DIET(TransformerRasaModel):
 
         lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
 
-        # Pick elements that were masked, throwing away the sequence dimension and
-        # effectively switching from shape (batch_size, sequence_length, units) to
+        # Pick elements that were masked, throwing away the batch & sequence dimension
+        # and effectively switching from shape (batch_size, sequence_length, units) to
         # (num_masked_elements, units).
         outputs = tf.boolean_mask(outputs, lm_mask_bool)
         inputs = tf.boolean_mask(inputs, lm_mask_bool)
         ids = tf.boolean_mask(seq_ids, lm_mask_bool)
 
-        outputs_embed = self._tf_layers[f"embed.{name}_lm_mask"](outputs)
-        inputs_embed = self._tf_layers[f"embed.{name}_golden_token"](inputs)
+        tokens_predicted_embed = self._tf_layers[f"embed.{name}_lm_mask"](outputs)
+        tokens_true_embed = self._tf_layers[f"embed.{name}_golden_token"](inputs)
 
-        # To constrain the otherwise computationally expensive loss calculation, we
+        # To limit the otherwise computationally expensive loss calculation, we
         # constrain the label space in MLM (i.e. token space) to only those tokens that
         # were masked in this batch. Hence the reduced list of token embeddings
-        # (inputs_embed) and the reduced list of labels (ids) are passed as
+        # (tokens_true_embed) and the reduced list of labels (ids) are passed as
         # all_labels_embed and all_labels, respectively. In the future, we could be less
         # restrictive and construct a slightly bigger label space which could include
         # tokens not masked in the current batch too.
         return self._tf_layers[f"loss.{name}_mask"](
-            inputs_embed=outputs_embed,
-            labels_embed=inputs_embed,
+            inputs_embed=tokens_predicted_embed,
+            labels_embed=tokens_true_embed,
             labels=ids,
-            all_labels_embed=inputs_embed,
+            all_labels_embed=tokens_true_embed,
             all_labels=ids,
         )
 
@@ -1433,21 +1442,23 @@ class DIET(TransformerRasaModel):
             The loss of the given batch.
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-        # print(tf_batch_data["text"])
-        # for ft in ["sequence", "sentence"]:
-        #     print(f"--> {ft}")
-        #     sparse = tf_batch_data["text"][ft][0]
-        #     print(sparse.indices)
-        #     print(sparse.values)
 
         batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
-        mask_sequence_text = self._get_mask_for(
-            tf_batch_data, TEXT, SEQUENCE_LENGTH
-        )  # possibly None
+
+        # Get mask for sequence features only, with 1s for real tokens and 0 for padded.
+        # This one will be None if the sequence lengths aren't found in tf_batch_data.
+        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
+
+        # Create mask for sequence- and sentence-leve features combined. Differs from
+        # the previous mask only in being longer by 1 in the sequence dimension, due to
+        # having one more 1 at the end of each sequence (representing the sentence-level
+        # featues).
+        # This call can break if the sequence lengths aren't found in tf_batch_data,
+        # this needs to be fixed.
         sequence_lengths = self._get_sequence_lengths(
             tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
         )
-        mask_text = self._compute_mask(sequence_lengths)  # never None
+        mask_text = self._compute_mask(sequence_lengths)
 
         _inputs = (
             tf_batch_data[TEXT][SEQUENCE],
@@ -1464,9 +1475,6 @@ class DIET(TransformerRasaModel):
         ) = self._tf_layers[f"{self.text_name}_sequence_layer"](
             _inputs, masked_lm_loss=self.config[MASKED_LM], training=self._training
         )
-        # print(f"text_transformed # {type(text_transformed)} # {text_transformed.shape} # {text_transformed}")
-        # print(f"text_in # {type(text_in)} # {text_in.shape} # {text_in}")
-        # print(f"text_seq_ids # {type(text_seq_ids)} # {text_seq_ids.shape} # {text_seq_ids}")
 
         losses = []
 

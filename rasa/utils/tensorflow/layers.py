@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Text, Tuple, Callable, Union, Any, Dict
+from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
