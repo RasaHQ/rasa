@@ -114,7 +114,7 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         "for symmetric methods. Please also make sure to use "
         "--jwt-method to select the method of the signature, "
         "otherwise this argument will be ignored."
-        "Note that this key is for securing the HTTP API.",
+        "Note that this key is meant for securing the HTTP API.",
     )
     jwt_auth.add_argument(
         "--jwt-method",
