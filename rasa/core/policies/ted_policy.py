@@ -1205,12 +1205,12 @@ class TED(TransformerRasaModel):
             # boolean mask returns flat tensor
             sequence_lengths = tf.expand_dims(sequence_lengths, axis=-1)
 
-            mask_sequence_text = tf.squeeze(
-                self._compute_mask(sequence_lengths), axis=1
-            )
+            mask_sequence = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
             # add 1 to sequence lengths to account for sentence features
             sequence_lengths += 1
-            mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
+            mask_combined_sequence_sentence = tf.squeeze(
+                self._compute_mask(sequence_lengths), axis=1
+            )
 
             attribute_features, _, _, _, _ = self._tf_layers[
                 f"sequence_layer.{attribute}"
@@ -1218,8 +1218,8 @@ class TED(TransformerRasaModel):
                 (
                     tf_batch_data[attribute][SEQUENCE],
                     tf_batch_data[attribute][SENTENCE],
-                    mask_sequence_text,
-                    mask_text,
+                    mask_sequence,
+                    mask_combined_sequence_sentence,
                 ),
                 training=self._training,
             )
