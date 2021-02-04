@@ -140,6 +140,7 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     )
 
 
+@pytest.mark.trains_model
 async def test_end_to_evaluation_trips_circuit_breaker():
     agent = Agent(
         domain="data/test_domains/default.yml",

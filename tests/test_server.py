@@ -138,6 +138,7 @@ async def test_root_without_enable_api(rasa_app_without_api: SanicASGITestClient
     assert response.text.startswith("Hello from Rasa:")
 
 
+@pytest.mark.trains_model
 async def test_root_secured(rasa_secured_app: SanicASGITestClient):
     _, response = await rasa_secured_app.get("/")
     assert response.status == HTTPStatus.OK

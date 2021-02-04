@@ -48,6 +48,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
         ],
     ],
 )
+@pytest.mark.trains_model
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(

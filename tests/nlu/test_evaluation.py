@@ -416,6 +416,7 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
+@pytest.mark.trains_model
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
@@ -451,6 +452,7 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+@pytest.mark.trains_model
 def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.md"
