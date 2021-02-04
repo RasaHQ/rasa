@@ -799,7 +799,7 @@ class TEDPolicy(Policy):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
-            use_only_last_dialogue_turns=isinstance(
+            max_history_featurizer_is_used=isinstance(
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
             label_data=label_data,
@@ -1197,7 +1197,7 @@ class TED(TransformerRasaModel):
     def _create_last_dialogue_turns_mask(
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> tf.Tensor:
-        # Since use_only_last_dialogue_turns is True,
+        # Since max_history_featurizer_is_used is True,
         # we need to find the locations of last dialogue turns in
         # (combined batch dimension and dialogue length,) dimension,
         # so that we can use `_sequence_lengths` as a boolean  mask to pick
