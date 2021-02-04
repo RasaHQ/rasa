@@ -91,9 +91,9 @@ class Exporter:
                 raise PublishingError(current_timestamp)
 
         if asyncio.iscoroutinefunction(self.event_broker.close):
-            self.event_broker.close()
-        else:
             await self.event_broker.close()
+        else:
+            self.event_broker.close()
 
         return published_events
 
