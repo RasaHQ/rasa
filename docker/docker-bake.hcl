@@ -14,6 +14,10 @@ variable "BASE_MITIE_IMAGE_HASH" {
   default = "localdev"
 }
 
+variable "BASE_BUILDER_IMAGE_HASH" {
+  default = "localdev"
+}
+
 # keep this in sync with the version in pyproject.toml
 # the variable is set automatically for builds in CI
 variable "POETRY_VERSION" {
@@ -53,20 +57,33 @@ target "base-poetry" {
   ]
 }
 
+target "base-builder" {
+  dockerfile = "docker/Dockerfile.base-builder"
+  tags       = ["${IMAGE_NAME}:base-builder-${IMAGE_TAG}"]
+
+  args = {
+    IMAGE_BASE_NAME = "${IMAGE_NAME}"
+    POETRY_VERSION  = "${POETRY_VERSION}"
+  }
+
+  cache-to = ["type=inline"]
+}
+
 target "default" {
   dockerfile = "Dockerfile"
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}"]
 
   args = {
-    IMAGE_BASE_NAME = "${IMAGE_NAME}"
-    BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
-    POETRY_VERSION  = "${POETRY_VERSION}"
+    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
 
   cache-to = ["type=inline"]
 
   cache-from = [
     "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:latest",
   ]
 }
@@ -76,16 +93,17 @@ target "full" {
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-full"]
 
   args = {
-    IMAGE_BASE_NAME       = "${IMAGE_NAME}"
-    BASE_IMAGE_HASH       = "${BASE_IMAGE_HASH}"
-    BASE_MITIE_IMAGE_HASH = "${BASE_MITIE_IMAGE_HASH}"
-    POETRY_VERSION        = "${POETRY_VERSION}"
+    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    BASE_MITIE_IMAGE_HASH   = "${BASE_MITIE_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
 
   cache-to = ["type=inline"]
 
   cache-from = [
     "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:latest-full",
   ]
 }
@@ -95,10 +113,10 @@ target "mitie-en" {
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-mitie-en"]
 
   args = {
-    IMAGE_BASE_NAME       = "${IMAGE_NAME}"
-    BASE_IMAGE_HASH       = "${BASE_IMAGE_HASH}"
-    BASE_MITIE_IMAGE_HASH = "${BASE_MITIE_IMAGE_HASH}"
-    POETRY_VERSION        = "${POETRY_VERSION}"
+    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    BASE_MITIE_IMAGE_HASH   = "${BASE_MITIE_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
 
   cache-to = ["type=inline"]
@@ -106,6 +124,7 @@ target "mitie-en" {
   cache-from = [
     "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:base-mitie-${BASE_MITIE_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:latest-mitie-en",
   ]
 }
@@ -115,15 +134,16 @@ target "spacy-de" {
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-de"]
 
   args = {
-    IMAGE_BASE_NAME = "${IMAGE_NAME}"
-    BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
-    POETRY_VERSION  = "${POETRY_VERSION}"
+    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
 
   cache-to = ["type=inline"]
 
   cache-from = [
     "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:latest-spacy-de",
   ]
 }
@@ -133,15 +153,16 @@ target "spacy-en" {
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-en"]
 
   args = {
-    IMAGE_BASE_NAME = "${IMAGE_NAME}"
-    BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
-    POETRY_VERSION  = "${POETRY_VERSION}"
+    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
 
   cache-to = ["type=inline"]
 
   cache-from = [
     "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:latest-spacy-en",
   ]
 }
