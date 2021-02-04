@@ -3,13 +3,38 @@ import functools
 import importlib
 import inspect
 import logging
-from typing import Text, Dict, Optional, Any, List, Callable, Collection
+import pkgutil
+from typing import Union, Text, Dict, Optional, Any, List, Callable, Collection
+import types
 
 import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 
 
 logger = logging.getLogger(__name__)
+
+
+def import_submodules(
+    package: Union[Text, types.ModuleType], recursive: bool = True
+) -> None:
+    """Import a module, or a package and its submodules recursively.
+    Args:
+        package: Package or module name, or an already loaded Python module.
+        recursive: If `True`, and `package` is a package, import all of its
+            sub-packages as well.
+    """
+    if isinstance(package, str):
+        package = importlib.import_module(package)
+
+    if not getattr(package, "__path__", None):
+        return
+
+    for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
+        full_name = package.__name__ + "." + name
+        importlib.import_module(full_name)
+
+        if recursive and is_pkg:
+            import_submodules(full_name)
 
 
 def class_from_module_path(

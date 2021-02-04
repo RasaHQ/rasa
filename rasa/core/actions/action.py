@@ -147,12 +147,16 @@ def action_for_name_or_text(
         domain.raise_action_not_found_exception(action_name_or_text)
 
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
+    customs = {a.name(): a for a in getattr(action_endpoint, "custom_actions", [])}
 
     if (
         action_name_or_text in defaults
         and action_name_or_text not in domain.user_actions_and_forms
     ):
         return defaults[action_name_or_text]
+
+    if action_name_or_text in customs:
+        return customs[action_name_or_text]
 
     if action_name_or_text.startswith(UTTER_PREFIX) and is_retrieval_action(
         action_name_or_text, domain.retrieval_intents
