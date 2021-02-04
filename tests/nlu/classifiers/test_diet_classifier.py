@@ -377,15 +377,13 @@ async def test_softmax_normalization(
             -1,
             1,
             LABEL_RANKING_LENGTH,
-        )
-    ],
-    [
+        ),
         (
             {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"},
             -1e9,
             1e9,
             LABEL_RANKING_LENGTH,
-        )
+        ),
     ],
 )
 async def test_cross_entropy_without_normalization(
