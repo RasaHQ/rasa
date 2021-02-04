@@ -61,7 +61,7 @@ class Token:
             other.lemma,
         )
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return f"<Token object value='{self.text}' start={self.start} end={self.end} at {hex(id(self))}>"
 
 
