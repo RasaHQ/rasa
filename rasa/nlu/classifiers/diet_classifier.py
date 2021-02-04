@@ -449,6 +449,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Dict[Text, Union[scipy.sparse.spmatrix, np.ndarray]]:
+
         (
             sparse_sequence_features,
             sparse_sentence_features,
@@ -1462,13 +1463,9 @@ class DIET(TransformerRasaModel):
         )
         mask_text = self._compute_mask(sequence_lengths)
 
-        (
-            text_transformed,
-            text_in,
-            text_seq_ids,
-            lm_mask_bool_text,
-            _,
-        ) = self._tf_layers[f"sequence_layer.{self.text_name}"](
+        text_transformed, text_in, text_seq_ids, lm_mask_bool_text, _ = self._tf_layers[
+            f"sequence_layer.{self.text_name}"
+        ](
             (
                 tf_batch_data[TEXT][SEQUENCE],
                 tf_batch_data[TEXT][SENTENCE],

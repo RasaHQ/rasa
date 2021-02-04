@@ -651,10 +651,7 @@ class TEDPolicy(Policy):
         # text inputs in the batch
         # therefore, in order to pick entities from the latest user message
         # we need to pick entities from the last batch dimension of entity prediction
-        (
-            predicted_tags,
-            confidence_values,
-        ) = rasa.utils.train_utils.entity_label_to_tags(
+        predicted_tags, confidence_values = rasa.utils.train_utils.entity_label_to_tags(
             prediction_output,
             self._entity_tag_specs,
             self.config[BILOU_FLAG],
@@ -1224,7 +1221,6 @@ class TED(TransformerRasaModel):
                     mask_sequence_text,
                     mask_text,
                 ),
-                masked_lm_loss=self.config[MASKED_LM],
                 training=self._training,
             )
 
@@ -1570,7 +1566,7 @@ class TED(TransformerRasaModel):
         label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
         labels_embed = self._get_labels_embed(label_ids, all_labels_embed)
 
-        (dialogue_in, text_output, text_sequence_lengths,) = self._process_batch_data(
+        dialogue_in, text_output, text_sequence_lengths = self._process_batch_data(
             tf_batch_data
         )
         (
@@ -1640,7 +1636,7 @@ class TED(TransformerRasaModel):
         )
         self._compute_dialogue_indices(tf_batch_data)
 
-        (dialogue_in, text_output, text_sequence_lengths,) = self._process_batch_data(
+        dialogue_in, text_output, text_sequence_lengths = self._process_batch_data(
             tf_batch_data
         )
         (

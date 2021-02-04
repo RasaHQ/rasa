@@ -63,9 +63,6 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         N-D tensor with shape: `(batch_size, ..., units)` where `units` is the sum of
         the last dimension sizes across all input sensors, with sparse tensors instead
         contributing `config[DENSE_DIMENSION][attribute]` units each.
-
-    Raises:
-        A ValueError if no feature signatures are provided.
     """
 
     def __init__(
@@ -79,25 +76,9 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
             name=f"concatenate_sparse_dense_features_{attribute}_{feature_type}"
         )
 
-        if not attribute_signature:
-            raise ValueError("No feature signatures found!")
-
-        # compute the output units from the provided data signature
-        output_units_from_dense = sum(
-            [
-                signature.units
-                for signature in attribute_signature
-                if not signature.is_sparse
-            ]
+        self.output_units = self._calculate_output_units(
+            attribute, attribute_signature, config
         )
-        output_units_from_sparse = sum(
-            [
-                config[DENSE_DIMENSION][attribute]
-                for signature in attribute_signature
-                if signature.is_sparse
-            ]
-        )
-        self.output_units = output_units_from_dense + output_units_from_sparse
 
         # prepare dropout and sparse-to-dense layers if any sparse tensors are expected
         self._tf_layers = {}
@@ -114,11 +95,43 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
                 )
 
             if config[DENSE_INPUT_DROPOUT]:
-                # TODO: check that this really needs to happen only for sparse features
-                # and not for all!
                 self._tf_layers["dense_dropout"] = tf.keras.layers.Dropout(
                     rate=config[DROP_RATE]
                 )
+
+    def _calculate_output_units(
+        self,
+        attribute: Text,
+        attribute_signature: List[FeatureSignature],
+        config: Dict[Text, Any],
+    ):
+        """Determine the output units from the provided feature signatures.
+
+        Sparse features will be turned into dense ones, hence they each contribute with
+        their future dense number of units.
+        """
+        return sum(
+            [
+                config[DENSE_DIMENSION][attribute]
+                if signature.is_sparse
+                else signature.units
+                for signature in attribute_signature
+            ]
+        )
+
+    def _process_sparse_feature(
+        self, feature: tf.SparseTensor, training: Union[tf.Tensor, bool]
+    ):
+        """Turn sparse tensor into dense, maybe apply dropout before and/or after."""
+        if "sparse_dropout" in self._tf_layers:
+            feature = self._tf_layers["sparse_dropout"](feature, training)
+
+        feature = self._tf_layers["sparse_to_dense"](feature)
+
+        if "dense_dropout" in self._tf_layers:
+            feature = self._tf_layers["dense_dropout"](feature, training)
+
+        return feature
 
     def call(
         self,
@@ -142,14 +155,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         dense_features = []
         for f in features:
             if isinstance(f, tf.SparseTensor):
-                if "sparse_dropout" in self._tf_layers:
-                    f = self._tf_layers["sparse_dropout"](f, training)
-
-                f = self._tf_layers["sparse_to_dense"](f)
-
-                if "dense_dropout" in self._tf_layers:
-                    f = self._tf_layers["dense_dropout"](f, training)
-
+                f = self._process_sparse_feature(f, training)
             dense_features.append(f)
 
         return tf.concat(dense_features, axis=-1)
@@ -177,8 +183,6 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
     Arguments:
         attribute: Name of attribute (e.g. `text` or `label`) whose features will be
             processed.
-        concat_dimension: A positive integer -- number of output units of the dense
-            layers used to unify the last dimension of each feature type.
         feature_signature_sequence: Feature signature describing the sequence-level features.
         feature_signature_sentence: Feature signature describing the sentence-level features.
         config: A model config for correctly parametrising the layer's components.
@@ -190,9 +194,9 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             mask: `(batch_size, max_seq_length+1, 1)`
 
     Output shape:
-        3-D tensor with shape: `(batch_size, sequence_length, output_dim)` where:
-        - `output_dim` matches `input_dim_seq` if that is the same as `input_dim_sent`,
-            otherwise `output_dim` = `concat_dimension`.
+        3-D tensor with shape: `(batch_size, sequence_length, units)` where:
+        - `units` matches `input_dim_seq` if that is the same as `input_dim_sent`,
+            otherwise `units = config[CONCAT_DIMENSION][attribute]`.
         - `sequence_length` is the sum of 2nd dimension sizes of arguments `sequence`
             and`sentence`.
     """
@@ -200,7 +204,6 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
     def __init__(
         self,
         attribute: Text,
-        concat_dimension: int,
         feature_signature_sequence: FeatureSignature,
         feature_signature_sentence: FeatureSignature,
         config: Dict[Text, Any],
@@ -211,13 +214,10 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
 
         # main use case -- both sequence and sentence features are expected
         if feature_signature_sequence and feature_signature_sentence:
-            self.do_concatenation = True
+            self.return_feature_type = f"{SEQUENCE}_{SENTENCE}"
 
             # prepare dimension unifying layers if needed
-            self.unify_dimensions_before_concat = (
-                feature_signature_sequence.units != feature_signature_sentence.units
-            )
-            if self.unify_dimensions_before_concat:
+            if feature_signature_sequence.units != feature_signature_sentence.units:
                 self.output_units = config[CONCAT_DIMENSION][attribute]
 
                 for feature_type in [SEQUENCE, SENTENCE]:
@@ -233,12 +233,11 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
 
         # edge cases where only sequence or only sentence features are expected
         else:
-            self.do_concatenation = False
             if feature_signature_sequence and not feature_signature_sentence:
-                self.only_return = SEQUENCE
+                self.return_feature_type = SEQUENCE
                 self.output_units = feature_signature_sequence.units
-            elif feature_signature_sentence and not feature_signature_sequence:
-                self.only_return = SENTENCE
+            else:
+                self.return_feature_type = SENTENCE
                 self.output_units = feature_signature_sentence.units
 
     def call(self, inputs: Tuple[tf.Tensor, tf.Tensor, tf.Tensor]) -> tf.Tensor:
@@ -255,8 +254,10 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
         sentence = inputs[1]
         mask = inputs[2]
 
-        if self.do_concatenation:
-            if self.unify_dimensions_before_concat:
+        if self.return_feature_type == f"{SEQUENCE}_{SENTENCE}":
+            # If the layers for unifying the dimensions exist, apply them. They always
+            # exist both, or neither.
+            if f"unify_dims.{SEQUENCE}" in self._tf_layers:
                 sequence = self._tf_layers[f"unify_dims.{SEQUENCE}"](sequence)
                 sentence = self._tf_layers[f"unify_dims.{SENTENCE}"](sentence)
 
@@ -289,7 +290,7 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             # = [[seq1, seq2, seq3, sent1, 0]]
             return sequence + sentence
 
-        elif self.only_return == SEQUENCE:
+        elif self.return_feature_type == SEQUENCE:
             return sequence
 
         else:
@@ -328,10 +329,10 @@ class RasaInputLayer(tf.keras.layers.Layer):
                 of sequence- and sentence-level features.
 
     Output shape:
-        3-D tensor with shape: `(batch_size, sequence_length, output_dim)` where
-        `output_dim` is completely  determined by the internally applied
-        `ConcatenateSparseDenseFeatures` layer and `sequence_length` is completely
-        determined by the internally applied `ConcatenateSequenceSentenceFeatures` layer.
+        3-D tensor with shape: `(batch_size, sequence_length, units)` where `units` is 
+        completely  determined by the internally applied `ConcatenateSparseDenseFeatures`
+        layer and `sequence_length` is completely determined by the internally applied 
+        `ConcatenateSequenceSentenceFeatures` layer.
 
     Raises:
         A ValueError if no feature signatures are provided.
@@ -354,21 +355,20 @@ class RasaInputLayer(tf.keras.layers.Layer):
         self._tf_layers = {}
 
         # 1. prepare layers for combining sparse and dense features
-        for feature_type in [SENTENCE, SEQUENCE]:
-            # prepare the layer only if some feature signature are present for this
-            # feature type
-            if (
-                feature_type in attribute_signature
-                and attribute_signature[feature_type]
-            ):
-                self._tf_layers[
-                    f"sparse_dense.{feature_type}"
-                ] = ConcatenateSparseDenseFeatures(
-                    attribute=attribute,
-                    feature_type=feature_type,
-                    attribute_signature=attribute_signature.get(feature_type, []),
-                    config=config,
-                )
+        for feature_type in attribute_signature:
+            if len(attribute_signature[feature_type]) == 0 or feature_type not in [
+                SENTENCE,
+                SEQUENCE,
+            ]:
+                continue
+            self._tf_layers[
+                f"sparse_dense.{feature_type}"
+            ] = ConcatenateSparseDenseFeatures(
+                attribute=attribute,
+                feature_type=feature_type,
+                attribute_signature=attribute_signature[feature_type],
+                config=config,
+            )
 
         # 2. prepare layer for combining sequence- and sentence-level features
         self.have_all_feature_types = all(
@@ -404,7 +404,6 @@ class RasaInputLayer(tf.keras.layers.Layer):
                 attribute=attribute,
                 feature_signature_sequence=new_signatures[SEQUENCE],
                 feature_signature_sentence=new_signatures[SENTENCE],
-                concat_dimension=config[CONCAT_DIMENSION].get(attribute, None),
                 config=config,
             )
 
@@ -530,11 +529,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 of sequence- and sentence-level features.
 
     Output shape:
-        outputs: `(batch_size, max_seq_length+1, output_size)` where `output_size` matches
+        outputs: `(batch_size, max_seq_length+1, units)` where `units` matches
             the underlying transformer's output size if the transformer has some layers,
-            otherwise `output_size` matches that of the Ffnn block applied to the
-            combined features, or it's the output size of the underlying `RasaInputLayer`
-            the Ffnn block has 0 layers. `max_seq_length` is the length of the longest
+            otherwise `units` matches that of the Ffnn block applied to the combined 
+            features, or it's the output size of the underlying `RasaInputLayer` the 
+            Ffnn block has 0 layers. `max_seq_length` is the length of the longest
             sequence of tokens in the given batch.
         seq_sent_features: `(batch_size, max_seq_length+1, hidden_dim)`, where 
             `hidden_dim` is the output size of the underlying Ffnn block, or the output
@@ -564,19 +563,16 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
         super().__init__(name=f"rasa_input_layer_{attribute}")
 
-        self._tf_layers = {}
-
-        self._tf_layers["input_layer"] = RasaInputLayer(
-            attribute, attribute_signature, config
-        )
-
-        self._tf_layers["ffnn"] = layers.Ffnn(
-            config[HIDDEN_LAYERS_SIZES][attribute],
-            config[DROP_RATE],
-            config[REGULARIZATION_CONSTANT],
-            config[WEIGHT_SPARSITY],
-            layer_name_suffix=attribute,
-        )
+        self._tf_layers = {
+            "input_layer": RasaInputLayer(attribute, attribute_signature, config),
+            "ffnn": layers.Ffnn(
+                config[HIDDEN_LAYERS_SIZES][attribute],
+                config[DROP_RATE],
+                config[REGULARIZATION_CONSTANT],
+                config[WEIGHT_SPARSITY],
+                layer_name_suffix=attribute,
+            ),
+        }
 
         # Prepare masking and computing helper variables for masked language modeling.
         # This is only done for the text attribute and only if sequence-level (token-
@@ -626,16 +622,33 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 name=f"{attribute}_encoder",
             )
 
-        # The output size of this layer depends on which component is the last one in
-        # the pipeline because not all components (e.g. the transformer) are necessarily
-        # created.
+        self.output_units = self._calculate_output_units(
+            attribute, num_transformer_layers, transformer_size, config
+        )
+
+    def _calculate_output_units(
+        self,
+        attribute: Text,
+        num_transformer_layers: int,
+        transformer_size: int,
+        config: Dict[Text, Any],
+    ):
+        """Determine the output units based on which layer components are present.
+
+        The output units depend on which component is the last one in the internal 
+        pipeline that is `RasaInputLayer` -> `Ffnn` -> `Transformer`, because not all 
+        the components are necessarily created.
+        """
+        # transformer is the last component
         if num_transformer_layers > 0:
-            self.output_units = transformer_size
+            return transformer_size
+        # the Ffnn block is the last component
         elif len(config[HIDDEN_LAYERS_SIZES][attribute]) > 0:
-            # this is the output size of (the last layer of) the Ffnn block
-            self.output_units = config[HIDDEN_LAYERS_SIZES][attribute][-1]
+            # this is the output size of the last layer of the Ffnn block
+            return config[HIDDEN_LAYERS_SIZES][attribute][-1]
+        # only the RasaInputLayer is present
         else:
-            self.output_units = self._tf_layers["input_layer"].output_units
+            return self._tf_layers["input_layer"].output_units
 
     def _features_as_token_ids(
         self, features: List[Union[tf.Tensor, tf.SparseTensor]]
@@ -652,6 +665,40 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 return tf.stop_gradient(self._tf_layers["sparse_to_dense_token_ids"](f))
+
+    def _create_mlm_variables(
+        self,
+        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        seq_sent_features: tf.Tensor,
+        mask_sequence_sentence: tf.Tensor,
+        training: Union[tf.Tensor, bool],
+    ):
+        """Produce helper variables for masked language modelling (only in training).
+        
+        The `token_ids` embeddings can be viewed as token-level labels/unique IDs of all
+        input tokens (to be used later in the MLM loss) because these embeddings aren't 
+        affected by dropout or masking and are effectively always unique for different 
+        input tokens (and same for the same tokens).
+        `token_ids` share the batch and sequence dimension with the combined sequence-
+        and sentence-level features, the last dimension is unimportant and mimics the 
+        first dense sequence-level feature in the list of features, or alternatively the
+        last dimension will have size 2 if there are only sparse sequence features
+        present.
+        """
+        token_ids = self._features_as_token_ids(sequence_features)
+        # Pad in the sequence dimension to match the shape of combined sequence- and
+        # sentence-level features (sentence-level features effectively have sequence
+        # length of 1).
+        token_ids = tf.pad(token_ids, [[0, 0], [0, 1], [0, 0]])
+
+        # mlm_mask_bool has the same shape as mask_sequence_sentence (i.e. as the
+        # tensor with all combined features), with True meaning tokens that are
+        # masked and False meaning tokens that aren't masked or that are fake
+        # (padded) tokens.
+        transformer_inputs, mlm_mask_bool = self._tf_layers["mlm_input_mask"](
+            seq_sent_features, mask_sequence_sentence, training
+        )
+        return transformer_inputs, token_ids, mlm_mask_bool
 
     def call(
         self,
@@ -716,32 +763,14 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
         seq_sent_features = self._tf_layers["ffnn"](seq_sent_features, training)
 
-        # Produce helper variables for masked language modelling (only in training mode)
+        # If using masked language modeling, mask the transformer inputs and get labels
+        # for the masked tokens and a boolean mask.
         if self.enables_mlm and training:
-            # token_ids are embeddings with the same shape as the first dense sequence
-            # feature or alternatively the last dimension will have size 2 if there are
-            # only sparse sequence features present. In any case, these embeddings can
-            # be viewed as labels/unique IDs of all input tokens (to be used later)
-            # because these embeddings aren't affected by dropout or masking and are
-            # effectively always unique for different input tokens (and same for the
-            # same tokens).
-            token_ids = self._features_as_token_ids(sequence_features)
-            # Pad in the sequence dimension to match the shape of combined sequence- and
-            # sentence-level features (sentence-level features effectively have sequence
-            # length of 1).
-            token_ids = tf.pad(token_ids, [[0, 0], [0, 1], [0, 0]])
-
-            # mlm_mask_bool has the same shape as mask_sequence_sentence (i.e. as the
-            # tensor with all combined features), with True meaning tokens that are
-            # masked and False meaning tokens that aren't masked or that are fake
-            # (padded) tokens.
-            transformer_inputs, mlm_mask_bool = self._tf_layers["mlm_input_mask"](
-                seq_sent_features, mask_sequence_sentence, training
+            transformer_inputs, token_ids, mlm_mask_bool = self._create_mlm_variables(
+                sequence_features, seq_sent_features, mask_sequence_sentence, training
             )
         else:
-            token_ids = None
-            transformer_inputs = seq_sent_features
-            mlm_mask_bool = None
+            transformer_inputs, token_ids, mlm_mask_bool = seq_sent_features, None, None
 
         # Apply the transformer (if present), hence reducing a sequences of features per
         # input example into a simple fixed-size embeddings.
