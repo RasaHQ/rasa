@@ -314,4 +314,6 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
     # The `attention_weights` key should exist, regardless of there being a transformer
     assert "attention_weights" in diagnostic_data[name]
     # By default, ResponseSelector has `number_of_transformer_layers = 0`
-    assert diagnostic_data[name].get("attention_weights") is None
+    # in which case the attention weights should be an empty numpy array.
+    assert isinstance(diagnostic_data[name].get("attention_weights"), np.ndarray)
+    assert diagnostic_data[name].get("attention_weights").size == 0
