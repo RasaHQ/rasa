@@ -44,7 +44,7 @@ for more details). This will only work in combination with the
 `RedisLockStore` (see [Lock Stores](./lock-stores.mdx).
 
 :::caution
-Using multiple worker processes does not work when using the 
+The [SocketIO channel](./connectors/your-own-website.mdx#websocket-channel) does not support multiple worker processes. 
 [SocketIO channel](https://rasa.com/docs/rasa/reference/rasa/core/channels/socketio). Instead, use multiple 
 containers or pods with a single Sanic worker to scale up.
 
