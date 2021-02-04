@@ -232,7 +232,7 @@ class RedisLockStore(LockStore):
 
     def delete_lock(self, conversation_id: Text) -> None:
         deletion_successful = self.red.delete(conversation_id)
-        self._log_deletion(conversation_id, deletion_successful)
+        self._log_deletion(conversation_id, bool(deletion_successful))
 
     def save_lock(self, lock: TicketLock) -> None:
         self.red.set(lock.conversation_id, lock.dumps())
