@@ -190,7 +190,8 @@ class TEDPolicy(Policy):
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # Use a unidirectional or bidirectional encoder.
+        # Use a unidirectional or bidirectional encoder
+        # for `text`, `action_text`, and `label_action_text`.
         UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
         # Initial and final batch sizes:
