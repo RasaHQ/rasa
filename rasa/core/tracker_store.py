@@ -361,9 +361,9 @@ class DynamoTrackerStore(TrackerStore):
         except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
+                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"}],
                 AttributeDefinitions=[
-                    {"AttributeName": "sender_id", "AttributeType": "S"},
+                    {"AttributeName": "sender_id", "AttributeType": "S"}
                 ],
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             )
@@ -420,9 +420,7 @@ class DynamoTrackerStore(TrackerStore):
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types"""
         d = tracker.as_dialogue().as_dict()
-        d.update(
-            {"sender_id": tracker.sender_id,}
-        )
+        d.update({"sender_id": tracker.sender_id})
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
         return core_utils.replace_floats_with_decimals(d)
 
@@ -643,7 +641,9 @@ def is_postgresql_url(url: Union[Text, "URL"]) -> bool:
     return url.drivername == "postgresql"
 
 
-def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Union[Text, int]]:
+def create_engine_kwargs(
+    url: Union[Text, "URL"]
+) -> Dict[Text, Union[Dict[Text, Text], int]]:
     """Get `sqlalchemy.create_engine()` kwargs.
 
     Args:
@@ -748,7 +748,7 @@ class SQLTrackerStore(TrackerStore):
         # Database might take a while to come up
         while True:
             try:
-                self.engine = sa.engine.create_engine(
+                self.engine = sa.engine.create_engine(  # type: ignore
                     engine_url, **create_engine_kwargs(engine_url)
                 )
                 # if `login_db` has been provided, use current channel with
