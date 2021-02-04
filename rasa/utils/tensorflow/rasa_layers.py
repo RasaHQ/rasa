@@ -521,10 +521,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             size of the underlying `RasaInputLayer` if the Ffnn block has 0 layers.
         token_ids: `(batch_size, max_seq_length+1, id_dim)` where id_dim is unimportant
             and it's the last-dimension size of the first sequence-level dense feature
-            if any is present, and 2 otherwise. `None` if not doing MLM.
-        mlm_mask_bool: `(batch_size, max_seq_length+1, 1)`, `None` if not doing MLM.
+            if any is present, and 2 otherwise. Empty tensor if not doing MLM.
+        mlm_mask_bool: `(batch_size, max_seq_length+1, 1)`, empty tensor if not doing MLM.
         attention_weights: `(num_transformer_layers, batch_size, num_transformer_heads, 
-            max_seq_length+1, max_seq_length+1)`, `None` if the transformer has 0 layers.
+            max_seq_length+1, max_seq_length+1)`, empty tensor if the transformer has 0
+            layers.
 
     Raises:
         A ValueError if no feature signatures for sequence-level features are provided.
@@ -691,11 +692,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         ],
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> Tuple[
-        tf.Tensor,
-        tf.Tensor,
-        Optional[tf.Tensor],
-        Optional[tf.Tensor],
-        Optional[tf.Tensor],
+        tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor,
     ]:
         """Combine all features for an attribute into one and embed using a transformer.
 
@@ -722,11 +719,12 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 transformer applied.
             token_ids: 3-D tensor with dense token-level features which can serve as
                 unique embeddings/IDs of all the different tokens found in the batch.
-                `None` if not doing MLM.
+                Empty tensor if not doing MLM.
             mlm_mask_bool: 3-D tensor mask that has 1s where real tokens in `outputs` 
-                were masked and 0s elsewhere. `None` if not doing MLM.
+                were masked and 0s elsewhere. Empty tensor if not doing MLM.
             attention_weights: 5-D tensor containing self-attention weights received 
-                from the underlying transformer. `None` if the transformer has 0 layers.
+                from the underlying transformer. Empty tensor if the transformer has 0 
+                layers.
         """
         sequence_features = inputs[0]
         sentence_features = inputs[1]
@@ -755,7 +753,12 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 training,
             )
         else:
-            transformer_inputs, token_ids, mlm_mask_bool = seq_sent_features, None, None
+            # tf.zeros((0,)) is an alternative to None
+            transformer_inputs, token_ids, mlm_mask_bool = (
+                seq_sent_features,
+                tf.zeros((0,)),
+                tf.zeros((0,)),
+            )
 
         # Apply the transformer (if present), hence reducing a sequences of features per
         # input example into a simple fixed-size embeddings.
@@ -766,6 +769,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             )
             outputs = tfa.activations.gelu(outputs)
         else:
-            outputs, attention_weights = transformer_inputs, None
+            # tf.zeros((0,)) is an alternative to None
+            outputs, attention_weights = transformer_inputs, tf.zeros((0,))
 
         return outputs, seq_sent_features, token_ids, mlm_mask_bool, attention_weights
