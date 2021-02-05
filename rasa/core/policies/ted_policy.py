@@ -190,8 +190,9 @@ class TEDPolicy(Policy):
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # Use a unidirectional or bidirectional encoder.
-        UNIDIRECTIONAL_ENCODER: True,
+        # Use a unidirectional or bidirectional encoder
+        # for `text`, `action_text`, and `label_action_text`.
+        UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
@@ -316,11 +317,6 @@ class TEDPolicy(Policy):
         super().__init__(
             featurizer, priority, should_finetune=should_finetune, **kwargs
         )
-        if isinstance(featurizer, FullDialogueTrackerFeaturizer):
-            self.is_full_dialogue_featurizer_used = True
-        else:
-            self.is_full_dialogue_featurizer_used = False
-
         self._load_params(**kwargs)
 
         self.model = model
@@ -803,9 +799,9 @@ class TEDPolicy(Policy):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
-            # during prediction we don't care about previous dialogue turns,
-            # so to save computation time, use only the last one
-            use_only_last_dialogue_turns=True,
+            max_history_featurizer_is_used=isinstance(
+                featurizer, MaxHistoryTrackerFeaturizer
+            ),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,
@@ -842,7 +838,7 @@ class TED(TransformerRasaModel):
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         config: Dict[Text, Any],
-        use_only_last_dialogue_turns: bool,
+        max_history_featurizer_is_used: bool,
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> None:
@@ -851,13 +847,14 @@ class TED(TransformerRasaModel):
         Args:
             data_signature: the data signature of the input data
             config: the model configuration
-            use_only_last_dialogue_turns: if 'True' only the last dialogue turn will be used
+            max_history_featurizer_is_used: if 'True'
+                only the last dialogue turn will be used
             label_data: the label data
             entity_tag_specs: the entity tag specifications
         """
         super().__init__("TED", config, data_signature, label_data)
 
-        self.use_only_last_dialogue_turns = use_only_last_dialogue_turns
+        self.max_history_featurizer_is_used = max_history_featurizer_is_used
 
         self.predict_data_signature = {
             feature_name: features
@@ -925,6 +922,11 @@ class TED(TransformerRasaModel):
             self.config[TRANSFORMER_SIZE][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[DROP_RATE_ATTENTION],
+            # use bidirectional transformer, because
+            # we will invert dialogue sequence so that the last turn is located
+            # at the first position and would always have
+            # exactly the same positional encoding
+            unidirectional=not self.max_history_featurizer_is_used,
         )
 
         self._prepare_embed_layers(DIALOGUE)
@@ -1062,13 +1064,24 @@ class TED(TransformerRasaModel):
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         mask = self._compute_mask(dialogue_lengths)
 
+        if self.max_history_featurizer_is_used:
+            # invert dialogue sequence so that the last turn would always have
+            # exactly the same positional encoding
+            dialogue_in = tf.reverse_sequence(dialogue_in, dialogue_lengths, seq_axis=1)
+
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
         ](dialogue_in, 1 - mask, self._training)
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
-        if self.use_only_last_dialogue_turns:
-            # pick last vector if max history featurizer is used
+        if self.max_history_featurizer_is_used:
+            # pick last vector if max history featurizer is used, since we inverted
+            # dialogue sequence, the last vector is actually the first one
+            dialogue_transformed = dialogue_transformed[:, :1, :]
+            mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
+        elif not self._training:
+            # during prediction we don't care about previous dialogue turns,
+            # so to save computation time, use only the last one
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, dialogue_lengths), 1
             )
@@ -1184,7 +1197,7 @@ class TED(TransformerRasaModel):
     def _create_last_dialogue_turns_mask(
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> tf.Tensor:
-        # Since use_only_last_dialogue_turns is True,
+        # Since max_history_featurizer_is_used is True,
         # we need to find the locations of last dialogue turns in
         # (combined batch dimension and dialogue length,) dimension,
         # so that we can use `_sequence_lengths` as a boolean  mask to pick
@@ -1234,7 +1247,7 @@ class TED(TransformerRasaModel):
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
             attribute: the attribute we will encode features for
-            (e.g., ACTION_NAME, INTENT)
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             A tensor combining  all features for `attribute`
@@ -1277,7 +1290,7 @@ class TED(TransformerRasaModel):
                 text_transformer_output = attribute_features
                 text_sequence_lengths = sequence_lengths
 
-                if self.use_only_last_dialogue_turns:
+                if self.max_history_featurizer_is_used:
                     # get the location of all last dialogue inputs
                     last_dialogue_turns_mask = self._create_last_dialogue_turns_mask(
                         tf_batch_data, attribute
@@ -1334,10 +1347,9 @@ class TED(TransformerRasaModel):
 
         Args:
             attribute_features: the "real" features to convert
-            attribute_mask:  the tensor containing the position of "real" features
-                in the dialogue, shape is (batch-size x dialogue_len x 1)
-            dialogue_lengths: the tensor containing the actual dialogue length,
-                shape is (batch-size,)
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+            attribute: the attribute we will encode features for
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             The converted attribute features
@@ -1483,7 +1495,7 @@ class TED(TransformerRasaModel):
         attribute_mask = tf_batch_data[TEXT][MASK][0]
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
-        if self.use_only_last_dialogue_turns:
+        if self.max_history_featurizer_is_used:
             # pick outputs that correspond to the last dialogue turns
             attribute_mask = tf.expand_dims(
                 self._last_token(attribute_mask, dialogue_lengths), axis=1
