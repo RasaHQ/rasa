@@ -188,7 +188,6 @@ from rasa.shared.nlu.constants import TEXT, INTENT
 def test_lm_featurizer_shape_values(
     model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
 ):
-    print(os.environ.get("CI"))
     if model_name == "bert" and bool(os.environ.get("CI")):
         pytest.skip(
             "Reason: this model is too large, loading it results in"
@@ -479,6 +478,11 @@ def test_lm_featurizer_edge_cases(
 
     if model_weights is None:
         model_weights_config = {}
+        if model_name == "bert" and bool(os.environ.get("CI")):
+            pytest.skip(
+                "Reason: this model is too large, loading it results in"
+                "crashing of GH action workers."
+            )
     else:
         model_weights_config = {"model_weights": model_weights}
     transformers_config = {
@@ -516,6 +520,11 @@ def test_lm_featurizer_edge_cases(
 def test_lm_featurizer_number_of_sub_tokens(
     model_name, text, expected_number_of_sub_tokens
 ):
+    if model_name == "bert" and bool(os.environ.get("CI")):
+        pytest.skip(
+            "Reason: this model is too large, loading it results in"
+            "crashing of GH action workers."
+        )
     config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
 
     lm_featurizer = LanguageModelFeaturizer(config)
