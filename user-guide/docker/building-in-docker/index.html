@@ -198,12 +198,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.21
+          viewing: 1.10.22
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.10.22/user-guide/docker/building-in-docker/">1.10.22</a>
               <a href="../../.././1.10.21/user-guide/docker/building-in-docker/">1.10.21</a>
               <a href="../../.././1.10.20/user-guide/docker/building-in-docker/">1.10.20</a>
               <a href="../../.././1.10.19/user-guide/docker/building-in-docker/">1.10.19</a>
@@ -313,7 +314,7 @@ See <a class="reference external" href="https://docs.docker.com/install/">Docker
 The only difference is that you’ll be running Rasa inside a Docker container, using
 the image <code class="docutils literal notranslate"><span class="pre">rasa/rasa</span></code>. To initialize your project, run:</p>
 <blockquote>
-<div><pre class="literal-block">docker run -v $(pwd):/app rasa/rasa:1.10.21-full init --no-prompt</pre>
+<div><pre class="literal-block">docker run -v $(pwd):/app rasa/rasa:1.10.22-full init --no-prompt</pre>
 </div></blockquote>
 <p>What does this command mean?</p>
 <ul class="simple">
@@ -321,7 +322,7 @@ the image <code class="docutils literal notranslate"><span class="pre">rasa/rasa
 in the Docker container. This means that files you create on your computer will be
 visible inside the container, and files created in the container will
 get synced back to your computer.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa/rasa</span></code> is the name of the docker image to run. ‘1.10.21-full’ is the name of the tag,
+<li><p><code class="docutils literal notranslate"><span class="pre">rasa/rasa</span></code> is the name of the docker image to run. ‘1.10.22-full’ is the name of the tag,
 which specifies the version and dependencies.</p></li>
 <li><p>the Docker image has the <code class="docutils literal notranslate"><span class="pre">rasa</span></code> command as its entrypoint, which means you don’t
 have to type <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code>, just <code class="docutils literal notranslate"><span class="pre">init</span></code> is enough.</p></li>
@@ -350,7 +351,7 @@ if you want to run the containers as a different user.</p>
 <h2><a class="toc-backref" href="#id4">Talking to Your Assistant</a><a class="headerlink" href="#talking-to-your-assistant" title="Permalink to this headline">¶</a></h2>
 <p>To talk to your newly-trained assistant, run this command:</p>
 <blockquote>
-<div><pre class="literal-block">docker run -it -v $(pwd):/app rasa/rasa:1.10.21-full shell</pre>
+<div><pre class="literal-block">docker run -it -v $(pwd):/app rasa/rasa:1.10.22-full shell</pre>
 </div></blockquote>
 <p>This will start a shell where you can chat to your assistant.
 Note that this command includes the flags <code class="docutils literal notranslate"><span class="pre">-it</span></code>, which means that you are running
@@ -363,14 +364,14 @@ you need to pass the <code class="docutils literal notranslate"><span class="pre
 <p>If you edit the NLU or Core training data or edit the <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> file, you’ll need to
 retrain your Rasa model. You can do so by running:</p>
 <blockquote>
-<div><pre class="literal-block">docker run -v $(pwd):/app rasa/rasa:1.10.21-full train --domain domain.yml --data data --out models</pre>
+<div><pre class="literal-block">docker run -v $(pwd):/app rasa/rasa:1.10.22-full train --domain domain.yml --data data --out models</pre>
 </div></blockquote>
 <p>Here’s what’s happening in that command:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">-v</span> <span class="pre">$(pwd):/app</span></code>: Mounts your project directory into the Docker
 container so that Rasa can train a model on your training data</p></li>
-<li><p>rasa/rasa:1.10.21-full: Use the Rasa image with the tag ‘1.10.21-full’</p></li>
+<li><p>rasa/rasa:1.10.22-full: Use the Rasa image with the tag ‘1.10.22-full’</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">train</span></code>: Execute the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> command within the container. For more
 information see <a class="reference internal" href="../../command-line-interface/#command-line-interface"><span class="std std-ref">Command Line Interface</span></a>.</p></li>
 </ul>
@@ -383,7 +384,7 @@ You can also leave these out, since we are passing the default values.</p>
 <h2><a class="toc-backref" href="#id6">Customizing your Model</a><a class="headerlink" href="#customizing-your-model" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="choosing-a-tag">
 <span id="id1"></span><h3><a class="toc-backref" href="#id7">Choosing a Tag</a><a class="headerlink" href="#choosing-a-tag" title="Permalink to this headline">¶</a></h3>
-<p>All <code class="docutils literal notranslate"><span class="pre">rasa/rasa</span></code> image tags start with a version number. The current version is 1.10.21. The tags are:</p>
+<p>All <code class="docutils literal notranslate"><span class="pre">rasa/rasa</span></code> image tags start with a version number. The current version is 1.10.22. The tags are:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">{version}</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">{version}-full</span></code></p></li>
@@ -464,7 +465,7 @@ tell your bot to use this new action.</p>
 </div></blockquote>
 <p>After updating your domain and stories, you have to retrain your model:</p>
 <blockquote>
-<div><pre class="literal-block">docker run -v $(pwd):/app rasa/rasa:1.10.21-full train</pre>
+<div><pre class="literal-block">docker run -v $(pwd):/app rasa/rasa:1.10.22-full train</pre>
 </div></blockquote>
 <p>Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:</p>
 <blockquote>
@@ -500,7 +501,7 @@ Add this endpoint to your <code class="docutils literal notranslate"><span class
 </div></blockquote>
 <p>Now you can talk to your bot again via the <code class="docutils literal notranslate"><span class="pre">shell</span></code> command:</p>
 <blockquote>
-<div><pre class="literal-block">docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:1.10.21-full shell</pre>
+<div><pre class="literal-block">docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:1.10.22-full shell</pre>
 </div></blockquote>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
