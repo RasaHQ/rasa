@@ -39,7 +39,9 @@ class SpacyEntityExtractor(EntityExtractor):
         message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @staticmethod
-    def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:
+    def extract_entities(
+        doc: "Doc",
+    ) -> List[Dict[Text, Any]]:  # pytype: disable=invalid-annotation
         entities = [
             {
                 "entity": ent.label_,

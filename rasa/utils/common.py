@@ -1,9 +1,20 @@
+import asyncio
 import logging
 import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import (
+    Any,
+    Coroutine,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Type,
+    TypeVar,
+)
 
 import rasa.core.utils
 import rasa.utils.io
@@ -18,6 +29,8 @@ from rasa.constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 class TempDirectoryPath(str):
@@ -394,3 +407,35 @@ class RepeatedLogFilter(logging.Filter):
             self.last_log = current_log
             return True
         return False
+
+
+def run_in_loop(
+    f: Coroutine[Any, Any, T], loop: Optional[asyncio.AbstractEventLoop] = None
+) -> T:
+    """Execute the awaitable in the passed loop.
+    If no loop is passed, the currently existing one is used or a new one is created
+    if no loop has been started in the current context.
+    After the awaitable is finished, all remaining tasks on the loop will be
+    awaited as well (background tasks).
+    WARNING: don't use this if there are never ending background tasks scheduled.
+        in this case, this function will never return.
+    Args:
+       f: function to execute
+       loop: loop to use for the execution
+    Returns:
+        return value from the function
+    """
+
+    if loop is None:
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(f)
+
+    # Let's also finish all running tasks:
+    pending = asyncio.Task.all_tasks()
+    loop.run_until_complete(asyncio.gather(*pending))
+
+    return result

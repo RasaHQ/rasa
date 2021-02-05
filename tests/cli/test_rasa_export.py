@@ -9,6 +9,7 @@ from _pytest.pytester import RunResult
 
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.events import UserUttered
 from rasa.core.trackers import DialogueStateTracker
@@ -76,7 +77,7 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
 
 
 # noinspection PyProtectedMember
-def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
+async def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
     # write config without event broker to file
     endpoints_path = write_endpoint_config_to_yaml(
         tmp_path, {"tracker_store": {"type": "sql"}}
@@ -85,7 +86,7 @@ def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     with pytest.raises(SystemExit):
-        assert export._get_event_broker(available_endpoints)
+        assert await export._get_event_broker(available_endpoints)
 
 
 def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
@@ -224,8 +225,15 @@ def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
 
     # mock event broker so we can check its `publish` method is called
     event_broker = Mock()
-    event_broker.publish = Mock()
-    monkeypatch.setattr(export, "_get_event_broker", lambda _: event_broker)
+
+    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+        return event_broker
+
+    async def close():
+        pass
+
+    event_broker.close = close
+    monkeypatch.setattr(export, "_get_event_broker", _get_event_broker)
 
     # run the export function
     export.export_trackers(namespace)
@@ -257,7 +265,11 @@ def test_export_trackers_publishing_exceptions(
     # mock event broker so we can check its `publish` method is called
     event_broker = Mock()
     event_broker.publish.side_effect = exception
-    monkeypatch.setattr(export, "_get_event_broker", lambda _: event_broker)
+
+    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+        return event_broker
+
+    monkeypatch.setattr(export, "_get_event_broker", _get_event_broker)
 
     with pytest.raises(SystemExit):
         export.export_trackers(namespace)

@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+from asyncio import AbstractEventLoop
 from typing import Optional
 
 from rasa.constants import DOCS_URL_EVENT_BROKERS
@@ -42,7 +43,9 @@ class KafkaEventBroker(EventBroker):
         logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional["KafkaEventBroker"]:
+    async def from_endpoint_config(
+        cls, broker_config, event_loop: Optional[AbstractEventLoop] = None,
+    ) -> Optional["KafkaEventBroker"]:
         if broker_config is None:
             return None
 

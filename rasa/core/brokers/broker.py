@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union
 
 from rasa.utils import common
@@ -11,17 +13,22 @@ class EventBroker:
     """Base class for any event broker implementation."""
 
     @staticmethod
-    def create(
+    async def create(
         obj: Union["EventBroker", EndpointConfig, None],
+        loop: Optional[AbstractEventLoop] = None,
     ) -> Optional["EventBroker"]:
         """Factory to create an event broker."""
         if isinstance(obj, EventBroker):
             return obj
 
-        return _create_from_endpoint_config(obj)
+        return await _create_from_endpoint_config(obj, loop)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventBroker":
+    async def from_endpoint_config(
+        cls,
+        broker_config: EndpointConfig,
+        event_loop: Optional[AbstractEventLoop] = None,
+    ) -> "EventBroker":
         raise NotImplementedError(
             "Event broker must implement the `from_endpoint_config` method."
         )
@@ -38,14 +45,14 @@ class EventBroker:
         """
         return True
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Close the connection to an event broker."""
         # default implementation does nothing
         pass
 
 
-def _create_from_endpoint_config(
-    endpoint_config: Optional[EndpointConfig],
+async def _create_from_endpoint_config(
+    endpoint_config: Optional[EndpointConfig], event_loop: Optional[AbstractEventLoop]
 ) -> Optional["EventBroker"]:
     """Instantiate an event broker based on its configuration."""
 
@@ -55,32 +62,36 @@ def _create_from_endpoint_config(
         from rasa.core.brokers.pika import PikaEventBroker
 
         # default broker if no type is set
-        broker = PikaEventBroker.from_endpoint_config(endpoint_config)
+        broker = await PikaEventBroker.from_endpoint_config(endpoint_config, event_loop)
     elif endpoint_config.type.lower() == "sql":
         from rasa.core.brokers.sql import SQLEventBroker
 
-        broker = SQLEventBroker.from_endpoint_config(endpoint_config)
+        broker = await SQLEventBroker.from_endpoint_config(endpoint_config, event_loop)
     elif endpoint_config.type.lower() == "file":
         from rasa.core.brokers.file import FileEventBroker
 
-        broker = FileEventBroker.from_endpoint_config(endpoint_config)
+        broker = await FileEventBroker.from_endpoint_config(endpoint_config, event_loop)
     elif endpoint_config.type.lower() == "kafka":
         from rasa.core.brokers.kafka import KafkaEventBroker
 
-        broker = KafkaEventBroker.from_endpoint_config(endpoint_config)
+        broker = await KafkaEventBroker.from_endpoint_config(endpoint_config)
     else:
-        broker = _load_from_module_string(endpoint_config)
+        broker = await _load_from_module_string(endpoint_config)
 
     if broker:
         logger.debug(f"Instantiated event broker to '{broker.__class__.__name__}'.")
     return broker
 
 
-def _load_from_module_string(broker_config: EndpointConfig,) -> Optional["EventBroker"]:
+async def _load_from_module_string(
+    broker_config: EndpointConfig,
+) -> Optional["EventBroker"]:
     """Instantiate an event broker based on its class name."""
     try:
         event_broker_class = common.class_from_module_path(broker_config.type)
-        return event_broker_class.from_endpoint_config(broker_config)
+        if not asyncio.iscoroutinefunction(event_broker_class.from_endpoint_config):
+            return event_broker_class.from_endpoint_config(broker_config)
+        return await event_broker_class.from_endpoint_config(broker_config)
     except (AttributeError, ImportError) as e:
         logger.warning(
             f"The `EventBroker` type '{broker_config.type}' could not be found. "

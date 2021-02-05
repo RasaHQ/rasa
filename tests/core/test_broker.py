@@ -1,27 +1,23 @@
 import json
 import logging
 from pathlib import Path
-from typing import Union, Text, List, Optional, Type
+from asyncio.events import AbstractEventLoop
+from typing import Union, Text, List, Optional, Type, Dict, Any
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 
 from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.brokers import pika
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.core.brokers.pika import (
-    PikaEventBroker,
-    PikaMessageProcessor,
-    DEFAULT_QUEUE_NAME,
-)
+from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
-
-import pika.connection
 
 TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
@@ -29,20 +25,19 @@ TEST_EVENTS = [
     Restarted(),
 ]
 
-TEST_CONNECTION_PARAMETERS = pika.connection.ConnectionParameters(
-    "amqp://username:password@host:port"
-)
 
-
-def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
+async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
 
     # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
-    monkeypatch.setattr(PikaEventBroker, "_connect", lambda _: None)
+    async def connect(self) -> None:
+        pass
+
+    monkeypatch.setattr(PikaEventBroker, "connect", connect)
 
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
     )
-    actual = EventBroker.create(cfg)
+    actual = await EventBroker.create(cfg)
 
     assert isinstance(actual, PikaEventBroker)
     assert actual.host == "localhost"
@@ -51,75 +46,73 @@ def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
 
 
 # noinspection PyProtectedMember
-def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
-    pika_processor = PikaMessageProcessor(TEST_CONNECTION_PARAMETERS, queues=None)
-
+def test_pika_message_property_app_id_without_env_set(monkeypatch: MonkeyPatch):
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
-    assert not pika_processor._get_message_properties().app_id
+    pika_broker = PikaEventBroker("some host", "username", "password")
+    assert not pika_broker._message({}, None).app_id
 
+
+def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     # setting it to some value results in that value as the App ID
     rasa_environment = "some-test-environment"
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
-    assert pika_processor._get_message_properties().app_id == rasa_environment
+    pika_broker = PikaEventBroker("some host", "username", "password")
+
+    assert pika_broker._message({}, None).app_id == rasa_environment
 
 
 @pytest.mark.parametrize(
-    "queue_arg,queues_arg,expected,warning",
+    "queues_arg,expected,warning",
     [
         # default case
-        (None, ["q1"], ["q1"], None),
-        # only provide `queue`
-        ("q1", None, ["q1"], FutureWarning),
-        # supplying a list for `queue` works too
-        (["q1", "q2"], None, ["q1", "q2"], FutureWarning),
-        # `queues` arg supplied, takes precedence
-        ("q1", "q2", ["q2"], FutureWarning),
-        # same, but with a list
-        ("q1", ["q2", "q3"], ["q2", "q3"], FutureWarning),
-        # only supplying `queues` works, and queues is a string
-        (None, "q1", ["q1"], None),
+        (["q1", "q2"], ["q1", "q2"], None),
+        # `queues` arg supplied, as string
+        ("q1", ["q1"], None),
         # no queues provided. Use default queue and print warning.
-        (None, None, [DEFAULT_QUEUE_NAME], UserWarning),
+        (None, [DEFAULT_QUEUE_NAME], UserWarning),
     ],
 )
 def test_pika_queues_from_args(
-    queue_arg: Union[Text, List[Text], None],
     queues_arg: Union[Text, List[Text], None],
     expected: List[Text],
     warning: Optional[Type[Warning]],
 ):
     with pytest.warns(warning):
-        pika_processor = PikaMessageProcessor(
-            TEST_CONNECTION_PARAMETERS, queues=queues_arg, queue=queue_arg,
+        pika_processor = PikaEventBroker(
+            "host",
+            "username",
+            "password",
+            queues=queues_arg,
+            get_message=lambda: ("", None),
         )
 
     assert pika_processor.queues == expected
 
 
-def test_no_broker_in_config():
+async def test_no_broker_in_config():
     cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "event_broker")
 
-    actual = EventBroker.create(cfg)
+    actual = await EventBroker.create(cfg)
 
     assert actual is None
 
 
-def test_sql_broker_from_config():
+async def test_sql_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
     )
-    actual = EventBroker.create(cfg)
+    actual = await EventBroker.create(cfg)
 
     assert isinstance(actual, SQLEventBroker)
     assert actual.engine.name == "sqlite"
 
 
-def test_sql_broker_logs_to_sql_db():
+async def test_sql_broker_logs_to_sql_db():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
     )
-    actual = EventBroker.create(cfg)
+    actual = await EventBroker.create(cfg)
 
     assert isinstance(actual, SQLEventBroker)
 
@@ -135,20 +128,20 @@ def test_sql_broker_logs_to_sql_db():
     assert events_types == ["user", "slot", "restart"]
 
 
-def test_file_broker_from_config():
+async def test_file_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/file_endpoint.yml", "event_broker"
     )
-    actual = EventBroker.create(cfg)
+    actual = await EventBroker.create(cfg)
 
     assert isinstance(actual, FileEventBroker)
     assert actual.path == "rasa_event.log"
 
 
-def test_file_broker_logs_to_file(tmpdir):
+async def test_file_broker_logs_to_file(tmpdir):
     log_file_path = tmpdir.join("events.log").strpath
 
-    actual = EventBroker.create(
+    actual = await EventBroker.create(
         EndpointConfig(**{"type": "file", "path": log_file_path})
     )
 
@@ -164,10 +157,10 @@ def test_file_broker_logs_to_file(tmpdir):
     assert recovered == TEST_EVENTS
 
 
-def test_file_broker_properly_logs_newlines(tmpdir):
+async def test_file_broker_properly_logs_newlines(tmpdir):
     log_file_path = tmpdir.join("events.log").strpath
 
-    actual = EventBroker.create(
+    actual = await EventBroker.create(
         EndpointConfig(**{"type": "file", "path": log_file_path})
     )
 
@@ -189,16 +182,43 @@ def test_load_custom_broker_name():
     assert EventBroker.create(config)
 
 
-def test_load_non_existent_custom_broker_name():
+class CustomEventBrokerWithoutAsync(EventBroker):
+    @classmethod
+    def from_endpoint_config(
+        cls,
+        broker_config: EndpointConfig,
+        event_loop: Optional[AbstractEventLoop] = None,
+    ) -> "EventBroker":
+        return FileEventBroker()
+
+    def publish(self, event: Dict[Text, Any]) -> None:
+        pass
+
+
+async def test_load_custom_broker_without_async_support(tmpdir):
+    log_file_path = tmpdir.join("events.log").strpath
+
+    config = EndpointConfig(
+        **{
+            "type": f"{CustomEventBrokerWithoutAsync.__module__}."
+            f"{CustomEventBrokerWithoutAsync.__name__}",
+            "path": str(log_file_path),
+        }
+    )
+
+    assert isinstance(await EventBroker.create(config), FileEventBroker)
+
+
+async def test_load_non_existent_custom_broker_name():
     config = EndpointConfig(**{"type": "rasa.core.brokers.my.MyProducer"})
-    assert EventBroker.create(config) is None
+    assert await EventBroker.create(config) is None
 
 
-def test_kafka_broker_from_config():
+async def test_kafka_broker_from_config():
     endpoints_path = "data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml"
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
-    actual = KafkaEventBroker.from_endpoint_config(cfg)
+    actual = await KafkaEventBroker.from_endpoint_config(cfg)
 
     expected = KafkaEventBroker(
         "localhost",
@@ -214,27 +234,22 @@ def test_kafka_broker_from_config():
     assert actual.topic == expected.topic
 
 
-def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
-    from rasa.core.brokers import pika
+async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
+    broker = PikaEventBroker(
+        "host", "username", "password", retry_delay_in_seconds=1, connection_attempts=1
+    )
 
     with pytest.raises(Exception):
-        pika.initialise_pika_connection(
-            "localhost", "user", "password", connection_attempts=1
-        )
+        await broker.connect()
 
-    assert len(caplog.records) == 0
+    assert (
+        len(caplog.records) == 1 and caplog.records[0].name == "rasa.core.brokers.pika"
+    )
 
 
-def test_pika_logs_in_debug_mode(caplog: LogCaptureFixture, monkeypatch: MonkeyPatch):
-    from rasa.core.brokers.pika import _pika_log_level
+def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("RABBITMQ_SSL_KEY_PASSWORD", "test")
+    monkeypatch.setenv("RABBITMQ_SSL_CA_FILE", "test")
 
-    pika_level = logging.getLogger("pika").level
-
-    with caplog.at_level(logging.INFO):
-        with _pika_log_level(logging.CRITICAL):
-            assert logging.getLogger("pika").level == logging.CRITICAL
-
-    with caplog.at_level(logging.DEBUG):
-        with _pika_log_level(logging.CRITICAL):
-            # level should not change
-            assert logging.getLogger("pika").level == pika_level
+    with pytest.warns(UserWarning):
+        pika._create_rabbitmq_ssl_options()
