@@ -36,23 +36,16 @@ def test_align_token_features():
     assert np.all(actual_features[0][4] == np.mean(token_features[0][5:10], axis=0))
 
 
-def test_normalize():
-    input_values = [0.7, 0.1, 0.1]
-    normalized_values = train_utils.normalize(np.array(input_values))
-    assert np.allclose(
-        normalized_values, np.array([0.77777778, 0.11111111, 0.11111111]), atol=1e-5
-    )
-
-
 @pytest.mark.parametrize(
     "input_values, ranking_length, output_values",
-    [([0.5, 0.8, 0.1], 2, [0.5, 0.8, 0.0]), ([0.5, 0.3, 0.9], 5, [0.5, 0.3, 0.9]),],
+    [
+        ([0.2, 0.7, 0.1], 2, [0.2222222, 0.77777778, 0.0]),
+        ([0.1, 0.7, 0.1], 5, [0.11111111, 0.77777778, 0.11111111]),
+    ],
 )
-def test_sort_and_rank(
-    input_values: List[float], ranking_length: int, output_values: List[float]
-):
-    ranked_values = train_utils.filter_top_k(np.array(input_values), ranking_length)
-    assert np.array_equal(ranked_values, output_values)
+def test_normalize(input_values, ranking_length, output_values):
+    normalized_values = train_utils.normalize(np.array(input_values), ranking_length)
+    assert np.allclose(normalized_values, np.array(output_values), atol=1e-5)
 
 
 @pytest.mark.parametrize(

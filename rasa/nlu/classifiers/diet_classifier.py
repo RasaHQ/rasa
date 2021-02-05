@@ -181,8 +181,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'cross_entropy' or 'margin'.
         LOSS_TYPE: CROSS_ENTROPY,
-        # Number of top intents to normalize scores for. Applicable with loss type 'cross_entropy'.
-        # Set to 0 to turn off normalization.
+        # Number of top intents to normalize scores for. Applicable with loss type 'cross_entropy'
+        # and 'softmax' confidences. Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
