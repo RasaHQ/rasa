@@ -44,6 +44,7 @@ from rasa.core.interpreter import (
     RegexInterpreter,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.lock_store import LockStore
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -69,6 +70,7 @@ class MessageProcessor:
         policy_ensemble: PolicyEnsemble,
         domain: Domain,
         tracker_store: TrackerStore,
+        lock_store: LockStore,
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
@@ -348,28 +350,29 @@ class MessageProcessor:
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
-        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
+        async with self.lock_store.lock(sender_id):
+            tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
 
-        if not tracker:
-            logger.warning(
-                f"Failed to retrieve tracker for conversation ID '{sender_id}'."
-            )
-            return None
+            if not tracker:
+                logger.warning(
+                    f"Failed to retrieve tracker for conversation ID '{sender_id}'."
+                )
+                return None
 
-        if (
-            reminder_event.kill_on_user_message
-            and self._has_message_after_reminder(tracker, reminder_event)
-            or not self._is_reminder_still_valid(tracker, reminder_event)
-        ):
-            logger.debug(
-                f"Canceled reminder because it is outdated ({reminder_event})."
-            )
-        else:
-            intent = reminder_event.intent
-            entities = reminder_event.entities or {}
-            await self.trigger_external_user_uttered(
-                intent, entities, tracker, output_channel
-            )
+            if (
+                reminder_event.kill_on_user_message
+                and self._has_message_after_reminder(tracker, reminder_event)
+                or not self._is_reminder_still_valid(tracker, reminder_event)
+            ):
+                logger.debug(
+                    f"Canceled reminder because it is outdated ({reminder_event})."
+                )
+            else:
+                intent = reminder_event.intent
+                entities = reminder_event.entities or {}
+                await self.trigger_external_user_uttered(
+                    intent, entities, tracker, output_channel
+                )
 
     async def trigger_external_user_uttered(
         self,
