@@ -12,6 +12,7 @@ task_mapping = {
     "CRFEntityExtractor_report.json": "Entity Prediction",
     "DIETClassifier_report.json": "Entity Prediction",
     "response_selection_report.json": "Response Selection",
+    "story_report.json": "action_prediction",
 }
 
 
