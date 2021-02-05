@@ -316,6 +316,7 @@ class AvailableEndpoints:
         nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
+        action.custom_actions = cls.find_custom_actions_in_endpoints(endpoint_file)
         model = read_endpoint_config(endpoint_file, endpoint_type="models")
         tracker_store = read_endpoint_config(
             endpoint_file, endpoint_type="tracker_store"
@@ -342,6 +343,42 @@ class AvailableEndpoints:
         self.tracker_store = tracker_store
         self.lock_store = lock_store
         self.event_broker = event_broker
+
+    @staticmethod
+    def find_custom_actions_in_endpoints(endpoint_file):
+        custom_actions = read_endpoint_config(
+            endpoint_file, endpoint_type="custom_actions"
+        )
+        if custom_actions is None:
+            return None
+        custom_action_modules = getattr(custom_actions, "modules", [])
+        import_custom_action_modules(custom_action_modules)
+        return list_imported_custom_actions()
+
+
+def import_custom_action_modules(modules):
+    if not isinstance(modules, list):
+        modules = [modules]
+    for module in modules:
+        try:
+            rasa.shared.utils.common.import_submodules(module)
+        except (AttributeError, ImportError):
+            logger.error(
+                "Could not load custom actions"
+                + (f" from '{module}'" if isinstance(module, str) else "")
+                + "."
+            )
+            continue
+
+
+def list_imported_custom_actions():
+    return [
+        a()
+        for a in rasa.shared.utils.common.all_subclasses(
+            rasa.core.actions.action.Action
+        )
+        if not a.__module__.startswith("rasa.")
+    ]
 
 
 def read_endpoints_from_path(

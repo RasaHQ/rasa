@@ -5,6 +5,19 @@ title: Custom Actions
 abstract: A custom action can run any code you want, including API calls, database queries etc. They can turn on the lights, add an event to a calendar, check a user's bank balance, or anything else you can imagine.
 ---
 
+Rasa supports two ways of implementing custom actions, using an action server, or by
+importing a Python module accessible from your Rasa installation.
+
+
+### Using an Action Server
+
+To specify an action server, set its URL under the `action_endpoint` key of `endpoints.yml`:
+
+```yaml-rasa
+action_endpoint:
+  url: "http://action-server:5055/webhook"
+```
+
 For details on how to implement a custom action, see the [SDK documentation](https://rasa.com/docs/action-server/running-action-server).
 Any custom action that you want to use in your stories should be added into the
 actions section of your [domain](./domain.mdx).
@@ -52,3 +65,24 @@ Your action server should respond with a list of events and responses:
   "responses": [{}]
 }
 ```
+
+
+### Within Rasa itself
+
+Using a dedicated action server is the recommended way to implement custom behavior in Rasa.
+However, if your use case is not supported, it is also possible to bundle Rasa actions with
+your Rasa installation, by specifying module paths under the `custom_actions` key of `endpoints.yml`:
+
+```yaml-rasa
+custom_actions:
+  modules:
+    - my_module.actions
+    - my_module.some_more_actions
+```
+
+In this example, all subclasses of [`rasa.core.actions.action.Action`](./reference/rasa/core/actions/action#action-objects)
+under the specified paths `my_module.actions` and `my_module.some_more_actions` would be registered.
+
+:::note Resolving action names at execution time
+When executing an action, Rasa will first match it against any actions registered using this
+method, and _then_ query the action server, if set.
