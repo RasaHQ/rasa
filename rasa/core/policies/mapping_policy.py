@@ -6,7 +6,6 @@ import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.utils import common as common_utils
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
@@ -19,7 +18,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
@@ -43,10 +42,9 @@ class MappingPolicy(Policy):
     def _standard_featurizer() -> None:
         return None
 
-    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
+    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY, **kwargs: Any) -> None:
         """Create a new Mapping policy."""
-
-        super().__init__(priority=priority)
+        super().__init__(priority=priority, **kwargs)
 
         rasa.shared.utils.io.raise_deprecation_warning(
             f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
@@ -75,7 +73,7 @@ class MappingPolicy(Policy):
                 "You have defined triggers in your domain, but haven't "
                 "added the MappingPolicy to your policy ensemble. "
                 "Either remove the triggers from your domain or "
-                "exclude the MappingPolicy from your policy configuration."
+                "include the MappingPolicy in your policy configuration."
             )
 
     def train(
@@ -95,13 +93,13 @@ class MappingPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         """Predicts the assigned action.
 
         If the current intent is assigned to an action that action will be
         predicted with the highest probability of all policies. If it is not
-        the policy will predict zero for every action."""
-
+        the policy will predict zero for every action.
+        """
         result = self._default_predictions(domain)
 
         intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
@@ -168,7 +166,7 @@ class MappingPolicy(Policy):
                 "There is no mapped action for the predicted intent, "
                 "'{}'.".format(intent)
             )
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {"priority": self.priority}

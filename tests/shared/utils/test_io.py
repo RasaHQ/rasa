@@ -8,6 +8,7 @@ from typing import Callable, Text, List, Set, Any
 import pytest
 
 import rasa.shared
+from rasa.shared.exceptions import FileIOException, FileNotFoundException
 import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.utils.io import raise_deprecation_warning
@@ -43,7 +44,7 @@ def test_raise_deprecation():
 
 
 def test_read_file_with_not_existing_path():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundException):
         rasa.shared.utils.io.read_file("some path")
 
 
@@ -378,3 +379,10 @@ def test_raise_deprecation_warning_default():
         f"This feature is deprecated. "
         f"(will be removed in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS})"
     )
+
+
+def test_read_file_with_wrong_encoding(tmp_path: Path):
+    file = tmp_path / "myfile.txt"
+    file.write_text("ä", encoding="latin-1")
+    with pytest.raises(FileIOException):
+        rasa.shared.utils.io.read_file(file)

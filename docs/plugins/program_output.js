@@ -8,6 +8,18 @@
     It is inspired by `remark-source` and also relies on a pre-build phase,
     before docusaurus is started (or built). It allows us to support separate
     versions of the docs (and of the program outputs).
+
+
+    Caveat: this plugin operates at 2 separate points in time:
+        1. During the "pre-build" phase, pre-generating files inside the
+           sources/ folder. This phase is run on the "main" version of the repo
+           (main branch, release branches, tags, etc...), which doesn't have
+           several versions of the docs site. This is why `getProgramOutputs()` is
+           version-agnostic and simply outputs files in `mainSourceDir`.
+        2. At the build phase, happening on the `documentation` branch. In this context,
+           there are multiple versions of the docs, and the plugins needs to support that.
+           This is why the `remarkProgramOutput()` is version-aware and takes care
+           of loading the files from a versioned path.
 */
 const fs = require('fs');
 const globby = require('globby');
@@ -20,9 +32,12 @@ const { readFile, writeFile } = fs.promises;
 
 const PROGRAM_OUTPUT_RE = /```[a-z]+ \[([^\]]+)\]\n```/;
 
+const VERSIONED_DOCS_PATH_RE = /(\/versioned_docs\/version-\d+\.\d+\.x)\//;
+
 const defaultOptions = {
     docsDir: './docs',
-    sourceDir: './docs/sources',
+    sourceDirectoryName: 'sources',
+    mainSourceDir: './docs/sources',
     include: ['**.mdx', '**.md'],
     commandPrefix: '',
 };
@@ -33,15 +48,16 @@ const defaultOptions = {
     generates outputs and save them as files.
 
     Options:
-    - docsDir:        the directory containing the docs files
-    - sourceDir:      the directory that will contain the program outputs
-    - include:        list of patterns to look for doc files
-    - commandPrefix:  a prefix to be prepended before each command
+    - docsDir:              the directory containing the docs files
+    - mainSourceDir:        the directory that will contain the program outputs
+    - sourceDirectoryName:  the name (relative) of the source directory
+    - include:              list of patterns to look for doc files
+    - commandPrefix:        a prefix to be prepended before each command
 */
 async function getProgramOutputs(options) {
 
     options = { ...defaultOptions, ...options };
-    const { docsDir, include, sourceDir, commandPrefix } = options;
+    const { docsDir, include, mainSourceDir, commandPrefix } = options;
     // first, gather all the docs files
     const docsFiles = await globby(include, {
       cwd: docsDir,
@@ -69,9 +85,9 @@ async function getProgramOutputs(options) {
     }));
     commands = commands.flat().filter(pair => pair.length > 0);
 
-    // finally, write all the command outputs as files in the `sourceDir`
+    // finally, write all the command outputs as files in the `mainSourceDir`
     return await Promise.all(commands.map(async ([command, output]) => {
-        return await writeFile(`${sourceDir}/${commandToFilename(command)}`, output);
+        return await writeFile(`${mainSourceDir}/${commandToFilename(command)}`, output);
     }));
 };
 
@@ -88,10 +104,10 @@ async function getProgramOutputs(options) {
 */
 function remarkProgramOutput(options = {}) {
     options = { ...defaultOptions, ...options };
-    return (root) => {
+    return (root, { history }) => {
         visitChildren((node, index, parent) => {
             if (node && node.type === 'code') {
-                const content = readCommandOutput(node.meta, options);
+                const content = readCommandOutput(node.meta, options, history[0]);
                 if (content !== undefined) {
                     node.value = content;
                 }
@@ -101,7 +117,7 @@ function remarkProgramOutput(options = {}) {
 }
 
 
-function readCommandOutput(meta, { sourceDir }) {
+function readCommandOutput(meta, { mainSourceDir, sourceDirectoryName }, filename) {
     if (!meta) {
         return undefined;
     }
@@ -109,16 +125,27 @@ function readCommandOutput(meta, { sourceDir }) {
         return undefined;
     }
     meta = meta.slice(1, -1);
+    const sourceFile = `${getVersionedSourceDir(mainSourceDir, sourceDirectoryName, filename)}/${commandToFilename(meta)}`
     try {
-        return fs.readFileSync(`${sourceDir}/${commandToFilename(meta)}`, { encoding: 'utf8' });
+        return fs.readFileSync(sourceFile, { encoding: 'utf8' });
     } catch (e) {
-        throw new Error(`Failed to read file: ${meta}`);
+        throw new Error(`Failed to read file: ${sourceFile} for meta ${meta}`);
     }
 }
 
 
 function commandToFilename(command) {
     return command.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.txt';
+}
+
+/**
+    By analyzing the `filename` argument, we can guess if the file we want
+    to load is in a specific version of the docs, or the main one.
+*/
+function getVersionedSourceDir(mainSourceDir, sourceDirectoryName, filename) {
+    const re = new RegExp(VERSIONED_DOCS_PATH_RE, 'gi');
+    const match = re.exec(filename);
+    return match === null ? mainSourceDir : `.${match[1]}/${sourceDirectoryName}`;
 }
 
 

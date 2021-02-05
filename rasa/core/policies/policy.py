@@ -17,6 +17,9 @@ from typing import (
 )
 import numpy as np
 
+from rasa.core.exceptions import UnsupportedDialogueModelError
+from rasa.shared.core.events import Event
+
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.io
@@ -31,6 +34,9 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
+from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.utils.tensorflow.constants import EPOCHS
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -107,12 +113,17 @@ class Policy:
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
+        should_finetune: bool = False,
+        **kwargs: Any,
     ) -> None:
+        """Constructs a new Policy object."""
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
+        self.finetune_mode = should_finetune
 
     @property
     def featurizer(self):
+        """Returns the policy's featurizer."""
         return self.__featurizer
 
     @staticmethod
@@ -125,7 +136,6 @@ class Policy:
         Returns:
             the dictionary of parameters
         """
-
         valid_keys = rasa.shared.utils.common.arguments_of(func)
 
         params = {key: kwargs.get(key) for key in valid_keys if kwargs.get(key)}
@@ -140,8 +150,13 @@ class Policy:
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
         **kwargs: Any,
-    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
+    ) -> Tuple[
+        List[List[Dict[Text, List["Features"]]]],
+        np.ndarray,
+        List[List[Dict[Text, List["Features"]]]],
+    ]:
         """Transform training trackers into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -152,6 +167,7 @@ class Policy:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+            bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
             - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -159,10 +175,12 @@ class Policy:
               all training trackers
             - the label ids (e.g. action ids) for every dialogue turn in all training
               trackers
+            - A dictionary of entity type (ENTITY_TAGS) to a list of features
+              containing entity tag ids for text user inputs otherwise empty dict
+              for all dialogue turns in all training trackers
         """
-
-        state_features, label_ids = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter
+        state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
+            training_trackers, domain, interpreter, bilou_tagging
         )
 
         max_training_samples = kwargs.get("max_training_samples")
@@ -173,8 +191,9 @@ class Policy:
             )
             state_features = state_features[:max_training_samples]
             label_ids = label_ids[:max_training_samples]
+            entity_tags = entity_tags[:max_training_samples]
 
-        return state_features, label_ids
+        return state_features, label_ids, entity_tags
 
     def train(
         self,
@@ -191,7 +210,6 @@ class Policy:
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which can be used by the polices for featurization.
         """
-
         raise NotImplementedError("Policy must have the capacity to train.")
 
     def predict_action_probabilities(
@@ -200,7 +218,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> "PolicyPrediction":
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
@@ -210,10 +228,29 @@ class Policy:
                 additional features.
 
         Returns:
-             the list of probabilities for the next actions
+             The policy's prediction (e.g. the probabilities for the actions).
         """
-
         raise NotImplementedError("Policy must have the capacity to predict.")
+
+    def _prediction(
+        self,
+        probabilities: List[float],
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
+    ) -> "PolicyPrediction":
+        return PolicyPrediction(
+            probabilities,
+            self.__class__.__name__,
+            self.priority,
+            events,
+            optional_events,
+            is_end_to_end_prediction,
+            is_no_user_prediction,
+            diagnostic_data,
+        )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.
@@ -254,7 +291,7 @@ class Policy:
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> "Policy":
+    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
         """Loads a policy from path.
 
         Args:
@@ -271,6 +308,25 @@ class Policy:
             if (Path(path) / FEATURIZER_FILE).is_file():
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
+
+            data.update(kwargs)
+
+            constructor_args = rasa.shared.utils.common.arguments_of(cls)
+            if "kwargs" not in constructor_args:
+                if set(data.keys()).issubset(set(constructor_args)):
+                    rasa.shared.utils.io.raise_deprecation_warning(
+                        f"`{cls.__name__}.__init__` does not accept `**kwargs` "
+                        f"This is required for contextual information e.g. the flag "
+                        f"`should_finetune`.",
+                        warn_until_version="3.0.0",
+                    )
+                else:
+                    raise UnsupportedDialogueModelError(
+                        f"`{cls.__name__}.__init__` does not accept `**kwargs`. "
+                        f"Attempting to pass {data} to the policy. "
+                        f"This argument should be added to all policies by "
+                        f"Rasa Open Source 3.0.0."
+                    )
 
             return cls(**data)
 
@@ -289,8 +345,166 @@ class Policy:
         Returns:
             the list of the length of the number of actions
         """
-
         return [0.0] * domain.num_actions
+
+    @staticmethod
+    def format_tracker_states(states: List[Dict]) -> Text:
+        """Format tracker states to human readable format on debug log.
+
+        Args:
+            states: list of tracker states dicts
+
+        Returns:
+            the string of the states with user intents and actions
+        """
+        # empty string to insert line break before first state
+        formatted_states = [""]
+        if states:
+            for index, state in enumerate(states):
+                state_messages = []
+                if state:
+                    if USER in state:
+                        if TEXT in state[USER]:
+                            state_messages.append(
+                                f"user text: {str(state[USER][TEXT])}"
+                            )
+                        if INTENT in state[USER]:
+                            state_messages.append(
+                                f"user intent: {str(state[USER][INTENT])}"
+                            )
+                        if ENTITIES in state[USER]:
+                            state_messages.append(
+                                f"user entities: {str(state[USER][ENTITIES])}"
+                            )
+                    if PREVIOUS_ACTION in state:
+                        if ACTION_NAME in state[PREVIOUS_ACTION]:
+                            state_messages.append(
+                                f"previous action name: {str(state[PREVIOUS_ACTION][ACTION_NAME])}"
+                            )
+                        if ACTION_TEXT in state[PREVIOUS_ACTION]:
+                            state_messages.append(
+                                f"previous action text: {str(state[PREVIOUS_ACTION][ACTION_TEXT])}"
+                            )
+                    if ACTIVE_LOOP in state:
+                        state_messages.append(f"active loop: {str(state[ACTIVE_LOOP])}")
+                    if SLOTS in state:
+                        state_messages.append(f"slots: {str(state[SLOTS])}")
+                    state_message_formatted = " | ".join(state_messages)
+                    state_formatted = f"[state {str(index)}] {state_message_formatted}"
+                    formatted_states.append(state_formatted)
+
+        return "\n".join(formatted_states)
+
+
+class PolicyPrediction:
+    """Stores information about the prediction of a `Policy`."""
+
+    def __init__(
+        self,
+        probabilities: List[float],
+        policy_name: Optional[Text],
+        policy_priority: int = 1,
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates a `PolicyPrediction`.
+
+        Args:
+            probabilities: The probabilities for each action.
+            policy_name: Name of the policy which made the prediction.
+            policy_priority: The priority of the policy which made the prediction.
+            events: Events which the `Policy` needs to have applied to the tracker
+                after the prediction. These events are applied independent of whether
+                the policy wins against other policies or not. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            optional_events: Events which the `Policy` needs to have applied to the
+                tracker after the prediction in case it wins. These events are only
+                applied in case the policy's prediction wins. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            is_end_to_end_prediction: `True` if the prediction used the text of the
+                user message instead of the intent.
+            is_no_user_prediction: `True` if the prediction uses neither the text
+                of the user message nor the intent. This is for the example the case
+                for happy loop paths.
+            diagnostic_data: Intermediate results or other information that is not
+                necessary for Rasa to function, but intended for debugging and
+                fine-tuning purposes.
+        """
+        self.probabilities = probabilities
+        self.policy_name = policy_name
+        self.policy_priority = (policy_priority,)
+        self.events = events or []
+        self.optional_events = optional_events or []
+        self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.is_no_user_prediction = is_no_user_prediction
+        self.diagnostic_data = diagnostic_data or {}
+
+    @staticmethod
+    def for_action_name(
+        domain: Domain,
+        action_name: Text,
+        policy_name: Optional[Text] = None,
+        confidence: float = 1.0,
+    ) -> "PolicyPrediction":
+        """Create a prediction for a given action.
+
+        Args:
+            domain: The current model domain
+            action_name: The action which should be predicted.
+            policy_name: The policy which did the prediction.
+            confidence: The prediction confidence.
+
+        Returns:
+            The prediction.
+        """
+        probabilities = confidence_scores_for(action_name, confidence, domain)
+
+        return PolicyPrediction(probabilities, policy_name)
+
+    def __eq__(self, other: Any) -> bool:
+        """Checks if the two objects are equal.
+
+        Args:
+            other: Any other object.
+
+        Returns:
+            `True` if other has the same type and the values are the same.
+        """
+        if not isinstance(other, PolicyPrediction):
+            return False
+
+        return (
+            self.probabilities == other.probabilities
+            and self.policy_name == other.policy_name
+            and self.policy_priority == other.policy_priority
+            and self.events == other.events
+            and self.optional_events == other.events
+            and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+            and self.is_no_user_prediction == other.is_no_user_prediction
+            # We do not compare `diagnostic_data`, because it has no effect on the
+            # action prediction.
+        )
+
+    @property
+    def max_confidence_index(self) -> int:
+        """Gets the index of the action prediction with the highest confidence.
+
+        Returns:
+            The index of the action with the highest confidence.
+        """
+        return self.probabilities.index(self.max_confidence)
+
+    @property
+    def max_confidence(self) -> float:
+        """Gets the highest predicted probability.
+
+        Returns:
+            The highest predicted probability.
+        """
+        return max(self.probabilities, default=0.0)
 
 
 def confidence_scores_for(
@@ -306,7 +520,6 @@ def confidence_scores_for(
     Returns:
         the list of the length of the number of actions
     """
-
     results = [0.0] * domain.num_actions
     idx = domain.index_for_action(action_name)
     results[idx] = value

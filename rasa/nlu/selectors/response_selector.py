@@ -6,9 +6,11 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.shared.constants import DIAGNOSTIC_DATA
+import rasa.utils.tensorflow.numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
-from rasa.nlu.config import InvalidConfigError
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
@@ -19,11 +21,11 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_KEY,
     LABEL_SUB_KEY,
-    EntityTagSpec,
     SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE,
 )
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -240,6 +242,7 @@ class ResponseSelector(DIETClassifier):
         model: Optional[RasaModel] = None,
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
+        finetune_mode: bool = False,
     ) -> None:
 
         component_config = component_config or {}
@@ -256,7 +259,11 @@ class ResponseSelector(DIETClassifier):
         self.use_text_as_label = False
 
         super().__init__(
-            component_config, index_label_id_mapping, entity_tag_specs, model
+            component_config,
+            index_label_id_mapping,
+            entity_tag_specs,
+            model,
+            finetune_mode=finetune_mode,
         )
 
     @property
@@ -300,7 +307,12 @@ class ResponseSelector(DIETClassifier):
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
+
+        Args:
+            training_data: training data to preprocessed.
         """
+        # Collect all retrieval intents present in the data before filtering
+        self.all_retrieval_intents = list(training_data.retrieval_intents)
 
         if self.retrieval_intent:
             training_data = training_data.filter_training_examples(
@@ -321,7 +333,6 @@ class ResponseSelector(DIETClassifier):
         )
 
         self.responses = training_data.responses
-        self.all_retrieval_intents = list(training_data.retrieval_intents)
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -372,7 +383,6 @@ class ResponseSelector(DIETClassifier):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
-
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
@@ -430,6 +440,12 @@ class ResponseSelector(DIETClassifier):
 
         self._set_message_property(message, prediction_dict, selector_key)
 
+        if out and DIAGNOSTIC_DATA in out:
+            message.add_diagnostic_data(
+                self.unique_name,
+                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
+            )
+
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
@@ -454,6 +470,7 @@ class ResponseSelector(DIETClassifier):
         label_data: RasaModelData,
         entity_tag_specs: List[EntityTagSpec],
         meta: Dict[Text, Any],
+        finetune_mode: bool = False,
     ) -> "RasaModel":
 
         return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
@@ -463,6 +480,7 @@ class ResponseSelector(DIETClassifier):
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             config=copy.deepcopy(meta),
+            finetune_mode=finetune_mode,
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
@@ -489,12 +507,12 @@ class ResponseSelector(DIETClassifier):
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
         if not meta.get("file"):
-            return model  # pytype: disable=bad-return-type
+            return model
 
         model.responses = meta.get("responses", {})
         model.all_retrieval_intents = meta.get("all_retrieval_intents", [])
 
-        return model  # pytype: disable=bad-return-type
+        return model
 
 
 class DIET2BOW(DIET):
@@ -536,14 +554,16 @@ class DIET2BOW(DIET):
 
 
 class DIET2DIET(DIET):
+    """Diet 2 Diet transformer implementation."""
+
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if LABEL not in self.data_signature:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
@@ -610,7 +630,7 @@ class DIET2DIET(DIET):
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
-        label_transformed, _, _, _ = self._create_sequence(
+        label_transformed, _, _, _, _ = self._create_sequence(
             self.tf_label_data[LABEL][SEQUENCE],
             self.tf_label_data[LABEL][SENTENCE],
             sequence_mask_label,
@@ -628,7 +648,7 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        batch_dim = self._get_batch_dim(tf_batch_data)
+        batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
         sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths_text = self._get_sequence_lengths(
             tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
@@ -640,6 +660,7 @@ class DIET2DIET(DIET):
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
+            _,
         ) = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
@@ -660,7 +681,7 @@ class DIET2DIET(DIET):
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
-        label_transformed, _, _, _ = self._create_sequence(
+        label_transformed, _, _, _, _ = self._create_sequence(
             tf_batch_data[LABEL][SEQUENCE],
             tf_batch_data[LABEL][SENTENCE],
             sequence_mask_label,
@@ -712,7 +733,7 @@ class DIET2DIET(DIET):
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, _, _, _, attention_weights = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             sequence_mask_text,
@@ -721,6 +742,11 @@ class DIET2DIET(DIET):
         )
 
         out = {}
+
+        out[DIAGNOSTIC_DATA] = {
+            "attention_weights": attention_weights,
+            "text_transformed": text_transformed,
+        }
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()

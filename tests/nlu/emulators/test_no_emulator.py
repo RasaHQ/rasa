@@ -24,5 +24,5 @@ def test_emulators_can_handle_missing_data():
     norm = em.normalise_response_json(
         {"text": "this data doesn't contain an intent result"}
     )
-    assert norm["topScoringIntent"] is None
-    assert norm["intents"] == []
+    assert norm["prediction"]["topIntent"] is None
+    assert norm["prediction"]["intents"] == {}

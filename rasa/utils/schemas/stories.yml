@@ -24,7 +24,6 @@ mapping:
             mapping: &intent_and_entities
               intent:
                 type: "str"
-                required: True
                 allowempty: False
               user:
                 type: "str"
@@ -37,6 +36,10 @@ mapping:
                   mapping:
                     regex;(.*):
                       type: "any"
+                    role:
+                      type: "str"
+                    group:
+                      type: "str"
                 - type: "str"
           - type: "map"
             mapping: &active_loop
@@ -46,6 +49,11 @@ mapping:
           - type: "map"
             mapping: &action
               action:
+                type: "str"
+                allowempty: False
+          - type: "map"
+            mapping:
+              bot:
                 type: "str"
                 allowempty: False
           - type: "map"
@@ -102,6 +110,9 @@ mapping:
         rule:
           type: "str"
           allowempty: False
+        metadata:
+          type: "any"
+          required: False
         steps:
           type: "seq"
           matching: "any"

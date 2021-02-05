@@ -8,15 +8,8 @@ module.exports = {
       collapsed: false,
       items: [
           'installation',
-//        {
-//          type: 'category',
-//          label: 'Getting Started',
-//          collapsed: true,
-//          items: [
-//            'installation',
-//            'migrate-from',
-//          ],
-//        },
+          'migrate-from',
+          'command-line-interface',
         {
           type: 'category',
           label: 'Best Practices',
@@ -70,6 +63,7 @@ module.exports = {
             'components',
             'policies',
             'training-data-importers',
+            'language-support',
           ],
         },
         {
@@ -120,8 +114,8 @@ module.exports = {
       label: 'APIs',
       collapsed: true,
       items: [
-        'command-line-interface',
         'http-api',
+        'nlu-only-server'
         // 'jupyter-notebooks',
       ],
     },

@@ -1,7 +1,10 @@
 from pathlib import Path
 
 import pytest
+import numpy as np
+from typing import List, Dict, Text, Any
 
+import rasa.model
 from rasa.nlu import train
 from rasa.nlu.components import ComponentBuilder
 from rasa.shared.nlu.training_data import util
@@ -17,7 +20,11 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     CHECKPOINT_MODEL,
 )
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.mark.parametrize(
@@ -93,6 +100,34 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     for rank in ranking:
         assert rank.get("confidence") is not None
         assert rank.get("intent_response_key") is not None
+
+
+def test_preprocess_selector_multiple_retrieval_intents():
+
+    # use some available data
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
+    training_data_extra_intent = TrainingData(
+        [
+            Message.build(
+                text="Is it possible to detect the version?", intent="faq/q1"
+            ),
+            Message.build(text="How can I get a new virtual env", intent="faq/q2"),
+        ]
+    )
+    training_data = training_data.merge(training_data_responses).merge(
+        training_data_extra_intent
+    )
+
+    response_selector = ResponseSelector()
+
+    response_selector.preprocess_train_data(training_data)
+
+    assert sorted(response_selector.all_retrieval_intents) == ["chitchat", "faq"]
 
 
 @pytest.mark.parametrize(
@@ -208,3 +243,75 @@ async def test_train_model_checkpointing(
     """
     all_files = list(best_model_file.rglob("*.*"))
     assert len(all_files) > 4
+
+
+async def _train_persist_load_with_different_settings(
+    pipeline: List[Dict[Text, Any]],
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    should_finetune: bool,
+):
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trainer, trained, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/examples/rasa/demo-rasa.md",
+        component_builder=component_builder,
+    )
+
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    loaded = Interpreter.load(
+        persisted_path,
+        component_builder,
+        new_config=_config if should_finetune else None,
+    )
+
+    assert loaded.pipeline
+    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+
+
+@pytest.mark.skip_on_windows
+async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "ResponseSelector", EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, True
+    )
+
+
+async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
+    """Tests if processing a message returns attention weights as numpy array."""
+
+    with rasa.model.unpack_model(
+        trained_response_selector_bot
+    ) as unpacked_model_directory:
+        _, nlu_model_directory = rasa.model.get_model_subdirectories(
+            unpacked_model_directory
+        )
+        interpreter = Interpreter.load(nlu_model_directory)
+
+    message = Message(data={TEXT: "hello"})
+    for component in interpreter.pipeline:
+        component.process(message)
+
+    diagnostic_data = message.get(DIAGNOSTIC_DATA)
+
+    # The last component is ResponseSelector, which should add diagnostic data
+    name = f"component_{len(interpreter.pipeline) - 1}_ResponseSelector"
+    assert isinstance(diagnostic_data, dict)
+    assert name in diagnostic_data
+    assert "text_transformed" in diagnostic_data[name]
+    assert isinstance(diagnostic_data[name].get("text_transformed"), np.ndarray)
+    # The `attention_weights` key should exist, regardless of there being a transformer
+    assert "attention_weights" in diagnostic_data[name]
+    # By default, ResponseSelector has `number_of_transformer_layers = 0`
+    assert diagnostic_data[name].get("attention_weights") is None

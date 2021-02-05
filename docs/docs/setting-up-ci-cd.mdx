@@ -8,6 +8,7 @@ abstract: Even though developing a contextual assistant is different from develo
   Setting up a Continuous Integration (CI) and Continuous Deployment (CD)
   pipeline ensures that incremental updates to your bot are improving it, not harming it.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 ## Overview
 
@@ -36,114 +37,66 @@ resource-intensive tests only when certain files have been changed or when some
 other indicator is present. For example, if your code is hosted on Github,
 you can make a test run only if the pull request has a certain label (e.g. “NLU testing required”).
 
-### Validating Data and Stories
+### CI Pipeline Overview
 
-Data validation verifies that there are no mistakes or
-major inconsistencies in your domain, NLU data, or conversation data. To validate
-your data, have your CI run this command:
+Your CI pipeline should include model training and testing as steps to streamline the deployment process.
+The first step after saving new training data is to kick off the pipeline. This can be initiated manually
+or when you create or update a pull request.
 
-```bash
-rasa data validate --fail-on-warnings --max-history <max_history>
+Next, you need to run various sets of test to see the impact of your changes. This includes running
+tests for data validation, NLU cross validation, and story testing. For
+more information about testing, see [Testing Your Assistant](./testing-your-assistant.mdx).
+
+The last step is to review the results of your test and push the changes if the tests are successful.
+Once the new model is trained and tested, it can be deployed automatically using a Continuous
+Deployment pipeline.
+
+### GitHub Actions CI Pipeline
+
+You can use the [Rasa Train-Test Github Action](https://github.com/RasaHQ/rasa-train-test-gha)
+in your CI pipeline to automatically perform data validation, training, and testing.
+
+An example CI pipeline using the Github Action is shown below:
+
+```yaml
+jobs:
+  training-testing:
+    name: Training and Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Rasa Train and Test GitHub Action
+        uses: RasaHQ/rasa-train-test-gha@main
+        with:
+          requirements_file: requirements.txt
+          data_validate: true
+          rasa_train: true
+          cross_validation: true
+          rasa_test: true
+          test_type: all
+          publish_summary: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload model
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@master
+        with:
+          name: model
+          path: models
 ```
 
-By default the validator searches only for errors in the data (e.g. the same
-example being listed as an example for two intents), but does not report other
-minor issues (such as unused intents, responses that are not listed as
-actions) that won't prevent training a model, but might indicate
-messy data.
+In this pipeline, the Rasa Train-Test Github Action is performing data validation, model training, and story testing
+in the first step and the model file is uploaded as an artifact in the second step.
 
-If data validation results in errors, training a model will also fail, so it's
-always good to run this check before training a model. By including the
-`--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
+The complete list of configurable parameters for the Rasa Train-Test Github Action is available in the repository's
+[README](https://github.com/RasaHQ/rasa-train-test-gha#input-arguments).
 
-Data validation also includes story structure validation.
-Story validation checks if you have any
-stories where different bot actions follow from the same dialogue history.
-Conflicts between stories will prevent a model from learning the correct
-pattern for a dialogue. Set the `--max-history` parameter to the value of `max_history` for the
-memoization policy in your `config.yml`. If you haven't set one, use the default of `5`.
+When `publish_summary` is set to `true`, this action will automatically publish the model's test results to the associated
+Pull Request as a comment:
 
-:::caution check your story names
-The `rasa data validate stories` command assumes that all your story names are unique!
+<img alt="image" src={useBaseUrl("/img/train-test-github-action.png")} />
 
-:::
+The pull request can be approved or denied based on the evaluation results and, in many cases, you will want to automate the model's deployment if all CI checks pass. You can continue to the next section to learn more about Continuous Deployment.
 
-### Training a Model
-
-You can train a model with the following command:
-
-```bash
-rasa train
-```
-
-Training a model verifies that your NLU pipeline and policy configurations are
-valid and trainable, and provides a model to use for testing your assistant.
-If the model passes the CI tests, then you can also [upload the trained model](./setting-up-ci-cd.mdx#deploying-your-rasa-model)
-to your server as part of the continuous deployment process.
-
-
-### Testing Your Assistant
-
-Testing your trained model on [test stories](./testing-your-assistant.mdx#end-to-end-testing) is the best way to have confidence in how your assistant
-will act in certain situations. Written in a modified story
-format, test stories allow you to provide entire conversations and test that, given certain
-user input, your model will behave in the expected manner. This is especially
-important as you start introducing more complicated stories from user
-conversations.
-
-The command to run test stories is:
-
-```bash
-rasa test --fail-on-prediction-errors
-```
-By default, the command will run tests on stories from any files with names starting with `test_`. You can also provide
-a specific test stories file or directory with the `--stories` argument.
-
-The `--fail-on-prediction-errors` flag ensures the test will fail if any test
-story fails.
-
-End-to-end conversation testing is only as thorough and accurate as the test
-cases you include, so you should continue to grow your set of test stories
-as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
-to be representative of the true distribution of real conversations.
-Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
-
-Note: Running test stories does **not** execute your action code. You will need to
-[test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a separate step.
-
-### Comparing NLU Performance
-
-If you've made significant changes to your NLU training data (e.g.
-splitting an intent into two intents or adding a lot of training examples), you should run a
-[full NLU evaluation](./testing-your-assistant.mdx#evaluating-an-nlu-model). You'll want to compare
-the performance of the NLU model without your changes to an NLU model with your
-changes.
-
-You can do this by running NLU testing in cross-validation mode:
-
-```bash
-rasa test nlu --cross-validation
-```
-
-You could also train a model on a training set and testing it on a test set. If you use the train-test
-set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#rasa-data-split) using `rasa data split` as part of this CI step, as
-opposed to using a static NLU test set, which can easily become outdated.
-
-Because this test doesn't result in a pass/fail exit code, it's best to make
-the results visible so that you can interpret them.
-For example, [this GitHub Actions Workflow](https://gist.github.com/amn41/de555c93913a01fbd56df2e2d211862c)
-includes commenting on a PR with a results table that shows which intents are confused with others.
-
-Since NLU comparison can be a fairly resource intensive test, you may choose to run this test
-only when certain conditions are met. Conditions might include the presence of a manual label (e.g. “NLU
-testing required”), changes to NLU data, or changes to the NLU pipeline.
-
-### Testing Action Code
-
-The approach used to test your action code will depend on how it is
-implemented. For example, if you connect to external APIs, you should write integration tests to ensure
-that those APIs respond as expected to common inputs. However you test your action code, you should
-include these tests in your CI pipeline so that they run each time you make changes.
 
 ## Continuous Deployment (CD)
 
@@ -155,7 +108,7 @@ succeeded.
 
 ### Deploying Your Rasa Model
 
-If you ran [test stories](#testing-your-assistant) in your CI pipeline,
+If you ran [test stories](./testing-your-assistant.mdx) in your CI pipeline,
 you'll already have a trained model. You can set up your CD pipeline to upload the trained model to your
 Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X:
 
@@ -177,6 +130,7 @@ automatically tag the model as `production`. You will first need to build and
 deploy your updated action server, so that the new model won't e.g. call
 actions that don't exist in the pre-update action server.
 :::
+
 
 ### Deploying Your Action Server
 

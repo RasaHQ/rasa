@@ -10,7 +10,7 @@ The script also requires ``pandoc`` to be previously installed in the system.
 Requires Python3.6+.
 
 Based on code from pytest.
-https://github.com/pytest-dev/pytest/blob/master/scripts/publish_gh_release_notes.py
+https://github.com/pytest-dev/pytest/blob/master/scripts/publish-gh-release-notes.py
 Copyright Holger Krekel and others, 2004-2019.
 
 Distributed under the terms of the MIT license, pytest is free and open source software.

@@ -6,7 +6,7 @@ TODAY=`date "+%Y%m%d"`
 # we build new versions only for minors and majors
 PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.0$"
 PATTERN_FOR_PATCH_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.[1-9]+$"
-MASTER_REF=refs/heads/master
+MAIN_REF=refs/heads/main
 VARIABLES_JSON=docs/docs/variables.json
 SOURCES_FILES=docs/docs/sources/
 REFERENCE_FILES=docs/docs/reference/
@@ -15,8 +15,8 @@ TELEMETRY_REFERENCE=docs/docs/telemetry/reference.mdx
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
 && [[ ! $GITHUB_REF =~ $PATTERN_FOR_PATCH_VERSION ]] \
-&& [[ $GITHUB_REF != $MASTER_REF ]] \
-&& echo "Not on master or tagged version, skipping." \
+&& [[ $GITHUB_REF != $MAIN_REF ]] \
+&& echo "Not on main or tagged version, skipping." \
 && exit 0
 
 NEW_VERSION=
@@ -32,13 +32,19 @@ fi
 # clone the $DOCS_BRANCH in a temp directory
 git clone --depth=1 --branch=$DOCS_BRANCH git@github.com:$GITHUB_REPOSITORY.git $TMP_DOCS_FOLDER
 
+if [ ! -z "$NEW_VERSION" ] && [ -d "$TMP_DOCS_FOLDER/docs/versioned_docs/version-$NEW_VERSION/" ]
+then
+    echo "Trying to create a new docs version, but the folder already exist. Updating the $NEW_VERSION version instead..."
+    EXISTING_VERSION=$NEW_VERSION
+fi
+
 if [ ! -z "$EXISTING_VERSION" ]
 then
     echo "Updating docs for existing version $EXISTING_VERSION..."
     # FIXME: this doesn't support all types of docs updates on an existing version at the moment,
     # For instance if we were to make significant updates to the documentation pages
     # (creating new page, deleting some, updating the sidebar), these changes wouldn't work here.
-    cp -R docs/docs/ $TMP_DOCS_FOLDER/docs/versioned_docs/version-$EXISTING_VERSION/
+    cp -R docs/docs/* $TMP_DOCS_FOLDER/docs/versioned_docs/version-$EXISTING_VERSION/
 else
     echo "Updating the docs..."
     # remove everything in the previous docs/ folder, except versioned_docs/*, versioned_sidebars/*

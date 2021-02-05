@@ -534,7 +534,7 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     for idx, event in enumerate(applied_events):
         if isinstance(event, ActionExecuted):
-            bot_column.append(colored(event.action_name, "autocyan"))
+            bot_column.append(colored(str(event), "autocyan"))
             if event.confidence is not None:
                 bot_column[-1] += colored(f" {event.confidence:03.2f}", "autowhite")
 
@@ -750,21 +750,12 @@ def _split_conversation_at_restarts(
     """Split a conversation at restart events.
 
     Returns an array of event lists, without the restart events."""
+    deserialized_events = [Event.from_parameters(event) for event in events]
+    split_events = rasa.shared.core.events.split_events(
+        deserialized_events, Restarted, include_splitting_event=False
+    )
 
-    sub_conversations = []
-    current = []
-    for e in events:
-        if e.get("event") == "restart":
-            if current:
-                sub_conversations.append(current)
-            current = []
-        else:
-            current.append(e)
-
-    if current:
-        sub_conversations.append(current)
-
-    return sub_conversations
+    return [[event.as_dict() for event in events] for events in split_events]
 
 
 def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
@@ -946,7 +937,7 @@ def _write_domain_to_file(
         slots=[],
         templates=templates,
         action_names=collected_actions,
-        forms=[],
+        forms={},
     )
 
     old_domain.merge(new_domain).persist_clean(domain_path)
@@ -1244,9 +1235,7 @@ async def _validate_nlu(
 
     latest_message = latest_user_message(tracker.get("events", [])) or {}
 
-    if latest_message.get("text", "").startswith(  # pytype: disable=attribute-error
-        INTENT_MESSAGE_PREFIX
-    ):
+    if latest_message.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         valid = _validate_user_regex(latest_message, intents)
     else:
         valid = await _validate_user_text(latest_message, endpoint, conversation_id)
@@ -1439,7 +1428,7 @@ def _print_help(skip_visualization: bool) -> None:
     rasa.shared.utils.cli.print_success(
         f"Bot loaded. {visualization_help}\n"
         f"Type a message and press enter "
-        f"(press 'Ctr-c' to exit)."
+        f"(press 'Ctrl-c' to exit)."
     )
 
 
@@ -1727,5 +1716,5 @@ def run_interactive_learning(
     _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 
     if not skip_visualization and p is not None:
-        p.terminate()  # pytype: disable=attribute-error
-        p.join()  # pytype: disable=attribute-error
+        p.terminate()
+        p.join()

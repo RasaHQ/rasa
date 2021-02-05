@@ -7,6 +7,7 @@ from functools import partial
 from typing import Any, List, Optional, Text, Union
 
 import rasa.core.utils
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
@@ -65,12 +66,12 @@ def _create_single_channel(channel, credentials) -> Any:
             )
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
-            raise Exception(
-                "Failed to find input channel class for '{}'. Unknown "
-                "input channel. Check your credentials configuration to "
-                "make sure the mentioned channel is not misspelled. "
-                "If you are creating your own channel, make sure it "
-                "is a proper name of a class in a module.".format(channel)
+            raise RasaException(
+                f"Failed to find input channel class for '{channel}'. Unknown "
+                f"input channel. Check your credentials configuration to "
+                f"make sure the mentioned channel is not misspelled. "
+                f"If you are creating your own channel, make sure it "
+                f"is a proper name of a class in a module."
             )
 
 
@@ -96,7 +97,6 @@ def configure_app(
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the agent."""
-    from rasa import server
 
     rasa.core.utils.configure_file_logging(logger, log_file)
 
@@ -167,7 +167,6 @@ def serve_application(
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the API entrypoint."""
-    from rasa import server
 
     if not channel and not credentials:
         channel = "cmdline"
@@ -201,6 +200,7 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
+    app.register_listener(close_resources, "after_server_stop")
 
     # noinspection PyUnresolvedReferences
     async def clear_model_files(_app: Sanic, _loop: Text) -> None:
@@ -251,7 +251,7 @@ async def load_agent_on_start(
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None
 
-    _broker = EventBroker.create(endpoints.event_broker)
+    _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
     _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
     _lock_store = LockStore.create(endpoints.lock_store)
 
@@ -270,7 +270,8 @@ async def load_agent_on_start(
         )
     except Exception as e:
         rasa.shared.utils.io.raise_warning(
-            f"The model at '{model_path}' could not be loaded. " f"Error: {e}"
+            f"The model at '{model_path}' could not be loaded. "
+            f"Error: {type(e)}: {e}"
         )
         app.agent = None
 
@@ -290,3 +291,29 @@ async def load_agent_on_start(
 
     logger.info("Rasa server is up and running.")
     return app.agent
+
+
+async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
+    """Gracefully closes resources when shutting down server.
+
+    Args:
+        app: The Sanic application.
+        _: The current Sanic worker event loop.
+    """
+    current_agent = getattr(app, "agent", None)
+    if not current_agent:
+        logger.debug("No agent found when shutting down server.")
+        return
+
+    event_broker = current_agent.tracker_store.event_broker
+    if event_broker:
+        if not asyncio.iscoroutinefunction(event_broker.close):
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The method '{EventBroker.__name__}.{EventBroker.close.__name__}' was "
+                f"changed to be asynchronous. Please adapt your custom event broker "
+                f"accordingly. Support for synchronous implementations will be removed "
+                f"in Rasa Open Source 3.0.0."
+            )
+            event_broker.close()
+        else:
+            await event_broker.close()
