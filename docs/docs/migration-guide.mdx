@@ -16,7 +16,7 @@ how you can migrate from one version to another.
 
 Few changes have been made to the loss function inside machine learning (ML)
 components - `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
-1. Configuration option `loss_type=softmax` is now deprecated. Use `loss_type=cross_entropy` instead.
+1. Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0. Use `loss_type=cross_entropy` instead.
 2. The default loss function (`loss_type=cross_entropy`) adds an optional sigmoid cross-entropy loss of all similarity values to constrain
 them to an approximate range. You can turn on this option by setting `constrain_similarities=True`.
 
