@@ -94,7 +94,7 @@ class SpacyNLP(Component):
     def provide_context(self) -> Dict[Text, Any]:
         return {"spacy_nlp": self.nlp}
 
-    def doc_for_text(self, text: Text) -> "Doc":
+    def doc_for_text(self, text: Text) -> "Doc":  # pytype: disable=invalid-annotation
 
         return self.nlp(self.preprocess_text(text))
 
@@ -117,8 +117,8 @@ class SpacyNLP(Component):
     @staticmethod
     def merge_content_lists(
         indexed_training_samples: List[Tuple[int, Text]],
-        doc_lists: List[Tuple[int, "Doc"]],
-    ) -> List[Tuple[int, "Doc"]]:
+        doc_lists: List[Tuple[int, "Doc"]],  # pytype: disable=invalid-annotation
+    ) -> List[Tuple[int, "Doc"]]:  # pytype: disable=invalid-annotation
         """Merge lists with processed Docs back into their original order."""
 
         dct = dict(indexed_training_samples)
@@ -147,7 +147,7 @@ class SpacyNLP(Component):
 
     def process_content_bearing_samples(
         self, samples_to_pipe: List[Tuple[int, Text]]
-    ) -> List[Tuple[int, "Doc"]]:
+    ) -> List[Tuple[int, "Doc"]]:  # pytype: disable=invalid-annotation
         """Sends content bearing training samples to spaCy's pipe."""
 
         docs = [
@@ -166,7 +166,7 @@ class SpacyNLP(Component):
 
     def process_non_content_bearing_samples(
         self, empty_samples: List[Tuple[int, Text]]
-    ) -> List[Tuple[int, "Doc"]]:
+    ) -> List[Tuple[int, "Doc"]]:  # pytype: disable=invalid-annotation
         """Creates empty Doc-objects from zero-lengthed training samples strings."""
 
         from spacy.tokens import Doc

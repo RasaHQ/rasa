@@ -27,7 +27,9 @@ class SpacyTokenizer(Tokenizer):
         "intent_split_symbol": "_",
     }
 
-    def get_doc(self, message: Message, attribute: Text) -> "Doc":
+    def get_doc(
+        self, message: Message, attribute: Text
+    ) -> "Doc":  # pytype: disable=invalid-annotation
         return message.get(SPACY_DOCS[attribute])
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:

@@ -117,7 +117,7 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
 def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = arguments_of(f)
 
