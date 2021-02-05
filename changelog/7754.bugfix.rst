@@ -1,2 +1,0 @@
-Backported the Rasa Open Source 2 `PikaEventBroker` implementation to address connection
-problems with the current implementation.

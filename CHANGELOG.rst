@@ -17,6 +17,15 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.22] - 2021-02-05
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#7754 <https://github.com/rasahq/rasa/issues/7754>`_: Backported the Rasa Open Source 2 `PikaEventBroker` implementation to address connection
+  problems with the current implementation.
+
+
 [1.10.21] - 2021-02-01
 ^^^^^^^^^^^^^^^^^^^^^^
 
