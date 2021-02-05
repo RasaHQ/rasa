@@ -82,6 +82,7 @@ class MessageProcessor:
         self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
+        self.lock_store = lock_store
         self.max_number_of_predictions = max_number_of_predictions
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
