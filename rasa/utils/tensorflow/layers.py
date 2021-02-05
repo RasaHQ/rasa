@@ -287,7 +287,7 @@ class Embed(tf.keras.layers.Layer):
     """
 
     def __init__(
-        self, embed_dim: int, reg_lambda: float, layer_name_suffix: Text,
+        self, embed_dim: int, reg_lambda: float, layer_name_suffix: Text
     ) -> None:
         """Initialize layer.
 
@@ -547,7 +547,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_lambda: float,
         scale_loss: bool,
         name: Optional[Text] = None,
-        parallel_iterations: int = 1000,
         same_sampling: bool = False,
         similarity_type: Optional[Text] = None,
         constrain_similarities: bool = True,
@@ -573,8 +572,6 @@ class DotProductLoss(tf.keras.layers.Layer):
             scale_loss: Boolean, if 'True' scale loss inverse proportionally to
                 the confidence of the correct prediction.
             name: Optional name of the layer.
-            parallel_iterations: Positive integer, the number of iterations allowed
-                to run in parallel.
             same_sampling: Boolean, if 'True' sample same negative labels
                 for the whole batch.
             similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
@@ -593,7 +590,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.use_max_sim_neg = use_max_sim_neg
         self.neg_lambda = neg_lambda
         self.scale_loss = scale_loss
-        self.parallel_iterations = parallel_iterations
         self.same_sampling = same_sampling
         self.constrain_similarities = constrain_similarities
         self.model_confidence = model_confidence
@@ -852,7 +848,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         sim_neg_li: tf.Tensor,
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
-        """Define cross entropy loss."""
+        """Defines cross entropy loss."""
         # Similarity terms between input and label should be optimized relative
         # to each other and hence use them as logits for softmax term
         softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
@@ -883,10 +879,8 @@ class DotProductLoss(tf.keras.layers.Layer):
 
             sigmoid_labels = tf.concat(
                 [
-                    tf.expand_dims(
-                        tf.ones_like(sigmoid_logits[..., 0], tf.float32), -1
-                    ),
-                    tf.zeros_like(sigmoid_logits[..., 1:], tf.float32),
+                    tf.ones_like(sigmoid_logits[..., :1]),
+                    tf.zeros_like(sigmoid_logits[..., 1:]),
                 ],
                 axis=-1,
             )
