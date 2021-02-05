@@ -40,38 +40,18 @@ if TYPE_CHECKING:
     from rasa.nlu.tokenizers.tokenizer import Token
 
 
-def normalize(values: np.ndarray) -> np.ndarray:
+def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
     """Normalizes an array of positive numbers over the top `ranking_length` values.
-
-    Args:
-        values: Values to normalize
-
-    Returns:
-        Normalized values.
-    """
-    new_values = values.copy()
-
-    if np.sum(new_values) > 0:
-        new_values = new_values / np.sum(new_values)
-
-    return new_values
-
-
-def filter_top_k(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
-    """Sorts the values in descending order and keeps only top `ranking_length` values.
-
     Other values will be set to 0.
-    Args:
-        values: Values to sort and rank
-        ranking_length: number of values to maintain above 0.
-
-    Returns:
-        Modified values.
     """
     new_values = values.copy()  # prevent mutation of the input
     if 0 < ranking_length < len(new_values):
         ranked = sorted(new_values, reverse=True)
         new_values[new_values < ranked[ranking_length - 1]] = 0
+
+    if np.sum(new_values) > 0:
+        new_values = new_values / np.sum(new_values)
+
     return new_values
 
 
@@ -386,7 +366,7 @@ def override_defaults(
     return config
 
 
-def _check_confidence_setting(component_config) -> None:
+def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
             f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
@@ -396,7 +376,7 @@ def _check_confidence_setting(component_config) -> None:
         )
 
 
-def _check_loss_setting(component_config) -> None:
+def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
     if not component_config[CONSTRAIN_SIMILARITIES] and component_config[LOSS_TYPE] in [
         SOFTMAX,
         CROSS_ENTROPY,
@@ -409,7 +389,7 @@ def _check_loss_setting(component_config) -> None:
         )
 
 
-def _check_similarity_loss_setting(component_config) -> None:
+def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
     if (
         component_config[SIMILARITY_TYPE] == COSINE
         and component_config[LOSS_TYPE] == CROSS_ENTROPY

@@ -620,19 +620,17 @@ class TEDPolicy(Policy):
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
-        if self.config[LOSS_TYPE] == CROSS_ENTROPY and self.config[RANKING_LENGTH] > 0:
-            confidence = rasa.utils.train_utils.filter_top_k(
-                confidence, self.config[RANKING_LENGTH]
+        if (
+            self.config[LOSS_TYPE] == CROSS_ENTROPY
+            and self.config[RANKING_LENGTH] > 0
+            and self.config[SIMILARITY_TYPE] == INNER
+            and self.config[MODEL_CONFIDENCE] == SOFTMAX
+        ):
+            # TODO: This should be removed in 3.0 when softmax as
+            #  model confidence and normalization is completely deprecated.
+            confidences = rasa.utils.train_utils.normalize(
+                confidences, self.config[RANKING_LENGTH]
             )
-
-            if (
-                self.config[SIMILARITY_TYPE] == INNER
-                and self.config[MODEL_CONFIDENCE] == SOFTMAX
-            ):
-                # TODO: This should be removed in 3.0 when softmax as
-                #  model confidence is completely deprecated.
-                # Normalize the values if returned probabilities are from softmax.
-                confidence = rasa.utils.train_utils.normalize(confidence)
 
         optional_events = self._create_optional_event_for_entities(
             output, is_e2e_prediction, interpreter, tracker

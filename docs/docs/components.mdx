@@ -1535,8 +1535,8 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'margin'.                                                 |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
-|                                 |                  | with loss type 'cross_entropy'. Set to 0 to disable          |
-|                                 |                  | normalization.                                               |
+|                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
+|                                 |                  | confidences. Set to 0 to disable normalization.              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
 |                                 |                  | embedding vectors for correct labels.                        |
@@ -2766,8 +2766,8 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | or 'margin'.                                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
-|                                 |                   | with loss type 'cross_entropy'. Set to 0 to disable          |
-|                                 |                   | normalization.                                               |
+|                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
+|                                 |                   | confidences. Set to 0 to disable normalization.              |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | maximum_positive_similarity     | 0.8               | Indicates how similar the algorithm should try to make       |
 |                                 |                   | embedding vectors for correct labels.                        |

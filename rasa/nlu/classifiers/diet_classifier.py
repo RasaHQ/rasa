@@ -867,20 +867,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if (
             self.component_config[LOSS_TYPE] == CROSS_ENTROPY
             and self.component_config[RANKING_LENGTH] > 0
+            and self.component_config[SIMILARITY_TYPE] == INNER
+            and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
         ):
-            message_sim = train_utils.filter_top_k(
+            # TODO: This should be removed in 3.0 when softmax as
+            #  model confidence and normalization is completely deprecated.
+            message_sim = train_utils.normalize(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
-
-            if (
-                self.component_config[SIMILARITY_TYPE] == INNER
-                and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
-            ):
-                # TODO: This should be removed in 3.0 when softmax as
-                #  model confidence is completely deprecated.
-                # Normalize the values if returned confidences are from
-                # softmax(hence relative to each other).
-                message_sim = train_utils.normalize(message_sim)
 
         message_sim[::-1].sort()
         message_sim = message_sim.tolist()
