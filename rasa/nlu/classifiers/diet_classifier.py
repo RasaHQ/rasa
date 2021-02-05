@@ -1308,8 +1308,8 @@ class DIET(TransformerRasaModel):
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
             self._tf_layers[
-                f"input_layer.{self.label_name}"
-            ] = rasa_layers.RasaInputLayer(
+                f"feature_combining_layer.{self.label_name}"
+            ] = rasa_layers.RasaFeatureCombiningLayer(
                 self.label_name, self.label_signature[self.label_name], self.config
             )
 
@@ -1345,19 +1345,12 @@ class DIET(TransformerRasaModel):
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask_sequence: tf.Tensor,
-        mask_combined_sentence_sequence: tf.Tensor,
+        sequence_feature_lengths: tf.Tensor,
         name: Text,
-        sparse_dropout: bool = False,
-        dense_dropout: bool = False,
     ) -> tf.Tensor:
-        x = self._tf_layers[f"input_layer.{name}"](
-            (
-                sequence_features,
-                sentence_features,
-                mask_sequence,
-                mask_combined_sentence_sequence,
-            ),
+
+        x, _ = self._tf_layers[f"feature_combining_layer.{name}"](
+            (sequence_features, sentence_features, sequence_feature_lengths),
             training=self._training,
         )
 
@@ -1369,13 +1362,14 @@ class DIET(TransformerRasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        mask_sequence = self._get_mask_for(self.tf_label_data, LABEL, SEQUENCE_LENGTH)
+        sequence_feature_lengths = self._get_sequence_feature_lengths(
+            self.tf_label_data, LABEL, SEQUENCE_LENGTH
+        )
 
         x = self._create_bow(
             self.tf_label_data[LABEL][SEQUENCE],
             self.tf_label_data[LABEL][SENTENCE],
-            mask_sequence,
-            mask_sequence,
+            sequence_feature_lengths,
             self.label_name,
         )
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
@@ -1449,36 +1443,30 @@ class DIET(TransformerRasaModel):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
-
-        # Get mask for sequence features only, with 1s for real tokens and 0 for padded.
-        # This one will be None if the sequence lengths aren't found in tf_batch_data.
-        mask_sequence = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
-
-        # Create mask for sequence- and sentence-leve features combined. Differs from
-        # the previous mask only in being longer by 1 in the sequence dimension, due to
-        # having one more 1 at the end of each sequence (representing the sentence-level
-        # featues).
-        # This call can break if the sequence lengths aren't found in tf_batch_data,
-        # this needs to be fixed.
-        sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
+        sequence_feature_lengths = self._get_sequence_feature_lengths(
+            tf_batch_data, TEXT, SEQUENCE_LENGTH
         )
-        mask_combined_sequence_sentence = self._compute_mask(sequence_lengths)
 
-        text_transformed, text_in, text_seq_ids, lm_mask_bool_text, _ = self._tf_layers[
-            f"sequence_layer.{self.text_name}"
-        ](
+        (
+            text_transformed,
+            text_in,
+            mask_combined_sequence_sentence,
+            text_seq_ids,
+            lm_mask_bool_text,
+            _,
+        ) = self._tf_layers[f"sequence_layer.{self.text_name}"](
             (
                 tf_batch_data[TEXT][SEQUENCE],
                 tf_batch_data[TEXT][SENTENCE],
-                mask_sequence,
-                mask_combined_sequence_sentence,
+                sequence_feature_lengths,
             ),
             training=self._training,
         )
 
         losses = []
+
+        # TODO ensure sentence features will always be present in DIET
+        combined_sequence_sentence_feature_lengths = sequence_feature_lengths + 1
 
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
@@ -1490,8 +1478,7 @@ class DIET(TransformerRasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             loss = self._batch_loss_intent(
-                sequence_lengths,
-                mask_combined_sequence_sentence,
+                combined_sequence_sentence_feature_lengths,
                 text_transformed,
                 tf_batch_data,
             )
@@ -1500,7 +1487,7 @@ class DIET(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             losses += self._batch_loss_entities(
                 mask_combined_sequence_sentence,
-                sequence_lengths,
+                sequence_feature_lengths,
                 text_transformed,
                 tf_batch_data,
             )
@@ -1509,22 +1496,24 @@ class DIET(TransformerRasaModel):
 
     def _batch_loss_intent(
         self,
-        sequence_lengths: tf.Tensor,
-        mask_combined_sequence_sentence_text: tf.Tensor,
+        combined_sequence_sentence_feature_lengths_text: tf.Tensor,
         text_transformed: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> tf.Tensor:
         # get sentence features vector for intent classification
-        sentence_vector = self._last_token(text_transformed, sequence_lengths)
+        sentence_vector = self._last_token(
+            text_transformed, combined_sequence_sentence_feature_lengths_text
+        )
 
-        mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL, SEQUENCE_LENGTH)
+        sequence_feature_lengths_label = self._get_sequence_feature_lengths(
+            tf_batch_data, LABEL, SEQUENCE_LENGTH
+        )
 
         label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
         label = self._create_bow(
             tf_batch_data[LABEL][SEQUENCE],
             tf_batch_data[LABEL][SENTENCE],
-            mask_sequence_label,
-            mask_combined_sequence_sentence_text,
+            sequence_feature_lengths_label,
             self.label_name,
         )
         loss, acc = self._calculate_label_loss(sentence_vector, label, label_ids)
@@ -1541,13 +1530,11 @@ class DIET(TransformerRasaModel):
     def _batch_loss_entities(
         self,
         mask_combined_sequence_sentence: tf.Tensor,
-        sequence_lengths: tf.Tensor,
+        sequence_feature_lengths: tf.Tensor,
         text_transformed: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> List[tf.Tensor]:
         losses = []
-
-        sequence_lengths -= 1  # remove sentence features
 
         entity_tags = None
 
@@ -1564,7 +1551,7 @@ class DIET(TransformerRasaModel):
                 text_transformed,
                 tag_ids,
                 mask_combined_sequence_sentence,
-                sequence_lengths,
+                sequence_feature_lengths,
                 tag_spec.tag_name,
                 entity_tags,
             )
@@ -1613,21 +1600,17 @@ class DIET(TransformerRasaModel):
             batch_in, self.predict_data_signature
         )
 
-        mask_sequence = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
-        sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim=1
+        sequence_feature_lengths = self._get_sequence_feature_lengths(
+            tf_batch_data, TEXT, SEQUENCE_LENGTH
         )
 
-        mask_combined_sequence_sentence = self._compute_mask(sequence_lengths)
-
-        text_transformed, _, _, _, attention_weights = self._tf_layers[
+        text_transformed, _, _, _, _, attention_weights = self._tf_layers[
             f"sequence_layer.{self.text_name}"
         ](
             (
                 tf_batch_data[TEXT][SEQUENCE],
                 tf_batch_data[TEXT][SENTENCE],
-                mask_sequence,
-                mask_combined_sequence_sentence,
+                sequence_feature_lengths,
             ),
             training=self._training,
         )
@@ -1641,18 +1624,20 @@ class DIET(TransformerRasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(
-                self._batch_predict_intents(sequence_lengths, text_transformed)
+                self._batch_predict_intents(
+                    sequence_feature_lengths + 1, text_transformed
+                )
             )
 
         if self.config[ENTITY_RECOGNITION]:
             predictions.update(
-                self._batch_predict_entities(sequence_lengths, text_transformed)
+                self._batch_predict_entities(sequence_feature_lengths, text_transformed)
             )
 
         return predictions
 
     def _batch_predict_entities(
-        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor
+        self, sequence_feature_lengths: tf.Tensor, text_transformed: tf.Tensor
     ) -> Dict[Text, tf.Tensor]:
         predictions: Dict[Text, tf.Tensor] = {}
 
@@ -1672,7 +1657,7 @@ class DIET(TransformerRasaModel):
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
             pred_ids, confidences = self._tf_layers[f"crf.{name}"](
-                _logits, sequence_lengths - 1
+                _logits, sequence_feature_lengths
             )
 
             predictions[f"e_{name}_ids"] = pred_ids
@@ -1688,7 +1673,9 @@ class DIET(TransformerRasaModel):
         return predictions
 
     def _batch_predict_intents(
-        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor
+        self,
+        combined_sequence_sentence_feature_lengths: tf.Tensor,
+        text_transformed: tf.Tensor,
     ) -> Dict[Text, tf.Tensor]:
 
         if self.all_labels_embed is None:
@@ -1698,7 +1685,9 @@ class DIET(TransformerRasaModel):
             )
 
         # get sentence feature vector for intent classification
-        sentence_vector = self._last_token(text_transformed, sequence_lengths)
+        sentence_vector = self._last_token(
+            text_transformed, combined_sequence_sentence_feature_lengths
+        )
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(

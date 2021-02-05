@@ -27,6 +27,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
 )
 from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.models import TransformerRasaModel
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 
 
@@ -296,7 +297,7 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
         return sentence
 
 
-class RasaInputLayer(tf.keras.layers.Layer):
+class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
     """Combines multiple dense or sparse feature tensors into one.
 
     This layer combines features by following these steps:
@@ -349,7 +350,7 @@ class RasaInputLayer(tf.keras.layers.Layer):
         ):
             raise ValueError("The data signature must contain some features.")
 
-        super().__init__(name=f"rasa_input_layer_{attribute}")
+        super().__init__(name=f"rasa_feature_combining_layer_{attribute}")
 
         self._tf_layers = {}
 
@@ -395,10 +396,9 @@ class RasaInputLayer(tf.keras.layers.Layer):
             List[Union[tf.Tensor, tf.SparseTensor]],
             List[Union[tf.Tensor, tf.SparseTensor]],
             tf.Tensor,
-            tf.Tensor,
         ],
         training: bool = False,
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Combine multiple 3-D dense/sparse feature tensors into one.
 
         Arguments:
@@ -423,8 +423,15 @@ class RasaInputLayer(tf.keras.layers.Layer):
         """
         sequence_features = inputs[0]
         sentence_features = inputs[1]
-        mask_sequence = inputs[2]
-        mask_combined_sequence_sentence = inputs[3]
+        sequence_feature_lengths = inputs[2]
+
+        mask_sequence = TransformerRasaModel._compute_mask(sequence_feature_lengths)
+        combined_sequence_sentence_features_lengths = sequence_feature_lengths
+        if len(sentence_features) > 0:
+            combined_sequence_sentence_features_lengths += 1
+        mask_combined_sequence_sentence = TransformerRasaModel._compute_mask(
+            combined_sequence_sentence_features_lengths
+        )
 
         if f"sparse_dense.{SEQUENCE}" in self._tf_layers:
             sequence = self._tf_layers[f"sparse_dense.{SEQUENCE}"](
@@ -449,9 +456,11 @@ class RasaInputLayer(tf.keras.layers.Layer):
         else:
             sentence = None
 
-        return self._tf_layers["concat_seq_sent"](
+        combined_sequence_sentence_features = self._tf_layers["concat_seq_sent"](
             (sequence, sentence, mask_combined_sequence_sentence)
         )
+
+        return combined_sequence_sentence_features, mask_combined_sequence_sentence
 
 
 class RasaSequenceLayer(tf.keras.layers.Layer):
@@ -461,8 +470,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     transformer. The layer is meant only for attributes with sequence-level features,
     such as `text` and `action_text`.
 
-    Internally, this layer extends RasaInputLayer and goes through the following steps:
-    1. Combine features using RasaInputLayer.
+    Internally, this layer extends RasaFeatureCombiningLayer and goes through the following steps:
+    1. Combine features using RasaFeatureCombiningLayer.
     2. Apply a dense layer(s) to the combined features.
     3. Optionally (during training for the `text` attribute), apply masking to the
         features and create further helper variables for masked language modeling.
@@ -494,12 +503,12 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         outputs: `(batch_size, max_seq_length+1, units)` where `units` matches
             the underlying transformer's output size if the transformer has some layers,
             otherwise `units` matches that of the Ffnn block applied to the combined 
-            features, or it's the output size of the underlying `RasaInputLayer` the 
+            features, or it's the output size of the underlying `RasaFeatureCombiningLayer` the 
             Ffnn block has 0 layers. `max_seq_length` is the length of the longest
             sequence of tokens in the given batch.
         seq_sent_features: `(batch_size, max_seq_length+1, hidden_dim)`, where 
             `hidden_dim` is the output size of the underlying Ffnn block, or the output
-            size of the underlying `RasaInputLayer` if the Ffnn block has 0 layers.
+            size of the underlying `RasaFeatureCombiningLayer` if the Ffnn block has 0 layers.
         token_ids: `(batch_size, max_seq_length+1, id_dim)` where id_dim is unimportant
             and it's the last-dimension size of the first sequence-level dense feature
             if any is present, and 2 otherwise. Empty tensor if not doing MLM.
@@ -527,7 +536,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         super().__init__(name=f"rasa_sequence_layer_{attribute}")
 
         self._tf_layers = {
-            "input_layer": RasaInputLayer(attribute, attribute_signature, config),
+            "feature_combining_layer": RasaFeatureCombiningLayer(
+                attribute, attribute_signature, config
+            ),
             "ffnn": layers.Ffnn(
                 config[HIDDEN_LAYERS_SIZES][attribute],
                 config[DROP_RATE],
@@ -616,7 +627,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         """Determine the output units based on which layer components are present.
 
         The output units depend on which component is the last one in the internal 
-        pipeline that is `RasaInputLayer` -> `Ffnn` -> `Transformer`, because not all 
+        pipeline that is `RasaFeatureCombiningLayer` -> `Ffnn` -> `Transformer`, because not all 
         the components are necessarily created.
         """
         # transformer is the last component
@@ -628,8 +639,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             # this is the output size of the last layer of the Ffnn block
             return config[HIDDEN_LAYERS_SIZES][attribute][-1]
 
-        # only the RasaInputLayer is present
-        return self._tf_layers["input_layer"].output_units
+        # only the RasaFeatureCombiningLayer is present
+        return self._tf_layers["feature_combining_layer"].output_units
 
     def _features_as_token_ids(
         self, features: List[Union[tf.Tensor, tf.SparseTensor]]
@@ -687,12 +698,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             List[Union[tf.Tensor, tf.SparseTensor]],
             List[Union[tf.Tensor, tf.SparseTensor]],
             tf.Tensor,
-            tf.Tensor,
         ],
         training: bool = False,
-    ) -> Tuple[
-        tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor,
-    ]:
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Combine all features for an attribute into one and embed using a transformer.
 
         Arguments:
@@ -727,18 +735,25 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         """
         sequence_features = inputs[0]
         sentence_features = inputs[1]
-        mask_sequence = inputs[2]
-        mask_combined_sequence_sentence = inputs[3]
+        sequence_feature_lengths = inputs[2]
+
+        # TODO
+        # Get mask for sequence features only, with 1s for real tokens and 0 for padded.
+        # This one will be None if the sequence lengths aren't found in tf_batch_data.
+        # mask_sequence = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
+
+        # TODO
+        # Create mask for sequence- and sentence-leve features combined. Differs from
+        # the previous mask only in being longer by 1 in the sequence dimension, due to
+        # having one more 1 at the end of each sequence (representing the sentence-level
+        # featues).
+        # This call can break if the sequence lengths aren't found in tf_batch_data,
+        # this needs to be fixed.
 
         # Combine all features (sparse/dense, sequence-/sentence-level) into one tensor
-        seq_sent_features = self._tf_layers["input_layer"](
-            (
-                sequence_features,
-                sentence_features,
-                mask_sequence,
-                mask_combined_sequence_sentence,
-            )
-        )
+        seq_sent_features, mask_combined_sequence_sentence = self._tf_layers[
+            "feature_combining_layer"
+        ]((sequence_features, sentence_features, sequence_feature_lengths))
 
         seq_sent_features = self._tf_layers["ffnn"](seq_sent_features, training)
 
@@ -774,6 +789,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         return (
             outputs,
             seq_sent_features,
+            mask_combined_sequence_sentence,
             token_ids,
             mlm_boolean_mask,
             attention_weights,

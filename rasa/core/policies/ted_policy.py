@@ -1195,22 +1195,16 @@ class TED(TransformerRasaModel):
         text_sequence_lengths = tf.zeros((0,))
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
-            # sequence_lengths contain `0` for "fake" features, while
+            # sequence_feature_lengths contain `0` for "fake" features, while
             # tf_batch_data[attribute] contain only "real" features
-            sequence_lengths = tf_batch_data[attribute][SEQUENCE_LENGTH][0]
+            sequence_feature_lengths = tf_batch_data[attribute][SEQUENCE_LENGTH][0]
             # extract only nonzero lengths and cast to int
-            sequence_lengths = tf.cast(
-                tf.boolean_mask(sequence_lengths, sequence_lengths), dtype=tf.int32
+            sequence_feature_lengths = tf.cast(
+                tf.boolean_mask(sequence_feature_lengths, sequence_feature_lengths),
+                dtype=tf.int32,
             )
             # boolean mask returns flat tensor
-            sequence_lengths = tf.expand_dims(sequence_lengths, axis=-1)
-
-            mask_sequence = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
-            # add 1 to sequence lengths to account for sentence features
-            sequence_lengths += 1
-            mask_combined_sequence_sentence = tf.squeeze(
-                self._compute_mask(sequence_lengths), axis=1
-            )
+            sequence_feature_lengths = tf.expand_dims(sequence_feature_lengths, axis=-1)
 
             attribute_features, _, _, _, _ = self._tf_layers[
                 f"sequence_layer.{attribute}"
@@ -1218,17 +1212,18 @@ class TED(TransformerRasaModel):
                 (
                     tf_batch_data[attribute][SEQUENCE],
                     tf_batch_data[attribute][SENTENCE],
-                    mask_sequence,
-                    mask_combined_sequence_sentence,
+                    sequence_feature_lengths,
                 ),
                 training=self._training,
             )
+
+            combined_sentence_sequence_feature_lengths = sequence_feature_lengths + 1
 
             # Only for user text, the transformer output and sequence lengths also have
             # to be returned to enable entity recognition training and prediction.
             if attribute == TEXT:
                 text_output = attribute_features
-                text_sequence_lengths = sequence_lengths
+                text_sequence_lengths = combined_sentence_sequence_feature_lengths
 
                 if self.use_only_last_dialogue_turns:
                     # get the location of all last dialogue inputs
@@ -1245,7 +1240,8 @@ class TED(TransformerRasaModel):
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = tf.expand_dims(
                 self._last_token(
-                    attribute_features, tf.squeeze(sequence_lengths, axis=-1)
+                    attribute_features,
+                    tf.squeeze(combined_sentence_sequence_feature_lengths, axis=-1),
                 ),
                 axis=1,
             )

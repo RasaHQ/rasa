@@ -852,9 +852,32 @@ class TransformerRasaModel(RasaModel):
 
         return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32) + 1
 
+    # TODO: unify with above method
+    def _get_sequence_feature_lengths(
+        self,
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        key: Text,
+        sub_key: Text,
+    ) -> tf.Tensor:
+        if key in tf_batch_data and sub_key in tf_batch_data[key]:
+            return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
+
+        batch_dim = self._get_batch_dim(tf_batch_data[key])
+        return tf.ones([batch_dim], dtype=tf.int32)
+
+    def _get_sentence_feature_lengths(
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
+    ) -> tf.Tensor:
+        batch_dim = self._get_batch_dim(tf_batch_data[key])
+
+        if key in tf_batch_data and SENTENCE in tf_batch_data[key]:
+            return tf.ones([batch_dim], dtype=tf.int32)
+
+        return tf.zeros([batch_dim], dtype=tf.int32)
+
     @staticmethod
     def _get_batch_dim(attribute_data: Dict[Text, List[tf.Tensor]]) -> int:
-        if SEQUENCE in attribute_data:
+        if SEQUENCE in attribute_data and len(attribute_data[SEQUENCE]) > 0:
             return tf.shape(attribute_data[SEQUENCE][0])[0]
 
         return tf.shape(attribute_data[SENTENCE][0])[0]
