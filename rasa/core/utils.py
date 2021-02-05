@@ -377,7 +377,7 @@ def list_imported_custom_actions():
         for a in rasa.shared.utils.common.all_subclasses(
             rasa.core.actions.action.Action
         )
-        if not a.__module__.startswith("rasa.") and a.__name__ != "ActionBotfrontForm"
+        if not a.__module__.startswith("rasa.")
     ]
 
 

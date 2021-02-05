@@ -9,7 +9,7 @@ Rasa supports two ways of implementing custom actions, using an action server, o
 importing a Python module accessible from your Rasa installation.
 
 
-### Using an Actions Server
+### Using an Action Server
 
 To specify an action server, set its URL under the `action_endpoint` key of `endpoints.yml`:
 
@@ -67,7 +67,7 @@ Your action server should respond with a list of events and responses:
 ```
 
 
-### Using an Action Server
+### Within Rasa itself
 
 Using a dedicated action server is the recommended way to implement custom behavior in Rasa.
 However, if your use case is not supported, it is also possible to bundle Rasa actions with
