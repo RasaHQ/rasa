@@ -1,0 +1,1085 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Tracker Stores" href="../tracker-stores/" />
+    <link rel="prev" title="Events" href="../events/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Tracker" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/api/tracker" />
+  
+    <meta name="description" content="Trackers maintain the state of the a dialogue and can be
+featurized for machine learning algorithms right out of
+the box." />
+    <meta itemprop="description" content="Trackers maintain the state of the a dialogue and can be
+featurized for machine learning algorithms right out of
+the box.">
+    <meta name="twitter:description" content="Trackers maintain the state of the a dialogue and can be
+featurized for machine learning algorithms right out of
+the box." />
+    <meta property="og:description" content="Trackers maintain the state of the a dialogue and can be
+featurized for machine learning algorithms right out of
+the box." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Tracker">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/api/tracker/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../events/">Events</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.21
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.21/api/tracker/">1.10.21</a>
+              <a href="../../../1.10.20/api/tracker/">1.10.20</a>
+              <a href="../../../1.10.19/api/tracker/">1.10.19</a>
+              <a href="../../../1.10.18/api/tracker/">1.10.18</a>
+              <a href="../../../1.10.17/api/tracker/">1.10.17</a>
+              <a href="../../../1.10.16/api/tracker/">1.10.16</a>
+              <a href="../../../1.10.15/api/tracker/">1.10.15</a>
+              <a href="../../../1.10.14/api/tracker/">1.10.14</a>
+              <a href="../../../1.10.13/api/tracker/">1.10.13</a>
+              <a href="../../../1.10.12/api/tracker/">1.10.12</a>
+              <a href="../../../1.10.11/api/tracker/">1.10.11</a>
+              <a href="../../../1.10.10/api/tracker/">1.10.10</a>
+              <a href="../../../1.10.9/api/tracker/">1.10.9</a>
+              <a href="../../../1.10.8/api/tracker/">1.10.8</a>
+              <a href="../../../1.10.7/api/tracker/">1.10.7</a>
+              <a href="../../../1.10.6/api/tracker/">1.10.6</a>
+              <a href="../../../1.10.5/api/tracker/">1.10.5</a>
+              <a href="../../../1.10.4/api/tracker/">1.10.4</a>
+              <a href="../../../1.10.3/api/tracker/">1.10.3</a>
+              <a href="../../../1.10.2/api/tracker/">1.10.2</a>
+              <a href="../../../1.10.1/api/tracker/">1.10.1</a>
+              <a href="../../../1.10.0/api/tracker/">1.10.0</a>
+              <a href="../../../1.9.7/api/tracker/">1.9.7</a>
+              <a href="../../../1.9.6/api/tracker/">1.9.6</a>
+              <a href="../../../1.9.5/api/tracker/">1.9.5</a>
+              <a href="../../../1.9.4/api/tracker/">1.9.4</a>
+              <a href="../../../1.9.3/api/tracker/">1.9.3</a>
+              <a href="../../../1.9.2/api/tracker/">1.9.2</a>
+              <a href="../../../1.9.1/api/tracker/">1.9.1</a>
+              <a href="../../../1.9.0/api/tracker/">1.9.0</a>
+              <a href="../../../1.8.3/api/tracker/">1.8.3</a>
+              <a href="../../../1.8.2/api/tracker/">1.8.2</a>
+              <a href="../../../1.8.1/api/tracker/">1.8.1</a>
+              <a href="../../../1.8.0/api/tracker/">1.8.0</a>
+              <a href="../../../1.7.4/api/tracker/">1.7.4</a>
+              <a href="../../../1.7.3/api/tracker/">1.7.3</a>
+              <a href="../../../1.7.2/api/tracker/">1.7.2</a>
+              <a href="../../../1.7.1/api/tracker/">1.7.1</a>
+              <a href="../../../1.7.0/api/tracker/">1.7.0</a>
+              <a href="../../../1.6.2/api/tracker/">1.6.2</a>
+              <a href="../../../1.5.3/api/tracker/">1.5.3</a>
+              <a href="../../../1.4.6/api/tracker/">1.4.6</a>
+              <a href="../../../1.3.10/api/tracker/">1.3.10</a>
+              <a href="../../../1.2.9/api/tracker/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="tracker">
+<span id="id1"></span><h1>Tracker<a class="headerlink" href="#tracker" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/tracker.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>Trackers maintain the state of a dialogue between the assistant and the user in the form
+of conversation sessions. To learn more about how to configure the session behavior,
+check out the docs on <a class="reference internal" href="../../core/domains/#session-config"><span class="std std-ref">Session configuration</span></a>.</p>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/rasa/core/trackers.py" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST DOCSTRING EDITS</a>
+  </div><dl class="py class">
+<dt id="rasa.core.trackers.DialogueStateTracker">
+<em class="property">class </em><code class="sig-prename descclassname">rasa.core.trackers.</code><code class="sig-name descname">DialogueStateTracker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">slots</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_source</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maintains the state of a conversation.</p>
+<p>The field max_event_history will only give you these last events,
+it can be set in the tracker_store</p>
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.applied_events">
+<code class="sig-name descname">applied_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.applied_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all actions that should be applied - w/o reverted events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.as_dialogue">
+<code class="sig-name descname">as_dialogue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.as_dialogue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <code class="docutils literal notranslate"><span class="pre">Dialogue</span></code> object containing all of the turns.</p>
+<p>This can be serialised and later used to recover the state
+of this tracker exactly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dialogue</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.change_form_to">
+<code class="sig-name descname">change_form_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">form_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.change_form_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Activate or deactivate a form</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.clear_followup_action">
+<code class="sig-name descname">clear_followup_action</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.clear_followup_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears follow up action when it was executed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a duplicate of this tracker</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.current_slot_values">
+<code class="sig-name descname">current_slot_values</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.current_slot_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the currently set values of the slots</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.current_state">
+<code class="sig-name descname">current_state</code><span class="sig-paren">(</span><em class="sig-param">event_verbosity=&lt;EventVerbosity.NONE: 1&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.current_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current tracker state as an object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.events_after_latest_restart">
+<code class="sig-name descname">events_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.events_after_latest_restart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of events after the most recent restart.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.export_stories">
+<code class="sig-name descname">export_stories</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">e2e</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">include_source</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump the tracker as a story in the Rasa Core story format.</p>
+<p>Returns the dumped tracker as a string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.export_stories_to_file">
+<code class="sig-name descname">export_stories_to_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">export_path</span><span class="o">=</span><span class="default_value">'debug.md'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories_to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump the tracker as a story to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">from_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">events_as_dict</span></em>, <em class="sig-param"><span class="n">slots</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a tracker from dump.</p>
+<p>The dump should be an array of dumped events. When restoring
+the tracker, these events will be replayed to recreate the state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.generate_all_prior_trackers">
+<code class="sig-name descname">generate_all_prior_trackers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.generate_all_prior_trackers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a generator of the previous trackers of this tracker.</p>
+<p>The resulting array is representing the trackers before each action.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.get_last_event_for">
+<code class="sig-name descname">get_last_event_for</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event_type</span></em>, <em class="sig-param"><span class="n">action_names_to_exclude</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_last_event_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the last event of a given type which was actually applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_type</strong> – The type of event you want to find.</p></li>
+<li><p><strong>action_names_to_exclude</strong> – Events of type <cite>ActionExecuted</cite> which
+should be excluded from the results. Can be used to skip
+<cite>action_listen</cite> events.</p></li>
+<li><p><strong>skip</strong> – Skips n possible results before return an event.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>event which matched the query or <cite>None</cite> if no event matched.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.get_latest_entity_values">
+<code class="sig-name descname">get_latest_entity_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entity_type</span></em>, <em class="sig-param"><span class="n">entity_role</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">entity_group</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get entity values found for the passed entity type and optional role and
+group in latest message.</p>
+<p>If you are only interested in the first entity of a given type use
+<cite>next(tracker.get_latest_entity_values(“my_entity_name”), None)</cite>.
+If no entity is found <cite>None</cite> is the default result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_type</strong> – the entity type of interest</p></li>
+<li><p><strong>entity_role</strong> – optional entity role of interest</p></li>
+<li><p><strong>entity_group</strong> – optional entity group of interest</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Entity values.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.get_latest_input_channel">
+<code class="sig-name descname">get_latest_input_channel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_input_channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the name of the input_channel of the latest UserUttered event</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.get_slot">
+<code class="sig-name descname">get_slot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_slot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the value of a slot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.idx_after_latest_restart">
+<code class="sig-name descname">idx_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.idx_after_latest_restart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the idx of the most recent restart in the list of events.</p>
+<p>If the conversation has not been restarted, <code class="docutils literal notranslate"><span class="pre">0</span></code> is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.init_copy">
+<code class="sig-name descname">init_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.init_copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new state tracker with the same initial values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.is_paused">
+<code class="sig-name descname">is_paused</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.is_paused" title="Permalink to this definition">¶</a></dt>
+<dd><p>State whether the tracker is currently paused.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.last_executed_action_has">
+<code class="sig-name descname">last_executed_action_has</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">skip</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.last_executed_action_has" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether last <cite>ActionExecuted</cite> event had a specific name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Name of the event which should be matched.</p></li>
+<li><p><strong>skip</strong> – Skips n possible results in between.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>True</cite> if last executed action had name <cite>name</cite>, otherwise <cite>False</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.past_states">
+<code class="sig-name descname">past_states</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.past_states" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the past states of this tracker based on the history.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">deque</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.recreate_from_dialogue">
+<code class="sig-name descname">recreate_from_dialogue</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dialogue</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.recreate_from_dialogue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use a serialised <cite>Dialogue</cite> to update the trackers state.</p>
+<p>This uses the state as is persisted in a <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code>. If the
+tracker is blank before calling this method, the final state will be
+identical to the tracker from which the dialogue was created.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.reject_action">
+<code class="sig-name descname">reject_action</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.reject_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Notify active form that it was rejected</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.replay_events">
+<code class="sig-name descname">replay_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.replay_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the tracker based on a list of events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.set_form_validation">
+<code class="sig-name descname">set_form_validation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validate</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.set_form_validation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Toggle form validation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.set_latest_action_name">
+<code class="sig-name descname">set_latest_action_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.set_latest_action_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set latest action name
+and reset form validation and rejection parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.travel_back_in_time">
+<code class="sig-name descname">travel_back_in_time</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_time</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.travel_back_in_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new tracker with a state at a specific timestamp.</p>
+<p>A new tracker will be created and all events previous to the
+passed time stamp will be replayed. Events that occur exactly
+at the target time will be included.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.trigger_followup_action">
+<code class="sig-name descname">trigger_followup_action</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.trigger_followup_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Triggers another action following the execution of the current.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="rasa.core.trackers.DialogueStateTracker.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">domain</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify the state of the tracker according to an <code class="docutils literal notranslate"><span class="pre">Event</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>
