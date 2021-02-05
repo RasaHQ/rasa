@@ -287,7 +287,7 @@ class Embed(tf.keras.layers.Layer):
     """
 
     def __init__(
-        self, embed_dim: int, reg_lambda: float, layer_name_suffix: Text,
+        self, embed_dim: int, reg_lambda: float, layer_name_suffix: Text
     ) -> None:
         """Initialize layer.
 
@@ -852,7 +852,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         sim_neg_li: tf.Tensor,
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
-        """Define cross entropy loss."""
+        """Defines cross entropy loss."""
         # Similarity terms between input and label should be optimized relative
         # to each other and hence use them as logits for softmax term
         softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)

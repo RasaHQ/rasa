@@ -283,7 +283,7 @@ class TEDPolicy(Policy):
         # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
-        # Model confidence to be returned during inference. Possible values - softmax, cosine, inner.
+        # Model confidence to be returned during inference. Possible values - 'softmax', 'cosine', 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
