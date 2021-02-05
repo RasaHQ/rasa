@@ -57,7 +57,7 @@ from rasa.utils.tensorflow.constants import (
     SCALE_LOSS,
 )
 
-from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE
+from rasa.shared.nlu.constants import TEXT, ENTITY_ATTRIBUTE_TYPE
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.transformer import MultiHeadAttention
@@ -887,12 +887,13 @@ class TransformerRasaModel(RasaModel):
             self._tf_layers[f"crf.{name}"] = layers.CRF(
                 num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
             )
-            self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
-                self.config[EMBEDDING_DIMENSION],
-                self.config[REGULARIZATION_CONSTANT],
-                f"tags.{name}",
-            )
             if name != ENTITY_ATTRIBUTE_TYPE:
+                self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                    # self.config[EMBEDDING_DIMENSION],
+                    self.config[CONCAT_DIMENSION][TEXT],
+                    self.config[REGULARIZATION_CONSTANT],
+                    f"tags.{name}",
+                )
                 self._tf_layers[f"attention.{name}"] = MultiHeadAttention(
                     self.config[TRANSFORMER_SIZE],
                     self.config[NUM_HEADS],
@@ -902,6 +903,12 @@ class TransformerRasaModel(RasaModel):
                     use_key_relative_position=True,
                     use_value_relative_position=True,
                     max_relative_position=5,
+                )
+            else:
+                self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                    self.config[EMBEDDING_DIMENSION],
+                    self.config[REGULARIZATION_CONSTANT],
+                    f"tags.{name}",
                 )
 
     def _combine_sparse_dense_features(
