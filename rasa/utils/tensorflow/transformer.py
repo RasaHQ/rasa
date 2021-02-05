@@ -599,6 +599,11 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # add batch dimension
         return tf.stop_gradient(pos_encoding[tf.newaxis, ...])
 
+    @staticmethod
+    def _look_ahead_pad_mask(max_position: tf.Tensor) -> tf.Tensor:
+        pad_mask = 1 - tf.linalg.band_part(tf.ones((max_position, max_position)), -1, 0)
+        return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
+
     def call(
         self,
         x: tf.Tensor,
