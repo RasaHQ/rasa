@@ -1769,7 +1769,7 @@ async def test_get_story_without_conversation_id(
     rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
 ):
     conversation_id = "some-conversation-ID"
-    url = f"/conversations/{conversation_id}/story?"
+    url = f"/conversations/{conversation_id}/story"
 
     _, response = await rasa_app.get(url)
 
