@@ -1,6 +1,8 @@
 import os
 from shutil import copyfile
 
+import pytest
+
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
@@ -32,6 +34,7 @@ def test_test_core_with_no_model(run_in_simple_project: Callable[..., RunResult]
     )
 
 
+@pytest.mark.trains_model
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     write_yaml(
         {
@@ -96,6 +99,7 @@ def test_test_nlu_no_plot(run_in_simple_project: Callable[..., RunResult]):
     assert not os.path.exists("results/intent_confusion_matrix.png")
 
 
+@pytest.mark.trains_model
 def test_test_nlu_cross_validation(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project(
         "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2", "-r", "1"
@@ -145,6 +149,7 @@ def test_test_core_comparison(
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
 
 
+@pytest.mark.trains_model
 def test_test_core_comparison_after_train(
     run_in_simple_project: Callable[..., RunResult]
 ):
