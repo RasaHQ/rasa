@@ -756,6 +756,7 @@ class TransformerRasaModel(RasaModel):
         units: int,
         drop_rate: float,
         drop_rate_attention: float,
+        unidirectional: bool,
         prefix: Text = "transformer",
     ):
         if num_layers > 0:
@@ -768,7 +769,7 @@ class TransformerRasaModel(RasaModel):
                 dropout_rate=drop_rate,
                 attention_dropout_rate=drop_rate_attention,
                 sparsity=self.config[WEIGHT_SPARSITY],
-                unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                unidirectional=unidirectional,
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
                 max_relative_position=self.config[MAX_RELATIVE_POSITION],
@@ -874,6 +875,7 @@ class TransformerRasaModel(RasaModel):
             size,
             self.config[DROP_RATE],
             self.config[DROP_RATE_ATTENTION],
+            self.config[UNIDIRECTIONAL_ENCODER],
         )
 
     def _prepare_entity_recognition_layers(self) -> None:
