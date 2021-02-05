@@ -357,15 +357,15 @@ which allows you to clear the conversation history and start fresh.</p>
 </div>
 <p>Now that we’ve defined our policies, we can add some stories for the <code class="docutils literal notranslate"><span class="pre">goodbye</span></code>, <code class="docutils literal notranslate"><span class="pre">thank</span></code> and <code class="docutils literal notranslate"><span class="pre">greet</span></code>
 intents to the <code class="docutils literal notranslate"><span class="pre">stories.md</span></code> file:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> greet
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## greet</span>
 <span class="k">*</span> greet
   <span class="k">-</span> utter_greet
 
-<span class="gu">##</span> thank
+<span class="gu">## thank</span>
 <span class="k">*</span> thank
   <span class="k">-</span> utter_noworries
 
-<span class="gu">##</span> goodbye
+<span class="gu">## goodbye</span>
 <span class="k">*</span> bye
   <span class="k">-</span> utter_bye
 </pre></div>
@@ -387,7 +387,7 @@ responses:
 </div>
 <p>Finally, we’ll copy over some NLU data from Sara into our <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code> file
 (more can be found <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md">here</a>):</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:greet
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:greet</span>
 <span class="k">-</span> Hi
 <span class="k">-</span> Hey
 <span class="k">-</span> Hi bot
@@ -397,7 +397,7 @@ responses:
 <span class="k">-</span> hi again
 <span class="k">-</span> hi folks
 
-<span class="gu">##</span> intent:bye
+<span class="gu">## intent:bye</span>
 <span class="k">-</span> goodbye
 <span class="k">-</span> goodnight
 <span class="k">-</span> good bye
@@ -408,7 +408,7 @@ responses:
 <span class="k">-</span> gotta go
 <span class="k">-</span> farewell
 
-<span class="gu">##</span> intent:thank
+<span class="gu">## intent:thank</span>
 <span class="k">-</span> Thanks
 <span class="k">-</span> Thank you
 <span class="k">-</span> Thank you so much
@@ -429,19 +429,19 @@ rasa shell
 can later be included as part of our CI/CD system. <a class="reference external" href="https://rasa.com/docs/rasa/user-guide/evaluating-models/#end-to-end-evaluation">End to end stories</a>
 include NLU data, so that both components of Rasa can be tested.  Create a file called
 <code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code> in the root directory with some test cases:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> greet + goodbye
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## greet + goodbye</span>
 <span class="k">*</span> greet: Hi!
   <span class="k">-</span> utter_greet
 <span class="k">*</span> bye: Bye
   <span class="k">-</span> utter_bye
 
-<span class="gu">##</span> greet + thanks
+<span class="gu">## greet + thanks</span>
 <span class="k">*</span> greet: Hello there
   <span class="k">-</span> utter_greet
 <span class="k">*</span> thank: thanks a bunch
   <span class="k">-</span> utter_noworries
 
-<span class="gu">##</span> greet + thanks + goodbye
+<span class="gu">## greet + thanks + goodbye</span>
 <span class="k">*</span> greet: Hey
   <span class="k">-</span> utter_greet
 <span class="k">*</span> thank: thank you
@@ -471,21 +471,21 @@ start with three intents: <code class="docutils literal notranslate"><span class
 We’re going to copy over some NLU data from the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md">Sara training data</a>
 into our <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>. It’s important that these intents have an <code class="docutils literal notranslate"><span class="pre">faq/</span></code> prefix, so they’re
 recognised as the faq intent by the ResponseSelector:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent: faq/ask_channels
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent: faq/ask_channels</span>
 <span class="k">-</span> What channels of communication does rasa support?
 <span class="k">-</span> what channels do you support?
 <span class="k">-</span> what chat channels does rasa uses
 <span class="k">-</span> channels supported by Rasa
 <span class="k">-</span> which messaging channels does rasa support?
 
-<span class="gu">##</span> intent: faq/ask_languages
+<span class="gu">## intent: faq/ask_languages</span>
 <span class="k">-</span> what language does rasa support?
 <span class="k">-</span> which language do you support?
 <span class="k">-</span> which languages supports rasa
 <span class="k">-</span> can I use rasa also for another laguage?
 <span class="k">-</span> languages supported
 
-<span class="gu">##</span> intent: faq/ask_rasax
+<span class="gu">## intent: faq/ask_rasax</span>
 <span class="k">-</span> I want information about rasa x
 <span class="k">-</span> i want to learn more about Rasa X
 <span class="k">-</span> what is rasa x?
@@ -495,17 +495,17 @@ recognised as the faq intent by the ResponseSelector:</p>
 </pre></div>
 </div>
 <p>Next, we’ll need to define the responses associated with these FAQs in a new file called <code class="docutils literal notranslate"><span class="pre">responses.md</span></code> in the <code class="docutils literal notranslate"><span class="pre">data/</span></code> directory:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> ask channels
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## ask channels</span>
 <span class="k">*</span> faq/ask_channels
   <span class="k">-</span> We have a comprehensive list of [<span class="nt">supported connectors</span>](<span class="na">https://rasa.com/docs/core/connectors/</span>), but if
     you don&#39;t see the one you&#39;re looking for, you can always create a custom connector by following
     [<span class="nt">this guide</span>](<span class="na">https://rasa.com/docs/rasa/user-guide/connectors/custom-connectors/</span>).
 
-<span class="gu">##</span> ask languages
+<span class="gu">## ask languages</span>
 <span class="k">*</span> faq/ask_languages
   <span class="k">-</span> You can use Rasa to build assistants in any language you want!
 
-<span class="gu">##</span> ask rasa x
+<span class="gu">## ask rasa x</span>
 <span class="k">*</span> faq/ask_rasax
  <span class="k">-</span> Rasa X is a tool to learn from real conversations and improve your assistant. Read more [<span class="nt">here</span>](<span class="na">https://rasa.com/docs/rasa-x/</span>)
 </pre></div>
@@ -544,7 +544,7 @@ to the list of actions. These actions always have to start with the <code class=
 </pre></div>
 </div>
 <p>Next we’ll write a story so that Core knows which action to predict:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> Some question from FAQ
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## Some question from FAQ</span>
 <span class="k">*</span> faq
     <span class="k">-</span> respond_faq
 </pre></div>
@@ -556,15 +556,15 @@ rasa shell
 </pre></div>
 </div>
 <p>At this stage it makes sense to add a few test cases to your <code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code> file again:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> ask channels
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## ask channels</span>
 <span class="k">*</span> faq: What messaging channels does Rasa support?
   <span class="k">-</span> respond_faq
 
-<span class="gu">##</span> ask languages
+<span class="gu">## ask languages</span>
 <span class="k">*</span> faq: Which languages can I build assistants in?
   <span class="k">-</span> respond_faq
 
-<span class="gu">##</span> ask rasa x
+<span class="gu">## ask rasa x</span>
 <span class="k">*</span> faq: What’s Rasa X?
   <span class="k">-</span> respond_faq
 </pre></div>
@@ -719,7 +719,7 @@ for an example of how to store this information in a spreadsheet.</p>
 <p>We also need to create an intent to activate the form, as well as an intent for providing all the
 information the form asks the user for. For the form activation intent, we can create an
 intent called <code class="docutils literal notranslate"><span class="pre">contact_sales</span></code>. Add the following training data to your nlu file:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:contact_sales
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:contact_sales</span>
 <span class="k">-</span> I wanna talk to your sales people.
 <span class="k">-</span> I want to talk to your sales people
 <span class="k">-</span> I want to speak with sales
@@ -736,7 +736,7 @@ intent called <code class="docutils literal notranslate"><span class="pre">conta
 provides to the bot. <em>The reason we put all this under one intent, is because there is no
 real intent behind providing information, only the entity is important.</em> Add the following
 data to your NLU file:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:inform
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:inform</span>
 <span class="k">-</span> [<span class="nt">100k</span>](<span class="na">budget</span>)
 <span class="k">-</span> [<span class="nt">100k</span>](<span class="na">budget</span>)
 <span class="k">-</span> [<span class="nt">240k/year</span>](<span class="na">budget</span>)
@@ -798,7 +798,7 @@ we want to avoid any additional setup.</p>
 <p>A story for a form is very simple, as all the slot collection form happens inside the form, and
 therefore doesn’t need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
 to your <code class="docutils literal notranslate"><span class="pre">stories.md</span></code> file:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> sales form
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## sales form</span>
 <span class="k">*</span> contact_sales
     <span class="k">-</span> sales_form                   &lt;!--Run the sales_form action--&gt;
     <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}   &lt;!--Activate the form--&gt;
@@ -961,7 +961,7 @@ rasa shell
 For example, a user might ask a related FAQ in the middle of filling a form:</p>
 <a class="reference internal image-reference" href="../../_images/generic_interjection.png"><img alt="Generic Interjections" class="align-center" src="../../_images/generic_interjection.png" style="width: 240px;" /></a>
 <p>To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> just sales, continue
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## just sales, continue</span>
 <span class="k">*</span> contact_sales
     <span class="k">-</span> sales_form
     <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}
@@ -1000,7 +1000,7 @@ the bot has requested, and the response should differ for each slot. For example
 <p>This means that Core will pay attention to the value of the slot when making a prediction
 (read more about other <a class="reference external" href="https://rasa.com/docs/rasa/api/core-featurization/">featurized slots</a>), whereas
 unfeaturized slots are only used for storing information. The stories for this should look as follows:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> explain email
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## explain email</span>
 <span class="k">*</span> contact_sales
     <span class="k">-</span> sales_form
     <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}
@@ -1010,7 +1010,7 @@ unfeaturized slots are only used for storing information. The stories for this s
     <span class="k">-</span> sales_form
     <span class="k">-</span> form{&quot;name&quot;: null}
 
-<span class="gu">##</span> explain budget
+<span class="gu">## explain budget</span>
 <span class="k">*</span> contact_sales
     <span class="k">-</span> sales_form
     <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}
@@ -1037,7 +1037,7 @@ unfeaturized slots are only used for storing information. The stories for this s
 </pre></div>
 </div>
 <p>Finally, we’ll need to add some NLU data for the explain intent:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:explain
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:explain</span>
 <span class="k">-</span> why
 <span class="k">-</span> why is that
 <span class="k">-</span> why do you need it
@@ -1130,7 +1130,7 @@ the bot respond with a default message like “Sorry, I can’t handle that requ
 </pre></div>
 </div>
 <p>We’ll need to add NLU data for the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent as well:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:out_of_scope
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:out_of_scope</span>
 <span class="k">-</span> I want to order food
 <span class="k">-</span> What is 2 + 2?
 <span class="k">-</span> Who’s the US President?
@@ -1281,7 +1281,7 @@ used your assistant will definitely fail, like in state machine based dialogue s
 very well. It can learn to bring the user back on track after some
 interjections during the main user goal the user is trying to complete. For example,
 in the conversation below (extracted from a conversation on <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/review-conversations/">Rasa X</a>):</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> Story from conversation with a2baab6c83054bfaa8d598459c659d2a on November 28th 2019
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## Story from conversation with a2baab6c83054bfaa8d598459c659d2a on November 28th 2019</span>
 <span class="k">*</span> greet
   <span class="k">-</span> action_greet_user
   <span class="k">-</span> slot{&quot;shown_privacy&quot;:true}

@@ -477,7 +477,7 @@ tell your bot to use this new action.</p>
 </div></blockquote>
 <p>You can then run the actions with the following command:</p>
 <blockquote>
-<div><pre class="literal-block">docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:1.10.2</pre>
+<div><pre class="literal-block">docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:1.10.3</pre>
 </div></blockquote>
 <p>Here’s what’s happening in that command:</p>
 <blockquote>
@@ -487,7 +487,7 @@ tell your bot to use this new action.</p>
 container so that the action server can run the code in the <code class="docutils literal notranslate"><span class="pre">actions</span></code> folder</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">net</span> <span class="pre">my-project</span></code>: Run the server on a specific network so that the rasa container can find it</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--name</span> <span class="pre">action-server</span></code>: Gives the server a specific name for the rasa server to reference</p></li>
-<li><p>rasa/rasa-sdk:1.10.2 : Uses the Rasa SDK image with the tag 1.10.2</p></li>
+<li><p>rasa/rasa-sdk:1.10.3 : Uses the Rasa SDK image with the tag 1.10.3</p></li>
 </ul>
 </div></blockquote>
 <p>Because the action server is running in detached mode, if you want to stop the container,

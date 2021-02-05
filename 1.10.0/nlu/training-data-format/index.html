@@ -321,23 +321,23 @@ Using the latter syntax, you can also assign synonyms, roles, or groups to an en
 <code class="docutils literal notranslate"><span class="pre">[&lt;entity-text&gt;]{&quot;entity&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;role&quot;:</span> <span class="pre">&quot;&lt;role</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;group&quot;:</span> <span class="pre">&quot;&lt;group</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">synonym&gt;&quot;}</span></code>.
 The keywords <code class="docutils literal notranslate"><span class="pre">role</span></code>, <code class="docutils literal notranslate"><span class="pre">group</span></code>, and <code class="docutils literal notranslate"><span class="pre">value</span></code> are optional in this notation.
 To understand what the labels <code class="docutils literal notranslate"><span class="pre">role</span></code> and <code class="docutils literal notranslate"><span class="pre">group</span></code> are for, see section <a class="reference internal" href="../entity-extraction/#entities-roles-groups"><span class="std std-ref">Entities Roles and Groups</span></a>.</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:check_balance
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:check_balance</span>
 <span class="k">-</span> what is my balance &lt;!-- no entity --&gt;
 <span class="k">-</span> how much do I have on my [<span class="nt">savings</span>](<span class="na">source_account</span>) &lt;!-- entity &quot;source_account&quot; has value &quot;savings&quot; --&gt;
 <span class="k">-</span> how much do I have on my [savings account]{&quot;entity&quot;: &quot;source_account&quot;, &quot;value&quot;: &quot;savings&quot;} &lt;!-- synonyms, method 1--&gt;
 <span class="k">-</span> Could I pay in [<span class="nt">yen</span>](<span class="na">currency</span>)?  &lt;!-- entity matched by lookup table --&gt;
 
-<span class="gu">##</span> intent:greet
+<span class="gu">## intent:greet</span>
 <span class="k">-</span> hey
 <span class="k">-</span> hello
 
-<span class="gu">##</span> synonym:savings   &lt;!-- synonyms, method 2 --&gt;
+<span class="gu">## synonym:savings   &lt;!-- synonyms, method 2 --&gt;</span>
 <span class="k">-</span> pink pig
 
-<span class="gu">##</span> regex:zipcode
+<span class="gu">## regex:zipcode</span>
 <span class="k">-</span> [0-9]{5}
 
-<span class="gu">##</span> lookup:additional_currencies  &lt;!-- specify lookup tables in an external file --&gt;
+<span class="gu">## lookup:additional_currencies  &lt;!-- specify lookup tables in an external file --&gt;</span>
 path/to/currencies.txt
 </pre></div>
 </div>
@@ -417,7 +417,7 @@ to apply to the string, e.g. in the example below, with <code class="docutils li
 <code class="docutils literal notranslate"><span class="pre">text[8:15]</span> <span class="pre">==</span> <span class="pre">'chinese'</span></code>. Entities can span multiple words, and in
 fact the <code class="docutils literal notranslate"><span class="pre">value</span></code> field does not have to correspond exactly to the substring in your example.
 That way you can map synonyms, or misspellings, to the same <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:restaurant_search
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:restaurant_search</span>
 <span class="k">-</span> show me [<span class="nt">chinese</span>](<span class="na">cuisine</span>) restaurants
 </pre></div>
 </div>
@@ -427,10 +427,10 @@ That way you can map synonyms, or misspellings, to the same <code class="docutil
 <p>Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity
 has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection
 of that entity. For the zipcode example it might look like this:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> regex:zipcode
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## regex:zipcode</span>
 <span class="k">-</span> [0-9]{5}
 
-<span class="gu">##</span> regex:greet
+<span class="gu">## regex:greet</span>
 <span class="k">-</span> hey[^\\s]*
 </pre></div>
 </div>
@@ -464,10 +464,10 @@ For example, <code class="docutils literal notranslate"><span class="pre">data/t
 </pre></div>
 </div>
 <p>And can be loaded and used as shown here:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> lookup:plates
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## lookup:plates</span>
 data/test/lookup_tables/plates.txt
 
-<span class="gu">##</span> intent:food_request
+<span class="gu">## intent:food_request</span>
 <span class="k">-</span> I&#39;d like beef [<span class="nt">tacos</span>](<span class="na">plates</span>) and a [<span class="nt">burrito</span>](<span class="na">plates</span>)
 <span class="k">-</span> How about some [<span class="nt">mapo tofu</span>](<span class="na">plates</span>)
 </pre></div>
@@ -497,7 +497,7 @@ clean data.</p>
 <div class="section" id="entity-synonyms">
 <span id="id3"></span><h3><a class="toc-backref" href="#id12">Entity Synonyms</a><a class="headerlink" href="#entity-synonyms" title="Permalink to this headline">¶</a></h3>
 <p>If you define entities as having the same value they will be treated as synonyms. Here is an example of that:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:search
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:search</span>
 <span class="k">-</span> in the center of [NYC]{&quot;entity&quot;: &quot;city&quot;, &quot;value&quot;: &quot;New York City&quot;)
 <span class="k">-</span> in the centre of [<span class="nt">New York City</span>](<span class="na">city</span>)
 </pre></div>
@@ -510,7 +510,7 @@ synonym instead of the actual text in the message.</p>
 <code class="docutils literal notranslate"><span class="pre">EntitySynonymMapper</span></code> component (see <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>).</p>
 <p>Alternatively, you can add an “entity_synonyms” array to define several synonyms to one entity value. Here is an
 example of that:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> synonym:New York City
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## synonym:New York City</span>
 <span class="k">-</span> NYC
 <span class="k">-</span> nyc
 <span class="k">-</span> the big apple

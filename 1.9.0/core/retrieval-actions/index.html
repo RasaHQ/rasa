@@ -339,12 +339,12 @@ retrieval model to predict the correct response from a list of candidate respons
 <span id="retrieval-training-data"></span><h2><a class="toc-backref" href="#id4">Training Data</a><a class="headerlink" href="#training-data" title="Permalink to this headline">¶</a></h2>
 <p>Like the name suggests, retrieval actions learn to select the correct response from a list of candidates.
 As with other NLU data, you need to include examples of what your users will say in your NLU file:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent: chitchat/ask_name
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent: chitchat/ask_name</span>
 <span class="k">-</span> what&#39;s your name
 <span class="k">-</span> who are you?
 <span class="k">-</span> what are you called?
 
-<span class="gu">##</span> intent: chitchat/ask_weather
+<span class="gu">## intent: chitchat/ask_weather</span>
 <span class="k">-</span> how&#39;s weather?
 <span class="k">-</span> is it sunny where you are?
 </pre></div>
@@ -353,11 +353,11 @@ As with other NLU data, you need to include examples of what your users will say
 All retrieval intents have a suffix added to them which identifies a particular response text for your assistant, in the
 above example - <code class="docutils literal notranslate"><span class="pre">ask_name</span></code> and <code class="docutils literal notranslate"><span class="pre">ask_weather</span></code>. The suffix is separated from the intent name by a <code class="docutils literal notranslate"><span class="pre">/</span></code> delimiter</p>
 <p>Next, include response texts for all retrieval intents in a <strong>separate</strong> training data file as <code class="docutils literal notranslate"><span class="pre">responses.md</span></code>:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> ask name
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## ask name</span>
 <span class="k">*</span> chitchat/ask_name
     <span class="k">-</span> my name is Sara, Rasa&#39;s documentation bot!
 
-<span class="gu">##</span> ask weather
+<span class="gu">## ask weather</span>
 <span class="k">*</span> chitchat/ask_weather
     <span class="k">-</span> it&#39;s always sunny where I live
 </pre></div>

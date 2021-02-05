@@ -416,7 +416,7 @@ a new intent. We will call it <code class="docutils literal notranslate"><span c
 <p>We can split requests that <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code> can handle into two categories:
 (1) the user wants to obtain a list of objects of a specific type, or (2) the user wants to know about a certain
 attribute of an object. The intent should contain lots of variations of both of these requests:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:query_knowledge_base
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:query_knowledge_base</span>
 <span class="k">-</span> what [<span class="nt">restaurants</span>](<span class="na">object_type:restaurant</span>) can you recommend?
 <span class="k">-</span> list some [<span class="nt">restaurants</span>](<span class="na">object_type:restaurant</span>)
 <span class="k">-</span> can you name some [<span class="nt">restaurants</span>](<span class="na">object_type:restaurant</span>) please?
@@ -495,7 +495,7 @@ If you keep the default action name, those slots will be automatically added for
 </div>
 <p>You also need to make sure to add a story to your stories file that includes the intent <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code> and
 the action <code class="docutils literal notranslate"><span class="pre">action_query_knowledge_base</span></code>. For example:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> Happy Path
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## Happy Path</span>
 <span class="k">*</span> greet
   <span class="k">-</span> utter_greet
 <span class="k">*</span> query_knowledge_base

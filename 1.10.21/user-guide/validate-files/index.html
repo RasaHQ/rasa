@@ -357,14 +357,14 @@ and the utterance actions you have defined.</p>
 In particular, you can test if your stories are inconsistent, i.e. if different bot actions follow from the same dialogue history.
 If this is not the case, then Rasa cannot learn the correct behavior.</p>
 <p>Take, for example, the following two stories:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> Story 1
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## Story 1</span>
 <span class="k">*</span> greet
   <span class="k">-</span> utter_greet
 <span class="k">*</span> inform_happy
   <span class="k">-</span> utter_happy
   <span class="k">-</span> utter_goodbye
 
-<span class="gu">##</span> Story 2
+<span class="gu">## Story 2</span>
 <span class="k">*</span> greet
   <span class="k">-</span> utter_greet
 <span class="k">*</span> inform_happy
@@ -381,8 +381,8 @@ To do this, use <code class="docutils literal notranslate"><span class="pre">ras
 &gt; <span class="m">2019</span>-12-09 <span class="m">09</span>:32:13 INFO     rasa.core.validator  - Assuming <span class="nv">max_history</span> <span class="o">=</span> <span class="m">3</span>
 &gt;   Processed Story Blocks: <span class="m">100</span>% <span class="m">2</span>/2 <span class="o">[</span><span class="m">00</span>:00&lt;<span class="m">00</span>:00, <span class="m">3237</span>.59it/s, <span class="c1"># trackers=1]</span>
 &gt; <span class="m">2019</span>-12-09 <span class="m">09</span>:32:13 WARNING  rasa.core.validator  - CONFLICT after intent <span class="s1">&#39;inform_happy&#39;</span>:
-&gt;   utter_goodbye predicted in <span class="s1">&#39;Story 2&#39;</span>
-&gt;   utter_happy predicted in <span class="s1">&#39;Story 1&#39;</span>
+&gt;   utter_goodbye predicted <span class="k">in</span> <span class="s1">&#39;Story 2&#39;</span>
+&gt;   utter_happy predicted <span class="k">in</span> <span class="s1">&#39;Story 1&#39;</span>
 </pre></div>
 </div>
 <p>Here we specify a <code class="docutils literal notranslate"><span class="pre">max-history</span></code> value of 3.
