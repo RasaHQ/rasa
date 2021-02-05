@@ -22,8 +22,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Bugfixes
 --------
-- `#7754 <https://github.com/rasahq/rasa/issues/7754>`_: Backported the Rasa Open Source 2 `PikaEventBroker` implementation to address connection
-  problems with the current implementation.
+- `#7772 <https://github.com/rasahq/rasa/issues/7754>`_: Backported the Rasa Open Source 2 `PikaEventBroker` implementation to address
+  problems when using it with multiple Sanic workers.
 
 
 [1.10.21] - 2021-02-01
