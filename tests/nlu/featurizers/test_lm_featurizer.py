@@ -188,6 +188,7 @@ from rasa.shared.nlu.constants import TEXT, INTENT
 def test_lm_featurizer_shape_values(
     model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
 ):
+    print(os.environ.get("CI"))
     if model_name == "bert" and bool(os.environ.get("CI")):
         pytest.skip(
             "Reason: this model is too large, loading it results in"
