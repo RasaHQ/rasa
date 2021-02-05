@@ -346,9 +346,8 @@ class TEDPolicy(Policy):
             self.defaults, new_config
         )
 
-        rasa.utils.train_utils._check_loss_setting(self.config)
-        rasa.utils.train_utils._check_confidence_setting(self.config)
-        rasa.utils.train_utils._check_similarity_loss_setting(self.config)
+        rasa.utils.train_utils.validate_configuration_settings(self.config)
+
         self.config = rasa.utils.train_utils.update_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
@@ -620,16 +619,11 @@ class TEDPolicy(Policy):
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
-        if (
-            self.config[LOSS_TYPE] == CROSS_ENTROPY
-            and self.config[RANKING_LENGTH] > 0
-            and self.config[SIMILARITY_TYPE] == INNER
-            and self.config[MODEL_CONFIDENCE] == SOFTMAX
-        ):
+        if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
             # TODO: This should be removed in 3.0 when softmax as
             #  model confidence and normalization is completely deprecated.
-            confidences = rasa.utils.train_utils.normalize(
-                confidences, self.config[RANKING_LENGTH]
+            confidence = rasa.utils.train_utils.normalize(
+                confidence, self.config[RANKING_LENGTH]
             )
 
         optional_events = self._create_optional_event_for_entities(

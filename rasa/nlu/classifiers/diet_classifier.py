@@ -293,9 +293,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
 
-        train_utils._check_loss_setting(self.component_config)
-        train_utils._check_confidence_setting(self.component_config)
-        train_utils._check_similarity_loss_setting(self.component_config)
+        train_utils.validate_configuration_settings(self.component_config)
 
         self.component_config = train_utils.update_loss_type(self.component_config)
 
@@ -865,9 +863,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = message_sim.argsort()[::-1]
 
         if (
-            self.component_config[LOSS_TYPE] == CROSS_ENTROPY
-            and self.component_config[RANKING_LENGTH] > 0
-            and self.component_config[SIMILARITY_TYPE] == INNER
+            self.component_config[RANKING_LENGTH] > 0
             and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
         ):
             # TODO: This should be removed in 3.0 when softmax as

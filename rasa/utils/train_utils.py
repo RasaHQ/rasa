@@ -34,6 +34,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.core.constants import DIALOGUE
+from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
@@ -366,6 +367,17 @@ def override_defaults(
     return config
 
 
+def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
+    """Performs checks to validate that combination of parameters in the configuration are correctly set.
+
+    Args:
+        component_config: Configuration to validate.
+    """
+    _check_loss_setting(component_config)
+    _check_confidence_setting(component_config)
+    _check_similarity_loss_setting(component_config)
+
+
 def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
@@ -374,6 +386,20 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
             f"Rasa Open Source 3.0 onwards.",
             category=FutureWarning,
         )
+        if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
+            raise InvalidConfigException(
+                f"{LOSS_TYPE}={component_config[LOSS_TYPE]} and "
+                f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
+                f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"only with {LOSS_TYPE}={CROSS_ENTROPY}."
+            )
+        if component_config[SIMILARITY_TYPE] != INNER:
+            raise InvalidConfigException(
+                f"{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]} and "
+                f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
+                f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"only with {SIMILARITY_TYPE}={INNER}."
+            )
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
