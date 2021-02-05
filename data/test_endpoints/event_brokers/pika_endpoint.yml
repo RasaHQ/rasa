@@ -8,3 +8,4 @@ event_broker:
 #   you may supply more than one queue to publish to
 #   - queue-2
 #   - queue-3
+  exchange_name: exchange

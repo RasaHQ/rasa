@@ -41,6 +41,7 @@ class PikaEventBroker(EventBroker):
         event_loop: Optional[AbstractEventLoop] = None,
         connection_attempts: int = 20,
         retry_delay_in_seconds: float = 5,
+        exchange_name: Union[Text, None] = None,
         **kwargs: Any,
     ):
         """Initialise RabbitMQ event broker.
@@ -62,6 +63,8 @@ class PikaEventBroker(EventBroker):
             connection_attempts: Number of attempts for connecting to RabbitMQ before
                 an exception is thrown.
             retry_delay_in_seconds: Time in seconds between connection attempts.
+            exchange_name: Exchange name to which the queues binds to.
+            If nothing is mention then Default exchange name would be used
         """
         super().__init__()
         _set_pika_log_levels(log_level)
@@ -74,6 +77,7 @@ class PikaEventBroker(EventBroker):
         self.raise_on_failure = raise_on_failure
         self._connection_attempts = connection_attempts
         self._retry_delay_in_seconds = retry_delay_in_seconds
+        self.exchange_name = exchange_name if exchange_name else RABBITMQ_EXCHANGE
 
         # Unpublished messages which hopefully will be published later 🤞
         self._unpublished_events: Deque[Dict[Text, Any]] = deque()
@@ -201,7 +205,7 @@ class PikaEventBroker(EventBroker):
         self, channel: aio_pika.RobustChannel
     ) -> aio_pika.Exchange:
         exchange = await channel.declare_exchange(
-            RABBITMQ_EXCHANGE, type=aio_pika.ExchangeType.FANOUT
+            self.exchange_name, type=aio_pika.ExchangeType.FANOUT
         )
 
         await asyncio.gather(
