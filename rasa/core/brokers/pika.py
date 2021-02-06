@@ -41,7 +41,7 @@ class PikaEventBroker(EventBroker):
         event_loop: Optional[AbstractEventLoop] = None,
         connection_attempts: int = 20,
         retry_delay_in_seconds: float = 5,
-        exchange_name: Union[Text, None] = None,
+        exchange_name: Text = RABBITMQ_EXCHANGE,
         **kwargs: Any,
     ):
         """Initialise RabbitMQ event broker.
@@ -77,7 +77,7 @@ class PikaEventBroker(EventBroker):
         self.raise_on_failure = raise_on_failure
         self._connection_attempts = connection_attempts
         self._retry_delay_in_seconds = retry_delay_in_seconds
-        self.exchange_name = exchange_name if exchange_name else RABBITMQ_EXCHANGE
+        self.exchange_name = exchange_name
 
         # Unpublished messages which hopefully will be published later 🤞
         self._unpublished_events: Deque[Dict[Text, Any]] = deque()
@@ -150,7 +150,9 @@ class PikaEventBroker(EventBroker):
         logger.info(f"RabbitMQ connection to '{self.host}' was established.")
 
         channel = await self._connection.channel()
-        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
+        logger.debug(
+            f"RabbitMQ channel was opened. Declaring fanout exchange. exchange name: {self.exchange_name}"
+        )
 
         self._exchange = await self._set_up_exchange(channel)
 
