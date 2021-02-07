@@ -159,10 +159,10 @@ def plot_histogram(
         [min(hist_data[0], default=0), min(hist_data[1], default=0)], default=0
     )
 
-    bin_width = (max_value - min_value) / n_bins
-    bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
+    # bin_width = (max_value - min_value) / n_bins
+    # bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
 
-    # bins = _get_bins(hist_data)
+    bins = _get_bins(hist_data)
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
@@ -178,11 +178,11 @@ def plot_histogram(
                 ]
             )
         ]
-        - bins[0]
+        # - bins[0]
     )
 
-    max_ylim = max(bins) + bin_width
-    # max_ylim = max(bins)
+    # max_ylim = max(bins) + bin_width
+    max_ylim = max(bins)
 
     yticks = [float("{:.2f}".format(x)) for x in bins]
 
