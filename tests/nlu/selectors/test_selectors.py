@@ -384,7 +384,10 @@ async def test_cross_entropy_without_normalization(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
 async def test_margin_loss_is_not_normalized(
-    monkeypatch, component_builder, tmpdir, classifier_params
+    monkeypatch: MonkeyPatch,
+    component_builder: ComponentBuilder,
+    tmpdir: Path,
+    classifier_params: Dict[Text, int],
 ):
     pipeline = as_pipeline(
         "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
@@ -417,13 +420,17 @@ async def test_margin_loss_is_not_normalized(
 @pytest.mark.parametrize(
     "classifier_params, data_path, output_length",
     [
-        ({RANDOM_SEED: 42, EPOCHS: 2}, "data/test_selectors", 2),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 2}, "data/test_selectors", 2),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 1, EPOCHS: 2}, "data/test_selectors", 1),
+        ({RANDOM_SEED: 42, EPOCHS: 2}, "data/test_selectors", 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 2}, "data/test_selectors", 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 2}, "data/test_selectors", 2),
     ],
 )
 async def test_softmax_ranking(
-    component_builder, tmp_path, classifier_params, data_path, output_length,
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    classifier_params: Dict[Text, int],
+    data_path: Text,
+    output_length: int,
 ):
     pipeline = as_pipeline(
         "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
