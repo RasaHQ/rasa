@@ -27,12 +27,16 @@ stories:
   - action: utter_greet
   - intent: search_restaurant
   - action: utter_suggest_cuisine
-  - user: "I can always go for sushi"
+  - user: |
+      I can always go for sushi
+    intent: affirm
   - action: utter_search_restaurants
 
 - story: rejects suggestion, indirectly
   steps:
   - intent: search_restaurant
   - action: utter_suggest_cuisine
-  - user: "I had that yesterday"
+  - user: |
+      I had that yesterday
+    intent: deny
   - action: utter_suggest_cuisine
