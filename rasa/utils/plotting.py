@@ -128,7 +128,7 @@ def plot_histogram(
     """
     import matplotlib.pyplot as plt
 
-    def get_bins(data: List[List[float]], bin_size_frac: float = 0.04) -> List[float]:
+    def _get_bins(data: List[List[float]], bin_size_frac: float = 0.04) -> List[float]:
         total_values = len(data[0]) + len(data[1])
         bin_max_size = int(total_values * bin_size_frac)
 
@@ -158,7 +158,7 @@ def plot_histogram(
         [min(hist_data[0], default=0), min(hist_data[1], default=0)], default=0
     )
 
-    bins = get_bins(hist_data)
+    bins = _get_bins(hist_data)
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
