@@ -5,6 +5,7 @@ import os
 import numpy as np
 from typing import List, Text, Optional, Union, Any
 import matplotlib
+from matplotlib.ticker import FormatStrFormatter
 
 import rasa.shared.utils.io
 from rasa.constants import RESULTS_FILE
@@ -158,7 +159,10 @@ def plot_histogram(
         [min(hist_data[0], default=0), min(hist_data[1], default=0)], default=0
     )
 
-    bins = _get_bins(hist_data)
+    bin_width = (max_value - min_value) / n_bins
+    bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
+
+    # bins = _get_bins(hist_data)
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
@@ -174,11 +178,11 @@ def plot_histogram(
                 ]
             )
         ]
-        # - bins[0]
+        - bins[0]
     )
 
-    # max_ylim = max(bins) + bin_width
-    max_ylim = max(bins)
+    max_ylim = max(bins) + bin_width
+    # max_ylim = max(bins)
 
     yticks = [float("{:.2f}".format(x)) for x in bins]
 
@@ -203,10 +207,13 @@ def plot_histogram(
         color=colors[1],
         label="misses",
     )
+    axes[0].set_yscale("log")
     axes[1].set(title="Wrong")
 
     axes[0].set(yticks=yticks, xlim=(0, max_xlims[0]), ylim=(min_ylim, max_ylim))
     axes[1].set(yticks=yticks, xlim=(0, max_xlims[1]), ylim=(min_ylim, max_ylim))
+
+    axes[0].yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 
     axes[0].invert_xaxis()
     axes[0].yaxis.tick_right()

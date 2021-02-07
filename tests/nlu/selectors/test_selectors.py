@@ -27,14 +27,12 @@ from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
 )
 from rasa.utils import train_utils
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from tests.nlu.classifiers.test_diet_classifier import as_pipeline
-from tests.conftest import DEFAULT_NLU_DATA
 
 
 @pytest.mark.parametrize(
@@ -330,8 +328,8 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
 @pytest.mark.parametrize(
     "classifier_params, prediction_min, prediction_max, output_length",
     [
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"}, -1, 1, 9,),
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9,),
+        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"}, -1, 1, 9),
+        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9),
     ],
 )
 async def test_cross_entropy_without_normalization(

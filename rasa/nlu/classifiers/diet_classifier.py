@@ -252,7 +252,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If 'True' applies sigmoid on all similarity terms and adds it to the loss function to
         # ensure that similarity values are approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
-        # Model confidence to be returned during inference. Possible values - softmax, cosine, inner.
+        # Model confidence to be returned during inference. Possible values - 'softmax', 'cosine', 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
@@ -1019,6 +1019,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_example,
         ) = cls._load_from_files(meta, model_dir)
 
+        meta = train_utils.update_confidence_type(meta)
         meta = train_utils.update_similarity_type(meta)
         meta = train_utils.update_loss_type(meta)
 
