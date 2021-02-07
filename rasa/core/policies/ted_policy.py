@@ -346,6 +346,8 @@ class TEDPolicy(Policy):
             self.defaults, new_config
         )
 
+        self.config = rasa.utils.train_utils.update_confidence_type(self.config)
+
         rasa.utils.train_utils.validate_configuration_settings(self.config)
 
         self.config = rasa.utils.train_utils.update_loss_type(self.config)

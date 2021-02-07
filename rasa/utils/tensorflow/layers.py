@@ -12,6 +12,7 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     CROSS_ENTROPY,
 )
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -595,7 +596,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.model_confidence = model_confidence
         self.similarity_type = similarity_type
         if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
-            raise ValueError(
+            raise RasaException(
                 f"Wrong similarity type '{self.similarity_type}', "
                 f"should be '{COSINE}' or '{INNER}'."
             )
@@ -918,7 +919,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         elif self.loss_type == CROSS_ENTROPY:
             return self._loss_cross_entropy
         else:
-            raise ValueError(
+            raise RasaException(
                 f"Wrong loss type '{self.loss_type}', "
                 f"should be '{MARGIN}' or '{CROSS_ENTROPY}'"
             )

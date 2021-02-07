@@ -293,6 +293,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
 
+        self.component_config = train_utils.update_confidence_type(
+            self.component_config
+        )
+
         train_utils.validate_configuration_settings(self.component_config)
 
         self.component_config = train_utils.update_loss_type(self.component_config)

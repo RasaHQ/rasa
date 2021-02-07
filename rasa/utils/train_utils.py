@@ -367,6 +367,28 @@ def override_defaults(
     return config
 
 
+def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Set model confidence to cosine if margin loss is used.
+
+    Args:
+        component_config: model configuration
+
+    Returns:
+        updated model configuration
+    """
+    # TODO: Remove this once model_confidence is set to cosine by default.
+    if (
+        component_config[LOSS_TYPE] == MARGIN
+        and component_config[MODEL_CONFIDENCE] == SOFTMAX
+    ):
+        rasa.shared.utils.io.raise_warning(
+            f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
+            f"{COSINE} as {LOSS_TYPE} is set to {MARGIN} in the configuration."
+        )
+        component_config[MODEL_CONFIDENCE] = COSINE
+    return component_config
+
+
 def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
     """Performs checks to validate that combination of parameters in the configuration are correctly set.
 
@@ -393,7 +415,7 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
                 f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
                 f"only with {LOSS_TYPE}={CROSS_ENTROPY}."
             )
-        if component_config[SIMILARITY_TYPE] != INNER:
+        if component_config[SIMILARITY_TYPE] not in [INNER, AUTO]:
             raise InvalidConfigException(
                 f"{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]} and "
                 f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "

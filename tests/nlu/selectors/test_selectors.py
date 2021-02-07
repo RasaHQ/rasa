@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 import numpy as np
 from typing import List, Dict, Text, Any
+from mock import Mock
+from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 from rasa.nlu import train
@@ -19,12 +21,20 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
     CHECKPOINT_MODEL,
+    MODEL_CONFIDENCE,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    LOSS_TYPE,
 )
+from rasa.utils import train_utils
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from tests.nlu.classifiers.test_diet_classifier import as_pipeline
+from tests.conftest import DEFAULT_NLU_DATA
 
 
 @pytest.mark.parametrize(
@@ -315,3 +325,119 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
     assert "attention_weights" in diagnostic_data[name]
     # By default, ResponseSelector has `number_of_transformer_layers = 0`
     assert diagnostic_data[name].get("attention_weights") is None
+
+
+@pytest.mark.parametrize(
+    "classifier_params, prediction_min, prediction_max, output_length",
+    [
+        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"}, -1, 1, 9,),
+        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9,),
+    ],
+)
+async def test_cross_entropy_without_normalization(
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    classifier_params: Dict[Text, Any],
+    prediction_min: float,
+    prediction_max: float,
+    output_length: int,
+    monkeypatch: MonkeyPatch,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    )
+    assert pipeline[2]["name"] == "ResponseSelector"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/test_selectors",
+        component_builder=component_builder,
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    mock = Mock()
+    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+
+    parse_data = loaded.parse("hello")
+    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
+
+    # check that the output was correctly truncated
+    assert len(response_ranking) == output_length
+
+    response_confidences = [response.get("confidence") for response in response_ranking]
+
+    # check each confidence is in range
+    confidence_in_range = [
+        prediction_min <= confidence <= prediction_max
+        for confidence in response_confidences
+    ]
+    assert all(confidence_in_range)
+
+    # normalize shouldn't have been called
+    mock.normalize.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
+)
+async def test_margin_loss_is_not_normalized(
+    monkeypatch, component_builder, tmpdir, classifier_params
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    )
+    assert pipeline[2]["name"] == "ResponseSelector"
+    pipeline[2].update(classifier_params)
+
+    mock = Mock()
+    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config,
+        path=str(tmpdir),
+        data="data/test_selectors",
+        component_builder=component_builder,
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    parse_data = loaded.parse("hello")
+    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
+
+    # check that the output was not normalized
+    mock.normalize.assert_not_called()
+
+    # check that the output was correctly truncated
+    assert len(response_ranking) == 9
+
+
+@pytest.mark.parametrize(
+    "classifier_params, data_path, output_length",
+    [
+        ({RANDOM_SEED: 42, EPOCHS: 2}, "data/test_selectors", 2),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 2}, "data/test_selectors", 2),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 1, EPOCHS: 2}, "data/test_selectors", 1),
+    ],
+)
+async def test_softmax_ranking(
+    component_builder, tmp_path, classifier_params, data_path, output_length,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    )
+    assert pipeline[2]["name"] == "ResponseSelector"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    parse_data = loaded.parse("hello")
+    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
+    # check that the output was correctly truncated after normalization
+    assert len(response_ranking) == output_length
