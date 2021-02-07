@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
     """Normalizes an array of positive numbers over the top `ranking_length` values.
+
     Other values will be set to 0.
     """
     new_values = values.copy()  # prevent mutation of the input

@@ -287,6 +287,18 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         # function should not get called for margin loss_type
         mock.normalize.assert_not_called()
 
+    def test_prediction_on_empty_tracker(
+        self, trained_policy: Policy, default_domain: Domain
+    ):
+        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
+        prediction = trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        )
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert max(prediction.probabilities) <= 1.0
+        assert min(prediction.probabilities) >= -1.0
+
 
 class TestTEDPolicyWithEval(TestTEDPolicy):
     def create_policy(

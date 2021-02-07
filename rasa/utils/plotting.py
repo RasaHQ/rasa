@@ -128,6 +128,23 @@ def plot_histogram(
     """
     import matplotlib.pyplot as plt
 
+    def get_bins(data: List[List[float]], bin_size_frac: float = 0.04) -> List[float]:
+        total_values = len(data[0]) + len(data[1])
+        bin_max_size = int(total_values * bin_size_frac)
+
+        all_values = sorted(data[0] + data[1])
+        bins = []
+        bin_count = 0
+        for value in all_values:
+            bin_count += 1
+            if bin_count == bin_max_size:
+                bins.append(value)
+                bin_count = 0
+        if bin_count:
+            bins.append(all_values[-1])
+
+        return bins
+
     plt.gcf().clear()
 
     # Wine-ish colour for the confidences of hits.
@@ -140,8 +157,8 @@ def plot_histogram(
     min_value = min(
         [min(hist_data[0], default=0), min(hist_data[1], default=0)], default=0
     )
-    bin_width = (max_value - min_value) / n_bins
-    bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
+
+    bins = get_bins(hist_data)
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
@@ -157,10 +174,11 @@ def plot_histogram(
                 ]
             )
         ]
-        - bin_width
+        # - bins[0]
     )
 
-    max_ylim = max(bins) + bin_width
+    # max_ylim = max(bins) + bin_width
+    max_ylim = max(bins)
 
     yticks = [float("{:.2f}".format(x)) for x in bins]
 
