@@ -74,13 +74,13 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
 
     parser.add_argument(
-        "--nlu-training-data", type=str, help="File containing your NLU training data."
+        "--nlu-training-data", type=str, help="File containing your NLU training data, i.e. the train set generated with the `rasa data split nlu` command."
     )
 
     parser.add_argument(
         "--nlu-evaluation-data",
         type=str,
-        help="File containing your NLU evaluation data.",
+        help="File containing your NLU evaluation data, i.e. the test set generated with the `rasa data split nlu` command.",
     )
 
     parser.add_argument(
@@ -90,7 +90,7 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "--paraphrases", type=str, help="File containing your paraphrases."
+        "--paraphrases", type=str, help="File containing your paraphrases generated from the paraphraser repository: https://github.com/RasaHQ/rasa/pull/7584."
     )
 
     parser.add_argument(
