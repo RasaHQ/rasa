@@ -371,7 +371,6 @@ def _create_summary_report(
 
 def _plot_summary_report(
     intent_summary: Dict[Text, Dict[Text, float]],
-    changed_intents: Set[Text],
     output_directory: Text,
 ) -> None:
     """
@@ -379,14 +378,12 @@ def _plot_summary_report(
 
     Args:
         intent_summary: Summary report of the effect of data augmentation.
-        changed_intents: Set of intents that were affected by data augmentation.
         output_directory: Directory to store the summary plot in.
     """
     for metric in ["precision", "recall", "f1-score"]:
         output_file_diverse = os.path.join(output_directory, f"{metric}_changes.png")
         rasa.utils.plotting.plot_intent_augmentation_summary(
             augmentation_summary=intent_summary,
-            changed_intents=changed_intents,
             metric=metric,
             output_file=output_file_diverse,
         )
