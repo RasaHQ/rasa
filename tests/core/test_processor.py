@@ -109,7 +109,7 @@ async def test_http_parsing():
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
-            await MessageProcessor(inter, None, None, None, None)._parse_message(
+            await MessageProcessor(inter, None, None, None, None, None)._parse_message(
                 message
             )
         except KeyError:
