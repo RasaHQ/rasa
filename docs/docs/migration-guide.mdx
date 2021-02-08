@@ -14,20 +14,20 @@ how you can migrate from one version to another.
 
 ### Machine Learning Components
 
-Few changes have been made to the loss function inside machine learning (ML)
-components - `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
+A few changes have been made to the loss function inside machine learning (ML)
+components `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
 1. Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0. Use `loss_type=cross_entropy` instead.
-2. The default loss function (`loss_type=cross_entropy`) adds an optional sigmoid cross-entropy loss of all similarity values to constrain
+2. The default loss function (`loss_type=cross_entropy`) can add an optional sigmoid cross-entropy loss of all similarity values to constrain
 them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
 
-Also, a new option `model_confidence` has been added to each ML component. It affects how model's confidence for each label is computed during inference. It can take three values -
+Also, a new option `model_confidence` has been added to each ML component. It affects how model's confidence for each label is computed during inference. It can take one of three values:
 1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
 2. `cosine` - Cosine similarity between input label embeddings. Confidence for each label will be in the range `[-1,1]`.
 3. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in an unbounded range.
-The default value is `softmax`, but we recommend using `cosine` as that will be the new default value, Rasa Open Source 3.0 onwards.
+The default value is `softmax`, but we recommend using `cosine` as that will be the new default value from Rasa Open Source 3.0 onwards.
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
 
-With both the above recommendations, users should configure their ML component, e.g. `DIETClassifier`, as -
+With both the above recommendations, users should configure their ML component, e.g. `DIETClassifier`, as:
 ```
 - name: DIETClassifier
   model_confidence: cosine
