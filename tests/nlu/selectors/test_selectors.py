@@ -418,9 +418,9 @@ async def test_margin_loss_is_not_normalized(
 @pytest.mark.parametrize(
     "classifier_params, data_path, output_length",
     [
-        ({RANDOM_SEED: 42, EPOCHS: 2}, "data/test_selectors", 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 2}, "data/test_selectors", 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 2}, "data/test_selectors", 2),
+        ({RANDOM_SEED: 42, EPOCHS: 1}, "data/test_selectors", 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1}, "data/test_selectors", 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, "data/test_selectors", 2),
     ],
 )
 async def test_softmax_ranking(
