@@ -22,7 +22,7 @@ them to an approximate range. You can turn on this option by setting `constrain_
 
 Also, a new option `model_confidence` has been added to each ML component. It affects how model's confidence for each label is computed during inference. It can take one of three values:
 1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
-2. `cosine` - Cosine similarity between input label embeddings. Confidence for each label will be in the range `[-1,1]`.
+2. `cosine` - Cosine similarity between input and label embeddings. Confidence for each label will be in the range `[-1,1]`.
 3. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in an unbounded range.
 The default value is `softmax`, but we recommend using `cosine` as that will be the new default value from Rasa Open Source 3.0.0 onwards.
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
