@@ -384,7 +384,7 @@ async def test_cross_entropy_without_normalization(
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch,
     component_builder: ComponentBuilder,
-    tmpdir: Path,
+    tmp_path: Path,
     classifier_params: Dict[Text, int],
 ):
     pipeline = as_pipeline(
@@ -399,7 +399,7 @@ async def test_margin_loss_is_not_normalized(
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
         _config,
-        path=str(tmpdir),
+        path=str(tmp_path),
         data="data/test_selectors",
         component_builder=component_builder,
     )

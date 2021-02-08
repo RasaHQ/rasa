@@ -406,8 +406,8 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
         rasa.shared.utils.io.raise_warning(
             f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
             f"to set it to `cosine`. It will be set to `cosine` by default, "
-            f"Rasa Open Source 3.0 onwards.",
-            category=FutureWarning,
+            f"Rasa Open Source 3.0.0 onwards.",
+            category=UserWarning,
         )
         if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
             raise InvalidConfigException(
@@ -433,8 +433,8 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
             f"to set it to `True` when using cross-entropy loss. It will be set to `True` by default, "
-            f"Rasa Open Source 3.0 onwards.",
-            category=FutureWarning,
+            f"Rasa Open Source 3.0.0 onwards.",
+            category=UserWarning,
         )
 
 
@@ -452,7 +452,7 @@ def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
             f"Ideally use `{SIMILARITY_TYPE}={INNER}`"
             f" and `{LOSS_TYPE}={CROSS_ENTROPY}` or"
             f"`{SIMILARITY_TYPE}={COSINE}` and `{LOSS_TYPE}={MARGIN}`.",
-            category=FutureWarning,
+            category=UserWarning,
         )
 
 
