@@ -370,8 +370,7 @@ def _create_summary_report(
 
 
 def _plot_summary_report(
-    intent_summary: Dict[Text, Dict[Text, float]],
-    output_directory: Text,
+    intent_summary: Dict[Text, Dict[Text, float]], output_directory: Text,
 ) -> None:
     """
     Plots the data augmentation summary.

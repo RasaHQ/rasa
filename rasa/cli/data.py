@@ -261,10 +261,15 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 
 
 def augment_nlu_data(args: argparse.Namespace) -> None:
-    """Load NLU training & evaluation data, paraphrases, an existing classification report, its corresponding config
-    file and suggest additional training
-     examples.
+    """Performs data augmentation for NLU.
 
+    Data augementation works by determining intents with low performance or little data from the existing training data
+    and the generated paraphrases are used as additional training data for these intents.
+
+    Subsequently, two models with augmented data are trained and then evaluated on the supplied test data.
+
+    The module outputs a report highlighting how data augmentation has changed classification performance.
+    
     Args:
         args: Command-line arguments.
     """
@@ -277,7 +282,9 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(args.paraphrases)
 
     default_report_file_path = os.path.join(DEFAULT_RESULTS_PATH, "intent_report.json")
-    report_file = rasa.cli.utils.get_validated_path(args.nlu_classification_report, "", default_report_file_path)
+    report_file = rasa.cli.utils.get_validated_path(
+        args.nlu_classification_report, "", default_report_file_path
+    )
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
     # Determine intents for which to perform data augmentation
