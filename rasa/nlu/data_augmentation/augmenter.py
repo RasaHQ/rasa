@@ -76,8 +76,8 @@ def collect_intents_for_data_augmentation(
     )[:num_intents_to_augment]
 
     pooled_intents = {
-        tp[0]
-        for tp in low_data_intents
+        intent_score_tuple[0]
+        for intent_score_tuple in low_data_intents
         + low_precision_intents
         + low_recall_intents
         + low_f1_intents
