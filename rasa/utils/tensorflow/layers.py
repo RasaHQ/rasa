@@ -582,6 +582,9 @@ class DotProductLoss(tf.keras.layers.Layer):
                 Used inside _loss_cross_entropy() only.
             model_confidence: Model confidence to be returned during inference.
                 Possible values - softmax, cosine, inner.
+
+        Raises:
+            RasaException: When `similarity_type` is not one of 'cosine' or 'inner'.
         """
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -595,7 +598,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.constrain_similarities = constrain_similarities
         self.model_confidence = model_confidence
         self.similarity_type = similarity_type
-        if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
+        if not self.similarity_type or self.similarity_type not in {COSINE, INNER}:
             raise RasaException(
                 f"Wrong similarity type '{self.similarity_type}', "
                 f"should be '{COSINE}' or '{INNER}'."
@@ -850,48 +853,14 @@ class DotProductLoss(tf.keras.layers.Layer):
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
         """Defines cross entropy loss."""
-        # Similarity terms between input and label should be optimized relative
-        # to each other and hence use them as logits for softmax term
-        softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
-
-        if not self.constrain_similarities:
-            # Concatenate other similarity terms as well. Due to this,
-            # similarity values between input and label may not be
-            # approximately bounded in a defined range.
-            softmax_logits = tf.concat(
-                [softmax_logits, sim_neg_ii, sim_neg_ll], axis=-1
-            )
-
-        # create label_ids for softmax
-        softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
-
-        softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=softmax_label_ids, logits=softmax_logits
+        loss = self._compute_softmax_loss(
+            sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
         )
 
-        loss = softmax_loss
-
         if self.constrain_similarities:
-            # Constrain similarity values in a range by applying sigmoid
-            # on them individually so that they saturate at extreme values.
-            sigmoid_logits = tf.concat(
-                [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+            loss += self._compute_sigmoid_loss(
+                sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
             )
-
-            sigmoid_labels = tf.concat(
-                [
-                    tf.ones_like(sigmoid_logits[..., :1]),
-                    tf.zeros_like(sigmoid_logits[..., 1:]),
-                ],
-                axis=-1,
-            )
-
-            sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-                labels=sigmoid_labels, logits=sigmoid_logits
-            )
-
-            # average over logits axis
-            loss += tf.reduce_mean(sigmoid_loss, axis=-1)
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -909,6 +878,57 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         # average the loss over the batch
         return tf.reduce_mean(loss)
+
+    def _compute_sigmoid_loss(
+        self,
+        sim_pos: tf.Tensor,
+        sim_neg_il: tf.Tensor,
+        sim_neg_ll: tf.Tensor,
+        sim_neg_ii: tf.Tensor,
+        sim_neg_li: tf.Tensor,
+    ) -> tf.Tensor:
+        # Constrain similarity values in a range by applying sigmoid
+        # on them individually so that they saturate at extreme values.
+        sigmoid_logits = tf.concat(
+            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+        )
+        sigmoid_labels = tf.concat(
+            [
+                tf.ones_like(sigmoid_logits[..., :1]),
+                tf.zeros_like(sigmoid_logits[..., 1:]),
+            ],
+            axis=-1,
+        )
+        sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=sigmoid_labels, logits=sigmoid_logits
+        )
+        # average over logits axis
+        return tf.reduce_mean(sigmoid_loss, axis=-1)
+
+    def _compute_softmax_loss(
+        self,
+        sim_pos: tf.Tensor,
+        sim_neg_il: tf.Tensor,
+        sim_neg_ll: tf.Tensor,
+        sim_neg_ii: tf.Tensor,
+        sim_neg_li: tf.Tensor,
+    ) -> tf.Tensor:
+        # Similarity terms between input and label should be optimized relative
+        # to each other and hence use them as logits for softmax term
+        softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
+        if not self.constrain_similarities:
+            # Concatenate other similarity terms as well. Due to this,
+            # similarity values between input and label may not be
+            # approximately bounded in a defined range.
+            softmax_logits = tf.concat(
+                [softmax_logits, sim_neg_ii, sim_neg_ll], axis=-1
+            )
+        # create label_ids for softmax
+        softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
+        softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=softmax_label_ids, logits=softmax_logits
+        )
+        return softmax_loss
 
     @property
     def _chosen_loss(self) -> Callable:

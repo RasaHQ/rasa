@@ -181,8 +181,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'cross_entropy' or 'margin'.
         LOSS_TYPE: CROSS_ENTROPY,
-        # Number of top intents to normalize scores for. Applicable with loss type 'cross_entropy'
-        # and 'softmax' confidences. Set to 0 to turn off normalization.
+        # Number of top intents to normalize scores for. Applicable with
+        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+        # to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
@@ -249,10 +250,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Split entities by comma, this makes sense e.g. for a list of ingredients
         # in a recipie, but it doesn't make sense for the parts of an address
         SPLIT_ENTITIES_BY_COMMA: True,
-        # If 'True' applies sigmoid on all similarity terms and adds it to the loss function to
-        # ensure that similarity values are approximately bounded. Used inside softmax loss only.
+        # If 'True' applies sigmoid on all similarity terms and adds
+        # it to the loss function to ensure that similarity values are
+        # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
-        # Model confidence to be returned during inference. Possible values - 'softmax', 'cosine', 'inner'.
+        # Model confidence to be returned during inference. Possible values -
+        # 'softmax', 'cosine', 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
     }
 

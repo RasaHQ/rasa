@@ -218,8 +218,9 @@ class TEDPolicy(Policy):
         SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'cross_entropy' or 'margin'.
         LOSS_TYPE: CROSS_ENTROPY,
-        # Number of top actions to normalize scores for. Applicable with loss type 'cross_entropy'
-        # and 'softmax' confidences. Set to 0 to turn off normalization.
+        # Number of top actions to normalize scores for. Applicable with
+        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+        # to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
@@ -281,10 +282,12 @@ class TEDPolicy(Policy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: True,
-        # if 'True' applies sigmoid on all similarity terms and adds it to the loss function to
-        # ensure that similarity values are approximately bounded. Used inside softmax loss only.
+        # if 'True' applies sigmoid on all similarity terms and adds
+        # it to the loss function to ensure that similarity values are
+        # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
-        # Model confidence to be returned during inference. Possible values - 'softmax', 'cosine' and 'inner'.
+        # Model confidence to be returned during inference. Possible values -
+        # 'softmax', 'cosine' and 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
