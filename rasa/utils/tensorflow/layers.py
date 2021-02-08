@@ -547,9 +547,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         use_max_sim_neg: bool,
         neg_lambda: float,
         scale_loss: bool,
+        similarity_type: Text,
         name: Optional[Text] = None,
         same_sampling: bool = False,
-        similarity_type: Optional[Text] = None,
         constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
     ) -> None:
@@ -572,10 +572,10 @@ class DotProductLoss(tf.keras.layers.Layer):
                 used only if 'loss_type' is set to 'margin'.
             scale_loss: Boolean, if 'True' scale loss inverse proportionally to
                 the confidence of the correct prediction.
+            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
             name: Optional name of the layer.
             same_sampling: Boolean, if 'True' sample same negative labels
                 for the whole batch.
-            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
             constrain_similarities: Boolean, if 'True' applies sigmoid on all
                 similarity terms and adds to the loss function to
                 ensure that similarity values are approximately bounded.
@@ -598,7 +598,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.constrain_similarities = constrain_similarities
         self.model_confidence = model_confidence
         self.similarity_type = similarity_type
-        if not self.similarity_type or self.similarity_type not in {COSINE, INNER}:
+        if self.similarity_type not in {COSINE, INNER}:
             raise RasaException(
                 f"Wrong similarity type '{self.similarity_type}', "
                 f"should be '{COSINE}' or '{INNER}'."
