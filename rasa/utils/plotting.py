@@ -271,9 +271,9 @@ def _autolabel(rects: Axes.bar) -> None:
         width = rect.get_width()
         offset = 0.0
         if width > 0.0:
-            offset = 0.05
+            offset = 0.07
         elif width < 0.0:
-            offset = -0.055
+            offset = -0.075
 
         plt.annotate(
             f"{width:.2f}",
