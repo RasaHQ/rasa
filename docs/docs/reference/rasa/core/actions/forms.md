@@ -124,14 +124,28 @@ Extract the values of the other slots
 if they are set by corresponding entities from the user input
 else return `None`.
 
+#### get\_slot\_to\_fill
+
+```python
+ | get_slot_to_fill(tracker: "DialogueStateTracker") -> Optional[str]
+```
+
+Gets the name of the slot which should be filled next.
+
+When switching to another form, the requested slot setting is still from the
+previous form and must be ignored.
+
+**Returns**:
+
+  The slot name or `None`
+
 #### extract\_requested\_slot
 
 ```python
  | extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain) -> Dict[Text, Any]
 ```
 
-Extract the value of requested slot from a user input
-else return `None`.
+Extracts the value of requested slot from a user input else return `None`.
 
 #### validate\_slots
 
