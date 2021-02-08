@@ -108,6 +108,8 @@ def test_confidence_loss_settings(
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_confidence_setting(component_config)
+    else:
+        train_utils._check_confidence_setting(component_config)
 
 
 @pytest.mark.parametrize(
@@ -128,3 +130,5 @@ def test_confidence_similarity_settings(
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_confidence_setting(component_config)
+    else:
+        train_utils._check_confidence_setting(component_config)
