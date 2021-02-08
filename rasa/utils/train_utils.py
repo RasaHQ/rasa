@@ -430,7 +430,6 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
         SOFTMAX,
         CROSS_ENTROPY,
     ]:
-        print("raising")
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
             f"to set it to `True` when using cross-entropy loss. It will be set to `True` by default, "

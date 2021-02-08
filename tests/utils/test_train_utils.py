@@ -3,8 +3,6 @@ from typing import Any, Dict
 import numpy as np
 import pytest
 from typing import Text
-from _pytest.logging import LogCaptureFixture
-import logging
 
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
@@ -22,9 +20,8 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     CROSS_ENTROPY,
     MARGIN,
-    CONSTRAIN_SIMILARITIES,
 )
-from rasa.shared.exceptions import RasaException, InvalidConfigException
+from rasa.shared.exceptions import InvalidConfigException
 
 
 def test_align_token_features():

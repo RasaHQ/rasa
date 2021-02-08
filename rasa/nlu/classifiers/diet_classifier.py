@@ -334,11 +334,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         super().__init__(component_config)
 
-        print(
-            self.component_config[CONSTRAIN_SIMILARITIES],
-            self.component_config[MODEL_CONFIDENCE],
-        )
-
         self._check_config_parameters()
 
         # transform numbers to labels
