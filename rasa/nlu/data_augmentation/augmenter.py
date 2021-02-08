@@ -548,3 +548,71 @@ def run_data_augmentation_random_sampling(
     _plot_summary_report(
         intent_summary=intent_summary, output_directory=output_directory,
     )
+
+
+def augment_nlu_data(
+    nlu_training_data: TrainingData,
+    nlu_evaluation_data: TrainingData,
+    paraphrases: TrainingData,
+    classification_report: Dict[Text, Dict[Text, float]],
+    config: Text,
+    num_intents_to_augment: int,
+    random_seed: int,
+    paraphrase_sim_score_threshold: float,
+    output_directory: Text,
+) -> None:
+    """Performs data augmentation for NLU by evaluating two augmentation strategies.
+
+    Args:
+        nlu_training_data: NLU training data (without data augmentation).
+        nlu_evaluation_data: NLU evaluation data.
+        paraphrases: The generated paraphrases with similarity scores obtained from https://github.com/RasaHQ/paraphraser.
+        classification_report: Classification report of the model run *without* data augmentation.
+        config: NLU model config.
+        num_intents_to_augment: Number of intents to choose for augmentation (per criterion).
+        random_seed: Random seed for sampling the paraphrases.
+        paraphrase_sim_score_threshold: Minimum required similarity for a generated paraphrase to be considered for data augmentation.
+        output_directory: Directory to store the output files in.
+    """
+    # Determine intents for which to perform data augmentation
+    pooled_intents = collect_intents_for_data_augmentation(
+        nlu_training_data=nlu_training_data,
+        num_intents_to_augment=num_intents_to_augment,
+        classification_report=classification_report,
+    )
+
+    # Retrieve paraphrase pool and training data pool
+    paraphrase_pool = create_paraphrase_pool(
+        paraphrases, pooled_intents, paraphrase_sim_score_threshold
+    )
+    (training_data_pool, training_data_vocab_per_intent,) = create_training_data_pool(
+        nlu_training_data, pooled_intents
+    )
+
+    # Run data augmentation with diverse augmentation
+    output_directory_diverse = os.path.join(output_directory, "augmentation_diverse")
+    run_data_augmentation_max_vocab_expansion(
+        nlu_training_data=nlu_training_data,
+        nlu_evaluation_data=nlu_evaluation_data,
+        paraphrase_pool=paraphrase_pool,
+        training_data_vocab_per_intent=training_data_vocab_per_intent,
+        training_data_pool=training_data_pool,
+        pooled_intents=pooled_intents,
+        output_directory=output_directory_diverse,
+        config=config,
+        classification_report=classification_report,
+    )
+
+    # Run data augmentation with random sampling augmentation
+    output_directory_random = os.path.join(output_directory, "augmentation_random")
+    run_data_augmentation_random_sampling(
+        nlu_training_data=nlu_training_data,
+        nlu_evaluation_data=nlu_evaluation_data,
+        paraphrase_pool=paraphrase_pool,
+        training_data_pool=training_data_pool,
+        pooled_intents=pooled_intents,
+        output_directory=output_directory_random,
+        config=config,
+        classification_report=classification_report,
+        random_seed=random_seed,
+    )

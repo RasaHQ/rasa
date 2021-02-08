@@ -278,6 +278,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
         "Data augmentation by paraphrasing for NLU"
     )
 
+    # Collect inputs
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         args.nlu_training_data
     )
@@ -292,48 +293,17 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     )
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
-    # Determine intents for which to perform data augmentation
-    pooled_intents = augmenter.collect_intents_for_data_augmentation(
+    # Run augmentation
+    augmenter.augment_nlu_data(
         nlu_training_data=nlu_training_data,
+        nlu_evaluation_data=nlu_evaluation_data,
+        paraphrases=paraphrases,
+        classification_report=classification_report,
+        config=args.config,
         num_intents_to_augment=args.num_intents,
-        classification_report=classification_report,
-    )
-
-    # Retrieve paraphrase pool and training data pool
-    paraphrase_pool = augmenter.create_paraphrase_pool(
-        paraphrases, pooled_intents, args.paraphrase_score_threshold
-    )
-    (
-        training_data_pool,
-        training_data_vocab_per_intent,
-    ) = augmenter.create_training_data_pool(nlu_training_data, pooled_intents)
-
-    # Run data augmentation with diverse augmentation
-    output_directory_diverse = os.path.join(args.out, "augmentation_diverse")
-    augmenter.run_data_augmentation_max_vocab_expansion(
-        nlu_training_data=nlu_training_data,
-        nlu_evaluation_data=nlu_evaluation_data,
-        paraphrase_pool=paraphrase_pool,
-        training_data_vocab_per_intent=training_data_vocab_per_intent,
-        training_data_pool=training_data_pool,
-        pooled_intents=pooled_intents,
-        output_directory=output_directory_diverse,
-        config=args.config,
-        classification_report=classification_report,
-    )
-
-    # Run data augmentation with random sampling augmentation
-    output_directory_random = os.path.join(args.out, "augmentation_random")
-    augmenter.run_data_augmentation_random_sampling(
-        nlu_training_data=nlu_training_data,
-        nlu_evaluation_data=nlu_evaluation_data,
-        paraphrase_pool=paraphrase_pool,
-        training_data_pool=training_data_pool,
-        pooled_intents=pooled_intents,
-        output_directory=output_directory_random,
-        config=args.config,
-        classification_report=classification_report,
         random_seed=args.random_seed,
+        paraphrase_sim_score_threshold=args.paraphrase_score_threshold,
+        output_directory=args.out,
     )
 
     telemetry.track_data_augment()
