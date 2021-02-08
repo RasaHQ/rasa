@@ -301,7 +301,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         train_utils.validate_configuration_settings(self.component_config)
 
-        self.component_config = train_utils.update_loss_type(self.component_config)
+        self.component_config = train_utils.update_deprecated_loss_type(
+            self.component_config
+        )
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
@@ -1029,7 +1031,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta = train_utils.override_defaults(cls.defaults, meta)
         meta = train_utils.update_confidence_type(meta)
         meta = train_utils.update_similarity_type(meta)
-        meta = train_utils.update_loss_type(meta)
+        meta = train_utils.update_deprecated_loss_type(meta)
 
         model = cls._load_model(
             entity_tag_specs,

@@ -581,7 +581,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Model confidence to be returned during inference.
-                Possible values - softmax, cosine, inner.
+                Possible values - 'softmax', 'cosine' and 'inner'.
 
         Raises:
             RasaException: When `similarity_type` is not one of 'cosine' or 'inner'.
@@ -879,8 +879,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         # average the loss over the batch
         return tf.reduce_mean(loss)
 
+    @staticmethod
     def _compute_sigmoid_loss(
-        self,
         sim_pos: tf.Tensor,
         sim_neg_il: tf.Tensor,
         sim_neg_ll: tf.Tensor,

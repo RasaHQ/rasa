@@ -75,7 +75,7 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     return config
 
 
-def update_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     """If LOSS_TYPE is set to 'softmax', update it to 'cross_entropy' since former is deprecated.
 
     Args:

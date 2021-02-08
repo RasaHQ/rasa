@@ -352,7 +352,7 @@ class TEDPolicy(Policy):
 
         rasa.utils.train_utils.validate_configuration_settings(self.config)
 
-        self.config = rasa.utils.train_utils.update_loss_type(self.config)
+        self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
@@ -812,7 +812,7 @@ class TEDPolicy(Policy):
         meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
-        meta = rasa.utils.train_utils.update_loss_type(meta)
+        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
         meta[EPOCHS] = epoch_override
 
