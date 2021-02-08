@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import random
 import shutil
 from pathlib import Path
 from typing import Dict, List, Text, TYPE_CHECKING
@@ -21,6 +20,7 @@ from rasa.nlu.data_augmentation import paraphraser
 import rasa.nlu.test
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
+    DEFAULT_RESULTS_PATH,
     DOCS_URL_MIGRATION_GUIDE,
 )
 import rasa.shared.data
@@ -275,9 +275,10 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
         args.nlu_evaluation_data
     )
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(args.paraphrases)
-    classification_report = rasa.shared.utils.io.read_json_file(
-        args.nlu_classification_report
-    )
+
+    default_report_file_path = os.path.join(DEFAULT_RESULTS_PATH, "intent_report.json")
+    report_file = rasa.cli.utils.get_validated_path(args.nlu_classification_report, "", default_report_file_path)
+    classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
     # Determine intents for which to perform data augmentation
     pooled_intents = paraphraser.collect_intents_for_data_augmentation(
