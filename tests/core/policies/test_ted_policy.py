@@ -268,7 +268,10 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         )
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[SIMILARITY_TYPE] == "cosine"
+        assert trained_policy.config[SIMILARITY_TYPE] == COSINE
+
+    def test_confidence_type(self, trained_policy: TEDPolicy):
+        assert trained_policy.config[MODEL_CONFIDENCE] == COSINE
 
     def test_normalization(
         self,
@@ -354,8 +357,8 @@ class TestTEDPolicyCosineConfidence(TestTEDPolicy):
             featurizer=featurizer, priority=priority, **{MODEL_CONFIDENCE: COSINE}
         )
 
-    def test_similarity_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[SIMILARITY_TYPE] == COSINE
+    def test_confidence_type(self, trained_policy: TEDPolicy):
+        assert trained_policy.config[MODEL_CONFIDENCE] == COSINE
 
     def test_normalization(
         self,
@@ -404,8 +407,8 @@ class TestTEDPolicyInnerConfidence(TestTEDPolicy):
             featurizer=featurizer, priority=priority, **{MODEL_CONFIDENCE: INNER}
         )
 
-    def test_similarity_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[SIMILARITY_TYPE] == INNER
+    def test_confidence_type(self, trained_policy: TEDPolicy):
+        assert trained_policy.config[MODEL_CONFIDENCE] == INNER
 
     def test_normalization(
         self,

@@ -129,23 +129,6 @@ def plot_histogram(
     """
     import matplotlib.pyplot as plt
 
-    def _get_bins(data: List[List[float]], bin_size_frac: float = 0.04) -> List[float]:
-        total_values = len(data[0]) + len(data[1])
-        bin_max_size = int(total_values * bin_size_frac)
-
-        all_values = sorted(data[0] + data[1])
-        bins = []
-        bin_count = 0
-        for value in all_values:
-            bin_count += 1
-            if bin_count == bin_max_size:
-                bins.append(value)
-                bin_count = 0
-        if bin_count:
-            bins.append(all_values[-1])
-
-        return bins
-
     plt.gcf().clear()
 
     # Wine-ish colour for the confidences of hits.
@@ -159,10 +142,8 @@ def plot_histogram(
         [min(hist_data[0], default=0), min(hist_data[1], default=0)], default=0
     )
 
-    # bin_width = (max_value - min_value) / n_bins
-    # bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
-
-    bins = _get_bins(hist_data)
+    bin_width = (max_value - min_value) / n_bins
+    bins = [min_value + (i * bin_width) for i in range(1, n_bins + 1)]
 
     binned_data_sets = [np.histogram(d, bins=bins)[0] for d in hist_data]
 
@@ -178,11 +159,10 @@ def plot_histogram(
                 ]
             )
         ]
-        # - bins[0]
+        - bin_width
     )
 
-    # max_ylim = max(bins) + bin_width
-    max_ylim = max(bins)
+    max_ylim = max(bins) + bin_width
 
     yticks = [float("{:.2f}".format(x)) for x in bins]
 
@@ -207,13 +187,14 @@ def plot_histogram(
         color=colors[1],
         label="misses",
     )
-    axes[0].set_yscale("log")
+
     axes[1].set(title="Wrong")
 
     axes[0].set(yticks=yticks, xlim=(0, max_xlims[0]), ylim=(min_ylim, max_ylim))
     axes[1].set(yticks=yticks, xlim=(0, max_xlims[1]), ylim=(min_ylim, max_ylim))
 
     axes[0].yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+    axes[0].yaxis.set_minor_formatter(FormatStrFormatter("%.2f"))
 
     axes[0].invert_xaxis()
     axes[0].yaxis.tick_right()
