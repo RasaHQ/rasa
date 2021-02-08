@@ -50,6 +50,7 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
+import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -707,6 +708,7 @@ class Agent:
             exclusion_percentage=exclusion_percentage,
         )
 
+    @rasa.shared.utils.common.raise_on_unexpected_train
     def train(
         self, training_trackers: List[DialogueStateTracker], **kwargs: Any
     ) -> None:

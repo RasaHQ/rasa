@@ -11,7 +11,6 @@ from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils import io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
-
 if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -73,6 +72,7 @@ def create_persistor(persistor: Optional[Text]):
         return None
 
 
+@rasa.shared.utils.common.raise_on_unexpected_train
 async def train(
     nlu_config: Union[Text, Dict, RasaNLUModelConfig],
     data: Union[Text, "TrainingDataImporter"],
