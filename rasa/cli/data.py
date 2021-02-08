@@ -16,7 +16,7 @@ from rasa.core.training.converters.responses_prefix_converter import (
     StoryResponsePrefixConverter,
 )
 import rasa.nlu.convert
-from rasa.nlu.data_augmentation import paraphraser
+from rasa.nlu.data_augmentation import augmenter
 import rasa.nlu.test
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
@@ -38,6 +38,7 @@ from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.cli
+import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.utils.plotting
 from rasa.utils.converter import TrainingDataConverter
@@ -273,6 +274,10 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     Args:
         args: Command-line arguments.
     """
+    rasa.shared.utils.common.mark_as_experimental_feature(
+        "Data augmentation by paraphrasing for NLU"
+    )
+
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         args.nlu_training_data
     )
@@ -288,24 +293,24 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
     # Determine intents for which to perform data augmentation
-    pooled_intents = paraphraser.collect_intents_for_data_augmentation(
+    pooled_intents = augmenter.collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
         num_intents_to_augment=args.num_intents,
         classification_report=classification_report,
     )
 
     # Retrieve paraphrase pool and training data pool
-    paraphrase_pool = paraphraser.create_paraphrase_pool(
+    paraphrase_pool = augmenter.create_paraphrase_pool(
         paraphrases, pooled_intents, args.paraphrase_score_threshold
     )
     (
         training_data_pool,
         training_data_vocab_per_intent,
-    ) = paraphraser.create_training_data_pool(nlu_training_data, pooled_intents)
+    ) = augmenter.create_training_data_pool(nlu_training_data, pooled_intents)
 
     # Run data augmentation with diverse augmentation
     output_directory_diverse = os.path.join(args.out, "augmentation_diverse")
-    paraphraser.run_data_augmentation_max_vocab_expansion(
+    augmenter.run_data_augmentation_max_vocab_expansion(
         nlu_training_data=nlu_training_data,
         nlu_evaluation_data=nlu_evaluation_data,
         paraphrase_pool=paraphrase_pool,
@@ -319,7 +324,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
 
     # Run data augmentation with random sampling augmentation
     output_directory_random = os.path.join(args.out, "augmentation_random")
-    paraphraser.run_data_augmentation_random_sampling(
+    augmenter.run_data_augmentation_random_sampling(
         nlu_training_data=nlu_training_data,
         nlu_evaluation_data=nlu_evaluation_data,
         paraphrase_pool=paraphrase_pool,
