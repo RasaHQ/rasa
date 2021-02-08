@@ -809,6 +809,7 @@ class TEDPolicy(Policy):
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
         )
+        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
         meta = rasa.utils.train_utils.update_loss_type(meta)

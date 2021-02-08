@@ -332,6 +332,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         super().__init__(component_config)
 
+        print(
+            self.component_config[CONSTRAIN_SIMILARITIES],
+            self.component_config[MODEL_CONFIDENCE],
+        )
+
         self._check_config_parameters()
 
         # transform numbers to labels
@@ -1021,6 +1026,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_example,
         ) = cls._load_from_files(meta, model_dir)
 
+        meta = train_utils.override_defaults(cls.defaults, meta)
         meta = train_utils.update_confidence_type(meta)
         meta = train_utils.update_similarity_type(meta)
         meta = train_utils.update_loss_type(meta)
