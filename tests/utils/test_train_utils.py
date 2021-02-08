@@ -2,7 +2,9 @@ from typing import Any, Dict
 
 import numpy as np
 import pytest
-from typing import List
+from typing import Text
+from _pytest.logging import LogCaptureFixture
+import logging
 
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
@@ -11,6 +13,18 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SPLIT_ENTITIES_BY_COMMA,
 )
+from rasa.utils.tensorflow.constants import (
+    MODEL_CONFIDENCE,
+    SIMILARITY_TYPE,
+    LOSS_TYPE,
+    COSINE,
+    SOFTMAX,
+    INNER,
+    CROSS_ENTROPY,
+    MARGIN,
+    CONSTRAIN_SIMILARITIES,
+)
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 
 
 def test_align_token_features():
@@ -74,3 +88,46 @@ def test_init_split_entities_config(
         )
         == expected_initialized_config
     )
+
+
+@pytest.mark.parametrize(
+    "component_config, raises_exception",
+    [
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: SOFTMAX}, False),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, False),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, False),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: SOFTMAX}, False),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, False),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: MARGIN}, False),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: SOFTMAX}, False),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: CROSS_ENTROPY}, False),
+    ],
+)
+def test_confidence_loss_settings(
+    component_config: Dict[Text, Any], raises_exception: bool
+):
+    component_config[SIMILARITY_TYPE] = INNER
+    if raises_exception:
+        with pytest.raises(InvalidConfigException):
+            train_utils._check_confidence_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config, raises_exception",
+    [
+        ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: INNER}, False),
+        ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: COSINE}, True),
+        ({MODEL_CONFIDENCE: COSINE, SIMILARITY_TYPE: INNER}, False),
+        ({MODEL_CONFIDENCE: COSINE, SIMILARITY_TYPE: COSINE}, False),
+        ({MODEL_CONFIDENCE: INNER, SIMILARITY_TYPE: INNER}, False),
+        ({MODEL_CONFIDENCE: INNER, SIMILARITY_TYPE: COSINE}, False),
+    ],
+)
+def test_confidence_similarity_settings(
+    component_config: Dict[Text, Any], raises_exception: bool
+):
+    component_config[LOSS_TYPE] = SOFTMAX
+    if raises_exception:
+        with pytest.raises(InvalidConfigException):
+            train_utils._check_confidence_setting(component_config)
