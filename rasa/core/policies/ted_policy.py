@@ -83,7 +83,6 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
     CROSS_ENTROPY,
-    INNER,
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_DIR,
