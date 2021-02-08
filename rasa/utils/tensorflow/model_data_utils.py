@@ -2,6 +2,7 @@ import typing
 import copy
 import numpy as np
 import scipy.sparse
+import tensorflow as tf
 from collections import defaultdict, OrderedDict
 from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
@@ -449,3 +450,10 @@ def _extract_features(
         attribute_masks.append(attribute_mask)
 
     return attribute_masks, dense_features, sparse_features
+
+
+def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
+    mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
+    # explicitly add last dimension to mask
+    # to track correctly dynamic sequences
+    return tf.expand_dims(mask, -1)

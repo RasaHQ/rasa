@@ -864,7 +864,7 @@ class TransformerRasaModel(RasaModel):
             return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
 
         batch_dim = self._get_batch_dim(tf_batch_data[key])
-        return tf.ones([batch_dim], dtype=tf.int32)
+        return tf.zeros([batch_dim], dtype=tf.int32)
 
     def _get_sentence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
@@ -878,10 +878,13 @@ class TransformerRasaModel(RasaModel):
 
     @staticmethod
     def _get_batch_dim(attribute_data: Dict[Text, List[tf.Tensor]]) -> int:
-        if SEQUENCE in attribute_data and len(attribute_data[SEQUENCE]) > 0:
-            return tf.shape(attribute_data[SEQUENCE][0])[0]
-
-        return tf.shape(attribute_data[SENTENCE][0])[0]
+        # All the values in the attribute_data dict should be lists of tensors, each
+        # tensor of the shape (batch_dim, ...). So we take the first non-empty list we
+        # encounter and infer the batch size from its first tensor.
+        for key, data in attribute_data.items():
+            if isinstance(data, list) and data:
+                return tf.shape(data[0])[0]
+        return None
 
     def _calculate_entity_loss(
         self,

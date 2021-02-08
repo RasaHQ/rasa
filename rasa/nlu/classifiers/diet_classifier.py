@@ -1466,7 +1466,12 @@ class DIET(TransformerRasaModel):
         losses = []
 
         # TODO ensure sentence features will always be present in DIET
-        combined_sequence_sentence_feature_lengths = sequence_feature_lengths + 1
+        sentence_feature_lengths = self._get_sentence_feature_lengths(
+            tf_batch_data, TEXT
+        )
+        combined_sequence_sentence_feature_lengths = (
+            sequence_feature_lengths + sentence_feature_lengths
+        )
 
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
@@ -1603,6 +1608,9 @@ class DIET(TransformerRasaModel):
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT, SEQUENCE_LENGTH
         )
+        sentence_feature_lengths = self._get_sentence_feature_lengths(
+            tf_batch_data, TEXT,
+        )
 
         text_transformed, _, _, _, _, attention_weights = self._tf_layers[
             f"sequence_layer.{self.text_name}"
@@ -1625,7 +1633,8 @@ class DIET(TransformerRasaModel):
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(
                 self._batch_predict_intents(
-                    sequence_feature_lengths + 1, text_transformed
+                    sequence_feature_lengths + sentence_feature_lengths,
+                    text_transformed,
                 )
             )
 

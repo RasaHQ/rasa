@@ -936,12 +936,17 @@ class TED(TransformerRasaModel):
         attribute_name: Text,
         attribute_signature: Dict[Text, List[FeatureSignature]],
     ) -> None:
+        # Attributes with sequence-level features also have sentence-level features,
+        # all these need to be combined and further processed.
         if attribute_name in SEQUENCE_FEATURES_TO_ENCODE:
             self._tf_layers[
                 f"sequence_layer.{attribute_name}"
             ] = rasa_layers.RasaSequenceLayer(
                 attribute_name, attribute_signature, self.config
             )
+        # Attributes without sequence-level features require some actual feature
+        # processing only if they have sentence-level features. Attributes with no
+        # sequence- and sentence-level features (e.g. entity_tags) are skipped here.
         elif SENTENCE in attribute_signature:
             self._tf_layers[
                 f"sparse_dense_concat_layer.{attribute_name}"
@@ -1219,13 +1224,13 @@ class TED(TransformerRasaModel):
             # boolean mask returns flat tensor
             sequence_feature_lengths = tf.expand_dims(sequence_feature_lengths, axis=-1)
 
-            attribute_features, _, _, _, _ = self._tf_layers[
+            attribute_features, _, _, _, _, _ = self._tf_layers[
                 f"sequence_layer.{attribute}"
             ](
                 (
                     tf_batch_data[attribute][SEQUENCE],
                     tf_batch_data[attribute][SENTENCE],
-                    sequence_feature_lengths,
+                    tf.squeeze(sequence_feature_lengths, axis=-1),
                 ),
                 training=self._training,
             )

@@ -29,10 +29,14 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import TransformerRasaModel
 from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.utils.tensorflow.model_data_utils import _compute_mask
 
 
 # TODO: use this? it's in layers.py
 tfa.options.TF_ADDONS_PY_OPS = True
+
+# TODO: check for empty lists of features where necessary
+# TODO: add return types to helper functions
 
 
 class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
@@ -81,24 +85,33 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
             attribute, attribute_signature, config
         )
 
-        # prepare dropout and sparse-to-dense layers if any sparse tensors are expected
+        # Prepare dropout and sparse-to-dense layers if any sparse tensors are expected
         self._tf_layers = {}
         if any([signature.is_sparse for signature in attribute_signature]):
-            self._tf_layers["sparse_to_dense"] = layers.DenseForSparse(
-                name=f"sparse_to_dense.{attribute}_{feature_type}",
-                units=config[DENSE_DIMENSION][attribute],
-                reg_lambda=config[REGULARIZATION_CONSTANT],
+            self._prepare_layers_for_sparse_tensors(attribute, feature_type, config)
+
+    def _prepare_layers_for_sparse_tensors(
+        self, attribute: Text, feature_type: Text, config: Dict[Text, Any],
+    ):
+        # For optionally apply dropout to sparse tensors
+        if config[SPARSE_INPUT_DROPOUT]:
+            self._tf_layers["sparse_dropout"] = layers.SparseDropout(
+                rate=config[DROP_RATE]
             )
 
-            if config[SPARSE_INPUT_DROPOUT]:
-                self._tf_layers["sparse_dropout"] = layers.SparseDropout(
-                    rate=config[DROP_RATE]
-                )
+        # For converting sparse tensors to dense
+        self._tf_layers["sparse_to_dense"] = layers.DenseForSparse(
+            name=f"sparse_to_dense.{attribute}_{feature_type}",
+            units=config[DENSE_DIMENSION][attribute],
+            reg_lambda=config[REGULARIZATION_CONSTANT],
+        )
 
-            if config[DENSE_INPUT_DROPOUT]:
-                self._tf_layers["dense_dropout"] = tf.keras.layers.Dropout(
-                    rate=config[DROP_RATE]
-                )
+        # For optionally apply dropout to sparse tensors after they're converted to
+        # dense tensors.
+        if config[DENSE_INPUT_DROPOUT]:
+            self._tf_layers["dense_dropout"] = tf.keras.layers.Dropout(
+                rate=config[DROP_RATE]
+            )
 
     def _calculate_output_units(
         self,
@@ -256,6 +269,7 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
         sentence = inputs[1]
         mask = inputs[2]
 
+        # Combine both feature types when they're present
         if self._return_feature_type == f"{SEQUENCE}_{SENTENCE}":
             if f"unify_dims.{SEQUENCE}" in self._tf_layers:
                 sequence = self._tf_layers[f"unify_dims.{SEQUENCE}"](sequence)
@@ -291,9 +305,13 @@ class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
             # = [[seq1, seq2, seq3, sent1, 0]]
             return sequence + sentence
 
+        # Return just the sequence-level features because no sentence-level features are
+        # present.
         elif self._return_feature_type == SEQUENCE:
             return sequence
 
+        # Return just the sentence-level features because no sequence-level features are
+        # present.
         return sentence
 
 
@@ -355,20 +373,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         self._tf_layers = {}
 
         # 1. prepare layers for combining sparse and dense features
-        for feature_type in attribute_signature:
-            if len(attribute_signature[feature_type]) == 0 or feature_type not in [
-                SENTENCE,
-                SEQUENCE,
-            ]:
-                continue
-            self._tf_layers[
-                f"sparse_dense.{feature_type}"
-            ] = ConcatenateSparseDenseFeatures(
-                attribute=attribute,
-                feature_type=feature_type,
-                attribute_signature=attribute_signature[feature_type],
-                config=config,
-            )
+        self._prepare_sparse_dense_concat_layers(attribute, attribute_signature, config)
 
         # 2. prepare layer for combining sequence- and sentence-level features
         sentence_units = (
@@ -389,6 +394,28 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         )
 
         self.output_units = self._tf_layers["concat_seq_sent"].output_units
+
+    def _prepare_sparse_dense_concat_layers(
+        self,
+        attribute: Text,
+        attribute_signature: Dict[Text, List[FeatureSignature]],
+        config: Dict[Text, Any],
+    ):
+        for feature_type in attribute_signature:
+            # Prepare the concatenation layer only if any features are expected for this
+            # feature type.
+            if attribute_signature[feature_type] and feature_type in [
+                SENTENCE,
+                SEQUENCE,
+            ]:
+                self._tf_layers[
+                    f"sparse_dense.{feature_type}"
+                ] = ConcatenateSparseDenseFeatures(
+                    attribute=attribute,
+                    feature_type=feature_type,
+                    attribute_signature=attribute_signature[feature_type],
+                    config=config,
+                )
 
     def call(
         self,
@@ -425,11 +452,11 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         sentence_features = inputs[1]
         sequence_feature_lengths = inputs[2]
 
-        mask_sequence = TransformerRasaModel._compute_mask(sequence_feature_lengths)
+        mask_sequence = _compute_mask(sequence_feature_lengths)
         combined_sequence_sentence_features_lengths = sequence_feature_lengths
         if len(sentence_features) > 0:
             combined_sequence_sentence_features_lengths += 1
-        mask_combined_sequence_sentence = TransformerRasaModel._compute_mask(
+        mask_combined_sequence_sentence = _compute_mask(
             combined_sequence_sentence_features_lengths
         )
 
@@ -444,8 +471,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             # and we want those to become zeros again.
             # This step isn't needed for sentence-level features because those are never
             # padded -- the effective sequence length in their case is always 1.
-            if mask_sequence is not None:
-                sequence = sequence * mask_sequence
+            sequence = sequence * mask_sequence
         else:
             sequence = None
 
@@ -550,7 +576,15 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
         self._prepare_masked_language_modeling(attribute, attribute_signature, config)
 
-        # Prepare the transformer
+        transformer_layers, transformer_units = self._prepare_transformer(
+            attribute, config
+        )
+
+        self.output_units = self._calculate_output_units(
+            attribute, transformer_layers, transformer_units, config
+        )
+
+    def _prepare_transformer(self, attribute: Text, config: Dict[Text, Any]):
         transformer_layers, transformer_units = self._get_transformer_dimensions(
             attribute, config
         )
@@ -570,10 +604,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 max_relative_position=config[MAX_RELATIVE_POSITION],
                 name=f"{attribute}_encoder",
             )
-
-        self.output_units = self._calculate_output_units(
-            attribute, transformer_layers, transformer_units, config
-        )
+        return transformer_layers, transformer_units
 
     def _get_transformer_dimensions(self, attribute: Text, config: Dict[Text, Any]):
         transformer_layers = config[NUM_TRANSFORMER_LAYERS]
@@ -768,11 +799,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             )
         else:
             # tf.zeros((0,)) is an alternative to None
-            seq_sent_features, token_ids, mlm_boolean_mask = (
-                seq_sent_features,
-                tf.zeros((0,)),
-                tf.zeros((0,)),
-            )
+            token_ids = tf.zeros((0,))
+            mlm_boolean_mask = tf.zeros((0,))
 
         # Apply the transformer (if present), hence reducing a sequences of features per
         # input example into a simple fixed-size embeddings.
