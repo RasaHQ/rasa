@@ -184,6 +184,7 @@ def test_train_no_domain_exists(
     assert os.path.exists(metadata_path)
 
 
+@pytest.mark.trains_model
 def test_train_skip_on_model_not_changed(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
@@ -217,6 +218,7 @@ def test_train_force(run_in_simple_project_with_model: Callable[..., RunResult])
     assert len(files) == 2
 
 
+@pytest.mark.trains_model
 def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
@@ -230,6 +232,7 @@ def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult
     assert output.ret == 0
 
 
+@pytest.mark.trains_model
 def test_train_dry_run_failure(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
@@ -256,6 +259,7 @@ def test_train_dry_run_failure(
     ) and (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
 
 
+@pytest.mark.trains_model
 def test_train_dry_run_force(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):

@@ -31,6 +31,7 @@ from tests.core.conftest import (
 )
 
 
+@pytest.mark.trains_model
 async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
@@ -56,6 +57,7 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
 @pytest.mark.parametrize(
     "test_file", [END_TO_END_STORY_FILE, "data/test_evaluations/end_to_end_story.yml"]
 )
+@pytest.mark.trains_model
 async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Text):
     generator = await _create_data_generator(test_file, default_agent, use_e2e=True)
     completed_trackers = generator.generate_story_trackers()
@@ -92,6 +94,7 @@ async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Tex
     assert num_stories == 3
 
 
+@pytest.mark.trains_model
 async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent):
     generator = await _create_data_generator(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True
@@ -121,6 +124,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
 
 
+@pytest.mark.trains_model
 async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 

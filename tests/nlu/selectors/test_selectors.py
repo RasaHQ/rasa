@@ -291,6 +291,7 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
+@pytest.mark.trains_model
 async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
     """Tests if processing a message returns attention weights as numpy array."""
 

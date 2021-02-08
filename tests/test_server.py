@@ -179,6 +179,7 @@ async def test_status_nlu_only(
     assert model_file == trained_nlu_model
 
 
+@pytest.mark.trains_model
 async def test_status_secured(rasa_secured_app: SanicASGITestClient):
     _, response = await rasa_secured_app.get("/status")
     assert response.status == HTTPStatus.UNAUTHORIZED
@@ -281,6 +282,7 @@ def training_request(
 # https://github.com/RasaHQ/rasa/issues/6302
 @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
 @pytest.mark.skip_on_windows
+@pytest.mark.trains_model
 def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process
 ):
@@ -1324,6 +1326,7 @@ async def _create_tracker_for_sender(app: SanicASGITestClient, sender_id: Text) 
     assert response.status == HTTPStatus.OK
 
 
+@pytest.mark.trains_model
 async def test_get_tracker_with_jwt(rasa_secured_app: SanicASGITestClient):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
@@ -1363,6 +1366,7 @@ async def test_get_tracker_with_jwt(rasa_secured_app: SanicASGITestClient):
     assert response.status == HTTPStatus.OK
 
 
+@pytest.mark.trains_model
 def test_list_routes(default_agent: Agent):
     app = rasa.server.create_app(default_agent, auth_token=None)
 

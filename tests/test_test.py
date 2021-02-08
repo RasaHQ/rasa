@@ -364,6 +364,7 @@ def test_evaluation_store_serialise(entity_predictions, entity_targets):
             i_target += 1
 
 
+@pytest.mark.trains_model
 async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
     from rasa.core.test import _create_data_generator
 

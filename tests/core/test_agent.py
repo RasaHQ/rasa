@@ -122,6 +122,7 @@ async def test_agent_train(trained_moodbot_path: Text):
         ),
     ],
 )
+@pytest.mark.trains_model
 async def test_agent_parse_message_using_nlu_interpreter(
     default_agent: Agent, text_message_data: Text, expected: Dict[Text, Any]
 ):
@@ -129,6 +130,7 @@ async def test_agent_parse_message_using_nlu_interpreter(
     assert result == expected
 
 
+@pytest.mark.trains_model
 async def test_agent_handle_text(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
@@ -137,6 +139,7 @@ async def test_agent_handle_text(default_agent: Agent):
     ]
 
 
+@pytest.mark.trains_model
 async def test_agent_handle_message(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     message = UserMessage(text, sender_id="test_agent_handle_message")

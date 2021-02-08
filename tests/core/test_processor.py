@@ -67,6 +67,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.trains_model
 async def test_message_processor(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -79,6 +80,7 @@ async def test_message_processor(
     }
 
 
+@pytest.mark.trains_model
 async def test_message_id_logging(default_processor: MessageProcessor):
     message = UserMessage("If Meg was an egg would she still have a leg?")
     tracker = DialogueStateTracker("1", [])
@@ -89,6 +91,7 @@ async def test_message_id_logging(default_processor: MessageProcessor):
     assert logged_event.message_id is not None
 
 
+@pytest.mark.trains_model
 async def test_parsing(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "boy"}')
     parsed = await default_processor.parse_message(message)
@@ -96,6 +99,7 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["entities"][0]["entity"] == "name"
 
 
+@pytest.mark.trains_model
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/dislike{"test_entity": "RASA"}')
     parsed = await default_processor.parse_message(message)
@@ -114,6 +118,7 @@ async def test_check_for_unseen_feature(default_processor: MessageProcessor):
 
 
 @pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
+@pytest.mark.trains_model
 async def test_default_intent_recognized(
     default_processor: MessageProcessor, default_intent: Text
 ):
@@ -173,6 +178,7 @@ async def test_parsing_with_tracker():
             assert result["requested_language"] == "en"
 
 
+@pytest.mark.trains_model
 async def test_reminder_scheduled(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -201,6 +207,7 @@ async def test_reminder_scheduled(
     )
 
 
+@pytest.mark.trains_model
 async def test_trigger_external_latest_input_channel(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -220,6 +227,7 @@ async def test_trigger_external_latest_input_channel(
     assert tracker.get_latest_input_channel() == input_channel
 
 
+@pytest.mark.trains_model
 async def test_reminder_aborted(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -256,6 +264,7 @@ async def wait_until_all_jobs_were_executed(
         raise TimeoutError
 
 
+@pytest.mark.trains_model
 async def test_reminder_cancelled_multi_user(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -313,6 +322,7 @@ async def test_reminder_cancelled_multi_user(
     )
 
 
+@pytest.mark.trains_model
 async def test_reminder_cancelled_cancels_job_with_name(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -328,6 +338,7 @@ async def test_reminder_cancelled_cancels_job_with_name(
     assert not reminder_cancelled.cancels_job_with_name(job_name.upper(), sender_id)
 
 
+@pytest.mark.trains_model
 async def test_reminder_cancelled_cancels_job_with_name_special_name(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -363,6 +374,7 @@ async def cancel_reminder_and_check(
     assert len((await jobs.scheduler()).get_jobs()) == num_jobs_after
 
 
+@pytest.mark.trains_model
 async def test_reminder_cancelled_by_name(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -379,6 +391,7 @@ async def test_reminder_cancelled_by_name(
     )
 
 
+@pytest.mark.trains_model
 async def test_reminder_cancelled_by_entities(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -399,6 +412,7 @@ async def test_reminder_cancelled_by_entities(
     )
 
 
+@pytest.mark.trains_model
 async def test_reminder_cancelled_by_intent(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -415,6 +429,7 @@ async def test_reminder_cancelled_by_intent(
     )
 
 
+@pytest.mark.trains_model
 async def test_reminder_cancelled_all(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -431,6 +446,7 @@ async def test_reminder_cancelled_all(
     )
 
 
+@pytest.mark.trains_model
 async def test_reminder_restart(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -468,6 +484,7 @@ async def test_reminder_restart(
         (None, 1, False),
     ],
 )
+@pytest.mark.trains_model
 async def test_has_session_expired(
     event_to_apply: Optional[Event],
     session_expiration_time_in_minutes: float,
@@ -492,6 +509,7 @@ async def test_has_session_expired(
 
 
 # noinspection PyProtectedMember
+@pytest.mark.trains_model
 async def test_update_tracker_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -521,6 +539,7 @@ async def test_update_tracker_session(
 
 
 # noinspection PyProtectedMember
+@pytest.mark.trains_model
 async def test_update_tracker_session_with_metadata(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -552,6 +571,7 @@ async def test_update_tracker_session_with_metadata(
 
 
 # noinspection PyProtectedMember
+@pytest.mark.trains_model
 async def test_update_tracker_session_with_slots(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -598,6 +618,7 @@ async def test_update_tracker_session_with_slots(
     assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
 
 
+@pytest.mark.trains_model
 async def test_fetch_tracker_and_update_session(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -633,6 +654,7 @@ async def test_fetch_tracker_and_update_session(
         ([], [ActionExecuted, SessionStarted, ActionExecuted]),
     ],
 )
+@pytest.mark.trains_model
 async def test_fetch_tracker_with_initial_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -660,6 +682,7 @@ async def test_fetch_tracker_with_initial_session(
     )
 
 
+@pytest.mark.trains_model
 async def test_fetch_tracker_with_initial_session_does_not_update_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -702,6 +725,7 @@ async def test_fetch_tracker_with_initial_session_does_not_update_session(
     ]
 
 
+@pytest.mark.trains_model
 async def test_handle_message_with_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -785,6 +809,7 @@ async def test_handle_message_with_session_start(
         ("utter_greet", True),
     ],
 )
+@pytest.mark.trains_model
 async def test_should_predict_another_action(
     default_processor: MessageProcessor,
     action_name: Text,
@@ -858,6 +883,7 @@ def test_get_next_action_probabilities_pass_policy_predictions_without_interpret
         )
 
 
+@pytest.mark.trains_model
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -919,6 +945,7 @@ async def test_restart_triggers_session_start(
         assert actual == expected
 
 
+@pytest.mark.trains_model
 async def test_handle_message_if_action_manually_rejects(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
@@ -947,6 +974,7 @@ async def test_handle_message_if_action_manually_rejects(
     assert all(event in logged_events for event in rejection_events)
 
 
+@pytest.mark.trains_model
 def test_predict_next_action_with_deprecated_ensemble(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
@@ -980,6 +1008,7 @@ def test_predict_next_action_with_deprecated_ensemble(
     assert prediction == PolicyPrediction(expected_probabilities, expected_policy_name)
 
 
+@pytest.mark.trains_model
 async def test_policy_events_are_applied_to_tracker(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
@@ -1051,6 +1080,7 @@ async def test_policy_events_are_applied_to_tracker(
         lambda: (_ for _ in ()).throw(ActionExecutionRejection(ACTION_LISTEN_NAME)),
     ],
 )
+@pytest.mark.trains_model
 async def test_policy_events_not_applied_if_rejected(
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,

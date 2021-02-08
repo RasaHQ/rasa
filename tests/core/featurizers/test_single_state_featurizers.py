@@ -227,6 +227,7 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
 
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
+@pytest.mark.trains_model
 def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
     unpacked_trained_moodbot_path: Text,
 ):
