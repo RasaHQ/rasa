@@ -139,10 +139,11 @@ def test_attention_mask(
 
 
 @pytest.mark.parametrize(
-    "model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
+    "model_name, model_weights, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
     [
         (
             "bert",
+            None,
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
@@ -155,7 +156,22 @@ def test_attention_mask(
             ],
         ),
         (
+            "bert",
+            "bert-base-uncased",
+            ["Good evening.", "here is the sentence I want embeddings for."],
+            [(3, 768), (9, 768)],
+            [
+                [0.57274431, -0.16078192],
+                [-0.54851216, 0.09632845, -0.42788929, 0.11438307, 0.18316516],
+            ],
+            [
+                [0.06880389, 0.32802248, -0.11250392, -0.11338016, -0.37116382],
+                [0.05909365, 0.06433402, 0.08569094, -0.16530040, -0.11396892],
+            ],
+        ),
+        (
             "gpt",
+            None,
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
@@ -187,6 +203,7 @@ def test_attention_mask(
         ),
         (
             "gpt2",
+            None,
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
@@ -212,6 +229,7 @@ def test_attention_mask(
         ),
         (
             "xlnet",
+            None,
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
@@ -243,6 +261,7 @@ def test_attention_mask(
         ),
         (
             "distilbert",
+            None,
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
@@ -274,6 +293,7 @@ def test_attention_mask(
         ),
         (
             "roberta",
+            None,
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
@@ -300,15 +320,23 @@ def test_attention_mask(
     ],
 )
 def test_hf_transformers_shape_values(
-    model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
+    model_name,
+    model_weights,
+    texts,
+    expected_shape,
+    expected_sequence_vec,
+    expected_cls_vec,
 ):
-    if model_name == "bert" and bool(os.environ.get("CI")):
+    if model_name == "bert" and not model_weights and bool(os.environ.get("CI")):
         pytest.skip(
             "Reason: this model is too large, loading it results in"
             "crashing of GH action workers."
         )
 
     config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
+
+    if model_weights:
+        config["model_weights"] = model_weights
 
     whitespace_tokenizer = WhitespaceTokenizer()
     hf_transformer = HFTransformersNLP(config)
