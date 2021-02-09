@@ -245,6 +245,13 @@ jobs:
     - remove_runner_gpu
 
     steps:
+    - name: test log
+      run: |
+        echo "Read Test Configuratino: ${{ needs.read_test_configuration.result }}"
+        echo "Deploy Runner GPU: ${{ needs.deploy_runner_gpu.result }}"
+        echo "Model Regression Test: ${{ needs.model_regression_test_gpu.result }}"
+        echo "Remove Runner GPU: ${{ needs.remove_runner_gpu.result }}"
+
     - name: Notify Slack on Failure ⛔
       if: needs.read_test_configuration.result == 'failure' || needs.deploy_runner_gpu.result == 'failure' || needs.model_regression_test_gpu.result == 'failure' || needs.remove_runner_gpu.result == 'failure'
       env:
