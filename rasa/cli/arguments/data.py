@@ -87,6 +87,7 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
 
     parser.add_argument(
         "--nlu-classification-report",
+        default="intent_report.json",
         type=str,
         help="File containing your NLU classification report.",
     )
