@@ -967,7 +967,7 @@ class RulePolicy(MemoizationPolicy):
                     )
                     return (
                         active_loop_name,
-                        LOOP_RULES + active_loop_name,
+                        best_rule_key,
                         returning_from_unhappy_path,
                     )
 

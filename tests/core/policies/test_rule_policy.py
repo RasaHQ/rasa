@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text, Optional
+from typing import Text
 
 import pytest
 
@@ -22,6 +22,8 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     USER,
     PREVIOUS_ACTION,
+    ACTIVE_LOOP,
+    LOOP_NAME,
 )
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME
 from rasa.shared.core.domain import Domain
@@ -33,6 +35,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
     HideRuleTurn,
+    FollowupAction,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -2309,5 +2312,113 @@ def test_hide_rule_turn_with_loops():
         {
             USER: {TEXT: "haha", INTENT: chitchat},
             PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+        },
+    ]
+
+
+def test_hide_rule_turn_with_loops_as_followup_action():
+    form_name = "some_form"
+    activate_form = "activate_form"
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        - {activate_form}
+        actions:
+        - {UTTER_GREET_ACTION}
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+    """
+    )
+
+    form_activation_rule = _form_activation_rule(domain, form_name, activate_form)
+    form_activation_story = form_activation_rule.copy()
+    form_activation_story.is_rule_tracker = False
+
+    policy = RulePolicy()
+    policy.train(
+        [form_activation_rule, GREET_RULE, form_activation_story],
+        domain,
+        RegexInterpreter(),
+    )
+
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": activate_form}),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, form_name)
+    assert not prediction.optional_events
+
+    conversation_events += [
+        ActionExecuted(form_name),
+        ActiveLoop(form_name),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(
+        prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
+    )
+    assert not prediction.optional_events
+
+    conversation_events += [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ActionExecutionRejected(form_name),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+
+    conversation_events += prediction.optional_events
+    conversation_events += [
+        ActionExecuted(UTTER_GREET_ACTION),
+        FollowupAction(form_name),
+        ActionExecuted(form_name),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(
+        prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
+    )
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    states = tracker.past_states(domain, ignore_rule_only_turns=True)
+    assert states == [
+        {},
+        {
+            USER: {TEXT: "haha", INTENT: activate_form},
+            PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+        },
+        {
+            USER: {TEXT: "haha", INTENT: activate_form},
+            PREVIOUS_ACTION: {ACTION_NAME: form_name},
+            ACTIVE_LOOP: {LOOP_NAME: form_name},
         },
     ]

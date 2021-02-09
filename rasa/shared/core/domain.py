@@ -1112,16 +1112,23 @@ class Domain:
         """
         states = []
         last_ml_action_sub_state = None
-        last_action_is_ml_action = True
+        turn_was_hidden = False
         for tr in tracker.generate_all_prior_trackers():
             if ignore_rule_only_turns:
                 # remember previous ml action based on the last non hidden turn
                 # we need this to override previous action in the ml state
-                if last_action_is_ml_action:
+                if not turn_was_hidden:
                     last_ml_action_sub_state = self._get_prev_action_sub_state(tr)
-                last_action_is_ml_action = not tr.hide_rule_turn
 
-                if tr.hide_rule_turn:
+                # followup action or happy path loop prediction
+                # don't change the fact whether dialogue turn should be hidden
+                if (
+                    not tr.followup_action
+                    and not tr.latest_action_name == tr.active_loop_name
+                ):
+                    turn_was_hidden = tr.hide_rule_turn
+
+                if turn_was_hidden:
                     continue
 
             state = self.get_active_states(tr)

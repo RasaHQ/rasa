@@ -1545,9 +1545,12 @@ class ActionExecuted(Event):
         """Applies event to current conversation state."""
         tracker.set_latest_action(self.as_sub_state())
         tracker.clear_followup_action()
+
         # HideRuleTurn event is added by RulePolicy before actual action is executed,
         # so we can safely reset it on each action executed
-        tracker.hide_rule_turn = False
+        # unless it is active_loop prediction
+        if not self.action_name == tracker.active_loop_name:
+            tracker.hide_rule_turn = False
 
 
 class AgentUttered(SkipEventInMDStoryMixin):
