@@ -1401,7 +1401,7 @@ def _test_data_file_from_payload(request: Request, temporary_directory: Path) ->
         )
     else:
         return rasa.utils.io.create_temporary_file(
-            request.body, mode="w+b", suffix=".md"
+            request.body, mode="w+b", suffix=".tmp"
         )
 
 

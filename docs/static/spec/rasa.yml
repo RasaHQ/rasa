@@ -566,6 +566,12 @@ paths:
       requestBody:
         required: true
         content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rasa_nlu_data:
+                  $ref: '#/components/schemas/RasaNLUData'
           application/x-yaml:
             schema:
               type: string
@@ -1802,3 +1808,26 @@ components:
         properties:
           use_entities:
             type: boolean
+
+    RasaNLUData:
+      type: object
+      properties:
+        common_examples:
+          type: object
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/CommonExample'
+
+    CommonExample:
+      type: object
+      properties:
+        entities:
+          $ref: '#/components/schemas/Entity'
+        intent:
+          type: string
+          description: "Intent name"
+        text:
+          type: string
+          description: Text of the message
+          example: "Hello!"
