@@ -211,7 +211,8 @@ def arguments_of(func: Callable) -> List[Text]:
 def raise_on_unexpected_train(f):
     @functools.wraps(f)
     def decorated(*args, **kwargs):
-        if os.environ.get('RAISE_ON_TRAIN') == 'True':
-            raise ValueError('Training called and RAISE_ON_TRAIN is set.')
+        if os.environ.get("RAISE_ON_TRAIN") == "True":
+            raise ValueError("Training called and RAISE_ON_TRAIN is set.")
         return f(*args, **kwargs)
+
     return decorated

@@ -276,7 +276,107 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        make test
+        make test-non-training
+
+    - name: Send Coverage Report 📊
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_SERVICE_NAME: github
+      run: poetry run coveralls
+
+  test_training:
+    name: Run Tests
+    runs-on: ${{ matrix.os }}
+    needs: [changes]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+    - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }} 🐍
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install poetry 🦄
+      if: needs.changes.outputs.backend == 'true'
+      uses: Gr1N/setup-poetry@v4
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v2
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+      run: rm -r .venv
+
+      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+      # The virtualenv simply doesn't work on Windows with our setup,
+      # that's why we use venv to create virtual environment
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      # Poetry on Windows cannot pick up the virtual environments directory properly,
+      # and it creates a new one every time the pipeline runs.
+      # This step solves this problem — it tells poetry to always use `.venv` directory inside
+      # the project itself, which also makes it easier for us to determine the correct directory
+      # that needs to be cached.
+      run: poetry config virtualenvs.in-project true
+
+
+    - name: Install Dependencies (Linux) 📦
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full | tee .output
+        if grep 'The lock file is not up to date' .output; then exit 1; fi
+        make prepare-tests-ubuntu
+
+    - name: Install Dependencies (Windows) 📦
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
+      # Restoring cache doesn't work properly on Windows due to symlinks.
+      # We create symlinks for spacy models, that's why we need to clean them up
+      # before caching the dependencies directory.
+      # More information: https://github.com/actions/cache/issues/120
+      run: |
+        $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+        if (Test-Path $spacy_data_dir) {
+          Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+          Remove-Item -Force -Recurse $spacy_data_dir
+          New-Item -Path $spacy_data_dir -Type Directory
+        }
+        make install-full
+        make prepare-tests-windows
+
+    - name: Test Code 🔍
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      env:
+        JOBS: 2
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        make test-training
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
