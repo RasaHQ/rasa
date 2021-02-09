@@ -286,7 +286,7 @@ jobs:
       run: poetry run coveralls
 
   test_training:
-    name: Run Tests
+    name: Run Tests That Train
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
