@@ -68,8 +68,8 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
     )
 
     conn = engine.connect()
-    _create_login_db(conn)
     try:
+        _create_login_db(conn)
         yield conn
     finally:
         _drop_db(conn, POSTGRES_LOGIN_DB)
