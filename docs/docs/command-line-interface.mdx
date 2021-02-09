@@ -368,6 +368,11 @@ You can perform data augmentation by first [generating paraphrases](https://gith
 rasa data augment nlu
 ```
 
+This will automatically choose paraphrases and intents to augment from the provided data and train/test two augmented NLU models. You can specify the training data, the evaluation data, the paraphrases, an existing NLU classification report (without augmentation), the model config, and the output directory for storing the augmentation summaries and models using the following arguments:
+
+```text [rasa data augment nlu --help]
+```
+
 Data augmentation is one strategy that can help produce more training data for intents that currently have little data, are frequently confused, or exhibit low performance in general. Our data augmentation strategy works by feeding the generated paraphrases and then evaluating whether adding a subset of these can improve intent classification performance.
 
 We are evaluating two strategies for selecting paraphrases, firstly by simply randomly choosing a subset of paraphrases, and secondly, by maximising vocabulary expansion, i.e. preferring paraphrases that add new words to a given intent.
