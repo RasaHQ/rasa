@@ -5,7 +5,7 @@ on:
   schedule:
     # Run once a week
     - cron:  '1 23 * * */7'
-  workflow_dispatch:
+  pull_request:
 
 env:
   GKE_ZONE: us-central1-a
@@ -248,9 +248,8 @@ jobs:
     - name: Notify Slack on Failure ⛔
       if: needs.read_test_configuration.result == 'failure' || needs.deploy_runner_gpu.result == 'failure' || needs.model_regression_test_gpu.result == 'failure' || needs.remove_runner_gpu.result == 'failure'
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_TEST_WEBHOOK }}
       uses: voxmedia/github-action-slack-notify-build@v1
       with:
-        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
         status: FAILED
         color: danger
