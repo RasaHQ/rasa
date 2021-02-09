@@ -520,36 +520,26 @@ async def test_update_tracker_session(
     ]
 
 
-# TODO: improve test
-# noinspection PyProtectedMember
 async def test_update_tracker_session_with_metadata(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
-
-    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
-    # does something
-    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
-
     metadata = {"metadataTestKey": "metadataTestValue"}
+    output_channel = CollectingOutputChannel()
+    message = UserMessage(
+        text="hi", output_channel=output_channel, sender_id=sender_id, metadata=metadata
+    )
+    await default_processor.handle_message(message)
 
-    await default_processor._update_tracker_session(tracker, default_channel, metadata)
-
-    # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
-
-    # inspect tracker events and make sure SessionStarted event is present
-    # and has metadata.
     tracker = default_processor.tracker_store.retrieve(sender_id)
-    assert tracker.events.count(SessionStarted()) == 1
-
-    session_started_event_idx = tracker.events.index(SessionStarted())
-    session_started_event_metadata = tracker.events[session_started_event_idx].metadata
-
-    assert session_started_event_metadata == metadata
+    events = list(tracker.events)
+    assert events[0] == ActionExecuted(ACTION_SESSION_START_NAME)
+    assert events[1] == SessionStarted()
+    assert events[1].metadata == metadata
+    assert events[2] == ActionExecuted(ACTION_LISTEN_NAME)
+    assert isinstance(events[3], UserUttered)
 
 
 # TODO: write test that ensure metadata is sent to remote action
