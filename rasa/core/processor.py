@@ -184,6 +184,7 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
+            # TODO: Set unfeaturized slot with metadata
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
                 tracker=tracker,
@@ -738,6 +739,7 @@ class MessageProcessor:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
+            # TODO: move up and think about whether we can remove this
             # Here we set optional metadata to the ActionSessionStart, which will then
             # be passed to the SessionStart event. Otherwise the metadata will be lost.
             if action.name() == ACTION_SESSION_START_NAME:

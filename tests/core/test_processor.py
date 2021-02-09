@@ -520,6 +520,7 @@ async def test_update_tracker_session(
     ]
 
 
+# TODO: improve test
 # noinspection PyProtectedMember
 async def test_update_tracker_session_with_metadata(
     default_channel: CollectingOutputChannel,
@@ -549,6 +550,11 @@ async def test_update_tracker_session_with_metadata(
     session_started_event_metadata = tracker.events[session_started_event_idx].metadata
 
     assert session_started_event_metadata == metadata
+
+
+# TODO: write test that ensure metadata is sent to remote action
+async def test_custom_action_session_start_with_metadata():
+    pass
 
 
 # noinspection PyProtectedMember

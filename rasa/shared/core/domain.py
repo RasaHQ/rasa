@@ -722,6 +722,7 @@ class Domain:
         self._add_requested_slot()
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
+        # TODO: add new slot
 
     def _add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
