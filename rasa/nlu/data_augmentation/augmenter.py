@@ -24,12 +24,16 @@ def collect_intents_for_data_augmentation(
     num_intents_to_augment: int,
     classification_report: Dict[Text, Dict[Text, Any]],
 ) -> Set[Text]:
-    """Analyses the training dataset and extracts:
+    """Collects intents for which to perform data augmentation.
+
+    It analyses the training datasets and extracts:
         * The `num_intents_to_augment` intents with the least data
         * The `num_intents_to_augment` with lowest precision (according to `classification_report`)
         * The `num_intents_to_augment` with lowest recall (according to `classification_report`)
         * The `num_intents_to_augment` with lowest f1-score (according to `classification_report`)
         * The `num_intents_to_augment` most frequently confused intents (according to `classification_report`)
+
+    For all of the intents matching the above criteria paraphrases will be used for data augmentation.
 
     Args:
         nlu_training_data: The existing NLU training data.
