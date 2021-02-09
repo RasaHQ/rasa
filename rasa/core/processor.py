@@ -186,17 +186,20 @@ class MessageProcessor:
             )
 
             action_session_start = self._get_action(ACTION_SESSION_START_NAME)
+            # TODO: Remove in 3.0.0 and describe migration to `session_start_metadata`
+            # slot in migration guide.
             if isinstance(
                 action_session_start, rasa.core.actions.action.ActionSessionStart
             ):
                 # Here we set optional metadata to the ActionSessionStart, which will
                 # then be passed to the SessionStart event.
-                # Otherwise the metadata will be lost.
                 action_session_start.metadata = metadata
+
             if metadata:
                 tracker.update(
                     SlotSet(METADATA_SLOT_SESSION_START, metadata), self.domain
                 )
+
             await self._run_action(
                 action=action_session_start,
                 tracker=tracker,
