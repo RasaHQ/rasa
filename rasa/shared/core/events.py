@@ -1889,7 +1889,7 @@ class SessionStarted(AlwaysEqualEventMixin):
 
 
 class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
-    """Emulate undoing of the last dialogue turn.
+    """Emulates undoing of the last dialogue turn.
 
     The bot reverts everything until before the most recent action.
     This includes the action itself, as well as any events that
