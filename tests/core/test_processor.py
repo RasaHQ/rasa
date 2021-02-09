@@ -1,6 +1,8 @@
 import asyncio
 
 import datetime
+
+import freezegun
 import pytest
 import time
 import uuid
@@ -19,7 +21,7 @@ from rasa.core.actions.action import (
 import rasa.core.policies.policy
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
-from tests.utilities import latest_request
+import tests.utilities
 
 from rasa.core import jobs
 from rasa.core.agent import Agent
@@ -28,7 +30,7 @@ from rasa.core.channels.channel import (
     UserMessage,
     OutputChannel,
 )
-from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -48,7 +50,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.core.policies import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import Slot, AnySlot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -60,6 +62,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
+    METADATA_SLOT_SESSION_START,
 )
 
 import logging
@@ -137,7 +140,9 @@ async def test_http_parsing():
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 
-        r = latest_request(mocked, "POST", "https://interpreter.com/model/parse")
+        r = tests.utilities.latest_request(
+            mocked, "POST", "https://interpreter.com/model/parse"
+        )
 
         assert r
 
@@ -521,30 +526,66 @@ async def test_update_tracker_session(
 
 
 async def test_update_tracker_session_with_metadata(
-    default_channel: CollectingOutputChannel,
-    default_processor: MessageProcessor,
-    monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
     metadata = {"metadataTestKey": "metadataTestValue"}
-    output_channel = CollectingOutputChannel()
     message = UserMessage(
-        text="hi", output_channel=output_channel, sender_id=sender_id, metadata=metadata
+        text="hi",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+        metadata=metadata,
     )
     await default_processor.handle_message(message)
 
     tracker = default_processor.tracker_store.retrieve(sender_id)
     events = list(tracker.events)
-    assert events[0] == ActionExecuted(ACTION_SESSION_START_NAME)
-    assert events[1] == SessionStarted()
-    assert events[1].metadata == metadata
-    assert events[2] == ActionExecuted(ACTION_LISTEN_NAME)
-    assert isinstance(events[3], UserUttered)
+    assert events[0] == SlotSet(METADATA_SLOT_SESSION_START, metadata)
+    assert tracker.slots[METADATA_SLOT_SESSION_START].value == metadata
+
+    assert events[1] == ActionExecuted(ACTION_SESSION_START_NAME)
+    assert events[2] == SessionStarted()
+    assert events[2].metadata == metadata
+    assert events[3] == SlotSet(METADATA_SLOT_SESSION_START, metadata)
+    assert events[4] == ActionExecuted(ACTION_LISTEN_NAME)
+    assert isinstance(events[5], UserUttered)
 
 
-# TODO: write test that ensure metadata is sent to remote action
-async def test_custom_action_session_start_with_metadata():
-    pass
+@freezegun.freeze_time("2020-02-01")
+async def test_custom_action_session_start_with_metadata(
+    default_processor: MessageProcessor,
+):
+    domain = Domain.from_dict({KEY_ACTIONS: [ACTION_SESSION_START_NAME]})
+    default_processor.domain = domain
+    action_server_url = "http://some-url"
+    default_processor.action_endpoint = EndpointConfig(action_server_url)
+
+    sender_id = uuid.uuid4().hex
+    metadata = {"metadataTestKey": "metadataTestValue"}
+    message = UserMessage(
+        text="hi",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+        metadata=metadata,
+    )
+
+    with aioresponses() as mocked:
+        mocked.post(action_server_url, payload={"events": []})
+        await default_processor.handle_message(message)
+
+    last_request = tests.utilities.latest_request(mocked, "post", action_server_url)
+    tracker_for_custom_action = tests.utilities.json_of_latest_request(last_request)[
+        "tracker"
+    ]
+
+    assert tracker_for_custom_action["events"] == [
+        {
+            "event": "slot",
+            "timestamp": 1580515200.0,
+            "name": "session_start_metadata",
+            "value": {"metadataTestKey": "metadataTestValue"},
+        }
+    ]
 
 
 # noinspection PyProtectedMember

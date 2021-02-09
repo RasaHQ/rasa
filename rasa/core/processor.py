@@ -22,6 +22,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     SLOTS,
     FOLLOWUP_ACTION,
+    METADATA_SLOT_SESSION_START,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -192,7 +193,10 @@ class MessageProcessor:
                 # then be passed to the SessionStart event.
                 # Otherwise the metadata will be lost.
                 action_session_start.metadata = metadata
-            # TODO: Set unfeaturized slot with metadata
+            if metadata:
+                tracker.update(
+                    SlotSet(METADATA_SLOT_SESSION_START, metadata), self.domain
+                )
             await self._run_action(
                 action=action_session_start,
                 tracker=tracker,
