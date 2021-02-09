@@ -21,6 +21,7 @@ from .conftest import (
 # that something is wrong in the setup of the test
 
 
+@pytest.mark.sequential
 @pytest.mark.timeout(10)
 def test_sql_tracker_store_with_login_db(
     postgres_login_db_connection: sa.engine.Connection,
@@ -50,6 +51,7 @@ def test_sql_tracker_store_with_login_db(
     tracker_store.engine.dispose()
 
 
+@pytest.mark.sequential
 @pytest.mark.timeout(10)
 def test_sql_tracker_store_with_login_db_db_already_exists(
     postgres_login_db_connection: sa.engine.Connection,
@@ -82,6 +84,7 @@ def test_sql_tracker_store_with_login_db_db_already_exists(
     tracker_store.engine.dispose()
 
 
+@pytest.mark.sequential
 @pytest.mark.timeout(10)
 def test_sql_tracker_store_with_login_db_race_condition(
     postgres_login_db_connection: sa.engine.Connection, caplog: LogCaptureFixture

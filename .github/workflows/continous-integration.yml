@@ -402,6 +402,16 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
+        PYTEST_MARKERS: '"not sequential"'
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        make test-integration
+
+    - name: Test Code with Services 🩺 (sequential)
+      if: needs.changes.outputs.backend == 'true'
+      env:
+        JOBS: 1
+        PYTEST_MARKERS: "sequential"
         PYTHONIOENCODING: "utf-8"
       run: |
         make test-integration
