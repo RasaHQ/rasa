@@ -229,6 +229,9 @@ def _train_test_nlu_model(
 ) -> Dict[Text, float]:
     """Runs the NLU train/test loop using the given augmented training data.
 
+    Performs training a new NLU model with the augmented training set and subsequently evaluates the model
+    on the test data. The trained model will be stored to the given output directory.
+
     Args:
          output_directory: Directory to store the evaluation reports and augmented training data in.
          nlu_training_file: Augmented NLU training data file.
@@ -273,7 +276,8 @@ def _create_augmentation_summary(
 ) -> Tuple[
     Dict[Text, Dict[Text, float]], Dict[Text, float],
 ]:
-    """Creates a summary report of the effect of data augmentation and modifies the original classification report with that information.
+    """Creates a summary report of the effect of data augmentation and modifies the original classification report
+    with that information.
 
     Args:
         pooled_intents: The intents that have been selected for data augmentation.
