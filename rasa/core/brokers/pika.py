@@ -64,7 +64,7 @@ class PikaEventBroker(EventBroker):
                 an exception is thrown.
             retry_delay_in_seconds: Time in seconds between connection attempts.
             exchange_name: Exchange name to which the queues binds to.
-                If nothing is mention then Default exchange name would be used
+                If nothing is mentioned then the default exchange name would be used.
         """
         super().__init__()
         _set_pika_log_levels(log_level)
