@@ -1,8 +1,15 @@
+import json
 from typing import Optional, Text
+
+import jsonschema
 
 
 class RasaException(Exception):
-    """Base exception class for all errors raised by Rasa Open Source."""
+    """Base exception class for all errors raised by Rasa Open Source.
+
+    These exceptions results from invalid use cases and will be reported
+    to the users, but will be ignored in telemetry.
+    """
 
 
 class RasaCoreException(RasaException):
@@ -15,6 +22,10 @@ class RasaXTermsError(RasaException):
 
 class InvalidParameterException(RasaException, ValueError):
     """Raised when an invalid parameter is used."""
+
+
+class MarkdownException(RasaException, ValueError):
+    """Raised if there is an error reading Markdown."""
 
 
 class YamlException(RasaException):
@@ -77,3 +88,26 @@ class InvalidConfigException(ValueError, RasaException):
 
 class UnsupportedFeatureException(RasaCoreException):
     """Raised if a requested feature is not supported."""
+
+
+class SchemaValidationError(RasaException, jsonschema.ValidationError):
+    """Raised if schema validation via `jsonschema` failed."""
+
+
+class InvalidEntityFormatException(RasaException, json.JSONDecodeError):
+    """Raised if the format of an entity is invalid."""
+
+    @classmethod
+    def create_from(
+        cls, other: json.JSONDecodeError, msg: Text
+    ) -> "InvalidEntityFormatException":
+        """Create an instance of `InvalidEntityFormatException` from a `JSONDecodeError`."""
+        return cls(msg, other.doc, other.pos)
+
+
+class ConnectionException(RasaException):
+    """Raised when a connection to a 3rd party service fails.
+
+    It's used by our broker and tracker store classes, when
+    they can't connect to services like postgres, dynamoDB, mongo.
+    """
