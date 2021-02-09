@@ -882,7 +882,7 @@ class TransformerRasaModel(RasaModel):
         # tensor of the shape (batch_dim, ...). So we take the first non-empty list we
         # encounter and infer the batch size from its first tensor.
         for key, data in attribute_data.items():
-            if isinstance(data, list) and data:
+            if data:
                 return tf.shape(data[0])[0]
         return None
 
