@@ -107,6 +107,32 @@ class ActionSessionStart(Action):
         return events
 ```
 
+If you want to access the metadata which was sent with the user message which triggered
+the session restart, you can access the special slot `session_started_metadata`:
+
+```python
+from typing import Any, Text, Dict, List
+from rasa_sdk import Action, Tracker
+from rasa_sdk.events import SessionStarted, ActionExecuted
+
+
+class ActionSessionStart(Action):
+    def name(self) -> Text:
+        return "action_session_start"
+
+    async def run(
+      self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+        metadata = tracker.get_slot("session_started_metadata")
+
+        # Do something with the metadata
+        print(metadata)
+
+        # the session should begin with a `session_started` event and an `action_listen`
+        # as a user message follows
+        return [SessionStarted(), ActionExecuted("action_listen")]
+```
+
 ## action_default_fallback
 
 This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
