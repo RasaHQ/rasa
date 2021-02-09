@@ -12,7 +12,7 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     CROSS_ENTROPY,
 )
-from rasa.shared.exceptions import TFLayerConfigException
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 
 logger = logging.getLogger(__name__)
 

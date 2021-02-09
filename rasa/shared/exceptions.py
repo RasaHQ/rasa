@@ -111,7 +111,3 @@ class ConnectionException(RasaException):
     It's used by our broker and tracker store classes, when
     they can't connect to services like postgres, dynamoDB, mongo.
     """
-
-
-class TFLayerConfigException(RasaException):
-    """Raised when wrong parameters are passed to tensorflow layers."""
