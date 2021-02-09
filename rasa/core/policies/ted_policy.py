@@ -12,8 +12,7 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
@@ -32,10 +31,13 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
     EXTRACTOR,
+    SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -48,6 +50,7 @@ from rasa.utils.tensorflow.model_data import (
     Data,
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
+import rasa.utils.tensorflow.numpy
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
@@ -99,6 +102,7 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     FEATURIZERS,
     ENTITY_RECOGNITION,
+    BILOU_FLAG,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -186,8 +190,9 @@ class TEDPolicy(Policy):
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # Use a unidirectional or bidirectional encoder.
-        UNIDIRECTIONAL_ENCODER: True,
+        # Use a unidirectional or bidirectional encoder
+        # for `text`, `action_text`, and `label_action_text`.
+        UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
@@ -272,6 +277,15 @@ class TEDPolicy(Policy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: True,
+        # 'BILOU_flag' determines whether to use BILOU tagging or not.
+        # If set to 'True' labelling is more rigorous, however more
+        # examples per entity are required.
+        # Rule of thumb: you should have more than 100 examples per entity.
+        BILOU_FLAG: True,
+        # Split entities by comma, this makes sense e.g. for a list of
+        # ingredients in a recipe, but it doesn't make sense for the parts of
+        # an address
+        SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     }
 
     @staticmethod
@@ -292,17 +306,17 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
+        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
+            kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
+            self.defaults[SPLIT_ENTITIES_BY_COMMA],
+        )
+
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
         super().__init__(
             featurizer, priority, should_finetune=should_finetune, **kwargs
         )
-        if isinstance(featurizer, FullDialogueTrackerFeaturizer):
-            self.is_full_dialogue_featurizer_used = True
-        else:
-            self.is_full_dialogue_featurizer_used = False
-
         self._load_params(**kwargs)
 
         self.model = model
@@ -324,26 +338,6 @@ class TEDPolicy(Policy):
         )
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
-
-    def _create_entity_tag_specs(self) -> List[EntityTagSpec]:
-        """Create entity tag specifications with their respective tag id mappings."""
-        _tag_specs = []
-
-        tag_id_index_mapping = self.featurizer.state_featurizer.get_entity_tag_ids()
-
-        if tag_id_index_mapping:
-            _tag_specs.append(
-                EntityTagSpec(
-                    tag_name=ENTITY_ATTRIBUTE_TYPE,
-                    tags_to_ids=tag_id_index_mapping,
-                    ids_to_tags={
-                        value: key for key, value in tag_id_index_mapping.items()
-                    },
-                    num_tags=len(tag_id_index_mapping),
-                )
-            )
-
-        return _tag_specs
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
@@ -482,7 +476,11 @@ class TEDPolicy(Policy):
 
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self.featurize_for_training(
-            training_trackers, domain, interpreter, **kwargs
+            training_trackers,
+            domain,
+            interpreter,
+            bilou_tagging=self.config[BILOU_FLAG],
+            **kwargs,
         )
 
         self._label_data, encoded_all_labels = self._create_label_data(
@@ -501,7 +499,7 @@ class TEDPolicy(Policy):
             return
 
         if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self._create_entity_tag_specs()
+            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
@@ -621,6 +619,9 @@ class TEDPolicy(Policy):
             confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
             optional_events=optional_events,
+            diagnostic_data=rasa.utils.tensorflow.numpy.values_to_numpy(
+                output.get(DIAGNOSTIC_DATA)
+            ),
         )
 
     def _create_optional_event_for_entities(
@@ -649,7 +650,10 @@ class TEDPolicy(Policy):
             predicted_tags,
             confidence_values,
         ) = rasa.utils.train_utils.entity_label_to_tags(
-            prediction_output, self._entity_tag_specs, prediction_index=-1
+            prediction_output,
+            self._entity_tag_specs,
+            self.config[BILOU_FLAG],
+            prediction_index=-1,
         )
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
@@ -662,7 +666,11 @@ class TEDPolicy(Policy):
         parsed_message = interpreter.featurize_message(Message(data={TEXT: text}))
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
         entities = EntityExtractor.convert_predictions_into_entities(
-            text, tokens, predicted_tags, confidences=confidence_values
+            text,
+            tokens,
+            predicted_tags,
+            self.split_entities_config,
+            confidences=confidence_values,
         )
 
         # add the extractor name
@@ -735,10 +743,11 @@ class TEDPolicy(Policy):
         model_path = Path(path)
 
         if not model_path.exists():
-            raise Exception(
+            logger.error(
                 f"Failed to load TED policy model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
+            return
 
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
@@ -790,9 +799,9 @@ class TEDPolicy(Policy):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
-            # during prediction we don't care about previous dialogue turns,
-            # so to save computation time, use only the last one
-            use_only_last_dialogue_turns=True,
+            max_history_featurizer_is_used=isinstance(
+                featurizer, MaxHistoryTrackerFeaturizer
+            ),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,
@@ -829,7 +838,7 @@ class TED(TransformerRasaModel):
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         config: Dict[Text, Any],
-        use_only_last_dialogue_turns: bool,
+        max_history_featurizer_is_used: bool,
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> None:
@@ -838,13 +847,14 @@ class TED(TransformerRasaModel):
         Args:
             data_signature: the data signature of the input data
             config: the model configuration
-            use_only_last_dialogue_turns: if 'True' only the last dialogue turn will be used
+            max_history_featurizer_is_used: if 'True'
+                only the last dialogue turn will be used
             label_data: the label data
             entity_tag_specs: the entity tag specifications
         """
         super().__init__("TED", config, data_signature, label_data)
 
-        self.use_only_last_dialogue_turns = use_only_last_dialogue_turns
+        self.max_history_featurizer_is_used = max_history_featurizer_is_used
 
         self.predict_data_signature = {
             feature_name: features
@@ -912,6 +922,11 @@ class TED(TransformerRasaModel):
             self.config[TRANSFORMER_SIZE][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[DROP_RATE_ATTENTION],
+            # use bidirectional transformer, because
+            # we will invert dialogue sequence so that the last turn is located
+            # at the first position and would always have
+            # exactly the same positional encoding
+            unidirectional=not self.max_history_featurizer_is_used,
         )
 
         self._prepare_embed_layers(DIALOGUE)
@@ -1035,18 +1050,38 @@ class TED(TransformerRasaModel):
         self,
         dialogue_in: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        """Create dialogue level embedding and mask."""
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, Optional[tf.Tensor]]:
+        """Creates dialogue level embedding and mask.
+
+        Args:
+            dialogue_in: The encoded dialogue.
+            tf_batch_data: Batch in model data format.
+
+        Returns:
+            The dialogue embedding, the mask, and (for diagnostic purposes)
+            also the attention weights.
+        """
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         mask = self._compute_mask(dialogue_lengths)
 
-        dialogue_transformed = self._tf_layers[f"transformer.{DIALOGUE}"](
-            dialogue_in, 1 - mask, self._training
-        )
+        if self.max_history_featurizer_is_used:
+            # invert dialogue sequence so that the last turn would always have
+            # exactly the same positional encoding
+            dialogue_in = tf.reverse_sequence(dialogue_in, dialogue_lengths, seq_axis=1)
+
+        dialogue_transformed, attention_weights = self._tf_layers[
+            f"transformer.{DIALOGUE}"
+        ](dialogue_in, 1 - mask, self._training)
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
-        if self.use_only_last_dialogue_turns:
-            # pick last vector if max history featurizer is used
+        if self.max_history_featurizer_is_used:
+            # pick last vector if max history featurizer is used, since we inverted
+            # dialogue sequence, the last vector is actually the first one
+            dialogue_transformed = dialogue_transformed[:, :1, :]
+            mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
+        elif not self._training:
+            # during prediction we don't care about previous dialogue turns,
+            # so to save computation time, use only the last one
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, dialogue_lengths), 1
             )
@@ -1054,7 +1089,7 @@ class TED(TransformerRasaModel):
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
-        return dialogue_embed, mask, dialogue_transformed
+        return dialogue_embed, mask, dialogue_transformed, attention_weights
 
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
@@ -1162,7 +1197,7 @@ class TED(TransformerRasaModel):
     def _create_last_dialogue_turns_mask(
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> tf.Tensor:
-        # Since use_only_last_dialogue_turns is True,
+        # Since max_history_featurizer_is_used is True,
         # we need to find the locations of last dialogue turns in
         # (combined batch dimension and dialogue length,) dimension,
         # so that we can use `_sequence_lengths` as a boolean  mask to pick
@@ -1212,7 +1247,7 @@ class TED(TransformerRasaModel):
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
             attribute: the attribute we will encode features for
-            (e.g., ACTION_NAME, INTENT)
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             A tensor combining  all features for `attribute`
@@ -1239,7 +1274,7 @@ class TED(TransformerRasaModel):
             sequence_lengths += 1
             mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
-            attribute_features, _, _, _ = self._create_sequence(
+            attribute_features, _, _, _, _ = self._create_sequence(
                 tf_batch_data[attribute][SEQUENCE],
                 tf_batch_data[attribute][SENTENCE],
                 mask_sequence_text,
@@ -1255,7 +1290,7 @@ class TED(TransformerRasaModel):
                 text_transformer_output = attribute_features
                 text_sequence_lengths = sequence_lengths
 
-                if self.use_only_last_dialogue_turns:
+                if self.max_history_featurizer_is_used:
                     # get the location of all last dialogue inputs
                     last_dialogue_turns_mask = self._create_last_dialogue_turns_mask(
                         tf_batch_data, attribute
@@ -1312,10 +1347,9 @@ class TED(TransformerRasaModel):
 
         Args:
             attribute_features: the "real" features to convert
-            attribute_mask:  the tensor containing the position of "real" features
-                in the dialogue, shape is (batch-size x dialogue_len x 1)
-            dialogue_lengths: the tensor containing the actual dialogue length,
-                shape is (batch-size,)
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+            attribute: the attribute we will encode features for
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             The converted attribute features
@@ -1461,7 +1495,7 @@ class TED(TransformerRasaModel):
         attribute_mask = tf_batch_data[TEXT][MASK][0]
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
-        if self.use_only_last_dialogue_turns:
+        if self.max_history_featurizer_is_used:
             # pick outputs that correspond to the last dialogue turns
             attribute_mask = tf.expand_dims(
                 self._last_token(attribute_mask, dialogue_lengths), axis=1
@@ -1600,6 +1634,7 @@ class TED(TransformerRasaModel):
             dialogue_embed,
             dialogue_mask,
             dialogue_transformer_output,
+            _,
         ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
@@ -1671,6 +1706,7 @@ class TED(TransformerRasaModel):
             dialogue_embed,
             dialogue_mask,
             dialogue_transformer_output,
+            attention_weights,
         ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
@@ -1683,7 +1719,11 @@ class TED(TransformerRasaModel):
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
-        predictions = {"action_scores": scores, "similarities": sim_all}
+        predictions = {
+            "action_scores": scores,
+            "similarities": sim_all,
+            DIAGNOSTIC_DATA: {"attention_weights": attention_weights},
+        }
 
         if (
             self.config[ENTITY_RECOGNITION]

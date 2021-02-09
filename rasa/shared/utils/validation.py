@@ -9,7 +9,11 @@ from pykwalify.errors import SchemaError
 from ruamel.yaml.constructor import DuplicateKeyError
 
 import rasa.shared
-from rasa.shared.exceptions import YamlException, YamlSyntaxException
+from rasa.shared.exceptions import (
+    YamlException,
+    YamlSyntaxException,
+    SchemaValidationError,
+)
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
@@ -176,7 +180,7 @@ def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) 
         schema: the schema
 
     Raises:
-        ValidationError if validation fails.
+        SchemaValidationError if validation fails.
     """
     from jsonschema import validate
     from jsonschema import ValidationError
@@ -189,7 +193,7 @@ def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) 
             f"is valid. For more information about the format visit "
             f"{DOCS_URL_TRAINING_DATA}."
         )
-        raise e
+        raise SchemaValidationError.create_from(e) from e
 
 
 def validate_training_data_format_version(

@@ -8,15 +8,17 @@ import os
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
+import rasa.utils.tensorflow.numpy
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
@@ -108,19 +110,10 @@ LABEL_SUB_KEY = IDS
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
 
-class EntityTagSpec(NamedTuple):
-    """Specification of an entity tag present in the training data."""
-
-    tag_name: Text
-    ids_to_tags: Dict[int, Text]
-    tags_to_ids: Dict[Text, int]
-    num_tags: int
-
-
 class DIETClassifier(IntentClassifier, EntityExtractor):
-    """DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
-    intent classification and entity recognition.
+    """A multi-task model for intent classification and entity extraction.
 
+    DIET is Dual Intent and Entity Transformer.
     The architecture is based on a transformer which is shared for both tasks.
     A sequence of entity labels is predicted through a Conditional Random Field (CRF)
     tagging layer on top of the transformer output sequence corresponding to the
@@ -471,7 +464,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sequence features "
-                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
                 )
         if dense_sentence_features is not None and sparse_sentence_features is not None:
             if (
@@ -480,7 +474,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sentence features "
-                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
                 )
 
         # If we don't use the transformer and we don't want to do entity recognition,
@@ -918,7 +913,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return entities
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely label and its similarity to the input."""
+        """Augments the message with intents, entities, and diagnostic data."""
         out = self._predict(message)
 
         if self.component_config[INTENT_CLASSIFICATION]:
@@ -932,12 +927,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             message.set(ENTITIES, entities, add_to_output=True)
 
+        if out and DIAGNOSTIC_DATA in out:
+            message.add_diagnostic_data(
+                self.unique_name,
+                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
+            )
+
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
         """
-
         if self.model is None:
             return {"file": None}
 
@@ -1424,6 +1424,7 @@ class DIET(TransformerRasaModel):
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
+            _,
         ) = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
@@ -1573,7 +1574,7 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, _, _, _, attention_weights = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             mask_sequence_text,
@@ -1582,6 +1583,11 @@ class DIET(TransformerRasaModel):
         )
 
         predictions: Dict[Text, tf.Tensor] = {}
+
+        predictions[DIAGNOSTIC_DATA] = {
+            "attention_weights": attention_weights,
+            "text_transformed": text_transformed,
+        }
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(

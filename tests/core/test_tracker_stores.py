@@ -31,6 +31,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
+from rasa.shared.exceptions import ConnectionException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -896,3 +897,13 @@ def test_current_state_without_events(default_domain: Domain):
 def test_login_db_with_no_postgresql(tmp_path: Path):
     with pytest.warns(UserWarning):
         SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db="other")
+
+
+@pytest.mark.parametrize(
+    "config", [{"type": "mongod", "url": "mongodb://0.0.0.0:42",}, {"type": "dynamo",}],
+)
+def test_tracker_store_connection_error(config: Dict, default_domain: Domain):
+    store = EndpointConfig.from_dict(config)
+
+    with pytest.raises(ConnectionException):
+        TrackerStore.create(store, default_domain)

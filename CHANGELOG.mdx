@@ -12,7 +12,7 @@ file is managed by ``towncrier``.
 
 You **may** edit previous change logs to fix problems like typo corrections or such.
 You can find more information on how to add a new change log entry at
-https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
+https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
@@ -1183,6 +1183,23 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
+
+
+## [1.10.22] - 2021-02-05
+
+### Bugfixes
+- [#7772](https://github.com/rasahq/rasa/issues/7754): Backported the Rasa Open Source 2 `PikaEventBroker` implementation to address
+  problems when using it with multiple Sanic workers.
+
+## [1.10.21] - 2021-02-01
+
+### Improvements
+- [#7439](https://github.com/rasahq/rasa/issues/7439): The `url` option now supports a list of servers `url: ['10.0.0.158:32803','10.0.0.158:32804']`.
+  Removed `group_id` because it is not a valid Kafka producer parameter.
+
+### Bugfixes
+- [#7638](https://github.com/rasahq/rasa/issues/7638): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](lock-stores.mdx). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](lock-stores.mdx#redislockstore).
+- [#7722](https://github.com/rasahq/rasa/issues/7722): Fix a bug where, if a user injects an intent using the HTTP API, slot auto-filling is not performed on the entities provided.
 
 
 ## [1.10.20] - 2020-12-18
