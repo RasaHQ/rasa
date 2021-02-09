@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+from rasa.utils.endpoints import EndpointConfig
 from sanic.request import Request
 import uuid
 from datetime import datetime
@@ -201,8 +202,10 @@ def default_tracker(default_domain: Domain) -> DialogueStateTracker:
     return DialogueStateTracker("my-sender", default_domain.slots)
 
 
-@pytest.fixture
-async def form_bot_agent(trained_async) -> Agent:
+@pytest.fixture(scope="session")
+async def form_bot_agent(trained_async: Callable) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
@@ -212,7 +215,7 @@ async def form_bot_agent(trained_async) -> Agent:
         ],
     )
 
-    return Agent.load_local_model(zipped_model)
+    return Agent.load_local_model(zipped_model, action_endpoint=endpoint)
 
 
 @pytest.fixture(scope="session")
