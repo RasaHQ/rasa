@@ -933,7 +933,6 @@ class DotProductLoss(tf.keras.layers.Layer):
     @property
     def _chosen_loss(self) -> Callable:
         """Use loss depending on given option."""
-
         if self.loss_type == MARGIN:
             return self._loss_margin
         elif self.loss_type == CROSS_ENTROPY:
