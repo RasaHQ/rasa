@@ -401,6 +401,7 @@
                 "reference/rasa/utils/tensorflow/transformer",
                 "reference/rasa/utils/tensorflow/numpy",
                 "reference/rasa/utils/tensorflow/crf",
+                "reference/rasa/utils/tensorflow/exceptions",
                 "reference/rasa/utils/tensorflow/models",
                 "reference/rasa/utils/tensorflow/environment"
               ],

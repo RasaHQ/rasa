@@ -196,23 +196,37 @@ class Embed(tf.keras.layers.Layer)
 
 Dense embedding layer.
 
+Input shape:
+    N-D tensor with shape: `(batch_size, ..., input_dim)`.
+    The most common situation would be
+    a 2D input with shape `(batch_size, input_dim)`.
+
+Output shape:
+    N-D tensor with shape: `(batch_size, ..., embed_dim)`.
+    For instance, for a 2D input with shape `(batch_size, input_dim)`,
+    the output would have shape `(batch_size, embed_dim)`.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(embed_dim: int, reg_lambda: float, layer_name_suffix: Text) -> None
+```
+
+Initialize layer.
+
 **Arguments**:
 
-- `embed_dim` - Positive integer, dimensionality of the output space.
-- `reg_lambda` - Float; regularization factor.
+- `embed_dim` - Dimensionality of the output space.
+- `reg_lambda` - Regularization factor.
 - `layer_name_suffix` - Text added to the name of the layers.
-- `similarity_type` - Optional type of similarity measure to use,
-  either &#x27;cosine&#x27; or &#x27;inner&#x27;.
-  
-  Input shape:
-  N-D tensor with shape: `(batch_size, ..., input_dim)`.
-  The most common situation would be
-  a 2D input with shape `(batch_size, input_dim)`.
-  
-  Output shape:
-  N-D tensor with shape: `(batch_size, ..., embed_dim)`.
-  For instance, for a 2D input with shape `(batch_size, input_dim)`,
-  the output would have shape `(batch_size, embed_dim)`.
+
+#### call
+
+```python
+ | call(x: tf.Tensor) -> tf.Tensor
+```
+
+Apply dense layer.
 
 ## InputMask Objects
 
@@ -327,11 +341,19 @@ class DotProductLoss(tf.keras.layers.Layer)
 
 Dot-product loss layer.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(num_neg: int, loss_type: Text, mu_pos: float, mu_neg: float, use_max_sim_neg: bool, neg_lambda: float, scale_loss: bool, similarity_type: Text, name: Optional[Text] = None, same_sampling: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX) -> None
+```
+
+Declare instance variables with default values.
+
 **Arguments**:
 
 - `num_neg` - Positive integer, the number of incorrect labels;
   the algorithm will minimize their similarity to the input.
-- `loss_type` - The type of the loss function, either &#x27;softmax&#x27; or &#x27;margin&#x27;.
+- `loss_type` - The type of the loss function, either &#x27;cross_entropy&#x27; or &#x27;margin&#x27;.
 - `mu_pos` - Float, indicates how similar the algorithm should
   try to make embedding vectors for correct labels;
   should be 0.0 &lt; ... &lt; 1.0 for &#x27;cosine&#x27; similarity type.
@@ -345,16 +367,25 @@ Dot-product loss layer.
   used only if &#x27;loss_type&#x27; is set to &#x27;margin&#x27;.
 - `scale_loss` - Boolean, if &#x27;True&#x27; scale loss inverse proportionally to
   the confidence of the correct prediction.
+- `similarity_type` - Similarity measure to use, either &#x27;cosine&#x27; or &#x27;inner&#x27;.
 - `name` - Optional name of the layer.
-- `parallel_iterations` - Positive integer, the number of iterations allowed
-  to run in parallel.
 - `same_sampling` - Boolean, if &#x27;True&#x27; sample same negative labels
   for the whole batch.
+- `constrain_similarities` - Boolean, if &#x27;True&#x27; applies sigmoid on all
+  similarity terms and adds to the loss function to
+  ensure that similarity values are approximately bounded.
+  Used inside _loss_cross_entropy() only.
+- `model_confidence` - Model confidence to be returned during inference.
+  Possible values - &#x27;softmax&#x27;, &#x27;cosine&#x27; and &#x27;inner&#x27;.
+  
+
+**Raises**:
+
+- `LayerConfigException` - When `similarity_type` is not one of &#x27;cosine&#x27; or &#x27;inner&#x27;.
 
 #### sim
 
 ```python
- | @staticmethod
  | sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor
 ```
 

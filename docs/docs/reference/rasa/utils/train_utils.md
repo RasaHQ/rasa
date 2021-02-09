@@ -28,6 +28,23 @@ on the LOSS_TYPE.
   
 - `Returns` - updated model configuration
 
+#### update\_deprecated\_loss\_type
+
+```python
+update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+If LOSS_TYPE is set to &#x27;softmax&#x27;, update it to &#x27;cross_entropy&#x27; since former is deprecated.
+
+**Arguments**:
+
+- `config` - model configuration
+  
+
+**Returns**:
+
+  updated model configuration
+
 #### align\_token\_features
 
 ```python
@@ -147,6 +164,35 @@ We cannot use `dict.update` method because configs contain nested dicts.
 **Returns**:
 
   updated config
+
+#### update\_confidence\_type
+
+```python
+update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Set model confidence to cosine if margin loss is used.
+
+**Arguments**:
+
+- `component_config` - model configuration
+  
+
+**Returns**:
+
+  updated model configuration
+
+#### validate\_configuration\_settings
+
+```python
+validate_configuration_settings(component_config: Dict[Text, Any]) -> None
+```
+
+Performs checks to validate that combination of parameters in the configuration are correctly set.
+
+**Arguments**:
+
+- `component_config` - Configuration to validate.
 
 #### init\_split\_entities
 

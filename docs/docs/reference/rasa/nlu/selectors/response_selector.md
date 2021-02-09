@@ -26,6 +26,25 @@ Based on the starspace idea from: https://arxiv.org/abs/1709.03856.
 However, in this implementation the `mu` parameter is treated differently
 and additional hidden layers are added together with dropout.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, all_retrieval_intents: Optional[List[Text]] = None, responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None, finetune_mode: bool = False) -> None
+```
+
+Declare instance variables with default values.
+
+**Arguments**:
+
+- `component_config` - Configuration for the component.
+- `index_label_id_mapping` - Mapping between label and index used for encoding.
+- `entity_tag_specs` - Format specification all entity tags.
+- `model` - Model architecture.
+- `all_retrieval_intents` - All retrieval intents defined in the data.
+- `responses` - All responses defined in the data.
+- `finetune_mode` - If `True` loads the model with pre-trained weights,
+  otherwise initializes it with random weights.
+
 #### preprocess\_train\_data
 
 ```python
