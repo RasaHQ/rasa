@@ -16,7 +16,7 @@ Pika-based event broker for publishing messages to RabbitMQ.
 ```python
  | __init__(host: Text, username: Text, password: Text, port: Union[int, Text] = 5672, queues: Union[List[Text], Tuple[Text], Text, None] = None, should_keep_unpublished_messages: bool = True, raise_on_failure: bool = False, log_level: Union[Text, int] = os.environ.get(
  |             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
- |         ), event_loop: Optional[AbstractEventLoop] = None, connection_attempts: int = 20, retry_delay_in_seconds: float = 5, **kwargs: Any, ,)
+ |         ), event_loop: Optional[AbstractEventLoop] = None, connection_attempts: int = 20, retry_delay_in_seconds: float = 5, exchange_name: Text = RABBITMQ_EXCHANGE, **kwargs: Any, ,)
 ```
 
 Initialise RabbitMQ event broker.
@@ -39,6 +39,8 @@ Initialise RabbitMQ event broker.
 - `connection_attempts` - Number of attempts for connecting to RabbitMQ before
   an exception is thrown.
 - `retry_delay_in_seconds` - Time in seconds between connection attempts.
+- `exchange_name` - Exchange name to which the queues binds to.
+  If nothing is mentioned then the default exchange name would be used.
 
 #### from\_endpoint\_config
 
