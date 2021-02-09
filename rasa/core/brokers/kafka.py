@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from asyncio import AbstractEventLoop
 from typing import Any, Text, List, Optional, Union
 import time
@@ -101,7 +102,7 @@ class KafkaEventBroker(EventBroker):
                 return
             except Exception as e:
                 logger.error(
-                    f"Could not publish message to kafka host '{self.host}'. "
+                    f"Could not publish message to kafka url '{self.url}'. "
                     f"Failed with error: {e}"
                 )
                 connected = self.producer.bootstrap_connected()
