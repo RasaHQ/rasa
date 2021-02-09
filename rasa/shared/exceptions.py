@@ -114,4 +114,4 @@ class ConnectionException(RasaException):
 
 
 class TFLayerConfigException(RasaException):
-    """Raised when wrong parameters are passed to tensorflow layers"""
+    """Raised when wrong parameters are passed to tensorflow layers."""
