@@ -70,7 +70,7 @@ slots, but only a user's name and their phone number. To do that, you'd override
 `action_session_start` with a custom action that might look like this:
 
 ```python
-from typing import Any, Text, Dict, List, Type
+from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
 
