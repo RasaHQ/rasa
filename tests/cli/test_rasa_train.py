@@ -572,12 +572,4 @@ def test_train_nlu_finetune_with_model(
     model_name = "models" + os.path.join(files[0])[0] + os.path.basename(files[0])
     output = run_in_simple_project_with_model("train", "nlu", "--finetune", model_name)
 
-    assert [
-        s
-        for s in output.outlines
-        if "Loading NLU model from models"
-        + os.path.join(files[0])[0]
-        + os.path.basename(files[0])
-        + " for finetuning..."
-        in s
-    ]
+    assert any(os.path.basename(files[0]) in line for line in output.outlines)
