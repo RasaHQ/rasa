@@ -144,7 +144,7 @@ responses:
         default_agent.policy_ensemble,
         domain,
         InMemoryTrackerStore(domain),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
     )
 
     # activate the first form
@@ -164,7 +164,7 @@ responses:
         action_1,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
 
@@ -198,7 +198,7 @@ responses:
         action_1,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
     events_expected.extend([ActionExecutionRejected(action_name=form_1)])
@@ -210,7 +210,7 @@ responses:
         action_2,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
     events_expected.extend(
@@ -544,7 +544,7 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
