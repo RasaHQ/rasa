@@ -33,7 +33,6 @@ from rasa.utils.tensorflow.transformer import TransformerEncoder
 tfa.options.TF_ADDONS_PY_OPS = True
 
 # TODO: check for empty lists of features where necessary
-# TODO: check for +1 that mgith falsely assume presence of sentence-level features.
 
 
 class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
@@ -461,8 +460,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     transformer. The layer is meant only for attributes with sequence-level features,
     such as `text` and `action_text`.
 
-    Internally, this layer extends RasaFeatureCombiningLayer and goes through the following steps:
-    1. Combine features using RasaFeatureCombiningLayer.
+    Internally, this layer extends `RasaFeatureCombiningLayer` and goes through the 
+    following steps:
+    1. Combine features using `RasaFeatureCombiningLayer`.
     2. Apply a dense layer(s) to the combined features.
     3. Optionally (during training for the `text` attribute), apply masking to the
         features and create further helper variables for masked language modeling.
@@ -485,34 +485,29 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 `(batch_size, 1, input_dim)` where `input_dim` can be different for
                 sparse vs dense tensors, and can differ from that in `sequence_features`.
             sequence_feature_lengths: Dense tensor of shape `(batch_size, )` containing
-                the real sequence length for each example in the batch, i.e. the lengths
-                of the real (not padded) sequence-level (token-level) features.
+                the real sequence lengths for the sequence-level features, i.e. the 
+                numbers of real (not padding) tokens for each example in the batch.
 
     Output shape:
-        outputs: `(batch_size, max_seq_length+1, units)` where `units` matches
-            the underlying transformer's output size if the transformer has some layers,
-            otherwise `units` matches that of the Ffnn block applied to the combined 
-            features, or it's the output size of the underlying `RasaFeatureCombiningLayer` the 
-            Ffnn block has 0 layers. `max_seq_length` is the length of the longest
-            sequence of tokens in the given batch.
-        seq_sent_features: `(batch_size, max_seq_length+1, hidden_dim)`, where 
-            `hidden_dim` is the output size of the underlying Ffnn block, or the output
-            size of the underlying `RasaFeatureCombiningLayer` if the Ffnn block has 0 layers.
-        mask_combined_sequence_sentence: `(batch_size, max_seq_length+1, hidden_dim)`
-        token_ids: `(batch_size, max_seq_length+1, id_dim)` where id_dim is unimportant
-            and it's the last-dimension size of the first sequence-level dense feature
+        outputs: `(batch_size, seq_length, units)` where `units` matches the underlying
+            transformer's output size if the transformer has some layers, otherwise 
+            `units` matches that of the `Ffnn` block applied to the combined features, or
+            it's the output size of the underlying `RasaFeatureCombiningLayer` if the 
+            `Ffnn` block has 0 layers. `seq_length` is the sum of the sequence dimension
+            sizes of sequence- and sentence-level features (for details, see the output
+            shape of `RasaFeatureCombiningLayer`). If both feature types are present,
+            then `seq_length` will be 1 + the length of the longest sequence of real
+            tokens across all examples in the given batch.
+        seq_sent_features: `(batch_size, seq_length, hidden_dim)`, where `hidden_dim` is
+            the output size of the underlying `Ffnn` block, or the output size of the
+            underlying `RasaFeatureCombiningLayer` if the `Ffnn` block has 0 layers.
+        mask_combined_sequence_sentence: `(batch_size, seq_length, hidden_dim)`
+        token_ids: `(batch_size, seq_length, id_dim)` where id_dim is unimportant and 
+            it's the last-dimension size of the first sequence-level dense feature
             if any is present, and 2 otherwise. Empty tensor if not doing MLM.
-        mlm_boolean_mask: `(batch_size, max_seq_length+1, 1)`, empty tensor if not doing MLM.
+        mlm_boolean_mask: `(batch_size, seq_length, 1)`, empty tensor if not doing MLM.
         attention_weights: `(transformer_layers, batch_size, num_transformer_heads, 
-            max_seq_length+1, max_seq_length+1)`, empty tensor if the transformer has 0
-            layers.
-
-            outputs,
-            seq_sent_features,
-            mask_combined_sequence_sentence,
-            token_ids,
-            mlm_boolean_mask,
-            attention_weights,
+            seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
 
     Raises:
         A ValueError if no feature signatures for sequence-level features are provided.
@@ -558,6 +553,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     def _prepare_transformer(
         self, attribute: Text, config: Dict[Text, Any]
     ) -> Tuple[int, int]:
+        """Prepare a transformer if the config specifies >0 transformer layers."""
         transformer_layers, transformer_units = self._get_transformer_dimensions(
             attribute, config
         )
@@ -582,6 +578,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     def _get_transformer_dimensions(
         self, attribute: Text, config: Dict[Text, Any]
     ) -> Tuple[int, int]:
+        """Determine # of transformer layers & output size from the model config.
+
+        The config can contain these directly (same for all attributes) or specified
+        separately for each attribute.
+        """
         transformer_layers = config[NUM_TRANSFORMER_LAYERS]
         if isinstance(transformer_layers, dict):
             transformer_layers = transformer_layers[attribute]
@@ -632,9 +633,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     ) -> int:
         """Determine the output units based on which layer components are present.
 
-        The output units depend on which component is the last one in the internal 
-        pipeline that is `RasaFeatureCombiningLayer` -> `Ffnn` -> `Transformer`, because not all 
-        the components are necessarily created.
+        The size depends on which component is the last created one in the internal 
+        pipeline that is `RasaFeatureCombiningLayer` -> `Ffnn` -> `Transformer`, since
+        not all the components are always created.
         """
         # transformer is the last component
         if transformer_layers > 0:
@@ -653,7 +654,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     ) -> Optional[tf.Tensor]:
         """Creates dense labels (token IDs) used for negative sampling in MLM."""
         # If there are dense features, we use them as labels - taking the first dense
-        # feature in the list because any dense feature will do the job.
+        # feature in the list, but any other dense feature would do the job.
         for f in features:
             if not isinstance(f, tf.SparseTensor):
                 return tf.stop_gradient(f)
@@ -669,6 +670,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         seq_sent_features: tf.Tensor,
         mask_combined_sequence_sentence: tf.Tensor,
+        sentence_features_present: bool,
         training: bool,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """Produce helper variables for masked language modelling (only in training).
@@ -684,18 +686,22 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         present.
         """
         token_ids = self._features_as_token_ids(sequence_features)
-        # Pad in the sequence dimension to match the shape of combined sequence- and
-        # sentence-level features (sentence-level features effectively have sequence
-        # length of 1).
-        token_ids = tf.pad(token_ids, [[0, 0], [0, 1], [0, 0]])
 
-        # mlm_boolean_mask has the same shape as mask_combined_sequence_sentence (i.e. as
-        # the tensor with all combined features), with True meaning tokens that are
+        # Pad in the sequence dimension to match the shape of combined sequence- and
+        # sentence-level features. This means padding by 1 if sentence-level features
+        # are present (those effectively have sequence length of 1) and not padding
+        # otherwise.
+        if sentence_features_present:
+            token_ids = tf.pad(token_ids, [[0, 0], [0, 1], [0, 0]])
+
+        # mlm_boolean_mask has the same shape as mask_combined_sequence_sentence (i.e.
+        # as the tensor with all combined features), with True meaning tokens that are
         # masked and False meaning tokens that aren't masked or that are fake
         # (padded) tokens.
         seq_sent_features, mlm_boolean_mask = self._tf_layers["mlm_input_mask"](
             seq_sent_features, mask_combined_sequence_sentence, training
         )
+
         return seq_sent_features, token_ids, mlm_boolean_mask
 
     def call(
@@ -743,24 +749,14 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         sentence_features = inputs[1]
         sequence_feature_lengths = inputs[2]
 
-        # TODO
-        # Get mask for sequence features only, with 1s for real tokens and 0 for padded.
-        # This one will be None if the sequence lengths aren't found in tf_batch_data.
-        # mask_sequence = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
-
-        # TODO
-        # Create mask for sequence- and sentence-leve features combined. Differs from
-        # the previous mask only in being longer by 1 in the sequence dimension, due to
-        # having one more 1 at the end of each sequence (representing the sentence-level
-        # featues).
-        # This call can break if the sequence lengths aren't found in tf_batch_data,
-        # this needs to be fixed.
-
-        # Combine all features (sparse/dense, sequence-/sentence-level) into one tensor
+        # Combine all features (sparse/dense, sequence-/sentence-level) into one tensor,
+        # also get a binary mask that has 1s at positions with real features and 0s at
+        # padded positions.
         seq_sent_features, mask_combined_sequence_sentence = self._tf_layers[
             "feature_combining_layer"
         ]((sequence_features, sentence_features, sequence_feature_lengths))
 
+        # Apply one or more dense layers.
         seq_sent_features = self._tf_layers["ffnn"](seq_sent_features, training)
 
         # If using masked language modeling, mask the transformer inputs and get labels
@@ -770,7 +766,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 sequence_features,
                 seq_sent_features,
                 mask_combined_sequence_sentence,
-                training,
+                sentence_features_present=len(sentence_features) > 0,
+                training=training,
             )
         else:
             # tf.zeros((0,)) is an alternative to None
@@ -778,11 +775,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             mlm_boolean_mask = tf.zeros((0,))
 
         # Apply the transformer (if present), hence reducing a sequences of features per
-        # input example into a simple fixed-size embeddings.
+        # input example into a simple fixed-size embedding.
         if "transformer" in self._tf_layers:
             mask_padding = 1 - mask_combined_sequence_sentence
             outputs, attention_weights = self._tf_layers["transformer"](
-                seq_sent_features, 1 - mask_padding, training
+                seq_sent_features, mask_padding, training
             )
             outputs = tfa.activations.gelu(outputs)
         else:
@@ -800,7 +797,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
 
 def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
+    """Compute binary mask given real sequence lengths.
+
+    Takes a 1-D tensor of shape `(batch_size,)` containing the lengths of real feature
+    sequences in the batch. Creates a binary mask of shape `(batch_size, max_seq_length,
+    1)` with 1s at positions with real features and 0s elsewhere.
+    """
     mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
-    # explicitly add last dimension to mask
-    # to track correctly dynamic sequences
     return tf.expand_dims(mask, -1)
