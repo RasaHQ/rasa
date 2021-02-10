@@ -238,9 +238,11 @@ class Policy:
                 for featurizing last user input.
 
         Returns:
-            A dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-            ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
-            the tracker.
+            A list (corresponds to the list of trackers)
+            of lists (corresponds to all dialogue turns)
+            of dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+            turns in all trackers.
         """
         return self.featurizer.create_state_features(
             [tracker],
