@@ -399,7 +399,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
 
 class E2EImporter(TrainingDataImporter):
-    """Importer which
+    """Importer with the following functionality.
 
     - enhances the NLU training data with actions / user messages from the stories.
     - adds potential end-to-end bot messages from stories as actions to the domain
