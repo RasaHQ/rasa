@@ -73,6 +73,7 @@ DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
 DEFAULT_RULES = "predicting default action with intent "
 LOOP_RULES = "handling active loops and forms - "
+LOOP_RULES_SEPARATOR = " - "
 
 
 class InvalidRule(RasaException):
@@ -521,7 +522,9 @@ class RulePolicy(MemoizationPolicy):
         loop_sources = set()
         for loop_name in domain.form_names:
             loop_sources.add(LOOP_RULES + loop_name)
-            loop_sources.add(LOOP_RULES + loop_name + " - " + ACTION_LISTEN_NAME)
+            loop_sources.add(
+                LOOP_RULES + loop_name + LOOP_RULES_SEPARATOR + ACTION_LISTEN_NAME
+            )
         return loop_sources
 
     def _check_prediction(
@@ -927,7 +930,10 @@ class RulePolicy(MemoizationPolicy):
             )
             return (
                 ACTION_LISTEN_NAME,
-                LOOP_RULES + active_loop_name + " - " + ACTION_LISTEN_NAME,
+                LOOP_RULES
+                + active_loop_name
+                + LOOP_RULES_SEPARATOR
+                + ACTION_LISTEN_NAME,
             )
 
         return None, None

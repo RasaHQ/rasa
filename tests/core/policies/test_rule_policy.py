@@ -2336,9 +2336,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
 
     policy = RulePolicy()
     policy.train(
-        [form_activation_rule, form_activation_story],
-        domain,
-        RegexInterpreter(),
+        [form_activation_rule, form_activation_story], domain, RegexInterpreter(),
     )
 
     conversation_events = [
