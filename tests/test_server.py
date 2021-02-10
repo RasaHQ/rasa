@@ -49,6 +49,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
+    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -1136,7 +1137,11 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     content = response.json()
     assert response.status == HTTPStatus.OK
     assert content["paused"] is False
-    assert content["slots"] == {"name": None, REQUESTED_SLOT: None}
+    assert content["slots"] == {
+        "name": None,
+        REQUESTED_SLOT: None,
+        SESSION_START_METADATA_SLOT: None,
+    }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
         {
@@ -1754,6 +1759,28 @@ stories:
         ),
         # empty conversation
         ([], None, True, 'version: "2.0"'),
+        # Conversation with slot
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                SlotSet(REQUESTED_SLOT, "some value"),
+            ],
+            None,
+            True,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet
+  - slot_was_set:
+    - requested_slot: some value""",
+        ),
     ],
 )
 async def test_get_story(
