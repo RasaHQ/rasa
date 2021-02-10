@@ -38,6 +38,7 @@ DROP_RATE = "drop_rate"
 DROP_RATE_ATTENTION = "drop_rate_attention"
 DROP_RATE_DIALOGUE = "drop_rate_dialogue"
 DROP_RATE_LABEL = "drop_rate_label"
+CONSTRAIN_SIMILARITIES = "constrain_similarities"
 
 WEIGHT_SPARSITY = "weight_sparsity"
 
@@ -52,6 +53,7 @@ SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
+MODEL_CONFIDENCE = "model_confidence"
 
 BILOU_FLAG = "BILOU_flag"
 
@@ -64,6 +66,7 @@ MARGIN = "margin"
 AUTO = "auto"
 INNER = "inner"
 COSINE = "cosine"
+CROSS_ENTROPY = "cross_entropy"
 
 BALANCED = "balanced"
 
