@@ -2315,6 +2315,63 @@ def test_hide_rule_turn_with_loops():
     ]
 
 
+def test_do_not_hide_rule_turn_with_loops_in_stories():
+    form_name = "some_form"
+    activate_form = "activate_form"
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {activate_form}
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+    """
+    )
+
+    form_activation_rule = _form_activation_rule(domain, form_name, activate_form)
+    form_activation_story = form_activation_rule.copy()
+    form_activation_story.is_rule_tracker = False
+
+    policy = RulePolicy()
+    policy.train(
+        [form_activation_rule, form_activation_story],
+        domain,
+        RegexInterpreter(),
+    )
+
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": activate_form}),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, form_name)
+    assert not prediction.optional_events
+
+    conversation_events += [
+        ActionExecuted(form_name),
+        ActiveLoop(form_name),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(
+        prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
+    )
+    assert not prediction.optional_events
+
+
 def test_hide_rule_turn_with_loops_as_followup_action():
     form_name = "some_form"
     activate_form = "activate_form"
