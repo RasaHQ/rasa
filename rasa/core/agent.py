@@ -394,7 +394,7 @@ class Agent:
 
         if hasattr(self.nlg, "templates"):
             rasa.shared.utils.io.raise_deprecation_warning(
-                "The terminology 'template' is deprecated and replaced by 'response'. This will be removed in the future."
+                "The terminology 'template' is deprecated and replaced by 'response'. This will be removed in Rasa Open Source 3.0.0."
             )
             self.nlg.templates = domain.responses if domain else {}
 
