@@ -565,6 +565,7 @@ def test_lm_featurizer_number_of_sub_tokens(
     config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
     if model_name == "bert" and bool(os.environ.get("CI")):
         config["model_weights"] = "bert-base-uncased"
+        expected_number_of_sub_tokens = [1, 4]
 
     lm_featurizer = LanguageModelFeaturizer(config)
     whitespace_tokenizer = WhitespaceTokenizer()
