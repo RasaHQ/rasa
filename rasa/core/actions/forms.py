@@ -264,7 +264,7 @@ class FormAction(LoopAction):
         if they are set by corresponding entities from the user input
         else return `None`.
         """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
 
         entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
             slot_to_fill, domain
@@ -317,13 +317,26 @@ class FormAction(LoopAction):
 
         return slot_values
 
+    def get_slot_to_fill(self, tracker: "DialogueStateTracker") -> Optional[str]:
+        """Gets the name of the slot which should be filled next.
+
+        When switching to another form, the requested slot setting is still from the
+        previous form and must be ignored.
+
+        Returns:
+            The slot name or `None`
+        """
+        return (
+            tracker.get_slot(REQUESTED_SLOT)
+            if tracker.active_loop_name == self.name()
+            else None
+        )
+
     def extract_requested_slot(
         self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
-        """Extract the value of requested slot from a user input
-        else return `None`.
-        """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        """Extracts the value of requested slot from a user input else return `None`."""
+        slot_to_fill = self.get_slot_to_fill(tracker)
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
         # get mapping for requested slot
@@ -428,6 +441,20 @@ class FormAction(LoopAction):
             slots=domain.slots,
         )
 
+    def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
+        """Checks if user rejected the form execution during a slot_validation.
+
+        Args:
+            validation_events: Events returned by the custom slot_validation action
+
+        Returns:
+            True if the validation_events include an ActionExecutionRejected event,
+            else False.
+        """
+        return any(
+            isinstance(event, ActionExecutionRejected) for event in validation_events
+        )
+
     async def validate(
         self,
         tracker: "DialogueStateTracker",
@@ -446,7 +473,7 @@ class FormAction(LoopAction):
         slot_values = self.extract_other_slots(tracker, domain)
 
         # extract requested slot
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
         if slot_to_fill:
             slot_values.update(self.extract_requested_slot(tracker, domain))
 
@@ -461,17 +488,19 @@ class FormAction(LoopAction):
             # to be filled by the user.
             if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
-        user_rejected_manually = any(
-            isinstance(event, ActionExecutionRejected) for event in validation_events
-        )
+
         if (
             slot_to_fill
             and not some_slots_were_validated
-            and not user_rejected_manually
+            and not self._user_rejected_manually(validation_events)
         ):
             # reject to execute the form action
             # if some slot was requested but nothing was extracted
             # it will allow other policies to predict another action
+            #
+            # don't raise it here if the user rejected manually, to allow slots other
+            # than the requested slot to be filled.
+            #
             raise ActionExecutionRejection(
                 self.name(),
                 f"Failed to extract slot {slot_to_fill} with action {self.name()}",
@@ -682,9 +711,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-        events += await self.request_next_slot(
-            tracker, domain, output_channel, nlg, events_so_far + events
-        )
+        if not self._user_rejected_manually(events):
+            events += await self.request_next_slot(
+                tracker, domain, output_channel, nlg, events_so_far + events
+            )
 
         return events
 

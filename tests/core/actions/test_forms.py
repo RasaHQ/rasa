@@ -5,6 +5,10 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
+from rasa.core.agent import Agent
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.processor import MessageProcessor
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
@@ -20,6 +24,7 @@ from rasa.shared.core.events import (
     Restarted,
     Event,
     ActionExecutionRejected,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -88,6 +93,138 @@ async def test_activate_with_prefilled_slot():
         SlotSet(slot_name, slot_value),
         SlotSet(REQUESTED_SLOT, next_slot_to_request),
     ]
+
+
+async def test_switch_forms_with_same_slot(default_agent: Agent):
+    """Tests switching of forms, where the first slot is the same in both forms.
+
+    Tests the fix for issue 7710"""
+
+    # Define two forms in the domain, with same first slot
+    slot_a = "my_slot_a"
+
+    form_1 = "my_form_1"
+    utter_ask_form_1 = f"Please provide the value for {slot_a} of form 1"
+
+    form_2 = "my_form_2"
+    utter_ask_form_2 = f"Please provide the value for {slot_a} of form 2"
+
+    domain = f"""
+version: "2.0"
+nlu:
+- intent: order_status
+  examples: |
+    - check status of my order
+    - when are my shoes coming in
+- intent: return
+  examples: |
+    - start a return
+    - I don't want my shoes anymore
+forms:
+  {form_1}:
+    {slot_a}:
+    - type: from_entity
+      entity: number
+  {form_2}:
+    {slot_a}:
+    - type: from_entity
+      entity: number
+responses:
+    utter_ask_{form_1}_{slot_a}:
+    - text: {utter_ask_form_1}
+    utter_ask_{form_2}_{slot_a}:
+    - text: {utter_ask_form_2}
+"""
+
+    domain = Domain.from_yaml(domain)
+
+    # Driving it like rasa/core/processor
+    processor = MessageProcessor(
+        default_agent.interpreter,
+        default_agent.policy_ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+    )
+
+    # activate the first form
+    tracker = DialogueStateTracker.from_events(
+        "some-sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("order status", {"name": "form_1", "confidence": 1.0}),
+            DefinePrevUserUtteredFeaturization(False),
+        ],
+    )
+    # rasa/core/processor.predict_next_action
+    prediction = PolicyPrediction([], "some_policy")
+    action_1 = FormAction(form_1, None)
+
+    await processor._run_action(
+        action_1,
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        prediction,
+    )
+
+    events_expected = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("order status", {"name": "form_1", "confidence": 1.0}),
+        DefinePrevUserUtteredFeaturization(False),
+        ActionExecuted(form_1),
+        ActiveLoop(form_1),
+        SlotSet(REQUESTED_SLOT, slot_a),
+        BotUttered(
+            text=utter_ask_form_1,
+            metadata={"template_name": f"utter_ask_{form_1}_{slot_a}"},
+        ),
+    ]
+    assert tracker.applied_events() == events_expected
+
+    next_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("return my shoes", {"name": "form_2", "confidence": 1.0}),
+        DefinePrevUserUtteredFeaturization(False),
+    ]
+    tracker.update_with_events(
+        next_events, domain,
+    )
+    events_expected.extend(next_events)
+
+    # form_1 is still active, and bot will first validate if the user utterance
+    #  provides valid data for the requested slot, which is rejected
+    await processor._run_action(
+        action_1,
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        prediction,
+    )
+    events_expected.extend([ActionExecutionRejected(action_name=form_1)])
+    assert tracker.applied_events() == events_expected
+
+    # Next, bot predicts form_2
+    action_2 = FormAction(form_2, None)
+    await processor._run_action(
+        action_2,
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        prediction,
+    )
+    events_expected.extend(
+        [
+            ActionExecuted(form_2),
+            ActiveLoop(form_2),
+            SlotSet(REQUESTED_SLOT, slot_a),
+            BotUttered(
+                text=utter_ask_form_2,
+                metadata={"template_name": f"utter_ask_{form_2}_{slot_a}"},
+            ),
+        ]
+    )
+    assert tracker.applied_events() == events_expected
 
 
 async def test_activate_and_immediate_deactivate():
@@ -299,7 +436,6 @@ async def test_action_rejection():
                 ActionExecutionRejected("my form"),
                 SlotSet("num_tables", 5),
                 SlotSet("num_people", "hi"),
-                SlotSet(REQUESTED_SLOT, None),
             ],
         ),
     ],
@@ -576,6 +712,7 @@ def test_extract_requested_slot_default():
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop("some form"),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla", entities=[{"entity": "some_slot", "value": "some_value"}]
@@ -616,6 +753,7 @@ def test_extract_requested_slot_when_mapping_applies(
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla",
@@ -906,6 +1044,7 @@ def test_extract_requested_slot_from_entity(
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla", intent={"name": intent, "confidence": 1.0}, entities=entities
