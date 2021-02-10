@@ -108,13 +108,11 @@ def create_paraphrase_pool(
 
     paraphrase_pool = collections.defaultdict(list)
     for p in paraphrases.intent_examples:
-        if p.data["intent"] not in pooled_intents:
+        if p.data["intent"] not in pooled_intents or "metadata" not in p.data:
             continue
 
-        paraphrases_for_example = p.data["metadata"]["example"]["paraphrases"].split(
-            "\n"
-        )
-        paraphrase_scores = p.data["metadata"]["example"]["scores"].split("\n")
+        paraphrases_for_example = p.data["metadata"]["example"]["paraphrases"]
+        paraphrase_scores = p.data["metadata"]["example"]["scores"]
 
         for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
             if paraphrase == "" or float(score) < paraphrase_quality_threshold:
