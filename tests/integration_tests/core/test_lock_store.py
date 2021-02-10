@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from unittest.mock import patch
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
@@ -92,7 +92,9 @@ async def test_multiple_conversation_ids(default_agent: Agent):
     assert processed_ids == conversation_ids
 
 
-async def test_message_order(tmp_path: Path, default_agent: Agent):
+async def test_message_order(
+    tmp_path: Path, default_agent: Agent, monkeypatch: MonkeyPatch
+):
     start_time = time.time()
     n_messages = 10
     lock_wait = 0.5
@@ -126,43 +128,43 @@ async def test_message_order(tmp_path: Path, default_agent: Agent):
     # We'll send n_messages from the same sender_id with different blocking times
     # after the lock has been acquired.
     # We have to ensure that the messages are processed in the right order.
-    with patch.object(Agent, "handle_message", mocked_handle_message):
-        # use decreasing wait times so that every message after the first one
-        # does not acquire its lock immediately
-        wait_times = np.linspace(0.1, 0.05, n_messages)
-        tasks = [
-            default_agent.handle_message(
-                UserMessage(f"sender {i}", sender_id="some id"), wait=k
-            )
-            for i, k in enumerate(wait_times)
-        ]
+    monkeypatch.setattr(Agent, "handle_message", mocked_handle_message)
+    # use decreasing wait times so that every message after the first one
+    # does not acquire its lock immediately
+    wait_times = np.linspace(0.1, 0.05, n_messages)
+    tasks = [
+        default_agent.handle_message(
+            UserMessage(f"sender {i}", sender_id="some id"), wait=k
+        )
+        for i, k in enumerate(wait_times)
+    ]
 
-        # execute futures
-        await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
+    # execute futures
+    await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
-        expected_order = [f"sender {i}" for i in range(len(wait_times))]
+    expected_order = [f"sender {i}" for i in range(len(wait_times))]
 
-        # ensure order of incoming messages is as expected
-        with open(str(incoming_order_file)) as f:
-            incoming_order = [line for line in f.read().split("\n") if line]
-            assert incoming_order == expected_order
+    # ensure order of incoming messages is as expected
+    with open(str(incoming_order_file)) as f:
+        incoming_order = [line for line in f.read().split("\n") if line]
+        assert incoming_order == expected_order
 
-        # ensure results are processed in expected order
-        with open(str(results_file)) as f:
-            results_order = [line for line in f.read().split("\n") if line]
-            assert results_order == expected_order
+    # ensure results are processed in expected order
+    with open(str(results_file)) as f:
+        results_order = [line for line in f.read().split("\n") if line]
+        assert results_order == expected_order
 
-        # Every message after the first one will wait `lock_wait` seconds to acquire its
-        # lock (`wait_time_in_seconds` kwarg in `lock_store.lock()`).
-        # Let's make sure that this is not blocking and test that total test
-        # execution time is less than  the sum of all wait times plus
-        # (n_messages - 1) * lock_wait
-        time_limit = np.sum(wait_times[1:])
-        time_limit += (n_messages - 1) * lock_wait
-        assert time.time() - start_time < time_limit
+    # Every message after the first one will wait `lock_wait` seconds to acquire its
+    # lock (`wait_time_in_seconds` kwarg in `lock_store.lock()`).
+    # Let's make sure that this is not blocking and test that total test
+    # execution time is less than  the sum of all wait times plus
+    # (n_messages - 1) * lock_wait
+    time_limit = np.sum(wait_times[1:])
+    time_limit += (n_messages - 1) * lock_wait
+    assert time.time() - start_time < time_limit
 
 
-async def test_lock_error(default_agent: Agent):
+async def test_lock_error(default_agent: Agent, monkeypatch: MonkeyPatch):
     lock_lifetime = 0.01
     wait_time_in_seconds = 0.01
     holdup = 0.5
@@ -180,15 +182,13 @@ async def test_lock_error(default_agent: Agent):
 
         return None
 
-    with patch.object(Agent, "handle_message", mocked_handle_message):
-        # first message blocks the lock for `holdup`,
-        # meaning the second message will not be able to acquire a lock
-        tasks = [
-            default_agent.handle_message(
-                UserMessage(f"sender {i}", sender_id="some id")
-            )
-            for i in range(2)
-        ]
+    monkeypatch.setattr(Agent, "handle_message", mocked_handle_message)
+    # first message blocks the lock for `holdup`,
+    # meaning the second message will not be able to acquire a lock
+    tasks = [
+        default_agent.handle_message(UserMessage(f"sender {i}", sender_id="some id"))
+        for i in range(2)
+    ]
 
-        with pytest.raises(LockError):
-            await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
+    with pytest.raises(LockError):
+        await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))

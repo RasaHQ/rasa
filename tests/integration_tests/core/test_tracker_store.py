@@ -1,8 +1,9 @@
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 import sqlalchemy as sa
 
 from rasa.core.tracker_store import SQLTrackerStore
@@ -87,7 +88,9 @@ def test_sql_tracker_store_with_login_db_db_already_exists(
 @pytest.mark.sequential
 @pytest.mark.timeout(10)
 def test_sql_tracker_store_with_login_db_race_condition(
-    postgres_login_db_connection: sa.engine.Connection, caplog: LogCaptureFixture
+    postgres_login_db_connection: sa.engine.Connection,
+    caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
 ):
     original_execute = sa.engine.Connection.execute
 
@@ -102,7 +105,8 @@ def test_sql_tracker_store_with_login_db_race_condition(
         else:
             return original_execute(self, *args, **kwargs)
 
-    with patch.object(sa.engine.Connection, "execute", mock_execute):
+    with monkeypatch.context() as mp:
+        mp.setattr(sa.engine.Connection, "execute", mock_execute)
         with caplog.at_level(logging.ERROR):
             tracker_store = SQLTrackerStore(
                 dialect="postgresql",
