@@ -12,7 +12,7 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     CROSS_ENTROPY,
 )
-from rasa.shared.exceptions import RasaException
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -588,7 +588,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 picking the top k corresponding negatives.
 
         Raises:
-            RasaException: When `similarity_type` is not one of 'cosine' or 'inner'.
+            LayerConfigException: When `similarity_type` is not one of 'cosine' or 'inner'.
         """
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -604,7 +604,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.similarity_type = similarity_type
         self.randomly_sample_negatives = randomly_sample_negatives
         if self.similarity_type not in {COSINE, INNER}:
-            raise RasaException(
+            raise TFLayerConfigException(
                 f"Wrong similarity type '{self.similarity_type}', "
                 f"should be '{COSINE}' or '{INNER}'."
             )
@@ -1034,13 +1034,12 @@ class DotProductLoss(tf.keras.layers.Layer):
     @property
     def _chosen_loss(self) -> Callable:
         """Use loss depending on given option."""
-
         if self.loss_type == MARGIN:
             return self._loss_margin
         elif self.loss_type == CROSS_ENTROPY:
             return self._loss_cross_entropy
         else:
-            raise RasaException(
+            raise TFLayerConfigException(
                 f"Wrong loss type '{self.loss_type}', "
                 f"should be '{MARGIN}' or '{CROSS_ENTROPY}'"
             )

@@ -132,3 +132,19 @@ def test_confidence_similarity_settings(
             train_utils._check_confidence_setting(component_config)
     else:
         train_utils._check_confidence_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config, model_confidence",
+    [
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, COSINE),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, SOFTMAX),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, COSINE),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, COSINE),
+    ],
+)
+def test_update_confidence_type(
+    component_config: Dict[Text, Text], model_confidence: Text
+):
+    component_config = train_utils.update_confidence_type(component_config)
+    assert component_config[MODEL_CONFIDENCE] == model_confidence
