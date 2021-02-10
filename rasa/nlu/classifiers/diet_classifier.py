@@ -1407,24 +1407,24 @@ class DIET(TransformerRasaModel):
         outputs: tf.Tensor,
         inputs: tf.Tensor,
         seq_ids: tf.Tensor,
-        lm_mask_bool: tf.Tensor,
+        mlm_mask_boolean: tf.Tensor,
         name: Text,
     ) -> tf.Tensor:
         # make sure there is at least one element in the mask
-        lm_mask_bool = tf.cond(
-            tf.reduce_any(lm_mask_bool),
-            lambda: lm_mask_bool,
-            lambda: tf.scatter_nd([[0, 0, 0]], [True], tf.shape(lm_mask_bool)),
+        mlm_mask_boolean = tf.cond(
+            tf.reduce_any(mlm_mask_boolean),
+            lambda: mlm_mask_boolean,
+            lambda: tf.scatter_nd([[0, 0, 0]], [True], tf.shape(mlm_mask_boolean)),
         )
 
-        lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
+        mlm_mask_boolean = tf.squeeze(mlm_mask_boolean, -1)
 
         # Pick elements that were masked, throwing away the batch & sequence dimension
         # and effectively switching from shape (batch_size, sequence_length, units) to
         # (num_masked_elements, units).
-        outputs = tf.boolean_mask(outputs, lm_mask_bool)
-        inputs = tf.boolean_mask(inputs, lm_mask_bool)
-        ids = tf.boolean_mask(seq_ids, lm_mask_bool)
+        outputs = tf.boolean_mask(outputs, mlm_mask_boolean)
+        inputs = tf.boolean_mask(inputs, mlm_mask_boolean)
+        ids = tf.boolean_mask(seq_ids, mlm_mask_boolean)
 
         tokens_predicted_embed = self._tf_layers[f"embed.{name}_lm_mask"](outputs)
         tokens_true_embed = self._tf_layers[f"embed.{name}_golden_token"](inputs)
@@ -1478,7 +1478,7 @@ class DIET(TransformerRasaModel):
             text_in,
             mask_combined_sequence_sentence,
             text_seq_ids,
-            lm_mask_bool_text,
+            mmlm_mask_booleanean_text,
             _,
         ) = self._tf_layers[f"sequence_layer.{self.text_name}"](
             (
@@ -1491,17 +1491,19 @@ class DIET(TransformerRasaModel):
 
         losses = []
 
-        # TODO ensure sentence features will always be present in DIET
+        # Lengths of sequences in case of sentence-level features are always 1, but they
+        # can effectively be 0 if sentence-level features aren't present.
         sentence_feature_lengths = self._get_sentence_feature_lengths(
             tf_batch_data, TEXT
         )
+
         combined_sequence_sentence_feature_lengths = (
             sequence_feature_lengths + sentence_feature_lengths
         )
 
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
-                text_transformed, text_in, text_seq_ids, lm_mask_bool_text, TEXT
+                text_transformed, text_in, text_seq_ids, mmlm_mask_booleanean_text, TEXT
             )
             self.mask_loss.update_state(loss)
             self.mask_acc.update_state(acc)
