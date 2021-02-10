@@ -1718,6 +1718,28 @@ stories:
         ),
         # empty conversation
         ([], None, True, 'version: "2.0"'),
+        # Conversation with slot
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                SlotSet(REQUESTED_SLOT, "some value"),
+            ],
+            None,
+            True,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet
+  - slot_was_set:
+    - requested_slot: some value""",
+        ),
     ],
 )
 async def test_get_story(
