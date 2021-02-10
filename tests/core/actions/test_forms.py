@@ -177,7 +177,7 @@ responses:
         SlotSet(REQUESTED_SLOT, slot_a),
         BotUttered(
             text=utter_ask_form_1,
-            metadata={"template_name": f"utter_ask_{form_1}_{slot_a}"},
+            metadata={"utter_action": f"utter_ask_{form_1}_{slot_a}"},
         ),
     ]
     assert tracker.applied_events() == events_expected
@@ -220,7 +220,7 @@ responses:
             SlotSet(REQUESTED_SLOT, slot_a),
             BotUttered(
                 text=utter_ask_form_2,
-                metadata={"template_name": f"utter_ask_{form_2}_{slot_a}"},
+                metadata={"utter_action": f"utter_ask_{form_2}_{slot_a}"},
             ),
         ]
     )

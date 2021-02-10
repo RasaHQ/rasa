@@ -237,7 +237,7 @@ def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
         intents=[],
         entities=["city", f"city{ENTITY_LABEL_SEPARATOR}to"],
         slots=[],
-        templates={},
+        responses={},
         forms={},
         action_names=[],
     )
