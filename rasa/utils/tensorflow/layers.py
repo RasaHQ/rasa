@@ -695,7 +695,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         # Pair is composed of elements from first embeddings and
         # elements from second embeddings.
         pairwise_similarities = self.sim(
-            embeds_a_flat, embeds_b_flat, mask
+            tf.expand_dims(embeds_a_flat, 1), tf.expand_dims(embeds_b_flat, 0), mask
         )  # (bs x ns)
 
         # Apply unique label mask so that same label elements are not picked during argsort
