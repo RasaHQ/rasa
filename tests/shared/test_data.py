@@ -130,6 +130,7 @@ def test_get_core_nlu_files(project):
             ],
         ),
         ("wit", ["data/examples/wit/demo-flights.json"]),
+        ("watson", ["data/examples/watson/demo_watson.json"]),
     ],
 )
 def test_find_nlu_files_with_different_formats(test_input, expected):

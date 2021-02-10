@@ -153,6 +153,17 @@ def test_wit_data():
     assert td.entities == {"location", "wit$datetime"}
 
 
+def test_watson_data():
+    td = load_data("data/examples/watson/demo_watson.json")
+    assert not td.is_empty()
+    assert len(td.entity_examples) == 2
+    assert len(td.intent_examples) == 15
+    assert len(td.training_examples) == 309
+    assert td.entity_synonyms == {"Apple": "Mac"}
+    assert td.intents == {"Specific_AddToBasket"}
+    assert td.entities == {"brands"}
+
+
 def test_dialogflow_data():
     td = load_data("data/examples/dialogflow/")
     assert not td.is_empty()
