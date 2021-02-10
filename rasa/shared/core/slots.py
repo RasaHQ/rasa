@@ -15,7 +15,13 @@ class InvalidSlotTypeException(RasaException):
     """Raised if a slot type is invalid."""
 
 
+class InvalidSlotConfigError(RasaException, ValueError):
+    """Raised if a slot's config is invalid."""
+
+
 class Slot:
+    """Key-value store for storing information during a conversation."""
+
     type_name = None
 
     def __init__(
@@ -145,7 +151,7 @@ class FloatSlot(Slot):
         self.min_value = min_value
 
         if min_value >= max_value:
-            raise ValueError(
+            raise InvalidSlotConfigError(
                 "Float slot ('{}') created with an invalid range "
                 "using min ({}) and max ({}) values. Make sure "
                 "min is smaller than max."
@@ -253,7 +259,7 @@ class UnfeaturizedSlot(Slot):
         influence_conversation: bool = False,
     ) -> None:
         if influence_conversation:
-            raise ValueError(
+            raise InvalidSlotConfigError(
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. See the "
                 f"documentation for more information: {DOCS_URL_SLOTS}"
@@ -367,7 +373,7 @@ class AnySlot(Slot):
         influence_conversation: bool = False,
     ) -> None:
         if influence_conversation:
-            raise ValueError(
+            raise InvalidSlotConfigError(
                 f"An {AnySlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. If you "
                 f"need to featurize a data type which is not supported out of the box, "
@@ -377,4 +383,17 @@ class AnySlot(Slot):
 
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, AnySlot):
+            return NotImplemented
+
+        return (
+            self.name == other.name
+            and self.initial_value == other.initial_value
+            and self._value_reset_delay == other._value_reset_delay
+            and self.auto_fill == other.auto_fill
+            and self.value == other.value
         )
