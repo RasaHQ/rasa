@@ -891,6 +891,8 @@ class RulePolicy(MemoizationPolicy):
             logger.debug(f"Predicted default action '{default_action_name}'.")
             return (
                 default_action_name,
+                # create prediction source that corresponds to one of
+                # default prediction sources in `_default_sources()`
                 DEFAULT_RULES + tracker.latest_message.intent.get(INTENT_NAME_KEY),
             )
 
