@@ -106,6 +106,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     BILOU_FLAG,
+    RANDOMLY_SAMPLE_NEGATIVES,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -288,6 +289,8 @@ class TEDPolicy(Policy):
         # Model confidence to be returned during inference. Possible values -
         # 'softmax', 'cosine' and 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
+        # Use random sampling strategy for mining negatives during training.
+        RANDOMLY_SAMPLE_NEGATIVES: True,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
         # examples per entity are required.

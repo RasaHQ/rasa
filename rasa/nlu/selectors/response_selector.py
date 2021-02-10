@@ -78,6 +78,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    RANDOMLY_SAMPLE_NEGATIVES,
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -243,6 +244,8 @@ class ResponseSelector(DIETClassifier):
         # Model confidence to be returned during inference. Possible values -
         # 'softmax', 'cosine', 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
+        # Use random sampling strategy for mining negatives during training.
+        RANDOMLY_SAMPLE_NEGATIVES: True,
     }
 
     def __init__(
