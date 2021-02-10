@@ -828,8 +828,7 @@ async def test_evaluate_intent_without_body(
     rasa_app: SanicASGITestClient, default_nlu_data: Text
 ):
     _, response = await rasa_app.post(
-        "/model/test/intents",
-        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
     )
 
     assert response.status == HTTPStatus.BAD_REQUEST
