@@ -9,7 +9,7 @@
 # This command will push the changes to the `documentation` branch of this repository.
 #
 # Please make sure to have the proper dependencies installed with `make install install-docs`
-# and docs need to be pre-built using: cd docs/ && poetry run yarn pre-build.
+# and that the docs are pre-built with `make prepare-docs`.
 
 set -Eeuo pipefail
 
