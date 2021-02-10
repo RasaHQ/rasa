@@ -234,7 +234,7 @@ def _write_errors(errors: List[Dict], errors_filename: Text, error_type: Text) -
         logger.info(f"Every {error_type} was predicted correctly by the model.")
 
 
-def _get_intent_errors(intent_results: List[IntentEvaluationResult]) -> List[Dict]:
+def get_intent_errors(intent_results: List[IntentEvaluationResult]) -> List[Dict]:
     return [
         {
             "text": r.message,
@@ -595,7 +595,7 @@ def create_intent_report(
         # save classified samples to file for debugging
         write_intent_successes(intent_results, successes_filename)
 
-    intent_errors = _get_intent_errors(intent_results)
+    intent_errors = get_intent_errors(intent_results)
     if errors and output_directory:
         errors_filename = os.path.join(output_directory, "intent_errors.json")
         _write_errors(intent_errors, errors_filename, "intent")
@@ -607,8 +607,8 @@ def create_intent_report(
                 output_directory, confusion_matrix_filename
             )
         plot_utils.plot_confusion_matrix(
-            intent_report.confusion_matrix,
-            classes=intent_report.labels,
+            confusion_matrix,
+            classes=labels,
             title="Intent Confusion matrix",
             output_file=confusion_matrix_filename,
         )

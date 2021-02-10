@@ -14,7 +14,7 @@ from rasa.nlu.test import (
     create_intent_report,
     get_eval_data,
     remove_pretrained_extractors,
-    extract_intent_errors_from_results,
+    get_intent_errors,
 )
 import rasa.utils.plotting
 
@@ -255,15 +255,18 @@ def _train_test_nlu_model(
     (intent_results, *_) = get_eval_data(interpreter, nlu_evaluation_data)
     intent_report = create_intent_report(
         intent_results=intent_results,
-        add_confused_labels_to_report=True,
-        metrics_as_dict=True,
+        successes=False,
+        errors=False,
+        output_directory=None,
+        disable_plotting=True,
+        report_as_dict=True
     )
-    intent_errors = extract_intent_errors_from_results(intent_results=intent_results)
+    intent_errors = get_intent_errors(intent_results=intent_results)
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output_directory, "intent_errors.json"), intent_errors,
     )
 
-    return intent_report.report
+    return intent_report['report']
 
 
 def _create_augmentation_summary(
@@ -413,6 +416,8 @@ def _get_intents_with_performance_changes(
     """
     changed_intents = set()
     for intent_key in all_intents:
+        #if intent_key not in intent_report:
+        #    continue
         for metric in ["precision", "recall", "f1-score"]:
             rounded_original = round(
                 classification_report[intent_key][metric], significant_figures
