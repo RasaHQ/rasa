@@ -4,7 +4,7 @@
 # For instance, if the doc version for 2.2.10 fails to be pushed, you
 # can do:
 #
-# TMP_DOCS_FOLDER=/tmp/documentation DOCS_BRANCH=documentation GITHUB_REF=refs/tags/2.2.10 ./scripts/push_docs_to_branch.sh
+# TMP_DOCS_FOLDER=/tmp/documentation DOCS_BRANCH=documentation GITHUB_REF=refs/tags/2.2.10 GITHUB_REPOSITORY=RasaHQ/rasa ./scripts/push_docs_to_branch.sh
 #
 # This command will push the changes to the `documentation` branch of this repository.
 #
