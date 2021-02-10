@@ -1,7 +1,5 @@
 import asyncio
-
 import datetime
-
 import freezegun
 import pytest
 import time
@@ -540,6 +538,7 @@ async def test_update_tracker_session_with_metadata(
 
     tracker = default_processor.tracker_store.retrieve(sender_id)
     events = list(tracker.events)
+
     assert events[0] == SlotSet(SESSION_START_METADATA_SLOT, metadata)
     assert tracker.slots[SESSION_START_METADATA_SLOT].value == metadata
 
@@ -582,8 +581,8 @@ async def test_custom_action_session_start_with_metadata(
         {
             "event": "slot",
             "timestamp": 1580515200.0,
-            "name": "session_start_metadata",
-            "value": {"metadataTestKey": "metadataTestValue"},
+            "name": SESSION_START_METADATA_SLOT,
+            "value": metadata,
         }
     ]
 
