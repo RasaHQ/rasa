@@ -35,7 +35,9 @@ COPY . /build/
 COPY docker/configs/config_pretrained_embeddings_mitie.yml /build/config.yml
 
 # download mitie model
-RUN wget -P /build/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+RUN wget -P /build/data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2 && \
+  tar -xvjf /build/data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C /build/data/ MITIE-models/english/total_word_feature_extractor.dat && \
+  rm /build/data/MITIE*.bz2
 
 # change working directory
 WORKDIR /build
