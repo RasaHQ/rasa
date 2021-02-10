@@ -30,11 +30,10 @@ from asyncio import AbstractEventLoop
 logger = logging.getLogger()  # get the root logger
 
 
-def create_http_input_channels(
+def create_input_channels(
     channel: Optional[Text], credentials_file: Optional[Text]
 ) -> List["InputChannel"]:
     """Instantiate the chosen input channel."""
-
     if credentials_file:
         all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
     else:
@@ -171,7 +170,7 @@ def serve_application(
     if not channel and not credentials:
         channel = "cmdline"
 
-    input_channels = create_http_input_channels(channel, credentials)
+    input_channels = create_input_channels(channel, credentials)
 
     app = configure_app(
         input_channels,
