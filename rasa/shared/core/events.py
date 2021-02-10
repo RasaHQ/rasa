@@ -1893,8 +1893,9 @@ class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
 
     The bot reverts everything until before the most recent action.
     This includes the action itself, as well as any events that
-    action created, like set slot events, unless they are in a list
-    to reapply them.
+    action created, like set slot events (unless they are not in a list
+    of `rule_only_slots`) and active loop events (unless they are not in a list
+    of `rule_only_loops`).
     """
 
     type_name = "hide_rule_turn"
