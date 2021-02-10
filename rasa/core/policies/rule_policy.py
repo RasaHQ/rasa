@@ -1181,6 +1181,8 @@ class RulePolicy(MemoizationPolicy):
 
 
 class RulePolicyPrediction(PolicyPrediction):
+    """Stores information about the prediction of a `RulePolicy`."""
+
     def __init__(
         self,
         probabilities: List[float],
