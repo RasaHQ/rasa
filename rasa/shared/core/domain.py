@@ -1072,7 +1072,7 @@ class Domain:
     def _remove_rule_only_features(
         state: State, tracker: "DialogueStateTracker"
     ) -> None:
-        # remove only rule slots
+        # remove slots which only occur in rules but not in stories
         for slot in tracker.rule_only_slots:
             if state.get(rasa.shared.core.constants.SLOTS, {}).get(slot):
                 del state[rasa.shared.core.constants.SLOTS][slot]
