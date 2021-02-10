@@ -2107,8 +2107,7 @@ def test_hide_rule_turn_with_slots():
     )
     assert_predicted_action(prediction, domain, some_action)
     assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert some_slot in prediction.optional_events[0].rule_only_slots
-    assert some_other_slot not in prediction.optional_events[0].rule_only_slots
+    assert prediction.optional_events[0].rule_only_slots == [some_slot]
 
     conversation_events += prediction.optional_events
     conversation_events += [
