@@ -233,7 +233,13 @@ def plot_intent_augmentation_summary(
     num_intents = len(intents)
     ind = np.arange(num_intents)
 
-    plt.figure(figsize=(10, 10))
+    fig_size = (10, 10)
+    if 30 <= num_intents < 60:
+        fig_size = (12, 20)
+    elif num_intents >= 60:
+        fig_size = (15, 30)
+
+    plt.figure(figsize=fig_size)
     plt.xlabel(f"Performance Change ({metric})", fontsize=16)
     plt.ylabel("Intent", fontsize=16)
     plt.title("NLU Data Augmentation Summary")
