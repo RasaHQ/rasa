@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# In case this script fails in our CI workflows, you can run it locally.
+# For instance, if the doc version for 2.2.10 fails to be pushed, you
+# can do:
+#
+# TMP_DOCS_FOLDER=/tmp/documentation DOCS_BRANCH=documentation GITHUB_REF=refs/tags/2.2.10 ./scripts/push_docs_to_branch.sh
+#
+# This command will push the changes to the `documentation` branch of this repository.
+#
+# Please make sure to have the proper dependencies installed with `make install install-docs`
+# and docs need to be pre-built using: cd docs/ && poetry run yarn pre-build.
+
 set -Eeuo pipefail
 
 TODAY=`date "+%Y%m%d"`
