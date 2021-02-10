@@ -213,15 +213,7 @@ def test_lm_featurizer_shape_values(
     expected_sequence_vec,
     expected_cls_vec,
 ):
-    if model_name == "bert" and not model_weights and bool(os.environ.get("CI")):
-        pytest.skip(
-            "Reason: this model is too large, loading it results in"
-            "crashing of GH action workers."
-        )
-    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
-    if model_weights:
-        config["model_weights"] = model_weights
-
+    config = create_config(model_name, model_weights)
     whitespace_tokenizer = WhitespaceTokenizer()
     lm_featurizer = LanguageModelFeaturizer(config)
 
@@ -249,7 +241,6 @@ def test_lm_featurizer_shape_values(
         assert computed_sentence_vec.shape[1] == expected_shape[index][1]
 
         # Look at the value of first dimension for a few starting timesteps
-        """
         assert np.allclose(
             computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
             expected_sequence_vec[index],
@@ -260,9 +251,6 @@ def test_lm_featurizer_shape_values(
         assert np.allclose(
             computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-5
         )
-        """
-        print(computed_sequence_vec[: len(expected_sequence_vec[index]), 0])
-        print(computed_sentence_vec[0][:5])
 
         intent_sequence_vec, intent_sentence_vec = messages[index].get_dense_features(
             INTENT, []
@@ -408,6 +396,27 @@ def test_attention_mask(
     assert np.all(mask_zeros == 0)
 
 
+def skip_on_CI(model_name, model_weights):
+    # This only applies when skip_model_load=False
+    return model_name == "bert" and bool(os.environ.get("CI")) and not model_weights
+
+
+def create_config(model_name, model_weights):
+    """
+    Create a config for LanguageModelFeaturizer. Skips model/model_weight
+    combinations that are too large (bert, and LaBSE).
+    """
+    if skip_on_CI(model_name, model_weights):
+        pytest.skip(
+            "Reason: this model is too large, loading it results in"
+            "crashing of GH action workers."
+        )
+    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
+    if model_weights:
+        config["model_weights"] = model_weights
+    return config
+
+
 @pytest.mark.parametrize(
     "model_name, model_weights, texts, expected_number_of_sub_tokens",
     [
@@ -518,21 +527,7 @@ def test_lm_featurizer_edge_cases(
     texts: List[Text],
     expected_number_of_sub_tokens: List[List[float]],
 ):
-    if model_weights is None:
-        model_weights_config = {}
-        if model_name == "bert" and bool(os.environ.get("CI")):
-            pytest.skip(
-                "Reason: this model is too large, loading it results in"
-                "crashing of GH action workers."
-            )
-    else:
-        model_weights_config = {"model_weights": model_weights}
-    transformers_config = {
-        **{"model_name": model_name},
-        **model_weights_config,
-        "cache_dir": HF_TEST_CACHE_DIR,
-    }
-
+    transformers_config = create_config(model_name, model_weights)
     lm_featurizer = LanguageModelFeaturizer(transformers_config)
     whitespace_tokenizer = WhitespaceTokenizer()
 
@@ -549,24 +544,21 @@ def test_lm_featurizer_edge_cases(
 
 
 @pytest.mark.parametrize(
-    "model_name, text, expected_number_of_sub_tokens",
+    "model_name, model_weights, text, expected_number_of_sub_tokens",
     [
-        ("bert", "sentence embeddings", [1, 2]),
-        ("gpt", "sentence embeddings", [1, 2]),
-        ("gpt2", "sentence embeddings", [2, 3]),
-        ("xlnet", "sentence embeddings", [1, 3]),
-        ("distilbert", "sentence embeddings", [1, 4]),
-        ("roberta", "sentence embeddings", [2, 3]),
+        ("bert", None, "sentence embeddings", [1, 2]),
+        ("bert", "bert-base-uncased", "sentence embeddings", [1, 4]),
+        ("gpt", None, "sentence embeddings", [1, 2]),
+        ("gpt2", None, "sentence embeddings", [2, 3]),
+        ("xlnet", None, "sentence embeddings", [1, 3]),
+        ("distilbert", None, "sentence embeddings", [1, 4]),
+        ("roberta", None, "sentence embeddings", [2, 3]),
     ],
 )
 def test_lm_featurizer_number_of_sub_tokens(
-    model_name, text, expected_number_of_sub_tokens
+    model_name, model_weights, text, expected_number_of_sub_tokens
 ):
-    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
-    if model_name == "bert" and bool(os.environ.get("CI")):
-        config["model_weights"] = "bert-base-uncased"
-        expected_number_of_sub_tokens = [1, 4]
-
+    config = create_config(model_name, model_weights)
     lm_featurizer = LanguageModelFeaturizer(config)
     whitespace_tokenizer = WhitespaceTokenizer()
 

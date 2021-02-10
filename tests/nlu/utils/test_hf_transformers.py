@@ -12,6 +12,10 @@ from rasa.nlu.constants import LANGUAGE_MODEL_DOCS, HF_TEST_CACHE_DIR
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
+# this would normally go into conftest, but HFTransformers is set to be
+# deprecated and it only makes sense for this and LanguageModelFeaturizer
+from tests.nlu.featurizers.test_lm_featurizer import create_config
+
 
 @pytest.mark.parametrize(
     "input_sequence_length, model_name, should_overflow",
@@ -327,17 +331,7 @@ def test_hf_transformers_shape_values(
     expected_sequence_vec,
     expected_cls_vec,
 ):
-    if model_name == "bert" and not model_weights and bool(os.environ.get("CI")):
-        pytest.skip(
-            "Reason: this model is too large, loading it results in"
-            "crashing of GH action workers."
-        )
-
-    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
-
-    if model_weights:
-        config["model_weights"] = model_weights
-
+    config = create_config(model_name, model_weights)
     whitespace_tokenizer = WhitespaceTokenizer()
     hf_transformer = HFTransformersNLP(config)
 
