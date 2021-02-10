@@ -32,8 +32,6 @@ from rasa.utils.tensorflow.transformer import TransformerEncoder
 # TODO: use this? it's in layers.py
 tfa.options.TF_ADDONS_PY_OPS = True
 
-# TODO: check for empty lists of features where necessary
-
 
 class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
     """Combines multiple sparse and dense feature tensors into one dense tensor.
@@ -51,7 +49,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         attribute: Name of attribute (e.g. `text` or `label`) whose features will be
             processed.
         feature_type: Feature type to be processed -- `sequence` or `sentence`.
-        attribute_signature: A list of `FeatureSignature`s for the given attribute and
+        feature_type_signature: A list of `FeatureSignature`s for the given attribute and
             feature type.
         config: A model config for correctly parametrising the layer.
 
@@ -64,26 +62,34 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         N-D tensor with shape: `(batch_size, ..., units)` where `units` is the sum of
         the last dimension sizes across all input sensors, with sparse tensors instead
         contributing `config[DENSE_DIMENSION][attribute]` units each.
+
+    Raises:
+        ValueError if no feature signatures are provided.
     """
 
     def __init__(
         self,
         attribute: Text,
         feature_type: Text,
-        attribute_signature: List[FeatureSignature],
+        feature_type_signature: List[FeatureSignature],
         config: Dict[Text, Any],
     ) -> None:
+        if not feature_type_signature:
+            raise ValueError(
+                "The feature type signature must contain some feature signatures."
+            )
+
         super().__init__(
             name=f"concatenate_sparse_dense_features_{attribute}_{feature_type}"
         )
 
         self.output_units = self._calculate_output_units(
-            attribute, attribute_signature, config
+            attribute, feature_type_signature, config
         )
 
         # Prepare dropout and sparse-to-dense layers if any sparse tensors are expected
         self._tf_layers = {}
-        if any([signature.is_sparse for signature in attribute_signature]):
+        if any([signature.is_sparse for signature in feature_type_signature]):
             self._prepare_layers_for_sparse_tensors(attribute, feature_type, config)
 
     def _prepare_layers_for_sparse_tensors(
@@ -113,7 +119,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
     def _calculate_output_units(
         self,
         attribute: Text,
-        attribute_signature: List[FeatureSignature],
+        feature_type_signature: List[FeatureSignature],
         config: Dict[Text, Any],
     ) -> int:
         """Determine the output units from the provided feature signatures.
@@ -126,7 +132,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
                 config[DENSE_DIMENSION][attribute]
                 if signature.is_sparse
                 else signature.units
-                for signature in attribute_signature
+                for signature in feature_type_signature
             ]
         )
 
@@ -224,10 +230,12 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         config: Dict[Text, Any],
     ) -> None:
         if not attribute_signature or not (
-            len(attribute_signature.get(SENTENCE, [])) > 0
-            or len(attribute_signature.get(SEQUENCE, [])) > 0
+            attribute_signature.get(SENTENCE, [])
+            or attribute_signature.get(SEQUENCE, [])
         ):
-            raise ValueError("The data signature must contain some features.")
+            raise ValueError(
+                "The attribute signature must contain some feature signatures."
+            )
 
         super().__init__(name=f"rasa_feature_combining_layer_{attribute}")
 
@@ -519,10 +527,10 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         attribute_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
     ) -> None:
-        if not attribute_signature or len(attribute_signature.get(SEQUENCE, [])) == 0:
+        if not attribute_signature or not attribute_signature.get(SEQUENCE, []):
             raise ValueError(
-                "The data signature must contain some sequence-level features but none\
-                were found."
+                "The attribute signature must contain some sequence-level feature\
+                signatures but none were found."
             )
 
         super().__init__(name=f"rasa_sequence_layer_{attribute}")
