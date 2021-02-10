@@ -1911,9 +1911,9 @@ class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
 
         Args:
             rule_only_slots: The list of slot names,
-                SlotSet events for which shouldn't be hidden
+                which only occur in rules but not in stories.
             rule_only_loops: The list of loop names,
-                ActiveLoop events for which shouldn't be hidden
+                which only occur in rules but not in stories.
             timestamp: the timestamp
             metadata: some optional metadata
         """
