@@ -79,9 +79,14 @@ class UserMessage:
 
 
 class InputChannelSetupOptions:
-    """Parameters used to setup InputChannels"""
+    """Parameters used to setup InputChannels."""
 
     def __init__(self, url_prefix: Optional[Text] = None):
+        """Creates a ``InputChannelSetupOptions`` object.
+
+        Args:
+            url_prefix: the URL prefix that shall be used for the blueprint.
+        """
         self.url_prefix = url_prefix
 
 
@@ -122,8 +127,7 @@ class InputChannel:
         app: Sanic,
         options: InputChannelSetupOptions,
     ) -> NoReturn:
-        """Registers the channel's blueprint on the Sanic application"""
-
+        """Registers the channel's blueprint on the Sanic application."""
         url_prefix = options.url_prefix
 
         app.blueprint(self.blueprint(on_new_message), url_prefix=url_prefix)
