@@ -78,6 +78,13 @@ class UserMessage:
         self.metadata = metadata
 
 
+class InputChannelSetupOptions:
+    """Parameters used to setup InputChannels"""
+
+    def __init__(self, url_prefix: Optional[Text] = None):
+        self.url_prefix = url_prefix
+
+
 def register(
     input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
 ) -> None:
@@ -89,7 +96,9 @@ def register(
             p = urljoin(route, channel.url_prefix())
         else:
             p = None
-        app.blueprint(channel.blueprint(handler), url_prefix=p)
+
+        options = InputChannelSetupOptions(p)
+        channel.setup(handler, app, options)
 
     app.input_channels = input_channels
 
@@ -106,6 +115,18 @@ class InputChannel:
 
     def url_prefix(self) -> Text:
         return self.name()
+
+    def setup(
+        self,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        app: Sanic,
+        options: InputChannelSetupOptions,
+    ) -> NoReturn:
+        """Registers the channel's blueprint on the Sanic application"""
+
+        url_prefix = options.url_prefix
+
+        app.blueprint(self.blueprint(on_new_message), url_prefix=url_prefix)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
