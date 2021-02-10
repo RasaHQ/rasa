@@ -570,8 +570,6 @@ def test_train_nlu_finetune_with_model(
     assert len(files) == 1
 
     output = run_in_simple_project_with_model("train", "nlu", "--finetune")
-    breakpoint()
-    assert any(os.path.basename(files[0]) in line for line in output.outlines)
 
     assert [
         s
