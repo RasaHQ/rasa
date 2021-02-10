@@ -975,7 +975,7 @@ class TED(TransformerRasaModel):
             ] = rasa_layers.ConcatenateSparseDenseFeatures(
                 attribute=attribute_name,
                 feature_type=SENTENCE,
-                attribute_signature=attribute_signature[SENTENCE],
+                feature_type_signature=attribute_signature[SENTENCE],
                 config=self.config,
             )
 

@@ -273,7 +273,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
                 ] = ConcatenateSparseDenseFeatures(
                     attribute=attribute,
                     feature_type=feature_type,
-                    attribute_signature=attribute_signature[feature_type],
+                    feature_type_signature=attribute_signature[feature_type],
                     config=config,
                 )
         return feature_types_present
