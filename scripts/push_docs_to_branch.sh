@@ -16,7 +16,7 @@ set -Eeuo pipefail
 TODAY=`date "+%Y%m%d"`
 # we build new versions only for minors and majors
 PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.0$"
-PATTERN_FOR_PATCH_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.[1-9]+[0-9]*$"
+PATTERN_FOR_MICRO_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.[1-9]+[0-9]*$"
 MASTER_REF=refs/heads/master
 VARIABLES_JSON=docs/docs/variables.json
 SOURCES_FILES=docs/docs/sources/
@@ -25,7 +25,7 @@ CHANGELOG=docs/docs/changelog.mdx
 TELEMETRY_REFERENCE=docs/docs/telemetry/reference.mdx
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
-&& [[ ! $GITHUB_REF =~ $PATTERN_FOR_PATCH_VERSION ]] \
+&& [[ ! $GITHUB_REF =~ $PATTERN_FOR_MICRO_VERSION ]] \
 && [[ $GITHUB_REF != $MASTER_REF ]] \
 && echo "Not on master or tagged version, skipping." \
 && exit 0
@@ -35,7 +35,7 @@ EXISTING_VERSION=
 if [[ "$GITHUB_REF" =~ $PATTERN_FOR_NEW_VERSION ]]
 then
     NEW_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.0$/\1.\2.x/")
-elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_PATCH_VERSION ]]
+elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_MICRO_VERSION ]]
 then
     EXISTING_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.[0-9]+$/\1.\2.x/")
 fi
