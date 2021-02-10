@@ -11,11 +11,21 @@ class InvalidSlotTypeException(RasaException)
 
 Raised if a slot type is invalid.
 
+## InvalidSlotConfigError Objects
+
+```python
+class InvalidSlotConfigError(RasaException,  ValueError)
+```
+
+Raised if a slot&#x27;s config is invalid.
+
 ## Slot Objects
 
 ```python
 class Slot()
 ```
+
+Key-value store for storing information during a conversation.
 
 #### \_\_init\_\_
 
@@ -128,4 +138,12 @@ class AnySlot(Slot)
 
 Slot which can be used to store any value. Users need to create a subclass of
 `Slot` in case the information is supposed to get featurized.
+
+#### \_\_eq\_\_
+
+```python
+ | __eq__(other: Any) -> bool
+```
+
+Compares object with other object.
 
