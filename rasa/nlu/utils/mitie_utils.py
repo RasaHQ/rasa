@@ -3,7 +3,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config import RasaNLUModelConfig
+import rasa.utils.train_utils
 from rasa.nlu.model import Metadata
 
 if typing.TYPE_CHECKING:
@@ -37,7 +38,9 @@ class MitieNLP(Component):
     ) -> "MitieNLP":
         import mitie
 
-        component_config = override_defaults(cls.defaults, component_config)
+        component_config = rasa.utils.train_utils.override_defaults(
+            cls.defaults, component_config
+        )
 
         model_file = component_config.get("model")
         if not model_file:

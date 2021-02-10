@@ -21,6 +21,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
+from rasa.shared.constants import DIAGNOSTIC_DATA
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -51,7 +52,30 @@ class Message:
         if features is not None:
             self.features.append(features)
 
-    def set(self, prop, info, add_to_output=False) -> None:
+    def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
+        """Adds diagnostic data from the `origin` component.
+
+        Args:
+            origin: Name of the component that created the data.
+            data: The diagnostic data.
+        """
+        if origin in self.get(DIAGNOSTIC_DATA, {}):
+            rasa.shared.utils.io.raise_warning(
+                f"Please make sure every pipeline component has a distinct name. "
+                f"The name '{origin}' appears at least twice and diagnostic "
+                f"data will be overwritten."
+            )
+        self.data.setdefault(DIAGNOSTIC_DATA, {})
+        self.data[DIAGNOSTIC_DATA][origin] = data
+
+    def set(self, prop: Text, info: Any, add_to_output: bool = False) -> None:
+        """Sets the message's property to the given value.
+
+        Args:
+            prop: Name of the property to be set.
+            info: Value to be assigned to that property.
+            add_to_output: Decides whether to add `prop` to the `output_properties`.
+        """
         self.data[prop] = info
         if add_to_output:
             self.output_properties.add(prop)
@@ -115,14 +139,15 @@ class Message:
         example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
-        """
-        Build a Message from `UserUttered` data.
+        """Builds a Message from `UserUttered` data.
+
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
             intent_metadata: optional metadata for the intent
             example_metadata: optional metadata for the intent example
+
         Returns:
             Message
         """
@@ -183,12 +208,14 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all sparse features for the given attribute that are coming from the
-        given list of featurizers.
+        """Gets all sparse features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Sparse features.
         """
@@ -207,12 +234,14 @@ class Message:
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
-        """Get all dense features for the given attribute that are coming from the given
-        list of featurizers.
+        """Gets all dense features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
             Dense features.
         """
@@ -228,17 +257,38 @@ class Message:
 
         return sequence_features, sentence_features
 
-    def features_present(
+    def get_all_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
-    ) -> bool:
-        """Check if there are any features present for the given attribute and
-        featurizers.
+    ) -> List["Features"]:
+        """Gets all features for the attribute given the list of featurizers.
+
         If no featurizers are provided, all available features will be considered.
+
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
+
         Returns:
-            ``True``, if features are present, ``False`` otherwise
+            Features.
+        """
+        sparse_features = self.get_sparse_features(attribute, featurizers)
+        dense_features = self.get_dense_features(attribute, featurizers)
+
+        return [f for f in sparse_features + dense_features if f is not None]
+
+    def features_present(
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ) -> bool:
+        """Checks if there are any features present for the attribute and featurizers.
+
+        If no featurizers are provided, all available features will be considered.
+
+        Args:
+            attribute: Message attribute.
+            featurizers: Names of featurizers to consider.
+
+        Returns:
+            ``True``, if features are present, ``False`` otherwise.
         """
         if featurizers is None:
             featurizers = []
@@ -316,13 +366,14 @@ class Message:
 
         return combined_features
 
-    def is_core_message(self) -> bool:
-        """Checks whether the message is a core message or not.
+    def is_core_or_domain_message(self) -> bool:
+        """Checks whether the message is a core message or from the domain.
 
-        E.g. a core message is created from a story, not from the NLU data.
+        E.g. a core message is created from a story or a domain action,
+        not from the NLU data.
 
         Returns:
-            True, if message is a core message, false otherwise.
+            True, if message is a core or domain message, false otherwise.
         """
         return bool(
             self.data.get(ACTION_NAME)
@@ -335,4 +386,15 @@ class Message:
                 self.data.get(TEXT)
                 and not (self.data.get(INTENT) or self.data.get(RESPONSE))
             )
+        )
+
+    def is_e2e_message(self) -> bool:
+        """Checks whether the message came from an e2e story.
+
+        Returns:
+            `True`, if message is a from an e2e story, `False` otherwise.
+        """
+        return bool(
+            (self.get(ACTION_TEXT) and not self.get(ACTION_NAME))
+            or (self.get(TEXT) and not self.get(INTENT))
         )
