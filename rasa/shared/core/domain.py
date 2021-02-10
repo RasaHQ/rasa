@@ -86,6 +86,7 @@ class ActionNotFoundException(ValueError, RasaException):
 class SessionConfig(NamedTuple):
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
+    global_not_intent: Optional[Text] = None
 
     @staticmethod
     def default() -> "SessionConfig":
