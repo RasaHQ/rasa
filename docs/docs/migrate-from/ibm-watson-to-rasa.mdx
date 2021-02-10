@@ -5,6 +5,47 @@ title: Rasa as open source alternative to IBM Watson - Migration Tips
 description: Open source alternative to IBM Watson for conversational bots and NLP
 ---
 
-There is no support for IBM Watson yet. However, a group of community members is working on a way
-to use <a className="reference external" href="https://developer.ibm.com/tutorials/learn-how-to-export-import-a-watson-assistant-workspace/" target="_blank">exported IBM Watson workspaces</a>
-in Rasa. If you're interested in that, check out our <a className="reference external" href="https://forum.rasa.com/" target="_blank">Community Forum</a>.
+## Step 1
+
+To use <a className="reference external" href="https://developer.ibm.com/tutorials/learn-how-to-export-import-a-watson-assistant-workspace/" target="_blank">exported IBM Watson workspaces</a>
+in Rasa. 
+
+## Step 2: Create a Rasa Project
+
+To create a Rasa project, run:
+
+```bash
+rasa init
+```
+
+This will create a directory called `data`.
+Remove the files in this directory, and
+move your json file into this directory.
+
+```bash
+rm -r data/*
+mv /path/to/file.json data/
+```
+
+## Step 3: Train your NLU model
+
+To train a model using your Watson data, run:
+
+```bash
+rasa train nlu
+```
+
+## Step 4: Test your NLU model
+
+Let's see how your NLU model will interpret some test messages.
+To start a testing session, run:
+
+```bash
+rasa shell nlu
+```
+
+This will prompt your for input.
+Type a test message and press 'Enter'.
+The output of your NLU model will be printed to the screen.
+You can keep entering messages and test as many as you like.
+Press 'control + C' to quit.
