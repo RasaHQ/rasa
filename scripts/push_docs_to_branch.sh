@@ -4,12 +4,11 @@
 # For instance, if the doc version for 2.2.10 fails to be pushed, you
 # can do:
 #
-# TMP_DOCS_FOLDER=/tmp/documentation DOCS_BRANCH=documentation GITHUB_REF=refs/tags/2.2.10 GITHUB_REPOSITORY=RasaHQ/rasa ./scripts/push_docs_to_branch.sh
+# 1. make install install-docs
+# 2. make prepare-docs
+# 3. TMP_DOCS_FOLDER=/tmp/documentation DOCS_BRANCH=documentation GITHUB_REF=refs/tags/2.2.10 GITHUB_REPOSITORY=RasaHQ/rasa ./scripts/push_docs_to_branch.sh
 #
-# This command will push the changes to the `documentation` branch of this repository.
-#
-# Please make sure to have the proper dependencies installed with `make install install-docs`
-# and that the docs are pre-built with `make prepare-docs`.
+# This script will push the changes to the `documentation` branch of this repository.
 
 set -Eeuo pipefail
 
