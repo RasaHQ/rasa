@@ -918,7 +918,7 @@ def evaluate_entities(
                     merged_targets,
                     merged_predictions,
                     merged_confidences,
-                    title="Entity Confusion matrix",
+                    title="Entity Prediction Confidence Distribution",
                     hist_filename=histogram_filename,
                 )
 
