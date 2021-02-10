@@ -20,6 +20,8 @@ class InvalidSlotConfigError(RasaException, ValueError):
 
 
 class Slot:
+    """Key-value store for storing information during a conversation."""
+
     type_name = None
 
     def __init__(
@@ -384,6 +386,7 @@ class AnySlot(Slot):
         )
 
     def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
         if not isinstance(other, AnySlot):
             return NotImplemented
 
