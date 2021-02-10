@@ -55,6 +55,8 @@ from rasa.utils.tensorflow.constants import (
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
     SCALE_LOSS,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -730,7 +732,6 @@ class TransformerRasaModel(RasaModel):
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             name,
-            self.config[SIMILARITY_TYPE],
         )
 
     def _prepare_ffnn_layer(
@@ -789,8 +790,9 @@ class TransformerRasaModel(RasaModel):
             self.config[USE_MAX_NEG_SIM],
             self.config[NEGATIVE_MARGIN_SCALE],
             scale_loss,
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
+            similarity_type=self.config[SIMILARITY_TYPE],
+            constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
+            model_confidence=self.config[MODEL_CONFIDENCE],
         )
 
     def _prepare_sparse_dense_dropout_layers(
