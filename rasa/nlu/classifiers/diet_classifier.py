@@ -100,6 +100,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    RANDOMLY_SAMPLE_NEGATIVES,
 )
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Model confidence to be returned during inference. Possible values -
         # 'softmax', 'cosine', 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
+        # Use random sampling strategy for mining negatives during training.
+        RANDOMLY_SAMPLE_NEGATIVES: True,
     }
 
     # init helpers

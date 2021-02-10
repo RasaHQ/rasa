@@ -54,6 +54,7 @@ DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
 MODEL_CONFIDENCE = "model_confidence"
+RANDOMLY_SAMPLE_NEGATIVES = "randomly_sample_negatives"
 
 BILOU_FLAG = "BILOU_flag"
 

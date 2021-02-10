@@ -57,6 +57,7 @@ from rasa.utils.tensorflow.constants import (
     SCALE_LOSS,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
+    RANDOMLY_SAMPLE_NEGATIVES,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -793,6 +794,7 @@ class TransformerRasaModel(RasaModel):
             similarity_type=self.config[SIMILARITY_TYPE],
             constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
             model_confidence=self.config[MODEL_CONFIDENCE],
+            randomly_sample_negatives=self.config[RANDOMLY_SAMPLE_NEGATIVES],
         )
 
     def _prepare_sparse_dense_dropout_layers(
