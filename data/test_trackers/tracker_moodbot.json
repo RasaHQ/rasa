@@ -30,7 +30,7 @@
   "paused": false,
   "latest_event_time": 1517821726.211042,
   "followup_action": null,
-  "slots": {"name": null, "requested_slot": null, "session_start_metadata": null},
+  "slots": {"name": null, "requested_slot": null, "session_started_metadata": null},
   "latest_input_channel": null,
   "events": [
     {
