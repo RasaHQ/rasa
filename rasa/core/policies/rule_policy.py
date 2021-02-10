@@ -624,13 +624,47 @@ class RulePolicy(MemoizationPolicy):
 
         return error_messages, rules_used_in_stories
 
-    def _find_contradicting_rules(
+    def _collect_rule_sources(
+        self,
+        rule_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> None:
+        self._run_prediction_on_trackers(
+            rule_trackers, domain, interpreter, collect_sources=True
+        )
+
+    def _find_contradicting_and_used_in_stories_rules(
+        self,
+        trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> Tuple[List[Text], Set[Text]]:
+        return self._run_prediction_on_trackers(
+            trackers, domain, interpreter, collect_sources=False
+        )
+
+    def _analyze_rules(
         self,
         rule_trackers: List[TrackerWithCachedStates],
         all_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> List[Text]:
+        """Analyze learned rules by running prediction on training trackers.
+
+        This method collects error messages for contradicting rules
+        and creates the lookup for rules that are not present in the stories.
+
+        Args:
+            rule_trackers: The list of the rule trackers.
+            all_trackers: The list of all trackers.
+            domain: The domain.
+            interpreter: Interpreter which can be used by the polices for featurization.
+
+        Returns:
+             The list of rules that are not present in the stories.
+        """
         logger.debug("Started checking rules and stories for contradictions.")
         # during training we run `predict_action_probabilities` to check for
         # contradicting rules.
@@ -640,11 +674,12 @@ class RulePolicy(MemoizationPolicy):
 
         # we need to run prediction on rule trackers twice, because we need to collect
         # the information about which rule snippets contributed to the learned rules
-        self._run_prediction_on_trackers(
-            rule_trackers, domain, interpreter, collect_sources=True
-        )
-        error_messages, rules_used_in_stories = self._run_prediction_on_trackers(
-            all_trackers, domain, interpreter, collect_sources=False
+        self._collect_rule_sources(rule_trackers, domain, interpreter)
+        (
+            error_messages,
+            rules_used_in_stories,
+        ) = self._find_contradicting_and_used_in_stories_rules(
+            all_trackers, domain, interpreter
         )
 
         logger.setLevel(logger_level)  # reset logger level
@@ -741,7 +776,7 @@ class RulePolicy(MemoizationPolicy):
         if self._check_for_contradictions:
             # using trackers here might not be the most efficient way, however
             # it allows us to directly test `predict_action_probabilities` method
-            self.lookup[RULES_NOT_IN_STORIES] = self._find_contradicting_rules(
+            self.lookup[RULES_NOT_IN_STORIES] = self._analyze_rules(
                 rule_trackers, training_trackers, domain, interpreter
             )
 
