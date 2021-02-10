@@ -56,7 +56,7 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
-    METADATA_SLOT_SESSION_START,
+    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -165,7 +165,7 @@ async def test_remote_action_runs(
                 "slots": {
                     "name": None,
                     REQUESTED_SLOT: None,
-                    METADATA_SLOT_SESSION_START: None,
+                    SESSION_START_METADATA_SLOT: None,
                 },
                 "events": [],
                 "latest_input_channel": None,
@@ -224,7 +224,7 @@ async def test_remote_action_logs_events(
                 "slots": {
                     "name": None,
                     REQUESTED_SLOT: None,
-                    METADATA_SLOT_SESSION_START: None,
+                    SESSION_START_METADATA_SLOT: None,
                 },
                 "events": [],
                 "latest_input_channel": None,

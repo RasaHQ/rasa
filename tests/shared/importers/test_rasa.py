@@ -7,7 +7,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
-from rasa.shared.core.constants import DEFAULT_INTENTS, METADATA_SLOT_SESSION_START
+from rasa.shared.core.constants import DEFAULT_INTENTS, SESSION_START_METADATA_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import AnySlot
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -23,7 +23,7 @@ async def test_rasa_file_importer(project: Text):
 
     domain = await importer.get_domain()
     assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
-    assert domain.slots == [AnySlot(METADATA_SLOT_SESSION_START)]
+    assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT)]
     assert domain.entities == []
     assert len(domain.action_names_or_texts) == 17
     assert len(domain.templates) == 6

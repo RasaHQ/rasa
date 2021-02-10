@@ -809,7 +809,7 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.METADATA_SLOT_SESSION_START,)
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
         )
 
     def index_for_action(self, action_name: Text) -> Optional[int]:

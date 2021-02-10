@@ -62,7 +62,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
-    METADATA_SLOT_SESSION_START,
+    SESSION_START_METADATA_SLOT,
 )
 
 import logging
@@ -540,13 +540,13 @@ async def test_update_tracker_session_with_metadata(
 
     tracker = default_processor.tracker_store.retrieve(sender_id)
     events = list(tracker.events)
-    assert events[0] == SlotSet(METADATA_SLOT_SESSION_START, metadata)
-    assert tracker.slots[METADATA_SLOT_SESSION_START].value == metadata
+    assert events[0] == SlotSet(SESSION_START_METADATA_SLOT, metadata)
+    assert tracker.slots[SESSION_START_METADATA_SLOT].value == metadata
 
     assert events[1] == ActionExecuted(ACTION_SESSION_START_NAME)
     assert events[2] == SessionStarted()
     assert events[2].metadata == metadata
-    assert events[3] == SlotSet(METADATA_SLOT_SESSION_START, metadata)
+    assert events[3] == SlotSet(SESSION_START_METADATA_SLOT, metadata)
     assert events[4] == ActionExecuted(ACTION_LISTEN_NAME)
     assert isinstance(events[5], UserUttered)
 

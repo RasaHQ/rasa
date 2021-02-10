@@ -22,7 +22,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     SLOTS,
     FOLLOWUP_ACTION,
-    METADATA_SLOT_SESSION_START,
+    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -197,7 +197,7 @@ class MessageProcessor:
 
             if metadata:
                 tracker.update(
-                    SlotSet(METADATA_SLOT_SESSION_START, metadata), self.domain
+                    SlotSet(SESSION_START_METADATA_SLOT, metadata), self.domain
                 )
 
             await self._run_action(
