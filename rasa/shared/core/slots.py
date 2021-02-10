@@ -382,3 +382,15 @@ class AnySlot(Slot):
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, AnySlot):
+            return NotImplemented
+
+        return (
+            self.name == other.name
+            and self.initial_value == other.initial_value
+            and self._value_reset_delay == other._value_reset_delay
+            and self.auto_fill == other.auto_fill
+            and self.value == other.value
+        )
