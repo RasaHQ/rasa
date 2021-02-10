@@ -1076,7 +1076,7 @@ class Domain:
         for slot in tracker.rule_only_slots:
             if state.get(rasa.shared.core.constants.SLOTS, {}).get(slot):
                 del state[rasa.shared.core.constants.SLOTS][slot]
-        # remove active loop feature if it is only rule loop
+        # remove active loop which only occur in rules but not in stories
         if (
             state.get(rasa.shared.core.constants.ACTIVE_LOOP, {}).get(
                 rasa.shared.core.constants.LOOP_NAME
