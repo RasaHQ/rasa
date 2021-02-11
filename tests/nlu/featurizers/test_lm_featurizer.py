@@ -406,7 +406,7 @@ def create_config(model_name, model_weights):
             "Reason: this model is too large, loading it results in"
             "crashing of GH action workers."
         )
-    config = {"model_name": model_name, "cache_dir": HF_TEST_CACHE_DIR}
+    config = {"model_name": model_name}
     if model_weights:
         config["model_weights"] = model_weights
     return config
@@ -596,11 +596,7 @@ def test_preserve_sentence_and_sequence_features_old_config():
     message = Message.build("hi there")
 
     transformers_nlp = HFTransformersNLP(
-        {
-            "model_name": "bert",
-            "model_weights": "bert-base-uncased",
-            "cache_dir": HF_TEST_CACHE_DIR,
-        }
+        {"model_name": "bert", "model_weights": "bert-base-uncased"}
     )
     transformers_nlp.process(message)
     lm_tokenizer = LanguageModelTokenizer()
@@ -640,7 +636,6 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     config = {
         "model_name": "bert",
         "model_weights": "bert-base-chinese",
-        "cache_dir": HF_TEST_CACHE_DIR,
     }
 
     lm_featurizer = LanguageModelFeaturizer(config)
