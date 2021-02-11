@@ -1066,7 +1066,7 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request, temporary_directory)
+        test_data = _test_data_file_from_payload(request, temporary_directory, ".md")
 
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
@@ -1397,14 +1397,16 @@ def _get_output_channel(
     )
 
 
-def _test_data_file_from_payload(request: Request, temporary_directory: Path) -> Text:
+def _test_data_file_from_payload(
+    request: Request, temporary_directory: Path, suffix: Text = ".tmp"
+) -> Text:
     if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
         return str(
             _training_payload_from_yaml(request, temporary_directory)["training_files"]
         )
     else:
         return rasa.utils.io.create_temporary_file(
-            request.body, mode="w+b", suffix=".tmp"
+            request.body, mode="w+b", suffix=suffix
         )
 
 

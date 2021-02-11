@@ -754,7 +754,7 @@ async def test_evaluate_stories_end_to_end(
 ):
     stories = rasa.shared.utils.io.read_file(end_to_end_test_story_file)
 
-    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories)
+    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories,)
 
     assert response.status == HTTPStatus.OK
     js = response.json()
