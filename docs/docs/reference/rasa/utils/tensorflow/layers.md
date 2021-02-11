@@ -391,6 +391,28 @@ Declare instance variables with default values.
 
 Calculate similarity between given tensors.
 
+#### similarity\_confidence\_from\_embeddings
+
+```python
+ | similarity_confidence_from_embeddings(input_embeddings: tf.Tensor, label_embeddings: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
+```
+
+Computes similarity between input and label embeddings and model&#x27;s confidence.
+
+First compute the similarity from embeddings and then apply an activation
+function if needed to get the confidence.
+
+**Arguments**:
+
+- `input_embeddings` - Embeddings of input.
+- `label_embeddings` - Embeddings of labels.
+- `mask` - Mask over input and output sequence.
+  
+
+**Returns**:
+
+  similarity between input and label embeddings and model&#x27;s prediction confidence for each label.
+
 #### call
 
 ```python
