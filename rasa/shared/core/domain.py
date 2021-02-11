@@ -203,11 +203,17 @@ class Domain:
         return SessionConfig(session_expiration_time_min, carry_over_slots)
 
     @classmethod
-    def from_directory(cls, path: Text) -> "Domain":
+    def from_directory(cls, path: Text, include_hidden: bool = False) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
 
         domain = Domain.empty()
-        for root, _, files in os.walk(path, followlinks=True):
+        for root, dirs, files in os.walk(path, followlinks=True, topdown=True):
+            if not include_hidden:
+                files = [f for f in files if not f[0] == "."]
+                # When topdown is True, os.walk allows you to affect the directories
+                # into which it recurses by changing the variable in place
+                dirs[:] = [d for d in dirs if not d[0] == "."]
+
             for file in files:
                 full_path = os.path.join(root, file)
                 if Domain.is_domain_file(full_path):
