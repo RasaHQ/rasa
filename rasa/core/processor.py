@@ -356,12 +356,6 @@ class MessageProcessor:
                 sender_id, output_channel
             )
 
-            if not tracker:
-                logger.warning(
-                    f"Failed to retrieve tracker for conversation ID '{sender_id}'."
-                )
-                return None
-
             if (
                 reminder_event.kill_on_user_message
                 and self._has_message_after_reminder(tracker, reminder_event)
