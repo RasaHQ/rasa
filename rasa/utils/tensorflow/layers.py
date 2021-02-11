@@ -1065,38 +1065,42 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         if self.randomly_sample_negatives:
             (
-                neg_inputs_embed,
-                neg_labels_embed,
-                inputs_bad_negs,
-                labels_bad_negs,
-            ) = self._sample_negatives(
-                pos_inputs_embed, labels, all_labels_embed, all_labels
-            )
-
-            # calculate similarities
-            sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li = self._train_sim(
+                sim_neg_ii,
+                sim_neg_il,
+                sim_neg_li,
+                sim_neg_ll,
+                sim_pos,
+            ) = self._get_similarities_with_random_sampling(
+                all_labels,
+                all_labels_embed,
+                labels,
+                mask,
                 pos_inputs_embed,
                 pos_labels_embed,
-                neg_inputs_embed,
-                neg_labels_embed,
-                inputs_bad_negs,
-                labels_bad_negs,
-                mask,
             )
         else:
-            (
-                sim_pos,
-                sim_neg_il,
-                sim_neg_ll,
-                sim_neg_ii,
-                sim_neg_li,
-            ) = self._hard_train_sim(
-                pos_inputs_embed,
-                pos_labels_embed,
-                labels,
-                all_labels_embed,
-                all_labels,
-                mask,
+            random_chance = tf.cast(
+                tf.random.uniform(shape=(), minval=0, maxval=2, dtype=tf.int32),
+                dtype=tf.bool,
+            )
+            sim_neg_ii, sim_neg_il, sim_neg_li, sim_neg_ll, sim_pos = tf.cond(
+                random_chance,
+                lambda: self._get_similarities_with_sorted_sampling(
+                    all_labels,
+                    all_labels_embed,
+                    labels,
+                    mask,
+                    pos_inputs_embed,
+                    pos_labels_embed,
+                ),
+                lambda: self._get_similarities_with_random_sampling(
+                    all_labels,
+                    all_labels_embed,
+                    labels,
+                    mask,
+                    pos_inputs_embed,
+                    pos_labels_embed,
+                ),
             )
 
         accuracy = self._calc_accuracy(sim_pos, sim_neg_il)
@@ -1106,3 +1110,57 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
         return loss, accuracy
+
+    def _get_similarities_with_sorted_sampling(
+        self,
+        all_labels,
+        all_labels_embed,
+        labels,
+        mask,
+        pos_inputs_embed,
+        pos_labels_embed,
+    ):
+        (
+            sim_pos,
+            sim_neg_il,
+            sim_neg_ll,
+            sim_neg_ii,
+            sim_neg_li,
+        ) = self._hard_train_sim(
+            pos_inputs_embed,
+            pos_labels_embed,
+            labels,
+            all_labels_embed,
+            all_labels,
+            mask,
+        )
+        return sim_neg_ii, sim_neg_il, sim_neg_li, sim_neg_ll, sim_pos
+
+    def _get_similarities_with_random_sampling(
+        self,
+        all_labels,
+        all_labels_embed,
+        labels,
+        mask,
+        pos_inputs_embed,
+        pos_labels_embed,
+    ):
+        (
+            neg_inputs_embed,
+            neg_labels_embed,
+            inputs_bad_negs,
+            labels_bad_negs,
+        ) = self._sample_negatives(
+            pos_inputs_embed, labels, all_labels_embed, all_labels
+        )
+        # calculate similarities
+        sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li = self._train_sim(
+            pos_inputs_embed,
+            pos_labels_embed,
+            neg_inputs_embed,
+            neg_labels_embed,
+            inputs_bad_negs,
+            labels_bad_negs,
+            mask,
+        )
+        return sim_neg_ii, sim_neg_il, sim_neg_li, sim_neg_ll, sim_pos
