@@ -205,7 +205,6 @@ class Domain:
     @classmethod
     def from_directory(cls, path: Text, include_hidden: bool = False) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-
         domain = Domain.empty()
         for root, dirs, files in os.walk(path, followlinks=True, topdown=True):
             if not include_hidden:
@@ -228,7 +227,6 @@ class Domain:
         List attributes like ``intents`` and ``actions`` will be deduped
         and merged. Single attributes will be taken from `self` unless
         override is `True`, in which case they are taken from `domain`."""
-
         if not domain or domain.is_empty():
             return self
 
