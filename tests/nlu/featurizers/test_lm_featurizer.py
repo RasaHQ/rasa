@@ -399,7 +399,11 @@ def skip_on_CI(model_name, model_weights):
 def create_config(model_name, model_weights):
     """
     Create a config for LanguageModelFeaturizer. Skips model/model_weight
-    combinations that are too large (bert, and LaBSE).
+    combinations that are too large (bert with LaBSE).
+
+    Args:
+        model_name: model name
+        model_weights: model weights name
     """
     if skip_on_CI(model_name, model_weights):
         pytest.skip(

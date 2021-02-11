@@ -1,5 +1,3 @@
-import os
-
 import pytest
 import numpy as np
 from typing import List, Text

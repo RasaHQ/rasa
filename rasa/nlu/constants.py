@@ -1,5 +1,4 @@
 import rasa.shared.nlu.constants
-import os
 
 
 BILOU_ENTITIES = "bilou_entities"
