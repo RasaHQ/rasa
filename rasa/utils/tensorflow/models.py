@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     SEQUENCE,
     SENTENCE,
+    SEQUENCE_LENGTH,
     TENSORBOARD_LOG_LEVEL,
     RANDOM_SEED,
     TENSORBOARD_LOG_DIR,
@@ -838,6 +839,8 @@ class TransformerRasaModel(RasaModel):
         sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
         return self._compute_mask(sequence_lengths)
 
+    # TODO: remove when refactoring response selectors (should switch to using
+    # `_get_sequence_feature_lengths` instead.)
     @staticmethod
     def _get_sequence_lengths(
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
@@ -855,15 +858,11 @@ class TransformerRasaModel(RasaModel):
 
         return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32) + 1
 
-    # TODO: unify with above method
     def _get_sequence_feature_lengths(
-        self,
-        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
-        key: Text,
-        sub_key: Text,
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
-        if key in tf_batch_data and sub_key in tf_batch_data[key]:
-            return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
+        if key in tf_batch_data and SEQUENCE_LENGTH in tf_batch_data[key]:
+            return tf.cast(tf_batch_data[key][SEQUENCE_LENGTH][0], dtype=tf.int32)
 
         batch_dim = self._get_batch_dim(tf_batch_data[key])
         return tf.zeros([batch_dim], dtype=tf.int32)

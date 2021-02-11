@@ -1389,7 +1389,7 @@ class DIET(TransformerRasaModel):
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
         sequence_feature_lengths = self._get_sequence_feature_lengths(
-            self.tf_label_data, LABEL, SEQUENCE_LENGTH
+            self.tf_label_data, LABEL
         )
 
         x = self._create_bow(
@@ -1470,7 +1470,7 @@ class DIET(TransformerRasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         sequence_feature_lengths = self._get_sequence_feature_lengths(
-            tf_batch_data, TEXT, SEQUENCE_LENGTH
+            tf_batch_data, TEXT
         )
 
         (
@@ -1478,7 +1478,7 @@ class DIET(TransformerRasaModel):
             text_in,
             mask_combined_sequence_sentence,
             text_seq_ids,
-            mmlm_mask_booleanean_text,
+            mlm_mask_booleanean_text,
             _,
         ) = self._tf_layers[f"sequence_layer.{self.text_name}"](
             (
@@ -1503,7 +1503,7 @@ class DIET(TransformerRasaModel):
 
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
-                text_transformed, text_in, text_seq_ids, mmlm_mask_booleanean_text, TEXT
+                text_transformed, text_in, text_seq_ids, mlm_mask_booleanean_text, TEXT
             )
             self.mask_loss.update_state(loss)
             self.mask_acc.update_state(acc)
@@ -1539,7 +1539,7 @@ class DIET(TransformerRasaModel):
         )
 
         sequence_feature_lengths_label = self._get_sequence_feature_lengths(
-            tf_batch_data, LABEL, SEQUENCE_LENGTH
+            tf_batch_data, LABEL
         )
 
         label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
@@ -1634,7 +1634,7 @@ class DIET(TransformerRasaModel):
         )
 
         sequence_feature_lengths = self._get_sequence_feature_lengths(
-            tf_batch_data, TEXT, SEQUENCE_LENGTH
+            tf_batch_data, TEXT
         )
         sentence_feature_lengths = self._get_sentence_feature_lengths(
             tf_batch_data, TEXT,
