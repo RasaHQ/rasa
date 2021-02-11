@@ -95,7 +95,10 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         .get("utter_action")
     ) is not None
     assert (
-        parsed.get("response_selector").get("default").get("response").get("responses")
+        parsed.get("response_selector")
+        .get("default")
+        .get("response")
+        .get("response_templates")
     ) is not None
 
     ranking = parsed.get("response_selector").get("default").get("ranking")
