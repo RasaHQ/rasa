@@ -116,7 +116,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   Before, the next form was correctly activated, but the previous form had wrongly uttered 
   the response that asked for the requested slot when slot validation for that slot 
   had failed.
-- [#7829](https://github.com/rasahq/rasa/issues/7829): Fine-tuning by passing a specific model path with the `--finetune` argument.
+- [#7829](https://github.com/rasahq/rasa/issues/7829): Fix a bug in incremental training when passing a specific model path with the `--finetune` argument.
 - [#7867](https://github.com/rasahq/rasa/issues/7867): Fix the role of `unidirectional_encoder` in TED. This parameter is only applied to
   transformers for `text`, `action_text` and `label_action_text`.
 
