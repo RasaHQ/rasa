@@ -19,16 +19,25 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     INNER,
     COSINE,
+    CROSS_ENTROPY,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     DENSE_DIMENSION,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
 )
-from rasa.shared.nlu.constants import ACTION_NAME, INTENT, ENTITIES
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    INTENT,
+    ENTITIES,
+    SPLIT_ENTITIES_BY_COMMA,
+)
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.core.constants import DIALOGUE
+from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
-    from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+    from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
 
 
@@ -58,10 +67,32 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
     if config.get(SIMILARITY_TYPE) == AUTO:
-        if config[LOSS_TYPE] == SOFTMAX:
+        if config[LOSS_TYPE] == CROSS_ENTROPY:
             config[SIMILARITY_TYPE] = INNER
         elif config[LOSS_TYPE] == MARGIN:
             config[SIMILARITY_TYPE] = COSINE
+
+    return config
+
+
+def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """If LOSS_TYPE is set to 'softmax', update it to 'cross_entropy' since former is deprecated.
+
+    Args:
+        config: model configuration
+
+    Returns:
+        updated model configuration
+    """
+    # TODO: Completely deprecate this with 3.0
+    if config.get(LOSS_TYPE) == SOFTMAX:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"`{LOSS_TYPE}={SOFTMAX}` is deprecated. "
+            f"Please update your configuration file to use"
+            f"`{LOSS_TYPE}={CROSS_ENTROPY}` instead.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        )
+        config[LOSS_TYPE] = CROSS_ENTROPY
 
     return config
 
@@ -335,3 +366,111 @@ def override_defaults(
                 config[key] = custom[key]
 
     return config
+
+
+def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Set model confidence to cosine if margin loss is used.
+
+    Args:
+        component_config: model configuration
+
+    Returns:
+        updated model configuration
+    """
+    # TODO: Remove this once model_confidence is set to cosine by default.
+    if (
+        component_config[LOSS_TYPE] == MARGIN
+        and component_config[MODEL_CONFIDENCE] == SOFTMAX
+    ):
+        rasa.shared.utils.io.raise_warning(
+            f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
+            f"{COSINE} as {LOSS_TYPE} is set to {MARGIN} in the configuration."
+        )
+        component_config[MODEL_CONFIDENCE] = COSINE
+    return component_config
+
+
+def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
+    """Performs checks to validate that combination of parameters in the configuration are correctly set.
+
+    Args:
+        component_config: Configuration to validate.
+    """
+    _check_loss_setting(component_config)
+    _check_confidence_setting(component_config)
+    _check_similarity_loss_setting(component_config)
+
+
+def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
+    if component_config[MODEL_CONFIDENCE] == SOFTMAX:
+        rasa.shared.utils.io.raise_warning(
+            f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
+            f"to set it to `cosine`. It will be set to `cosine` by default, "
+            f"Rasa Open Source 3.0.0 onwards.",
+            category=UserWarning,
+        )
+        if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
+            raise InvalidConfigException(
+                f"{LOSS_TYPE}={component_config[LOSS_TYPE]} and "
+                f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
+                f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"only with {LOSS_TYPE}={CROSS_ENTROPY}."
+            )
+        if component_config[SIMILARITY_TYPE] not in [INNER, AUTO]:
+            raise InvalidConfigException(
+                f"{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]} and "
+                f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
+                f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"only with {SIMILARITY_TYPE}={INNER}."
+            )
+
+
+def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
+    if not component_config[CONSTRAIN_SIMILARITIES] and component_config[LOSS_TYPE] in [
+        SOFTMAX,
+        CROSS_ENTROPY,
+    ]:
+        rasa.shared.utils.io.raise_warning(
+            f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
+            f"to set it to `True` when using cross-entropy loss. It will be set to `True` by default, "
+            f"Rasa Open Source 3.0.0 onwards.",
+            category=UserWarning,
+        )
+
+
+def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
+    if (
+        component_config[SIMILARITY_TYPE] == COSINE
+        and component_config[LOSS_TYPE] == CROSS_ENTROPY
+        or component_config[SIMILARITY_TYPE] == INNER
+        and component_config[LOSS_TYPE] == MARGIN
+    ):
+        rasa.shared.utils.io.raise_warning(
+            f"`{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]}`"
+            f" and `{LOSS_TYPE}={component_config[LOSS_TYPE]}` "
+            f"is not a recommended setting as it may not lead to best results."
+            f"Ideally use `{SIMILARITY_TYPE}={INNER}`"
+            f" and `{LOSS_TYPE}={CROSS_ENTROPY}` or"
+            f"`{SIMILARITY_TYPE}={COSINE}` and `{LOSS_TYPE}={MARGIN}`.",
+            category=UserWarning,
+        )
+
+
+def init_split_entities(
+    split_entities_config, default_split_entity
+) -> Dict[Text, bool]:
+    """Initialise the behaviour for splitting entities by comma (or not).
+
+    Returns:
+        Defines desired behaviour for splitting specific entity types and
+        default behaviour for splitting any entity types for which no behaviour
+        is defined.
+    """
+    if isinstance(split_entities_config, bool):
+        # All entities will be split according to `split_entities_config`
+        split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
+    else:
+        # All entities not named in split_entities_config will be split
+        # according to `split_entities_config`
+        split_entities_config[SPLIT_ENTITIES_BY_COMMA] = default_split_entity
+    return split_entities_config

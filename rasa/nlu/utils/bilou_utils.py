@@ -160,21 +160,30 @@ def apply_bilou_schema(training_data: "TrainingData") -> None:
         training_data: the training data
     """
     for message in training_data.nlu_examples:
-        entities = message.get(ENTITIES)
+        apply_bilou_schema_to_message(message)
 
-        if not entities:
-            continue
 
-        tokens = message.get(TOKENS_NAMES[TEXT])
+def apply_bilou_schema_to_message(message: "Message") -> None:
+    """Get a list of BILOU entity tags and set them on the given message.
 
-        for attribute, message_key in [
-            (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
-            (ENTITY_ATTRIBUTE_ROLE, BILOU_ENTITIES_ROLE),
-            (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
-        ]:
-            entities = map_message_entities(message, attribute)
-            output = bilou_tags_from_offsets(tokens, entities)
-            message.set(message_key, output)
+    Args:
+        message: the message
+    """
+    entities = message.get(ENTITIES)
+
+    if not entities:
+        return
+
+    tokens = message.get(TOKENS_NAMES[TEXT])
+
+    for attribute, message_key in [
+        (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
+        (ENTITY_ATTRIBUTE_ROLE, BILOU_ENTITIES_ROLE),
+        (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
+    ]:
+        entities = map_message_entities(message, attribute)
+        output = bilou_tags_from_offsets(tokens, entities)
+        message.set(message_key, output)
 
 
 def map_message_entities(

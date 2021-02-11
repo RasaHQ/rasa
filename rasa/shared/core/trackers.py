@@ -907,7 +907,10 @@ def get_trackers_for_conversation_sessions(
 
     return [
         DialogueStateTracker.from_events(
-            tracker.sender_id, evts, tracker.slots, sender_source=tracker.sender_source
+            tracker.sender_id,
+            evts,
+            tracker.slots.values(),
+            sender_source=tracker.sender_source,
         )
         for evts in split_conversations
     ]

@@ -16,7 +16,7 @@ TODAY=`date "+%Y%m%d"`
 # we build new versions only for minors and majors
 PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.0$"
 PATTERN_FOR_MICRO_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.[1-9][0-9]*$"
-MASTER_REF=refs/heads/master
+MAIN_REF=refs/heads/main
 VARIABLES_JSON=docs/docs/variables.json
 SOURCES_FILES=docs/docs/sources/
 REFERENCE_FILES=docs/docs/reference/
@@ -25,8 +25,8 @@ TELEMETRY_REFERENCE=docs/docs/telemetry/reference.mdx
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
 && [[ ! $GITHUB_REF =~ $PATTERN_FOR_MICRO_VERSION ]] \
-&& [[ $GITHUB_REF != $MASTER_REF ]] \
-&& echo "Not on master or tagged version, skipping." \
+&& [[ $GITHUB_REF != $MAIN_REF ]] \
+&& echo "Not on main or tagged version, skipping." \
 && exit 0
 
 NEW_VERSION=

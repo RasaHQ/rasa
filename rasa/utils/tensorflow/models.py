@@ -55,6 +55,8 @@ from rasa.utils.tensorflow.constants import (
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
     SCALE_LOSS,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -570,9 +572,9 @@ class RasaModel(tf.keras.models.Model):
         """Convert input batch tensors into batch data format.
 
         Batch contains any number of batch data. The order is equal to the
-        key-value pairs in session data. As sparse data were converted into indices,
-        data, shape before, this methods converts them into sparse tensors. Dense data
-        is kept.
+        key-value pairs in session data. As sparse data were converted into (indices,
+        data, shape) before, this method converts them into sparse tensors. Dense
+        data is kept.
         """
         batch_data = defaultdict(lambda: defaultdict(list))
 
@@ -730,7 +732,6 @@ class TransformerRasaModel(RasaModel):
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             name,
-            self.config[SIMILARITY_TYPE],
         )
 
     def _prepare_ffnn_layer(
@@ -755,6 +756,7 @@ class TransformerRasaModel(RasaModel):
         units: int,
         drop_rate: float,
         drop_rate_attention: float,
+        unidirectional: bool,
         prefix: Text = "transformer",
     ):
         if num_layers > 0:
@@ -767,7 +769,7 @@ class TransformerRasaModel(RasaModel):
                 dropout_rate=drop_rate,
                 attention_dropout_rate=drop_rate_attention,
                 sparsity=self.config[WEIGHT_SPARSITY],
-                unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                unidirectional=unidirectional,
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
                 max_relative_position=self.config[MAX_RELATIVE_POSITION],
@@ -775,7 +777,7 @@ class TransformerRasaModel(RasaModel):
             )
         else:
             # create lambda so that it can be used later without the check
-            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: x
+            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: (x, None)
 
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
@@ -788,8 +790,9 @@ class TransformerRasaModel(RasaModel):
             self.config[USE_MAX_NEG_SIM],
             self.config[NEGATIVE_MARGIN_SCALE],
             scale_loss,
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
+            similarity_type=self.config[SIMILARITY_TYPE],
+            constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
+            model_confidence=self.config[MODEL_CONFIDENCE],
         )
 
     def _prepare_sparse_dense_dropout_layers(
@@ -872,6 +875,7 @@ class TransformerRasaModel(RasaModel):
             size,
             self.config[DROP_RATE],
             self.config[DROP_RATE_ATTENTION],
+            self.config[UNIDIRECTIONAL_ENCODER],
         )
 
     def _prepare_entity_recognition_layers(self) -> None:
@@ -1032,7 +1036,13 @@ class TransformerRasaModel(RasaModel):
         dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
-    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+    ) -> Tuple[
+        tf.Tensor,
+        tf.Tensor,
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+    ]:
         if sequence_ids:
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
@@ -1057,7 +1067,7 @@ class TransformerRasaModel(RasaModel):
             transformer_inputs = inputs
             lm_mask_bool = None
 
-        outputs = self._tf_layers[f"transformer.{name}"](
+        outputs, attention_weights = self._tf_layers[f"transformer.{name}"](
             transformer_inputs, 1 - mask, self._training
         )
 
@@ -1070,7 +1080,7 @@ class TransformerRasaModel(RasaModel):
             # apply activation
             outputs = tfa.activations.gelu(outputs)
 
-        return outputs, inputs, seq_ids, lm_mask_bool
+        return outputs, inputs, seq_ids, lm_mask_bool, attention_weights
 
     @staticmethod
     def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
