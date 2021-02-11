@@ -107,6 +107,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
+@pytest.mark.timeout(300)
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
         "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
@@ -130,11 +131,11 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
         max_stories=None,
         e2e=False,
     )
-
+    story_file_unknown_entity = Path(E2E_STORY_FILE_UNKNOWN_ENTITY).absolute()
     failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     assert (
-        f"story: simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
+        f"story: simple_story_with_unknown_entity ({story_file_unknown_entity})"
         in failed_stories
     )
 
@@ -244,6 +245,7 @@ def test_event_has_proper_implementation(
     assert actual_entities[0] == expected_entity
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize(
     "test_file",
     [

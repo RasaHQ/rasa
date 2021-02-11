@@ -22,6 +22,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     SLOTS,
     FOLLOWUP_ACTION,
+    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -184,12 +185,26 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
+            action_session_start = self._get_action(ACTION_SESSION_START_NAME)
+            # TODO: Remove in 3.0.0 and describe migration to `session_start_metadata`
+            # slot in migration guide.
+            if isinstance(
+                action_session_start, rasa.core.actions.action.ActionSessionStart
+            ):
+                # Here we set optional metadata to the ActionSessionStart, which will
+                # then be passed to the SessionStart event.
+                action_session_start.metadata = metadata
+
+            if metadata:
+                tracker.update(
+                    SlotSet(SESSION_START_METADATA_SLOT, metadata), self.domain
+                )
+
             await self._run_action(
-                action=self._get_action(ACTION_SESSION_START_NAME),
+                action=action_session_start,
                 tracker=tracker,
                 output_channel=output_channel,
                 nlg=self.nlg,
-                metadata=metadata,
                 prediction=PolicyPrediction.for_action_name(
                     self.domain, ACTION_SESSION_START_NAME
                 ),
@@ -733,16 +748,10 @@ class MessageProcessor:
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
         prediction: PolicyPrediction,
-        metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
-            # Here we set optional metadata to the ActionSessionStart, which will then
-            # be passed to the SessionStart event. Otherwise the metadata will be lost.
-            if action.name() == ACTION_SESSION_START_NAME:
-                action.metadata = metadata
-
             # Use temporary tracker as we might need to discard the policy events in
             # case of a rejection.
             temporary_tracker = tracker.copy()

@@ -12,9 +12,34 @@ file is managed by ``towncrier``.
 
 You **may** edit previous change logs to fix problems like typo corrections or such.
 You can find more information on how to add a new change log entry at
-https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
+https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
+
+## [2.2.10] - 2021-02-08
+                        
+
+### Improvements
+- [#7069](https://github.com/rasahq/rasa/issues/7069): Updated error message when using incompatible model versions.
+
+### Bugfixes
+- [#7885](https://github.com/rasahq/rasa/issues/7885): Limit `numpy` version to `< 1.2` as `tensorflow` is not compatible with `numpy`
+  versions `>= 1.2`. `pip` versions `<= 20.2` don't resolve dependencies conflicts
+  correctly which could result in an incompatible `numpy` version and the following
+  error:
+
+  ```bash
+  NotImplementedError: Cannot convert a symbolic Tensor (strided_slice_6:0) to a numpy array. This error may indicate that you're trying to pass a Tensor to a NumPy call, which is not supported
+  ```
+
+
+## [2.2.9] - 2021-02-02
+                       
+
+### Bugfixes
+- [#7861](https://github.com/rasahq/rasa/issues/7861): Correctly include the `confused_with` field in the test report for the 
+  [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) endpoint.
+
 
 ## [2.2.8] - 2021-01-28
                        
@@ -1158,6 +1183,23 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
+
+
+## [1.10.22] - 2021-02-05
+
+### Bugfixes
+- [#7772](https://github.com/rasahq/rasa/issues/7754): Backported the Rasa Open Source 2 `PikaEventBroker` implementation to address
+  problems when using it with multiple Sanic workers.
+
+## [1.10.21] - 2021-02-01
+
+### Improvements
+- [#7439](https://github.com/rasahq/rasa/issues/7439): The `url` option now supports a list of servers `url: ['10.0.0.158:32803','10.0.0.158:32804']`.
+  Removed `group_id` because it is not a valid Kafka producer parameter.
+
+### Bugfixes
+- [#7638](https://github.com/rasahq/rasa/issues/7638): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](lock-stores.mdx). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](lock-stores.mdx#redislockstore).
+- [#7722](https://github.com/rasahq/rasa/issues/7722): Fix a bug where, if a user injects an intent using the HTTP API, slot auto-filling is not performed on the entities provided.
 
 
 ## [1.10.20] - 2020-12-18

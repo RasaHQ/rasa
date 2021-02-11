@@ -357,8 +357,8 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-def test_run_evaluation(unpacked_trained_moodbot_path: Text):
-    result = run_evaluation(
+async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
+    result = await run_evaluation(
         DEFAULT_DATA_PATH,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
         errors=False,
@@ -438,7 +438,8 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
     assert len(intent_results.test["F1-score"]) == n_folds
     assert all(key in intent_results.evaluation for key in ["errors", "report"])
     assert any(
-        isinstance(intent_report, dict) and intent_report.get("confused_with")
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
         for intent_report in intent_results.evaluation["report"].values()
     )
 
@@ -493,7 +494,8 @@ def test_run_cv_evaluation_with_response_selector():
     assert len(intent_results.test["F1-score"]) == n_folds
     assert all(key in intent_results.evaluation for key in ["errors", "report"])
     assert any(
-        isinstance(intent_report, dict) and intent_report.get("confused_with")
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
         for intent_report in intent_results.evaluation["report"].values()
     )
 
@@ -507,7 +509,8 @@ def test_run_cv_evaluation_with_response_selector():
         key in response_selection_results.evaluation for key in ["errors", "report"]
     )
     assert any(
-        isinstance(intent_report, dict) and intent_report.get("confused_with")
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
@@ -932,7 +935,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-def test_nlu_comparison(tmp_path: Path):
+async def test_nlu_comparison(tmp_path: Path):
     config = {
         "language": "en",
         "pipeline": [
@@ -946,7 +949,7 @@ def test_nlu_comparison(tmp_path: Path):
     configs = [write_file_config(config).name, write_file_config(config).name]
 
     output = str(tmp_path)
-    compare_nlu_models(
+    await compare_nlu_models(
         configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
     )
 
