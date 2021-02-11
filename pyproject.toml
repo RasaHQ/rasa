@@ -123,6 +123,7 @@ joblib = "^0.15.1"
 sentry-sdk = ">=0.17.0,<0.20.0"
 aio-pika = "^6.7.1"
 pyTelegramBotAPI = "^3.7.3"
+uvloop = "~0.14.0"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
