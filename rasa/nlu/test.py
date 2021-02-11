@@ -569,7 +569,7 @@ def create_intent_report(
             given.
 
     Returns:
-        `IntentReport` `namedtuple` with evaluation results.
+        Dictionary with evaluation results.
     """
     # remove empty intent targets
     num_examples = len(intent_results)
@@ -641,6 +641,8 @@ def create_intent_report(
         "f1_score": f1,
         "accuracy": accuracy,
         "errors": intent_errors,
+        "confusion_matrix": confusion_matrix,
+        "labels": labels,
     }
 
 
@@ -682,6 +684,103 @@ def _dump_report(output_directory: Text, filename: Text, report: Dict) -> None:
     report_filename = os.path.join(output_directory, filename)
     rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
     logger.info(f"Classification report saved to {report_filename}.")
+
+
+def evaluate_intents(
+    intent_results: List[IntentEvaluationResult],
+    output_directory: Optional[Text],
+    successes: bool,
+    errors: bool,
+    disable_plotting: bool,
+    report_as_dict: Optional[bool] = None,
+) -> Dict:  # pragma: no cover
+    """Creates summary statistics for intents.
+    Only considers those examples with a set intent. Others are filtered out.
+    Returns a dictionary of containing the evaluation result.
+    Args:
+        intent_results: Intent evaluation results.
+        output_directory: Directory to store files to.
+        successes: If `True`, correct predictions are written to disk.
+        errors: If `True`, incorrect predictions are written to disk.
+        disable_plotting: If `True`, no plots are created.
+    Returns:
+        Dictionary with evaluation results.
+    """
+    intent_report = create_intent_report(
+        intent_results=intent_results,
+        output_directory=None,
+        successes=successes,
+        errors=errors,
+        disable_plotting=disable_plotting,
+        report_as_dict=report_as_dict,
+    )
+
+    if output_directory:
+        report_filename = os.path.join(output_directory, "intent_report.json")
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            report_filename, intent_report["report"]
+        )
+        logger.info(f"Classification report saved to {report_filename}.")
+
+    elif isinstance(intent_report["report"], str):
+        log_evaluation_table(
+            intent_report["report"],
+            intent_report["precision"],
+            intent_report["f1_score"],
+            intent_report["accuracy"],
+        )
+
+    if successes and output_directory:
+        successes_filename = os.path.join(output_directory, "intent_successes.json")
+        # save classified samples to file for debugging
+        write_intent_successes(intent_results, successes_filename)
+
+    if errors and output_directory:
+        errors_filename = os.path.join(output_directory, "intent_errors.json")
+        # log and save misclassified samples to file for debugging
+        _write_errors(intent_results, errors_filename, "intent")
+
+    if not disable_plotting:
+        confusion_matrix_filename = "intent_confusion_matrix.png"
+        if output_directory:
+            confusion_matrix_filename = os.path.join(
+                output_directory, confusion_matrix_filename
+            )
+        plot_utils.plot_confusion_matrix(
+            intent_report["confusion_matrix"],
+            classes=intent_report["labels"],
+            title="Intent Confusion matrix",
+            output_file=confusion_matrix_filename,
+        )
+
+        histogram_filename = "intent_histogram.png"
+        if output_directory:
+            histogram_filename = os.path.join(output_directory, histogram_filename)
+        plot_attribute_confidences(
+            intent_results,
+            histogram_filename,
+            "intent_target",
+            "intent_prediction",
+            title="Intent Prediction Confidence Distribution",
+        )
+
+    predictions = [
+        {
+            "text": res.message,
+            "intent": res.intent_target,
+            "predicted": res.intent_prediction,
+            "confidence": res.confidence,
+        }
+        for res in intent_results
+    ]
+
+    return {
+        "predictions": predictions,
+        "report": intent_report["report"],
+        "precision": intent_report["precision"],
+        "f1_score": intent_report["f1_score"],
+        "accuracy": intent_report["accuracy"],
+    }
 
 
 def merge_labels(
