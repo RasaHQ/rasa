@@ -13,7 +13,6 @@ from rasa.nlu.constants import (
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
     LANGUAGE_MODEL_DOCS,
-    HF_TEST_CACHE_DIR,
 )
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -357,11 +356,7 @@ def test_log_longer_sequence(
     should_overflow: bool,
     caplog,
 ):
-    config = {
-        "model_name": model_name,
-        "model_weights": model_weights,
-        "cache_dir": HF_TEST_CACHE_DIR,
-    }
+    config = {"model_name": model_name, "model_weights": model_weights}
 
     featurizer = LanguageModelFeaturizer(config)
 
