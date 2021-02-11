@@ -83,6 +83,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     RESPONSE_SELECTOR_RESPONSES_KEY,
+    RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
@@ -448,7 +449,7 @@ class ResponseSelector(DIETClassifier):
             f"Adding following selector key to message property: {selector_key}"
         )
 
-        # TODO: remove `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
+        # TODO: remove `RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY` and `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
         utter_action_key = util.intent_response_key_to_template_key(
             label_intent_response_key
         )
@@ -456,6 +457,7 @@ class ResponseSelector(DIETClassifier):
             RESPONSE_SELECTOR_PREDICTION_KEY: {
                 "id": top_label["id"],
                 RESPONSE_SELECTOR_RESPONSES_KEY: label_responses,
+                RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY: label_responses,
                 PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                 INTENT_RESPONSE_KEY: label_intent_response_key,
                 RESPONSE_SELECTOR_UTTER_ACTION_KEY: utter_action_key,

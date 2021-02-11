@@ -355,7 +355,7 @@ async def test_action_utter_retrieved_response(
                 "chitchat": {
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
-                        "response_templates": [{"text": "I am a bot."}],
+                        "responses": [{"text": "I am a bot."}],
                         "utter_action": "utter_chitchat/ask_name",
                     }
                 }
@@ -393,7 +393,7 @@ async def test_action_utter_default_retrieved_response(
                 "default": {
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
-                        "response_templates": [{"text": "I am a bot."}],
+                        "responses": [{"text": "I am a bot."}],
                         "utter_action": "utter_chitchat/ask_name",
                     }
                 }
@@ -432,7 +432,7 @@ async def test_action_utter_retrieved_empty_response(
                 "dummy": {
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
-                        "response_templates": [{"text": "I am a bot."}],
+                        "responses": [{"text": "I am a bot."}],
                         "utter_action": "utter_chitchat/ask_name",
                     }
                 }
