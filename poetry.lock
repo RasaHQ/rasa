@@ -3138,7 +3138,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "758ab4284fc9592d04783bb40f0ef34090cbe102a96d263c49af2c114bfb945c"
+content-hash = "9cffaa8d4ab1a304a694bf195d6af7f7b203fd76867f28094460eb9a79b857de"
 
 [metadata.files]
 absl-py = [
