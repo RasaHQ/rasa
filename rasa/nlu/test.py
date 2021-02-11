@@ -587,42 +587,8 @@ def create_intent_report(
     report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
         output_directory, target_intents, predicted_intents, report_as_dict,
     )
-    if output_directory:
-        _dump_report(output_directory, "intent_report.json", report)
-
-    if successes and output_directory:
-        successes_filename = os.path.join(output_directory, "intent_successes.json")
-        # save classified samples to file for debugging
-        write_intent_successes(intent_results, successes_filename)
 
     intent_errors = get_intent_errors(intent_results)
-    if errors and output_directory:
-        errors_filename = os.path.join(output_directory, "intent_errors.json")
-        _write_errors(intent_errors, errors_filename, "intent")
-
-    if not disable_plotting:
-        confusion_matrix_filename = "intent_confusion_matrix.png"
-        if output_directory:
-            confusion_matrix_filename = os.path.join(
-                output_directory, confusion_matrix_filename
-            )
-        plot_utils.plot_confusion_matrix(
-            confusion_matrix,
-            classes=labels,
-            title="Intent Confusion matrix",
-            output_file=confusion_matrix_filename,
-        )
-
-        histogram_filename = "intent_histogram.png"
-        if output_directory:
-            histogram_filename = os.path.join(output_directory, histogram_filename)
-        plot_attribute_confidences(
-            intent_results,
-            histogram_filename,
-            "intent_target",
-            "intent_prediction",
-            title="Intent Prediction Confidence Distribution",
-        )
 
     predictions = [
         {
@@ -715,19 +681,12 @@ def evaluate_intents(
         report_as_dict=report_as_dict,
     )
 
+    # HANDLED BY DUMP_REPORT
     if output_directory:
-        report_filename = os.path.join(output_directory, "intent_report.json")
-        rasa.shared.utils.io.dump_obj_as_json_to_file(
-            report_filename, intent_report["report"]
-        )
-        logger.info(f"Classification report saved to {report_filename}.")
-
-    elif isinstance(intent_report["report"], str):
-        log_evaluation_table(
-            intent_report["report"],
-            intent_report["precision"],
-            intent_report["f1_score"],
-            intent_report["accuracy"],
+        _dump_report(
+            output_directory=output_directory,
+            filename="intent_report.json",
+            report=intent_report["report"],
         )
 
     if successes and output_directory:
@@ -738,7 +697,7 @@ def evaluate_intents(
     if errors and output_directory:
         errors_filename = os.path.join(output_directory, "intent_errors.json")
         # log and save misclassified samples to file for debugging
-        _write_errors(intent_results, errors_filename, "intent")
+        _write_errors(intent_report["errors"], errors_filename, "intent")
 
     if not disable_plotting:
         confusion_matrix_filename = "intent_confusion_matrix.png"
