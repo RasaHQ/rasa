@@ -356,6 +356,7 @@ async def test_nlu_data_domain_sync_responses(project: Text):
     assert "utter_rasa" in domain.templates.keys()
 
 
+@pytest.mark.timeout(0)
 async def test_profile_training_data_loading():
     dataset = os.environ.get(
         "DATASET_PATH",
@@ -386,6 +387,7 @@ async def test_profile_training_data_loading():
     profile.dump_stats("./test_inference.prof")
 
 
+@pytest.mark.timeout(0)
 async def test_profile_training_data_loading2(monkeypatch: MonkeyPatch):
     dataset = os.environ.get(
         "DATASET_PATH",
