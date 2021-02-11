@@ -55,6 +55,8 @@ from rasa.utils.tensorflow.constants import (
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
     SCALE_LOSS,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
 )
 
 from rasa.shared.nlu.constants import TEXT, ENTITY_ATTRIBUTE_TYPE
@@ -733,7 +735,6 @@ class TransformerRasaModel(RasaModel):
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             name,
-            self.config[SIMILARITY_TYPE],
         )
 
     def _prepare_ffnn_layer(
@@ -758,6 +759,7 @@ class TransformerRasaModel(RasaModel):
         units: int,
         drop_rate: float,
         drop_rate_attention: float,
+        unidirectional: bool,
         prefix: Text = "transformer",
     ):
         if num_layers > 0:
@@ -770,7 +772,7 @@ class TransformerRasaModel(RasaModel):
                 dropout_rate=drop_rate,
                 attention_dropout_rate=drop_rate_attention,
                 sparsity=self.config[WEIGHT_SPARSITY],
-                unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                unidirectional=unidirectional,
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
                 max_relative_position=self.config[MAX_RELATIVE_POSITION],
@@ -791,8 +793,9 @@ class TransformerRasaModel(RasaModel):
             self.config[USE_MAX_NEG_SIM],
             self.config[NEGATIVE_MARGIN_SCALE],
             scale_loss,
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
+            similarity_type=self.config[SIMILARITY_TYPE],
+            constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
+            model_confidence=self.config[MODEL_CONFIDENCE],
         )
 
     def _prepare_sparse_dense_dropout_layers(
@@ -875,6 +878,7 @@ class TransformerRasaModel(RasaModel):
             size,
             self.config[DROP_RATE],
             self.config[DROP_RATE_ATTENTION],
+            self.config[UNIDIRECTIONAL_ENCODER],
         )
 
     def _prepare_entity_recognition_layers(self) -> None:
