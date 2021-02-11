@@ -1,8 +1,11 @@
+import cProfile
 import os
+import sys
 from pathlib import Path
 from typing import Text, Dict, Type, List, Any
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -24,6 +27,7 @@ from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.train import train_async
 
 
 @pytest.fixture()
@@ -350,3 +354,68 @@ async def test_nlu_data_domain_sync_responses(project: Text):
 
     # Responses were sync between "test_responses.yml" and the "domain.yml"
     assert "utter_rasa" in domain.templates.keys()
+
+
+async def test_profile_training_data_loading():
+    dataset = os.environ.get(
+        "DATASET_PATH",
+        str(
+            Path.home() / "Workspace" / "training-data" / "public" / "MultiWOZ" / "rasa"
+        ),
+    )
+
+    dataset = Path(dataset)
+
+    profile = cProfile.Profile()
+    profile.enable()
+
+    importer = TrainingDataImporter.load_from_dict(
+        config_path=str(dataset / "config.yml"),
+        domain_path=str(dataset / "domain.yml"),
+        training_data_paths=[str(dataset / "data")],
+    )
+
+    # Access data to make sure all steps were performed
+    domain = await importer.get_domain()
+    stories = await importer.get_stories()
+    nlu_data = await importer.get_nlu_data()
+    config = await importer.get_config()
+
+    profile.disable()
+
+    profile.dump_stats("./test_inference.prof")
+
+
+async def test_profile_training_data_loading2(monkeypatch: MonkeyPatch):
+    dataset = os.environ.get(
+        "DATASET_PATH",
+        str(
+            Path.home() / "Workspace" / "training-data" / "public" / "MultiWOZ" / "rasa"
+        ),
+    )
+
+    dataset = Path(dataset)
+
+    async def _do_training(
+        file_importer: TrainingDataImporter, *args: Any, **kwargs
+    ) -> None:
+        # Access data to make sure all steps were performed
+        domain = await file_importer.get_domain()
+        stories = await file_importer.get_stories()
+        nlu_data = await file_importer.get_nlu_data()
+        config = await file_importer.get_config()
+
+    # skip actual training
+    monkeypatch.setattr(sys.modules["rasa.train"], "_do_training", _do_training)
+
+    profile = cProfile.Profile()
+    profile.enable()
+
+    await train_async(
+        domain=str(dataset / "domain.yml"),
+        config=str(dataset / "config.yml"),
+        training_files=str(dataset / "data"),
+    )
+
+    profile.disable()
+    profile.dump_stats("./test_inference2.prof")
