@@ -150,7 +150,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If 'True' use value relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
+        MAX_RELATIVE_POSITION: 5,
         # Use a unidirectional or bidirectional encoder.
         UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
@@ -1658,10 +1658,11 @@ class DIET(TransformerRasaModel):
                     dtype=_input.dtype,
                 )
                 _tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
+                # text_in = self._tf_layers[f"embed.{name}.inputs"](text_in)
                 # _input = tf.concat([_input, _tags], axis=-1)
                 _input = text_in * entity_mask + _tags * (1 - entity_mask)
-                _input, _ = self._tf_layers[f"attention.{name}"](
-                    _tags, _input, 1 - mask, self._training
+                _input, _ = self._tf_layers[f"transformer.{name}"](
+                    _input, 1 - mask, self._training
                 )
                 # _input = tf.concat([_input, _tags], axis=-1)
 

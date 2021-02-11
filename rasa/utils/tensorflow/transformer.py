@@ -337,11 +337,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # (batch_size, length, units)
         return tf.reshape(x, (tf.shape(x)[0], -1, self.units))
 
-    @staticmethod
-    def _look_ahead_pad_mask(max_position: tf.Tensor) -> tf.Tensor:
-        pad_mask = 1 - tf.linalg.band_part(tf.ones((max_position, max_position)), -1, 0)
-        return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
-
     # noinspection PyMethodOverriding
     def call(
         self,
@@ -364,16 +359,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         """
         if training is None:
             training = K.learning_phase()
-
-        if pad_mask is not None:
-            pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, length)
-            pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]
-            # pad_mask.shape = (batch_size, 1, 1, length)
-            if self.unidirectional:
-                # add look ahead pad mask to emulate unidirectional behavior
-                pad_mask = tf.minimum(
-                    1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
-                )  # (batch_size, 1, length, length)
 
         query = self._query_dense_layer(query_input)  # (batch_size, length, units)
         key = self._key_dense_layer(source_input)  # (batch_size, length, units)
@@ -451,17 +436,20 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         )
         self._dropout = tf.keras.layers.Dropout(dropout_rate)
 
-        self._ffn_layers = [
-            tf.keras.layers.LayerNormalization(epsilon=1e-6),
-            DenseWithSparseWeights(
-                units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity
-            ),  # (batch_size, length, filter_units)
-            tf.keras.layers.Dropout(dropout_rate),
+        self._ffn_layers = [tf.keras.layers.LayerNormalization(epsilon=1e-6)]
+        if filter_units:
+            self._ffn_layers.extend([
+                DenseWithSparseWeights(
+                    units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity
+                ),  # (batch_size, length, filter_units)
+                tf.keras.layers.Dropout(dropout_rate),
+            ])
+        self._ffn_layers.extend([
             DenseWithSparseWeights(
                 units=units, sparsity=sparsity
             ),  # (batch_size, length, units)
             tf.keras.layers.Dropout(dropout_rate),
-        ]
+        ])
 
     def call(
         self,
@@ -599,6 +587,11 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # add batch dimension
         return tf.stop_gradient(pos_encoding[tf.newaxis, ...])
 
+    @staticmethod
+    def _look_ahead_pad_mask(max_position: tf.Tensor) -> tf.Tensor:
+        pad_mask = 1 - tf.linalg.band_part(tf.ones((max_position, max_position)), -1, 0)
+        return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
+
     def call(
         self,
         x: tf.Tensor,
@@ -621,6 +614,16 @@ class TransformerEncoder(tf.keras.layers.Layer):
         x *= tf.math.sqrt(tf.cast(self.units, tf.float32))
         x += self._positional_encoding(tf.shape(x)[1])
         x = self._dropout(x, training=training)
+
+        if pad_mask is not None:
+            pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, length)
+            pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]
+            # pad_mask.shape = (batch_size, 1, 1, length)
+            if self.unidirectional:
+                # add look ahead pad mask to emulate unidirectional behavior
+                pad_mask = tf.minimum(
+                    1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
+                )  # (batch_size, 1, length, length)
 
         layer_attention_weights = []
 

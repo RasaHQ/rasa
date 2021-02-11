@@ -898,15 +898,26 @@ class TransformerRasaModel(RasaModel):
                     self.config[REGULARIZATION_CONSTANT],
                     f"tags.{name}",
                 )
-                self._tf_layers[f"attention.{name}"] = MultiHeadAttention(
+                # self._tf_layers[f"embed.{name}.inputs"] = layers.Embed(
+                #     self.config[EMBEDDING_DIMENSION],
+                #     self.config[REGULARIZATION_CONSTANT],
+                #     f"tags.{name}",
+                # )
+                self._tf_layers[f"transformer.{name}"] = TransformerEncoder(
+                    1,
+                    # self.config[EMBEDDING_DIMENSION],
                     self.config[TRANSFORMER_SIZE],
                     self.config[NUM_HEADS],
+                    0,
+                    self.config[REGULARIZATION_CONSTANT],
+                    dropout_rate=self.config[DROP_RATE],
                     attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
                     sparsity=self.config[WEIGHT_SPARSITY],
                     unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
                     use_key_relative_position=True,
                     use_value_relative_position=True,
-                    max_relative_position=5,
+                    max_relative_position=self.config[MAX_RELATIVE_POSITION],
+                    name=f"{name}_encoder",
                 )
             else:
                 self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
@@ -1175,10 +1186,11 @@ class TransformerRasaModel(RasaModel):
                 dtype=inputs.dtype,
             )
             _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
+            # pre_inputs = self._tf_layers[f"embed.{tag_name}.inputs"](pre_inputs)
             # inputs = tf.concat([inputs, _tags], axis=-1)
             inputs = pre_inputs * entity_mask + _tags * (1 - entity_mask)
-            inputs, _ = self._tf_layers[f"attention.{tag_name}"](
-                _tags, inputs, 1 - mask, self._training
+            inputs, _ = self._tf_layers[f"transformer.{tag_name}"](
+                inputs, 1 - mask, self._training
             )
             # inputs = tf.concat([inputs, _tags], axis=-1)
 
