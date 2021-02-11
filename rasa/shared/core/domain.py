@@ -722,6 +722,19 @@ class Domain:
         return self.responses
 
     @staticmethod
+    def is_retrieval_intent_template(
+        response: Tuple[Text, List[Dict[Text, Any]]]
+    ) -> bool:
+        """Check if the response is for a retrieval intent.
+
+        These responses have a `/` symbol in their name. Use that to filter them from the rest.
+        """
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed Rasa Open Source 3.0.0."
+        )
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
+
+    @staticmethod
     def is_retrieval_intent_response(
         response: Tuple[Text, List[Dict[Text, Any]]]
     ) -> bool:
@@ -1547,6 +1560,13 @@ class Domain:
                     incorrect_mappings,
                 )
             )
+
+    def check_missing_templates(self) -> None:
+        """Warn user of utterance names which have no specified response."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed Rasa Open Source 3.0.0."
+        )
+        self.check_missing_responses
 
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""

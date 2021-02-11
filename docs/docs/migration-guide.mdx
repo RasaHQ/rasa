@@ -36,6 +36,23 @@ With both the above recommendations, users should configure their ML component, 
 ```
 Once the assistant is re-trained with the above configuration, users should also tune fallback confidence thresholds.
 
+### Deprecating `template` for `response`
+NLG Server
+- Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa Open Source 3.0.0.
+
+rasa.core.agent
+- The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa Open Source 3.0.0. Please see [here](https://rasa.com/docs/rasa/nlg) for more details.
+
+rasa.core.nlg.generator
+- `generate()` now takes in  `utter_action` as a parameter.
+- The terminology `template` is deprecated and replaced by `response`. Support for `template` in the `NaturalLanguageGenerator` will be removed in Rasa Open Source 3.0.0.
+
+rasa.shared.core.domain
+- The property `templates` is deprecated. Use `responses` instead. `Templates` will be removed in Rasa Open Source 3.0.0.
+- `retrieval_intent_templates` will be removed in Rasa Open Source 3.0.0. Please use `retrieval_intent_responses` instead.
+- `is_retrieval_intent_template` will be removed in Rasa Open Source 3.0.0. Please use `is_retrieval_intent_response` instead.
+- `check_missing_templates` will be removed in Rasa Open Source 3.0.0. Please use `check_missing_responses` instead.
+
 
 ## Rasa 2.1 to Rasa 2.2
 
