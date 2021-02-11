@@ -569,7 +569,7 @@ def test_train_nlu_finetune_with_model(
     files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
 
-    model_name = "models" + os.path.join(files[0])[0] + os.path.basename(files[0])
+    model_name = os.path.relpath(files[0])
     output = run_in_simple_project_with_model("train", "nlu", "--finetune", model_name)
 
     assert any(os.path.basename(files[0]) in line for line in output.outlines)
