@@ -180,8 +180,11 @@ test-docs: generate-pending-changelog docs
 	poetry run pytest tests/docs/*
 	cd docs && yarn mdx-lint
 
-docs:
-	cd docs/ && poetry run yarn pre-build && yarn build
+prepare-docs:
+	cd docs/ && poetry run yarn pre-build
+
+docs: prepare-docs
+	cd docs/ && yarn build
 
 livedocs:
 	cd docs/ && poetry run yarn start
