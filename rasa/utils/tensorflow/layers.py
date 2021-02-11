@@ -622,8 +622,8 @@ class DotProductLoss(tf.keras.layers.Layer):
             shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
         )
 
-    def _top_k_indices_from_scores(self, scores: tf.Tensor) -> tf.Tensor:
-        return tf.argsort(scores, direction="DESCENDING", axis=-1)[..., : self.num_neg]
+    def _top_neg_scores(self, scores: tf.Tensor) -> tf.Tensor:
+        return tf.sort(scores, axis=-1, direction="DESCENDING")[..., : self.num_neg]
 
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
@@ -667,7 +667,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         labels_a: tf.Tensor,
         labels_b: tf.Tensor,
         mask: tf.Tensor,
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    ) -> tf.Tensor:
         """Sample negatives from `embeddings_b` based on similarity between `embeddings_a` and `embeddings_b`.
         
         Args:
@@ -703,20 +703,11 @@ class DotProductLoss(tf.keras.layers.Layer):
             tf.squeeze(unique_label_mask, -1), pairwise_similarities, -1e9
         )
 
-        most_similar_indices = self._top_k_indices_from_scores(
+        top_similarities = self._top_neg_scores(
             pairwise_similarities_masked
         )  # (bs x num_neg)
 
-        chosen_similarities = tf.squeeze(
-            tf.gather(
-                tf.expand_dims(pairwise_similarities, -1),
-                most_similar_indices,
-                batch_dims=1,
-            ),
-            -1,
-        )  # (bs x num_neg)
-
-        return chosen_similarities
+        return top_similarities
 
     def _get_negs(
         self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor

@@ -839,7 +839,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
             self.component_config[BATCH_STRATEGY],
-            eager=True,
         )
 
     # process helpers
