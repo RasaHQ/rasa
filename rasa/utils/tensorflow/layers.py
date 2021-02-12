@@ -710,7 +710,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return sim
 
-    def _similarity_confidence_from_embeddings(
+    def similarity_confidence_from_embeddings(
         self,
         input_embeddings: tf.Tensor,
         label_embeddings: tf.Tensor,
