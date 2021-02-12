@@ -1,5 +1,5 @@
 import os
-from typing import Text, List
+from typing import Text, List, Dict, Tuple
 
 import numpy as np
 import pytest
@@ -21,6 +21,72 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.constants import TEXT, INTENT
+
+
+def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
+    """
+    Checks whether to skip this configuration on CI.
+    Only applies when skip_model_load=False
+    """
+    # First check if CI
+    return (
+        bool(os.environ.get("CI"))
+        and model_name == "bert"
+        and (not model_weights or model_weights == "rasa/LaBSE")
+    )
+
+
+def create_pretrained_transformers_config(
+    model_name: Text, model_weights: Text
+) -> Dict[Text, Text]:
+    """
+    Create a config for LanguageModelFeaturizer. If CI, skips model/model_weight
+    combinations that are too large (bert with LaBSE).
+
+    Args:
+        model_name: model name
+        model_weights: model weights name
+    """
+    if skip_on_CI(model_name, model_weights):
+        pytest.skip(
+            "Reason: this model is too large, loading it results in"
+            "crashing of GH action workers."
+        )
+    config = {"model_name": model_name}
+    if model_weights:
+        config["model_weights"] = model_weights
+    return config
+
+
+def train_texts(
+    texts: List[Text], model_name: Text, model_weights: Text
+) -> List[Message]:
+    config = create_pretrained_transformers_config(model_name, model_weights)
+    whitespace_tokenizer = WhitespaceTokenizer()
+    lm_featurizer = LanguageModelFeaturizer(config)
+
+    messages = [Message.build(text=text) for text in texts]
+    td = TrainingData(messages)
+
+    whitespace_tokenizer.train(td)
+    lm_featurizer.train(td)
+    return messages
+
+
+def process_texts(
+    texts: List[Text], model_name: Text, model_weights: Text
+) -> List[Message]:
+    config = create_pretrained_transformers_config(model_name, model_weights)
+    whitespace_tokenizer = WhitespaceTokenizer()
+    lm_featurizer = LanguageModelFeaturizer(config)
+
+    messages = []
+    for text in texts:
+        message = Message.build(text=text)
+        whitespace_tokenizer.process(message)
+        lm_featurizer.process(message)
+        messages.append(message)
+    return messages
 
 
 @pytest.mark.parametrize(
@@ -204,63 +270,257 @@ from rasa.shared.nlu.constants import TEXT, INTENT
         ),
     ],
 )
-def test_lm_featurizer_shape_values(
-    model_name,
-    model_weights,
-    texts,
-    expected_shape,
-    expected_sequence_vec,
-    expected_cls_vec,
-):
-    config = create_config(model_name, model_weights)
-    whitespace_tokenizer = WhitespaceTokenizer()
-    lm_featurizer = LanguageModelFeaturizer(config)
+class TestShapeValuesTrainAndProcess:
+    def evaluate_message_shape_values(
+        self,
+        messages: List[Message],
+        expected_shape: List[tuple],
+        expected_sequence_vec: List[List[float]],
+        expected_cls_vec: List[List[float]],
+    ) -> None:
+        for index in range(len(messages)):
+            (computed_sequence_vec, computed_sentence_vec) = messages[
+                index
+            ].get_dense_features(TEXT, [])
+            if computed_sequence_vec:
+                computed_sequence_vec = computed_sequence_vec.features
+            if computed_sentence_vec:
+                computed_sentence_vec = computed_sentence_vec.features
 
-    messages = []
-    for text in texts:
-        messages.append(Message.build(text=text))
-    td = TrainingData(messages)
+            assert computed_sequence_vec.shape[0] == expected_shape[index][0] - 1
+            assert computed_sequence_vec.shape[1] == expected_shape[index][1]
+            assert computed_sentence_vec.shape[0] == 1
+            assert computed_sentence_vec.shape[1] == expected_shape[index][1]
 
-    whitespace_tokenizer.train(td)
-    lm_featurizer.train(td)
+            # Look at the value of first dimension for a few starting timesteps
+            assert np.allclose(
+                computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
+                expected_sequence_vec[index],
+                atol=1e-5,
+            )
 
-    for index in range(len(texts)):
+            # Look at the first value of first five dimensions
+            assert np.allclose(
+                computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-5
+            )
 
-        computed_sequence_vec, computed_sentence_vec = messages[
-            index
-        ].get_dense_features(TEXT, [])
-        if computed_sequence_vec:
-            computed_sequence_vec = computed_sequence_vec.features
-        if computed_sentence_vec:
-            computed_sentence_vec = computed_sentence_vec.features
+            (intent_sequence_vec, intent_sentence_vec) = messages[
+                index
+            ].get_dense_features(INTENT, [])
+            if intent_sequence_vec:
+                intent_sequence_vec = intent_sequence_vec.features
+            if intent_sentence_vec:
+                intent_sentence_vec = intent_sentence_vec.features
 
-        assert computed_sequence_vec.shape[0] == expected_shape[index][0] - 1
-        assert computed_sequence_vec.shape[1] == expected_shape[index][1]
-        assert computed_sentence_vec.shape[0] == 1
-        assert computed_sentence_vec.shape[1] == expected_shape[index][1]
+            assert intent_sequence_vec is None
+            assert intent_sentence_vec is None
 
-        # Look at the value of first dimension for a few starting timesteps
-        assert np.allclose(
-            computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
-            expected_sequence_vec[index],
-            atol=1e-5,
+    def test_lm_featurizer_shape_values_train(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        texts: List[Text],
+        expected_shape: List[Tuple[int]],
+        expected_sequence_vec: List[List[float]],
+        expected_cls_vec: List[List[float]],
+    ) -> None:
+        messages = train_texts(texts, model_name, model_weights)
+        self.evaluate_message_shape_values(
+            messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
-        # Look at the first value of first five dimensions
-        assert np.allclose(
-            computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-5
+    def test_lm_featurizer_shape_values_process(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        texts: List[Text],
+        expected_shape: List[Tuple[int]],
+        expected_sequence_vec: List[List[float]],
+        expected_cls_vec: List[List[float]],
+    ) -> None:
+        messages = process_texts(texts, model_name, model_weights)
+        self.evaluate_message_shape_values(
+            messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
-        intent_sequence_vec, intent_sentence_vec = messages[index].get_dense_features(
-            INTENT, []
-        )
-        if intent_sequence_vec:
-            intent_sequence_vec = intent_sequence_vec.features
-        if intent_sentence_vec:
-            intent_sentence_vec = intent_sentence_vec.features
 
-        assert intent_sequence_vec is None
-        assert intent_sentence_vec is None
+class TestEdgeCasesTrainAndProcess:
+    edge_case_args = (
+        "model_name, model_weights, texts, expected_number_of_sub_tokens",
+        [
+            (
+                "bert",
+                None,
+                [
+                    "Good evening.",
+                    "you're",
+                    "r. n. b.",
+                    "rock & roll",
+                    "here is the sentence I want embeddings for.",
+                ],
+                [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
+            ),
+            (
+                "bert",
+                "bert-base-chinese",
+                [
+                    "晚上好",  # normal & easy case
+                    "没问题！",  # `！` is a Chinese punctuation
+                    "去东畈村",  # `畈` is a OOV token for bert-base-chinese
+                    "好的😃",  # include a emoji which is common in Chinese text-based chat
+                ],
+                [[3], [4], [4], [3]],
+            ),
+            (
+                "gpt",
+                None,
+                [
+                    "Good evening.",
+                    "hello",
+                    "you're",
+                    "r. n. b.",
+                    "rock & roll",
+                    "here is the sentence I want embeddings for.",
+                ],
+                [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
+            ),
+            (
+                "gpt2",
+                None,
+                [
+                    "Good evening.",
+                    "hello",
+                    "you're",
+                    "r. n. b.",
+                    "rock & roll",
+                    "here is the sentence I want embeddings for.",
+                ],
+                [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
+            ),
+            (
+                "xlnet",
+                None,
+                [
+                    "Good evening.",
+                    "hello",
+                    "you're",
+                    "r. n. b.",
+                    "rock & roll",
+                    "here is the sentence I want embeddings for.",
+                ],
+                [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 3, 1]],
+            ),
+            (
+                "distilbert",
+                None,
+                [
+                    "Good evening.",
+                    "you're",
+                    "r. n. b.",
+                    "rock & roll",
+                    "here is the sentence I want embeddings for.",
+                ],
+                [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1]],
+            ),
+            (
+                "roberta",
+                None,
+                [
+                    "Good evening.",
+                    "hello",
+                    "you're",
+                    "r. n. b.",
+                    "rock & roll",
+                    "here is the sentence I want embeddings for.",
+                ],
+                [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
+            ),
+            (
+                "bert",
+                "bert-base-uncased",
+                [
+                    "Good evening.",
+                    "you're",
+                    "r. n. b.",
+                    "rock & roll",
+                    "here is the sentence I want embeddings for.",
+                ],
+                [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1]],
+            ),
+        ],
+    )
+
+    general_case_args = (
+        "model_name, model_weights, text, expected_number_of_sub_tokens",
+        [
+            ("bert", None, "sentence embeddings", [1, 2]),
+            ("bert", "bert-base-uncased", "sentence embeddings", [1, 4]),
+            ("gpt", None, "sentence embeddings", [1, 2]),
+            ("gpt2", None, "sentence embeddings", [2, 3]),
+            ("xlnet", None, "sentence embeddings", [1, 3]),
+            ("distilbert", None, "sentence embeddings", [1, 4]),
+            ("roberta", None, "sentence embeddings", [2, 3]),
+        ],
+    )
+
+    def check_subtokens(
+        self,
+        texts: List[Text],
+        messages: List[Message],
+        expected_number_of_sub_tokens: List[List[float]],
+    ) -> None:
+        whitespace_tokenizer = WhitespaceTokenizer()
+        for index, message in enumerate(messages):
+            assert [
+                t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
+            ] == expected_number_of_sub_tokens[index]
+            assert len(message.get(TOKENS_NAMES[TEXT])) == len(
+                whitespace_tokenizer.tokenize(Message.build(text=texts[index]), TEXT)
+            )
+
+    @pytest.mark.parametrize(*edge_case_args)
+    def test_lm_featurizer_edge_cases_train(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        texts: List[Text],
+        expected_number_of_sub_tokens: List[List[float]],
+    ) -> None:
+        messages = train_texts(texts, model_name, model_weights)
+        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
+
+    @pytest.mark.parametrize(*edge_case_args)
+    def test_lm_featurizer_edge_cases_process(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        texts: List[Text],
+        expected_number_of_sub_tokens: List[List[float]],
+    ) -> None:
+        messages = process_texts(texts, model_name, model_weights)
+        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
+
+    @pytest.mark.parametrize(*general_case_args)
+    def test_lm_featurizer_number_of_sub_tokens_train(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        text: Text,
+        expected_number_of_sub_tokens: List[List[float]],
+    ) -> None:
+        messages = train_texts([text], model_name, model_weights)
+        self.check_subtokens([text], messages, [expected_number_of_sub_tokens])
+
+    @pytest.mark.parametrize(*general_case_args)
+    def test_lm_featurizer_number_of_sub_tokens_process(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        text: Text,
+        expected_number_of_sub_tokens: List[List[float]],
+    ) -> None:
+        messages = process_texts([text], model_name, model_weights)
+        self.check_subtokens([text], messages, [expected_number_of_sub_tokens])
 
 
 @pytest.mark.parametrize(
@@ -298,7 +558,7 @@ def test_long_sequences_extra_padding(
     actual_sequence_lengths: List[int],
     model_name: Text,
     padding_needed: bool,
-):
+) -> None:
     component = LanguageModelFeaturizer(
         {"model_name": model_name}, skip_model_load=True
     )
@@ -332,7 +592,7 @@ def test_input_padding(
     max_sequence_length_model: int,
     resulting_length: int,
     padding_added: bool,
-):
+) -> None:
     component = LanguageModelFeaturizer({"model_name": "bert"}, skip_model_load=True)
     component.pad_token_id = 0
     padded_input = component._add_padding_to_batch(token_ids, max_sequence_length_model)
@@ -354,8 +614,8 @@ def test_log_longer_sequence(
     model_name: Text,
     model_weights: Text,
     should_overflow: bool,
-    caplog,
-):
+    caplog: LogCaptureFixture,
+) -> None:
     config = {"model_name": model_name, "model_weights": model_weights}
 
     featurizer = LanguageModelFeaturizer(config)
@@ -391,193 +651,8 @@ def test_attention_mask(
     assert np.all(mask_zeros == 0)
 
 
-def skip_on_CI(model_name, model_weights):
-    # This only applies when skip_model_load=False
-    return model_name == "bert" and bool(os.environ.get("CI")) and not model_weights
-
-
-def create_config(model_name, model_weights):
-    """
-    Create a config for LanguageModelFeaturizer. Skips model/model_weight
-    combinations that are too large (bert with LaBSE).
-
-    Args:
-        model_name: model name
-        model_weights: model weights name
-    """
-    if skip_on_CI(model_name, model_weights):
-        pytest.skip(
-            "Reason: this model is too large, loading it results in"
-            "crashing of GH action workers."
-        )
-    config = {"model_name": model_name}
-    if model_weights:
-        config["model_weights"] = model_weights
-    return config
-
-
-@pytest.mark.parametrize(
-    "model_name, model_weights, texts, expected_number_of_sub_tokens",
-    [
-        (
-            "bert",
-            None,
-            [
-                "Good evening.",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
-        ),
-        (
-            "bert",
-            "bert-base-chinese",
-            [
-                "晚上好",  # normal & easy case
-                "没问题！",  # `！` is a Chinese punctuation
-                "去东畈村",  # `畈` is a OOV token for bert-base-chinese
-                "好的😃",  # include a emoji which is common in Chinese text-based chat
-            ],
-            [[3], [4], [4], [3]],
-        ),
-        (
-            "gpt",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
-        ),
-        (
-            "gpt2",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
-        ),
-        (
-            "xlnet",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 3, 1]],
-        ),
-        (
-            "distilbert",
-            None,
-            [
-                "Good evening.",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1]],
-        ),
-        (
-            "roberta",
-            None,
-            [
-                "Good evening.",
-                "hello",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
-        ),
-        (
-            "bert",
-            "bert-base-uncased",
-            [
-                "Good evening.",
-                "you're",
-                "r. n. b.",
-                "rock & roll",
-                "here is the sentence I want embeddings for.",
-            ],
-            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1]],
-        ),
-    ],
-)
-def test_lm_featurizer_edge_cases(
-    model_name: Text,
-    model_weights: Text,
-    texts: List[Text],
-    expected_number_of_sub_tokens: List[List[float]],
-):
-    transformers_config = create_config(model_name, model_weights)
-    lm_featurizer = LanguageModelFeaturizer(transformers_config)
-    whitespace_tokenizer = WhitespaceTokenizer()
-
-    for i, text in enumerate(texts):
-        message = Message.build(text=text)
-
-        td = TrainingData([message])
-        whitespace_tokenizer.train(td)
-        lm_featurizer.train(td)
-
-        assert [
-            t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
-        ] == expected_number_of_sub_tokens[i]
-
-
-@pytest.mark.parametrize(
-    "model_name, model_weights, text, expected_number_of_sub_tokens",
-    [
-        ("bert", None, "sentence embeddings", [1, 2]),
-        ("bert", "bert-base-uncased", "sentence embeddings", [1, 4]),
-        ("gpt", None, "sentence embeddings", [1, 2]),
-        ("gpt2", None, "sentence embeddings", [2, 3]),
-        ("xlnet", None, "sentence embeddings", [1, 3]),
-        ("distilbert", None, "sentence embeddings", [1, 4]),
-        ("roberta", None, "sentence embeddings", [2, 3]),
-    ],
-)
-def test_lm_featurizer_number_of_sub_tokens(
-    model_name, model_weights, text, expected_number_of_sub_tokens
-):
-    config = create_config(model_name, model_weights)
-    lm_featurizer = LanguageModelFeaturizer(config)
-    whitespace_tokenizer = WhitespaceTokenizer()
-
-    message = Message.build(text=text)
-
-    td = TrainingData([message])
-    whitespace_tokenizer.train(td)
-    lm_featurizer.train(td)
-
-    assert [
-        t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
-    ] == expected_number_of_sub_tokens
-    assert len(message.get(TOKENS_NAMES[TEXT])) == len(
-        whitespace_tokenizer.tokenize(Message.build(text=text), TEXT)
-    )
-
-
-@pytest.mark.parametrize("text", [("hi there")])
-def test_log_deprecation_warning_with_old_config(text: str, caplog: LogCaptureFixture):
-    message = Message.build(text)
+def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture):
+    message = Message.build("hi there")
 
     transformers_nlp = HFTransformersNLP(
         {"model_name": "bert", "model_weights": "bert-base-uncased"}
@@ -596,7 +671,7 @@ def test_log_deprecation_warning_with_old_config(text: str, caplog: LogCaptureFi
 
 
 def test_preserve_sentence_and_sequence_features_old_config():
-    attribute = "text"
+    attribute = TEXT
     message = Message.build("hi there")
 
     transformers_nlp = HFTransformersNLP(
@@ -633,8 +708,10 @@ def test_preserve_sentence_and_sequence_features_old_config():
     ],
 )
 def test_lm_featurizer_correctly_handle_whitespace_token(
-    text, tokens, expected_feature_tokens
-):
+    text: Text,
+    tokens: List[Tuple[Text, int]],
+    expected_feature_tokens: List[Tuple[Text, int]],
+) -> None:
     from rasa.nlu.tokenizers.tokenizer import Token
 
     config = {
@@ -650,3 +727,56 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     result, _ = lm_featurizer._tokenize_example(message, TEXT)
 
     assert [(token.text, token.start) for token in result] == expected_feature_tokens
+
+
+def test_long_sequences_extra_padding(
+    sequence_embeddings: np.ndarray,
+    actual_sequence_lengths: List[int],
+    model_name: Text,
+    padding_needed: bool,
+) -> None:
+    component = LanguageModelFeaturizer(
+        {"model_name": model_name}, skip_model_load=True
+    )
+    modified_sequence_embeddings = component._add_extra_padding(
+        sequence_embeddings, actual_sequence_lengths
+    )
+    if not padding_needed:
+        assert np.all(modified_sequence_embeddings) == np.all(sequence_embeddings)
+    else:
+        assert modified_sequence_embeddings.shape[1] == actual_sequence_lengths[0]
+        assert (
+            modified_sequence_embeddings[0].shape[-1]
+            == sequence_embeddings[0].shape[-1]
+        )
+        zero_embeddings = modified_sequence_embeddings[0][
+            sequence_embeddings.shape[1] :
+        ]
+        assert np.all(zero_embeddings == 0)
+
+
+@pytest.mark.parametrize(
+    "token_ids, max_sequence_length_model, resulting_length, padding_added",
+    [
+        ([[1] * 200], 512, 512, True),
+        ([[1] * 700], 512, 512, False),
+        ([[1] * 200], 200, 200, False),
+    ],
+)
+def test_input_padding(
+    token_ids: List[List[int]],
+    max_sequence_length_model: int,
+    resulting_length: int,
+    padding_added: bool,
+) -> None:
+    lm_featurizer = LanguageModelFeaturizer(
+        {"model_name": "bert"}, skip_model_load=True
+    )
+    lm_featurizer.pad_token_id = 0
+    padded_input = lm_featurizer._add_padding_to_batch(
+        token_ids, max_sequence_length_model
+    )
+    assert len(padded_input[0]) == resulting_length
+    if padding_added:
+        original_length = len(token_ids[0])
+        assert np.all(np.array(padded_input[0][original_length:]) == 0)

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from typing import List, Text
+from typing import List, Text, Tuple
 import logging
 
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
@@ -12,7 +12,9 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 
 # this would normally go into conftest, but HFTransformers is set to be
 # deprecated and it only makes sense for this and LanguageModelFeaturizer
-from tests.nlu.featurizers.test_lm_featurizer import create_config
+from tests.nlu.featurizers.test_lm_featurizer import (
+    create_pretrained_transformers_config,
+)
 
 
 @pytest.mark.parametrize(
@@ -137,6 +139,37 @@ def test_attention_mask(
 
     assert np.all(mask_ones == 1)
     assert np.all(mask_zeros == 0)
+
+
+def train_texts(
+    texts: List[Text], model_name: Text, model_weights: Text
+) -> List[Message]:
+    config = create_pretrained_transformers_config(model_name, model_weights)
+    whitespace_tokenizer = WhitespaceTokenizer()
+    transformer = HFTransformersNLP(config)
+
+    messages = [Message.build(text=text) for text in texts]
+    td = TrainingData(messages)
+
+    whitespace_tokenizer.train(td)
+    transformer.train(td)
+    return messages
+
+
+def process_texts(
+    texts: List[Text], model_name: Text, model_weights: Text
+) -> List[Message]:
+    config = create_pretrained_transformers_config(model_name, model_weights)
+    whitespace_tokenizer = WhitespaceTokenizer()
+    transformer = HFTransformersNLP(config)
+
+    messages = []
+    for text in texts:
+        message = Message.build(text=text)
+        whitespace_tokenizer.process(message)
+        transformer.process(message)
+        messages.append(message)
+    return messages
 
 
 @pytest.mark.parametrize(
@@ -320,45 +353,60 @@ def test_attention_mask(
         ),
     ],
 )
-def test_hf_transformers_shape_values(
-    model_name,
-    model_weights,
-    texts,
-    expected_shape,
-    expected_sequence_vec,
-    expected_cls_vec,
-):
-    config = create_config(model_name, model_weights)
-    whitespace_tokenizer = WhitespaceTokenizer()
-    hf_transformer = HFTransformersNLP(config)
+class TestShapeValuesTrainAndProcess:
+    def evaluate_message_shape_values(
+        self,
+        messages: List[Message],
+        expected_shape: List[tuple],
+        expected_sequence_vec: List[List[float]],
+        expected_cls_vec: List[List[float]],
+    ) -> None:
+        for index in range(len(messages)):
+            lm_docs = messages[index].get(LANGUAGE_MODEL_DOCS[TEXT])
+            computed_sequence_vec = lm_docs["sequence_features"]
+            computed_sentence_vec = lm_docs["sentence_features"]
 
-    messages = []
-    for text in texts:
-        messages.append(Message.build(text=text))
-    td = TrainingData(messages)
+            assert computed_sequence_vec.shape[0] == expected_shape[index][0] - 1
+            assert computed_sequence_vec.shape[1] == expected_shape[index][1]
+            assert computed_sentence_vec.shape[0] == 1
+            assert computed_sentence_vec.shape[1] == expected_shape[index][1]
 
-    whitespace_tokenizer.train(td)
-    hf_transformer.train(td)
+            # Look at the value of first dimension for a few starting timesteps
+            assert np.allclose(
+                computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
+                expected_sequence_vec[index],
+                atol=1e-5,
+            )
 
-    for index in range(len(texts)):
+            # Look at the first value of first five dimensions
+            assert np.allclose(
+                computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-5
+            )
 
-        lm_docs = messages[index].get(LANGUAGE_MODEL_DOCS[TEXT])
-        computed_sequence_vec = lm_docs["sequence_features"]
-        computed_sentence_vec = lm_docs["sentence_features"]
-
-        assert computed_sequence_vec.shape[0] == expected_shape[index][0] - 1
-        assert computed_sequence_vec.shape[1] == expected_shape[index][1]
-        assert computed_sentence_vec.shape[0] == 1
-        assert computed_sentence_vec.shape[1] == expected_shape[index][1]
-
-        # Look at the value of first dimension for a few starting timesteps
-        assert np.allclose(
-            computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
-            expected_sequence_vec[index],
-            atol=1e-5,
+    def test_hf_transformers_shape_values_train(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        texts: List[Text],
+        expected_shape: List[Tuple[int]],
+        expected_sequence_vec: List[List[float]],
+        expected_cls_vec: List[List[float]],
+    ) -> None:
+        messages = train_texts(texts, model_name, model_weights)
+        self.evaluate_message_shape_values(
+            messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
-        # Look at the first value of first five dimensions
-        assert np.allclose(
-            computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-5
+    def test_hf_transformers_shape_values_process(
+        self,
+        model_name: Text,
+        model_weights: Text,
+        texts: List[Text],
+        expected_shape: List[Tuple[int]],
+        expected_sequence_vec: List[List[float]],
+        expected_cls_vec: List[List[float]],
+    ) -> None:
+        messages = process_texts(texts, model_name, model_weights)
+        self.evaluate_message_shape_values(
+            messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
