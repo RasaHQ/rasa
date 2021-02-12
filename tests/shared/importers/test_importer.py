@@ -1,9 +1,11 @@
+import asyncio
 import cProfile
 import os
 import sys
 import time
 from pathlib import Path
 from typing import Text, Dict, Type, List, Any
+from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -408,9 +410,18 @@ async def test_profile_training_data_loading2(monkeypatch: MonkeyPatch):
         nlu_data = await file_importer.get_nlu_data()
         config = await file_importer.get_config()
 
-    # skip actual training
-    monkeypatch.setattr(sys.modules["rasa.train"], "_do_training", _do_training)
+    # YAML validation is slow as fuck
+    import rasa.shared.utils.validation
 
+    monkeypatch.setattr(
+        rasa.shared.utils.validation,
+        rasa.shared.utils.validation.validate_yaml_schema.__name__,
+        Mock(),
+    )
+
+    # skip actual training
+    # monkeypatch.setattr(sys.modules["rasa.train"], "_do_training", _do_training)
+    monkeypatch.setattr(sys.modules["rasa.train"], "_do_training", _do_training)
     profile = cProfile.Profile()
     profile.enable()
 

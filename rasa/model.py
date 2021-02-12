@@ -323,27 +323,42 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     domain.templates = {}
 
     return {
-        FINGERPRINT_CONFIG_KEY: _get_fingerprint_of_config(
-            config, exclude_keys=CONFIG_KEYS
-        ),
-        FINGERPRINT_CONFIG_CORE_KEY: _get_fingerprint_of_config(
-            config, include_keys=CONFIG_KEYS_CORE
-        ),
-        FINGERPRINT_CONFIG_NLU_KEY: _get_fingerprint_of_config(
-            config, include_keys=CONFIG_KEYS_NLU
-        ),
-        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: _get_fingerprint_of_config_without_epochs(
-            config
-        ),
-        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain.fingerprint(),
-        FINGERPRINT_NLG_KEY: rasa.shared.utils.io.deep_container_fingerprint(responses),
-        FINGERPRINT_PROJECT: project_fingerprint(),
-        FINGERPRINT_NLU_DATA_KEY: nlu_data.fingerprint(),
-        FINGERPRINT_NLU_LABELS_KEY: nlu_data.label_fingerprint(),
-        FINGERPRINT_STORIES_KEY: stories.fingerprint(),
+        FINGERPRINT_CONFIG_KEY: 1,
+        FINGERPRINT_CONFIG_CORE_KEY: 2,
+        FINGERPRINT_CONFIG_NLU_KEY: 3,
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: 4,
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: 5,
+        FINGERPRINT_NLG_KEY: 5,
+        FINGERPRINT_PROJECT: 6,
+        FINGERPRINT_NLU_DATA_KEY: 6,
+        FINGERPRINT_NLU_LABELS_KEY: 7,
+        FINGERPRINT_STORIES_KEY: 8,
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
     }
+
+    # return {
+    #     FINGERPRINT_CONFIG_KEY: _get_fingerprint_of_config(
+    #         config, exclude_keys=CONFIG_KEYS
+    #     ),
+    #     FINGERPRINT_CONFIG_CORE_KEY: _get_fingerprint_of_config(
+    #         config, include_keys=CONFIG_KEYS_CORE
+    #     ),
+    #     FINGERPRINT_CONFIG_NLU_KEY: _get_fingerprint_of_config(
+    #         config, include_keys=CONFIG_KEYS_NLU
+    #     ),
+    #     FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: _get_fingerprint_of_config_without_epochs(
+    #         config
+    #     ),
+    #     FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain.fingerprint(),
+    #     FINGERPRINT_NLG_KEY: rasa.shared.utils.io.deep_container_fingerprint(responses),
+    #     FINGERPRINT_PROJECT: project_fingerprint(),
+    #     FINGERPRINT_NLU_DATA_KEY: nlu_data.fingerprint(),
+    #     FINGERPRINT_NLU_LABELS_KEY: nlu_data.label_fingerprint(),
+    #     FINGERPRINT_STORIES_KEY: stories.fingerprint(),
+    #     FINGERPRINT_TRAINED_AT_KEY: time.time(),
+    #     FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
+    # }
 
 
 def _get_fingerprint_of_config(

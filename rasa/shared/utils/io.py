@@ -328,9 +328,9 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
-    fix_yaml_loader()
+    # fix_yaml_loader()
 
-    replace_environment_variables()
+    # replace_environment_variables()
 
     yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION
