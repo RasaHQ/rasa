@@ -558,3 +558,17 @@ def test_get_valid_config(parameters):
 def test_get_valid_config_with_non_existing_file():
     with pytest.raises(SystemExit):
         _get_valid_config("non-existing-file.yml", CONFIG_MANDATORY_KEYS)
+
+
+def test_train_nlu_finetune_with_model(
+    run_in_simple_project_with_model: Callable[..., RunResult]
+):
+    temp_dir = os.getcwd()
+
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+
+    model_name = os.path.relpath(files[0])
+    output = run_in_simple_project_with_model("train", "nlu", "--finetune", model_name)
+
+    assert any(model_name in line for line in output.outlines)
