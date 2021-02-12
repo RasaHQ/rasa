@@ -729,32 +729,6 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     assert [(token.text, token.start) for token in result] == expected_feature_tokens
 
 
-def test_long_sequences_extra_padding(
-    sequence_embeddings: np.ndarray,
-    actual_sequence_lengths: List[int],
-    model_name: Text,
-    padding_needed: bool,
-) -> None:
-    component = LanguageModelFeaturizer(
-        {"model_name": model_name}, skip_model_load=True
-    )
-    modified_sequence_embeddings = component._add_extra_padding(
-        sequence_embeddings, actual_sequence_lengths
-    )
-    if not padding_needed:
-        assert np.all(modified_sequence_embeddings) == np.all(sequence_embeddings)
-    else:
-        assert modified_sequence_embeddings.shape[1] == actual_sequence_lengths[0]
-        assert (
-            modified_sequence_embeddings[0].shape[-1]
-            == sequence_embeddings[0].shape[-1]
-        )
-        zero_embeddings = modified_sequence_embeddings[0][
-            sequence_embeddings.shape[1] :
-        ]
-        assert np.all(zero_embeddings == 0)
-
-
 @pytest.mark.parametrize(
     "token_ids, max_sequence_length_model, resulting_length, padding_added",
     [
