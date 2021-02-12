@@ -1,6 +1,7 @@
 import cProfile
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Text, Dict, Type, List, Any
 
@@ -421,3 +422,22 @@ async def test_profile_training_data_loading2(monkeypatch: MonkeyPatch):
 
     profile.disable()
     profile.dump_stats("./test_inference2.prof")
+
+
+def test_load_multiwoz_with_huggingface():
+    # You need to install the library for this first: `pip install datasets`
+    import datasets
+
+    # You can view all datasets using
+    # all_datasets = datasets.list_datasets()
+
+    start = time.time()
+    profile = cProfile.Profile()
+    profile.enable()
+
+    woz = datasets.load_dataset("multi_woz_v22", ignore_verifications=True)
+
+    profile.disable()
+    profile.dump_stats("./profiling_multiwoz_huggingface.prof")
+
+    print(f"Loading this took {time.time() - start} seconds.")
