@@ -344,7 +344,7 @@ class TestShapeValuesTrainAndProcess:
         )
 
 
-class TestEdgeCasesTrainAndProcess:
+class TestSubTokensTrainAndProcess:
     edge_case_args = (
         "model_name, model_weights, texts, expected_number_of_sub_tokens",
         [
@@ -529,7 +529,7 @@ class TestEdgeCasesTrainAndProcess:
 )
 def test_sequence_length_overflow_train(
     input_sequence_length: int, model_name: Text, should_overflow: bool
-):
+) -> None:
     component = LanguageModelFeaturizer(
         {"model_name": model_name}, skip_model_load=True
     )
@@ -638,7 +638,7 @@ def test_log_longer_sequence(
 )
 def test_attention_mask(
     actual_sequence_length: int, max_input_sequence_length: int, zero_start_index: int
-):
+) -> None:
     component = LanguageModelFeaturizer({"model_name": "bert"}, skip_model_load=True)
 
     attention_mask = component._compute_attention_mask(
@@ -651,7 +651,7 @@ def test_attention_mask(
     assert np.all(mask_zeros == 0)
 
 
-def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture):
+def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture) -> None:
     message = Message.build("hi there")
 
     transformers_nlp = HFTransformersNLP(
@@ -670,7 +670,7 @@ def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture):
     assert "deprecated component HFTransformersNLP" in caplog.text
 
 
-def test_preserve_sentence_and_sequence_features_old_config():
+def test_preserve_sentence_and_sequence_features_old_config() -> None:
     attribute = TEXT
     message = Message.build("hi there")
 
