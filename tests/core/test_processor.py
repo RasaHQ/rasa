@@ -181,6 +181,29 @@ async def test_reminder_scheduled(
     assert t.events[-1] == ActionExecuted("action_listen")
 
 
+async def test_reminder_lock(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+
+    reminder = ReminderScheduled("remind", datetime.datetime.now())
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    tracker.update(UserUttered("test"))
+    tracker.update(ActionExecuted("action_schedule_reminder"))
+    tracker.update(reminder)
+
+    default_processor.tracker_store.save(tracker)
+
+    async with default_processor.handle_reminder(
+        reminder, sender_id, default_channel, default_processor.nlg
+    ):
+        lock_store = default_processor.lock_store
+        lock = lock_store.get_lock(sender_id)
+        assert lock
+        assert lock.conversation_id == sender_id
+
+
 async def test_reminder_aborted(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
