@@ -184,6 +184,15 @@ async def test_reminder_scheduled(
 async def test_reminder_lock(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
+    from io import StringIO
+
+    logger = logging.getLogger("rasa.core.lock_store")
+    logger.setLevel(logging.DEBUG)
+
+    log_stream = StringIO()
+    log_handler = logging.StreamHandler(log_stream)
+    logger.addHandler(log_handler)
+
     sender_id = uuid.uuid4().hex
 
     reminder = ReminderScheduled("remind", datetime.datetime.now())
@@ -195,13 +204,13 @@ async def test_reminder_lock(
 
     default_processor.tracker_store.save(tracker)
 
-    async with default_processor.handle_reminder(
+    await default_processor.handle_reminder(
         reminder, sender_id, default_channel, default_processor.nlg
-    ):
-        lock_store = default_processor.lock_store
-        lock = lock_store.get_lock(sender_id)
-        assert lock
-        assert lock.conversation_id == sender_id
+    )
+
+    last_log_message = log_stream.getvalue().splitlines()[-1]
+
+    assert last_log_message == f"Deleted lock for conversation '{sender_id}'."
 
 
 async def test_reminder_aborted(
