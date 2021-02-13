@@ -230,49 +230,54 @@ class RasaModel(tf.keras.models.Model):
 
         training_steps = 0
 
-        for epoch in progress_bar:
-            epoch_batch_size = self.linearly_increasing_batch_size(
-                epoch, batch_size, epochs
-            )
+        try:
+            for epoch in progress_bar:
+                epoch_batch_size = self.linearly_increasing_batch_size(
+                    epoch, batch_size, epochs
+                )
 
-            training_steps = self._batch_loop(
-                train_dataset_function,
-                tf_train_on_batch_function,
-                epoch_batch_size,
-                True,
-                training_steps,
-                self.train_summary_writer,
-            )
+                training_steps = self._batch_loop(
+                    train_dataset_function,
+                    tf_train_on_batch_function,
+                    epoch_batch_size,
+                    True,
+                    training_steps,
+                    self.train_summary_writer,
+                )
 
-            if self.tensorboard_log_on_epochs:
-                self._log_metrics_for_tensorboard(epoch, self.train_summary_writer)
+                if self.tensorboard_log_on_epochs:
+                    self._log_metrics_for_tensorboard(epoch, self.train_summary_writer)
 
-            postfix_dict = self._get_metric_results()
+                postfix_dict = self._get_metric_results()
 
-            if evaluate_on_num_examples > 0:
-                if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
-                    self._batch_loop(
-                        evaluation_dataset_function,
-                        tf_evaluation_on_batch_function,
-                        epoch_batch_size,
-                        False,
-                        training_steps,
-                        self.test_summary_writer,
-                    )
-
-                    if self.tensorboard_log_on_epochs:
-                        self._log_metrics_for_tensorboard(
-                            epoch, self.test_summary_writer
+                if evaluate_on_num_examples > 0:
+                    if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
+                        self._batch_loop(
+                            evaluation_dataset_function,
+                            tf_evaluation_on_batch_function,
+                            epoch_batch_size,
+                            False,
+                            training_steps,
+                            self.test_summary_writer,
                         )
 
-                    val_results = self._get_metric_results(prefix="val_")
-                    self._save_model_checkpoint(
-                        current_results=val_results, epoch=epoch
-                    )
+                        if self.tensorboard_log_on_epochs:
+                            self._log_metrics_for_tensorboard(
+                                epoch, self.test_summary_writer
+                            )
 
-                postfix_dict.update(val_results)
+                        val_results = self._get_metric_results(prefix="val_")
+                        self._save_model_checkpoint(
+                            current_results=val_results, epoch=epoch
+                        )
 
-            progress_bar.set_postfix(postfix_dict)
+                    postfix_dict.update(val_results)
+
+                progress_bar.set_postfix(postfix_dict)
+        except KeyboardInterrupt:
+            logger.info(
+                "Training was interrupted. Model will be persisted in its current state. Exiting from the component."
+            )
 
         if self.checkpoint_model:
             logger.info(
