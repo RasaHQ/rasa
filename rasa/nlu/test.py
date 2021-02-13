@@ -655,28 +655,19 @@ def _calculate_report(
     if report_as_dict is None:
         report_as_dict = bool(output_directory)
 
-    if output_directory:
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            targets,
-            predictions,
-            output_dict=report_as_dict,
-            exclude_label=exclude_label,
-        )
+    report, precision, f1, accuracy = get_evaluation_metrics(
+        targets, predictions, output_dict=report_as_dict, exclude_label=exclude_label,
+    )
+
+    if report_as_dict:
         report = _add_confused_labels_to_report(
             report,
             confusion_matrix,
             labels,
             exclude_labels=[exclude_label] if exclude_label else [],
         )
-    else:
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            targets,
-            predictions,
-            output_dict=report_as_dict,
-            exclude_label=exclude_label,
-        )
-        if isinstance(report, str):
-            log_evaluation_table(report, precision, f1, accuracy)
+    elif not output_directory:
+        log_evaluation_table(report, precision, f1, accuracy)
 
     return report, precision, f1, accuracy, confusion_matrix, labels
 
@@ -927,7 +918,7 @@ def evaluate_entities(
                     merged_targets,
                     merged_predictions,
                     merged_confidences,
-                    title="Entity Confusion matrix",
+                    title="Entity Prediction Confidence Distribution",
                     hist_filename=histogram_filename,
                 )
 
