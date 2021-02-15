@@ -71,9 +71,9 @@ async function getIncludedSources(options) {
     }));
     sourceFiles = sourceFiles.flat().filter(pair => pair.length > 0);
 
-    // finally, write all the source files in the `sourceDir`
+    // finally, write all the source files in the source directory
     return await Promise.all(sourceFiles.map(async ([sourceFile, content]) => {
-        return await outputFile(`${sourceDir}/${sourceFile}`, content);
+        return await outputFile(`${docsDir}/${relativeSourceDir}/${sourceFile}`, content);
     }));
 };
 
@@ -108,7 +108,7 @@ async function updateVersionedSources(options) {
 
     newDocsFiles = newDocsFiles.filter(pair => pair.length > 0);
 
-    // finally, write all the source files in the `sourceDir`
+    // finally, update all the docs files with the path to the versioned source
     return await Promise.all(newDocsFiles.map(async ([docsFile, updatedContent]) => {
         return await outputFile(docsFile, updatedContent);
     }));
