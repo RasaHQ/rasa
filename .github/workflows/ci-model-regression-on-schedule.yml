@@ -217,7 +217,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TEST_WEBHOOK }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
-          args: "😱 Scheduled model regression test *${{ matrix.config }}* failed. Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          args: "😱 Scheduled model regression test failed (configuration: *${{ matrix.config }}*, dataset: *${{ matrix.dataset }}*). Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
