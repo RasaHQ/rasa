@@ -159,7 +159,6 @@ class Domain:
                 data, original_filename
             ):
                 return Domain.empty()
-
             return cls.from_dict(data)
         except YamlException as e:
             e.filename = original_filename
@@ -1149,6 +1148,7 @@ class Domain:
             SESSION_CONFIG_KEY: {
                 SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+                GLOBAL_NOT_INTENT: self.session_config.global_not_intent,
             },
             KEY_INTENTS: self._transform_intents_for_file(),
             KEY_ENTITIES: self._transform_entities_for_file(),
