@@ -25,8 +25,6 @@ from rasa.shared.core.constants import (
     ENTITY_LABEL_SEPARATOR,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
-    RULE_ONLY_SLOTS,
-    RULE_ONLY_LOOPS,
 )
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (
@@ -1436,6 +1434,7 @@ class ActionExecuted(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
         action_text: Optional[Text] = None,
+        hide_rule_turn: bool = False,
     ) -> None:
         """Creates event for a successful event execution.
 
@@ -1454,6 +1453,7 @@ class ActionExecuted(Event):
         self.confidence = confidence
         self.unpredictable = False
         self.action_text = action_text
+        self.hide_rule_turn = hide_rule_turn
 
         super().__init__(timestamp, metadata)
 
@@ -1545,12 +1545,6 @@ class ActionExecuted(Event):
         """Applies event to current conversation state."""
         tracker.set_latest_action(self.as_sub_state())
         tracker.clear_followup_action()
-
-        # HideRuleTurn event is added by RulePolicy before actual action is executed,
-        # so we can safely reset it on each action executed
-        # unless it is active_loop prediction
-        if not self.action_name == tracker.active_loop_name:
-            tracker.hide_rule_turn = False
 
 
 class AgentUttered(SkipEventInMDStoryMixin):
@@ -1886,78 +1880,3 @@ class SessionStarted(AlwaysEqualEventMixin):
         """Applies event to current conversation state."""
         # noinspection PyProtectedMember
         tracker._reset()
-
-
-class HideRuleTurn(SkipEventInMDStoryMixin, AlwaysEqualEventMixin):
-    """Emulates undoing of the last dialogue turn.
-
-    The bot reverts everything until before the most recent action.
-    This includes the action itself, as well as any events that
-    action created, like set slot events (unless they are not in a list
-    of `rule_only_slots`) and active loop events (unless they are not in a list
-    of `rule_only_loops`).
-    """
-
-    type_name = "hide_rule_turn"
-
-    def __init__(
-        self,
-        rule_only_slots: List[Text],
-        rule_only_loops: List[Text],
-        timestamp: Optional[float] = None,
-        metadata: Optional[Dict[Text, Any]] = None,
-    ) -> None:
-        """Initializes event.
-
-        Args:
-            rule_only_slots: The list of slot names,
-                which only occur in rules but not in stories.
-            rule_only_loops: The list of loop names,
-                which only occur in rules but not in stories.
-            timestamp: the timestamp
-            metadata: some optional metadata
-        """
-        super().__init__(timestamp, metadata)
-        self.rule_only_slots = rule_only_slots
-        self.rule_only_loops = rule_only_loops
-
-    def __hash__(self) -> int:
-        """Returns unique hash for event."""
-        return hash(32143124321)
-
-    @classmethod
-    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "HideRuleTurn":
-        return HideRuleTurn(
-            parameters.get(RULE_ONLY_SLOTS),
-            parameters.get(RULE_ONLY_LOOPS),
-            parameters.get("timestamp"),
-            parameters.get("metadata"),
-        )
-
-    def as_dict(self) -> Dict[Text, Any]:
-        """Converts the event into a dict.
-
-        Returns:
-            A dict that represents this event.
-        """
-        d = super().as_dict()
-        d.update(
-            {
-                RULE_ONLY_SLOTS: self.rule_only_slots,
-                RULE_ONLY_LOOPS: self.rule_only_loops,
-            }
-        )
-        return d
-
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        """Applies event to current conversation state.
-
-        Args:
-            tracker: The current conversation state.
-        """
-        # HideRuleTurn event is added by RulePolicy before actual action is executed,
-        # we will reset it on each action executed
-        tracker.hide_rule_turn = True
-        # only rule slots and loops are always the same for all the trackers
-        tracker.rule_only_slots = self.rule_only_slots
-        tracker.rule_only_loops = self.rule_only_loops

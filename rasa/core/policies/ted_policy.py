@@ -547,6 +547,7 @@ class TEDPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -554,7 +555,11 @@ class TEDPolicy(Policy):
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self.featurize_for_prediction(
-            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e
+            tracker,
+            domain,
+            interpreter,
+            use_text_for_last_user_input=self.only_e2e,
+            **kwargs,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -563,7 +568,11 @@ class TEDPolicy(Policy):
             and not self.only_e2e
         ):
             tracker_state_features += self.featurize_for_prediction(
-                tracker, domain, interpreter, use_text_for_last_user_input=True
+                tracker,
+                domain,
+                interpreter,
+                use_text_for_last_user_input=True,
+                **kwargs,
             )
         return tracker_state_features
 
@@ -625,7 +634,7 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         tracker_state_features = self._featurize_tracker_for_e2e(
-            tracker, domain, interpreter
+            tracker, domain, interpreter, **kwargs
         )
         model_data = self._create_model_data(tracker_state_features)
 

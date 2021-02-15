@@ -26,7 +26,6 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
-    ActionExecuted,
     ActionExecutionRejected,
     BotUttered,
     Event,

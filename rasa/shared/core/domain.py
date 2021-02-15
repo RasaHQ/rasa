@@ -1076,18 +1076,22 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State, tracker: "DialogueStateTracker"
+        state: State,
+        rule_only_slots: Optional[List[Text]],
+        rule_only_loops: Optional[List[Text]],
     ) -> None:
         # remove slots which only occur in rules but not in stories
-        for slot in tracker.rule_only_slots:
-            if state.get(rasa.shared.core.constants.SLOTS, {}).get(slot):
-                del state[rasa.shared.core.constants.SLOTS][slot]
+        if rule_only_slots:
+            for slot in rule_only_slots:
+                if state.get(rasa.shared.core.constants.SLOTS, {}).get(slot):
+                    del state[rasa.shared.core.constants.SLOTS][slot]
         # remove active loop which only occur in rules but not in stories
         if (
-            state.get(rasa.shared.core.constants.ACTIVE_LOOP, {}).get(
+            rule_only_loops
+            and state.get(rasa.shared.core.constants.ACTIVE_LOOP, {}).get(
                 rasa.shared.core.constants.LOOP_NAME
             )
-            in tracker.rule_only_loops
+            in rule_only_loops
         ):
             del state[rasa.shared.core.constants.ACTIVE_LOOP]
 
@@ -1104,7 +1108,11 @@ class Domain:
                 ]
 
     def states_for_tracker_history(
-        self, tracker: "DialogueStateTracker", ignore_rule_only_turns: bool = False
+        self,
+        tracker: "DialogueStateTracker",
+        ignore_rule_only_turns: bool = False,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[State]:
         """Array of states for each state of the trackers history.
 
@@ -1112,6 +1120,10 @@ class Domain:
             tracker: Instance of `DialogueStateTracker` to featurize.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
+            rule_only_slots: The list of slot names,
+                which only occur in rules but not in stories.
+            rule_only_loops: The list of loop names,
+                which only occur in rules but not in stories.
 
         Return:
             A list of states.
@@ -1119,7 +1131,7 @@ class Domain:
         states = []
         last_ml_action_sub_state = None
         turn_was_hidden = False
-        for tr in tracker.generate_all_prior_trackers():
+        for tr, hide_rule_turn in tracker.generate_all_prior_trackers():
             if ignore_rule_only_turns:
                 # remember previous ml action based on the last non hidden turn
                 # we need this to override previous action in the ml state
@@ -1132,7 +1144,7 @@ class Domain:
                     not tr.followup_action
                     and not tr.latest_action_name == tr.active_loop_name
                 ):
-                    turn_was_hidden = tr.hide_rule_turn
+                    turn_was_hidden = hide_rule_turn
 
                 if turn_was_hidden:
                     continue
@@ -1141,7 +1153,7 @@ class Domain:
 
             if ignore_rule_only_turns:
                 # clean state from only rule features
-                self._remove_rule_only_features(state, tracker)
+                self._remove_rule_only_features(state, rule_only_slots, rule_only_loops)
                 # make sure user input is the same as for previous state
                 # for non action_listen turns
                 if states:

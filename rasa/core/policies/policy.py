@@ -34,7 +34,14 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
+from rasa.shared.core.constants import (
+    USER,
+    SLOTS,
+    PREVIOUS_ACTION,
+    ACTIVE_LOOP,
+    RULE_ONLY_SLOTS,
+    RULE_ONLY_LOOPS,
+)
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 
 if TYPE_CHECKING:
@@ -199,6 +206,7 @@ class Policy:
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        **kwargs: Any,
     ) -> List[State]:
         """Transforms tracker to states for prediction.
 
@@ -216,6 +224,8 @@ class Policy:
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
+            rule_only_slots=kwargs.get("rule_only_slots"),
+            rule_only_loops=kwargs.get("rule_only_loops"),
         )[0]
 
     def featurize_for_prediction(
@@ -224,6 +234,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         use_text_for_last_user_input: bool = False,
+        **kwargs: Any,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Transforms training tracker into a vector representation.
 
@@ -250,6 +261,8 @@ class Policy:
             interpreter,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
+            rule_only_slots=kwargs.get("rule_only_slots"),
+            rule_only_loops=kwargs.get("rule_only_loops"),
         )
 
     def train(
@@ -466,6 +479,7 @@ class PolicyPrediction:
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
+        hide_rule_turn: bool = False,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -489,6 +503,8 @@ class PolicyPrediction:
             diagnostic_data: Intermediate results or other information that is not
                 necessary for Rasa to function, but intended for debugging and
                 fine-tuning purposes.
+            hide_rule_turn: `True` if the prediction was made by the rules which
+                do not appear in the stories
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -498,6 +514,7 @@ class PolicyPrediction:
         self.is_end_to_end_prediction = is_end_to_end_prediction
         self.is_no_user_prediction = is_no_user_prediction
         self.diagnostic_data = diagnostic_data or {}
+        self.hide_rule_turn = hide_rule_turn
 
     @staticmethod
     def for_action_name(
@@ -541,6 +558,7 @@ class PolicyPrediction:
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
+            and self.hide_rule_turn == other.hide_rule_turn
             # We do not compare `diagnostic_data`, because it has no effect on the
             # action prediction.
         )

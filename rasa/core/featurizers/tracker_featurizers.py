@@ -55,6 +55,8 @@ class TrackerFeaturizer:
         tracker: DialogueStateTracker,
         domain: Domain,
         ignore_rule_only_turns: bool = False,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[State]:
         """Create states for the given tracker.
 
@@ -63,11 +65,20 @@ class TrackerFeaturizer:
             domain: a :class:`rasa.shared.core.domain.Domain`
             ignore_rule_only_turns: If `True` ignore dialogue turns that are present
                 only in rules.
+            rule_only_slots: The list of slot names,
+                which only occur in rules but not in stories.
+            rule_only_loops: The list of loop names,
+                which only occur in rules but not in stories.
 
         Returns:
             a list of states
         """
-        return tracker.past_states(domain, ignore_rule_only_turns)
+        return tracker.past_states(
+            domain,
+            ignore_rule_only_turns=ignore_rule_only_turns,
+            rule_only_slots=rule_only_slots,
+            rule_only_loops=rule_only_loops,
+        )
 
     def _featurize_states(
         self,
@@ -250,6 +261,8 @@ class TrackerFeaturizer:
         domain: Domain,
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
@@ -260,6 +273,10 @@ class TrackerFeaturizer:
                 for featurizing last user input.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
+            rule_only_slots: The list of slot names,
+                which only occur in rules but not in stories.
+            rule_only_loops: The list of loop names,
+                which only occur in rules but not in stories.
 
         Returns:
             A list of states.
@@ -275,6 +292,8 @@ class TrackerFeaturizer:
         interpreter: NaturalLanguageInterpreter,
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Create state features for prediction.
 
@@ -286,6 +305,10 @@ class TrackerFeaturizer:
                 for featurizing last user input.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
+            rule_only_slots: The list of slot names,
+                which only occur in rules but not in stories.
+            rule_only_loops: The list of loop names,
+                which only occur in rules but not in stories.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -295,7 +318,12 @@ class TrackerFeaturizer:
             turns in all trackers.
         """
         trackers_as_states = self.prediction_states(
-            trackers, domain, use_text_for_last_user_input, ignore_rule_only_turns
+            trackers,
+            domain,
+            use_text_for_last_user_input,
+            ignore_rule_only_turns,
+            rule_only_slots,
+            rule_only_loops,
         )
         return self._featurize_states(trackers_as_states, interpreter)
 
@@ -420,6 +448,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
@@ -430,12 +460,22 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                 for featurizing last user input.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
+            rule_only_slots: The list of slot names,
+                which only occur in rules but not in stories.
+            rule_only_loops: The list of loop names,
+                which only occur in rules but not in stories.
 
         Returns:
             A list of states.
         """
         trackers_as_states = [
-            self._create_states(tracker, domain, ignore_rule_only_turns)
+            self._create_states(
+                tracker,
+                domain,
+                ignore_rule_only_turns,
+                rule_only_slots,
+                rule_only_loops,
+            )
             for tracker in trackers
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
@@ -579,6 +619,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
@@ -589,12 +631,22 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 for featurizing last user input.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
+            rule_only_slots: The list of slot names,
+                which only occur in rules but not in stories.
+            rule_only_loops: The list of loop names,
+                which only occur in rules but not in stories.
 
         Returns:
             A list of states.
         """
         trackers_as_states = [
-            self._create_states(tracker, domain, ignore_rule_only_turns)
+            self._create_states(
+                tracker,
+                domain,
+                ignore_rule_only_turns,
+                rule_only_slots,
+                rule_only_loops,
+            )
             for tracker in trackers
         ]
         trackers_as_states = [

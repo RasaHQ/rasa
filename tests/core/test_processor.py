@@ -42,7 +42,6 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
     ActionExecutionRejected,
     LoopInterrupted,
-    HideRuleTurn,
 )
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -944,7 +943,6 @@ async def test_restart_triggers_session_start(
         BotUttered("hey there name1!", metadata={"template_name": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
-        HideRuleTurn([], []),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted(ACTION_RESTART_NAME),
         Restarted(),

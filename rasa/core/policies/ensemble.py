@@ -22,7 +22,6 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     DOCS_URL_MIGRATION_GUIDE,
     DEFAULT_CONFIG_PATH,
-    DOCS_URL_ACTIONS,
     DOCS_URL_DEFAULT_ACTIONS,
 )
 from rasa.shared.core.constants import (
@@ -31,6 +30,8 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
+    RULE_ONLY_SLOTS,
+    RULE_ONLY_LOOPS,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.events import (
@@ -68,6 +69,20 @@ class PolicyEnsemble:
 
         self._check_priorities()
         self._check_for_important_policies()
+
+        rule_policy = self._get_rule_policy()
+        self._rule_only_slots = (
+            rule_policy.lookup.get(RULE_ONLY_SLOTS, []) if rule_policy else []
+        )
+        self._rule_only_loops = (
+            rule_policy.lookup.get(RULE_ONLY_LOOPS, []) if rule_policy else []
+        )
+
+    def _get_rule_policy(self) -> Optional[RulePolicy]:
+        return next(
+            (policy for policy in self.policies if isinstance(policy, RulePolicy)),
+            None,
+        )
 
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy
@@ -203,6 +218,13 @@ class PolicyEnsemble:
 
             self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
                 training_trackers, domain
+            )
+            rule_policy = self._get_rule_policy()
+            self._rule_only_slots = (
+                rule_policy.lookup.get(RULE_ONLY_SLOTS, []) if rule_policy else []
+            )
+            self._rule_only_loops = (
+                rule_policy.lookup.get(RULE_ONLY_LOOPS, []) if rule_policy else []
             )
         else:
             logger.info("Skipped training, because there are no training samples.")
@@ -688,8 +710,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         return self._pick_best_policy(predictions)
 
-    @staticmethod
     def _get_prediction(
+        self,
         policy: Policy,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -705,7 +727,11 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             and "interpreter" in arguments
         ):
             prediction = policy.predict_action_probabilities(
-                tracker, domain, interpreter
+                tracker,
+                domain,
+                interpreter,
+                rule_only_slots=self._rule_only_slots,
+                rule_only_loops=self._rule_only_loops,
             )
         else:
             rasa.shared.utils.io.raise_warning(

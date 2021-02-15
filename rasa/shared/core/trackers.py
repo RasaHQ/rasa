@@ -59,7 +59,6 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     EntitiesAdded,
-    HideRuleTurn,
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
@@ -207,9 +206,6 @@ class DialogueStateTracker:
         self.latest_bot_utterance = None
         self._reset()
         self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
-        self.hide_rule_turn = False
-        self.rule_only_slots = []
-        self.rule_only_loops = []
 
     ###
     # Public tracker interface
@@ -279,7 +275,11 @@ class DialogueStateTracker:
         )
 
     def past_states(
-        self, domain: Domain, ignore_rule_only_turns: bool = False
+        self,
+        domain: Domain,
+        ignore_rule_only_turns: bool = False,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[State]:
         """Generate the past states of this tracker based on the history.
 
@@ -287,11 +287,17 @@ class DialogueStateTracker:
             domain: a :class:`rasa.shared.core.domain.Domain`.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
+            rule_only_slots: The list of slot names,
+                which only occur in rules but not in stories.
+            rule_only_loops: The list of loop names,
+                which only occur in rules but not in stories.
 
         Returns:
             a list of states
         """
-        return domain.states_for_tracker_history(self, ignore_rule_only_turns)
+        return domain.states_for_tracker_history(
+            self, ignore_rule_only_turns, rule_only_slots, rule_only_loops
+        )
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.
@@ -438,7 +444,7 @@ class DialogueStateTracker:
 
     def generate_all_prior_trackers(
         self,
-    ) -> Generator["DialogueStateTracker", None, None]:
+    ) -> Generator[Tuple["DialogueStateTracker", bool], None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
         The resulting array is representing the trackers before each action."""
@@ -448,11 +454,11 @@ class DialogueStateTracker:
         for event in self.applied_events():
 
             if isinstance(event, ActionExecuted):
-                yield tracker
+                yield tracker, event.hide_rule_turn
 
             tracker.update(event)
 
-        yield tracker
+        yield tracker, False
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.
@@ -566,13 +572,7 @@ class DialogueStateTracker:
                 break
 
             if isinstance(
-                e,
-                (
-                    ActionExecuted,
-                    UserUttered,
-                    HideRuleTurn,
-                    DefinePrevUserUtteredFeaturization,
-                ),
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization,),
             ):
                 del done_events[-1 - offset]
             else:

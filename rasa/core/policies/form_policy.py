@@ -103,7 +103,11 @@ class FormPolicy(MemoizationPolicy):
         return lookup
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        **kwargs: Any,
     ) -> Optional[Text]:
         # modify the states
         return self._recall_states(self._modified_states(states))

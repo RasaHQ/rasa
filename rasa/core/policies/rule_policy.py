@@ -13,7 +13,6 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     UserUttered,
     ActionExecuted,
-    HideRuleTurn,
     Event,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
@@ -1139,21 +1138,18 @@ class RulePolicy(MemoizationPolicy):
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
     ) -> "RulePolicyPrediction":
-        optional_events = []
-        if prediction_source in self.lookup.get(RULES_NOT_IN_STORIES, []):
-            # the prediction is based on rules that are not present in the stories
-            optional_events = [
-                HideRuleTurn(self.lookup[RULE_ONLY_SLOTS], self.lookup[RULE_ONLY_LOOPS])
-            ]
-
         return RulePolicyPrediction(
             probabilities,
             self.__class__.__name__,
             self.priority,
             events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
-            optional_events=optional_events,
             is_end_to_end_prediction=is_end_to_end_prediction,
             is_no_user_prediction=is_no_user_prediction,
+            hide_rule_turn=(
+                True
+                if prediction_source in self.lookup.get(RULES_NOT_IN_STORIES, [])
+                else False
+            ),
             prediction_source=prediction_source,
         )
 
@@ -1193,6 +1189,7 @@ class RulePolicyPrediction(PolicyPrediction):
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
+        hide_rule_turn: bool = False,
         prediction_source: Optional[Text] = None,
     ) -> None:
         """Creates a `RulePolicyPrediction`.
@@ -1217,6 +1214,8 @@ class RulePolicyPrediction(PolicyPrediction):
             diagnostic_data: Intermediate results or other information that is not
                 necessary for Rasa to function, but intended for debugging and
                 fine-tuning purposes.
+            hide_rule_turn: `True` if the prediction was made by the rules which
+                do not appear in the stories
             prediction_source: A description of the matching rule.
         """
         self.prediction_source = prediction_source
@@ -1229,4 +1228,5 @@ class RulePolicyPrediction(PolicyPrediction):
             is_end_to_end_prediction,
             is_no_user_prediction,
             diagnostic_data,
+            hide_rule_turn,
         )

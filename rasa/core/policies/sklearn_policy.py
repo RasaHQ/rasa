@@ -284,7 +284,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        X = self.featurize_for_prediction(tracker, domain, interpreter)
+        X = self.featurize_for_prediction(tracker, domain, interpreter, **kwargs)
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )

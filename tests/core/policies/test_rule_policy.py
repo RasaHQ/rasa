@@ -24,6 +24,8 @@ from rasa.shared.core.constants import (
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
     LOOP_NAME,
+    RULE_ONLY_SLOTS,
+    RULE_ONLY_LOOPS,
 )
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME
 from rasa.shared.core.domain import Domain
@@ -34,7 +36,6 @@ from rasa.shared.core.events import (
     SlotSet,
     ActionExecutionRejected,
     LoopInterrupted,
-    HideRuleTurn,
     FollowupAction,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -1986,11 +1987,10 @@ def test_hide_rule_turn():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
-    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+    assert prediction.hide_rule_turn
 
-    conversation_events += prediction.optional_events
     conversation_events += [
-        ActionExecuted(UTTER_GREET_ACTION),
+        ActionExecuted(UTTER_GREET_ACTION, hide_rule_turn=prediction.hide_rule_turn)
     ]
     prediction = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
@@ -2000,11 +2000,10 @@ def test_hide_rule_turn():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
-    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+    assert prediction.hide_rule_turn
 
-    conversation_events += prediction.optional_events
     conversation_events += [
-        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=prediction.hide_rule_turn),
         UserUttered("haha", {"name": chitchat}),
     ]
     tracker = DialogueStateTracker.from_events(
@@ -2080,7 +2079,7 @@ def test_hide_rule_turn_with_slots():
         slots=domain.slots,
         evts=[
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": some_other_action}),
+            UserUttered(intent={"name": some_other_intent}),
             ActionExecuted(some_other_action),
             SlotSet(some_other_slot, some_other_slot_value),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -2093,6 +2092,7 @@ def test_hide_rule_turn_with_slots():
         domain,
         RegexInterpreter(),
     )
+    assert policy.lookup[RULE_ONLY_SLOTS] == [some_slot]
 
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -2106,22 +2106,38 @@ def test_hide_rule_turn_with_slots():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, some_action)
-    assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert prediction.optional_events[0].rule_only_slots == [some_slot]
+    assert prediction.hide_rule_turn
 
-    conversation_events += prediction.optional_events
     conversation_events += [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", {"name": some_other_action}),
+        ActionExecuted(some_action, hide_rule_turn=prediction.hide_rule_turn),
+        SlotSet(some_slot, some_slot_value),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    assert prediction.hide_rule_turn
+
+    conversation_events += [
+        ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=prediction.hide_rule_turn),
+        UserUttered("haha", {"name": some_other_intent}),
     ]
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    states = tracker.past_states(domain, ignore_rule_only_turns=True)
+    states = tracker.past_states(
+        domain,
+        ignore_rule_only_turns=True,
+        rule_only_slots=policy.lookup[RULE_ONLY_SLOTS],
+    )
     assert states == [
         {},
         {
-            USER: {TEXT: "haha", INTENT: some_other_action},
+            USER: {TEXT: "haha", INTENT: some_other_intent},
             PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
         },
     ]
@@ -2172,6 +2188,7 @@ def test_hide_rule_turn_no_last_action_listen():
     policy.train(
         [simple_rule_no_last_action_listen, chitchat_story], domain, RegexInterpreter(),
     )
+    assert policy.lookup[RULE_ONLY_SLOTS] == [followup_on_chitchat]
 
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -2187,17 +2204,19 @@ def test_hide_rule_turn_no_last_action_listen():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, action_after_chitchat)
-    assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert followup_on_chitchat in prediction.optional_events[0].rule_only_slots
+    assert prediction.hide_rule_turn
 
-    conversation_events += prediction.optional_events
     conversation_events += [
-        ActionExecuted(action_after_chitchat),
+        ActionExecuted(action_after_chitchat, hide_rule_turn=prediction.hide_rule_turn),
     ]
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    states = tracker.past_states(domain, ignore_rule_only_turns=True)
+    states = tracker.past_states(
+        domain,
+        ignore_rule_only_turns=True,
+        rule_only_slots=policy.lookup[RULE_ONLY_SLOTS],
+    )
     assert states == [
         {},
         {USER: {INTENT: chitchat}, PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME}},
@@ -2261,6 +2280,7 @@ def test_hide_rule_turn_with_loops():
         domain,
         RegexInterpreter(),
     )
+    assert policy.lookup[RULE_ONLY_LOOPS] == [form_name]
 
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -2274,13 +2294,10 @@ def test_hide_rule_turn_with_loops():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, form_name)
-    assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert form_name in prediction.optional_events[0].rule_only_loops
-    assert another_form_name not in prediction.optional_events[0].rule_only_loops
+    assert prediction.hide_rule_turn
 
-    conversation_events += prediction.optional_events
     conversation_events += [
-        ActionExecuted(form_name),
+        ActionExecuted(form_name, hide_rule_turn=prediction.hide_rule_turn),
         ActiveLoop(form_name),
     ]
     prediction = policy.predict_action_probabilities(
@@ -2293,19 +2310,20 @@ def test_hide_rule_turn_with_loops():
     assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
-    assert isinstance(prediction.optional_events[0], HideRuleTurn)
-    assert form_name in prediction.optional_events[0].rule_only_loops
-    assert another_form_name not in prediction.optional_events[0].rule_only_loops
+    assert prediction.hide_rule_turn
 
-    conversation_events += prediction.optional_events
     conversation_events += [
-        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=prediction.hide_rule_turn),
         UserUttered("haha", {"name": chitchat}),
     ]
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    states = tracker.past_states(domain, ignore_rule_only_turns=True)
+    states = tracker.past_states(
+        domain,
+        ignore_rule_only_turns=True,
+        rule_only_loops=policy.lookup[RULE_ONLY_LOOPS],
+    )
     assert states == [
         {},
         {
@@ -2338,6 +2356,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
     policy.train(
         [form_activation_rule, form_activation_story], domain, RegexInterpreter(),
     )
+    assert policy.lookup[RULE_ONLY_LOOPS] == []
 
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -2351,10 +2370,10 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, form_name)
-    assert not prediction.optional_events
+    assert not prediction.hide_rule_turn
 
     conversation_events += [
-        ActionExecuted(form_name),
+        ActionExecuted(form_name, hide_rule_turn=prediction.hide_rule_turn),
         ActiveLoop(form_name),
     ]
     prediction = policy.predict_action_probabilities(
@@ -2367,7 +2386,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
     assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
-    assert not prediction.optional_events
+    assert not prediction.hide_rule_turn
 
 
 def test_hide_rule_turn_with_loops_as_followup_action():
@@ -2398,6 +2417,7 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         domain,
         RegexInterpreter(),
     )
+    assert policy.lookup[RULE_ONLY_LOOPS] == []
 
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -2411,10 +2431,10 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, form_name)
-    assert not prediction.optional_events
+    assert not prediction.hide_rule_turn
 
     conversation_events += [
-        ActionExecuted(form_name),
+        ActionExecuted(form_name, hide_rule_turn=prediction.hide_rule_turn),
         ActiveLoop(form_name),
     ]
     prediction = policy.predict_action_probabilities(
@@ -2427,10 +2447,10 @@ def test_hide_rule_turn_with_loops_as_followup_action():
     assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
-    assert not prediction.optional_events
+    assert not prediction.hide_rule_turn
 
     conversation_events += [
-        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=prediction.hide_rule_turn),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ActionExecutionRejected(form_name),
     ]
@@ -2442,11 +2462,10 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
-    assert isinstance(prediction.optional_events[0], HideRuleTurn)
+    assert prediction.hide_rule_turn
 
-    conversation_events += prediction.optional_events
     conversation_events += [
-        ActionExecuted(UTTER_GREET_ACTION),
+        ActionExecuted(UTTER_GREET_ACTION, hide_rule_turn=prediction.hide_rule_turn),
         FollowupAction(form_name),
         ActionExecuted(form_name),
     ]
