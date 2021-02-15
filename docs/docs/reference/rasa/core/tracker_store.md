@@ -83,7 +83,27 @@ The tracker begins with a `SessionStarted` event and is initially listening.
  | save(tracker)
 ```
 
-Save method that will be overridden by specific tracker
+Save method that will be overridden by specific tracker.
+
+#### exists
+
+```python
+ | exists(conversation_id: Text) -> bool
+```
+
+Checks if tracker exists for the specified ID.
+
+This method may be overridden by the specific tracker store for
+faster implementations.
+
+**Arguments**:
+
+- `conversation_id` - Conversation ID to check if the tracker exists.
+  
+
+**Returns**:
+
+  `True` if the tracker exists, `False` otherwise.
 
 #### retrieve
 

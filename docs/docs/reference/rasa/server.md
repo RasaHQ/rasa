@@ -38,6 +38,14 @@ Wraps a request handler ensuring there is a loaded and usable agent.
 Require the agent to have a loaded Core model if `require_core_is_ready` is
 `True`.
 
+#### ensure\_conversation\_exists
+
+```python
+ensure_conversation_exists() -> Callable[..., HTTPResponse]
+```
+
+Wraps a request handler ensuring the conversation exists.
+
 #### requires\_auth
 
 ```python
