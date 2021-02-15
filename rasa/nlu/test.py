@@ -1481,6 +1481,7 @@ async def run_evaluation(
     Returns: dictionary containing evaluation results
     """
     import rasa.shared.nlu.training_data.loading
+
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 

@@ -254,9 +254,7 @@ def _train_test_nlu_model(
 
     (intent_results, *_) = get_eval_data(interpreter, nlu_evaluation_data)
     intent_report = create_intent_report(
-        intent_results=intent_results,
-        output_directory=None,
-        report_as_dict=True,
+        intent_results=intent_results, output_directory=None, report_as_dict=True,
     )
     intent_errors = get_intent_errors(intent_results=intent_results)
     rasa.shared.utils.io.dump_obj_as_json_to_file(
