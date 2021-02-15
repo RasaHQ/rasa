@@ -333,7 +333,7 @@ jobs:
         # Fetch branch history
         git fetch --prune --unshallow
         LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
-        CURRENT_TAG=${GITHUB_TAG/refs\/tags\//}
+        CURRENT_TAG=${GITHUB_REF#refs/tags/}
         # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
         IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
           | sort -V -C && echo true || echo false) || true)
