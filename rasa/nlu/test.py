@@ -81,11 +81,6 @@ IntentEvaluationResult = namedtuple(
     "IntentEvaluationResult", "intent_target intent_prediction message confidence"
 )
 
-IntentReport = namedtuple(
-    "IntentReport",
-    ["report", "precision", "f1", "accuracy", "confusion_matrix", "labels"],
-)
-
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
     "intent_response_key_target intent_response_key_prediction message confidence",
@@ -544,7 +539,7 @@ def _add_confused_labels_to_report(
     return report
 
 
-def create_intent_report(
+def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
     output_directory: Optional[Text],
     successes: bool,
@@ -558,11 +553,89 @@ def create_intent_report(
     Returns a dictionary of containing the evaluation result.
 
     Args:
+        intent_results: Intent evaluation results.
+        output_directory: Directory to store files to.
+        successes: If `True`, correct predictions are written to disk.
+        errors: If `True`, incorrect predictions are written to disk.
+        disable_plotting: If `True`, no plots are created.
+        report_as_dict: `True` if the evaluation report should be returned as `dict`.
+            If `False` the report is returned in a human-readable text format. If `None`
+            `report_as_dict` is considered as `True` in case an `output_directory` is
+            given.
+
+    Returns:
+        Dictionary with evaluation results.
+    """
+    intent_report = create_intent_report(
+        intent_results=intent_results,
+        output_directory=None,
+        report_as_dict=report_as_dict,
+    )
+
+    if output_directory:
+        _dump_report(
+            output_directory=output_directory,
+            filename="intent_report.json",
+            report=intent_report["report"],
+        )
+
+    if successes and output_directory:
+        successes_filename = os.path.join(output_directory, "intent_successes.json")
+        # save classified samples to file for debugging
+        write_intent_successes(intent_results, successes_filename)
+
+    if errors and output_directory:
+        errors_filename = os.path.join(output_directory, "intent_errors.json")
+        # log and save misclassified samples to file for debugging
+        _write_errors(intent_report["errors"], errors_filename, "intent")
+
+    if not disable_plotting:
+        confusion_matrix_filename = "intent_confusion_matrix.png"
+        if output_directory:
+            confusion_matrix_filename = os.path.join(
+                output_directory, confusion_matrix_filename
+            )
+        plot_utils.plot_confusion_matrix(
+            intent_report["confusion_matrix"],
+            classes=intent_report["labels"],
+            title="Intent Confusion matrix",
+            output_file=confusion_matrix_filename,
+        )
+
+        histogram_filename = "intent_histogram.png"
+        if output_directory:
+            histogram_filename = os.path.join(output_directory, histogram_filename)
+        plot_attribute_confidences(
+            intent_results,
+            histogram_filename,
+            "intent_target",
+            "intent_prediction",
+            title="Intent Prediction Confidence Distribution",
+        )
+
+    return {
+        "predictions": intent_report["predictions"],
+        "report": intent_report["report"],
+        "precision": intent_report["precision"],
+        "f1_score": intent_report["f1_score"],
+        "accuracy": intent_report["accuracy"],
+        "errors": intent_report["errors"],
+    }
+
+
+def create_intent_report(
+    intent_results: List[IntentEvaluationResult],
+    output_directory: Optional[Text],
+    report_as_dict: Optional[bool] = None,
+) -> Dict:  # pragma: no cover
+    """Creates summary statistics for intents.
+
+    Only considers those examples with a set intent. Others are filtered out.
+    Returns a dictionary of containing the evaluation result.
+
+    Args:
         intent_results: intent evaluation results
         output_directory: directory to store files to
-        successes: if True correct predictions are written to disk
-        errors: if True incorrect predictions are written to disk
-        disable_plotting: if True no plots are created
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
             If `False` the report is returned in a human-readable text format. If `None`
             `report_as_dict` is considered as `True` in case an `output_directory` is
@@ -587,7 +660,8 @@ def create_intent_report(
     report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
         output_directory, target_intents, predicted_intents, report_as_dict,
     )
-
+    print(report)
+    print(type(report))
     intent_errors = get_intent_errors(intent_results)
 
     predictions = [
@@ -650,96 +724,6 @@ def _dump_report(output_directory: Text, filename: Text, report: Dict) -> None:
     report_filename = os.path.join(output_directory, filename)
     rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
     logger.info(f"Classification report saved to {report_filename}.")
-
-
-def evaluate_intents(
-    intent_results: List[IntentEvaluationResult],
-    output_directory: Optional[Text],
-    successes: bool,
-    errors: bool,
-    disable_plotting: bool,
-    report_as_dict: Optional[bool] = None,
-) -> Dict:  # pragma: no cover
-    """Creates summary statistics for intents.
-    Only considers those examples with a set intent. Others are filtered out.
-    Returns a dictionary of containing the evaluation result.
-    Args:
-        intent_results: Intent evaluation results.
-        output_directory: Directory to store files to.
-        successes: If `True`, correct predictions are written to disk.
-        errors: If `True`, incorrect predictions are written to disk.
-        disable_plotting: If `True`, no plots are created.
-    Returns:
-        Dictionary with evaluation results.
-    """
-    intent_report = create_intent_report(
-        intent_results=intent_results,
-        output_directory=None,
-        successes=successes,
-        errors=errors,
-        disable_plotting=disable_plotting,
-        report_as_dict=report_as_dict,
-    )
-
-    # HANDLED BY DUMP_REPORT
-    if output_directory:
-        _dump_report(
-            output_directory=output_directory,
-            filename="intent_report.json",
-            report=intent_report["report"],
-        )
-
-    if successes and output_directory:
-        successes_filename = os.path.join(output_directory, "intent_successes.json")
-        # save classified samples to file for debugging
-        write_intent_successes(intent_results, successes_filename)
-
-    if errors and output_directory:
-        errors_filename = os.path.join(output_directory, "intent_errors.json")
-        # log and save misclassified samples to file for debugging
-        _write_errors(intent_report["errors"], errors_filename, "intent")
-
-    if not disable_plotting:
-        confusion_matrix_filename = "intent_confusion_matrix.png"
-        if output_directory:
-            confusion_matrix_filename = os.path.join(
-                output_directory, confusion_matrix_filename
-            )
-        plot_utils.plot_confusion_matrix(
-            intent_report["confusion_matrix"],
-            classes=intent_report["labels"],
-            title="Intent Confusion matrix",
-            output_file=confusion_matrix_filename,
-        )
-
-        histogram_filename = "intent_histogram.png"
-        if output_directory:
-            histogram_filename = os.path.join(output_directory, histogram_filename)
-        plot_attribute_confidences(
-            intent_results,
-            histogram_filename,
-            "intent_target",
-            "intent_prediction",
-            title="Intent Prediction Confidence Distribution",
-        )
-
-    predictions = [
-        {
-            "text": res.message,
-            "intent": res.intent_target,
-            "predicted": res.intent_prediction,
-            "confidence": res.confidence,
-        }
-        for res in intent_results
-    ]
-
-    return {
-        "predictions": predictions,
-        "report": intent_report["report"],
-        "precision": intent_report["precision"],
-        "f1_score": intent_report["f1_score"],
-        "accuracy": intent_report["accuracy"],
-    }
 
 
 def merge_labels(
@@ -1499,7 +1483,7 @@ async def run_evaluation(
     Returns: dictionary containing evaluation results
     """
     import rasa.shared.nlu.training_data.loading
-
+    print('REPORT AS DICT:', report_as_dict)
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
