@@ -355,7 +355,7 @@ def process_texts(
 )
 class TestShapeValuesTrainAndProcess:
     @staticmethod
-    def evaluate_message_shape_values_hf_transformers(
+    def evaluate_message_shape_values(
         messages: List[Message],
         expected_shape: List[tuple],
         expected_sequence_vec: List[List[float]],
