@@ -44,6 +44,7 @@ IGNORE_ENTITIES_KEY = "ignore_entities"
 IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 ENTITY_ROLES_KEY = "roles"
 ENTITY_GROUPS_KEY = "groups"
+GLOBAL_NOT_INTENT = "global_not_intent"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -201,7 +202,11 @@ class Domain:
             rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
         )
 
-        return SessionConfig(session_expiration_time_min, carry_over_slots)
+        global_not_intent = session_config.get(GLOBAL_NOT_INTENT)
+
+        return SessionConfig(
+            session_expiration_time_min, carry_over_slots, global_not_intent,
+        )
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
