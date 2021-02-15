@@ -49,6 +49,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
+    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -1095,7 +1096,11 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     content = response.json()
     assert response.status == HTTPStatus.OK
     assert content["paused"] is False
-    assert content["slots"] == {"name": None, REQUESTED_SLOT: None}
+    assert content["slots"] == {
+        "name": None,
+        REQUESTED_SLOT: None,
+        SESSION_START_METADATA_SLOT: None,
+    }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
         {
@@ -1263,6 +1268,13 @@ async def test_put_tracker(rasa_app: SanicASGITestClient):
     assert tracker is not None
     evts = tracker.get("events")
     assert events.deserialise_events(evts) == test_events
+
+
+async def test_predict_without_conversation_id(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.post("/conversations/non_existent_id/predict")
+
+    assert response.status == HTTPStatus.NOT_FOUND
+    assert response.json()["message"] == "Conversation ID not found."
 
 
 async def test_sorted_predict(rasa_app: SanicASGITestClient):
@@ -1461,6 +1473,16 @@ async def test_execute(rasa_app: SanicASGITestClient):
     parsed_content = response.json()
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
+
+
+async def test_execute_without_conversation_id(rasa_app: SanicASGITestClient):
+    data = {INTENT_NAME_KEY: "utter_greet"}
+    _, response = await rasa_app.post(
+        "/conversations/non_existent_id/execute", json=data
+    )
+
+    assert response.status == HTTPStatus.NOT_FOUND
+    assert response.json()["message"] == "Conversation ID not found."
 
 
 async def test_execute_with_missing_action_name(rasa_app: SanicASGITestClient):
@@ -1713,6 +1735,28 @@ stories:
         ),
         # empty conversation
         ([], None, True, 'version: "2.0"'),
+        # Conversation with slot
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                SlotSet(REQUESTED_SLOT, "some value"),
+            ],
+            None,
+            True,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet
+  - slot_was_set:
+    - requested_slot: some value""",
+        ),
     ],
 )
 async def test_get_story(
@@ -1746,6 +1790,18 @@ async def test_get_story(
 
     assert response.status == HTTPStatus.OK
     assert response.content.decode().strip() == expected
+
+
+async def test_get_story_without_conversation_id(
+    rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
+):
+    conversation_id = "some-conversation-ID"
+    url = f"/conversations/{conversation_id}/story"
+
+    _, response = await rasa_app.get(url)
+
+    assert response.status == HTTPStatus.NOT_FOUND
+    assert response.json()["message"] == "Conversation ID not found."
 
 
 async def test_get_story_does_not_update_conversation_session(

@@ -6,6 +6,7 @@ USER_INTENT_RESTART = "restart"
 USER_INTENT_BACK = "back"
 USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 USER_INTENT_SESSION_START = "session_start"
+SESSION_START_METADATA_SLOT = "session_started_metadata"
 
 DEFAULT_INTENTS = [
     USER_INTENT_RESTART,
