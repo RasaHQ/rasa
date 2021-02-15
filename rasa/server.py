@@ -10,6 +10,7 @@ from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
+from http import HTTPStatus
 from typing import (
     Any,
     Callable,
@@ -148,6 +149,25 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
                 )
 
             return f(*args, **kwargs)
+
+        return decorated
+
+    return decorator
+
+
+def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
+    """Wraps a request handler ensuring the conversation exists."""
+
+    def decorator(f: Callable[..., HTTPResponse]) -> HTTPResponse:
+        @wraps(f)
+        def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
+            conversation_id = kwargs["conversation_id"]
+            if request.app.agent.tracker_store.exists(conversation_id):
+                return f(request, *args, **kwargs)
+            else:
+                raise ErrorResponse(
+                    HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
+                )
 
         return decorated
 
@@ -536,7 +556,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
                     )
                 # If an error happens, we send the error payload to the `callback_url`
                 payload = dict(json=e.error_info)
-                logger.debug(
+                logger.error(
                     "Error happened when processing request asynchronously. "
                     "Sending error to callback URL."
                 )
@@ -800,6 +820,7 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists()
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
@@ -826,6 +847,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists()
     async def execute_action(request: Request, conversation_id: Text):
         request_params = request.json
 
@@ -934,6 +956,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists()
     async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
@@ -1139,6 +1162,8 @@ def create_app(
     async def _evaluate_model_using_test_set(
         model_path: Text, test_data_file: Text
     ) -> Dict:
+        logger.info("Starting model evaluation using test set.")
+
         eval_agent = app.agent
 
         if model_path:
@@ -1170,6 +1195,7 @@ def create_app(
         )
 
     async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
+        logger.info(f"Starting cross-validation with {folds} folds.")
         importer = TrainingDataImporter.load_from_dict(
             config=None, config_path=config_file, training_data_paths=[data_file]
         )
