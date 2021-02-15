@@ -354,8 +354,8 @@ def process_texts(
     ],
 )
 class TestShapeValuesTrainAndProcess:
-    def evaluate_message_shape_values(
-        self,
+    @staticmethod
+    def evaluate_message_shape_values_hf_transformers(
         messages: List[Message],
         expected_shape: List[tuple],
         expected_sequence_vec: List[List[float]],
@@ -391,7 +391,7 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
-    ) -> None:
+    ):
         messages = train_texts(texts, model_name, model_weights)
         self.evaluate_message_shape_values(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
@@ -405,7 +405,7 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
-    ) -> None:
+    ):
         messages = process_texts(texts, model_name, model_weights)
         self.evaluate_message_shape_values(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec

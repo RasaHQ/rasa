@@ -24,8 +24,8 @@ from rasa.shared.nlu.constants import TEXT, INTENT
 
 
 def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
-    """
-    Checks whether to skip this configuration on CI.
+    """Checks whether to skip this configuration on CI.
+
     Only applies when skip_model_load=False
     """
     # First check if CI
@@ -39,9 +39,10 @@ def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
 def create_pretrained_transformers_config(
     model_name: Text, model_weights: Text
 ) -> Dict[Text, Text]:
-    """
-    Create a config for LanguageModelFeaturizer. If CI, skips model/model_weight
-    combinations that are too large (bert with LaBSE).
+    """Create a config for LanguageModelFeaturizer.
+
+    If CI, skips model/model_weight combinations that are too large (bert with
+    LaBSE).
 
     Args:
         model_name: model name
@@ -271,8 +272,8 @@ def process_texts(
     ],
 )
 class TestShapeValuesTrainAndProcess:
+    @staticmethod
     def evaluate_message_shape_values(
-        self,
         messages: List[Message],
         expected_shape: List[tuple],
         expected_sequence_vec: List[List[float]],
@@ -323,7 +324,7 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
-    ) -> None:
+    ):
         messages = train_texts(texts, model_name, model_weights)
         self.evaluate_message_shape_values(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
@@ -337,138 +338,164 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
-    ) -> None:
+    ):
         messages = process_texts(texts, model_name, model_weights)
         self.evaluate_message_shape_values(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
 
+@pytest.mark.parametrize(
+    "model_name, model_weights, texts, expected_number_of_sub_tokens",
+    [
+        (
+            "bert",
+            None,
+            [
+                "Good evening.",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+                "sentence embeddings",
+            ],
+            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1], [1, 2]],
+        ),
+        (
+            "bert",
+            "bert-base-chinese",
+            [
+                "晚上好",  # normal & easy case
+                "没问题！",  # `！` is a Chinese punctuation
+                "去东畈村",  # `畈` is a OOV token for bert-base-chinese
+                "好的😃",
+                # include a emoji which is common in Chinese text-based chat
+            ],
+            [[3], [4], [4], [3]],
+        ),
+        (
+            "gpt",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+                "sentence embeddings",
+            ],
+            [
+                [1, 1],
+                [1],
+                [1, 1],
+                [1, 1, 1],
+                [1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 2, 1],
+                [1, 2],
+            ],
+        ),
+        (
+            "gpt2",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+                "sentence embeddings",
+            ],
+            [
+                [1, 2],
+                [1],
+                [1, 1],
+                [1, 1, 1],
+                [1, 1, 1],
+                [1, 1, 1, 2, 1, 1, 3, 1],
+                [2, 3],
+            ],
+        ),
+        (
+            "xlnet",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+                "sentence embeddings",
+            ],
+            [
+                [1, 1],
+                [1],
+                [1, 1],
+                [1, 1, 1],
+                [1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 3, 1],
+                [1, 3],
+            ],
+        ),
+        (
+            "distilbert",
+            None,
+            [
+                "Good evening.",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+                "sentence embeddings",
+            ],
+            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1], [1, 4]],
+        ),
+        (
+            "roberta",
+            None,
+            [
+                "Good evening.",
+                "hello",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+                "sentence embeddings",
+            ],
+            [
+                [1, 2],
+                [1],
+                [1, 1],
+                [1, 1, 1],
+                [1, 1, 1],
+                [1, 1, 1, 2, 1, 1, 3, 1],
+                [2, 3],
+            ],
+        ),
+        (
+            "bert",
+            "bert-base-uncased",
+            [
+                "Good evening.",
+                "you're",
+                "r. n. b.",
+                "rock & roll",
+                "here is the sentence I want embeddings for.",
+                "sentence embeddings",
+            ],
+            [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1], [1, 4]],
+        ),
+    ],
+)
 class TestSubTokensTrainAndProcess:
-    edge_case_args = (
-        "model_name, model_weights, texts, expected_number_of_sub_tokens",
-        [
-            (
-                "bert",
-                None,
-                [
-                    "Good evening.",
-                    "you're",
-                    "r. n. b.",
-                    "rock & roll",
-                    "here is the sentence I want embeddings for.",
-                ],
-                [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
-            ),
-            (
-                "bert",
-                "bert-base-chinese",
-                [
-                    "晚上好",  # normal & easy case
-                    "没问题！",  # `！` is a Chinese punctuation
-                    "去东畈村",  # `畈` is a OOV token for bert-base-chinese
-                    "好的😃",  # include a emoji which is common in Chinese text-based chat
-                ],
-                [[3], [4], [4], [3]],
-            ),
-            (
-                "gpt",
-                None,
-                [
-                    "Good evening.",
-                    "hello",
-                    "you're",
-                    "r. n. b.",
-                    "rock & roll",
-                    "here is the sentence I want embeddings for.",
-                ],
-                [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 2, 1]],
-            ),
-            (
-                "gpt2",
-                None,
-                [
-                    "Good evening.",
-                    "hello",
-                    "you're",
-                    "r. n. b.",
-                    "rock & roll",
-                    "here is the sentence I want embeddings for.",
-                ],
-                [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
-            ),
-            (
-                "xlnet",
-                None,
-                [
-                    "Good evening.",
-                    "hello",
-                    "you're",
-                    "r. n. b.",
-                    "rock & roll",
-                    "here is the sentence I want embeddings for.",
-                ],
-                [[1, 1], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 3, 1]],
-            ),
-            (
-                "distilbert",
-                None,
-                [
-                    "Good evening.",
-                    "you're",
-                    "r. n. b.",
-                    "rock & roll",
-                    "here is the sentence I want embeddings for.",
-                ],
-                [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1]],
-            ),
-            (
-                "roberta",
-                None,
-                [
-                    "Good evening.",
-                    "hello",
-                    "you're",
-                    "r. n. b.",
-                    "rock & roll",
-                    "here is the sentence I want embeddings for.",
-                ],
-                [[1, 2], [1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 2, 1, 1, 3, 1]],
-            ),
-            (
-                "bert",
-                "bert-base-uncased",
-                [
-                    "Good evening.",
-                    "you're",
-                    "r. n. b.",
-                    "rock & roll",
-                    "here is the sentence I want embeddings for.",
-                ],
-                [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1]],
-            ),
-        ],
-    )
-
-    general_case_args = (
-        "model_name, model_weights, text, expected_number_of_sub_tokens",
-        [
-            ("bert", None, "sentence embeddings", [1, 2]),
-            ("bert", "bert-base-uncased", "sentence embeddings", [1, 4]),
-            ("gpt", None, "sentence embeddings", [1, 2]),
-            ("gpt2", None, "sentence embeddings", [2, 3]),
-            ("xlnet", None, "sentence embeddings", [1, 3]),
-            ("distilbert", None, "sentence embeddings", [1, 4]),
-            ("roberta", None, "sentence embeddings", [2, 3]),
-        ],
-    )
-
+    @staticmethod
     def check_subtokens(
-        self,
         texts: List[Text],
         messages: List[Message],
         expected_number_of_sub_tokens: List[List[float]],
-    ) -> None:
+    ):
         whitespace_tokenizer = WhitespaceTokenizer()
         for index, message in enumerate(messages):
             assert [
@@ -478,49 +505,25 @@ class TestSubTokensTrainAndProcess:
                 whitespace_tokenizer.tokenize(Message.build(text=texts[index]), TEXT)
             )
 
-    @pytest.mark.parametrize(*edge_case_args)
-    def test_lm_featurizer_edge_cases_train(
-        self,
-        model_name: Text,
-        model_weights: Text,
-        texts: List[Text],
-        expected_number_of_sub_tokens: List[List[float]],
-    ) -> None:
-        messages = train_texts(texts, model_name, model_weights)
-        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
-
-    @pytest.mark.parametrize(*edge_case_args)
-    def test_lm_featurizer_edge_cases_process(
-        self,
-        model_name: Text,
-        model_weights: Text,
-        texts: List[Text],
-        expected_number_of_sub_tokens: List[List[float]],
-    ) -> None:
-        messages = process_texts(texts, model_name, model_weights)
-        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
-
-    @pytest.mark.parametrize(*general_case_args)
     def test_lm_featurizer_number_of_sub_tokens_train(
         self,
         model_name: Text,
         model_weights: Text,
-        text: Text,
+        texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
-    ) -> None:
-        messages = train_texts([text], model_name, model_weights)
-        self.check_subtokens([text], messages, [expected_number_of_sub_tokens])
+    ):
+        messages = train_texts(texts, model_name, model_weights)
+        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
 
-    @pytest.mark.parametrize(*general_case_args)
     def test_lm_featurizer_number_of_sub_tokens_process(
         self,
         model_name: Text,
         model_weights: Text,
-        text: Text,
+        texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
-    ) -> None:
-        messages = process_texts([text], model_name, model_weights)
-        self.check_subtokens([text], messages, [expected_number_of_sub_tokens])
+    ):
+        messages = process_texts(texts, model_name, model_weights)
+        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
 
 
 @pytest.mark.parametrize(
@@ -529,7 +532,7 @@ class TestSubTokensTrainAndProcess:
 )
 def test_sequence_length_overflow_train(
     input_sequence_length: int, model_name: Text, should_overflow: bool
-) -> None:
+):
     component = LanguageModelFeaturizer(
         {"model_name": model_name}, skip_model_load=True
     )
@@ -558,7 +561,7 @@ def test_long_sequences_extra_padding(
     actual_sequence_lengths: List[int],
     model_name: Text,
     padding_needed: bool,
-) -> None:
+):
     component = LanguageModelFeaturizer(
         {"model_name": model_name}, skip_model_load=True
     )
@@ -592,7 +595,7 @@ def test_input_padding(
     max_sequence_length_model: int,
     resulting_length: int,
     padding_added: bool,
-) -> None:
+):
     component = LanguageModelFeaturizer({"model_name": "bert"}, skip_model_load=True)
     component.pad_token_id = 0
     padded_input = component._add_padding_to_batch(token_ids, max_sequence_length_model)
@@ -615,7 +618,7 @@ def test_log_longer_sequence(
     model_weights: Text,
     should_overflow: bool,
     caplog: LogCaptureFixture,
-) -> None:
+):
     config = {"model_name": model_name, "model_weights": model_weights}
 
     featurizer = LanguageModelFeaturizer(config)
@@ -638,7 +641,7 @@ def test_log_longer_sequence(
 )
 def test_attention_mask(
     actual_sequence_length: int, max_input_sequence_length: int, zero_start_index: int
-) -> None:
+):
     component = LanguageModelFeaturizer({"model_name": "bert"}, skip_model_load=True)
 
     attention_mask = component._compute_attention_mask(
@@ -651,7 +654,7 @@ def test_attention_mask(
     assert np.all(mask_zeros == 0)
 
 
-def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture) -> None:
+def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture):
     message = Message.build("hi there")
 
     transformers_nlp = HFTransformersNLP(
@@ -670,7 +673,7 @@ def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture) -> N
     assert "deprecated component HFTransformersNLP" in caplog.text
 
 
-def test_preserve_sentence_and_sequence_features_old_config() -> None:
+def test_preserve_sentence_and_sequence_features_old_config():
     attribute = TEXT
     message = Message.build("hi there")
 
@@ -711,7 +714,7 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     text: Text,
     tokens: List[Tuple[Text, int]],
     expected_feature_tokens: List[Tuple[Text, int]],
-) -> None:
+):
     from rasa.nlu.tokenizers.tokenizer import Token
 
     config = {
@@ -742,7 +745,7 @@ def test_input_padding(
     max_sequence_length_model: int,
     resulting_length: int,
     padding_added: bool,
-) -> None:
+):
     lm_featurizer = LanguageModelFeaturizer(
         {"model_name": "bert"}, skip_model_load=True
     )
