@@ -213,6 +213,14 @@ jobs:
           name: report.json
           path: ./report.json
 
+      - name: Notify Slack of Failure 😱
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "😱 Scheduled model regression test *${{ matrix.config }}* failed. Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
   remove_runner_gpu:
     name: Delete Github Runner - GPU
     if: always()
@@ -235,30 +243,3 @@ jobs:
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
-
-  send_slack_notifications:
-    name: Send Slack Notifications
-    runs-on: ubuntu-20.04
-    if: always() # always run this workflow, which allows us to receive Slack messages on failure
-    needs:
-    - read_test_configuration
-    - deploy_runner_gpu
-    - model_regression_test_gpu
-    - remove_runner_gpu
-
-    steps:
-    - name: test log
-      run: |
-        echo "Read Test Configuratino: ${{ needs.read_test_configuration.result }}"
-        echo "Deploy Runner GPU: ${{ needs.deploy_runner_gpu.result }}"
-        echo "Model Regression Test: ${{ needs.model_regression_test_gpu.result }}"
-        echo "Remove Runner GPU: ${{ needs.remove_runner_gpu.result }}"
-
-    - name: Notify Slack on Failure ⛔
-      if: needs.read_test_configuration.result == 'failure' || needs.deploy_runner_gpu.result == 'failure' || needs.model_regression_test_gpu.result == 'failure' || needs.remove_runner_gpu.result == 'failure'
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_TEST_WEBHOOK }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        status: FAILED
-        color: danger
