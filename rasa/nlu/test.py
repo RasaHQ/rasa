@@ -568,7 +568,7 @@ def evaluate_intents(
     """
     intent_report = create_intent_report(
         intent_results=intent_results,
-        output_directory=None,
+        output_directory=output_directory,
         report_as_dict=report_as_dict,
     )
 
@@ -660,8 +660,6 @@ def create_intent_report(
     report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
         output_directory, target_intents, predicted_intents, report_as_dict,
     )
-    print(report)
-    print(type(report))
     intent_errors = get_intent_errors(intent_results)
 
     predictions = [
@@ -1483,7 +1481,6 @@ async def run_evaluation(
     Returns: dictionary containing evaluation results
     """
     import rasa.shared.nlu.training_data.loading
-    print('REPORT AS DICT:', report_as_dict)
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
