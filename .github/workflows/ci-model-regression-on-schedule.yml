@@ -163,7 +163,6 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
-          exit 1
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -176,8 +175,6 @@ jobs:
 
           echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-
-          exit 1
 
       # Download the results of the previous runs
       # The report file is extended with new results every next job run
