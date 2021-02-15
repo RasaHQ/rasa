@@ -19,10 +19,12 @@ const { readFile, outputFile } = fs;
 
 const defaultOptions = {
     docsDir: './docs',
-    sourceDir: './docs/sources',
+    relativeSourceDir: 'sources',
     include: ['**.mdx', '**.md'],
     pathPrefix: '../',
 };
+
+const _getIncludedSourceRe = (sourceDir) => `\`\`\`([a-z\-]+) \\(${sourceDir}/([^\\]\\s]+)\\)\n\`\`\``;
 
 /**
     This function is used copy the included sources
@@ -30,17 +32,17 @@ const defaultOptions = {
     finds the included sources and copy them under the `sourceDir`.
 
     Options:
-    - docsDir:        the directory containing the docs files
-    - sourceDir:      the directory that will contain the included sources
-    - include:        list of patterns to look for doc files
-    - pathPrefix:     a path prefix to use for reading the sources
+    - docsDir:             the directory containing the docs files
+    - relativeSourceDir:   the directory that will contain the included sources
+    - include:             list of patterns to look for doc files
+    - pathPrefix:          a path prefix to use for reading the sources
 */
 async function getIncludedSources(options) {
 
     options = { ...defaultOptions, ...options };
-    const { docsDir, include, sourceDir, pathPrefix } = options;
-    const cleanedSourceDir = sourceDir.replace('./', '');
-    const includedSourceRe =`\`\`\`[a-z\-]+ \\(${cleanedSourceDir}/([^\\]\\s]+)\\)\n\`\`\``;
+    const { docsDir, include, relativeSourceDir, pathPrefix } = options;
+    const cleanedSourceDir = `${docsDir.replace('./', '')}/${relativeSourceDir}`;
+    const includedSourceRe = _getIncludedSourceRe(cleanedSourceDir);
 
     // first, gather all the docs files
     const docsFiles = await globby(include, {
@@ -56,7 +58,7 @@ async function getIncludedSources(options) {
         // there can be multiple sources in the same file
         const re = new RegExp(includedSourceRe, 'gi');
         while ((group = re.exec(data)) !== null) {
-            sourceFile = group[1];
+            sourceFile = group[2];
             if (seen.has(sourceFile)) {
                 continue;
             }
@@ -76,4 +78,42 @@ async function getIncludedSources(options) {
 };
 
 
+/**
+    Options:
+    - docsDir:                the directory containing the docs files
+    - relativeSourceDir:      the directory that will contain the included sources
+    - include:                list of patterns to look for doc files
+*/
+async function updateVersionedSources(options) {
+    options = { ...defaultOptions, ...options };
+    const { docsDir, include, relativeSourceDir } = options;
+    const originalSourceDir = `${defaultOptions.docsDir.replace('./', '')}/${relativeSourceDir}`;
+    const newSourceDir = `${docsDir.replace('./', '')}/${relativeSourceDir}`;
+    const includedSourceRe = _getIncludedSourceRe(originalSourceDir);
+
+    // first, gather all the docs files
+    const docsFiles = await globby(include, {
+      cwd: docsDir,
+    });
+    const seen = new Set();
+    // second, read every doc file and compute their updated content
+    let newDocsFiles = await Promise.all(docsFiles.map(async (source) => {
+        const data = await readFile(`${docsDir}/${source}`);
+        // third, find out if there is a source to be included
+        // there can be multiple sources in the same file
+        const re = new RegExp(includedSourceRe, 'gi');
+        const updatedData = data.replace(re, `\`\`\`$1 (${newSourceDir}/$2)\n\`\`\``);
+        return (updatedData != data) ? [`${docsDir}/${source}`, updatedData] : [];
+    }));
+
+    newDocsFiles = newDocsFiles.filter(pair => pair.length > 0);
+
+    // finally, write all the source files in the `sourceDir`
+    return await Promise.all(newDocsFiles.map(async ([docsFile, updatedContent]) => {
+        return await outputFile(docsFile, updatedContent);
+    }));
+}
+
+
 module.exports = getIncludedSources;
+module.exports.updateVersionedSources = updateVersionedSources;
