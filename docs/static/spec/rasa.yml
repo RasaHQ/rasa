@@ -1823,10 +1823,13 @@ components:
       type: object
       properties:
         entities:
-          $ref: '#/components/schemas/Entity'
+          description: Expected entities
+          type: array
+          items:
+            $ref: '#/components/schemas/Entity'
         intent:
           type: string
-          description: "Intent name"
+          description: Intent name
         text:
           type: string
           description: Text of the message
