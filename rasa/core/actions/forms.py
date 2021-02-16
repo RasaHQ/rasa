@@ -64,7 +64,6 @@ class FormAction(LoopAction):
         not_intent: Optional[Union[Text, List[Text]]] = None,
         role: Optional[Text] = None,
         group: Optional[Text] = None,
-        global_not_intent: Optional[Text] = None,
     ) -> Dict[Text, Any]:
         """A dictionary for slot mapping to extract slot value.
 
@@ -76,11 +75,9 @@ class FormAction(LoopAction):
                 meaning user intent should not be this intent
             - role if it is not None
             - group if it is not None
-            - global_not_intent if it is not None
         """
-        intent, not_intent = self._list_intents(
-            intent, not_intent, global_not_intent=global_not_intent
-        )
+
+        intent, not_intent = self._list_intents(intent, not_intent)
 
         return {
             "type": str(SlotMapping.FROM_ENTITY),
@@ -101,11 +98,7 @@ class FormAction(LoopAction):
 
         requested_slot_mappings = self._to_list(
             domain.slot_mapping_for_form(self.name()).get(
-                slot_to_fill,
-                self.from_entity(
-                    slot_to_fill,
-                    global_not_intent=domain.session_config.global_not_intent,
-                ),
+                slot_to_fill, self.from_entity(slot_to_fill),
             )
         )
         # check provided slot mappings
@@ -622,7 +615,6 @@ class FormAction(LoopAction):
         self,
         intent: Optional[Union[Text, List[Text]]] = None,
         not_intent: Optional[Union[Text, List[Text]]] = None,
-        global_not_intent: Optional[Text] = None,
     ) -> Tuple[List[Text], List[Text]]:
         """Check provided intent and not_intent"""
         if intent and not_intent:
@@ -630,9 +622,6 @@ class FormAction(LoopAction):
                 f"Providing  both intent '{intent}' and not_intent '{not_intent}' "
                 f"is not supported."
             )
-
-        if global_not_intent:
-            not_intent = global_not_intent
 
         return self._to_list(intent), self._to_list(not_intent)
 

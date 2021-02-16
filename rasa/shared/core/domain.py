@@ -159,6 +159,7 @@ class Domain:
                 data, original_filename
             ):
                 return Domain.empty()
+            # breakpoint()
             return cls.from_dict(data)
         except YamlException as e:
             e.filename = original_filename
@@ -168,6 +169,7 @@ class Domain:
     def from_dict(cls, data: Dict) -> "Domain":
         utter_templates = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
+        # breakpoint()
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
@@ -537,7 +539,7 @@ class Domain:
         )
 
         self.form_names, self.forms, overridden_form_actions = self._initialize_forms(
-            forms
+            forms, session_config
         )
         action_names += overridden_form_actions
 
@@ -605,7 +607,7 @@ class Domain:
 
     @staticmethod
     def _initialize_forms(
-        forms: Union[Dict[Text, Any], List[Text]]
+        forms: Union[Dict[Text, Any], List[Text]], session_config: SessionConfig
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
@@ -624,6 +626,31 @@ class Domain:
             `FormAction` which is implemented in the Rasa SDK.
         """
         if isinstance(forms, dict):
+            # updating the `not_intent` param of each slot with the `global_not_intent`
+            global_param = session_config.global_not_intent
+            # looping through all the available forms and each slot's type and
+            # updating the `not_intent` field accordingly.
+            for form_count, _ in enumerate(list(forms.keys())):
+                form_slots = list(forms.values())[form_count]
+                for _, slot_name in enumerate(form_slots):
+                    slot_params = form_slots[slot_name]
+                    for type_count, type_name in enumerate(slot_params):
+                        key = "not_intent"
+                        # check that `not_intent` param is present
+                        if key in slot_params[type_count]:
+                            # check that the value of `not_intent` is a list
+                            if isinstance(slot_params[type_count][key], list):
+                                # check that global_not_intent is in the list
+                                if global_param not in slot_params[type_count][key]:
+                                    slot_params[type_count][key].append(global_param)
+                            else:
+                                if global_param != slot_params[type_count][key]:
+                                    slot_params[type_count][key] = [
+                                        slot_params[type_count][key],
+                                        global_param,
+                                    ]
+                        else:
+                            slot_params[type_count][key] = global_param
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
