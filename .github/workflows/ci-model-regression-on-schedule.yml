@@ -163,6 +163,7 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
+          exit 1
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -212,7 +213,7 @@ jobs:
           path: ./report.json
 
       - name: Notify Slack of Failure 😱
-      - uses: 8398a7/action-slack@v3
+        uses: 8398a7/action-slack@v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
