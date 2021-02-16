@@ -303,7 +303,7 @@ def replace_environment_variables() -> None:
     """Enable yaml loader to process the environment variables in the yaml."""
     # eg. ${USER_NAME}, ${PASSWORD}
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
-    yaml.add_implicit_resolver("!env_var", env_var_pattern)
+    yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
     def env_var_constructor(loader, node):
         """Process environment variables found in the YAML."""
@@ -321,7 +321,36 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
+class BasicYAMLParser(yaml.YAML):
+    def __init__(self, typ = "safe", is_replace = False):
+        super().__init__(typ=typ)
+        self.previous_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
+        self.previous_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
+
+        if is_replace:
+            replace_environment_variables()
+        else:
+            def env_var_constructor(loader, node):
+                return node.value
+            yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
+
+        self.yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
+        self.yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
+
+        yaml.Resolver.yaml_implicit_resolvers = self.previous_yaml_implicit_resolvers
+        yaml.SafeConstructor.yaml_constructors = self.previous_yaml_constructors
+
+    def load(self, stream):
+        yaml.Resolver.yaml_implicit_resolvers = self.yaml_implicit_resolvers
+        yaml.SafeConstructor.yaml_constructors = self.yaml_constructors
+        return super().load(stream)
+
+
+parser1 = BasicYAMLParser(is_replace=True)
+parser2 = BasicYAMLParser(is_replace=False)
+
+
+def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", replace_vars = True) -> Any:
     """Parses yaml from a text.
 
     Args:
@@ -333,9 +362,7 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
     """
     fix_yaml_loader()
 
-    replace_environment_variables()
-
-    yaml_parser = yaml.YAML(typ=reader_type)
+    yaml_parser = parser1 if replace_vars else parser2
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
     yaml.allow_duplicate_keys = False

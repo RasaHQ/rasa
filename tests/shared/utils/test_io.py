@@ -130,6 +130,13 @@ def test_read_yaml_string_with_env_var_postfix():
     content = rasa.shared.utils.io.read_yaml(config_with_env_var_postfix)
     assert content["user"] == "user_admin" and content["password"] == "pass_admin"
 
+    config_with_env_var_postfix = """
+    user: ${USER_NAME}_admin
+    password: ${PASS}_admin
+    """
+    content = rasa.shared.utils.io.read_yaml(config_with_env_var_postfix, replace_vars=False)
+    assert content["user"] == "${USER_NAME}_admin" and content["password"] == "${PASS}_admin"
+
 
 def test_read_yaml_string_with_env_var_infix():
     config_with_env_var_infix = """
