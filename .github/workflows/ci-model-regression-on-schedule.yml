@@ -245,7 +245,7 @@ jobs:
               }]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
