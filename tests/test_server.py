@@ -754,7 +754,7 @@ async def test_evaluate_stories_end_to_end(
 ):
     stories = rasa.shared.utils.io.read_file(end_to_end_test_story_file)
 
-    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories)
+    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories,)
 
     assert response.status == HTTPStatus.OK
     js = response.json()
@@ -792,6 +792,41 @@ async def test_evaluate_intent(rasa_app: SanicASGITestClient, default_nlu_data: 
         "entity_evaluation",
         "response_selection_evaluation",
     }
+
+
+async def test_evaluate_intent_json(rasa_app: SanicASGITestClient):
+    nlu_data = rasa.shared.utils.io.read_file("data/test/demo-rasa-small.json")
+
+    _, response = await rasa_app.post(
+        "/model/test/intents",
+        json=nlu_data,
+        headers={"Content-type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert set(response.json().keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
+
+
+async def test_evaluate_invalid_intent_model_file(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.post(
+        "/model/test/intents?model=invalid.tar.gz",
+        json={},
+        headers={"Content-type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+async def test_evaluate_intent_without_body(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.post(
+        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_evaluate_intent_on_just_nlu_model(
