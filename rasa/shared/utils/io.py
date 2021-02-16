@@ -321,36 +321,45 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-class BasicYAMLParser(yaml.YAML):
-    def __init__(self, typ = "safe", is_replace = False):
+class YAMLParser(yaml.YAML):
+    def __init__(self, typ = "safe", replace_env_vars = False):
         super().__init__(typ=typ)
-        self.previous_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
-        self.previous_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
+        self._save_default_yaml_parameters()
 
-        if is_replace:
+        if replace_env_vars:
             replace_environment_variables()
         else:
-            def env_var_constructor(loader, node):
-                return node.value
-            yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
+            yaml.SafeConstructor.add_constructor("!env_var", lambda _, node: node.value)
 
-        self.yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
-        self.yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
+        self._save_modified_yaml_parameters()
+        self._restore_default_yaml_parameters()
 
-        yaml.Resolver.yaml_implicit_resolvers = self.previous_yaml_implicit_resolvers
-        yaml.SafeConstructor.yaml_constructors = self.previous_yaml_constructors
+    def _save_default_yaml_parameters(self):
+        self._default_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
+        self._default_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
+
+    def _restore_default_yaml_parameters(self):
+        yaml.Resolver.yaml_implicit_resolvers = self._default_yaml_implicit_resolvers
+        yaml.SafeConstructor.yaml_constructors = self._default_yaml_constructors
+
+    def _save_modified_yaml_parameters(self):
+        self._modified_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
+        self._modified_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
+
+    def _restore_modified_yaml_parameters(self):
+        yaml.Resolver.yaml_implicit_resolvers = self._modified_yaml_implicit_resolvers
+        yaml.SafeConstructor.yaml_constructors = self._modified_yaml_constructors
 
     def load(self, stream):
-        yaml.Resolver.yaml_implicit_resolvers = self.yaml_implicit_resolvers
-        yaml.SafeConstructor.yaml_constructors = self.yaml_constructors
+        self._restore_modified_yaml_parameters()
         return super().load(stream)
 
 
-parser1 = BasicYAMLParser(is_replace=True)
-parser2 = BasicYAMLParser(is_replace=False)
+ENV_VARS_PARSER = YAMLParser(replace_env_vars=True)
+DEFAULT_PARSER = YAMLParser(replace_env_vars=False)
 
 
-def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", replace_vars = True) -> Any:
+def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars = False) -> Any:
     """Parses yaml from a text.
 
     Args:
@@ -362,7 +371,7 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", repl
     """
     fix_yaml_loader()
 
-    yaml_parser = parser1 if replace_vars else parser2
+    yaml_parser = ENV_VARS_PARSER if replace_env_vars else DEFAULT_PARSER
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
     yaml.allow_duplicate_keys = False
