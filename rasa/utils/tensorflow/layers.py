@@ -1084,7 +1084,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 dtype=tf.bool,
             )
             sim_neg_ii, sim_neg_il, sim_neg_li, sim_neg_ll, sim_pos = tf.cond(
-                random_chance,
+                tf.constant(1),
                 lambda: self._get_similarities_with_sorted_sampling(
                     all_labels,
                     all_labels_embed,
