@@ -184,8 +184,22 @@ class TrackerStore:
         return tracker
 
     def save(self, tracker):
-        """Save method that will be overridden by specific tracker"""
+        """Save method that will be overridden by specific tracker."""
         raise NotImplementedError()
+
+    def exists(self, conversation_id: Text) -> bool:
+        """Checks if tracker exists for the specified ID.
+
+        This method may be overridden by the specific tracker store for
+        faster implementations.
+
+        Args:
+            conversation_id: Conversation ID to check if the tracker exists.
+
+        Returns:
+            `True` if the tracker exists, `False` otherwise.
+        """
+        return self.retrieve(conversation_id) is not None
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session.
