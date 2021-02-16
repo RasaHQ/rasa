@@ -78,13 +78,13 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
         engine.dispose()
 
 
-def _create_login_db(connection: sa.engine.Connection):
+def _create_login_db(connection: sa.engine.Connection) -> None:
     connection.execution_options(isolation_level="AUTOCOMMIT").execute(
         f"CREATE DATABASE {POSTGRES_LOGIN_DB}"
     )
 
 
-def _drop_db(connection: sa.engine.Connection, database_name: Text):
+def _drop_db(connection: sa.engine.Connection, database_name: Text) -> None:
     connection.execution_options(isolation_level="AUTOCOMMIT").execute(
         f"DROP DATABASE IF EXISTS {database_name}"
     )
