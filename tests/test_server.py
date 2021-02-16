@@ -794,9 +794,7 @@ async def test_evaluate_intent(rasa_app: SanicASGITestClient, default_nlu_data: 
     }
 
 
-async def test_evaluate_intent_json(
-    rasa_app: SanicASGITestClient, default_nlu_data: Text
-):
+async def test_evaluate_intent_json(rasa_app: SanicASGITestClient):
     nlu_data = rasa.shared.utils.io.read_file("data/test/demo-rasa-small.json")
 
     _, response = await rasa_app.post(
@@ -813,9 +811,7 @@ async def test_evaluate_intent_json(
     }
 
 
-async def test_evaluate_invalid_intent_model_file(
-    rasa_app: SanicASGITestClient, default_nlu_data: Text
-):
+async def test_evaluate_invalid_intent_model_file(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
         "/model/test/intents?model=invalid.tar.gz",
         json={},
@@ -825,9 +821,7 @@ async def test_evaluate_invalid_intent_model_file(
     assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-async def test_evaluate_intent_without_body(
-    rasa_app: SanicASGITestClient, default_nlu_data: Text
-):
+async def test_evaluate_intent_without_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
         "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
     )
