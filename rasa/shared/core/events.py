@@ -1517,7 +1517,7 @@ class ActionExecuted(Event):
         if hasattr(self, "confidence"):
             confidence = self.confidence
         action_text = None
-        if hasattr(self, "hide_rule_turn"):
+        if hasattr(self, "action_text"):
             action_text = self.action_text
         hide_rule_turn = False
         if hasattr(self, "hide_rule_turn"):
