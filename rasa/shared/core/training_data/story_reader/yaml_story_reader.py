@@ -178,8 +178,8 @@ class YAMLStoryReader(StoryReader):
             YamlException: if the file seems to be a YAML file (extension) but
                 can not be read / parsed.
         """
-        content = rasa.shared.utils.io.read_yaml_file(file_path)
-        return any(key in content for key in keys)
+        content = rasa.shared.utils.io.read_file(file_path)
+        return any(any(line.startswith(f"{key}:") for key in keys) for line in content)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:
