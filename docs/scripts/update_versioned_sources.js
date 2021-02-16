@@ -8,5 +8,5 @@ if (!version) {;
 
 console.info(`Updating sources in ${version} documentation`);
 includedSources.updateVersionedSources({
-  docsDir: `./versioned_docs/version-${version}/`,
+  docsDir: `./versioned_docs/version-${version}`,
 });

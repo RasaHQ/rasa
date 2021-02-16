@@ -12,6 +12,7 @@
     before docusaurus is started (or built). It allows us to support separate
     versions of the docs (and of the program outputs).
 */
+const path = require('path');
 const fs = require('fs-extra');
 const globby = require('globby');
 
@@ -41,7 +42,7 @@ async function getIncludedSources(options) {
 
     options = { ...defaultOptions, ...options };
     const { docsDir, include, relativeSourceDir, pathPrefix } = options;
-    const cleanedSourceDir = `${docsDir.replace('./', '')}/${relativeSourceDir}`;
+    const cleanedSourceDir = path.join(docsDir.replace('./', ''), relativeSourceDir);
     const includedSourceRe = _getIncludedSourceRe(cleanedSourceDir);
 
     // first, gather all the docs files
@@ -87,8 +88,8 @@ async function getIncludedSources(options) {
 async function updateVersionedSources(options) {
     options = { ...defaultOptions, ...options };
     const { docsDir, include, relativeSourceDir } = options;
-    const originalSourceDir = `${defaultOptions.docsDir.replace('./', '')}/${relativeSourceDir}`;
-    const newSourceDir = `${docsDir.replace('./', '')}/${relativeSourceDir}`;
+    const originalSourceDir = path.join(defaultOptions.docsDir.replace('./', ''), relativeSourceDir);
+    const newSourceDir = path.join(docsDir.replace('./', ''), relativeSourceDir);
     const includedSourceRe = _getIncludedSourceRe(originalSourceDir);
 
     // first, gather all the docs files
@@ -102,7 +103,7 @@ async function updateVersionedSources(options) {
         // third, find out if there is a source to be included
         // there can be multiple sources in the same file
         const re = new RegExp(includedSourceRe, 'gi');
-        const updatedData = data.replace(re, `\`\`\`$1 (${newSourceDir}/$2)\n\`\`\``);
+        const updatedData = data.toString().replace(re, `\`\`\`$1 (${newSourceDir}/$2)\n\`\`\``);
         return (updatedData != data) ? [`${docsDir}/${source}`, updatedData] : [];
     }));
 
