@@ -212,7 +212,7 @@ jobs:
           path: ./report.json
 
       - name: Notify Slack of Failure 😱
-        if: always()
+        if: failure()
         uses: 8398a7/action-slack@v3
         with:
           status: custom
