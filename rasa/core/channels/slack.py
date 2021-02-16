@@ -69,7 +69,7 @@ class SlackBot(OutputChannel):
         image_block = {"type": "image", "image_url": image, "alt_text": image}
 
         await self._post_message(
-            channel=recipient, as_user=True, text=image, blocks=[image_block]
+            channel=recipient, as_user=True, text="", blocks=[image_block]
         )
 
     async def send_attachment(
