@@ -6,6 +6,7 @@ import time
 import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List
 from unittest.mock import patch
@@ -182,35 +183,28 @@ async def test_reminder_scheduled(
 
 
 async def test_reminder_lock(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    caplog: LogCaptureFixture,
 ):
-    from io import StringIO
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        sender_id = uuid.uuid4().hex
 
-    logger = logging.getLogger("rasa.core.lock_store")
-    logger.setLevel(logging.DEBUG)
+        reminder = ReminderScheduled("remind", datetime.datetime.now())
+        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    log_stream = StringIO()
-    log_handler = logging.StreamHandler(log_stream)
-    logger.addHandler(log_handler)
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_schedule_reminder"))
+        tracker.update(reminder)
 
-    sender_id = uuid.uuid4().hex
+        default_processor.tracker_store.save(tracker)
 
-    reminder = ReminderScheduled("remind", datetime.datetime.now())
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        await default_processor.handle_reminder(
+            reminder, sender_id, default_channel, default_processor.nlg
+        )
 
-    tracker.update(UserUttered("test"))
-    tracker.update(ActionExecuted("action_schedule_reminder"))
-    tracker.update(reminder)
-
-    default_processor.tracker_store.save(tracker)
-
-    await default_processor.handle_reminder(
-        reminder, sender_id, default_channel, default_processor.nlg
-    )
-
-    last_log_message = log_stream.getvalue().splitlines()[-1]
-
-    assert last_log_message == f"Deleted lock for conversation '{sender_id}'."
+        assert f"Deleted lock for conversation '{sender_id}'." in caplog.text
 
 
 async def test_reminder_aborted(
