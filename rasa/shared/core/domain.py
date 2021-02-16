@@ -159,7 +159,6 @@ class Domain:
                 data, original_filename
             ):
                 return Domain.empty()
-            # breakpoint()
             return cls.from_dict(data)
         except YamlException as e:
             e.filename = original_filename
@@ -169,7 +168,6 @@ class Domain:
     def from_dict(cls, data: Dict) -> "Domain":
         utter_templates = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
-        # breakpoint()
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
