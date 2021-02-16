@@ -1495,7 +1495,6 @@ class ActionExecuted(Event):
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
-
         return [
             ActionExecuted(
                 parameters.get("name"),
@@ -1504,6 +1503,7 @@ class ActionExecuted(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 parameters.get("action_text"),
+                parameters.get("hide_rule_turn"),
             )
         ]
 
@@ -1516,13 +1516,20 @@ class ActionExecuted(Event):
         confidence = None
         if hasattr(self, "confidence"):
             confidence = self.confidence
+        action_text = None
+        if hasattr(self, "hide_rule_turn"):
+            action_text = self.action_text
+        hide_rule_turn = False
+        if hasattr(self, "hide_rule_turn"):
+            hide_rule_turn = self.hide_rule_turn
 
         d.update(
             {
                 "name": self.action_name,
                 "policy": policy,
                 "confidence": confidence,
-                "action_text": self.action_text,
+                "action_text": action_text,
+                "hide_rule_turn": hide_rule_turn,
             }
         )
         return d

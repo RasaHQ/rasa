@@ -70,19 +70,20 @@ class PolicyEnsemble:
         self._check_priorities()
         self._check_for_important_policies()
 
-        rule_policy = self._get_rule_policy()
-        self._rule_only_slots = (
-            rule_policy.lookup.get(RULE_ONLY_SLOTS, []) if rule_policy else []
-        )
-        self._rule_only_loops = (
-            rule_policy.lookup.get(RULE_ONLY_LOOPS, []) if rule_policy else []
-        )
+        self._rule_only_slots, self._rule_only_loops = self._get_rule_only_slots_loops()
 
-    def _get_rule_policy(self) -> Optional[RulePolicy]:
-        return next(
+    def _get_rule_only_slots_loops(self) -> Tuple[List[Text], List[Text]]:
+        rule_policy = next(
             (policy for policy in self.policies if isinstance(policy, RulePolicy)),
             None,
         )
+        rule_only_slots = (
+            rule_policy.lookup.get(RULE_ONLY_SLOTS, []) if rule_policy else []
+        )
+        rule_only_loops = (
+            rule_policy.lookup.get(RULE_ONLY_LOOPS, []) if rule_policy else []
+        )
+        return rule_only_slots, rule_only_loops
 
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy
@@ -219,13 +220,10 @@ class PolicyEnsemble:
             self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
                 training_trackers, domain
             )
-            rule_policy = self._get_rule_policy()
-            self._rule_only_slots = (
-                rule_policy.lookup.get(RULE_ONLY_SLOTS, []) if rule_policy else []
-            )
-            self._rule_only_loops = (
-                rule_policy.lookup.get(RULE_ONLY_LOOPS, []) if rule_policy else []
-            )
+            (
+                self._rule_only_slots,
+                self._rule_only_loops,
+            ) = self._get_rule_only_slots_loops()
         else:
             logger.info("Skipped training, because there are no training samples.")
 
