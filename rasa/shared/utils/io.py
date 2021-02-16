@@ -322,13 +322,15 @@ def replace_environment_variables() -> None:
 
 
 class YAMLParser(yaml.YAML):
-    def __init__(self, typ = "safe", replace_env_vars = False):
-        super().__init__(typ=typ)
+    def __init__(self, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False):
+        super().__init__(typ=reader_type)
         self._save_default_yaml_parameters()
 
         if replace_env_vars:
             replace_environment_variables()
         else:
+            # we need to do this because `yaml` adds contains a global `implicit_resolvers` list
+            # and the resolves from there cannot be de-registered
             yaml.SafeConstructor.add_constructor("!env_var", lambda _, node: node.value)
 
         self._save_modified_yaml_parameters()
@@ -350,28 +352,30 @@ class YAMLParser(yaml.YAML):
         yaml.Resolver.yaml_implicit_resolvers = self._modified_yaml_implicit_resolvers
         yaml.SafeConstructor.yaml_constructors = self._modified_yaml_constructors
 
-    def load(self, stream):
+    def load(self, stream: Union[Path, Any]) -> Any:
         self._restore_modified_yaml_parameters()
         return super().load(stream)
 
 
-ENV_VARS_PARSER = YAMLParser(replace_env_vars=True)
-DEFAULT_PARSER = YAMLParser(replace_env_vars=False)
+fix_yaml_loader()
 
 
-def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars = False) -> Any:
+def _get_yaml_parser(reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False) -> YAMLParser:
+    return YAMLParser(reader_type=reader_type, replace_env_vars=replace_env_vars)
+
+
+def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False) -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
         reader_type: Reader type to use. By default "safe" will be used
+        replace_env_vars: Specifies if environment variables need to be replaced
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
-    fix_yaml_loader()
-
-    yaml_parser = ENV_VARS_PARSER if replace_env_vars else DEFAULT_PARSER
+    yaml_parser = _get_yaml_parser(reader_type, replace_env_vars)
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
     yaml.allow_duplicate_keys = False
