@@ -401,7 +401,7 @@ def test_validate_config_file_with_extra_keys(tmp_path: Path):
         language: en
         pipeline:
         policies:
-    
+
         importers:
         - RasaFileImporter
         """
