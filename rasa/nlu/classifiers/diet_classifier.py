@@ -8,15 +8,16 @@ import os
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
@@ -83,9 +84,9 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SOFTMAX,
     AUTO,
     BALANCED,
+    CROSS_ENTROPY,
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
@@ -95,6 +96,9 @@ from rasa.utils.tensorflow.constants import (
     SEQUENCE_LENGTH,
     DENSE_DIMENSION,
     MASK,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
 )
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 
@@ -109,19 +113,10 @@ LABEL_SUB_KEY = IDS
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
 
-class EntityTagSpec(NamedTuple):
-    """Specification of an entity tag present in the training data."""
-
-    tag_name: Text
-    ids_to_tags: Dict[int, Text]
-    tags_to_ids: Dict[Text, int]
-    num_tags: int
-
-
 class DIETClassifier(IntentClassifier, EntityExtractor):
-    """DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
-    intent classification and entity recognition.
+    """A multi-task model for intent classification and entity extraction.
 
+    DIET is Dual Intent and Entity Transformer.
     The architecture is based on a transformer which is shared for both tasks.
     A sequence of entity labels is predicted through a Conditional Random Field (CRF)
     tagging layer on top of the transformer output sequence corresponding to the
@@ -183,10 +178,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
-        # Number of top actions to normalize scores for loss type 'softmax'.
-        # Set to 0 to turn off normalization.
+        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        LOSS_TYPE: CROSS_ENTROPY,
+        # Number of top intents to normalize scores for. Applicable with
+        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+        # to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
@@ -253,6 +249,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Split entities by comma, this makes sense e.g. for a list of ingredients
         # in a recipie, but it doesn't make sense for the parts of an address
         SPLIT_ENTITIES_BY_COMMA: True,
+        # If 'True' applies sigmoid on all similarity terms and adds
+        # it to the loss function to ensure that similarity values are
+        # approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: False,
+        # Model confidence to be returned during inference. Possible values -
+        # 'softmax', 'cosine', 'inner'.
+        MODEL_CONFIDENCE: SOFTMAX,
     }
 
     # init helpers
@@ -291,6 +294,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
+
+        self.component_config = train_utils.update_confidence_type(
+            self.component_config
+        )
+
+        train_utils.validate_configuration_settings(self.component_config)
+
+        self.component_config = train_utils.update_deprecated_loss_type(
+            self.component_config
+        )
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
@@ -474,7 +487,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sequence features "
-                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
                 )
         if dense_sentence_features is not None and sparse_sentence_features is not None:
             if (
@@ -483,7 +497,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sentence features "
-                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
                 )
 
         # If we don't use the transformer and we don't want to do entity recognition,
@@ -651,9 +666,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # we don't have any intent labels during prediction, just add them during
             # training
             attributes_to_consider.append(label_attribute)
-        if training and self.component_config[ENTITY_RECOGNITION]:
-            # we don't have any entity tags during prediction, just add them during
-            # training
+        if (
+            training
+            and self.component_config[ENTITY_RECOGNITION]
+            and self._entity_tag_specs
+        ):
+            # Add entities as labels only during training and only if there was
+            # training data added for entities with DIET configured to predict entities.
             attributes_to_consider.append(ENTITIES)
 
         if training and label_attribute is not None:
@@ -811,6 +830,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+            )
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
@@ -827,7 +849,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.tmp_checkpoint_dir,
         )
 
-        self.model.compile()
         self.model.fit(
             data_generator,
             epochs=self.component_config[EPOCHS],
@@ -835,10 +856,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             validation_freq=self.component_config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,
             verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
         )
 
     # process helpers
-    def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
+    def _predict(
+        self, message: Message
+    ) -> Optional[Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]]:
         if self.model is None:
             logger.debug(
                 f"There is no trained model for '{self.__class__.__name__}': The "
@@ -849,9 +873,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
-
-        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
-        return self.model.predict(data_generator)
+        return self.model.rasa_predict(model_data)
 
     def _predict_label(
         self, predict_out: Optional[Dict[Text, tf.Tensor]]
@@ -871,9 +893,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = message_sim.argsort()[::-1]
 
         if (
-            self.component_config[LOSS_TYPE] == SOFTMAX
-            and self.component_config[RANKING_LENGTH] > 0
+            self.component_config[RANKING_LENGTH] > 0
+            and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
         ):
+            # TODO: This should be removed in 3.0 when softmax as
+            #  model confidence and normalization is completely deprecated.
             message_sim = train_utils.normalize(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
@@ -934,7 +958,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return entities
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely label and its similarity to the input."""
+        """Augments the message with intents, entities, and diagnostic data."""
         out = self._predict(message)
 
         if self.component_config[INTENT_CLASSIFICATION]:
@@ -947,6 +971,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             entities = self._predict_entities(out, message)
 
             message.set(ENTITIES, entities, add_to_output=True)
+
+        if out and DIAGNOSTIC_DATA in out:
+            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -1016,7 +1043,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_example,
         ) = cls._load_from_files(meta, model_dir)
 
+        meta = train_utils.override_defaults(cls.defaults, meta)
+        meta = train_utils.update_confidence_type(meta)
         meta = train_utils.update_similarity_type(meta)
+        meta = train_utils.update_deprecated_loss_type(meta)
 
         model = cls._load_model(
             entity_tag_specs,
@@ -1119,9 +1149,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         finetune_mode: bool,
     ) -> "RasaModel":
 
+        predict_data_example = RasaModelData(
+            label_key=model_data_example.label_key,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if TEXT in feature_name
+            },
+        )
+
         return cls.model_class().load(
             tf_model_file,
             model_data_example,
+            predict_data_example,
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
@@ -1130,7 +1170,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
-
         return self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
@@ -1159,7 +1198,6 @@ class DIET(TransformerRasaModel):
         }
 
         # tf training
-        self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
         self._update_metrics_to_log()
 
@@ -1426,6 +1464,7 @@ class DIET(TransformerRasaModel):
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
+            _,
         ) = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
@@ -1575,15 +1614,19 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, _, _, _, attention_weights = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             mask_sequence_text,
             mask,
             self.text_name,
         )
-
-        predictions: Dict[Text, tf.Tensor] = {}
+        predictions = {
+            DIAGNOSTIC_DATA: {
+                "attention_weights": attention_weights,
+                "text_transformed": text_transformed,
+            }
+        }
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(
@@ -1647,12 +1690,11 @@ class DIET(TransformerRasaModel):
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        _, scores = self._tf_layers[
+            f"loss.{LABEL}"
+        ].similarity_confidence_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
-        )
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
         )
 
         return {"i_scores": scores}

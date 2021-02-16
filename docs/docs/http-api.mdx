@@ -43,6 +43,10 @@ recommended that you set the number of workers to the number of available CPU co
 for more details). This will only work in combination with the
 `RedisLockStore` (see [Lock Stores](./lock-stores.mdx).
 
+:::caution
+The [SocketIO channel](./connectors/your-own-website.mdx#websocket-channel) does not support multiple worker processes. 
+
+:::
 
 ## Security Considerations
 

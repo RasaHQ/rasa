@@ -33,7 +33,7 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import train_async, _train_nlu_async
+from rasa.train import train_async, train_nlu_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -45,6 +45,7 @@ from tests.core.conftest import (
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
 )
+from rasa.shared.exceptions import RasaException
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -223,7 +224,7 @@ def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 
-        return await _train_nlu_async(*args, output=output_path, **kwargs)
+        return await train_nlu_async(*args, output=output_path, **kwargs)
 
     return _train_nlu
 
@@ -382,6 +383,31 @@ def spacy_nlp(component_builder: ComponentBuilder, blank_config: RasaNLUModelCon
 @pytest.fixture(scope="session")
 def blank_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
+
+
+@pytest.fixture(scope="session")
+async def trained_response_selector_bot(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="examples/responseselectorbot/domain.yml",
+        config="examples/responseselectorbot/config.yml",
+        training_files=[
+            "examples/responseselectorbot/data/rules.yml",
+            "examples/responseselectorbot/data/stories.yml",
+            "examples/responseselectorbot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for responseselectorbot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="session")
+async def response_selector_agent(
+    trained_response_selector_bot: Optional[Path],
+) -> Agent:
+    return Agent.load_local_model(trained_response_selector_bot)
 
 
 def write_endpoint_config_to_yaml(

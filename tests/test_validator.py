@@ -171,6 +171,32 @@ async def test_verify_correct_e2e_story_structure(tmp_path: Path):
     assert validator.verify_story_structure(ignore_warnings=False)
 
 
+async def test_verify_correct_e2e_story_structure_with_intents(tmp_path: Path):
+    story_file_name = tmp_path / "stories.yml"
+    with open(story_file_name, "w") as file:
+        file.write(
+            """
+            stories:
+            - story: path 1
+              steps:
+              - intent: greet
+              - action: utter_greet
+            - story: path 2
+              steps:
+              - intent: goodbye
+              - action: utter_goodbye
+            """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[story_file_name],
+        training_type=TrainingType.NLU,
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_story_structure(ignore_warnings=False)
+
+
 async def test_verify_story_structure_ignores_rules():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",

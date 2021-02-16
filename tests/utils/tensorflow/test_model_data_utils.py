@@ -5,7 +5,7 @@ import scipy.sparse
 import numpy as np
 import copy
 
-from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (

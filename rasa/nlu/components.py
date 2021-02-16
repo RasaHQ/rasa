@@ -14,6 +14,7 @@ from rasa.shared.nlu.training_data.training_data import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import COMPONENT_INDEX
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 
@@ -389,23 +390,37 @@ class Component(metaclass=ComponentMetaclass):
     the pipeline to do intent classification.
     """
 
-    # Component class name is used when integrating it in a
-    # pipeline. E.g. ``[ComponentA, ComponentB]``
-    # will be a proper pipeline definition where ``ComponentA``
-    # is the name of the first component of the pipeline.
     @property
     def name(self) -> Text:
-        """Access the class's property name from an instance."""
+        """Returns the name of the component to be used in the model configuration.
+
+        Component class name is used when integrating it in a
+        pipeline. E.g. `[ComponentA, ComponentB]`
+        will be a proper pipeline definition where `ComponentA`
+        is the name of the first component of the pipeline.
+        """
         return type(self).name
 
-    # Which components are required by this component.
-    # Listed components should appear before the component itself in the pipeline.
+    @property
+    def unique_name(self) -> Text:
+        """Gets a unique name for the component in the pipeline.
+
+        The unique name can be used to distinguish components in
+        a pipeline, e.g. when the pipeline contains multiple
+        featurizers of the same type.
+        """
+        index = self.component_config.get(COMPONENT_INDEX)
+        return self.name if index is None else f"component_{index}_{self.name}"
+
     @classmethod
     def required_components(cls) -> List[Type["Component"]]:
-        """Specify which components need to be present in the pipeline.
+        """Specifies which components need to be present in the pipeline.
+
+        Which components are required by this component.
+        Listed components should appear before the component itself in the pipeline.
 
         Returns:
-            The list of class names of required components.
+            The class names of the required components.
         """
         return []
 
@@ -456,7 +471,7 @@ class Component(metaclass=ComponentMetaclass):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        """Specify which python packages need to be installed.
+        """Specifies which python packages need to be installed.
 
         E.g. ``["spacy"]``. More specifically, these should be
         importable python package names e.g. `sklearn` and not package
@@ -479,7 +494,7 @@ class Component(metaclass=ComponentMetaclass):
         cached_component: Optional["Component"] = None,
         **kwargs: Any,
     ) -> "Component":
-        """Load this component from file.
+        """Loads this component from file.
 
         After a component has been trained, it will be persisted by
         calling `persist`. When the pipeline gets loaded again,
@@ -532,7 +547,7 @@ class Component(metaclass=ComponentMetaclass):
         return component
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
-        """Initialize this component for a new pipeline.
+        """Initializes this component for a new pipeline.
 
         This function will be called before the training
         is started and before the first message is processed using
@@ -588,7 +603,7 @@ class Component(metaclass=ComponentMetaclass):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component.
+        """Trains this component.
 
         This is the components chance to train itself provided
         with the training data. The component can rely on
@@ -608,7 +623,7 @@ class Component(metaclass=ComponentMetaclass):
         self.train_chunk(training_data_chunk, config, **kwargs)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Process an incoming message.
+        """Processes an incoming message.
 
         This is the components chance to process an incoming
         message. The component can rely on
@@ -625,7 +640,7 @@ class Component(metaclass=ComponentMetaclass):
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this component to disk for future loading.
+        """Persists this component to disk for future loading.
 
         Args:
             file_name: The file name of the model.

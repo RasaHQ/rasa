@@ -56,6 +56,7 @@ from rasa.nlu.model import Interpreter, Trainer, TrainingDataFull
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -654,28 +655,19 @@ def _calculate_report(
     if report_as_dict is None:
         report_as_dict = bool(output_directory)
 
-    if output_directory:
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            targets,
-            predictions,
-            output_dict=report_as_dict,
-            exclude_label=exclude_label,
-        )
+    report, precision, f1, accuracy = get_evaluation_metrics(
+        targets, predictions, output_dict=report_as_dict, exclude_label=exclude_label,
+    )
+
+    if report_as_dict:
         report = _add_confused_labels_to_report(
             report,
             confusion_matrix,
             labels,
             exclude_labels=[exclude_label] if exclude_label else [],
         )
-    else:
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            targets,
-            predictions,
-            output_dict=report_as_dict,
-            exclude_label=exclude_label,
-        )
-        if isinstance(report, str):
-            log_evaluation_table(report, precision, f1, accuracy)
+    elif not output_directory:
+        log_evaluation_table(report, precision, f1, accuracy)
 
     return report, precision, f1, accuracy, confusion_matrix, labels
 
@@ -926,7 +918,7 @@ def evaluate_entities(
                     merged_targets,
                     merged_predictions,
                     merged_confidences,
-                    title="Entity Confusion matrix",
+                    title="Entity Prediction Confidence Distribution",
                     hist_filename=histogram_filename,
                 )
 
@@ -1415,7 +1407,7 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
     return pipeline
 
 
-def run_evaluation(
+async def run_evaluation(
     data_path: Text,
     model_path: Text,
     output_directory: Optional[Text] = None,
@@ -1448,9 +1440,10 @@ def run_evaluation(
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = rasa.shared.nlu.training_data.loading.load_data(
-        data_path, interpreter.model_metadata.language
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[data_path]
     )
+    test_data = await test_data_importer.get_nlu_data()
 
     result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
@@ -1829,7 +1822,7 @@ def compute_metrics(
     )
 
 
-def compare_nlu(
+async def compare_nlu(
     configs: List[Text],
     data: TrainingDataFull,
     exclusion_percentages: List[int],
@@ -1857,7 +1850,7 @@ def compare_nlu(
     Returns: training examples per run
     """
 
-    from rasa.train import train_nlu
+    from rasa.train import train_nlu_async
 
     training_examples_per_run = []
 
@@ -1902,7 +1895,7 @@ def compare_nlu(
                 )
 
                 try:
-                    model_path = train_nlu(
+                    model_path = await train_nlu_async(
                         nlu_config,
                         train_split_path,
                         model_output_path,
@@ -1918,7 +1911,7 @@ def compare_nlu(
                 model_path = os.path.join(get_model(model_path), "nlu")
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
-                result = run_evaluation(
+                result = await run_evaluation(
                     test_path, model_path, output_directory=output_path, errors=True
                 )
 

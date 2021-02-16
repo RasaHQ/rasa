@@ -21,14 +21,14 @@ from pathlib import Path
 
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException, YamlException
+from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 from rasa.shared.utils.validation import YamlValidationException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot
+from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 
@@ -722,6 +722,7 @@ class Domain:
         self._add_requested_slot()
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
+        self._add_session_metadata_slot()
 
     def _add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
@@ -805,6 +806,11 @@ class Domain:
             f"call superfluous."
         )
         self._add_knowledge_base_slots()
+
+    def _add_session_metadata_slot(self) -> None:
+        self.slots.append(
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+        )
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Looks up which action index corresponds to this action name."""
@@ -1579,7 +1585,11 @@ class Domain:
         if not is_likely_yaml_file(filename):
             return False
 
-        content = rasa.shared.utils.io.read_yaml_file(filename)
+        try:
+            content = rasa.shared.utils.io.read_yaml_file(filename)
+        except (ValueError, YamlSyntaxException):
+            return False
+
         return any(key in content for key in ALL_DOMAIN_KEYS)
 
     def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
