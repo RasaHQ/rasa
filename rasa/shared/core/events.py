@@ -1447,6 +1447,8 @@ class ActionExecuted(Event):
             metadata: Additional event metadata.
             action_text: In case it's an end-to-end action prediction, the text which
                 was predicted.
+            hide_rule_turn: If `True`, this action should be hidden in the dialogue
+                history created for ML-based policies.
         """
         self.action_name = action_name
         self.policy = policy

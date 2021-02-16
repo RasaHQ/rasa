@@ -201,6 +201,16 @@ class MemoizationPolicy(Policy):
         domain: Domain,
         **kwargs: Any,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         return self._recall_states(states)
 
     def _prediction_result(
@@ -305,11 +315,25 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return mcfly_tracker
 
     def _recall_using_delorean(
-        self, old_states, tracker, domain, **kwargs
+        self,
+        old_states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        **kwargs,
     ) -> Optional[Text]:
-        """Recursively go to the past to correctly forget slots,
-        and then back to the future to recall."""
+        """Applies to the future idea to change the past and get the new future.
 
+        Recursively go to the past to correctly forget slots,
+        and then back to the future to recall.
+
+        Args:
+            old_states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         logger.debug("Launch DeLorean...")
 
         mcfly_tracker = self._back_to_the_future(tracker)
@@ -338,7 +362,19 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         domain: Domain,
         **kwargs: Any,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
 
+        Uses back to the future idea to change the past and check whether the new future
+        can be used to recall the action.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker

@@ -447,8 +447,11 @@ class DialogueStateTracker:
     ) -> Generator[Tuple["DialogueStateTracker", bool], None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing the trackers before each action."""
-
+        Returns:
+            The tuple with the tracker before each action,
+            and the boolean flag representing whether this action should be hidden
+            in the dialogue history created for ML-based policies.
+        """
         tracker = self.init_copy()
 
         for event in self.applied_events():

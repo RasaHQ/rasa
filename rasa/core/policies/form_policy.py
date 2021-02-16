@@ -109,6 +109,16 @@ class FormPolicy(MemoizationPolicy):
         domain: Domain,
         **kwargs: Any,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         # modify the states
         return self._recall_states(self._modified_states(states))
 
