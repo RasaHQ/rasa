@@ -22,7 +22,6 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@rasa.shared.utils.common.raise_on_unexpected_train
 async def train(
     domain_file: Union[Domain, Text],
     training_resource: Union[Text, "TrainingDataImporter"],

@@ -181,7 +181,6 @@ class Trainer:
 
         return pipeline
 
-    @rasa.shared.utils.common.raise_on_unexpected_train
     def train(self, data: TrainingData, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
 

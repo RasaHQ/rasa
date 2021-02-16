@@ -708,7 +708,6 @@ class Agent:
             exclusion_percentage=exclusion_percentage,
         )
 
-    @rasa.shared.utils.common.raise_on_unexpected_train
     def train(
         self, training_trackers: List[DialogueStateTracker], **kwargs: Any
     ) -> None:

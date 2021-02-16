@@ -206,13 +206,3 @@ def arguments_of(func: Callable) -> List[Text]:
     import inspect
 
     return list(inspect.signature(func).parameters.keys())
-
-
-def raise_on_unexpected_train(f):
-    @functools.wraps(f)
-    def decorated(*args, **kwargs):
-        if os.environ.get("RAISE_ON_TRAIN") == "True":
-            raise ValueError("Training called and RAISE_ON_TRAIN is set.")
-        return f(*args, **kwargs)
-
-    return decorated

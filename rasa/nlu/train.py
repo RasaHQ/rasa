@@ -72,7 +72,6 @@ def create_persistor(persistor: Optional[Text]):
         return None
 
 
-@rasa.shared.utils.common.raise_on_unexpected_train
 async def train(
     nlu_config: Union[Text, Dict, RasaNLUModelConfig],
     data: Union[Text, "TrainingDataImporter"],
