@@ -406,6 +406,8 @@ jobs:
       run: |
         make test-integration
 
+    # these integration tests need to be ran in a sequential fashion,
+    # due to environment constraints, so we're running them in a single process.
     - name: Test Code with Services 🩺 (sequential)
       if: needs.changes.outputs.backend == 'true'
       env:
