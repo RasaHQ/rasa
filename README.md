@@ -195,7 +195,8 @@ make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
 make prepare-tests-macos  # Only on macOS
 ```
 
-Then, you'll need to start services with the following command which uses Docker Compose:
+Then, you'll need to start services with the following command which uses
+[Docker Compose](https://docs.docker.com/compose/install/):
 
 ```bash
 make run-integration-containers
