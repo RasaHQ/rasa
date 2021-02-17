@@ -5,7 +5,7 @@ import scipy.sparse
 import numpy as np
 import copy
 
-from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -24,7 +24,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 shape = 100
@@ -204,7 +204,7 @@ def test_convert_training_examples(
 
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
-    training_data = TrainingData([message])
+    training_data = TrainingDataFull([message])
     tokenizer.train(training_data)
     count_vectors_featurizer.train(training_data)
     spacy_featurizer.train(training_data)

@@ -16,7 +16,7 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaTrainChunkException
 from rasa.utils.tensorflow.data_generator import DataChunkFile
@@ -110,7 +110,7 @@ class SklearnIntentClassifier(IntentClassifier):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -187,7 +187,6 @@ class SklearnIntentClassifier(IntentClassifier):
             cv=cv_splits,
             scoring=self.component_config["scoring_function"],
             verbose=1,
-            iid=False,
         )
 
     def process(self, message: Message, **kwargs: Any) -> None:

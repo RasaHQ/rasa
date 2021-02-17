@@ -12,7 +12,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTION_NAME
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
@@ -37,7 +37,7 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
 
-    ftr.train(TrainingData([train_message]))
+    ftr.train(TrainingDataFull([train_message]))
 
     ftr.process(test_message)
 
@@ -80,7 +80,7 @@ def test_count_vector_featurizer_response_attribute_featurization(
     second_message.set(RESPONSE, "hi")
     second_message.set(INTENT, "greet")
 
-    data = TrainingData([train_message, second_message])
+    data = TrainingDataFull([train_message, second_message])
 
     tk.train(data)
     ftr.train(data)
@@ -134,7 +134,7 @@ def test_count_vector_featurizer_attribute_featurization(
     train_message.set(INTENT, intent)
     train_message.set(RESPONSE, response)
 
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
 
     tk.train(data)
     ftr.train(data)
@@ -196,7 +196,7 @@ def test_count_vector_featurizer_shared_vocab(
     train_message.set(INTENT, intent)
     train_message.set(RESPONSE, response)
 
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
     tk.train(data)
     ftr.train(data)
 
@@ -239,7 +239,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
     ftr.train(data)
 
     test_message = Message(data={TEXT: sentence})
@@ -275,7 +275,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
     ftr.train(data)
 
     test_message = Message(data={TEXT: sentence})
@@ -315,7 +315,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     train_message = Message(data={TEXT: ""})
     train_message.set(TOKENS_NAMES[TEXT], tokens_feature)
 
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
 
     ftr.train(data)
 
@@ -354,7 +354,7 @@ def test_count_vector_featurizer_char(sentence, expected):
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
     ftr.train(data)
 
     test_message = Message(data={TEXT: sentence})
@@ -395,7 +395,7 @@ def test_count_vector_featurizer_persist_load(tmp_path: Path):
     WhitespaceTokenizer().process(train_message1)
     WhitespaceTokenizer().process(train_message2)
 
-    data = TrainingData([train_message1, train_message2])
+    data = TrainingDataFull([train_message1, train_message2])
     train_ftr.train(data)
 
     # persist featurizer
@@ -471,9 +471,9 @@ def test_count_vectors_featurizer_train():
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingData([message]))
+    WhitespaceTokenizer().train(TrainingDataFull([message]))
 
-    featurizer.train(TrainingData([message]), RasaNLUModelConfig())
+    featurizer.train(TrainingDataFull([message]), RasaNLUModelConfig())
 
     expected = np.array([0, 1, 0, 0, 0])
     expected_cls = np.array([1, 1, 1, 1, 1])
@@ -537,7 +537,7 @@ def test_count_vector_featurizer_use_lemma(
     SpacyTokenizer().process(train_message)
     SpacyTokenizer().process(test_message)
 
-    ftr.train(TrainingData([train_message]))
+    ftr.train(TrainingDataFull([train_message]))
 
     ftr.process(test_message)
 
@@ -587,7 +587,7 @@ def test_count_vector_featurizer_action_attribute_featurization(
     second_message.set(ACTION_TEXT, "hi")
     second_message.set(ACTION_NAME, "greet")
 
-    data = TrainingData([train_message, second_message])
+    data = TrainingDataFull([train_message, second_message])
 
     tk.train(data)
     ftr.train(data)
@@ -653,7 +653,7 @@ def test_count_vector_featurizer_process_by_attribute(
     train_message1 = Message(data={TEXT: "hello"})
     train_message1.set(ACTION_TEXT, "hi")
 
-    data = TrainingData([train_message, train_message1])
+    data = TrainingDataFull([train_message, train_message1])
 
     tk.train(data)
     ftr.train(data)
@@ -709,7 +709,7 @@ def test_cvf_independent_train_vocabulary_expand(
             ACTION_NAME: "action_1",
         }
     )
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
 
     tokenizer.train(data)
     featurizer.train(data)
@@ -760,7 +760,7 @@ def test_cvf_shared_train_vocabulary_expand(
             ACTION_NAME: "action_1",
         }
     )
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
 
     tokenizer.train(data)
     featurizer.train(data)
@@ -793,7 +793,7 @@ def test_cvf_incremental_train_vocabulary(
         {"additional_vocabulary_size": {"text": additional_size}}, finetune_mode=False,
     )
     train_message = Message(data={"text": original_train_text})
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
 
     tokenizer.train(data)
     original_featurizer.train(data)
@@ -815,7 +815,7 @@ def test_cvf_incremental_train_vocabulary(
     assert len(new_featurizer.vectorizers["text"].vocabulary_) == total_vocabulary_size
 
     additional_train_message = Message(data={"text": additional_train_text})
-    data = TrainingData([train_message, additional_train_message])
+    data = TrainingDataFull([train_message, additional_train_message])
     tokenizer.train(data)
     new_featurizer.train(data)
 
@@ -846,7 +846,7 @@ def test_cvf_incremental_train_vocabulary_overflow(tmp_path: Path,):
         {"additional_vocabulary_size": {"text": additional_size}}, finetune_mode=False,
     )
     train_message = Message(data={"text": original_train_text})
-    data = TrainingData([train_message])
+    data = TrainingDataFull([train_message])
 
     tokenizer.train(data)
     original_featurizer.train(data)
@@ -861,7 +861,7 @@ def test_cvf_incremental_train_vocabulary_overflow(tmp_path: Path,):
     )
 
     additional_train_message = Message(data={"text": additional_train_text})
-    data = TrainingData([train_message, additional_train_message])
+    data = TrainingDataFull([train_message, additional_train_message])
     tokenizer.train(data)
 
     with pytest.warns(UserWarning) as warning:

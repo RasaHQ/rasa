@@ -13,7 +13,10 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE, TOKENS_NAMES
@@ -91,7 +94,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def prepare_partial_training(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -120,15 +123,20 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         self._create_sparse_features(message)
 
     def _create_feature_to_idx_dict(
-        self, training_data: TrainingData
+        self, training_data: TrainingDataFull
     ) -> Dict[Text, Dict[Text, int]]:
         """Create dictionary of all feature values.
 
         Each feature key, defined in the component configuration, points to
         different feature values and their indices in the overall resulting
         feature vector.
-        """
 
+        Args:
+            training_data: The complete training data.
+
+        Returns:
+            A dictionary of all feature values.
+        """
         # get all possible feature values
         all_features = []
         for example in training_data.training_examples:
@@ -177,15 +185,13 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return feature_vocabulary
 
     def _create_sparse_features(self, message: Message) -> None:
-        """Convert incoming messages into sparse features using the configured
-        features."""
+        """Convert the message into sparse features using the configured features."""
         import scipy.sparse
 
         tokens = message.get(TOKENS_NAMES[TEXT])
-        # this check is required because there might be training data examples without TEXT,
-        # e.g., `Message("", {action_name: "action_listen"})`
+        # this check is required because there might be training data examples
+        # without TEXT, e.g., `Message("", {action_name: "action_listen"})`
         if tokens:
-
             sentence_features = self._tokens_to_features(tokens)
             one_hot_seq_feature_vector = self._features_to_one_hot(sentence_features)
 
@@ -201,7 +207,6 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""
-
         configured_features = self.component_config["features"]
         sentence_features = []
 
@@ -242,9 +247,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def _features_to_one_hot(
         self, sentence_features: List[Dict[Text, Any]]
     ) -> np.ndarray:
-        """Convert the word features into a one-hot presentation using the indices
-        in the feature-to-idx dictionary."""
+        """Convert the word features into a one-hot presentation.
 
+        Uses the indices in the feature-to-idx dictionary.
+        """
         one_hot_seq_feature_vector = np.zeros(
             [len(sentence_features), self.number_of_features]
         )
@@ -300,7 +306,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":
+        """Load this component from file.
 
+        See the parent class for details.
+        """
         file_name = meta.get("file")
 
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
@@ -309,9 +318,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
+        """Persist this component to disk for future loading.
 
+        See the parent class for details.
+        """
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         io_utils.json_pickle(feature_to_idx_file, self.feature_to_idx_dict)
 

@@ -21,7 +21,7 @@ from rasa.shared.nlu.constants import (
 
 if TYPE_CHECKING:
     from rasa.nlu.tokenizers.tokenizer import Token
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
     from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
 
 
 def build_tag_id_dict(
-    training_data: "TrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+    training_data: "TrainingDataFull", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
@@ -153,28 +153,37 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: "TrainingData") -> None:
+def apply_bilou_schema(training_data: "TrainingDataFull") -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:
         training_data: the training data
     """
     for message in training_data.nlu_examples:
-        entities = message.get(ENTITIES)
+        apply_bilou_schema_to_message(message)
 
-        if not entities:
-            continue
 
-        tokens = message.get(TOKENS_NAMES[TEXT])
+def apply_bilou_schema_to_message(message: "Message") -> None:
+    """Get a list of BILOU entity tags and set them on the given message.
 
-        for attribute, message_key in [
-            (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
-            (ENTITY_ATTRIBUTE_ROLE, BILOU_ENTITIES_ROLE),
-            (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
-        ]:
-            entities = map_message_entities(message, attribute)
-            output = bilou_tags_from_offsets(tokens, entities)
-            message.set(message_key, output)
+    Args:
+        message: the message
+    """
+    entities = message.get(ENTITIES)
+
+    if not entities:
+        return
+
+    tokens = message.get(TOKENS_NAMES[TEXT])
+
+    for attribute, message_key in [
+        (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
+        (ENTITY_ATTRIBUTE_ROLE, BILOU_ENTITIES_ROLE),
+        (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
+    ]:
+        entities = map_message_entities(message, attribute)
+        output = bilou_tags_from_offsets(tokens, entities)
+        message.set(message_key, output)
 
 
 def map_message_entities(

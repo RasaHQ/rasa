@@ -8,7 +8,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReade
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 import rasa.shared.utils.io
 
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,9 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
-    def read(self, fn: Text, **kwargs: Any) -> "TrainingData":
+    """Reads training data in dialogflow format."""
+
+    def read(self, fn: Text, **kwargs: Any) -> "TrainingDataFull":
         """Loads training data stored in the Dialogflow data format."""
         language = kwargs["language"]
         fformat = kwargs["fformat"]
@@ -43,7 +45,7 @@ class DialogflowReader(TrainingDataReader):
                 f"No training examples found for dialogflow file {fn}!",
                 docs=DOCS_URL_MIGRATE_GOOGLE,
             )
-            return TrainingData()
+            return TrainingDataFull()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples)
         else:  # path for DIALOGFLOW_ENTITIES
@@ -51,7 +53,7 @@ class DialogflowReader(TrainingDataReader):
 
     def _read_intent(
         self, intent: Dict[Text, Any], examples: List[Dict[Text, Any]]
-    ) -> "TrainingData":
+    ) -> "TrainingDataFull":
         """Reads the intent and examples from respective jsons."""
         intent = intent.get("name")
 
@@ -60,7 +62,7 @@ class DialogflowReader(TrainingDataReader):
             text, entities = self._join_text_chunks(ex["data"])
             training_examples.append(Message.build(text, intent, entities))
 
-        return TrainingData(training_examples)
+        return TrainingDataFull(training_examples)
 
     def _join_text_chunks(
         self, chunks: List[Dict[Text, Any]]
@@ -125,15 +127,15 @@ class DialogflowReader(TrainingDataReader):
     @staticmethod
     def _read_entities(
         entity: Dict[Text, Any], examples: List[Dict[Text, Any]]
-    ) -> "TrainingData":
+    ) -> "TrainingDataFull":
         entity_synonyms = transform_entity_synonyms(examples)
 
         if entity["isRegexp"]:
             regex_features = DialogflowReader._extract_regex_features(entity, examples)
-            return TrainingData([], entity_synonyms, regex_features, [],)
+            return TrainingDataFull([], entity_synonyms, regex_features, [],)
         else:
             lookup_tables = DialogflowReader._extract_lookup_tables(entity, examples)
-            return TrainingData([], entity_synonyms, [], lookup_tables,)
+            return TrainingDataFull([], entity_synonyms, [], lookup_tables,)
 
     @staticmethod
     def _read_examples(
@@ -153,5 +155,14 @@ class DialogflowReader(TrainingDataReader):
         else:
             return None
 
-    def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
+        """Reads TrainingData from a string.
+
+        Args:
+            s: String with training data.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            New `TrainingData` object with parsed training data.
+        """
         raise NotImplementedError

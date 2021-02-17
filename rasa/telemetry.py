@@ -38,7 +38,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.channels.channel import InputChannel
     from rasa.core.agent import Agent
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
 
@@ -631,7 +631,15 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
+        ignore_errors=[
+            # std lib errors
+            KeyboardInterrupt,  # user hit the interrupt key (Ctrl+C)
+            MemoryError,  # machine is running out of memory
+            NotImplementedError,  # user is using a feature that is not implemented
+            asyncio.CancelledError,  # an async operation has been cancelled by the user
+            # expected Rasa errors
+            RasaException,
+        ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
@@ -920,7 +928,7 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
 
 
 @ensure_telemetry_enabled
-def track_nlu_model_test(test_data: "TrainingData") -> None:
+def track_nlu_model_test(test_data: "TrainingDataFull") -> None:
     """Track when a user tests an nlu model.
 
     Args:

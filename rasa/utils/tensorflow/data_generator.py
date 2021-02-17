@@ -38,8 +38,6 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
         self.shuffle = shuffle
         self.batch_strategy = batch_strategy
 
-        self.on_epoch_end()
-
     def __len__(self) -> int:
         """Number of batches in the Sequence.
 
@@ -63,7 +61,7 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
         """Update the data after every epoch."""
         raise NotImplementedError
 
-    def _shuffle_and_balance(self, batch_size: int):
+    def _shuffle_and_balance(self, batch_size: int) -> Data:
         data = self.model_data.data
 
         if self.shuffle:
@@ -72,7 +70,9 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
         if self.batch_strategy == BALANCED:
             data = self.model_data.balanced_data(data, batch_size, self.shuffle)
 
-        self.model_data.data = data
+        # do not override self.model_data.data, because we need original data for
+        # balancing on the next epoch
+        return data
 
     @staticmethod
     def prepare_batch(
@@ -356,18 +356,23 @@ class RasaBatchDataGenerator(RasaDataGenerator):
             batch_strategy: The batch strategy.
             shuffle: If 'True', data will be shuffled.
         """
-        self.increase_batch_size = False
+        super().__init__(model_data, batch_size, batch_strategy, shuffle)
+
         if isinstance(batch_size, list):
             logger.debug(
                 "The provided batch size is a list, this data generator will use a "
                 "linear increasing batch size."
             )
-            self.increase_batch_size = True
-        self.epochs = epochs
-        self.current_epoch = -1
-        self.current_batch_size = batch_size
 
-        super().__init__(model_data, batch_size, batch_strategy, shuffle)
+        self._epochs = epochs
+        # we use `on_epoch_end` method to prepare data for the next epoch
+        # set current epoch to `-1`, so that `on_epoch_end` will increase it to `0`
+        self._current_epoch = -1
+        # actual batch size will be set inside `on_epoch_end`
+        self._current_batch_size = None
+        # create separate data variable that will store modified data for each batch
+        self._data = None
+        self.on_epoch_end()
 
     def __len__(self) -> int:
         """Number of batches in the Sequence.
@@ -375,8 +380,9 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         Returns:
             The number of batches in the Sequence.
         """
-        num_examples = self.model_data.num_examples
-        batch_size = self.current_batch_size
+        # data was rebalanced, so need to recalculate number of examples
+        num_examples = self.model_data.number_of_examples(self._data)
+        batch_size = self._current_batch_size
         return num_examples // batch_size + int(num_examples % batch_size > 0)
 
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
@@ -388,47 +394,39 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         Returns:
             A batch (tuple of input data and target data).
         """
-        start = index * self.current_batch_size
-        end = start + self.current_batch_size
+        start = index * self._current_batch_size
+        end = start + self._current_batch_size
 
         # return input and target data, as our target data is inside the input
         # data return None for the target data
-        return self.prepare_batch(self.model_data.data, start, end), None
+        return self.prepare_batch(self._data, start, end), None
 
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""
-        self.current_epoch += 1
-        if self.increase_batch_size:
-            self.current_batch_size = self.linearly_increasing_batch_size(
-                self.current_epoch, self.batch_size, self.epochs
-            )
-        self._shuffle_and_balance(self.current_batch_size)
+        self._current_epoch += 1
+        self._current_batch_size = self._linearly_increasing_batch_size()
+        self._data = self._shuffle_and_balance(self._current_batch_size)
 
-    @staticmethod
-    def linearly_increasing_batch_size(
-        epoch: int, batch_size: Union[List[int], int], epochs: int
-    ) -> int:
+    def _linearly_increasing_batch_size(self) -> int:
         """Linearly increase batch size with every epoch.
 
         The idea comes from https://arxiv.org/abs/1711.00489.
 
-        Args:
-            epoch: The current epoch number.
-            batch_size: The batch sizes to use.
-            epochs: The total number of epochs.
-
         Returns:
             The batch size to use in this epoch.
         """
-        if not isinstance(batch_size, list):
-            return int(batch_size)
+        if not isinstance(self.batch_size, list):
+            return int(self.batch_size)
 
-        if epochs > 1:
+        if self._epochs > 1:
             return int(
-                batch_size[0] + epoch * (batch_size[1] - batch_size[0]) / (epochs - 1)
+                self.batch_size[0]
+                + self._current_epoch
+                * (self.batch_size[1] - self.batch_size[0])
+                / (self._epochs - 1)
             )
         else:
-            return int(batch_size[0])
+            return int(self.batch_size[0])
 
 
 class DataChunkFile(NamedTuple):

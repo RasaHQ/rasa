@@ -5,6 +5,8 @@ from unittest.mock import Mock
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 import pytest
+from _pytest.logging import LogCaptureFixture
+import logging
 import copy
 
 from rasa.core.exceptions import UnsupportedDialogueModelError
@@ -116,6 +118,7 @@ class ConstantPolicy(Policy):
         predict_index: Optional[int] = None,
         confidence: float = 1,
         is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         **kwargs: Any,
@@ -124,6 +127,7 @@ class ConstantPolicy(Policy):
         self.predict_index = predict_index
         self.confidence = confidence
         self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.is_no_user_prediction = is_no_user_prediction
         self.events = events or []
         self.optional_events = optional_events or []
 
@@ -158,6 +162,7 @@ class ConstantPolicy(Policy):
             self.__class__.__name__,
             policy_priority=self.priority,
             is_end_to_end_prediction=self.is_end_to_end_prediction,
+            is_no_user_prediction=self.is_no_user_prediction,
             events=self.events,
             optional_events=self.optional_events,
         )
@@ -365,13 +370,18 @@ class LoadReturnsNonePolicy(Policy):
         pass
 
 
-def test_policy_loading_load_returns_none(tmp_path: Path):
+def test_policy_loading_load_returns_none(tmp_path: Path, caplog: LogCaptureFixture):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsNonePolicy()])
     original_policy_ensemble.train([], None, RegexInterpreter())
     original_policy_ensemble.persist(str(tmp_path))
 
-    with pytest.raises(Exception):
-        PolicyEnsemble.load(str(tmp_path))
+    with caplog.at_level(logging.WARNING):
+        ensemble = PolicyEnsemble.load(str(tmp_path))
+        assert (
+            caplog.records.pop().msg
+            == "Failed to load policy tests.core.test_ensemble.LoadReturnsNonePolicy: load returned None"
+        )
+        assert len(ensemble.policies) == 0
 
 
 class LoadReturnsWrongTypePolicy(Policy):
@@ -525,6 +535,34 @@ def test_end_to_end_prediction_supersedes_others(default_domain: Domain):
     assert prediction.max_confidence == expected_confidence
     assert prediction.max_confidence_index == expected_action_index
     assert prediction.policy_name == f"policy_1_{ConstantPolicy.__name__}"
+
+
+def test_no_user_prediction_supersedes_others(default_domain: Domain):
+    expected_action_index = 2
+    expected_confidence = 0.5
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(priority=100, predict_index=0),
+            ConstantPolicy(priority=1, predict_index=1, is_end_to_end_prediction=True),
+            ConstantPolicy(
+                priority=1,
+                predict_index=expected_action_index,
+                confidence=expected_confidence,
+                is_no_user_prediction=True,
+            ),
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    prediction = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+
+    assert prediction.max_confidence == expected_confidence
+    assert prediction.max_confidence_index == expected_action_index
+    assert prediction.policy_name == f"policy_2_{ConstantPolicy.__name__}"
+    assert prediction.is_no_user_prediction
+    assert not prediction.is_end_to_end_prediction
 
 
 def test_prediction_applies_must_have_policy_events(default_domain: Domain):

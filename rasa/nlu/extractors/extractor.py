@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Text, Tuple, Optional
+from typing import Any, Dict, List, Text, Tuple, Optional, NamedTuple
 
 import rasa.shared.utils.io
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
@@ -30,10 +30,24 @@ from rasa.shared.nlu.constants import (
     TOKENS_NAMES,
 )
 from rasa.utils.tensorflow.data_generator import DataChunkFile
+import rasa.utils.train_utils
+
+
+class EntityTagSpec(NamedTuple):
+    """Specification of an entity tag present in the training data."""
+
+    tag_name: Text
+    ids_to_tags: Dict[int, Text]
+    tags_to_ids: Dict[Text, int]
+    num_tags: int
 
 
 class EntityExtractor(Component):
-    """Abstract entity extractor component."""
+    """Entity extractors are components which extract entities.
+
+    They can be placed in the pipeline like other components, and can extract
+    entities like a person's name, or a location.
+    """
 
     def train_on_chunks(
         self,
@@ -52,19 +66,27 @@ class EntityExtractor(Component):
     def add_extractor_name(
         self, entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
-        """Adds the name of this extractor to each given entity.
+        """Adds this extractor's name to a list of entities.
 
         Args:
-            entities: List of entities.
+            entities: the extracted entities.
 
         Returns:
-            Updated list of entities
+            the modified entities.
         """
         for entity in entities:
             entity[EXTRACTOR] = self.name
         return entities
 
     def add_processor_name(self, entity: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Adds this extractor's name to the list of processors for this entity.
+
+        Args:
+            entity: the extracted entity and its metadata.
+
+        Returns:
+            the modified entity.
+        """
         if "processors" in entity:
             entity["processors"].append(self.name)
         else:
@@ -72,18 +94,23 @@ class EntityExtractor(Component):
 
         return entity
 
-    def init_split_entities(self):
-        """Initialise the behaviour for splitting entities by comma (or not)."""
+    def init_split_entities(self) -> Dict[Text, bool]:
+        """Initialises the behaviour for splitting entities by comma (or not).
+
+        Returns:
+            Defines desired behaviour for splitting specific entity types and
+            default behaviour for splitting any entity types for which no
+            behaviour is defined.
+        """
         split_entities_config = self.component_config.get(
             SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-        if isinstance(split_entities_config, bool):
-            split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
-        else:
-            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[
-                SPLIT_ENTITIES_BY_COMMA
-            ]
-        return split_entities_config
+        default_value = self.defaults.get(
+            SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        return rasa.utils.train_utils.init_split_entities(
+            split_entities_config, default_value
+        )
 
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
@@ -418,7 +445,7 @@ class EntityExtractor(Component):
         return entity
 
     @staticmethod
-    def check_correct_entity_annotations(training_data: TrainingData) -> None:
+    def check_correct_entity_annotations(training_data: TrainingDataFull) -> None:
         """Check if entities are correctly annotated in the training data.
 
         If the start and end values of an entity do not match any start and end values

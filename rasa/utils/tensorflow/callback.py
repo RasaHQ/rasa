@@ -75,9 +75,8 @@ class RasaModelCheckpoint(tf.keras.callbacks.Callback):
         # Initialize best_metrics_so_far with the first results
         if not self.best_metrics_so_far:
             keys = filter(
-                lambda k: True
-                if (k.startswith("val") and (k.endswith("_acc") or k.endswith("_f1")))
-                else False,
+                lambda k: k.startswith("val")
+                and (k.endswith("_acc") or k.endswith("_f1")),
                 current_results.keys(),
             )
             if not keys:

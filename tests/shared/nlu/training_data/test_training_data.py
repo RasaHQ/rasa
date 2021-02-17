@@ -26,7 +26,7 @@ from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import (
-    TrainingData,
+    TrainingDataFull,
     TrainingDataChunk,
     TF_RECORD_KEY_SEPARATOR,
 )
@@ -618,7 +618,7 @@ def test_guess_format_from_non_existing_file_path():
 
 
 def test_is_empty():
-    assert TrainingData().is_empty()
+    assert TrainingDataFull().is_empty()
 
 
 def test_custom_attributes(tmp_path):
@@ -810,7 +810,7 @@ def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: 
                 for ex_index in range(intent_count)
             ]
         )
-    training_data = TrainingData(all_messages)
+    training_data = TrainingDataFull(all_messages)
     original_fingerprint = training_data.fingerprint()
     chunks = training_data.divide_into_chunks(num_chunks=num_chunks)
     new_fingerprint = training_data.fingerprint()
@@ -877,12 +877,12 @@ def test_training_data_chunk_exception():
     ],
 )
 def test_label_fingerprints(message: Message):
-    training_data1 = TrainingData(
+    training_data1 = TrainingDataFull(
         [
             Message({INTENT: "intent1"}),
             Message({ENTITIES: [{"entity": "entity1"}]}),
             Message({ACTION_NAME: "action_name1"}),
         ]
     )
-    training_data2 = training_data1.merge(TrainingData([message]))
+    training_data2 = training_data1.merge(TrainingDataFull([message]))
     assert training_data1.label_fingerprint() != training_data2.label_fingerprint()

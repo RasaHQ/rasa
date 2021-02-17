@@ -8,9 +8,13 @@ import rasa.utils.train_utils
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import COMPONENT_INDEX
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 
@@ -222,7 +226,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
 
 
 def validate_required_components_from_data(
-    pipeline: List["Component"], data: TrainingData
+    pipeline: List["Component"], data: TrainingDataFull
 ) -> None:
     """Validates that all components are present in the pipeline based on data.
 
@@ -230,7 +234,6 @@ def validate_required_components_from_data(
         pipeline: The list of the :class:`rasa.nlu.components.Component`s.
         data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
     """
-
     if data.response_examples and not any_components_in_pipeline(
         ["ResponseSelector"], pipeline
     ):
@@ -360,9 +363,8 @@ class ComponentMetaclass(type):
     """Metaclass with `name` class property."""
 
     @property
-    def name(cls):
+    def name(cls) -> Text:
         """The name property is a function of the class - its __name__."""
-
         return cls.__name__
 
 
@@ -388,26 +390,38 @@ class Component(metaclass=ComponentMetaclass):
     the pipeline to do intent classification.
     """
 
-    # Component class name is used when integrating it in a
-    # pipeline. E.g. ``[ComponentA, ComponentB]``
-    # will be a proper pipeline definition where ``ComponentA``
-    # is the name of the first component of the pipeline.
     @property
     def name(self) -> Text:
-        """Access the class's property name from an instance."""
+        """Returns the name of the component to be used in the model configuration.
 
+        Component class name is used when integrating it in a
+        pipeline. E.g. `[ComponentA, ComponentB]`
+        will be a proper pipeline definition where `ComponentA`
+        is the name of the first component of the pipeline.
+        """
         return type(self).name
 
-    # Which components are required by this component.
-    # Listed components should appear before the component itself in the pipeline.
+    @property
+    def unique_name(self) -> Text:
+        """Gets a unique name for the component in the pipeline.
+
+        The unique name can be used to distinguish components in
+        a pipeline, e.g. when the pipeline contains multiple
+        featurizers of the same type.
+        """
+        index = self.component_config.get(COMPONENT_INDEX)
+        return self.name if index is None else f"component_{index}_{self.name}"
+
     @classmethod
     def required_components(cls) -> List[Type["Component"]]:
-        """Specify which components need to be present in the pipeline.
+        """Specifies which components need to be present in the pipeline.
+
+        Which components are required by this component.
+        Listed components should appear before the component itself in the pipeline.
 
         Returns:
-            The list of class names of required components.
+            The class names of the required components.
         """
-
         return []
 
     # Defines the default configuration parameters of a component
@@ -457,7 +471,7 @@ class Component(metaclass=ComponentMetaclass):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        """Specify which python packages need to be installed.
+        """Specifies which python packages need to be installed.
 
         E.g. ``["spacy"]``. More specifically, these should be
         importable python package names e.g. `sklearn` and not package
@@ -469,7 +483,6 @@ class Component(metaclass=ComponentMetaclass):
         Returns:
             The list of required package names.
         """
-
         return []
 
     @classmethod
@@ -481,7 +494,7 @@ class Component(metaclass=ComponentMetaclass):
         cached_component: Optional["Component"] = None,
         **kwargs: Any,
     ) -> "Component":
-        """Load this component from file.
+        """Loads this component from file.
 
         After a component has been trained, it will be persisted by
         calling `persist`. When the pipeline gets loaded again,
@@ -534,7 +547,7 @@ class Component(metaclass=ComponentMetaclass):
         return component
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
-        """Initialize this component for a new pipeline.
+        """Initializes this component for a new pipeline.
 
         This function will be called before the training
         is started and before the first message is processed using
@@ -553,7 +566,7 @@ class Component(metaclass=ComponentMetaclass):
 
     def prepare_partial_training(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -571,11 +584,11 @@ class Component(metaclass=ComponentMetaclass):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component.
+        """Trains this component.
 
         This is the components chance to train itself provided
         with the training data. The component can rely on
@@ -587,14 +600,13 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            training_data: The
-                :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+            training_data: The training data containing all the examples.
             config: The model configuration parameters.
         """
         pass
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Process an incoming message.
+        """Processes an incoming message.
 
         This is the components chance to process an incoming
         message. The component can rely on
@@ -606,12 +618,12 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
+            message: The message to process.
         """
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this component to disk for future loading.
+        """Persists this component to disk for future loading.
 
         Args:
             file_name: The file name of the model.
@@ -779,9 +791,15 @@ class ComponentBuilder:
     ) -> Tuple[Optional[Component], Optional[Text]]:
         """Load a component from the cache, if it exists.
 
-        Returns the component, if found, and the cache key.
-        """
+        Args:
+            component_meta:
+                The metadata of the component to load in the pipeline.
+            model_metadata:
+                The model's :class:`rasa.nlu.model.Metadata`.
 
+        Returns:
+            the component, if found, and the cache key.
+        """
         from rasa.nlu import registry
 
         # try to get class name first, else create by name
@@ -799,7 +817,6 @@ class ComponentBuilder:
 
     def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
         """Add a component to the cache."""
-
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info(
@@ -829,7 +846,6 @@ class ComponentBuilder:
         Returns:
             The loaded component.
         """
-
         from rasa.nlu import registry
 
         try:

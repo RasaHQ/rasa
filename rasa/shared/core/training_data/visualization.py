@@ -20,7 +20,7 @@ from rasa.shared.nlu.constants import (
 )
 
 if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
     from rasa.shared.nlu.training_data.message import Message
     import networkx
 
@@ -40,12 +40,18 @@ class UserMessageGenerator:
 
     @staticmethod
     def _create_reverse_mapping(
-        data: "TrainingData",
+        data: "TrainingDataFull",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
-        """Create a mapping from intent to messages
+        """Create a mapping from intent to messages.
 
-        This allows a faster intent lookup."""
+        This allows a faster intent lookup.
 
+        Args:
+            data: The training data
+
+        Returns:
+            A mapping from intent to messages.
+        """
         d = defaultdict(list)
         for example in data.training_examples:
             if example.get(INTENT, {}) is not None:
@@ -400,7 +406,7 @@ async def visualize_neighborhood(
     output_file: Optional[Text] = None,
     max_history: int = 2,
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
-    nlu_training_data: Optional["TrainingData"] = None,
+    nlu_training_data: Optional["TrainingDataFull"] = None,
     should_merge_nodes: bool = True,
     max_distance: int = 1,
     fontsize: int = 12,
@@ -528,7 +534,7 @@ async def visualize_stories(
     output_file: Optional[Text],
     max_history: int,
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
-    nlu_training_data: Optional["TrainingData"] = None,
+    nlu_training_data: Optional["TrainingDataFull"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
 ):

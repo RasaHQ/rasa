@@ -20,37 +20,60 @@ import typing
 from typing import Text, Dict, Any, Union
 
 if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 
 class TrainingDataReader:
+    """Reads training data from files."""
+
     def __init__(self):
+        """Initializes the reader."""
         self.filename: Text = ""
 
-    def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
+    def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingDataFull":
         """Reads TrainingData from a file."""
         self.filename = filename
         return self.reads(rasa.shared.utils.io.read_file(filename), **kwargs)
 
-    def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Reads TrainingData from a string."""
         raise NotImplementedError
 
 
 class TrainingDataWriter:
+    """Writes training data to files."""
+
     def dump(self, filename: Text, training_data) -> None:
-        """Writes a TrainingData object in markdown format to a file."""
+        """Writes a TrainingData object in markdown format to a file.
+
+        Args:
+            filename: the name of the file
+            training_data: The training data.
+        """
         s = self.dumps(training_data)
         rasa.shared.utils.io.write_text_file(s, filename)
 
-    def dumps(self, training_data: "TrainingData") -> Text:
-        """Turns TrainingData into a string."""
+    def dumps(self, training_data: "TrainingDataFull") -> Text:
+        """Turns TrainingData into a string.
+
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A string representation of the training data.
+        """
         raise NotImplementedError
 
     @staticmethod
-    def prepare_training_examples(training_data: "TrainingData") -> OrderedDict:
-        """Pre-processes training data examples by removing not trainable entities."""
+    def prepare_training_examples(training_data: "TrainingDataFull") -> OrderedDict:
+        """Pre-processes training data examples by removing not trainable entities.
 
+        Args:
+            training_data: The training data.
+
+        Returns:
+            A dictionary containing the training data.
+        """
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
         training_examples = OrderedDict()
@@ -69,8 +92,12 @@ class TrainingDataWriter:
     @staticmethod
     def generate_list_item(text: Text) -> Text:
         """Generates text for a list item."""
+        return f"- {TrainingDataWriter.generate_string_item(text)}"
 
-        return f"- {rasa.shared.nlu.training_data.util.encode_string(text)}\n"
+    @staticmethod
+    def generate_string_item(text: Text) -> Text:
+        """Generates text for a string item."""
+        return f"{rasa.shared.nlu.training_data.util.encode_string(text)}\n"
 
     @staticmethod
     def generate_message(message: Dict[Text, Any]) -> Text:
@@ -135,11 +162,13 @@ class TrainingDataWriter:
 
 
 class JsonTrainingDataReader(TrainingDataReader):
-    def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
+    """Reads training data from json files."""
+
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Transforms string into json object and passes it on."""
         js = json.loads(s)
         return self.read_from_json(js, **kwargs)
 
-    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> "TrainingData":
+    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> "TrainingDataFull":
         """Reads TrainingData from a json object."""
         raise NotImplementedError

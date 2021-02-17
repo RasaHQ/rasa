@@ -9,6 +9,7 @@ from rasa.shared.constants import (
     LEGACY_DOCS_BASE_URL,
     DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
 )
+from rasa.shared.exceptions import MarkdownException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -16,7 +17,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
 )
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.util import encode_string, decode_string
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -59,7 +60,7 @@ class MarkdownReader(TrainingDataReader):
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 
-    def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Read markdown string and create TrainingData object."""
         s = self._strip_comments(s)
         for line in s.splitlines():
@@ -71,7 +72,7 @@ class MarkdownReader(TrainingDataReader):
                 self._parse_item(line)
                 self._load_files(line)
 
-        return TrainingData(
+        return TrainingDataFull(
             self.training_examples,
             self.entity_synonyms,
             self.regex_features,
@@ -135,47 +136,10 @@ class MarkdownReader(TrainingDataReader):
                     self.current_title, item, self.lookup_tables
                 )
 
-    @staticmethod
-    def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
-        """Converts the provided json_str to a valid dict containing the entity
-        attributes.
-
-        Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
-        [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
-
-        Args:
-            json_str: the entity dict as string without "{}"
-
-        Raises:
-            ValidationError if validation of entity dict fails.
-            JSONDecodeError if provided entity dict is not valid json.
-
-        Returns:
-            a proper python dict
-        """
-        import json
-        import rasa.shared.utils.validation as validation_utils
-        import rasa.shared.nlu.training_data.schemas.data_schema as schema
-
-        # add {} as they are not part of the regex
-        try:
-            data = json.loads(f"{{{json_str}}}")
-        except JSONDecodeError as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Incorrect training data format ('{{{json_str}}}'), make sure your "
-                f"data is valid. For more information about the format visit "
-                f"{LEGACY_DOCS_BASE_URL}/nlu/training-data-format/."
-            )
-            raise e
-
-        validation_utils.validate_training_data(data, schema.entity_dict_schema())
-
-        return data
-
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in AVAILABLE_SECTIONS:
-            raise ValueError(
+            raise MarkdownException(
                 "Found markdown section '{}' which is not "
                 "in the allowed sections '{}'."
                 "".format(section, "', '".join(AVAILABLE_SECTIONS))
@@ -208,7 +172,7 @@ class MarkdownWriter(TrainingDataWriter):
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 
-    def dumps(self, training_data: "TrainingData") -> Text:
+    def dumps(self, training_data: "TrainingDataFull") -> Text:
         """Transforms a TrainingData object into a markdown string."""
         md = ""
         md += self._generate_training_examples_md(training_data)
@@ -218,9 +182,8 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
+    def _generate_training_examples_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown training examples."""
-
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
         training_examples = OrderedDict()
@@ -250,9 +213,8 @@ class MarkdownWriter(TrainingDataWriter):
 
         return "".join(lines)
 
-    def _generate_synonyms_md(self, training_data: "TrainingData") -> Text:
+    def _generate_synonyms_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown for entity synomyms."""
-
         entity_synonyms = sorted(
             training_data.entity_synonyms.items(), key=lambda x: x[1]
         )
@@ -265,9 +227,8 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_regex_features_md(self, training_data: "TrainingData") -> Text:
+    def _generate_regex_features_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown for regex features."""
-
         md = ""
         # regex features are already sorted
         regex_features = training_data.regex_features
@@ -279,9 +240,8 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_lookup_tables_md(self, training_data: "TrainingData") -> Text:
+    def _generate_lookup_tables_md(self, training_data: "TrainingDataFull") -> Text:
         """Generates markdown for regex features."""
-
         md = ""
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
@@ -300,7 +260,6 @@ class MarkdownWriter(TrainingDataWriter):
         section_type: Text, title: Text, prepend_newline: bool = True
     ) -> Text:
         """Generates markdown section header."""
-
         prefix = "\n" if prepend_newline else ""
         title = encode_string(title)
 
@@ -309,5 +268,4 @@ class MarkdownWriter(TrainingDataWriter):
     @staticmethod
     def _generate_fname_md(text: Text) -> Text:
         """Generates markdown for a lookup table file path."""
-
         return f"  {encode_string(text)}\n"
