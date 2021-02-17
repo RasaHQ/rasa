@@ -5,6 +5,8 @@ import uuid
 from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, Text, List, Set, Any, Dict
+from _pytest.monkeypatch import MonkeyPatch
+from mock import Mock
 
 import pytest
 
@@ -147,6 +149,53 @@ def test_read_yaml_string_with_env_var_not_exist():
     """
     with pytest.raises(ValueError):
         rasa.shared.utils.io.read_yaml(config_with_env_var_not_exist)
+
+
+def test_read_yaml_parser_creation(monkeypatch: MonkeyPatch):
+    mock = Mock(return_value=rasa.shared.utils.io.YAMLParser())
+    monkeypatch.setattr(rasa.shared.utils.io, "_get_yaml_parser", mock)
+
+    config = """
+    user: ${USER_NAME}
+    password: ${PASS}
+    """
+    rasa.shared.utils.io.read_yaml(config)
+    mock.assert_called_once_with("safe", True)
+
+
+def test_read_yaml_parser_creation_without_replace_env_vars(monkeypatch: MonkeyPatch):
+    mock = Mock(return_value=rasa.shared.utils.io.YAMLParser())
+    monkeypatch.setattr(rasa.shared.utils.io, "_get_yaml_parser", mock)
+
+    config = """
+    user: user
+    password: pass
+    """
+    rasa.shared.utils.io.read_yaml(config)
+    mock.assert_called_once_with("safe", False)
+
+
+def test_read_yaml_parser_reuse(monkeypatch: MonkeyPatch):
+    config = """
+    user: user
+    password: pass
+    """
+    rasa.shared.utils.io.read_yaml(config)
+
+    config2 = """
+    user: user2
+    password: pass2
+    """
+    rasa.shared.utils.io.read_yaml(config2)
+
+    config3 = """
+    user: ${USER_NAME}
+    password: pass2
+    """
+    rasa.shared.utils.io.read_yaml(config3)
+
+    assert "safe" in rasa.shared.utils.io._parsers
+    assert len(rasa.shared.utils.io._parsers) == 1
 
 
 def test_environment_variable_not_existing():

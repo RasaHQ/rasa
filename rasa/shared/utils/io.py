@@ -297,6 +297,7 @@ def fix_yaml_loader() -> None:
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
+    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:
@@ -322,7 +323,13 @@ def replace_environment_variables() -> None:
 
 
 class YAMLParser(yaml.YAML):
-    """Parses YAML."""
+    """A custom parser for YAML.
+
+    It's used because `ruamel.yaml` stores all its information globally.
+    Which means it's impossible to create different parsers with different constructors
+    and resolvers without remembering the previous configuration and restoring it once
+    it's needed. That's exactly what this class does.
+    """
     def __init__(self, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False):
         super().__init__(typ=reader_type)
         self._save_default_yaml_parameters()
@@ -367,17 +374,20 @@ class YAMLParser(yaml.YAML):
 
 
 fix_yaml_loader()
-PARSERS: Dict[Tuple[Union[Text, List[Text]], bool], YAMLParser] = {}
+_parsers: Dict[Union[Text, List[Text]], YAMLParser] = {}
 ENV_VAR_REGEX = re.compile(r'\$\{[\S]+\}')
 
 
 def _get_yaml_parser(reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False) -> YAMLParser:
-    if (reader_type, replace_env_vars,) in PARSERS:
-        return PARSERS[(reader_type, replace_env_vars,)]
-    else:
-        new_parser = YAMLParser(reader_type=reader_type, replace_env_vars=replace_env_vars)
-        PARSERS[(reader_type, replace_env_vars,)] = new_parser
-        return new_parser
+    if replace_env_vars:
+        return YAMLParser(reader_type=reader_type, replace_env_vars=True)
+
+    if reader_type in _parsers:
+        return _parsers[reader_type]
+
+    new_parser = YAMLParser(reader_type=reader_type)
+    _parsers[reader_type] = new_parser
+    return new_parser
 
 
 def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
@@ -403,7 +413,6 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
     yaml_parser = _get_yaml_parser(reader_type, bool(ENV_VAR_REGEX.search(content)))
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
-    yaml.allow_duplicate_keys = False
 
     return yaml_parser.load(content) or {}
 
