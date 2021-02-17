@@ -80,8 +80,20 @@ async function getIncludedSources(options) {
 
 
 /**
+    This function is used to ensure that all the documentation files
+    which rely on the `remark-source` plugin to load source files into
+    the docs continue to work across documentation versions. There is no way for
+    `remark-source` to know about the file structure that we have, that's
+    why we need this extra function. The workflow is:
+    1. Doc files are put in a version folder upon release of a new version;
+    2. The files, previously on the `main` branch, used to point to source files
+       contained in `docs/source/...`;
+    3. Now that they are in a versioned folder, we need to them to point to source files
+       contained in `versioned_docs/version-xxx/sources/...`. This is what this function
+       does.
+
     Options:
-    - docsDir:                the directory containing the docs files
+    - docsDir:                the directory containing the versionned docs files
     - relativeSourceDir:      the directory that will contain the included sources
     - include:                list of patterns to look for doc files
 */
