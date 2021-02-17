@@ -415,7 +415,6 @@ def test_validate_config_file_with_extra_keys(tmp_path: Path):
 @pytest.mark.parametrize(
     "config",
     [
-        "",
         # Pre 2.x pipeline templates are invalid
         textwrap.dedent(
             """
@@ -467,7 +466,6 @@ def test_validate_config_file_with_extra_keys(tmp_path: Path):
 def test_invalid_config_files(config: Text, tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text(config)
-
     with pytest.raises(rasa.shared.utils.validation.YamlValidationException):
         rasa.shared.utils.io.read_model_configuration(config_file)
 
