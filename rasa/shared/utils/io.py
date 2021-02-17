@@ -543,7 +543,7 @@ def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
 
 
 def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
-    """Parses a yaml configuration file. Content needs to be a dictionary
+    """Parses a yaml configuration file. Content needs to be a dictionary.
 
     Args:
         filename: The path to the file which should be read.
@@ -574,6 +574,15 @@ def read_model_configuration(filename: Union[Path, Text]) -> Dict[Text, Any]:
 
 
 def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    """Checks if `path` is a subdirectory of `potential_parent_directory`.
+
+    Args:
+        path: Path to a file or directory.
+        potential_parent_directory: Potential parent directory.
+
+    Returns:
+        `True` if `path` is a subdirectory of `potential_parent_directory`.
+    """
     if path is None or potential_parent_directory is None:
         return False
 
