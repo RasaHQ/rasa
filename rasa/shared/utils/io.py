@@ -330,7 +330,12 @@ class YAMLParser(yaml.YAML):
     and resolvers without remembering the previous configuration and restoring it once
     it's needed. That's exactly what this class does.
     """
-    def __init__(self, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False):
+
+    def __init__(
+        self,
+        reader_type: Union[Text, List[Text]] = "safe",
+        replace_env_vars: bool = False,
+    ):
         super().__init__(typ=reader_type)
         self._save_default_yaml_parameters()
 
@@ -345,7 +350,9 @@ class YAMLParser(yaml.YAML):
         self._restore_default_yaml_parameters()
 
     def _save_default_yaml_parameters(self):
-        self._default_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
+        self._default_yaml_implicit_resolvers = (
+            yaml.Resolver.yaml_implicit_resolvers.copy()
+        )
         self._default_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
 
     def _restore_default_yaml_parameters(self):
@@ -353,7 +360,9 @@ class YAMLParser(yaml.YAML):
         yaml.SafeConstructor.yaml_constructors = self._default_yaml_constructors
 
     def _save_modified_yaml_parameters(self):
-        self._modified_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
+        self._modified_yaml_implicit_resolvers = (
+            yaml.Resolver.yaml_implicit_resolvers.copy()
+        )
         self._modified_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
 
     def _restore_modified_yaml_parameters(self):
@@ -375,10 +384,14 @@ class YAMLParser(yaml.YAML):
 
 fix_yaml_loader()
 _parsers: Dict[Union[Text, List[Text]], YAMLParser] = {}
-ENV_VAR_REGEX = re.compile(r'\$\{[\S]+\}')
+ENV_VAR_REGEX = re.compile(r"\$\{[\S]+\}")
 
 
-def _get_yaml_parser(reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False) -> YAMLParser:
+def _get_yaml_parser(
+    reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False
+) -> YAMLParser:
+    # we cannot reuse the existing parser in `_parsers` when `replace_env_vars` is `True`
+    # because the set of env variables might change
     if replace_env_vars:
         return YAMLParser(reader_type=reader_type, replace_env_vars=True)
 
