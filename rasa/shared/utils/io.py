@@ -335,7 +335,7 @@ class YAMLParser(yaml.YAML):
         self,
         reader_type: Union[Text, List[Text]] = "safe",
         replace_env_vars: bool = False,
-    ):
+    ) -> None:
         super().__init__(typ=reader_type)
         self._save_default_yaml_parameters()
 
@@ -347,25 +347,26 @@ class YAMLParser(yaml.YAML):
             yaml.SafeConstructor.add_constructor("!env_var", lambda _, node: node.value)
 
         self._save_modified_yaml_parameters()
-        self._restore_default_yaml_parameters()
+        self.restore_default_yaml_parameters()
 
-    def _save_default_yaml_parameters(self):
+    def _save_default_yaml_parameters(self) -> None:
         self._default_yaml_implicit_resolvers = (
             yaml.Resolver.yaml_implicit_resolvers.copy()
         )
         self._default_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
 
-    def _restore_default_yaml_parameters(self):
+    def restore_default_yaml_parameters(self) -> None:
+        """Restores the `ruamel.yaml` parameters that were specified before."""
         yaml.Resolver.yaml_implicit_resolvers = self._default_yaml_implicit_resolvers
         yaml.SafeConstructor.yaml_constructors = self._default_yaml_constructors
 
-    def _save_modified_yaml_parameters(self):
+    def _save_modified_yaml_parameters(self) -> None:
         self._modified_yaml_implicit_resolvers = (
             yaml.Resolver.yaml_implicit_resolvers.copy()
         )
         self._modified_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
 
-    def _restore_modified_yaml_parameters(self):
+    def _restore_modified_yaml_parameters(self) -> None:
         yaml.Resolver.yaml_implicit_resolvers = self._modified_yaml_implicit_resolvers
         yaml.SafeConstructor.yaml_constructors = self._modified_yaml_constructors
 
@@ -427,7 +428,9 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
 
-    return yaml_parser.load(content) or {}
+    content = yaml_parser.load(content) or {}
+    yaml_parser.restore_default_yaml_parameters()
+    return content
 
 
 def _is_ascii(text: Text) -> bool:
