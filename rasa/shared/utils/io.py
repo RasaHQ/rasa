@@ -336,6 +336,12 @@ class YAMLParser(yaml.YAML):
         reader_type: Union[Text, List[Text]] = "safe",
         replace_env_vars: bool = False,
     ) -> None:
+        """Creates an instance of YAMLParser.
+
+        Args:
+            reader_type: YAML reader type.
+            replace_env_vars: Indicates if environment variables need to be replaced.
+        """
         super().__init__(typ=reader_type)
         self._save_default_yaml_parameters()
 
