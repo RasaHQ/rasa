@@ -472,7 +472,7 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
     if fallback_rule:
         new_rules.append(fallback_rule)
 
-    if new_rules:
+    if model_configuration:
         _backup(configuration_file)
         rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
         _dump_rules(rule_output_file, new_rules)
