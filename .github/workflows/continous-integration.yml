@@ -529,7 +529,7 @@ jobs:
             RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
           fi
 
-          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$GITHUB_TAG'/latest/g')
+          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
 
           docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
           docker push rasa/rasa:${LATEST_TAG}
