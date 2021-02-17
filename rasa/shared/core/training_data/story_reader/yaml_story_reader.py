@@ -1,11 +1,12 @@
 import functools
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
 from rasa.shared.core.slots import TextSlot, ListSlot
-from rasa.shared.exceptions import YamlException
+from rasa.shared.exceptions import YamlException, FileNotFoundException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (
@@ -175,11 +176,18 @@ class YAMLStoryReader(StoryReader):
               `True` if all the keys are contained in the file, `False` otherwise.
 
         Raises:
-            YamlException: if the file seems to be a YAML file (extension) but
-                can not be read / parsed.
+            FileNotFoundException: if the file cannot be found.
         """
-        content = rasa.shared.utils.io.read_file(file_path)
-        return any(any(line.startswith(f"{key}:") for key in keys) for line in content)
+        try:
+            with open(file_path) as file:
+                return any(
+                    all(line.startswith(f"{key}:") for key in keys) for line in file
+                )
+        except FileNotFoundError:
+            raise FileNotFoundException(
+                f"Failed to read file, "
+                f"'{os.path.abspath(file_path)}' does not exist."
+            )
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:
