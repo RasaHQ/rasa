@@ -68,11 +68,6 @@ class SpacyNLP(Component):
 
         spacy_model_name = component_config.get("model")
 
-        # if no model is specified, we fall back to the language string
-        if not spacy_model_name:
-            spacy_model_name = config.language
-            component_config["model"] = config.language
-
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
 
         nlp = cls.load_model(spacy_model_name)
