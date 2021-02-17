@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Union
+from typing import Any, Dict, List, Optional, Text, Type, Tuple, Union
 import warnings
 
 from ruamel import yaml as yaml
@@ -322,6 +322,7 @@ def replace_environment_variables() -> None:
 
 
 class YAMLParser(yaml.YAML):
+    """Parses YAML."""
     def __init__(self, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False):
         super().__init__(typ=reader_type)
         self._save_default_yaml_parameters()
@@ -353,18 +354,33 @@ class YAMLParser(yaml.YAML):
         yaml.SafeConstructor.yaml_constructors = self._modified_yaml_constructors
 
     def load(self, stream: Union[Path, Any]) -> Any:
+        """Loads the YAML content.
+
+        Args:
+            stream: Any content or stream to parse.
+
+        Returns:
+            Parsed YAML.
+        """
         self._restore_modified_yaml_parameters()
         return super().load(stream)
 
 
 fix_yaml_loader()
+PARSERS: Dict[Tuple[Union[Text, List[Text]], bool], YAMLParser] = {}
+ENV_VAR_REGEX = re.compile(r'\$\{[\S]+\}')
 
 
 def _get_yaml_parser(reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False) -> YAMLParser:
-    return YAMLParser(reader_type=reader_type, replace_env_vars=replace_env_vars)
+    if (reader_type, replace_env_vars,) in PARSERS:
+        return PARSERS[(reader_type, replace_env_vars,)]
+    else:
+        new_parser = YAMLParser(reader_type=reader_type, replace_env_vars=replace_env_vars)
+        PARSERS[(reader_type, replace_env_vars,)] = new_parser
+        return new_parser
 
 
-def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False) -> Any:
+def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
     """Parses yaml from a text.
 
     Args:
@@ -375,11 +391,6 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", repl
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
-    yaml_parser = _get_yaml_parser(reader_type, replace_env_vars)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
-    yaml.allow_duplicate_keys = False
-
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
         content = (
@@ -388,6 +399,11 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe", repl
             .encode("utf-16", "surrogatepass")
             .decode("utf-16")
         )
+
+    yaml_parser = _get_yaml_parser(reader_type, bool(ENV_VAR_REGEX.search(content)))
+    yaml_parser.version = YAML_VERSION
+    yaml_parser.preserve_quotes = True
+    yaml.allow_duplicate_keys = False
 
     return yaml_parser.load(content) or {}
 
