@@ -6,7 +6,7 @@ mapping:
     allowempty: False
   language:
     type: "str"
-    required: True
+    required: False
   pipeline:
     type: "seq"
     required: False
