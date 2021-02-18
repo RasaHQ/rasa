@@ -472,7 +472,7 @@ class RasaModel(tf.keras.models.Model):
 
         return step
 
-    @profile
+    @staticmethod
     def _get_tf_call_model_function(
         dataset_function: Callable,
         call_model_function: Callable,
