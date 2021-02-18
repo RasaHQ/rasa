@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Set, Union
+from typing import Any, Dict, List, Optional, Text, Type, Union, FrozenSet
 import warnings
 
 from ruamel import yaml as yaml
@@ -390,7 +390,7 @@ class YAMLParser(yaml.YAML):
 
 
 fix_yaml_loader()
-_parsers: Dict[Union[Text, Set[Text]], YAMLParser] = {}
+_parsers: Dict[Union[Text, FrozenSet[Text]], YAMLParser] = {}
 ENV_VAR_REGEX = re.compile(r"\$\{[\S]+\}")
 
 
@@ -402,11 +402,12 @@ def _get_yaml_parser(
     if replace_env_vars:
         return YAMLParser(reader_type=reader_type, replace_env_vars=True)
 
-    if set(reader_type) in _parsers:
+    key = frozenset(reader_type)
+    if key in _parsers:
         return _parsers[reader_type]
 
     new_parser = YAMLParser(reader_type=reader_type)
-    _parsers[reader_type] = new_parser
+    _parsers[key] = new_parser
     return new_parser
 
 
