@@ -308,15 +308,91 @@ Thin wrapper around `raise_warning()` to raise a deprecation warning. It require
 a version until which we&#x27;ll warn, and after which the support for the feature will
 be removed.
 
+#### read\_validated\_yaml
+
+```python
+read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any
+```
+
+Validates YAML file content and returns parsed content.
+
+**Arguments**:
+
+- `filename` - The path to the file which should be read.
+- `schema` - The path to the schema file which should be used for validating the
+  file content.
+  
+
+**Returns**:
+
+  The parsed file content.
+  
+
+**Raises**:
+
+- `YamlValidationException` - In case the model configuration doesn&#x27;t match the
+  expected schema.
+
 #### read\_config\_file
 
 ```python
 read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]
 ```
 
-Parses a yaml configuration file. Content needs to be a dictionary
+Parses a yaml configuration file. Content needs to be a dictionary.
 
 **Arguments**:
 
 - `filename` - The path to the file which should be read.
+  
+
+**Raises**:
+
+- `YamlValidationException` - In case file content is not a `Dict`.
+  
+
+**Returns**:
+
+  Parsed config file.
+
+#### read\_model\_configuration
+
+```python
+read_model_configuration(filename: Union[Path, Text]) -> Dict[Text, Any]
+```
+
+Parses a model configuration file.
+
+**Arguments**:
+
+- `filename` - The path to the file which should be read.
+  
+
+**Raises**:
+
+- `YamlValidationException` - In case the model configuration doesn&#x27;t match the
+  expected schema.
+  
+
+**Returns**:
+
+  Parsed config file.
+
+#### is\_subdirectory
+
+```python
+is_subdirectory(path: Text, potential_parent_directory: Text) -> bool
+```
+
+Checks if `path` is a subdirectory of `potential_parent_directory`.
+
+**Arguments**:
+
+- `path` - Path to a file or directory.
+- `potential_parent_directory` - Potential parent directory.
+  
+
+**Returns**:
+
+  `True` if `path` is a subdirectory of `potential_parent_directory`.
 

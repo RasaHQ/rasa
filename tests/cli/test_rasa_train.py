@@ -104,20 +104,12 @@ def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
     rasa.shared.utils.io.write_yaml(
-        {
-            "language": "en",
-            "pipeline": "supervised_embeddings",
-            "policies": [{"name": "MemoizationPolicy"}],
-        },
+        {"language": "en", "policies": [{"name": "MemoizationPolicy"}],},
         "config_1.yml",
     )
 
     rasa.shared.utils.io.write_yaml(
-        {
-            "language": "en",
-            "pipeline": "supervised_embeddings",
-            "policies": [{"name": "MemoizationPolicy"}],
-        },
+        {"language": "en", "policies": [{"name": "MemoizationPolicy"}],},
         "config_2.yml",
     )
 
