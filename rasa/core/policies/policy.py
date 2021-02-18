@@ -3,6 +3,9 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
+import datetime
+from memory_profiler import profile
+
 from typing import (
     Any,
     List,
@@ -179,6 +182,7 @@ class Policy:
               containing entity tag ids for text user inputs otherwise empty dict
               for all dialogue turns in all training trackers
         """
+        logger.debug(f"NOTE: {datetime.datetime.now()} self.featurizer.featurize_trackers")
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter, bilou_tagging
         )

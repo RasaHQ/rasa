@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
 from collections import defaultdict
+import datetime
+from memory_profiler import profile
 
 import numpy as np
 
@@ -299,12 +301,14 @@ class TEDPolicy(Policy):
         SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     }
 
+
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
             SingleStateFeaturizer(), max_history=max_history
         )
 
+    @profile
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
@@ -342,6 +346,7 @@ class TEDPolicy(Policy):
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
+    @profile
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
         self.config = rasa.utils.train_utils.override_defaults(
@@ -356,6 +361,8 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
+
+    @profile
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
@@ -385,6 +392,8 @@ class TEDPolicy(Policy):
 
         return label_data, encoded_all_labels
 
+
+    @profile
     def _create_data_for_entities(
         self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
     ) -> Optional[Data]:
@@ -403,6 +412,8 @@ class TEDPolicy(Policy):
         )
         self.config[ENTITY_RECOGNITION] = False
 
+
+    @profile
     def _create_model_data(
         self,
         tracker_state_features: List[List[Dict[Text, List["Features"]]]],
@@ -475,6 +486,8 @@ class TEDPolicy(Policy):
 
         return model_data
 
+
+    @profile
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -492,6 +505,7 @@ class TEDPolicy(Policy):
             return
 
         # dealing with training data
+        logger.debug(f"NOTE: {datetime.datetime.now()} dealing with training data")
         tracker_state_features, label_ids, entity_tags = self.featurize_for_training(
             training_trackers,
             domain,
@@ -505,6 +519,7 @@ class TEDPolicy(Policy):
         )
 
         # extract actual training data to feed to model
+        logger.debug(f"NOTE: {datetime.datetime.now()} extract actual training data to feed to model")
         model_data = self._create_model_data(
             tracker_state_features, label_ids, entity_tags, encoded_all_labels
         )
@@ -525,6 +540,7 @@ class TEDPolicy(Policy):
             # This means the model wasn't loaded from a
             # previously trained model and hence needs
             # to be instantiated.
+            logger.debug(f"NOTE: {datetime.datetime.now()} This means the model wasn't loaded from a previously trained model and hence needs to be instantiated.")
             self.model = TED(
                 model_data.get_signature(),
                 self.config,
@@ -532,7 +548,7 @@ class TEDPolicy(Policy):
                 self._label_data,
                 self._entity_tag_specs,
             )
-
+        logger.debug(f"NOTE: {datetime.datetime.now()} self.model.fit")
         self.model.fit(
             model_data,
             self.config[EPOCHS],
@@ -542,6 +558,8 @@ class TEDPolicy(Policy):
             batch_strategy=self.config[BATCH_STRATEGY],
         )
 
+
+    @profile
     def _featurize_tracker_for_e2e(
         self,
         tracker: DialogueStateTracker,
@@ -567,6 +585,8 @@ class TEDPolicy(Policy):
             )
         return tracker_state_features
 
+
+    @profile
     def _pick_confidence(
         self, confidences: np.ndarray, similarities: np.ndarray
     ) -> Tuple[np.ndarray, bool]:
@@ -595,6 +615,8 @@ class TEDPolicy(Policy):
         # by default the first example in a batch is the one to use for prediction
         return confidences[0], self.only_e2e
 
+
+    @profile
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -643,6 +665,8 @@ class TEDPolicy(Policy):
             ),
         )
 
+
+    @profile
     def _create_optional_event_for_entities(
         self,
         prediction_output: Dict[Text, tf.Tensor],
@@ -698,6 +722,8 @@ class TEDPolicy(Policy):
 
         return [EntitiesAdded(entities)]
 
+
+    @profile
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
         if self.model is None:
@@ -748,6 +774,8 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
+
+    @profile
     def load(
         cls,
         path: Union[Text, Path],
@@ -856,6 +884,8 @@ class TEDPolicy(Policy):
 
 
 class TED(TransformerRasaModel):
+
+    @profile
     def __init__(
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
@@ -903,6 +933,8 @@ class TED(TransformerRasaModel):
 
         self._prepare_layers()
 
+
+    @profile
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
             raise ValueError(
@@ -925,6 +957,8 @@ class TED(TransformerRasaModel):
 
     # ---CREATING LAYERS HELPERS---
 
+
+    @profile
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
@@ -959,6 +993,8 @@ class TED(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
+
+    @profile
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
     ) -> None:
@@ -987,6 +1023,8 @@ class TED(TransformerRasaModel):
                 self.config[DENSE_DIMENSION][name],
             )
 
+
+    @profile
     def _prepare_encoding_layers(self, name: Text) -> None:
         """Create ffnn layer for given attribute name. The layer is used just before
         all dialogue features are combined.
@@ -1037,6 +1075,8 @@ class TED(TransformerRasaModel):
             ).values
         ]
 
+
+    @profile
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         # labels cannot have all features "fake"
@@ -1068,6 +1108,8 @@ class TED(TransformerRasaModel):
 
         return all_label_ids, all_labels_embed
 
+
+    @profile
     def _embed_dialogue(
         self,
         dialogue_in: tf.Tensor,
@@ -1113,6 +1155,8 @@ class TED(TransformerRasaModel):
 
         return dialogue_embed, mask, dialogue_transformed, attention_weights
 
+
+    @profile
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
@@ -1139,6 +1183,8 @@ class TED(TransformerRasaModel):
             lambda: self._encode_fake_features_per_attribute(tf_batch_data, attribute),
         )
 
+
+    @profile
     def _get_dense_units(
         self, attribute_features_list: List[tf.Tensor], attribute: Text
     ) -> int:
@@ -1151,6 +1197,8 @@ class TED(TransformerRasaModel):
                 units += f.shape[-1]
         return units
 
+
+    @profile
     def _get_concat_units(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> int:
@@ -1174,6 +1222,8 @@ class TED(TransformerRasaModel):
 
         return sentence_units
 
+
+    @profile
     def _encode_fake_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
@@ -1261,6 +1311,8 @@ class TED(TransformerRasaModel):
             tf.reshape(tf_batch_data[attribute][SEQUENCE_LENGTH][0], (-1,)),
         )
 
+
+    @profile
     def _encode_real_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
@@ -1424,6 +1476,8 @@ class TED(TransformerRasaModel):
 
         return tf.scatter_nd(indices, attribute_features, shape)
 
+
+    @profile
     def _process_batch_data(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> Tuple[tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
@@ -1489,6 +1543,8 @@ class TED(TransformerRasaModel):
 
         return batch_features, text_transformer_output, text_sequence_lengths
 
+
+    @profile
     def _reshape_for_entities(
         self,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
@@ -1559,6 +1615,8 @@ class TED(TransformerRasaModel):
 
     # ---TRAINING---
 
+
+    @profile
     def _batch_loss_entities(
         self,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
@@ -1583,6 +1641,8 @@ class TED(TransformerRasaModel):
             lambda: tf.constant(0.0),
         )
 
+
+    @profile
     def _real_batch_loss_entities(
         self,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
@@ -1628,6 +1688,8 @@ class TED(TransformerRasaModel):
 
         return labels_embed
 
+
+    @profile
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
@@ -1693,10 +1755,14 @@ class TED(TransformerRasaModel):
 
     # ---PREDICTION---
 
+
+    @profile
     def prepare_for_predict(self) -> None:
         """Prepares the model for prediction."""
         _, self.all_labels_embed = self._create_all_labels_embed()
 
+
+    @profile
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
@@ -1763,6 +1829,8 @@ class TED(TransformerRasaModel):
 
         return predictions
 
+
+    @profile
     def _batch_predict_entities(
         self,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
@@ -1791,6 +1859,8 @@ class TED(TransformerRasaModel):
             ),
         )
 
+
+    @profile
     def _real_batch_predict_entities(
         self,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
