@@ -402,7 +402,7 @@ def _get_yaml_parser(
     if replace_env_vars:
         return YAMLParser(reader_type=reader_type, replace_env_vars=True)
 
-    key = frozenset(reader_type)
+    key = frozenset(reader_type) if isinstance(reader_type, list) else reader_type
     if key in _parsers:
         return _parsers[key]
 
