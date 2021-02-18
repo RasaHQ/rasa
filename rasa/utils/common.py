@@ -108,17 +108,7 @@ def update_tensorflow_log_level() -> None:
     import tensorflow as tf
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
-
-    if log_level == "DEBUG":
-        tf_log_level = tf.compat.v1.logging.DEBUG
-    elif log_level == "INFO":
-        tf_log_level = tf.compat.v1.logging.INFO
-    elif log_level == "WARNING":
-        tf_log_level = tf.compat.v1.logging.WARN
-    else:
-        tf_log_level = tf.compat.v1.logging.ERROR
-
-    tf.compat.v1.logging.set_verbosity(tf_log_level)
+    tf.get_logger().setLevel(log_level)
     logging.getLogger("tensorflow").propagate = False
 
 
