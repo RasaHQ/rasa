@@ -404,7 +404,7 @@ def _get_yaml_parser(
 
     key = frozenset(reader_type)
     if key in _parsers:
-        return _parsers[reader_type]
+        return _parsers[key]
 
     new_parser = YAMLParser(reader_type=reader_type)
     _parsers[key] = new_parser
