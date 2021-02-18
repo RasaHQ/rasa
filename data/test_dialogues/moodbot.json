@@ -9,7 +9,8 @@
       "confidence":null,
       "policy":null,
       "timestamp":1551883958.346432,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.UserUttered",
@@ -69,7 +70,8 @@
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883975.6456478,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.BotUttered",
@@ -97,7 +99,8 @@
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883979.098331,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.UserUttered",
@@ -157,7 +160,8 @@
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883985.031668,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.BotUttered",
@@ -176,7 +180,8 @@
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883985.940413,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.BotUttered",
@@ -195,7 +200,8 @@
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883986.958556,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.UserUttered",
@@ -255,7 +261,8 @@
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883991.061463,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.BotUttered",
