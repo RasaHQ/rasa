@@ -61,7 +61,7 @@ class EntitySynonymMapper(EntityExtractor):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -83,7 +83,7 @@ class EntitySynonymMapper(EntityExtractor):
             training_data_chunk = TrainingDataChunk.load_chunk(data_chunk.file_path)
             self._process_entity_examples(training_data_chunk.entity_examples)
 
-    def _add_synonyms_from_data(self, training_data: TrainingData) -> None:
+    def _add_synonyms_from_data(self, training_data: TrainingDataFull) -> None:
         """Adds synonyms from data to the list of synonyms."""
         """Prepare the component for training on just a part of the data.
 

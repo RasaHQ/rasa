@@ -402,7 +402,7 @@ class ResponseSelector(DIETClassifier):
 
     def prepare_partial_training(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

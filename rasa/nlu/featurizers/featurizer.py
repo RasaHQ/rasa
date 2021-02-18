@@ -5,7 +5,10 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
-from rasa.shared.nlu.training_data.training_data import TrainingDataChunk, TrainingData
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataChunk,
+    TrainingDataFull,
+)
 
 
 class Featurizer(Component):
@@ -29,7 +32,7 @@ class Featurizer(Component):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

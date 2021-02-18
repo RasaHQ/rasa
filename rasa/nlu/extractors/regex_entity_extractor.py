@@ -102,14 +102,14 @@ class RegexEntityExtractor(EntityExtractor):
 
     def train(
         self,
-        training_data: TrainingData,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Train this component."""
         self._add_patterns_from_data(training_data)
 
-    def _add_patterns_from_data(self, training_data: TrainingData,) -> None:
+    def _add_patterns_from_data(self, training_data: TrainingDataFull) -> None:
         """Extracts the relevant regex pattern from the given training data."""
         if self.entity_names is None:
             self.entity_names = training_data.entities
