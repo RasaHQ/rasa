@@ -1,3 +1,5 @@
+from typing import Text
+
 import pytest
 
 from pep440_version_utils import Version
@@ -36,10 +38,9 @@ def test_validate_yaml_schema(file, schema):
         ("data/test_domains/wrong_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/wrong_custom_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/empty_response_format.yml", DOMAIN_SCHEMA_FILE),
-        ("data/test_config/example_config.yaml", CONFIG_SCHEMA_FILE),
     ],
 )
-def test_validate_yaml_schema_raise_exception(file, schema):
+def test_validate_yaml_schema_raise_exception(file: Text, schema: Text):
     with pytest.raises(YamlException):
         validation_utils.validate_yaml_schema(
             rasa.shared.utils.io.read_file(file), schema
