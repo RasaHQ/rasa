@@ -70,6 +70,12 @@ else
     fi
 fi
 
+CURRENTLY_EDITING_VERSION=${EXISTING_VERSION:-$NEW_VERSION}
+if [ -n "$CURRENTLY_EDITING_VERSION" ]
+then
+    cd $TMP_DOCS_FOLDER/docs && yarn run update-versioned-sources -- $CURRENTLY_EDITING_VERSION && cd -
+fi
+
 cd $TMP_DOCS_FOLDER
 
 if [ -z "$(git status --porcelain)" ]

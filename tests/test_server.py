@@ -618,7 +618,7 @@ responses:
 
 language: en
 
-polices:
+policies:
 - name: RulePolicy
 
 pipeline:
@@ -754,7 +754,7 @@ async def test_evaluate_stories_end_to_end(
 ):
     stories = rasa.shared.utils.io.read_file(end_to_end_test_story_file)
 
-    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories)
+    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories,)
 
     assert response.status == HTTPStatus.OK
     js = response.json()
@@ -792,6 +792,41 @@ async def test_evaluate_intent(rasa_app: SanicASGITestClient, default_nlu_data: 
         "entity_evaluation",
         "response_selection_evaluation",
     }
+
+
+async def test_evaluate_intent_json(rasa_app: SanicASGITestClient):
+    nlu_data = rasa.shared.utils.io.read_file("data/test/demo-rasa-small.json")
+
+    _, response = await rasa_app.post(
+        "/model/test/intents",
+        json=nlu_data,
+        headers={"Content-type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert set(response.json().keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
+
+
+async def test_evaluate_invalid_intent_model_file(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.post(
+        "/model/test/intents?model=invalid.tar.gz",
+        json={},
+        headers={"Content-type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+async def test_evaluate_intent_without_body(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.post(
+        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_evaluate_intent_on_just_nlu_model(
@@ -1270,6 +1305,13 @@ async def test_put_tracker(rasa_app: SanicASGITestClient):
     assert events.deserialise_events(evts) == test_events
 
 
+async def test_predict_without_conversation_id(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.post("/conversations/non_existent_id/predict")
+
+    assert response.status == HTTPStatus.NOT_FOUND
+    assert response.json()["message"] == "Conversation ID not found."
+
+
 async def test_sorted_predict(rasa_app: SanicASGITestClient):
     await _create_tracker_for_sender(rasa_app, "sortedpredict")
 
@@ -1466,6 +1508,16 @@ async def test_execute(rasa_app: SanicASGITestClient):
     parsed_content = response.json()
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
+
+
+async def test_execute_without_conversation_id(rasa_app: SanicASGITestClient):
+    data = {INTENT_NAME_KEY: "utter_greet"}
+    _, response = await rasa_app.post(
+        "/conversations/non_existent_id/execute", json=data
+    )
+
+    assert response.status == HTTPStatus.NOT_FOUND
+    assert response.json()["message"] == "Conversation ID not found."
 
 
 async def test_execute_with_missing_action_name(rasa_app: SanicASGITestClient):
@@ -1773,6 +1825,18 @@ async def test_get_story(
 
     assert response.status == HTTPStatus.OK
     assert response.content.decode().strip() == expected
+
+
+async def test_get_story_without_conversation_id(
+    rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
+):
+    conversation_id = "some-conversation-ID"
+    url = f"/conversations/{conversation_id}/story"
+
+    _, response = await rasa_app.get(url)
+
+    assert response.status == HTTPStatus.NOT_FOUND
+    assert response.json()["message"] == "Conversation ID not found."
 
 
 async def test_get_story_does_not_update_conversation_session(
