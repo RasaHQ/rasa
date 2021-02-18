@@ -85,12 +85,15 @@ class ActionNotFoundException(ValueError, RasaException):
 
 
 class SessionConfig(NamedTuple):
+    """The Session Configuration."""
+
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
-    global_not_intent: Optional[Text] = None
+    global_not_intent: Optional[Union[Text, List[Text]]] = None
 
     @staticmethod
     def default() -> "SessionConfig":
+        """Returns the SessionConfig with the default values."""
         return SessionConfig(
             rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
@@ -624,34 +627,41 @@ class Domain:
             `FormAction` which is implemented in the Rasa SDK.
         """
         if isinstance(forms, dict):
-            # updating the `not_intent` param of each slot with `global_not_intent`
+            # Updating the `not_intent` parameter of each slot with `global_not_intent`
             if session_config.global_not_intent is not None:
-                global_param = session_config.global_not_intent
-                # looping through all the available forms and each slot's type and
-                # updating the `not_intent` field accordingly.
-                for form_count, _ in enumerate(list(forms.keys())):
-                    form_slots = list(forms.values())[form_count]
-                    for _, slot_name in enumerate(form_slots):
-                        slot_params = form_slots[slot_name]
-                        for type_count, type_name in enumerate(slot_params):
-                            key = "not_intent"
-                            # check that `not_intent` param is present
-                            if key in slot_params[type_count]:
-                                # check that the value of `not_intent` is a list
-                                if isinstance(slot_params[type_count][key], list):
-                                    # check that global_not_intent is in the list
-                                    if global_param not in slot_params[type_count][key]:
-                                        slot_params[type_count][key].append(
-                                            global_param
-                                        )
+                global_params = session_config.global_not_intent
+                if not isinstance(global_params, list):
+                    global_params = [global_params]
+                for global_value in global_params:
+                    # looping through all the available forms, their slots and their
+                    # all their slot's types and updating the `not_intent` key
+                    # with the `global_not_intent` value.
+                    for form_count, _ in enumerate(list(forms.keys())):
+                        form_slots = list(forms.values())[form_count]
+                        for _, slot_name in enumerate(form_slots):
+                            slot_params = form_slots[slot_name]
+                            for type_count, type_name in enumerate(slot_params):
+                                key = "not_intent"
+                                # check that `not_intent` param is present
+                                if key in slot_params[type_count]:
+                                    # check that the value of `not_intent` is a list
+                                    if isinstance(slot_params[type_count][key], list):
+                                        # check that global_not_intent is in the list
+                                        if (
+                                            global_value
+                                            not in slot_params[type_count][key]
+                                        ):
+                                            slot_params[type_count][key].append(
+                                                global_value
+                                            )
+                                    else:
+                                        if global_value != slot_params[type_count][key]:
+                                            slot_params[type_count][key] = [
+                                                slot_params[type_count][key],
+                                                global_value,
+                                            ]
                                 else:
-                                    if global_param != slot_params[type_count][key]:
-                                        slot_params[type_count][key] = [
-                                            slot_params[type_count][key],
-                                            global_param,
-                                        ]
-                            else:
-                                slot_params[type_count][key] = global_param
+                                    slot_params[type_count][key] = global_value
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
