@@ -618,7 +618,7 @@ responses:
 
 language: en
 
-polices:
+policies:
 - name: RulePolicy
 
 pipeline:
