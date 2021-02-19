@@ -18,6 +18,6 @@ async def test_pika_event_broker_connect():
     )
     try:
         await broker.connect()
-        assert broker._exchange is not None
+        assert broker.is_ready()
     finally:
         await broker.close()
