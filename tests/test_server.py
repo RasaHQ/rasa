@@ -1515,9 +1515,15 @@ async def test_trigger_intent_with_entity(rasa_app: SanicASGITestClient):
     assert response.status == HTTPStatus.OK
 
     parsed_content = response.json()
+    last_slot_set_event = [
+        event
+        for event in parsed_content["tracker"]["events"]
+        if event["event"] == "slot"
+    ][-1]
+
     assert parsed_content["tracker"]
-    assert parsed_content["tracker"]["slots"] == name
     assert parsed_content["messages"]
+    assert last_slot_set_event["value"] == name
 
 
 async def test_trigger_intent_with_missing_intent_name(rasa_app: SanicASGITestClient):
