@@ -6,6 +6,7 @@ import time
 import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List
 from unittest.mock import patch
@@ -109,7 +110,7 @@ async def test_http_parsing():
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
-            await MessageProcessor(inter, None, None, None, None)._parse_message(
+            await MessageProcessor(inter, None, None, None, None, None)._parse_message(
                 message
             )
         except KeyError:
@@ -179,6 +180,31 @@ async def test_reminder_scheduled(
         f"{EXTERNAL_MESSAGE_PREFIX}remind", intent={"name": "remind", IS_EXTERNAL: True}
     )
     assert t.events[-1] == ActionExecuted("action_listen")
+
+
+async def test_reminder_lock(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    caplog: LogCaptureFixture,
+):
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        sender_id = uuid.uuid4().hex
+
+        reminder = ReminderScheduled("remind", datetime.datetime.now())
+        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_schedule_reminder"))
+        tracker.update(reminder)
+
+        default_processor.tracker_store.save(tracker)
+
+        await default_processor.handle_reminder(
+            reminder, sender_id, default_channel, default_processor.nlg
+        )
+
+        assert f"Deleted lock for conversation '{sender_id}'." in caplog.text
 
 
 async def test_reminder_aborted(
