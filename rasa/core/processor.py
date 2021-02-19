@@ -422,7 +422,7 @@ class MessageProcessor:
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
         async with self.lock_store.lock(sender_id):
-            tracker = await self.get_tracker_with_session_start(
+            tracker = await self.fetch_tracker_and_update_session(
                 sender_id, output_channel
             )
 

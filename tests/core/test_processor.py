@@ -51,6 +51,7 @@ from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot, AnySlot
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
@@ -225,9 +226,7 @@ async def test_reminder_lock(
 
         default_processor.tracker_store.save(tracker)
 
-        await default_processor.handle_reminder(
-            reminder, sender_id, default_channel, default_processor.nlg
-        )
+        await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
         assert f"Deleted lock for conversation '{sender_id}'." in caplog.text
 
@@ -881,7 +880,12 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
     domain = Domain.empty()
 
     processor = MessageProcessor(
-        test_interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+        test_interpreter,
+        ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
+        Mock(),
     )
 
     # This should not raise
@@ -911,7 +915,12 @@ def test_get_next_action_probabilities_pass_policy_predictions_without_interpret
     domain = Domain.empty()
 
     processor = MessageProcessor(
-        interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+        interpreter,
+        ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
+        Mock(),
     )
 
     with pytest.warns(DeprecationWarning):
@@ -1201,11 +1210,13 @@ async def test_logging_of_end_to_end_action():
                 return PolicyPrediction.for_action_name(domain, ACTION_LISTEN_NAME)
 
     tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
     processor = MessageProcessor(
         RegexInterpreter(),
         ConstantEnsemble(),
         domain,
         tracker_store,
+        lock_store,
         NaturalLanguageGenerator.create(None, domain),
     )
 
