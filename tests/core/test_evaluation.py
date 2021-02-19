@@ -110,6 +110,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
+@pytest.mark.timeout(300)
 @pytest.mark.trains_model
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(

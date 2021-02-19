@@ -8,6 +8,7 @@ from rasa.core.agent import Agent
 from rasa.utils.endpoints import ClientResponseError
 
 
+@pytest.mark.timeout(300)
 @pytest.mark.trains_model
 async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     agent = Agent.load(unpacked_trained_moodbot_path)

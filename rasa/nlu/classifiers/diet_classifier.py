@@ -85,9 +85,9 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SOFTMAX,
     AUTO,
     BALANCED,
+    CROSS_ENTROPY,
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
@@ -97,6 +97,9 @@ from rasa.utils.tensorflow.constants import (
     SEQUENCE_LENGTH,
     DENSE_DIMENSION,
     MASK,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
 )
 
 logger = logging.getLogger(__name__)
@@ -175,10 +178,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
-        # Number of top actions to normalize scores for loss type 'softmax'.
-        # Set to 0 to turn off normalization.
+        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        LOSS_TYPE: CROSS_ENTROPY,
+        # Number of top intents to normalize scores for. Applicable with
+        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+        # to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
@@ -245,6 +249,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Split entities by comma, this makes sense e.g. for a list of ingredients
         # in a recipie, but it doesn't make sense for the parts of an address
         SPLIT_ENTITIES_BY_COMMA: True,
+        # If 'True' applies sigmoid on all similarity terms and adds
+        # it to the loss function to ensure that similarity values are
+        # approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: False,
+        # Model confidence to be returned during inference. Possible values -
+        # 'softmax', 'cosine', 'inner'.
+        MODEL_CONFIDENCE: SOFTMAX,
     }
 
     # init helpers
@@ -283,6 +294,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
+
+        self.component_config = train_utils.update_confidence_type(
+            self.component_config
+        )
+
+        train_utils.validate_configuration_settings(self.component_config)
+
+        self.component_config = train_utils.update_deprecated_loss_type(
+            self.component_config
+        )
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
@@ -850,9 +871,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = message_sim.argsort()[::-1]
 
         if (
-            self.component_config[LOSS_TYPE] == SOFTMAX
-            and self.component_config[RANKING_LENGTH] > 0
+            self.component_config[RANKING_LENGTH] > 0
+            and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
         ):
+            # TODO: This should be removed in 3.0 when softmax as
+            #  model confidence and normalization is completely deprecated.
             message_sim = train_utils.normalize(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
@@ -1000,7 +1023,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_example,
         ) = cls._load_from_files(meta, model_dir)
 
+        meta = train_utils.override_defaults(cls.defaults, meta)
+        meta = train_utils.update_confidence_type(meta)
         meta = train_utils.update_similarity_type(meta)
+        meta = train_utils.update_deprecated_loss_type(meta)
 
         model = cls._load_model(
             entity_tag_specs,
@@ -1651,12 +1677,11 @@ class DIET(TransformerRasaModel):
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        _, scores = self._tf_layers[
+            f"loss.{LABEL}"
+        ].similarity_confidence_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
-        )
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
         )
 
         return {"i_scores": scores}
