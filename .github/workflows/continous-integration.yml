@@ -401,7 +401,7 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
-        PYTEST_MARKERS: '"not sequential"'
+        INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
         PYTHONIOENCODING: "utf-8"
       run: |
         make test-integration
@@ -412,7 +412,7 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 1
-        PYTEST_MARKERS: "sequential"
+        INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
         PYTHONIOENCODING: "utf-8"
       run: |
         make test-integration

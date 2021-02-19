@@ -2,7 +2,7 @@
 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
-PYTEST_MARKERS ?= "sequential or not sequential"
+INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
 
 help:
 	@echo "make"
@@ -177,9 +177,9 @@ test: clean
 test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 ifeq (,$(wildcard deployment/.env))
-	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(PYTEST_MARKERS)
+	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
 else
-	set -o allexport; source deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(PYTEST_MARKERS) && set +o allexport
+	set -o allexport; source deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
 endif
 
 generate-pending-changelog:
