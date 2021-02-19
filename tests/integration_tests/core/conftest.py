@@ -21,8 +21,12 @@ DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
 
 
 @pytest.fixture
-def redis_lock_store() -> RedisLockStore:
-    return RedisLockStore(REDIS_HOST, REDIS_PORT)
+def redis_lock_store() -> Iterator[RedisLockStore]:
+    lock_store = RedisLockStore(REDIS_HOST, REDIS_PORT)
+    try:
+        yield lock_store
+    finally:
+        lock_store.red.flushall()
 
 
 @pytest.fixture
