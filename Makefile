@@ -165,6 +165,14 @@ test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
+test-non-training: clean
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	RAISE_ON_TRAIN=True OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "not trains_model"
+
+test-training: clean
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "trains_model"
+
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
 
