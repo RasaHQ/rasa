@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import functools
 import os
 import random
 import pytest
@@ -452,3 +453,34 @@ class AsyncMock(Mock):
 
     async def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return super().__call__(*args, **kwargs)
+
+
+def raise_on_unexpected_train(f: Callable) -> Callable:
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if os.environ.get("RAISE_ON_TRAIN") == "True":
+            raise ValueError(
+                "Training called and RAISE_ON_TRAIN is set. "
+                "See https://github.com/RasaHQ/rasa#tests-that-train"
+            )
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+def wrap_training_methods() -> None:
+    """Wrap methods that train so they fail if RAISE_ON_TRAIN is set.
+
+        See "Tests that train" section in rasa/README.md.
+    """
+    import rasa.nlu as nlu
+    import rasa.core as core
+    from rasa.nlu.model import Trainer
+    from rasa.core.agent import Agent
+
+    for training_module in [nlu, core, Trainer, Agent]:
+        training_module.train = raise_on_unexpected_train(training_module.train)
+
+
+def pytest_configure():
+    wrap_training_methods()
