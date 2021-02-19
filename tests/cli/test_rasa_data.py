@@ -152,9 +152,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
         data.validate_files(args)
 
 
-def test_rasa_data_augment_nlu(
-        run: Callable[..., RunResult],
-):
+def test_rasa_data_augment_nlu(run: Callable[..., RunResult],):
 
     out_path = "data/augmentation_results"
     os.makedirs(out_path)
@@ -172,21 +170,35 @@ def test_rasa_data_augment_nlu(
         "--paraphrases",
         os.path.join(data_root, "data/test_nlu_paraphrasing/paraphrases.yml"),
         "--nlu-classification-report",
-        os.path.join(data_root, "data/test_nlu_paraphrasing/nlu_classification_report.json"),
+        os.path.join(
+            data_root, "data/test_nlu_paraphrasing/nlu_classification_report.json"
+        ),
         "--out",
         out_path,
         "-c",
         os.path.join(data_root, "data/test_nlu_paraphrasing/config.yml"),
         "--paraphrase-score-threshold",
-        "0.1"
+        "0.1",
     )
 
-    out_report_diverse = os.path.join(out_path, "augmentation_diverse/intent_report.json")
-    out_errors_diverse = os.path.join(out_path, "augmentation_diverse/intent_errors.json")
-    out_plot_f1_diverse = os.path.join(out_path, "augmentation_diverse/f1-score_changes.png")
-    out_plot_precision_diverse = os.path.join(out_path, "augmentation_diverse/precision_changes.png")
-    out_plot_recall_diverse = os.path.join(out_path, "augmentation_diverse/recall_changes.png")
-    out_augmented_train_diverse = os.path.join(out_path, "augmentation_diverse/train_augmented_diverse.yml")
+    out_report_diverse = os.path.join(
+        out_path, "augmentation_diverse/intent_report.json"
+    )
+    out_errors_diverse = os.path.join(
+        out_path, "augmentation_diverse/intent_errors.json"
+    )
+    out_plot_f1_diverse = os.path.join(
+        out_path, "augmentation_diverse/f1-score_changes.png"
+    )
+    out_plot_precision_diverse = os.path.join(
+        out_path, "augmentation_diverse/precision_changes.png"
+    )
+    out_plot_recall_diverse = os.path.join(
+        out_path, "augmentation_diverse/recall_changes.png"
+    )
+    out_augmented_train_diverse = os.path.join(
+        out_path, "augmentation_diverse/train_augmented_diverse.yml"
+    )
 
     # Files from the diverse augmentation criterion exist
     assert os.path.exists(out_report_diverse)
@@ -198,10 +210,18 @@ def test_rasa_data_augment_nlu(
 
     out_report_random = os.path.join(out_path, "augmentation_random/intent_report.json")
     out_errors_random = os.path.join(out_path, "augmentation_random/intent_errors.json")
-    out_plot_f1_random = os.path.join(out_path, "augmentation_random/f1-score_changes.png")
-    out_plot_precision_random = os.path.join(out_path, "augmentation_random/precision_changes.png")
-    out_plot_recall_random = os.path.join(out_path, "augmentation_random/recall_changes.png")
-    out_augmented_train_random = os.path.join(out_path, "augmentation_random/train_augmented_random.yml")
+    out_plot_f1_random = os.path.join(
+        out_path, "augmentation_random/f1-score_changes.png"
+    )
+    out_plot_precision_random = os.path.join(
+        out_path, "augmentation_random/precision_changes.png"
+    )
+    out_plot_recall_random = os.path.join(
+        out_path, "augmentation_random/recall_changes.png"
+    )
+    out_augmented_train_random = os.path.join(
+        out_path, "augmentation_random/train_augmented_random.yml"
+    )
 
     # Files from the random augmentation criterion exist
     assert os.path.exists(out_report_random)
