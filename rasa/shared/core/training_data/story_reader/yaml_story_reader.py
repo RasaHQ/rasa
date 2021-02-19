@@ -56,7 +56,7 @@ KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
 KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
-CORE_SCHEMA_FILE = "utils/schemas/stories.yml"
+CORE_SCHEMA_FILE = "shared/utils/schemas/stories.yml"
 DEFAULT_VALUE_TEXT_SLOTS = "filled"
 DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
