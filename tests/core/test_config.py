@@ -295,6 +295,17 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "rules_count": 0,
         },
     ),
+    # MappingPolicy only but no rules
+    (
+        {"policies": [{"name": "MappingPolicy"}]},
+        {"intents": ["greet", "leave"]},
+        {
+            "config": {"policies": [{"name": "RulePolicy"}]},
+            "domain_intents": ["greet", "leave"],
+            "rules": [],
+            "rules_count": 0,
+        },
+    ),
     # MappingPolicy + rules
     (
         {"policies": [{"name": "MemoizationPolicy"}, {"name": "MappingPolicy"}]},
