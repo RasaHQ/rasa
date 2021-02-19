@@ -12,7 +12,6 @@ from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.utils.common import TempDirectoryPath
-import rasa.shared.utils.common
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter

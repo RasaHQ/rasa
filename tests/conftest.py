@@ -455,11 +455,14 @@ class AsyncMock(Mock):
         return super().__call__(*args, **kwargs)
 
 
-def raise_on_unexpected_train(f) -> Callable:
+def raise_on_unexpected_train(f: Callable) -> Callable:
     @functools.wraps(f)
     def decorated(*args, **kwargs):
         if os.environ.get("RAISE_ON_TRAIN") == "True":
-            raise ValueError("Training called and RAISE_ON_TRAIN is set.")
+            raise ValueError(
+                "Training called and RAISE_ON_TRAIN is set. "
+                "See https://github.com/RasaHQ/rasa#tests-that-train"
+            )
         return f(*args, **kwargs)
 
     return decorated

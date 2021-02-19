@@ -9,7 +9,6 @@ import rasa.nlu
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.shared.utils.common
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.nlu import components, utils
 from rasa.nlu.classifiers.classifier import IntentClassifier

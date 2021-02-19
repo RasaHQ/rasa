@@ -3,7 +3,6 @@ import functools
 import importlib
 import inspect
 import logging
-import os
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
 import rasa.shared.utils.io
