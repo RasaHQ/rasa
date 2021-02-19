@@ -73,17 +73,11 @@ class PolicyEnsemble:
         self._rule_only_slots, self._rule_only_loops = self._get_rule_only_slots_loops()
 
     def _get_rule_only_slots_loops(self) -> Tuple[List[Text], List[Text]]:
-        rule_policy = next(
-            (policy for policy in self.policies if isinstance(policy, RulePolicy)),
-            None,
-        )
-        rule_only_slots = (
-            rule_policy.lookup.get(RULE_ONLY_SLOTS, []) if rule_policy else []
-        )
-        rule_only_loops = (
-            rule_policy.lookup.get(RULE_ONLY_LOOPS, []) if rule_policy else []
-        )
-        return rule_only_slots, rule_only_loops
+        for policy in self.policies:
+            if isinstance(policy, RulePolicy):
+                return policy.get_rule_only_slots_loops()
+
+        return [], []
 
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy

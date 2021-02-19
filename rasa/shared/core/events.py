@@ -1512,26 +1512,13 @@ class ActionExecuted(Event):
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
         d = super().as_dict()
-        policy = None  # for backwards compatibility (persisted events)
-        if hasattr(self, "policy"):
-            policy = self.policy
-        confidence = None
-        if hasattr(self, "confidence"):
-            confidence = self.confidence
-        action_text = None
-        if hasattr(self, "action_text"):
-            action_text = self.action_text
-        hide_rule_turn = False
-        if hasattr(self, "hide_rule_turn"):
-            hide_rule_turn = self.hide_rule_turn
-
         d.update(
             {
                 "name": self.action_name,
-                "policy": policy,
-                "confidence": confidence,
-                "action_text": action_text,
-                "hide_rule_turn": hide_rule_turn,
+                "policy": self.policy,
+                "confidence": self.confidence,
+                "action_text": self.action_text,
+                "hide_rule_turn": self.hide_rule_turn,
             }
         )
         return d
