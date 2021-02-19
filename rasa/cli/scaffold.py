@@ -217,7 +217,7 @@ def run(args: argparse.Namespace) -> None:
         # Can't use `if not path` either, as `None` will be handled differently (abort)
         if path == "":
             path = "."
-            
+
         if "windows" not in platform.system().lower():
             path = os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
