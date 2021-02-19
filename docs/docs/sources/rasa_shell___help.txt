@@ -24,7 +24,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        30332870c1a9402b8b02a0a3a3e6f054)
+                        7d2ca11162cd4883ab384cd522280e9b)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -84,8 +84,9 @@ JWT Authentication:
                         Public key for asymmetric JWT methods or shared
                         secretfor symmetric methods. Please also make sure to
                         use --jwt-method to select the method of the
-                        signature, otherwise this argument will be ignored.
-                        (default: None)
+                        signature, otherwise this argument will be
+                        ignored.Note that this key is meant for securing the
+                        HTTP API. (default: None)
   --jwt-method JWT_METHOD
                         Method used for the signature of the JWT
                         authentication payload. (default: HS256)

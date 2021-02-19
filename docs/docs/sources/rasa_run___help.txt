@@ -79,8 +79,9 @@ JWT Authentication:
                         Public key for asymmetric JWT methods or shared
                         secretfor symmetric methods. Please also make sure to
                         use --jwt-method to select the method of the
-                        signature, otherwise this argument will be ignored.
-                        (default: None)
+                        signature, otherwise this argument will be
+                        ignored.Note that this key is meant for securing the
+                        HTTP API. (default: None)
   --jwt-method JWT_METHOD
                         Method used for the signature of the JWT
                         authentication payload. (default: HS256)
