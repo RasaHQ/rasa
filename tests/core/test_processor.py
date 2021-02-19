@@ -570,6 +570,7 @@ async def test_update_tracker_session_with_metadata(
 
 
 @freezegun.freeze_time("2020-02-01")
+@pytest.mark.trains_model
 async def test_custom_action_session_start_with_metadata(
     default_processor: MessageProcessor,
 ):

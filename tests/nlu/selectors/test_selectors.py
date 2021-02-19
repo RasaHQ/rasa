@@ -336,6 +336,7 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
         ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9),
     ],
 )
+@pytest.mark.trains_model
 async def test_cross_entropy_without_normalization(
     component_builder: ComponentBuilder,
     tmp_path: Path,
@@ -385,6 +386,7 @@ async def test_cross_entropy_without_normalization(
 @pytest.mark.parametrize(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
+@pytest.mark.trains_model
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch,
     component_builder: ComponentBuilder,
@@ -427,6 +429,7 @@ async def test_margin_loss_is_not_normalized(
         ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, "data/test_selectors", 2),
     ],
 )
+@pytest.mark.trains_model
 async def test_softmax_ranking(
     component_builder: ComponentBuilder,
     tmp_path: Path,

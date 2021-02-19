@@ -392,6 +392,7 @@ async def test_softmax_normalization(
         ),
     ],
 )
+@pytest.mark.trains_model
 async def test_cross_entropy_without_normalization(
     component_builder: ComponentBuilder,
     tmp_path: Path,
