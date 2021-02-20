@@ -33,14 +33,27 @@ def test_not_found_init_path(run: Callable[..., RunResult]):
     assert "Project init path './workspace' not found" in output.outlines[-1]
 
 
-def test_expand_init_path(run: Callable[..., RunResult]):
+def test_expand_init_dbl_dot_path(run_with_stdin: Callable[..., RunResult]):
+    expandable_path = "./workspace/test/../test2"
+    expanded_path = os.path.realpath(os.path.expanduser(expandable_path))
+    print(f"This should be the path: {os.getenv('PYTEST_CURRENT_TEST')}")
+
+    run_with_stdin(
+        "init", "--init-dir", expandable_path, stdin=b"\nYN"
+    ) 
+
+    assert os.path.isdir(expanded_path)
+
+
+def test_expand_init_tilde_path(run_with_stdin: Callable[..., RunResult]):
     expandable_path = "~/workspace"
-    output = run("init", "--no-prompt", "--quiet", "--init-dir", expandable_path)
     expanded_path = os.path.realpath(os.path.expanduser(expandable_path))
 
-    assert os.path.isfile(expanded_path)
+    run_with_stdin(
+        "init", "--init-dir", expandable_path, stdin=b"\nN\n"
+    ) 
 
-    assert "not found" in output.outlines[-1].lower()
+    assert os.path.isdir(expanded_path)
 
 
 def test_init_help(run: Callable[..., RunResult]):
