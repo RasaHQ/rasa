@@ -82,7 +82,7 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SOFTMAX,
+    CROSS_ENTROPY,
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_DIR,
@@ -102,6 +102,9 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     FEATURIZERS,
     ENTITY_RECOGNITION,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
     BILOU_FLAG,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
@@ -190,8 +193,9 @@ class TEDPolicy(Policy):
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # Use a unidirectional or bidirectional encoder.
-        UNIDIRECTIONAL_ENCODER: True,
+        # Use a unidirectional or bidirectional encoder
+        # for `text`, `action_text`, and `label_action_text`.
+        UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
@@ -211,10 +215,11 @@ class TEDPolicy(Policy):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
-        # Number of top actions to normalize scores for loss type 'softmax'.
-        # Set to 0 to turn off normalization.
+        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        LOSS_TYPE: CROSS_ENTROPY,
+        # Number of top actions to normalize scores for. Applicable with
+        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+        # to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
@@ -276,6 +281,13 @@ class TEDPolicy(Policy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: True,
+        # if 'True' applies sigmoid on all similarity terms and adds
+        # it to the loss function to ensure that similarity values are
+        # approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: False,
+        # Model confidence to be returned during inference. Possible values -
+        # 'softmax', 'cosine' and 'inner'.
+        MODEL_CONFIDENCE: SOFTMAX,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
         # examples per entity are required.
@@ -316,11 +328,6 @@ class TEDPolicy(Policy):
         super().__init__(
             featurizer, priority, should_finetune=should_finetune, **kwargs
         )
-        if isinstance(featurizer, FullDialogueTrackerFeaturizer):
-            self.is_full_dialogue_featurizer_used = True
-        else:
-            self.is_full_dialogue_featurizer_used = False
-
         self._load_params(**kwargs)
 
         self.model = model
@@ -340,6 +347,12 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.override_defaults(
             self.defaults, new_config
         )
+
+        self.config = rasa.utils.train_utils.update_confidence_type(self.config)
+
+        rasa.utils.train_utils.validate_configuration_settings(self.config)
+
+        self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
@@ -610,7 +623,9 @@ class TEDPolicy(Policy):
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
-        if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
+        if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
+            # TODO: This should be removed in 3.0 when softmax as
+            #  model confidence and normalization is completely deprecated.
             confidence = rasa.utils.train_utils.normalize(
                 confidence, self.config[RANKING_LENGTH]
             )
@@ -747,10 +762,11 @@ class TEDPolicy(Policy):
         model_path = Path(path)
 
         if not model_path.exists():
-            raise Exception(
+            logger.error(
                 f"Failed to load TED policy model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
+            return
 
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
@@ -793,7 +809,10 @@ class TEDPolicy(Policy):
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
         )
+        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
+        meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
+        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
         meta[EPOCHS] = epoch_override
 
@@ -802,9 +821,9 @@ class TEDPolicy(Policy):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
-            # during prediction we don't care about previous dialogue turns,
-            # so to save computation time, use only the last one
-            use_only_last_dialogue_turns=True,
+            max_history_featurizer_is_used=isinstance(
+                featurizer, MaxHistoryTrackerFeaturizer
+            ),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,
@@ -841,7 +860,7 @@ class TED(TransformerRasaModel):
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         config: Dict[Text, Any],
-        use_only_last_dialogue_turns: bool,
+        max_history_featurizer_is_used: bool,
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> None:
@@ -850,13 +869,14 @@ class TED(TransformerRasaModel):
         Args:
             data_signature: the data signature of the input data
             config: the model configuration
-            use_only_last_dialogue_turns: if 'True' only the last dialogue turn will be used
+            max_history_featurizer_is_used: if 'True'
+                only the last dialogue turn will be used
             label_data: the label data
             entity_tag_specs: the entity tag specifications
         """
         super().__init__("TED", config, data_signature, label_data)
 
-        self.use_only_last_dialogue_turns = use_only_last_dialogue_turns
+        self.max_history_featurizer_is_used = max_history_featurizer_is_used
 
         self.predict_data_signature = {
             feature_name: features
@@ -924,6 +944,11 @@ class TED(TransformerRasaModel):
             self.config[TRANSFORMER_SIZE][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[DROP_RATE_ATTENTION],
+            # use bidirectional transformer, because
+            # we will invert dialogue sequence so that the last turn is located
+            # at the first position and would always have
+            # exactly the same positional encoding
+            unidirectional=not self.max_history_featurizer_is_used,
         )
 
         self._prepare_embed_layers(DIALOGUE)
@@ -1061,13 +1086,24 @@ class TED(TransformerRasaModel):
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         mask = self._compute_mask(dialogue_lengths)
 
+        if self.max_history_featurizer_is_used:
+            # invert dialogue sequence so that the last turn would always have
+            # exactly the same positional encoding
+            dialogue_in = tf.reverse_sequence(dialogue_in, dialogue_lengths, seq_axis=1)
+
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
         ](dialogue_in, 1 - mask, self._training)
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
-        if self.use_only_last_dialogue_turns:
-            # pick last vector if max history featurizer is used
+        if self.max_history_featurizer_is_used:
+            # pick last vector if max history featurizer is used, since we inverted
+            # dialogue sequence, the last vector is actually the first one
+            dialogue_transformed = dialogue_transformed[:, :1, :]
+            mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
+        elif not self._training:
+            # during prediction we don't care about previous dialogue turns,
+            # so to save computation time, use only the last one
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, dialogue_lengths), 1
             )
@@ -1183,7 +1219,7 @@ class TED(TransformerRasaModel):
     def _create_last_dialogue_turns_mask(
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> tf.Tensor:
-        # Since use_only_last_dialogue_turns is True,
+        # Since max_history_featurizer_is_used is True,
         # we need to find the locations of last dialogue turns in
         # (combined batch dimension and dialogue length,) dimension,
         # so that we can use `_sequence_lengths` as a boolean  mask to pick
@@ -1233,7 +1269,7 @@ class TED(TransformerRasaModel):
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
             attribute: the attribute we will encode features for
-            (e.g., ACTION_NAME, INTENT)
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             A tensor combining  all features for `attribute`
@@ -1276,7 +1312,7 @@ class TED(TransformerRasaModel):
                 text_transformer_output = attribute_features
                 text_sequence_lengths = sequence_lengths
 
-                if self.use_only_last_dialogue_turns:
+                if self.max_history_featurizer_is_used:
                     # get the location of all last dialogue inputs
                     last_dialogue_turns_mask = self._create_last_dialogue_turns_mask(
                         tf_batch_data, attribute
@@ -1333,10 +1369,9 @@ class TED(TransformerRasaModel):
 
         Args:
             attribute_features: the "real" features to convert
-            attribute_mask:  the tensor containing the position of "real" features
-                in the dialogue, shape is (batch-size x dialogue_len x 1)
-            dialogue_lengths: the tensor containing the actual dialogue length,
-                shape is (batch-size,)
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+            attribute: the attribute we will encode features for
+                (e.g., ACTION_NAME, INTENT)
 
         Returns:
             The converted attribute features
@@ -1482,7 +1517,7 @@ class TED(TransformerRasaModel):
         attribute_mask = tf_batch_data[TEXT][MASK][0]
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
-        if self.use_only_last_dialogue_turns:
+        if self.max_history_featurizer_is_used:
             # pick outputs that correspond to the last dialogue turns
             attribute_mask = tf.expand_dims(
                 self._last_token(attribute_mask, dialogue_lengths), axis=1
@@ -1697,15 +1732,14 @@ class TED(TransformerRasaModel):
         ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        sim_all, scores = self._tf_layers[
+            f"loss.{LABEL}"
+        ].similarity_confidence_from_embeddings(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             dialogue_mask,
         )
 
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
-        )
         predictions = {
             "action_scores": scores,
             "similarities": sim_all,

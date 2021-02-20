@@ -141,7 +141,8 @@ endif
 prepare-transformers:
 	CACHE_DIR=$(HOME)/.cache/torch/transformers;\
 	mkdir -p "$$CACHE_DIR";\
-	while read URL; do read -r CACHE_FILE; wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; done < "data/test/hf_transformers_models.txt"
+    i=0;\
+	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
 
 prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 
@@ -179,8 +180,11 @@ test-docs: generate-pending-changelog docs
 	poetry run pytest tests/docs/*
 	cd docs && yarn mdx-lint
 
-docs:
-	cd docs/ && poetry run yarn pre-build && yarn build
+prepare-docs:
+	cd docs/ && poetry run yarn pre-build
+
+docs: prepare-docs
+	cd docs/ && yarn build
 
 livedocs:
 	cd docs/ && poetry run yarn start
@@ -193,18 +197,21 @@ build-docker:
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base && \
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl default
 
 build-docker-full:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base-images && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl full
 
 build-docker-mitie-en:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base-images && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl mitie-en
 
 build-docker-spacy-en:
@@ -212,6 +219,7 @@ build-docker-spacy-en:
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base && \
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-en
 
 build-docker-spacy-de:
@@ -219,4 +227,5 @@ build-docker-spacy-de:
 	docker buildx use default && \
 	docker buildx bake -f docker/docker-bake.hcl base && \
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
