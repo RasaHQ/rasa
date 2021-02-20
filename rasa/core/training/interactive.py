@@ -75,8 +75,6 @@ logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-
-
 PATHS = {
     "stories": "data/stories.yml",
     "nlu": "data/nlu.yml",
