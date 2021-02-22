@@ -3,6 +3,7 @@ import operator
 import os
 import random
 from typing import Any, Dict, List, Set, Text, Tuple
+import logging
 
 from rasa.model import get_model
 from rasa.shared.core.domain import Domain
@@ -16,7 +17,10 @@ from rasa.nlu.test import (
     remove_pretrained_extractors,
     get_intent_errors,
 )
+from rasa.shared.nlu.constants import INTENT, METADATA, METADATA_EXAMPLE, TEXT
 import rasa.utils.plotting
+
+logger = logging.getLogger(__name__)
 
 
 def collect_intents_for_data_augmentation(
@@ -27,7 +31,7 @@ def collect_intents_for_data_augmentation(
     """Collects intents for which to perform data augmentation.
 
     It analyses the training datasets and extracts:
-        * The `num_intents_to_augment` intents with the least data
+        * The `num_intents_to_augment` intents with the least number of training examples.
         * The `num_intents_to_augment` with lowest precision (according to `classification_report`)
         * The `num_intents_to_augment` with lowest recall (according to `classification_report`)
         * The `num_intents_to_augment` with lowest f1-score (according to `classification_report`)
@@ -92,15 +96,16 @@ def collect_intents_for_data_augmentation(
 
 def create_paraphrase_pool(
     paraphrases: TrainingData,
-    pooled_intents: Set[Text],
+    intents_to_augment: Set[Text],
     paraphrase_quality_threshold: float,
 ) -> Dict[Text, List]:
     """Determines all suitable paraphrases for data augmentation for the given intents.
 
     Args:
         paraphrases: The paraphrases for data augmentation.
-        pooled_intents: The intents for which to perform data augmentation.
-        paraphrase_quality_threshold: Accept/Reject threshold for individual paraphrases.
+        intents_to_augment: The intents for which to perform data augmentation.
+        paraphrase_quality_threshold: Accept/Reject threshold for individual paraphrases
+            based on similarity score available for each of them.
 
     Returns:
         The pool of suitable paraphrases for data augmentation.
@@ -108,17 +113,27 @@ def create_paraphrase_pool(
 
     paraphrase_pool = collections.defaultdict(list)
     for p in paraphrases.intent_examples:
-        if p.data["intent"] not in pooled_intents or "metadata" not in p.data:
+
+        paraphrases_for_example = (
+            p.get(METADATA).get(METADATA_EXAMPLE, {}).get("paraphrases", {})
+        )
+        if p.get(INTENT) not in intents_to_augment or not paraphrases_for_example:
             continue
 
-        paraphrases_for_example = p.data["metadata"]["example"]["paraphrases"]
-        paraphrase_scores = p.data["metadata"]["example"]["scores"]
+        paraphrase_scores = (
+            p.get(METADATA, {}).get(METADATA_EXAMPLE, {}).get("scores", {})
+        )
+
+        if not paraphrase_scores:
+            logger.debug(
+                f"""Skipping "{p.get(TEXT)}" as no similarity scores were found for its paraphrases."""
+            )
 
         for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
-            if paraphrase == "" or float(score) < paraphrase_quality_threshold:
+            if not paraphrase or float(score) < paraphrase_quality_threshold:
                 continue
 
-            paraphrase_pool[p.data["intent"]].append(
+            paraphrase_pool[p.get(INTENT)].append(
                 (p, set(paraphrase.lower().split()), paraphrase)
             )
 
@@ -438,7 +453,9 @@ def run_data_augmentation_max_vocab_expansion(
     classification_report: Dict[Text, Dict[Text, float]],
 ) -> None:
     """
-    Runs the NLU train/test cycle with data augmentation (maximum vocabulary expansion criterion) and generates the reports and plots summarising the impact of data augmentation on model performance.
+    Runs the NLU train/test cycle with data augmentation (maximum vocabulary expansion criterion).
+
+    Also, generate reports and plots summarising the impact of data augmentation on model performance.
 
     Args:
         nlu_training_data: NLU training data (without data augmentation).
@@ -571,30 +588,35 @@ def augment_nlu_data(
     Args:
         nlu_training_data: NLU training data (without data augmentation).
         nlu_evaluation_data: NLU evaluation data.
-        paraphrases: The generated paraphrases with similarity scores obtained from https://github.com/RasaHQ/paraphraser.
+        paraphrases: The generated paraphrases with similarity scores obtained
+            from https://github.com/RasaHQ/paraphraser.
         classification_report: Classification report of the model run *without* data augmentation.
         config: NLU model config.
         num_intents_to_augment: Number of intents to choose for augmentation (per criterion).
         random_seed: Random seed for sampling the paraphrases.
-        paraphrase_sim_score_threshold: Minimum required similarity for a generated paraphrase to be considered for data augmentation.
+        paraphrase_sim_score_threshold: Minimum required similarity for a generated paraphrase to be
+            considered for data augmentation.
         output_directory: Directory to store the output files in.
     """
     # Determine intents for which to perform data augmentation
-    pooled_intents = collect_intents_for_data_augmentation(
+    intents_to_augment = collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
         num_intents_to_augment=num_intents_to_augment,
         classification_report=classification_report,
     )
 
+    logger.info(f"Picked intents for augmentation - {intents_to_augment}")
+
     # Retrieve paraphrase pool and training data pool
     paraphrase_pool = create_paraphrase_pool(
-        paraphrases, pooled_intents, paraphrase_sim_score_threshold
+        paraphrases, intents_to_augment, paraphrase_sim_score_threshold
     )
-    (training_data_pool, training_data_vocab_per_intent,) = create_training_data_pool(
-        nlu_training_data, pooled_intents
+    training_data_pool, training_data_vocab_per_intent = create_training_data_pool(
+        nlu_training_data, intents_to_augment
     )
 
     # Run data augmentation with diverse augmentation
+    logger.info("Running diversity promoting augmentation strategy...")
     output_directory_diverse = os.path.join(output_directory, "augmentation_diverse")
     run_data_augmentation_max_vocab_expansion(
         nlu_training_data=nlu_training_data,
@@ -602,20 +624,21 @@ def augment_nlu_data(
         paraphrase_pool=paraphrase_pool,
         training_data_vocab_per_intent=training_data_vocab_per_intent,
         training_data_pool=training_data_pool,
-        pooled_intents=pooled_intents,
+        pooled_intents=intents_to_augment,
         output_directory=output_directory_diverse,
         config=config,
         classification_report=classification_report,
     )
 
     # Run data augmentation with random sampling augmentation
+    logger.info("Running augmentation by picking random paraphrases...")
     output_directory_random = os.path.join(output_directory, "augmentation_random")
     run_data_augmentation_random_sampling(
         nlu_training_data=nlu_training_data,
         nlu_evaluation_data=nlu_evaluation_data,
         paraphrase_pool=paraphrase_pool,
         training_data_pool=training_data_pool,
-        pooled_intents=pooled_intents,
+        pooled_intents=intents_to_augment,
         output_directory=output_directory_random,
         config=config,
         classification_report=classification_report,
