@@ -299,7 +299,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config
         )
 
-        train_utils.validate_configuration_settings(self.component_config)
+        train_utils.validate_configuration_settings(
+            self.component_config, type(self).__name__
+        )
 
         self.component_config = train_utils.update_deprecated_loss_type(
             self.component_config
