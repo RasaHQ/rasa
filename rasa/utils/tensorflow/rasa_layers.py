@@ -194,7 +194,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             processed.
         attribute_signature: A dictionary containing two lists of `FeatureSignature`s,
             one for each feature type of the given attribute.
-        config: A model config used for correctly parametrising the the layer and the
+        config: A model config used for correctly parameterising the layer and the
             `ConcatenateSparseDenseFeatures` layer it creates internally.
 
     Input shape:
