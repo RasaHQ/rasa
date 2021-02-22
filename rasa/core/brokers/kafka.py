@@ -26,6 +26,7 @@ class KafkaEventBroker(EventBroker):
         client_id=None,
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
+        **kwargs,
     ) -> None:
 
         self.producer = None
@@ -156,6 +157,7 @@ class KafkaProducer(KafkaEventBroker):
         topic="rasa_core_events",
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
+        **kwargs,
     ) -> None:
         raise_warning(
             "The `KafkaProducer` class is deprecated, please inherit "
@@ -176,4 +178,5 @@ class KafkaProducer(KafkaEventBroker):
             topic,
             security_protocol,
             loglevel,
+            **kwargs,
         )
