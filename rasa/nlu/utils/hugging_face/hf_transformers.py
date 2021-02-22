@@ -697,7 +697,7 @@ class HFTransformersNLP(Component):
         """Compute tokens and dense features for each message in training data.
 
         Args:
-            training_data_chunk: NLU training data to be tokenized and featurized
+            training_data: NLU training data to be tokenized and featurized
             config: NLU pipeline config consisting of all components.
         """
         batch_size = 64

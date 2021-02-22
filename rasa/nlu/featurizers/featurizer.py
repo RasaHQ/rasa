@@ -39,8 +39,7 @@ class Featurizer(Component):
         """Train this component."""
         self.prepare_partial_training(training_data, config, **kwargs)
         training_data_chunk = TrainingDataChunk(
-            training_examples=training_data.training_examples,
-            responses=training_data.responses,
+            training_examples=training_data.training_examples
         )
         self.train_chunk(training_data_chunk, config, **kwargs)
 
