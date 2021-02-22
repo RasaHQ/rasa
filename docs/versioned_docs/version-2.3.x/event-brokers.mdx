@@ -45,7 +45,7 @@ The example implementation we're going to show you here uses
 You can instruct Rasa to stream all events to your Pika event broker by adding an `event_broker` section to your
 `endpoints.yml`:
 
-```yaml-rasa (versioned_docs/version-2.3.x/sources/data/test_endpoints/event_brokers/pika_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/pika_endpoint.yml)
 ```
 
 Rasa will automatically start streaming events when you restart the Rasa server.
@@ -143,22 +143,22 @@ You can instruct Rasa to stream all events to your Kafka event broker by adding 
 
 Using the `SASL_PLAINTEXT` protocol the endpoints file must have the following entries:
 
-```yaml-rasa (versioned_docs/version-2.3.x/sources/data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml)
 ```
 
 Using the `PLAINTEXT` protocol the endpoints file must have the following entries:
 
-```yaml-rasa (versioned_docs/version-2.3.x/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
 ```
 
 If using the `SSL` protocol, the endpoints file should look like:
 
-```yaml-rasa (versioned_docs/version-2.3.x/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
 ```
 
 If using the `SASL_SSL` protocol, the endpoints file should look like:
 
-```yaml-rasa (versioned_docs/version-2.3.x/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
 ```
 
 ## SQL Event Broker
