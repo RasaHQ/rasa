@@ -510,7 +510,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     transformer. The layer is meant only for attributes with sequence-level features,
     such as `text`, `response` and `action_text`.
 
-    Internally, this layer extends `RasaFeatureCombiningLayer` and applies the following
+    Internally, this layer uses `RasaFeatureCombiningLayer` and applies the following
     steps:
     1. Combine features using `RasaFeatureCombiningLayer`.
     2. Apply a dense layer(s) to the combined features.
