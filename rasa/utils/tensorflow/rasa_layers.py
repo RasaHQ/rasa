@@ -552,7 +552,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             the output size of the underlying `Ffnn` block, or the output size of the
             underlying `RasaFeatureCombiningLayer` if the `Ffnn` block has 0 layers.
         mask_combined_sequence_sentence: `(batch_size, seq_length, hidden_dim)`
-        token_ids: `(batch_size, seq_length, id_dim)` where id_dim is unimportant and
+        token_ids: `(batch_size, seq_length, id_dim)` where `id_dim` is unimportant and
             it's the last-dimension size of the first sequence-level dense feature
             if any is present, and 2 otherwise. Empty tensor if not doing MLM.
         mlm_boolean_mask: `(batch_size, seq_length, 1)`, empty tensor if not doing MLM.
