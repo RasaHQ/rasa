@@ -100,6 +100,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    CONSTRAIN_EMBEDDINGS,
 )
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Model confidence to be returned during inference. Possible values -
         # 'softmax', 'cosine', 'inner'.
         MODEL_CONFIDENCE: SOFTMAX,
+        # Constrain embeddings with an l2 norm over all input and label embeddings
+        CONSTRAIN_EMBEDDINGS: False,
     }
 
     # init helpers

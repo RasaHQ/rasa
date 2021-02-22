@@ -67,6 +67,7 @@ AUTO = "auto"
 INNER = "inner"
 COSINE = "cosine"
 CROSS_ENTROPY = "cross_entropy"
+CONSTRAIN_EMBEDDINGS = "constrain_embeddings"
 
 BALANCED = "balanced"
 

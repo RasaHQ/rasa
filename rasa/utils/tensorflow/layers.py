@@ -552,6 +552,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         same_sampling: bool = False,
         constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
+        constrain_embeddings: bool = False,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -598,6 +599,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.constrain_similarities = constrain_similarities
         self.model_confidence = model_confidence
         self.similarity_type = similarity_type
+        self.constrain_embeddings = constrain_embeddings
         if self.similarity_type not in {COSINE, INNER}:
             raise TFLayerConfigException(
                 f"Wrong similarity type '{self.similarity_type}', "
@@ -942,6 +944,17 @@ class DotProductLoss(tf.keras.layers.Layer):
                 f"Wrong loss type '{self.loss_type}', "
                 f"should be '{MARGIN}' or '{CROSS_ENTROPY}'"
             )
+
+    def _embedding_loss(
+        self,
+        inputs_embedding: tf.Tensor,
+        labels_embedding: tf.Tensor,
+        loss_weight: float = 0.01,
+    ) -> tf.Tensor:
+        return loss_weight * (
+            tf.reduce_mean(tf.norm(inputs_embedding, axis=-2))
+            + tf.reduce_mean(tf.norm(labels_embedding, axis=-2))
+        )
 
     # noinspection PyMethodOverriding
     def call(
