@@ -75,6 +75,8 @@ logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
+
+
 PATHS = {
     "stories": "data/stories.yml",
     "nlu": "data/nlu.yml",
@@ -819,7 +821,7 @@ def _write_stories_to_file(
     with open(
         export_story_path, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
     ) as f:
-        i = sum(1 for s in f if 'interactive_story_' in s)  # count the times string 'interactive story' occur in file
+        i = sum(1 for s in f if 'interactive_story_' in s) + 1  # count the times string 'interactive story' occur in file
 
     with open(
         export_story_path, append_write, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
@@ -828,7 +830,7 @@ def _write_stories_to_file(
         for conversation in sub_conversations:
             parsed_events = rasa.shared.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
-                f"interactive_story_{i + 1}", evts=parsed_events, slots=domain.slots
+                f"interactive_story_{i}", evts=parsed_events, slots=domain.slots
             )
 
             if any(
