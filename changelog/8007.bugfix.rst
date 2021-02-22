@@ -1,0 +1,1 @@
+Added **kwargs parameter back to ``KafkaEventBroker`` to fix error when instantiating event broker with a config containing parameters only relevant to the event consumer, such as ``group_id``.
