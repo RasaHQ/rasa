@@ -66,7 +66,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         contributing `config[DENSE_DIMENSION][attribute]` units each.
 
     Raises:
-        RasaException if no feature signatures are provided.
+        `RasaException` if no feature signatures are provided.
     """
 
     def __init__(
@@ -222,7 +222,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             `(batch_size, sequence_length, 1)`.
 
     Raises:
-        A RasaException if no feature signatures are provided.
+        A `RasaException` if no feature signatures are provided.
     """
 
     def __init__(
