@@ -560,7 +560,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
 
     Raises:
-        A RasaException if no feature signatures for sequence-level features are
+        A `RasaException` if no feature signatures for sequence-level features are
             provided.
     """
 
