@@ -3,7 +3,6 @@ import logging
 import os
 import numpy as np
 import random
-import typing
 import copy
 
 from pathlib import Path
@@ -32,11 +31,11 @@ from rasa.shared.nlu.constants import (
     ACTION_NAME,
     ENTITY_ATTRIBUTE_START,
     TOKENS_NAMES,
+    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.exceptions import RasaException
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -97,6 +96,17 @@ class NLUPipelineTrainingData:
         return [
             ex for ex in self.training_examples if not ex.is_core_or_domain_message()
         ]
+
+    @lazy_property
+    def core_examples(self) -> List[Message]:
+        """Return examples which have come from NLU training data.
+
+        E.g. If the example came from a story or domain it is not included.
+
+        Returns:
+            List of NLU training examples.
+        """
+        return [ex for ex in self.training_examples if ex.is_core_or_domain_message()]
 
     @lazy_property
     def intent_examples(self) -> List[Message]:
@@ -303,13 +313,14 @@ class NLUPipelineTrainingData:
                 )
 
     def split_nlu_examples(
-        self, train_frac: float, random_seed: Optional[int] = None
+        self, train_frac: float, random_seed: Optional[int] = None, silent: bool = False
     ) -> Tuple[list, list]:
         """Split the training data into a train and test set.
 
         Args:
             train_frac: percentage of examples to add to the training set.
             random_seed: random seed used to shuffle examples.
+            silent: if `True` suppress warnings.
 
         Returns:
             Test and training examples.
@@ -331,7 +342,7 @@ class NLUPipelineTrainingData:
         )
         num_examples = sum(self.number_of_examples_per_intent.values())
 
-        if int(smaller_split_frac * num_examples) + 1 < num_classes:
+        if not silent and int(smaller_split_frac * num_examples) + 1 < num_classes:
             rasa.shared.utils.io.raise_warning(
                 f"There aren't enough intent examples in your data to include "
                 f"an example of each class in both test and train splits and "
@@ -376,7 +387,7 @@ class NLUPipelineTrainingData:
                 _running_train_count + approx_train_count,
             )
 
-        training_examples = set(self.training_examples)
+        training_examples = set(self.nlu_examples)
         running_count = 0
         running_train_count = 0
 
@@ -826,6 +837,18 @@ class TrainingDataFull(NLUPipelineTrainingData):
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def _get_core_chunk_size(self, num_chunks: int) -> int:
+        return len(self.core_examples) // num_chunks + int(
+            len(self.core_examples) % num_chunks > 0
+        )
+
+    def _split_core_examples(
+        self, core_chunk_size: int, chunk_index: int
+    ) -> List[Message]:
+        start = chunk_index * core_chunk_size
+        end = start + core_chunk_size
+        return self.core_examples[start:end]
+
     def divide_into_chunks(self, num_chunks: int) -> List["TrainingDataChunk"]:
         """Divides the training data into smaller chunks.
 
@@ -843,19 +866,24 @@ class TrainingDataFull(NLUPipelineTrainingData):
 
         data_to_chunk = self
 
+        core_chunk_size = self._get_core_chunk_size(num_chunks)
         for chunk_index in range(num_chunks - 1):
 
-            chunk_size_fraction = 1 / (num_chunks - chunk_index)
-            current_chunk, leftover_examples = data_to_chunk.split_nlu_examples(
-                1 - chunk_size_fraction
+            nlu_chunk_size_fraction = 1 / (num_chunks - chunk_index)
+            current_nlu_chunk, leftover_nlu_examples = data_to_chunk.split_nlu_examples(
+                1 - nlu_chunk_size_fraction, silent=True
             )
+            current_core_chunk = self._split_core_examples(core_chunk_size, chunk_index)
 
             # update the data to chunk in next iteration
-            data_to_chunk = TrainingDataFull(leftover_examples)
-            all_chunks.append(TrainingDataChunk(current_chunk))
+            data_to_chunk = TrainingDataFull(leftover_nlu_examples)
+            all_chunks.append(TrainingDataChunk(current_nlu_chunk + current_core_chunk))
 
         # The last chunk is composed of whatever is left
-        all_chunks.append(TrainingDataChunk(data_to_chunk.training_examples))
+        last_core_chunk = self._split_core_examples(core_chunk_size, num_chunks - 1)
+        all_chunks.append(
+            TrainingDataChunk(data_to_chunk.training_examples + last_core_chunk)
+        )
         return all_chunks
 
 
@@ -880,6 +908,8 @@ RELEVANT_MESSAGE_KEYS = [
     INTENT_RESPONSE_KEY,
     ENTITIES,
     TOKENS_NAMES[TEXT],
+    ACTION_TEXT,
+    ACTION_NAME,
 ]
 
 
