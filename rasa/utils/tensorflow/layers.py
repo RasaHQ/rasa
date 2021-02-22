@@ -213,7 +213,9 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         kernel_shape = tf.shape(self.kernel)
         num_rows = kernel_shape[0].numpy()
         num_cols = kernel_shape[1].numpy()
-        num_connected_per_row = max(1, tf.math.ceil(self.density * num_rows))
+        num_connected_per_row = max(
+            1, tf.cast(tf.math.ceil(self.density * num_rows), tf.int32)
+        )
         num_disconnected_per_row = num_rows - num_connected_per_row
         # To ensure each column has at least one 1, we create each column separately
         # as [1 1 1 ... 1 0 0 0 ... 0] and then shuffle it randomly
