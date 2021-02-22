@@ -280,8 +280,14 @@ class MessengerBot(OutputChannel):
     ) -> None:
         """Sends custom json data to the output."""
 
-        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
-
+        if isinstance(json_message, list):
+            if isinstance(json_message.pop(), list):
+                recipient_id = json_message.pop().pop() or recipient_id
+            else:
+                recipient_id = json_message.pop().pop("id", None) or recipient_id
+        else:
+            recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
+            
         self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
     @staticmethod
