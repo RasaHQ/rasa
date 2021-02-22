@@ -5,10 +5,14 @@ import time
 import shutil
 from pathlib import Path
 from typing import Text, Optional, Any
+from unittest import mock
 from unittest.mock import Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
+import rasa
+import rasa.constants
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.constants import (
@@ -19,9 +23,11 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import KEY_RESPONSES
 from rasa.shared.core.domain import Domain
+import rasa.shared.utils.io
 from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
+    FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
     FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
     FINGERPRINT_NLG_KEY,
     FINGERPRINT_FILE_PATH,
@@ -33,6 +39,7 @@ from rasa.model import (
     FINGERPRINT_CONFIG_NLU_KEY,
     SECTION_CORE,
     SECTION_NLU,
+    can_finetune,
     create_package_rasa,
     get_latest_model,
     get_model,
@@ -44,7 +51,8 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING
+from rasa.train import train_core, train_core_async
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 
 def test_get_latest_model(trained_rasa_model: str):
@@ -102,18 +110,22 @@ def _fingerprint(
     config: Optional[Any] = None,
     config_nlu: Optional[Any] = None,
     config_core: Optional[Any] = None,
+    config_without_epochs: Optional[Any] = None,
     domain: Optional[Any] = None,
     nlg: Optional[Any] = None,
     stories: Optional[Any] = None,
     nlu: Optional[Any] = None,
     rasa_version: Text = "1.0",
-):
+) -> Fingerprint:
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
         FINGERPRINT_CONFIG_CORE_KEY: config_core
         if config_core is not None
         else ["test"],
         FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: config_without_epochs
+        if config_without_epochs
+        else ["test"],
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain if domain is not None else ["test"],
         FINGERPRINT_NLG_KEY: nlg if nlg is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
@@ -148,9 +160,10 @@ def test_persist_and_load_fingerprint():
         (_fingerprint(nlg=["other"]), False),
         (_fingerprint(nlu=["test", "other"]), False),
         (_fingerprint(config_nlu=["other"]), False),
+        (_fingerprint(config_without_epochs=["other"]), False),
     ],
 )
-def test_core_fingerprint_changed(fingerprint2, changed):
+def test_core_fingerprint_changed(fingerprint2: Fingerprint, changed: bool):
     fingerprint1 = _fingerprint()
     assert (
         did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_CORE)
@@ -168,9 +181,10 @@ def test_core_fingerprint_changed(fingerprint2, changed):
         (_fingerprint(nlg=["other"]), False),
         (_fingerprint(config_core=["other"]), False),
         (_fingerprint(stories=["other"]), False),
+        (_fingerprint(config_without_epochs=["other"]), False),
     ],
 )
-def test_nlu_fingerprint_changed(fingerprint2, changed):
+def test_nlu_fingerprint_changed(fingerprint2: Fingerprint, changed: bool):
     fingerprint1 = _fingerprint()
     assert (
         did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_NLU)
@@ -231,6 +245,124 @@ async def test_fingerprinting_changed_response_text(project: Text):
         == new_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
     )
     assert old_fingerprint[FINGERPRINT_NLG_KEY] != new_fingerprint[FINGERPRINT_NLG_KEY]
+
+
+async def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
+    config1 = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "RegexFeaturizer"},
+            {"name": "LexicalSyntacticFeaturizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {
+                "name": "CountVectorsFeaturizer",
+                "analyzer": "char_wb",
+                "min_ngram": 1,
+                "max_ngram": 4,
+            },
+            {"name": "DIETClassifier", "epochs": 100},
+            {"name": "EntitySynonymMapper"},
+            {"name": "ResponseSelector", "epochs": 100},
+            {
+                "name": "FallbackClassifier",
+                "threshold": 0.3,
+                "ambiguity_threshold": 0.1,
+            },
+        ],
+        "policies": [
+            {"name": "MemoizationPolicy"},
+            {"name": "TEDPolicy", "max_history": 5, "epochs": 100},
+            {"name": "RulePolicy"},
+        ],
+    }
+
+    config1_path = tmp_path / "config1.yml"
+    rasa.shared.utils.io.write_yaml(config1, config1_path, True)
+    importer = TrainingDataImporter.load_from_config(str(config1_path))
+    old_fingerprint = await model_fingerprint(importer)
+
+    config2 = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "RegexFeaturizer"},
+            {"name": "LexicalSyntacticFeaturizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {
+                "name": "CountVectorsFeaturizer",
+                "analyzer": "char_wb",
+                "min_ngram": 1,
+                "max_ngram": 4,
+            },
+            {"name": "DIETClassifier", "epochs": 50},
+            {"name": "EntitySynonymMapper"},
+            {"name": "ResponseSelector", "epochs": 50},
+            {
+                "name": "FallbackClassifier",
+                "threshold": 0.3,
+                "ambiguity_threshold": 0.1,
+            },
+        ],
+        "policies": [
+            {"name": "MemoizationPolicy"},
+            {"name": "TEDPolicy", "max_history": 5, "epochs": 50},
+            {"name": "RulePolicy"},
+        ],
+    }
+
+    config2_path = tmp_path / "config2.yml"
+    rasa.shared.utils.io.write_yaml(config2, config2_path, True)
+    importer = TrainingDataImporter.load_from_config(str(config2_path))
+    new_fingerprint = await model_fingerprint(importer)
+
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+        == new_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+    )
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_CORE_KEY]
+        != new_fingerprint[FINGERPRINT_CONFIG_CORE_KEY]
+    )
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_NLU_KEY]
+        != new_fingerprint[FINGERPRINT_CONFIG_NLU_KEY]
+    )
+
+    config3 = {
+        "language": "en",
+        "pipeline": [{"name": "WhitespaceTokenizer"},],
+        "policies": [
+            {"name": "MemoizationPolicy"},
+            {"name": "TEDPolicy", "max_history": 5, "epochs": 50},
+            {"name": "RulePolicy"},
+        ],
+    }
+
+    config3_path = tmp_path / "config3.yml"
+    rasa.shared.utils.io.write_yaml(config3, config3_path, True)
+    importer = TrainingDataImporter.load_from_config(str(config3_path))
+    new_fingerprint = await model_fingerprint(importer)
+
+    assert (
+        old_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+        != new_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
+    )
+
+
+@pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
+async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
+    project: Text, tmp_path: Path, empty_key: Text,
+):
+    config = {
+        "language": "en",
+        "pipeline": [{"name": "WhitespaceTokenizer"},],
+        "policies": [{"name": "MemoizationPolicy"},],
+    }
+
+    config[empty_key] = None
+
+    model._get_fingerprint_of_config_without_epochs(config)
 
 
 async def test_fingerprinting_additional_action(project: Text):
@@ -347,6 +479,33 @@ def test_should_retrain(
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
+async def test_should_not_retrain_core(default_domain_path: Text, tmp_path: Path):
+    # Don't use `default_stories_file` as checkpoints currently break fingerprinting
+    story_file = tmp_path / "simple_story.yml"
+    story_file.write_text(
+        """
+stories:
+- story: test_story
+  steps:
+  - intent: greet
+  - action: utter_greet
+    """
+    )
+    trained_model = await train_core_async(
+        default_domain_path, DEFAULT_STACK_CONFIG, str(story_file), str(tmp_path)
+    )
+
+    importer = TrainingDataImporter.load_from_config(
+        DEFAULT_STACK_CONFIG, default_domain_path, training_data_paths=[str(story_file)]
+    )
+
+    new_fingerprint = await model.model_fingerprint(importer)
+
+    result = model.should_retrain(new_fingerprint, trained_model, tmp_path)
+
+    assert not result.should_retrain_core()
+
+
 def set_fingerprint(
     trained_rasa_model: Text, fingerprint: Fingerprint, tmp_path: Path
 ) -> Text:
@@ -418,3 +577,66 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
 
     assert actual.is_empty()
+
+
+async def test_update_with_new_domain_preserves_domain(
+    tmpdir: Path, domain_with_categorical_slot_path
+):
+    domain = Domain.load(domain_with_categorical_slot_path)
+
+    core_directory = tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME
+    core_directory.mkdir()
+
+    domain.persist(str(core_directory / DEFAULT_DOMAIN_PATH))
+    domain.persist_specification(core_directory)
+
+    mocked_importer = Mock()
+
+    async def get_domain() -> Domain:
+        return Domain.load(domain_with_categorical_slot_path)
+
+    mocked_importer.get_domain = get_domain
+
+    await model.update_model_with_new_domain(mocked_importer, tmpdir)
+
+    new_persisted = Domain.load(core_directory / DEFAULT_DOMAIN_PATH)
+    new_persisted.compare_with_specification(str(core_directory))
+
+
+@pytest.mark.parametrize(
+    "min_compatible_version, old_model_version, can_tune",
+    [("2.1.0", "2.1.0", True), ("2.0.0", "2.1.0", True), ("2.1.0", "2.0.0", False),],
+)
+async def test_can_finetune_min_version(
+    project: Text,
+    monkeypatch: MonkeyPatch,
+    old_model_version: Text,
+    min_compatible_version: Text,
+    can_tune: bool,
+):
+    importer = _project_files(project)
+
+    monkeypatch.setattr(
+        rasa.constants, "MINIMUM_COMPATIBLE_VERSION", min_compatible_version
+    )
+    monkeypatch.setattr(rasa, "__version__", old_model_version)
+    old_fingerprint = await model_fingerprint(importer)
+    new_fingerprint = await model_fingerprint(importer)
+
+    with mock.patch("rasa.model.MINIMUM_COMPATIBLE_VERSION", min_compatible_version):
+        assert can_finetune(old_fingerprint, new_fingerprint) == can_tune
+
+
+@pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
+async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
+    project: Text, tmp_path: Path, empty_key: Text,
+):
+    config = {
+        "language": "en",
+        "pipeline": [{"name": "WhitespaceTokenizer"},],
+        "policies": [{"name": "MemoizationPolicy"},],
+    }
+
+    config[empty_key] = None
+
+    model._get_fingerprint_of_config_without_epochs(config)

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
+from rasa.core.actions.action import Action
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -21,6 +22,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     SLOTS,
     FOLLOWUP_ACTION,
+    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -151,7 +153,7 @@ class MessageProcessor:
 
         scores = [
             {"action": a, "score": p}
-            for a, p in zip(self.domain.action_names, prediction.probabilities)
+            for a, p in zip(self.domain.action_names_or_texts, prediction.probabilities)
         ]
         return {
             "scores": scores,
@@ -183,12 +185,26 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
+            action_session_start = self._get_action(ACTION_SESSION_START_NAME)
+            # TODO: Remove in 3.0.0 and describe migration to `session_start_metadata`
+            # slot in migration guide.
+            if isinstance(
+                action_session_start, rasa.core.actions.action.ActionSessionStart
+            ):
+                # Here we set optional metadata to the ActionSessionStart, which will
+                # then be passed to the SessionStart event.
+                action_session_start.metadata = metadata
+
+            if metadata:
+                tracker.update(
+                    SlotSet(SESSION_START_METADATA_SLOT, metadata), self.domain
+                )
+
             await self._run_action(
-                action=self._get_action(ACTION_SESSION_START_NAME),
+                action=action_session_start,
                 tracker=tracker,
                 output_channel=output_channel,
                 nlg=self.nlg,
-                metadata=metadata,
                 prediction=PolicyPrediction.for_action_name(
                     self.domain, ACTION_SESSION_START_NAME
                 ),
@@ -510,7 +526,7 @@ class MessageProcessor:
                 )
 
     def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
-        return rasa.core.actions.action.action_for_name(
+        return rasa.core.actions.action.action_for_name_or_text(
             action_name, self.domain, self.action_endpoint
         )
 
@@ -732,16 +748,10 @@ class MessageProcessor:
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
         prediction: PolicyPrediction,
-        metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
-            # Here we set optional metadata to the ActionSessionStart, which will then
-            # be passed to the SessionStart event. Otherwise the metadata will be lost.
-            if action.name() == ACTION_SESSION_START_NAME:
-                action.metadata = metadata
-
             # Use temporary tracker as we might need to discard the policy events in
             # case of a rejection.
             temporary_tracker = tracker.copy()
@@ -766,7 +776,7 @@ class MessageProcessor:
             )
             events = []
 
-        self._log_action_on_tracker(tracker, action.name(), events, prediction)
+        self._log_action_on_tracker(tracker, action, events, prediction)
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):
@@ -809,7 +819,7 @@ class MessageProcessor:
     def _log_action_on_tracker(
         self,
         tracker: DialogueStateTracker,
-        action_name: Text,
+        action: Action,
         events: Optional[List[Event]],
         prediction: PolicyPrediction,
     ) -> None:
@@ -819,23 +829,19 @@ class MessageProcessor:
         if events is None:
             events = []
 
-        self._warn_about_new_slots(tracker, action_name, events)
+        self._warn_about_new_slots(tracker, action.name(), events)
 
         action_was_rejected_manually = any(
             isinstance(event, ActionExecutionRejected) for event in events
         )
-        if action_name is not None and not action_was_rejected_manually:
+        if not action_was_rejected_manually:
             logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
             tracker.update_with_events(prediction.events, self.domain)
 
             # log the action and its produced events
-            tracker.update(
-                ActionExecuted(
-                    action_name, prediction.policy_name, prediction.max_confidence
-                )
-            )
+            tracker.update(action.event_for_successful_execution(prediction))
 
-        logger.debug(f"Action '{action_name}' ended with events '{events}'.")
+        logger.debug(f"Action '{action.name()}' ended with events '{events}'.")
         tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
@@ -883,7 +889,7 @@ class MessageProcessor:
         followup_action = tracker.followup_action
         if followup_action:
             tracker.clear_followup_action()
-            if followup_action in self.domain.action_names:
+            if followup_action in self.domain.action_names_or_texts:
                 return PolicyPrediction.for_action_name(
                     self.domain, followup_action, FOLLOWUP_ACTION
                 )

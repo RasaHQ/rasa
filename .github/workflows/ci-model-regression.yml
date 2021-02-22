@@ -18,7 +18,7 @@ jobs:
   cleanup_runs:
     name: Cancel old branch builds
     runs-on: ubuntu-latest
-    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/main'"
 
     steps:
       - name: Find and cancel old builds of this branch
@@ -35,7 +35,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       configuration_id: ${{ steps.fc_config.outputs.comment-id }}
     steps:
-    - name: Checkout master
+    - name: Checkout main
       uses: actions/checkout@v2
 
     - name: Checkout dataset
@@ -195,6 +195,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+          ref: ${{ matrix.dataset_branch }}
 
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
@@ -243,7 +244,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-3.8-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -298,6 +299,7 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -335,6 +337,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+          ref: ${{ matrix.dataset_branch }}
 
       - name: Download gomplate
         run: |-
@@ -388,7 +391,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-3.8-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -438,6 +441,7 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -470,7 +474,7 @@ jobs:
             | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
 
           ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
             | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
@@ -479,7 +483,7 @@ jobs:
           curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
 
           # Unzip and change name
-          unzip report.json.zip && mv report.json report_master.json
+          unzip report.json.zip && mv report.json report_main.json
 
       - name: Download the report
         uses: actions/download-artifact@v2
@@ -494,7 +498,7 @@ jobs:
       - name: Render a comment to add
         id: get_results
         run: |
-          OUTPUT="$(gomplate -d data=report.json -d results_master=report_master.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
@@ -546,7 +550,7 @@ jobs:
             | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
 
           ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
             | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
@@ -555,7 +559,7 @@ jobs:
           curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
 
           # Unzip and change name
-          unzip report.json.zip && mv report.json report_master.json
+          unzip report.json.zip && mv report.json report_main.json
 
       - name: Download the report
         uses: actions/download-artifact@v2
@@ -570,7 +574,7 @@ jobs:
       - name: Render a comment to add
         id: get_results
         run: |
-          OUTPUT="$(gomplate -d data=report.json -d results_master=report_master.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
