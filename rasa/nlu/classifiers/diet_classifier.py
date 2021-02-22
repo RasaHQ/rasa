@@ -327,7 +327,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        index_label_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         finetune_mode: bool = False,
@@ -344,8 +344,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_config_parameters()
 
         # transform numbers to labels
-        self.index_label_id_mapping = index_label_id_mapping
-        self.label_id_index_mapping = None
+        self.index_label_mapping = index_label_mapping
+        self._label_index_mapping = None
 
         self._entity_tag_specs = entity_tag_specs
 
@@ -387,28 +387,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     # training data helpers:
     @staticmethod
-    def _label_id_index_mapping(
-        training_data: NLUPipelineTrainingData, attribute: Text
-    ) -> Dict[Text, int]:
-        """Create label_id dictionary."""
-        distinct_label_ids = {
-            example.get(attribute) for example in training_data.intent_examples
-        } - {None}
-        return {
-            label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
-        }
-
-    @staticmethod
     def _invert_mapping(mapping: Dict) -> Dict:
         return {value: key for key, value in mapping.items()}
 
     def _create_label_index_mappings(
         self, training_data: NLUPipelineTrainingData, attribute: Text
     ) -> None:
-        self.label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=attribute
-        )
-        self.index_label_id_mapping = self._invert_mapping(self.label_id_index_mapping)
+        distinct_label_ids = {
+            example.get(attribute) for example in training_data.intent_examples
+        } - {None}
+        self._label_index_mapping = {
+            label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
+        }
+        self.index_label_mapping = self._invert_mapping(self._label_index_mapping)
 
     def _create_entity_tag_specs(self, training_data: NLUPipelineTrainingData) -> None:
         """Create entity tag specifications with their respective tag id mappings."""
@@ -598,10 +589,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ]
 
     def _create_label_data(
-        self,
-        training_data: NLUPipelineTrainingData,
-        label_id_dict: Dict[Text, int],
-        attribute: Text,
+        self, training_data: NLUPipelineTrainingData, attribute: Text,
     ) -> RasaModelData:
         """Create matrix with label_ids encoded in rows as bag of words.
 
@@ -612,7 +600,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """
         # Collect one example for each label
         labels_idx_examples = []
-        for label_name, idx in label_id_dict.items():
+        for label_name, idx in self._label_index_mapping.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, attribute
             )
@@ -668,7 +656,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _create_model_data(
         self,
         training_data: List[Message],
-        label_id_dict: Optional[Dict[Text, int]] = None,
         label_attribute: Optional[Text] = None,
         training: bool = True,
     ) -> RasaModelData:
@@ -717,9 +704,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_data(attribute_data)
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
 
-        self._add_label_features(
-            model_data, training_data, label_attribute, label_id_dict, training
-        )
+        self._add_label_features(model_data, training_data, label_attribute, training)
 
         # make sure all keys are in the same order during training and prediction
         # as we rely on the order of key and sub-key when constructing the actual
@@ -733,14 +718,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data: RasaModelData,
         training_data: List[Message],
         label_attribute: Text,
-        label_id_dict: Dict[Text, int],
         training: bool = True,
     ):
         label_ids = []
         if training and self.component_config[INTENT_CLASSIFICATION]:
             for example in training_data:
                 if example.get(label_attribute):
-                    label_ids.append(label_id_dict[example.get(label_attribute)])
+                    label_ids.append(
+                        self._label_index_mapping[example.get(label_attribute)]
+                    )
 
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
@@ -777,16 +763,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-        if self.index_label_id_mapping is None:
+        if self.index_label_mapping is None:
             self._create_label_index_mappings(training_data, INTENT)
 
         # If no labels are present we cannot train the mdoel
-        if not self.index_label_id_mapping:
+        if not self.index_label_mapping:
             return RasaModelData()
 
-        self._label_data = self._create_label_data(
-            training_data, self.label_id_index_mapping, attribute=INTENT
-        )
+        self._label_data = self._create_label_data(training_data, attribute=INTENT)
 
         if self._entity_tag_specs is None:
             self._create_entity_tag_specs(training_data)
@@ -799,9 +783,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         model_data = self._create_model_data(
-            training_data.nlu_examples,
-            self.label_id_index_mapping,
-            label_attribute=label_attribute,
+            training_data.nlu_examples, label_attribute=label_attribute
         )
 
         self._check_input_dimension_consistency(model_data)
@@ -837,7 +819,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_chunk_files: List of data chunk files.
             config: The model configuration parameters.
         """
-        if not data_chunk_files or not self.index_label_id_mapping:
+        if not data_chunk_files or not self.index_label_mapping:
             return
 
         def _load_data_func(file_path: Path) -> RasaModelData:
@@ -993,8 +975,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
             label = {
-                "id": hash(self.index_label_id_mapping[label_ids[0]]),
-                "name": self.index_label_id_mapping[label_ids[0]],
+                "id": hash(self.index_label_mapping[label_ids[0]]),
+                "name": self.index_label_mapping[label_ids[0]],
                 "confidence": message_sim[0],
             }
 
@@ -1010,8 +992,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ranking = ranking[:output_length]
             label_ranking = [
                 {
-                    "id": hash(self.index_label_id_mapping[label_idx]),
-                    "name": self.index_label_id_mapping[label_idx],
+                    "id": hash(self.index_label_mapping[label_idx]),
+                    "name": self.index_label_mapping[label_idx],
                     "confidence": score,
                 }
                 for label_idx, score in ranking
@@ -1086,8 +1068,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.label_data.pkl", dict(self._label_data.data)
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json",
-            self.index_label_id_mapping,
+            model_dir / f"{file_name}.index_label_mapping.json",
+            self.index_label_mapping,
         )
 
         entity_tag_specs = (
@@ -1121,7 +1103,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return cls(component_config=meta)
 
         (
-            index_label_id_mapping,
+            index_label_mapping,
             entity_tag_specs,
             label_data,
             meta,
@@ -1144,7 +1126,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return cls(
             component_config=meta,
-            index_label_id_mapping=index_label_id_mapping,
+            index_label_mapping=index_label_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
             finetune_mode=should_finetune,
@@ -1159,8 +1141,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         label_data = RasaModelData(data=label_data)
-        index_label_id_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json"
+        index_label_mapping = io_utils.json_unpickle(
+            model_dir / f"{file_name}.index_label_mapping.json"
         )
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
@@ -1180,12 +1162,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ]
 
         # jsonpickle converts dictionary keys to strings
-        index_label_id_mapping = {
-            int(key): value for key, value in index_label_id_mapping.items()
+        index_label_mapping = {
+            int(key): value for key, value in index_label_mapping.items()
         }
 
         return (
-            index_label_id_mapping,
+            index_label_mapping,
             entity_tag_specs,
             label_data,
             meta,

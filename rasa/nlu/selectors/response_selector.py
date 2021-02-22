@@ -248,7 +248,7 @@ class ResponseSelector(DIETClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        index_label_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         all_retrieval_intents: Optional[List[Text]] = None,
@@ -259,7 +259,7 @@ class ResponseSelector(DIETClassifier):
 
         Args:
             component_config: Configuration for the component.
-            index_label_id_mapping: Mapping between label and index used for encoding.
+            index_label_mapping: Mapping between label and index used for encoding.
             entity_tag_specs: Format specification all entity tags.
             model: Model architecture.
             all_retrieval_intents: All retrieval intents defined in the data.
@@ -282,7 +282,7 @@ class ResponseSelector(DIETClassifier):
 
         super().__init__(
             component_config,
-            index_label_id_mapping,
+            index_label_mapping,
             entity_tag_specs,
             model,
             finetune_mode=finetune_mode,
@@ -350,23 +350,21 @@ class ResponseSelector(DIETClassifier):
 
         label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
 
-        if self.index_label_id_mapping is None:
+        if self.index_label_mapping is None:
             self._create_label_index_mappings(training_data, label_attribute)
 
         # If no labels are present we cannot train the mdoel
-        if not self.index_label_id_mapping:
+        if not self.index_label_mapping:
             return RasaModelData()
 
         self.responses = training_data.responses
 
         self._label_data = self._create_label_data(
-            training_data, self.label_id_index_mapping, attribute=label_attribute
+            training_data, attribute=label_attribute
         )
 
         model_data = self._create_model_data(
-            training_data.intent_examples,
-            self.label_id_index_mapping,
-            label_attribute=label_attribute,
+            training_data.intent_examples, label_attribute=label_attribute
         )
 
         self._check_input_dimension_consistency(model_data)

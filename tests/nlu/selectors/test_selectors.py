@@ -162,9 +162,7 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
     response_selector.preprocess_train_data(training_data)
 
     assert response_selector.responses == training_data.responses
-    assert (
-        sorted(list(response_selector.index_label_id_mapping.values())) == label_values
-    )
+    assert sorted(list(response_selector.index_label_mapping.values())) == label_values
 
 
 @pytest.mark.parametrize(
