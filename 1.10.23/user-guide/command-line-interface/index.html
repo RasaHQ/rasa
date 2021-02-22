@@ -1,0 +1,1556 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Line Interface</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Architecture" href="../architecture/" />
+    <link rel="prev" title="Tutorial: Building Assistants" href="../building-assistants/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Command Line Interface" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/user-guide/command-line-interface" />
+  
+    <meta name="description" content="Command line interface for open source chatbot framework Rasa.  Learn how to train, test and run your machine learning-based conversational AI assistants" />
+    <meta itemprop="description" content="Command line interface for open source chatbot framework Rasa.  Learn how to train, test and run your machine learning-based conversational AI assistants">
+    <meta name="twitter:description" content="Command line interface for open source chatbot framework Rasa.  Learn how to train, test and run your machine learning-based conversational AI assistants" />
+    <meta property="og:description" content="Command line interface for open source chatbot framework Rasa.  Learn how to train, test and run your machine learning-based conversational AI assistants" />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Command Line Interface">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/user-guide/command-line-interface/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.23
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.23/user-guide/command-line-interface/">1.10.23</a>
+              <a href="../../../1.10.22/user-guide/command-line-interface/">1.10.22</a>
+              <a href="../../../1.10.21/user-guide/command-line-interface/">1.10.21</a>
+              <a href="../../../1.10.20/user-guide/command-line-interface/">1.10.20</a>
+              <a href="../../../1.10.19/user-guide/command-line-interface/">1.10.19</a>
+              <a href="../../../1.10.18/user-guide/command-line-interface/">1.10.18</a>
+              <a href="../../../1.10.17/user-guide/command-line-interface/">1.10.17</a>
+              <a href="../../../1.10.16/user-guide/command-line-interface/">1.10.16</a>
+              <a href="../../../1.10.15/user-guide/command-line-interface/">1.10.15</a>
+              <a href="../../../1.10.14/user-guide/command-line-interface/">1.10.14</a>
+              <a href="../../../1.10.13/user-guide/command-line-interface/">1.10.13</a>
+              <a href="../../../1.10.12/user-guide/command-line-interface/">1.10.12</a>
+              <a href="../../../1.10.11/user-guide/command-line-interface/">1.10.11</a>
+              <a href="../../../1.10.10/user-guide/command-line-interface/">1.10.10</a>
+              <a href="../../../1.10.9/user-guide/command-line-interface/">1.10.9</a>
+              <a href="../../../1.10.8/user-guide/command-line-interface/">1.10.8</a>
+              <a href="../../../1.10.7/user-guide/command-line-interface/">1.10.7</a>
+              <a href="../../../1.10.6/user-guide/command-line-interface/">1.10.6</a>
+              <a href="../../../1.10.5/user-guide/command-line-interface/">1.10.5</a>
+              <a href="../../../1.10.4/user-guide/command-line-interface/">1.10.4</a>
+              <a href="../../../1.10.3/user-guide/command-line-interface/">1.10.3</a>
+              <a href="../../../1.10.2/user-guide/command-line-interface/">1.10.2</a>
+              <a href="../../../1.10.1/user-guide/command-line-interface/">1.10.1</a>
+              <a href="../../../1.10.0/user-guide/command-line-interface/">1.10.0</a>
+              <a href="../../../1.9.7/user-guide/command-line-interface/">1.9.7</a>
+              <a href="../../../1.9.6/user-guide/command-line-interface/">1.9.6</a>
+              <a href="../../../1.9.5/user-guide/command-line-interface/">1.9.5</a>
+              <a href="../../../1.9.4/user-guide/command-line-interface/">1.9.4</a>
+              <a href="../../../1.9.3/user-guide/command-line-interface/">1.9.3</a>
+              <a href="../../../1.9.2/user-guide/command-line-interface/">1.9.2</a>
+              <a href="../../../1.9.1/user-guide/command-line-interface/">1.9.1</a>
+              <a href="../../../1.9.0/user-guide/command-line-interface/">1.9.0</a>
+              <a href="../../../1.8.3/user-guide/command-line-interface/">1.8.3</a>
+              <a href="../../../1.8.2/user-guide/command-line-interface/">1.8.2</a>
+              <a href="../../../1.8.1/user-guide/command-line-interface/">1.8.1</a>
+              <a href="../../../1.8.0/user-guide/command-line-interface/">1.8.0</a>
+              <a href="../../../1.7.4/user-guide/command-line-interface/">1.7.4</a>
+              <a href="../../../1.7.3/user-guide/command-line-interface/">1.7.3</a>
+              <a href="../../../1.7.2/user-guide/command-line-interface/">1.7.2</a>
+              <a href="../../../1.7.1/user-guide/command-line-interface/">1.7.1</a>
+              <a href="../../../1.7.0/user-guide/command-line-interface/">1.7.0</a>
+              <a href="../../../1.6.2/user-guide/command-line-interface/">1.6.2</a>
+              <a href="../../../1.5.3/user-guide/command-line-interface/">1.5.3</a>
+              <a href="../../../1.4.6/user-guide/command-line-interface/">1.4.6</a>
+              <a href="../../../1.3.10/user-guide/command-line-interface/">1.3.10</a>
+              <a href="../../../1.2.9/user-guide/command-line-interface/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="command-line-interface">
+<span id="id1"></span><h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/command-line-interface.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#cheat-sheet" id="id2">Cheat Sheet</a></p></li>
+<li><p><a class="reference internal" href="#create-a-new-project" id="id3">Create a new project</a></p></li>
+<li><p><a class="reference internal" href="#train-a-model" id="id4">Train a Model</a></p></li>
+<li><p><a class="reference internal" href="#interactive-learning" id="id5">Interactive Learning</a></p></li>
+<li><p><a class="reference internal" href="#talk-to-your-assistant" id="id6">Talk to your Assistant</a></p></li>
+<li><p><a class="reference internal" href="#start-a-server" id="id7">Start a Server</a></p></li>
+<li><p><a class="reference internal" href="#start-an-action-server" id="id8">Start an Action Server</a></p></li>
+<li><p><a class="reference internal" href="#visualize-your-stories" id="id9">Visualize your Stories</a></p></li>
+<li><p><a class="reference internal" href="#evaluating-a-model-on-test-data" id="id10">Evaluating a Model on Test Data</a></p></li>
+<li><p><a class="reference internal" href="#create-a-train-test-split" id="id11">Create a Train-Test Split</a></p></li>
+<li><p><a class="reference internal" href="#convert-data-between-markdown-and-json" id="id12">Convert Data Between Markdown and JSON</a></p></li>
+<li><p><a class="reference internal" href="#export-conversations-to-an-event-broker" id="id13">Export Conversations to an Event Broker</a></p></li>
+<li><p><a class="reference internal" href="#start-rasa-x" id="id14">Start Rasa X</a></p></li>
+</ul>
+</div>
+<div class="section" id="cheat-sheet">
+<h2><a class="toc-backref" href="#id2">Cheat Sheet</a><a class="headerlink" href="#cheat-sheet" title="Permalink to this headline">¶</a></h2>
+<p>The command line interface (CLI) gives you easy-to-remember commands for common tasks.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 80%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code></p></td>
+<td><p>Creates a new project with example training data, actions, and config files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code></p></td>
+<td><p>Trains a model using your NLU data and stories, saves trained model in <code class="docutils literal notranslate"><span class="pre">./models</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code></p></td>
+<td><p>Starts an interactive learning session to create new training data by chatting.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code></p></td>
+<td><p>Loads your trained model and lets you talk to your assistant on the command line.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code></p></td>
+<td><p>Starts a Rasa server with your trained model. See the <a class="reference internal" href="../configuring-http-api/#configuring-http-api"><span class="std std-ref">Configuring the HTTP API</span></a> docs for details.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">actions</span></code></p></td>
+<td><p>Starts an action server using the Rasa SDK.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code></p></td>
+<td><p>Visualizes stories.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code></p></td>
+<td><p>Tests a trained Rasa model using your test NLU data and stories.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">split</span> <span class="pre">nlu</span></code></p></td>
+<td><p>Performs a split of your NLU data according to the specified percentages.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">convert</span> <span class="pre">nlu</span></code></p></td>
+<td><p>Converts NLU training data between different formats.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">export</span></code></p></td>
+<td><p>Export conversations from a tracker store to an event broker.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code></p></td>
+<td><p>Launch Rasa X locally.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">-h</span></code></p></td>
+<td><p>Shows all available commands.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="create-a-new-project">
+<h2><a class="toc-backref" href="#id3">Create a new project</a><a class="headerlink" href="#create-a-new-project" title="Permalink to this headline">¶</a></h2>
+<p>A single command sets up a complete project for you with some example training data.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa init
+</pre></div>
+</div>
+<p>This creates the following files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>.
+├── __init__.py
+├── actions.py
+├── config.yml
+├── credentials.yml
+├── data
+│   ├── nlu.md
+│   └── stories.md
+├── domain.yml
+├── endpoints.yml
+└── models
+    └── &lt;timestamp&gt;.tar.gz
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command will ask you if you want to train an initial model using this data.
+If you answer no, the <code class="docutils literal notranslate"><span class="pre">models</span></code> directory will be empty.</p>
+<p>With this project setup, common commands are very easy to remember.
+To train a model, type <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code>, to talk to your model on the command line, <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code>,
+to test your model type <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>.</p>
+</div>
+<div class="section" id="train-a-model">
+<h2><a class="toc-backref" href="#id4">Train a Model</a><a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>
+<p>The main command is:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+</pre></div>
+</div>
+<p>This command trains a Rasa model that combines a Rasa NLU and a Rasa Core model.
+If you only want to train an NLU or a Core model, you can run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.
+However, Rasa will automatically skip training Core or NLU if the training data and config haven’t changed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> will store the trained model in the directory defined by <code class="docutils literal notranslate"><span class="pre">--out</span></code>. The name of the model
+is per default <code class="docutils literal notranslate"><span class="pre">&lt;timestamp&gt;.tar.gz</span></code>. If you want to name your model differently, you can specify the name
+using <code class="docutils literal notranslate"><span class="pre">--fixed-model-name</span></code>.</p>
+<p>The following arguments can be used to configure the training process:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
+                  [-c CONFIG] [-d DOMAIN] [--out OUT]
+                  [--augmentation AUGMENTATION] [--debug-plots]
+                  [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
+                  [--force]
+                  {core,nlu} ...
+
+positional arguments:
+  {core,nlu}
+    core                Trains a Rasa Core model using your stories.
+    nlu                 Trains a Rasa NLU model using your NLU data.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data DATA [DATA ...]
+                        Paths to the Core and NLU data files. (default:
+                        [&#39;data&#39;])
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  --out OUT             Directory where your models should be stored.
+                        (default: models)
+  --augmentation AUGMENTATION
+                        How much data augmentation to use during training.
+                        (default: 50)
+  --debug-plots         If enabled, will create plots showing checkpoints and
+                        their connections between story blocks in a file
+                        called `story_blocks_connections.html`. (default:
+                        False)
+  --fixed-model-name FIXED_MODEL_NAME
+                        If set, the name of the model file/directory will be
+                        set to the given name. (default: None)
+  --persist-nlu-data    Persist the nlu training data in the saved model.
+                        (default: False)
+  --force               Force a model training even if the data has not
+                        changed. (default: False)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure training data for Core and NLU are present when training a model using <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code>.
+If training data for only one model type is present, the command automatically falls back to
+<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> depending on the provided training files.</p>
+</div>
+</div>
+<div class="section" id="interactive-learning">
+<h2><a class="toc-backref" href="#id5">Interactive Learning</a><a class="headerlink" href="#interactive-learning" title="Permalink to this headline">¶</a></h2>
+<p>To start an interactive learning session with your assistant, run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa interactive
+</pre></div>
+</div>
+<p>If you provide a trained model using the <code class="docutils literal notranslate"><span class="pre">--model</span></code> argument, the interactive learning process
+is started with the provided model. If no model is specified, <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> will
+train a new Rasa model with the data located in <code class="docutils literal notranslate"><span class="pre">data/</span></code> if no other directory was passed to the
+<code class="docutils literal notranslate"><span class="pre">--data</span></code> flag. After training the initial model, the interactive learning session starts.
+Training will be skipped if the training data and config haven’t changed.</p>
+<p>The full list of arguments that can be set for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
+                        [--data DATA [DATA ...]] [--skip-visualization]
+                        [--conversation-id CONVERSATION_ID]
+                        [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
+                        [--out OUT] [--augmentation AUGMENTATION]
+                        [--debug-plots] [--force] [--persist-nlu-data]
+                        {core} ... [model-as-positional-argument]
+
+positional arguments:
+  {core}
+    core                Starts an interactive learning session model to create
+                        new training data for a Rasa Core model by chatting.
+                        Uses the &#39;RegexInterpreter&#39;, i.e. `/&lt;intent&gt;` input
+                        format.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --e2e                 Save story files in e2e format. In this format user
+                        messages will be included in the stories. (default:
+                        False)
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+  --data DATA [DATA ...]
+                        Paths to the Core and NLU data files. (default:
+                        [&#39;data&#39;])
+  --skip-visualization  Disable plotting the visualization during interactive
+                        learning. (default: False)
+  --conversation-id CONVERSATION_ID
+                        Specify the id of the conversation the messages are
+                        in. Defaults to a UUID that will be randomly
+                        generated. (default: 043399e2aca04debb8fd4efa02a71aeb)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Train Arguments:
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  --out OUT             Directory where your models should be stored.
+                        (default: models)
+  --augmentation AUGMENTATION
+                        How much data augmentation to use during training.
+                        (default: 50)
+  --debug-plots         If enabled, will create plots showing checkpoints and
+                        their connections between story blocks in a file
+                        called `story_blocks_connections.html`. (default:
+                        False)
+  --force               Force a model training even if the data has not
+                        changed. (default: False)
+  --persist-nlu-data    Persist the nlu training data in the saved model.
+                        (default: False)
+</pre></div>
+</div>
+</div>
+<div class="section" id="talk-to-your-assistant">
+<h2><a class="toc-backref" href="#id6">Talk to your Assistant</a><a class="headerlink" href="#talk-to-your-assistant" title="Permalink to this headline">¶</a></h2>
+<p>To start a chat session with your assistant on the command line, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa shell
+</pre></div>
+</div>
+<p>The model that should be used to interact with your bot can be specified by <code class="docutils literal notranslate"><span class="pre">--model</span></code>.
+If you start the shell with an NLU-only model, <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> allows
+you to obtain the intent and entities of any text you type on the command line.
+If your model includes a trained Core model, you can chat with your bot and see
+what the bot predicts as a next action.
+If you have trained a combined Rasa model but nevertheless want to see what your model
+extracts as intents and entities from text, you can use the command <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span> <span class="pre">nlu</span></code>.</p>
+<p>To increase the logging level for debugging, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa shell --debug
+</pre></div>
+</div>
+<p>The full list of options for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> is</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa shell [-h] [-v] [-vv] [--quiet]
+                  [--conversation-id CONVERSATION_ID] [-m MODEL]
+                  [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
+                  [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
+                  [--response-timeout RESPONSE_TIMEOUT]
+                  [--remote-storage REMOTE_STORAGE]
+                  [--ssl-certificate SSL_CERTIFICATE]
+                  [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
+                  [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
+                  [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
+                  [--jwt-method JWT_METHOD]
+                  {nlu} ... [model-as-positional-argument]
+
+positional arguments:
+  {nlu}
+    nlu                 Interprets messages on the command line using your NLU
+                        model.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --conversation-id CONVERSATION_ID
+                        Set the conversation ID. (default:
+                        081957846ffb46ba9d913eb0583e6d01)
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --log-file LOG_FILE   Store logs in specified file. (default: None)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --response-timeout RESPONSE_TIMEOUT
+                        Maximum time a response can take to process (sec).
+                        (default: 3600)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL Certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL Keyfile to create a TLS secured server.
+                        (default: None)
+  --ssl-ca-file SSL_CA_FILE
+                        If your SSL certificate needs to be verified, you can
+                        specify the CA file using this parameter. (default:
+                        None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
+</pre></div>
+</div>
+</div>
+<div class="section" id="start-a-server">
+<h2><a class="toc-backref" href="#id7">Start a Server</a><a class="headerlink" href="#start-a-server" title="Permalink to this headline">¶</a></h2>
+<p>To start a server running your Rasa model, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run
+</pre></div>
+</div>
+<p>The following arguments can be used to configure your Rasa server:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+                [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+                [--cors [CORS [CORS ...]]] [--enable-api]
+                [--response-timeout RESPONSE_TIMEOUT]
+                [--remote-storage REMOTE_STORAGE]
+                [--ssl-certificate SSL_CERTIFICATE]
+                [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
+                [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
+                [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
+                [--jwt-method JWT_METHOD]
+                {actions} ... [model-as-positional-argument]
+
+positional arguments:
+  {actions}
+    actions             Runs the action server.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --log-file LOG_FILE   Store logs in specified file. (default: None)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --response-timeout RESPONSE_TIMEOUT
+                        Maximum time a response can take to process (sec).
+                        (default: 3600)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL Certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL Keyfile to create a TLS secured server.
+                        (default: None)
+  --ssl-ca-file SSL_CA_FILE
+                        If your SSL certificate needs to be verified, you can
+                        specify the CA file using this parameter. (default:
+                        None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
+</pre></div>
+</div>
+<p>For more information on the additional parameters, see <a class="reference internal" href="../configuring-http-api/#configuring-http-api"><span class="std std-ref">Configuring the HTTP API</span></a>.
+See the Rasa <a class="reference internal" href="../../api/http-api/#http-api"><span class="std std-ref">HTTP API</span></a> docs for detailed documentation of all the endpoints.</p>
+</div>
+<div class="section" id="start-an-action-server">
+<span id="run-action-server"></span><h2><a class="toc-backref" href="#id8">Start an Action Server</a><a class="headerlink" href="#start-an-action-server" title="Permalink to this headline">¶</a></h2>
+<p>To run your action server run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions
+</pre></div>
+</div>
+<p>The following arguments can be used to adapt the server settings:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]
+                        [--ssl-keyfile SSL_KEYFILE]
+                        [--ssl-certificate SSL_CERTIFICATE]
+                        [--ssl-password SSL_PASSWORD] [--auto-reload]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  port to run the server at (default: 5055)
+  --cors [CORS [CORS ...]]
+                        enable CORS for the passed origin. Use * to whitelist
+                        all origins (default: None)
+  --actions ACTIONS     name of action package to be loaded (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+  --auto-reload         Enable auto-reloading of modules containing Action
+                        subclasses. (default: False)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+</pre></div>
+</div>
+</div>
+<div class="section" id="visualize-your-stories">
+<h2><a class="toc-backref" href="#id9">Visualize your Stories</a><a class="headerlink" href="#visualize-your-stories" title="Permalink to this headline">¶</a></h2>
+<p>To open a browser tab with a graph showing your stories:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa visualize
+</pre></div>
+</div>
+<p>Normally, training stories in the directory <code class="docutils literal notranslate"><span class="pre">data</span></code> are visualized. If your stories are located
+somewhere else, you can specify their location with <code class="docutils literal notranslate"><span class="pre">--stories</span></code>.</p>
+<p>Additional arguments are:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]
+                      [-c CONFIG] [--out OUT] [--max-history MAX_HISTORY]
+                      [-u NLU]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  -s STORIES, --stories STORIES
+                        File or folder containing your training stories.
+                        (default: data)
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  --out OUT             Filename of the output path, e.g. &#39;graph.html&#39;.
+                        (default: graph.html)
+  --max-history MAX_HISTORY
+                        Max history to consider when merging paths in the
+                        output graph. (default: 2)
+  -u NLU, --nlu NLU     File or folder containing your NLU data, used to
+                        insert example messages into the graph. (default:
+                        None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+</pre></div>
+</div>
+</div>
+<div class="section" id="evaluating-a-model-on-test-data">
+<h2><a class="toc-backref" href="#id10">Evaluating a Model on Test Data</a><a class="headerlink" href="#evaluating-a-model-on-test-data" title="Permalink to this headline">¶</a></h2>
+<p>To evaluate your model on test data, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span>
+</pre></div>
+</div>
+<p>Specify the model to test using <code class="docutils literal notranslate"><span class="pre">--model</span></code>.
+Check out more details in <a class="reference internal" href="../testing-your-assistant/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../testing-your-assistant/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
+<p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
+                 [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
+                 [--fail-on-prediction-errors] [--url URL]
+                 [--evaluate-model-directory] [-u NLU] [--out OUT]
+                 [--successes] [--no-errors] [--histogram HISTOGRAM]
+                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
+                 [--cross-validation] [-f FOLDS] [-r RUNS]
+                 [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                 {core,nlu} ...
+
+positional arguments:
+  {core,nlu}
+    core                Tests Rasa Core models using your test stories.
+    nlu                 Tests Rasa NLU models using your test NLU data.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Core Test Arguments:
+  -s STORIES, --stories STORIES
+                        File or folder containing your test stories. (default:
+                        tests)
+  --max-stories MAX_STORIES
+                        Maximum number of stories to test on. (default: None)
+  --endpoints ENDPOINTS
+                        Configuration file for the connectors as a yml file.
+                        (default: None)
+  --fail-on-prediction-errors
+                        If a prediction error is encountered, an exception is
+                        thrown. This can be used to validate stories during
+                        tests, e.g. on travis. (default: False)
+  --url URL             If supplied, downloads a story file from a URL and
+                        trains on it. Fetches the data by sending a GET
+                        request to the supplied URL. (default: None)
+  --evaluate-model-directory
+                        Should be set to evaluate models trained via &#39;rasa
+                        train core --config &lt;config-1&gt; &lt;config-2&gt;&#39;. All models
+                        in the provided directory are evaluated and compared
+                        against each other. (default: False)
+
+NLU Test Arguments:
+  -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
+                        data)
+  --out OUT             Output path for any files created during the
+                        evaluation. (default: results)
+  --successes           If set successful predictions (intent and entities)
+                        will be written to a file. (default: False)
+  --no-errors           If set incorrect predictions (intent and entities)
+                        will NOT be written to a file. (default: False)
+  --histogram HISTOGRAM
+                        Output path for the confidence histogram. (default:
+                        hist.png)
+  --confmat CONFMAT     Output path for the confusion matrix plot. (default:
+                        confmat.png)
+  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                        Model configuration file. If a single file is passed
+                        and cross validation mode is chosen, cross-validation
+                        is performed, if multiple configs or a folder of
+                        configs are passed, models will be trained and
+                        compared directly. (default: None)
+  --no-plot             Don&#39;t render evaluation plots (default: False)
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-a-train-test-split">
+<span id="train-test-split"></span><h2><a class="toc-backref" href="#id11">Create a Train-Test Split</a><a class="headerlink" href="#create-a-train-test-split" title="Permalink to this headline">¶</a></h2>
+<p>To create a split of your NLU data, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa data split nlu
+</pre></div>
+</div>
+<p>You can specify the training data, the fraction, and the output directory using the following arguments:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
+                           [--training-fraction TRAINING_FRACTION]
+                           [--random-seed RANDOM_SEED] [--out OUT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
+                        data)
+  --training-fraction TRAINING_FRACTION
+                        Percentage of the data which should be in the training
+                        data. (default: 0.8)
+  --random-seed RANDOM_SEED
+                        Seed to generate the same train/test split. (default:
+                        None)
+  --out OUT             Directory where the split files should be stored.
+                        (default: train_test_split)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+</pre></div>
+</div>
+<p>This command will attempt to keep the proportions of intents the same in train and test.
+If you have NLG data for retrieval actions, this will be saved to seperate files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls train_test_split
+
+      nlg_test_data.md     test_data.json
+      nlg_training_data.md training_data.json
+</pre></div>
+</div>
+</div>
+<div class="section" id="convert-data-between-markdown-and-json">
+<h2><a class="toc-backref" href="#id12">Convert Data Between Markdown and JSON</a><a class="headerlink" href="#convert-data-between-markdown-and-json" title="Permalink to this headline">¶</a></h2>
+<p>To convert NLU data from LUIS data format, WIT data format, Dialogflow data format, JSON, or Markdown
+to JSON or Markdown, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa data convert nlu
+</pre></div>
+</div>
+<p>You can specify the input file, output file, and the output format with the following arguments:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
+                             [-l LANGUAGE] -f {json,md}
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data DATA           Path to the file or directory containing Rasa NLU
+                        data. (default: None)
+  --out OUT             File where to save training data in Rasa format.
+                        (default: None)
+  -l LANGUAGE, --language LANGUAGE
+                        Language of data. (default: en)
+  -f {json,md}, --format {json,md}
+                        Output format the training data should be converted
+                        into. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+</pre></div>
+</div>
+</div>
+<div class="section" id="export-conversations-to-an-event-broker">
+<span id="section-export"></span><h2><a class="toc-backref" href="#id13">Export Conversations to an Event Broker</a><a class="headerlink" href="#export-conversations-to-an-event-broker" title="Permalink to this headline">¶</a></h2>
+<p>To export events from a tracker store using an event broker, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">export</span>
+</pre></div>
+</div>
+<p>You can specify the location of the environments file, the minimum and maximum
+timestamps of events that should be published, as well as the conversation IDs that
+should be published.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
+                   [--minimum-timestamp MINIMUM_TIMESTAMP]
+                   [--maximum-timestamp MAXIMUM_TIMESTAMP]
+                   [--conversation-ids CONVERSATION_IDS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --endpoints ENDPOINTS
+                        Endpoint configuration file specifying the tracker
+                        store and event broker. (default: endpoints.yml)
+  --minimum-timestamp MINIMUM_TIMESTAMP
+                        Minimum timestamp of events to be exported. The
+                        constraint is applied in a &#39;greater than or equal&#39;
+                        comparison. (default: None)
+  --maximum-timestamp MAXIMUM_TIMESTAMP
+                        Maximum timestamp of events to be exported. The
+                        constraint is applied in a &#39;less than&#39; comparison.
+                        (default: None)
+  --conversation-ids CONVERSATION_IDS
+                        Comma-separated list of conversation IDs to migrate.
+                        If unset, all available conversation IDs will be
+                        exported. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+</pre></div>
+</div>
+</div>
+<div class="section" id="start-rasa-x">
+<span id="section-evaluation"></span><h2><a class="toc-backref" href="#id14">Start Rasa X</a><a class="headerlink" href="#start-rasa-x" title="Permalink to this headline">¶</a></h2>
+Rasa X is a toolset that helps you leverage conversations to improve your assistant.
+You can find more information about it <a class="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.<p>You can start Rasa X locally by executing</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa x
+</pre></div>
+</div>
+To be able to start Rasa X you need to have Rasa X local mode installed
+and you need to be in a Rasa project.<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default Rasa X runs on the port 5002. Using the argument <code class="docutils literal notranslate"><span class="pre">--rasa-x-port</span></code> allows you to change it to
+any other port.</p>
+</div>
+<p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
+              [--no-prompt] [--production] [--rasa-x-port RASA_X_PORT]
+              [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
+              [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+              [--cors [CORS [CORS ...]]] [--enable-api]
+              [--response-timeout RESPONSE_TIMEOUT]
+              [--remote-storage REMOTE_STORAGE]
+              [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
+              [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
+              [--credentials CREDENTIALS] [--connector CONNECTOR]
+              [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --data DATA           Path to the file or directory containing stories and
+                        Rasa NLU data. (default: data)
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  --no-prompt           Automatic yes or default options to prompts and
+                        oppressed warnings. (default: False)
+  --production          Run Rasa X in a production environment. (default:
+                        False)
+  --rasa-x-port RASA_X_PORT
+                        Port to run the Rasa X server at. (default: 5002)
+  --config-endpoint CONFIG_ENDPOINT
+                        Rasa X endpoint URL from which to pull the runtime
+                        config. This URL typically contains the Rasa X token
+                        for authentication. Example:
+                        https://example.com/api/config?token=my_rasa_x_token
+                        (default: None)
+  --log-file LOG_FILE   Store logs in specified file. (default: None)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --response-timeout RESPONSE_TIMEOUT
+                        Maximum time a response can take to process (sec).
+                        (default: 3600)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL Certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL Keyfile to create a TLS secured server.
+                        (default: None)
+  --ssl-ca-file SSL_CA_FILE
+                        If your SSL certificate needs to be verified, you can
+                        specify the CA file using this parameter. (default:
+                        None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>

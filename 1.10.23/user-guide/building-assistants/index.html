@@ -1,0 +1,1734 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial: Building Assistants</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Command Line Interface" href="../command-line-interface/" />
+    <link rel="prev" title="Tutorial: Rasa Basics" href="../rasa-tutorial/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Tutorial: Building Assistants" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/user-guide/building-assistants" />
+  
+    <meta name="description" content="How to build simple FAQ and contextual assistants" />
+    <meta itemprop="description" content="How to build simple FAQ and contextual assistants">
+    <meta name="twitter:description" content="How to build simple FAQ and contextual assistants" />
+    <meta property="og:description" content="How to build simple FAQ and contextual assistants" />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Tutorial: Building Assistants">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/user-guide/building-assistants/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.23
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.23/user-guide/building-assistants/">1.10.23</a>
+              <a href="../../../1.10.22/user-guide/building-assistants/">1.10.22</a>
+              <a href="../../../1.10.21/user-guide/building-assistants/">1.10.21</a>
+              <a href="../../../1.10.20/user-guide/building-assistants/">1.10.20</a>
+              <a href="../../../1.10.19/user-guide/building-assistants/">1.10.19</a>
+              <a href="../../../1.10.18/user-guide/building-assistants/">1.10.18</a>
+              <a href="../../../1.10.17/user-guide/building-assistants/">1.10.17</a>
+              <a href="../../../1.10.16/user-guide/building-assistants/">1.10.16</a>
+              <a href="../../../1.10.15/user-guide/building-assistants/">1.10.15</a>
+              <a href="../../../1.10.14/user-guide/building-assistants/">1.10.14</a>
+              <a href="../../../1.10.13/user-guide/building-assistants/">1.10.13</a>
+              <a href="../../../1.10.12/user-guide/building-assistants/">1.10.12</a>
+              <a href="../../../1.10.11/user-guide/building-assistants/">1.10.11</a>
+              <a href="../../../1.10.10/user-guide/building-assistants/">1.10.10</a>
+              <a href="../../../1.10.9/user-guide/building-assistants/">1.10.9</a>
+              <a href="../../../1.10.8/user-guide/building-assistants/">1.10.8</a>
+              <a href="../../../1.10.7/user-guide/building-assistants/">1.10.7</a>
+              <a href="../../../1.10.6/user-guide/building-assistants/">1.10.6</a>
+              <a href="../../../1.10.5/user-guide/building-assistants/">1.10.5</a>
+              <a href="../../../1.10.4/user-guide/building-assistants/">1.10.4</a>
+              <a href="../../../1.10.3/user-guide/building-assistants/">1.10.3</a>
+              <a href="../../../1.10.2/user-guide/building-assistants/">1.10.2</a>
+              <a href="../../../1.10.1/user-guide/building-assistants/">1.10.1</a>
+              <a href="../../../1.10.0/user-guide/building-assistants/">1.10.0</a>
+              <a href="../../../1.9.7/user-guide/building-assistants/">1.9.7</a>
+              <a href="../../../1.9.6/user-guide/building-assistants/">1.9.6</a>
+              <a href="../../../1.9.5/user-guide/building-assistants/">1.9.5</a>
+              <a href="../../../1.9.4/user-guide/building-assistants/">1.9.4</a>
+              <a href="../../../1.9.3/user-guide/building-assistants/">1.9.3</a>
+              <a href="../../../1.9.2/user-guide/building-assistants/">1.9.2</a>
+              <a href="../../../1.9.1/user-guide/building-assistants/">1.9.1</a>
+              <a href="../../../1.9.0/user-guide/building-assistants/">1.9.0</a>
+              <a href="../../../1.8.3/user-guide/building-assistants/">1.8.3</a>
+              <a href="../../../1.8.2/user-guide/building-assistants/">1.8.2</a>
+              <a href="../../../1.8.1/user-guide/building-assistants/">1.8.1</a>
+              <a href="../../../1.8.0/user-guide/building-assistants/">1.8.0</a>
+              <a href="../../../1.7.4/user-guide/building-assistants/">1.7.4</a>
+              <a href="../../../1.7.3/user-guide/building-assistants/">1.7.3</a>
+              <a href="../../../1.7.2/user-guide/building-assistants/">1.7.2</a>
+              <a href="../../../1.7.1/user-guide/building-assistants/">1.7.1</a>
+              <a href="../../../1.7.0/user-guide/building-assistants/">1.7.0</a>
+              <a href="../../../1.6.2/index/">1.6.2</a>
+              <a href="../../../1.5.3/index/">1.5.3</a>
+              <a href="../../../1.4.6/index/">1.4.6</a>
+              <a href="../../../1.3.10/index/">1.3.10</a>
+              <a href="../../../1.2.9/index/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="tutorial-building-assistants">
+<span id="building-assistants"></span><h1>Tutorial: Building Assistants<a class="headerlink" href="#tutorial-building-assistants" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/building-assistants.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><p>After following the basics of setting up an assistant in the <a class="reference external" href="https://rasa.com/docs/rasa/user-guide/rasa-tutorial/">Rasa Tutorial</a>, we’ll
+now walk through building a basic FAQ chatbot and then build a bot that can handle
+contextual conversations.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#building-a-simple-faq-assistant" id="id8">Building a simple FAQ assistant</a></p>
+<ul>
+<li><p><a class="reference internal" href="#memoization-policy" id="id9">Memoization Policy</a></p></li>
+<li><p><a class="reference internal" href="#response-selectors" id="id10">Response Selectors</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#building-a-contextual-assistant" id="id11">Building a contextual assistant</a></p>
+<ul>
+<li><p><a class="reference internal" href="#handling-business-logic" id="id12">Handling business logic</a></p></li>
+<li><p><a class="reference internal" href="#handling-unexpected-user-input" id="id13">Handling unexpected user input</a></p>
+<ul>
+<li><p><a class="reference internal" href="#generic-interjections" id="id14">Generic interjections</a></p></li>
+<li><p><a class="reference internal" href="#contextual-questions" id="id15">Contextual questions</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#failing-gracefully" id="id16">Failing gracefully</a></p>
+<ul>
+<li><p><a class="reference internal" href="#fallback-policy" id="id17">Fallback policy</a></p></li>
+<li><p><a class="reference internal" href="#out-of-scope-intent" id="id18">Out of scope intent</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#more-complex-contextual-conversations" id="id19">More complex contextual conversations</a></p>
+<ul>
+<li><p><a class="reference internal" href="#augmentedmemoizationpolicy" id="id20">AugmentedMemoizationPolicy</a></p></li>
+<li><p><a class="reference internal" href="#using-ml-to-generalise" id="id21">Using ML to generalise</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="building-a-simple-faq-assistant">
+<span id="build-faq-assistant"></span><h2><a class="toc-backref" href="#id8">Building a simple FAQ assistant</a><a class="headerlink" href="#building-a-simple-faq-assistant" title="Permalink to this headline">¶</a></h2>
+<p>FAQ assistants are the simplest assistants to build and a good place to get started.
+These assistants allow the user to ask a simple question and get a response. We’re going to
+build a basic FAQ assistant using features of Rasa designed specifically for this type of assistant.</p>
+<p>In this section we’re going to cover the following topics:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="respond-with-memoization-policy">Responding to simple intents</a> with the MemoizationPolicy</p></li>
+<li><p><a class="reference external" href="faqs-response-selector">Handling FAQs</a> using the ResponseSelector</p></li>
+</ul>
+</div></blockquote>
+<p>We’re going to use content from <a class="reference external" href="https://github.com/RasaHQ/rasa-demo">Sara</a>, the Rasa
+assistant that, amongst other things, helps the user get started with the Rasa products.
+You should first install Rasa using the <a class="reference external" href="https://rasa.com/docs/rasa/user-guide/installation/#step-by-step-installation-guide">Step-by-step Installation Guide</a>
+and then follow the <a class="reference external" href="https://rasa.com/docs/rasa/user-guide/rasa-tutorial/">Rasa Tutorial</a>
+to make sure you know the basics.</p>
+<p>To prepare for this tutorial, we’re going to create a new directory and start a
+new Rasa project.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir rasa-assistant
+rasa init
+</pre></div>
+</div>
+<p>Let’s remove the default content from this bot, so that the <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>, <code class="docutils literal notranslate"><span class="pre">stories.md</span></code>
+and <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> files are empty.</p>
+<div class="section" id="memoization-policy">
+<span id="respond-with-memoization-policy"></span><h3><a class="toc-backref" href="#id9">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h3>
+<p>The MemoizationPolicy remembers examples from training stories for up to a <code class="docutils literal notranslate"><span class="pre">max_history</span></code>
+of turns. The number of “turns” includes messages the user sent, and actions the
+assistant performed. For the purpose of a simple, context-less FAQ bot, we only need
+to pay attention to the last message the user sent, and therefore we’ll set that to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+<p>You can do this by editing your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> file as follows (you can remove <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> for now):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MemoizationPolicy</span>
+  <span class="nt">max_history</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MappingPolicy</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The MappingPolicy is there because it handles the logic of the <code class="docutils literal notranslate"><span class="pre">/restart</span></code> intent,
+which allows you to clear the conversation history and start fresh.</p>
+</div>
+<p>Now that we’ve defined our policies, we can add some stories for the <code class="docutils literal notranslate"><span class="pre">goodbye</span></code>, <code class="docutils literal notranslate"><span class="pre">thank</span></code> and <code class="docutils literal notranslate"><span class="pre">greet</span></code>
+intents to the <code class="docutils literal notranslate"><span class="pre">stories.md</span></code> file:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## greet</span>
+<span class="k">*</span> greet
+  <span class="k">-</span> utter_greet
+
+<span class="gu">## thank</span>
+<span class="k">*</span> thank
+  <span class="k">-</span> utter_noworries
+
+<span class="gu">## goodbye</span>
+<span class="k">*</span> bye
+  <span class="k">-</span> utter_bye
+</pre></div>
+</div>
+<p>We’ll also need to add the intents, actions and responses to our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file in the following sections:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span>intents:
+  <span class="k">-</span> greet
+  <span class="k">-</span> bye
+  <span class="k">-</span> thank
+
+responses:
+  utter_noworries:
+    <span class="k">-</span> text: No worries!
+  utter_greet:
+    <span class="k">-</span> text: Hi
+  utter_bye:
+    <span class="k">-</span> text: Bye!
+</pre></div>
+</div>
+<p>Finally, we’ll copy over some NLU data from Sara into our <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code> file
+(more can be found <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md">here</a>):</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:greet</span>
+<span class="k">-</span> Hi
+<span class="k">-</span> Hey
+<span class="k">-</span> Hi bot
+<span class="k">-</span> Hey bot
+<span class="k">-</span> Hello
+<span class="k">-</span> Good morning
+<span class="k">-</span> hi again
+<span class="k">-</span> hi folks
+
+<span class="gu">## intent:bye</span>
+<span class="k">-</span> goodbye
+<span class="k">-</span> goodnight
+<span class="k">-</span> good bye
+<span class="k">-</span> good night
+<span class="k">-</span> see ya
+<span class="k">-</span> toodle-oo
+<span class="k">-</span> bye bye
+<span class="k">-</span> gotta go
+<span class="k">-</span> farewell
+
+<span class="gu">## intent:thank</span>
+<span class="k">-</span> Thanks
+<span class="k">-</span> Thank you
+<span class="k">-</span> Thank you so much
+<span class="k">-</span> Thanks bot
+<span class="k">-</span> Thanks for that
+<span class="k">-</span> cheers
+</pre></div>
+</div>
+<p>You can now train a first model and test the bot, by running the following commands:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+rasa shell
+</pre></div>
+</div>
+<p>This bot should now be able to reply to the intents we defined consistently, and in any order.</p>
+<p>For example:</p>
+<img alt="Memoization Policy Conversation" class="align-center" src="../../_images/memoization_policy_convo.png" />
+<p>While it’s good to test the bot interactively, we should also add end to end test cases that
+can later be included as part of a <a class="reference internal" href="../setting-up-ci-cd/#setting-up-ci-cd"><span class="std std-ref">CI/CD system</span></a>. End-to-end <a class="reference internal" href="../testing-your-assistant/#end-to-end-testing"><span class="std std-ref">test conversations</span></a>
+include NLU data, so that both components of Rasa can be tested. The file
+<code class="docutils literal notranslate"><span class="pre">tests/conversation_tests.md</span></code> contains example test conversations. Delete all the test conversations and replace
+them with some test conversations for your assistant so far:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## greet + goodbye</span>
+<span class="k">*</span> greet: Hi!
+  <span class="k">-</span> utter_greet
+<span class="k">*</span> bye: Bye
+  <span class="k">-</span> utter_bye
+
+<span class="gu">## greet + thanks</span>
+<span class="k">*</span> greet: Hello there
+  <span class="k">-</span> utter_greet
+<span class="k">*</span> thank: thanks a bunch
+  <span class="k">-</span> utter_noworries
+
+<span class="gu">## greet + thanks + goodbye</span>
+<span class="k">*</span> greet: Hey
+  <span class="k">-</span> utter_greet
+<span class="k">*</span> thank: thank you
+  <span class="k">-</span> utter_noworries
+<span class="k">*</span> bye: bye bye
+  <span class="k">-</span> utter_bye
+</pre></div>
+</div>
+<p>To test our model against the test file, run the command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> --stories tests/conversation_tests.md
+</pre></div>
+</div>
+<p>The test command will produce a directory named <code class="docutils literal notranslate"><span class="pre">results</span></code>. It should contain a file
+called <code class="docutils literal notranslate"><span class="pre">failed_stories.md</span></code>, where any test cases that failed will be printed. It will
+also specify whether it was an NLU or Core prediction that went wrong.  As part of a
+CI/CD pipeline, the test option <code class="docutils literal notranslate"><span class="pre">--fail-on-prediction-errors</span></code> can be used to throw
+an exception that stops the pipeline.</p>
+</div>
+<div class="section" id="response-selectors">
+<span id="faqs-response-selector"></span><h3><a class="toc-backref" href="#id10">Response Selectors</a><a class="headerlink" href="#response-selectors" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> NLU component is designed to make it easier to handle dialogue
+elements like <a class="reference internal" href="../../dialogue-elements/small-talk/#small-talk"><span class="std std-ref">Small Talk</span></a> and FAQ messages in a simple manner. By using the ResponseSelector,
+you only need one story to handle all FAQs, instead of adding new stories every time you
+want to increase your bot’s scope.</p>
+<p>People often ask Sara different questions surrounding the Rasa products, so let’s
+start with three intents: <code class="docutils literal notranslate"><span class="pre">ask_channels</span></code>, <code class="docutils literal notranslate"><span class="pre">ask_languages</span></code>, and <code class="docutils literal notranslate"><span class="pre">ask_rasax</span></code>.
+We’re going to copy over some NLU data from the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md">Sara training data</a>
+into our <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>. It’s important that these intents have an <code class="docutils literal notranslate"><span class="pre">faq/</span></code> prefix, so they’re
+recognised as the faq intent by the ResponseSelector:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent: faq/ask_channels</span>
+<span class="k">-</span> What channels of communication does rasa support?
+<span class="k">-</span> what channels do you support?
+<span class="k">-</span> what chat channels does rasa uses
+<span class="k">-</span> channels supported by Rasa
+<span class="k">-</span> which messaging channels does rasa support?
+
+<span class="gu">## intent: faq/ask_languages</span>
+<span class="k">-</span> what language does rasa support?
+<span class="k">-</span> which language do you support?
+<span class="k">-</span> which languages supports rasa
+<span class="k">-</span> can I use rasa also for another laguage?
+<span class="k">-</span> languages supported
+
+<span class="gu">## intent: faq/ask_rasax</span>
+<span class="k">-</span> I want information about rasa x
+<span class="k">-</span> i want to learn more about Rasa X
+<span class="k">-</span> what is rasa x?
+<span class="k">-</span> Can you tell me about rasa x?
+<span class="k">-</span> Tell me about rasa x
+<span class="k">-</span> tell me what is rasa x
+</pre></div>
+</div>
+<p>Next, we’ll need to define the responses associated with these FAQs in a new file called <code class="docutils literal notranslate"><span class="pre">responses.md</span></code> in the <code class="docutils literal notranslate"><span class="pre">data/</span></code> directory:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## ask channels</span>
+<span class="k">*</span> faq/ask_channels
+  <span class="k">-</span> We have a comprehensive list of [<span class="nt">supported connectors</span>](<span class="na">https://rasa.com/docs/core/connectors/</span>), but if
+    you don&#39;t see the one you&#39;re looking for, you can always create a custom connector by following
+    [<span class="nt">this guide</span>](<span class="na">https://rasa.com/docs/rasa/user-guide/connectors/custom-connectors/</span>).
+
+<span class="gu">## ask languages</span>
+<span class="k">*</span> faq/ask_languages
+  <span class="k">-</span> You can use Rasa to build assistants in any language you want!
+
+<span class="gu">## ask rasa x</span>
+<span class="k">*</span> faq/ask_rasax
+ <span class="k">-</span> Rasa X is a tool to learn from real conversations and improve your assistant. Read more [<span class="nt">here</span>](<span class="na">https://rasa.com/docs/rasa-x/</span>)
+</pre></div>
+</div>
+<p>The ResponseSelector should already be at the end of the NLU pipeline in our <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">en</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+</pre></div>
+</div>
+<p>Now that we’ve defined the NLU side, we need to make Core aware of these changes. Open your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file and add the <code class="docutils literal notranslate"><span class="pre">faq</span></code> intent:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bye</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">thank</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
+</pre></div>
+</div>
+<p>We’ll also need to add a <a class="reference external" href="https://rasa.com/docs/rasa/core/retrieval-actions/">retrieval action</a>,
+which takes care of sending the response predicted from the ResponseSelector back to the user,
+to the list of actions. These actions always have to start with the <code class="docutils literal notranslate"><span class="pre">respond_</span></code> prefix:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">actions</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">respond_faq</span>
+</pre></div>
+</div>
+<p>Next we’ll write a story so that Core knows which action to predict:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## Some question from FAQ</span>
+<span class="k">*</span> faq
+    <span class="k">-</span> respond_faq
+</pre></div>
+</div>
+<p>This prediction is handled by the MemoizationPolicy, as we described earlier.</p>
+<p>After all of the changes are done, train a new model and test the modified FAQs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+rasa shell
+</pre></div>
+</div>
+<p>At this stage it makes sense to add a few test cases to your <code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code> file again:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## ask channels</span>
+<span class="k">*</span> faq: What messaging channels does Rasa support?
+  <span class="k">-</span> respond_faq
+
+<span class="gu">## ask languages</span>
+<span class="k">*</span> faq: Which languages can I build assistants in?
+  <span class="k">-</span> respond_faq
+
+<span class="gu">## ask rasa x</span>
+<span class="k">*</span> faq: What’s Rasa X?
+  <span class="k">-</span> respond_faq
+</pre></div>
+</div>
+<p>You can read more in this <a class="reference external" href="https://blog.rasa.com/response-retrieval-models/">blog post</a> and the
+<a class="reference external" href="https://rasa.com/docs/rasa/core/retrieval-actions/">Retrieval Actions</a> page.</p>
+<p>Using the features we described in this tutorial, you can easily build a context-less assistant.
+When you’re ready to enhance your assistant with context, check out <a class="reference internal" href="#tutorial-contextual-assistants"><span class="std std-ref">Building a contextual assistant</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Here’s a minimal checklist of files we modified to build a basic FAQ assistant:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add NLU training data for <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/responses.md</span></code>: Add responses associated with <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>: Add <code class="docutils literal notranslate"><span class="pre">ReponseSelector</span></code> in your NLU pipeline</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>: Add a retrieval action <code class="docutils literal notranslate"><span class="pre">respond_faq</span></code> and intent <code class="docutils literal notranslate"><span class="pre">faq</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a simple story for FAQs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code>: Add E2E test stories for your FAQs</p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+</div>
+<div class="section" id="building-a-contextual-assistant">
+<span id="tutorial-contextual-assistants"></span><h2><a class="toc-backref" href="#id11">Building a contextual assistant</a><a class="headerlink" href="#building-a-contextual-assistant" title="Permalink to this headline">¶</a></h2>
+<p>Whether you’ve just created an FAQ bot or are starting from scratch, the next step is to expand
+your bot to handle contextual conversations.</p>
+<p>In this tutorial we’re going to cover a variety of topics:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="#handling-business-logic"><span class="std std-ref">Handling business logic</span></a></p></li>
+<li><p><a class="reference internal" href="#handling-unexpected-user-input"><span class="std std-ref">Handling unexpected user input</span></a></p></li>
+<li><p><a class="reference internal" href="#failing-gracefully"><span class="std std-ref">Failing gracefully</span></a></p></li>
+<li><p><a class="reference internal" href="#more-complex-contextual-conversations"><span class="std std-ref">More complex contextual conversations</span></a></p></li>
+</ul>
+</div></blockquote>
+<p>Please make sure you’ve got all the data from the <a class="reference internal" href="#build-faq-assistant"><span class="std std-ref">Building a simple FAQ assistant</span></a> section before starting this part.
+You will need to make some adjustments to your configuration file, since we now need to pay attention to context:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MemoizationPolicy</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MappingPolicy</span>
+</pre></div>
+</div>
+<p>We removed the <code class="docutils literal notranslate"><span class="pre">max_history:</span> <span class="pre">1</span></code> configuration. The default is <code class="docutils literal notranslate"><span class="pre">5</span></code>,
+meaning Core will pay attention to the past 5 turns when making a prediction
+(see explanation of <a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#max-history">max history</a>).</p>
+<div class="section" id="handling-business-logic">
+<span id="id2"></span><h3><a class="toc-backref" href="#id12">Handling business logic</a><a class="headerlink" href="#handling-business-logic" title="Permalink to this headline">¶</a></h3>
+<p>A lot of conversational assistants have user goals that involve collecting a bunch of information
+from the user before being able to do something for them. This is called slot filling. For
+example, in the banking industry you may have a user goal of transferring money, where you
+need to collect information about which account to transfer from, whom to transfer to and the
+amount to transfer. This type of behavior can and should be handled in a rule based way, as it
+is clear how this information should be collected.</p>
+<p>For this type of use case, we can use Forms and our FormPolicy. The <a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#form-policy">FormPolicy</a>
+works by predicting the form as the next action until all information is gathered from the user.</p>
+<p>As an example, we will build out the SalesForm from Sara. The user wants to contact
+our sales team, and for this we need to gather the following pieces of information:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Their job</p></li>
+<li><p>Their bot use case</p></li>
+<li><p>Their name</p></li>
+<li><p>Their email</p></li>
+<li><p>Their budget</p></li>
+<li><p>Their company</p></li>
+</ul>
+</div></blockquote>
+<p>We will start by defining the <code class="docutils literal notranslate"><span class="pre">SalesForm</span></code> as a new class in the file called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>.
+The first method we need to define is the name, which like in a regular Action
+returns the name that will be used in our stories:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk.forms</span> <span class="kn">import</span> <span class="n">FormAction</span>
+
+<span class="k">class</span> <span class="nc">SalesForm</span><span class="p">(</span><span class="n">FormAction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Collects sales information and adds it to the spreadsheet&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;sales_form&quot;</span>
+</pre></div>
+</div>
+<p>Next we have to define the <code class="docutils literal notranslate"><span class="pre">required_slots</span></code> method which specifies which pieces of information to
+ask for, i.e. which slots to fill.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@staticmethod</span>
+<span class="k">def</span> <span class="nf">required_slots</span><span class="p">(</span><span class="n">tracker</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="s2">&quot;job_function&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;use_case&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;budget&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;person_name&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;company&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;business_email&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+</pre></div>
+</div>
+<p>Note: you can customise the required slots function not to be static. E.g. if the <code class="docutils literal notranslate"><span class="pre">job_function</span></code> is a
+developer, you could add a <code class="docutils literal notranslate"><span class="pre">required_slot</span></code> about the users experience level with Rasa</p>
+<p>Once you’ve done that, you’ll need to specify how the bot should ask for this information. This
+is done by specifying <code class="docutils literal notranslate"><span class="pre">utter_ask_{slotname}</span></code> responses in your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file. For the above
+we’ll need to specify the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">utter_ask_business_email</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">What&#39;s your business email?</span>
+<span class="nt">utter_ask_company</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">What company do you work for?</span>
+<span class="nt">utter_ask_budget</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;What&#39;s</span><span class="nv"> </span><span class="s">your</span><span class="nv"> </span><span class="s">annual</span><span class="nv"> </span><span class="s">budget</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">conversational</span><span class="nv"> </span><span class="s">AI?</span><span class="nv"> </span><span class="s">💸&quot;</span>
+<span class="nt">utter_ask_job_function</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;What&#39;s</span><span class="nv"> </span><span class="s">your</span><span class="nv"> </span><span class="s">job?</span><span class="nv"> </span><span class="s">🕴&quot;</span>
+<span class="nt">utter_ask_person_name</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">What&#39;s your name?</span>
+<span class="nt">utter_ask_use_case</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">What&#39;s your use case?</span>
+</pre></div>
+</div>
+<p>We’ll also need to define all these slots in our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">slots</span><span class="p">:</span>
+  <span class="nt">company</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+  <span class="nt">job_function</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+  <span class="nt">person_name</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+  <span class="nt">budget</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+  <span class="nt">business_email</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+  <span class="nt">use_case</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+</pre></div>
+</div>
+<p>Going back to our Form definition, we need to define the <code class="docutils literal notranslate"><span class="pre">submit</span></code> method as well,
+which will do something with the information the user has provided once the form is complete:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">submit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dispatcher</span><span class="p">:</span> <span class="n">CollectingDispatcher</span><span class="p">,</span>
+        <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="s2">&quot;Thanks for getting in touch, we’ll contact you soon&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+</div>
+<p>In this case, we only tell the user that we’ll be in touch with them, however
+usually you would send this information to an API or a database. See the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L71">rasa-demo</a>
+for an example of how to store this information in a spreadsheet.</p>
+<p>We’ll need to add the form we just created to a new section in our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">forms</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">sales_form</span>
+</pre></div>
+</div>
+<p>We also need to create an intent to activate the form, as well as an intent for providing all the
+information the form asks the user for. For the form activation intent, we can create an
+intent called <code class="docutils literal notranslate"><span class="pre">contact_sales</span></code>. Add the following training data to your nlu file:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:contact_sales</span>
+<span class="k">-</span> I wanna talk to your sales people.
+<span class="k">-</span> I want to talk to your sales people
+<span class="k">-</span> I want to speak with sales
+<span class="k">-</span> Sales
+<span class="k">-</span> Please schedule a sales call
+<span class="k">-</span> Please connect me to someone from sales
+<span class="k">-</span> I want to get in touch with your sales guys
+<span class="k">-</span> I would like to talk to someone from your sales team
+<span class="k">-</span> sales please
+</pre></div>
+</div>
+<p>You can view the full intent <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md#intentcontact_sales">here</a>)</p>
+<p>We will also create an intent called <code class="docutils literal notranslate"><span class="pre">inform</span></code> which covers any sort of information the user
+provides to the bot. <em>The reason we put all this under one intent, is because there is no
+real intent behind providing information, only the entity is important.</em> Add the following
+data to your NLU file:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:inform</span>
+<span class="k">-</span> [<span class="nt">100k</span>](<span class="na">budget</span>)
+<span class="k">-</span> [<span class="nt">100k</span>](<span class="na">budget</span>)
+<span class="k">-</span> [<span class="nt">240k/year</span>](<span class="na">budget</span>)
+<span class="k">-</span> [<span class="nt">150,000 USD</span>](<span class="na">budget</span>)
+<span class="k">-</span> I work for [<span class="nt">Rasa</span>](<span class="na">company</span>)
+<span class="k">-</span> The name of the company is [<span class="nt">ACME</span>](<span class="na">company</span>)
+<span class="k">-</span> company: [<span class="nt">Rasa Technologies</span>](<span class="na">company</span>)
+<span class="k">-</span> it&#39;s a small company from the US, the name is [<span class="nt">Hooli</span>](<span class="na">company</span>)
+<span class="k">-</span> it&#39;s a tech company, [<span class="nt">Rasa</span>](<span class="na">company</span>)
+<span class="k">-</span> [<span class="nt">ACME</span>](<span class="na">company</span>)
+<span class="k">-</span> [<span class="nt">Rasa Technologies</span>](<span class="na">company</span>)
+<span class="k">-</span> [<span class="nt">maxmeier@firma.de</span>](<span class="na">business_email</span>)
+<span class="k">-</span> [<span class="nt">bot-fan@bots.com</span>](<span class="na">business_email</span>)
+<span class="k">-</span> [<span class="nt">maxmeier@firma.de</span>](<span class="na">business_email</span>)
+<span class="k">-</span> [<span class="nt">bot-fan@bots.com</span>](<span class="na">business_email</span>)
+<span class="k">-</span> [<span class="nt">my email is email@rasa.com</span>](<span class="na">business_email</span>)
+<span class="k">-</span> [<span class="nt">engineer</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">brand manager</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">marketing</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">sales manager</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">growth manager</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">CTO</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">CEO</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">COO</span>](<span class="na">job_function</span>)
+<span class="k">-</span> [<span class="nt">John Doe</span>](<span class="na">person_name</span>)
+<span class="k">-</span> [<span class="nt">Jane Doe</span>](<span class="na">person_name</span>)
+<span class="k">-</span> [<span class="nt">Max Mustermann</span>](<span class="na">person_name</span>)
+<span class="k">-</span> [<span class="nt">Max Meier</span>](<span class="na">person_name</span>)
+<span class="k">-</span> We plan to build a [<span class="nt">sales bot</span>](<span class="na">use_case</span>) to increase our sales by 500%.
+<span class="k">-</span> we plan to build a [<span class="nt">sales bot</span>](<span class="na">use_case</span>) to increase our revenue by 100%.
+<span class="k">-</span> a [<span class="nt">insurance tool</span>](<span class="na">use_case</span>) that consults potential customers on the best life insurance to choose.
+<span class="k">-</span> we&#39;re building a [<span class="nt">conversational assistant</span>](<span class="na">use_case</span>) for our employees to book meeting rooms.
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Entities like <code class="docutils literal notranslate"><span class="pre">business_email</span></code> and <code class="docutils literal notranslate"><span class="pre">budget</span></code> would usually be handled by pretrained entity extractors
+(e.g. <a class="reference internal" href="../../nlu/components/#ducklinghttpextractor"><span class="std std-ref">DucklingHTTPExtractor</span></a> or <a class="reference internal" href="../../nlu/components/#spacyentityextractor"><span class="std std-ref">SpacyEntityExtractor</span></a>), but for this tutorial
+we want to avoid any additional setup.</p>
+</div>
+<p>The intents and entities will need to be added to your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file as well:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bye</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">thank</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">contact_sales</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">inform</span>
+
+<span class="nt">entities</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">company</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">job_function</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">person_name</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">budget</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">business_email</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">use_case</span>
+</pre></div>
+</div>
+<p>A story for a form is very simple, as all the slot collection form happens inside the form, and
+therefore doesn’t need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
+to your <code class="docutils literal notranslate"><span class="pre">stories.md</span></code> file:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## sales form</span>
+<span class="k">*</span> contact_sales
+    <span class="k">-</span> sales_form                   &lt;!--Run the sales_form action--&gt;
+    <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}   &lt;!--Activate the form--&gt;
+    <span class="k">-</span> form{&quot;name&quot;: null}           &lt;!--Deactivate the form--&gt;
+</pre></div>
+</div>
+<p>As a final step, let’s add the FormPolicy to our config file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MemoizationPolicy</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">KerasPolicy</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MappingPolicy</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">FormPolicy</span>
+</pre></div>
+</div>
+<p>At this point, you already have a working form, so let’s try it out. Make sure to uncomment the
+<code class="docutils literal notranslate"><span class="pre">action_endpoint</span></code> in your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> to make Rasa aware of the action server that will run our form:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">action_endpoint</span><span class="p">:</span>
+ <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;http://localhost:5055/webhook&quot;</span>
+</pre></div>
+</div>
+<p>Then start the action server in a new terminal window:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions
+</pre></div>
+</div>
+<p>Then you can retrain and talk to your bot:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+rasa shell
+</pre></div>
+</div>
+<p>This simple form will work out of the box, however you will likely want to add a bit
+more capability to handle different situations. One example of this is validating
+slots, to make sure the user provided information correctly (read more about it
+<a class="reference external" href="https://rasa.com/docs/rasa/core/forms/#validating-user-input">here</a>).</p>
+<p>Another example is that you may want to fill slots from things other than entities
+of the same name. E.g. for the “use case” situation in our Form, we would expect
+the user to type a full sentence and not something that you could necessarily
+extract as an entity. In this case we can make use of the <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> method,
+where you can describe what your entities should be extracted from. Here we can
+use the <code class="docutils literal notranslate"><span class="pre">from_text</span></code> method to extract the users whole message:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">slot_mappings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]:</span>
+    <span class="sd">&quot;&quot;&quot;A dictionary to map required slots to</span>
+<span class="sd">    - an extracted entity</span>
+<span class="sd">    - intent: value pairs</span>
+<span class="sd">    - a whole message</span>
+<span class="sd">    or a list of them, where a first match will be picked&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;use_case&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_text</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s2">&quot;inform&quot;</span><span class="p">)}</span>
+</pre></div>
+</div>
+<p>Now our bot will extract the full user message when asking for the use case slot,
+and we don’t need to use the <code class="docutils literal notranslate"><span class="pre">use_case</span></code> entity defined before.</p>
+<p>All of the methods within a form can be customized to handle different branches in your
+business logic. Read more about this <a class="reference external" href="https://rasa.com/docs/rasa/core/forms/#">here</a>.
+However, you should make sure not to handle any unhappy paths inside the form. These
+should be handled by writing regular stories, so your model can learn this behavior.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Here’s a minimal checklist of files we modified to handle business logic using a form action:</p>
+<blockquote>
+<div><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define the form action, including the <code class="docutils literal notranslate"><span class="pre">required_slots</span></code>, <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> and <code class="docutils literal notranslate"><span class="pre">submit</span></code> methods</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add examples for an intent to activate the form</p></li>
+<li><p>Add examples for an <code class="docutils literal notranslate"><span class="pre">inform</span></code> intent to fill the form</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add all slots required by the form</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">utter_ask_{slot}</span></code> responses for all required slots</p></li>
+<li><p>Add your form action to the <code class="docutils literal notranslate"><span class="pre">forms</span></code> section</p></li>
+<li><p>Add all intents and entities from your NLU training data</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a story for the form</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> to your policies</p></li>
+<li><p>Add entity extractors to your pipeline</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>: Define the <code class="docutils literal notranslate"><span class="pre">action_endpoint</span></code></p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="handling-unexpected-user-input">
+<span id="id3"></span><h3><a class="toc-backref" href="#id13">Handling unexpected user input</a><a class="headerlink" href="#handling-unexpected-user-input" title="Permalink to this headline">¶</a></h3>
+<p>All expected user inputs should be handled by the form we defined above, i.e. if the
+user provides the information the bot asks for. However, in real situations, the user
+will often behave differently. In this section we’ll go through various forms of
+“interjections” and how to handle them within Rasa.</p>
+<p>The decision to handle these types of user input should always come from reviewing
+real conversations. You should first build part of your assistant, test it with real users
+(whether that’s your end user, or your colleague) and then add what’s missing. You shouldn’t
+try to implement every possible edge case that you think might happen, because in the end
+your users may never actually behave in that way.
+<a class="reference external" href="https://rasa.com/docs/rasa-x/">Rasa X</a>
+is a tool that can help you review conversations and make these types of decisions.</p>
+<div class="section" id="generic-interjections">
+<h4><a class="toc-backref" href="#id14">Generic interjections</a><a class="headerlink" href="#generic-interjections" title="Permalink to this headline">¶</a></h4>
+<p>If you have generic interjections that should always have the same single response no
+matter the context, you can use the <a class="reference internal" href="../../core/policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a> to handle these. It will always
+predict the same action for an intent, and when combined with a forgetting mechanism,
+you don’t need to write any stories either.</p>
+<p>For example, let’s say you see users having conversations like the following one with
+your assistant, where they write a greeting in the middle of a conversation -
+maybe because they were gone for a few minutes:</p>
+<a class="reference internal image-reference" href="../../_images/greet_interjection.png"><img alt="Greeting Interjection" class="align-center" src="../../_images/greet_interjection.png" style="width: 240px;" /></a>
+<p>The greet intent is a good example where we will always give the same response and
+yet we don’t want the intent to affect the dialogue history. To do this, the response
+must be an action that returns the <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> event to remove the
+interaction from the dialogue history.</p>
+<p>First, open the <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file and modify the greet intent and add a new block <code class="docutils literal notranslate"><span class="pre">`actions`</span></code> in
+the file, next, add the <code class="docutils literal notranslate"><span class="pre">action_greet</span></code> as shown here:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">greet</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">triggers</span><span class="p">:</span> <span class="nv">action_greet</span><span class="p p-Indicator">}</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bye</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">thank</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">contact_sales</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">inform</span>
+
+<span class="nt">actions</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">action_greet</span>
+</pre></div>
+</div>
+<p>Remove any stories using the “greet” intent if you have them.</p>
+<p>Next, we need to define <code class="docutils literal notranslate"><span class="pre">action_greet</span></code>. Add the following action to your <code class="docutils literal notranslate"><span class="pre">actions.py</span></code> file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk</span> <span class="kn">import</span> <span class="n">Action</span>
+<span class="kn">from</span> <span class="nn">rasa_sdk.events</span> <span class="kn">import</span> <span class="n">UserUtteranceReverted</span>
+
+<span class="k">class</span> <span class="nc">ActionGreetUser</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+<span class="sd">&quot;&quot;&quot;Revertible mapped action for utter_greet&quot;&quot;&quot;</span>
+
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;action_greet&quot;</span>
+
+<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_greet&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">UserUtteranceReverted</span><span class="p">()]</span>
+</pre></div>
+</div>
+<p>To test the modified intents, we need to re-start our action server:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions
+</pre></div>
+</div>
+<p>Then we can retrain the model, and try out our additions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+rasa shell
+</pre></div>
+</div>
+<p>FAQs are another kind of generic interjections that should always get the same response.
+For example, a user might ask a related FAQ in the middle of filling a form:</p>
+<a class="reference internal image-reference" href="../../_images/generic_interjection.png"><img alt="Generic Interjections" class="align-center" src="../../_images/generic_interjection.png" style="width: 240px;" /></a>
+<p>To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## just sales, continue</span>
+<span class="k">*</span> contact_sales
+    <span class="k">-</span> sales_form
+    <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}
+<span class="k">*</span> faq
+    <span class="k">-</span> respond_faq
+    <span class="k">-</span> sales_form
+    <span class="k">-</span> form{&quot;name&quot;: null}
+</pre></div>
+</div>
+<p>This will break out of the form and deal with the users FAQ question, and then return back to the original task.
+For example:</p>
+<a class="reference internal image-reference" href="../../_images/generic_interjection_handled.png"><img alt="Generic Interjection Handled" class="align-center" src="../../_images/generic_interjection_handled.png" style="width: 240px;" /></a>
+<p>If you find it difficult to write stories in this format, you can always use <a class="reference external" href="https://rasa.com/docs/rasa/core/interactive-learning/">Interactive Learning</a>
+to help you create them.</p>
+<p>As always, make sure to add an end to end test case to your <cite>test_stories.md</cite> file.</p>
+</div>
+<div class="section" id="contextual-questions">
+<h4><a class="toc-backref" href="#id15">Contextual questions</a><a class="headerlink" href="#contextual-questions" title="Permalink to this headline">¶</a></h4>
+<p>You can also handle <a class="reference external" href="https://rasa.com/docs/rasa/dialogue-elements/completing-tasks/#contextual-questions)">contextual questions</a>,
+like the user asking the question “Why do you need to know that”. The user could ask this based on a certain slot
+the bot has requested, and the response should differ for each slot. For example:</p>
+<a class="reference internal image-reference" href="../../_images/contextual_interjection.png"><img alt="Contextual Interjection" class="align-center" src="../../_images/contextual_interjection.png" style="width: 240px;" /></a>
+<p>To handle this, we need to make the <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> featurized, and assign it the categorical type:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">slots</span><span class="p">:</span>
+  <span class="nt">requested_slot</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">categorical</span>
+    <span class="nt">values</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">business_email</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">company</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">person_name</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">use_case</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">budget</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">job_function</span>
+</pre></div>
+</div>
+<p>This means that Core will pay attention to the value of the slot when making a prediction
+(read more about other <a class="reference external" href="https://rasa.com/docs/rasa/api/core-featurization/">featurized slots</a>), whereas
+unfeaturized slots are only used for storing information. The stories for this should look as follows:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## explain email</span>
+<span class="k">*</span> contact_sales
+    <span class="k">-</span> sales_form
+    <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}
+    <span class="k">-</span> slot{&quot;requested_slot&quot;: &quot;business_email&quot;}
+<span class="k">*</span> explain
+    <span class="k">-</span> utter_explain_why_email
+    <span class="k">-</span> sales_form
+    <span class="k">-</span> form{&quot;name&quot;: null}
+
+<span class="gu">## explain budget</span>
+<span class="k">*</span> contact_sales
+    <span class="k">-</span> sales_form
+    <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}
+    <span class="k">-</span> slot{&quot;requested_slot&quot;: &quot;budget&quot;}
+<span class="k">*</span> explain
+    <span class="k">-</span> utter_explain_why_budget
+    <span class="k">-</span> sales_form
+    <span class="k">-</span> form{&quot;name&quot;: null}
+</pre></div>
+</div>
+<p>We’ll need to add the intent and utterances we just added to our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">greet</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">triggers</span><span class="p">:</span> <span class="nv">action_greet_user</span><span class="p p-Indicator">}</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bye</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">thank</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">explain</span>
+
+<span class="nt">responses</span><span class="p">:</span>
+  <span class="nt">utter_explain_why_budget</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">We need to know your budget to recommend a subscription</span>
+  <span class="nt">utter_explain_why_email</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">We need your email so we can contact you</span>
+</pre></div>
+</div>
+<p>Finally, we’ll need to add some NLU data for the explain intent:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:explain</span>
+<span class="k">-</span> why
+<span class="k">-</span> why is that
+<span class="k">-</span> why do you need it
+<span class="k">-</span> why do you need to know that?
+<span class="k">-</span> could you explain why you need it?
+</pre></div>
+</div>
+<p>Then you can retrain your bot and test it again:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+rasa shell
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You will need to add a story for each of the values of the <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> slot
+for the bot to handle every case of “Why do you need to know that”</p>
+</div>
+<p>Don’t forget to add a few end to end stories to your <code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code> for testing as well.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Here’s a minimal checklist of  of files we modified to handle unexpected user input:</p>
+<blockquote>
+<div><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define <code class="docutils literal notranslate"><span class="pre">action_greet</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add training data for an <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Map intent <code class="docutils literal notranslate"><span class="pre">greet</span></code> to  <code class="docutils literal notranslate"><span class="pre">action_greet_user</span></code></p></li>
+<li><p>Make <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> a categorical slot with all required slots as values</p></li>
+<li><p>Add the <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</p></li>
+<li><p>Add responses for contextual question interruptions</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Remove stories using mapped intents if you have them</p></li>
+<li><p>Add stories with FAQ &amp; contextual interruptions in the middle of filling a form</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+</div>
+<div class="section" id="failing-gracefully">
+<span id="id5"></span><h3><a class="toc-backref" href="#id16">Failing gracefully</a><a class="headerlink" href="#failing-gracefully" title="Permalink to this headline">¶</a></h3>
+<p>Even if you design your bot perfectly, users will inevitably say things to your
+assistant that you did not anticipate. In these cases, your assistant will fail,
+and it’s important you ensure it does so gracefully.</p>
+<div class="section" id="fallback-policy">
+<h4><a class="toc-backref" href="#id17">Fallback policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h4>
+<p>One of the most common failures is low NLU confidence, which is handled very nicely with
+the TwoStageFallbackPolicy. You can enable it by adding the following to your configuration file,</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TwoStageFallbackPolicy</span>
+    <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>
+</pre></div>
+</div>
+<p>and adding the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent to your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">out_of_scope</span>
+</pre></div>
+</div>
+<p>When the nlu confidence falls below the defined threshold, the bot will prompt the user to
+rephrase their message. If the bot isn’t able to get their message three times, there
+will be a final action where the bot can e.g. hand off to a human.</p>
+<p>To try this out, retrain your model and send a message like “order me a pizza” to your bot:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+rasa shell
+</pre></div>
+</div>
+<p>There are also a bunch of ways in which you can customise this policy. In Sara, our demo bot,
+we’ve customized it to suggest intents to the user within a certain confidence range to make
+it easier for the user to give the bot the information it needs.</p>
+<p>This is done by customizing the action <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> as shown in the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L424">Sara rasa-demo action server</a>
+We define some intent mappings to make it more intuitive to the user what an intent means.</p>
+<a class="reference internal image-reference" href="../../_images/intent_mappings.png"><img alt="Intent Mappings" class="align-center" src="../../_images/intent_mappings.png" style="width: 240px;" /></a>
+</div>
+<div class="section" id="out-of-scope-intent">
+<h4><a class="toc-backref" href="#id18">Out of scope intent</a><a class="headerlink" href="#out-of-scope-intent" title="Permalink to this headline">¶</a></h4>
+<p>It is good practice to also handle questions you know your users may ask, but for which you haven’t necessarily implemented a user goal yet.</p>
+<p>You can define an <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent to handle generic out of scope requests, like “I’m hungry” and have
+the bot respond with a default message like “Sorry, I can’t handle that request”:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="k">*</span> out_of_scope
+  utter_out_of_scope
+</pre></div>
+</div>
+<p>We’ll need to add NLU data for the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent as well:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## intent:out_of_scope</span>
+<span class="k">-</span> I want to order food
+<span class="k">-</span> What is 2 + 2?
+<span class="k">-</span> Who’s the US President?
+<span class="k">-</span> I need a job
+</pre></div>
+</div>
+<p>And finally we’ll add a response to our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">responses</span><span class="p">:</span>
+  <span class="nt">utter_out_of_scope</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Sorry, I can’t handle that request.</span>
+</pre></div>
+</div>
+<p>We can now re-train, and test this addition</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
+rasa shell
+</pre></div>
+</div>
+<p>Going one step further, if you observe your users asking for certain things, that you’ll
+want to turn into a user goal in future, you can handle these as separate intents, to let
+the user know you’ve understood their message, but don’t have a solution quite yet. E.g.,
+let’s say the user asks “I want to apply for a job at Rasa”, we can then reply with
+“I understand you’re looking for a job, but I’m afraid I can’t handle that skill yet.”</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="k">*</span> ask_job
+  utter_job_not_handled
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Here’s a minimal checklist of files we modified to help our assistant fail gracefully:</p>
+<blockquote>
+<div><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add training data for the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents that you want to handle seperately</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add stories for any specific out of scope intents</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents</p></li>
+<li><p>Add an <code class="docutils literal notranslate"><span class="pre">utter_out_of_scope</span></code> response &amp; responses for any specific out of scope intents</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Customise <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> to suggest intents for the user to choose from</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add the TwoStageFallbackPolicy to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+</div>
+<div class="section" id="more-complex-contextual-conversations">
+<span id="id6"></span><h3><a class="toc-backref" href="#id19">More complex contextual conversations</a><a class="headerlink" href="#more-complex-contextual-conversations" title="Permalink to this headline">¶</a></h3>
+<p>Not every user goal you define will fall under the category of business logic. For the
+other cases you will need to use stories and context to help the user achieve their goal.</p>
+<p>If we take the example of the “getting started” skill from Sara, we want to give them
+different information based on whether they’ve built an AI assistant before and are
+migrating from a different tool etc. This can be done quite simply with stories and
+the concept of <a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#max-history">max history</a>.</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span> ## new to rasa + built a bot before
+ <span class="k">*</span> how_to_get_started
+   <span class="k">-</span> utter_getstarted
+<span class="hll">   <span class="k">-</span> utter_first_bot_with_rasa
+</span><span class="hll"> <span class="k">*</span> affirm
+</span><span class="hll">   <span class="k">-</span> action_set_onboarding
+</span><span class="hll">   <span class="k">-</span> slot{&quot;onboarding&quot;: true}
+</span><span class="hll">   <span class="k">-</span> utter_built_bot_before
+</span> <span class="k">*</span> affirm
+   <span class="k">-</span> utter_ask_migration
+ <span class="k">*</span> deny
+   <span class="k">-</span> utter_explain_rasa_components
+   <span class="k">-</span> utter_rasa_components_details
+   <span class="k">-</span> utter_ask_explain_nlucorex
+ <span class="k">*</span> affirm
+   <span class="k">-</span> utter_explain_nlu
+   <span class="k">-</span> utter_explain_core
+   <span class="k">-</span> utter_explain_x
+   <span class="k">-</span> utter_direct_to_step2
+
+ ## not new to rasa + core
+ <span class="k">*</span> how_to_get_started
+   <span class="k">-</span> utter_getstarted
+<span class="hll">   <span class="k">-</span> utter_first_bot_with_rasa
+</span><span class="hll"> <span class="k">*</span> deny
+</span><span class="hll">   <span class="k">-</span> action_set_onboarding
+</span><span class="hll">   <span class="k">-</span> slot{&quot;onboarding&quot;: false}
+</span><span class="hll">   <span class="k">-</span> utter_ask_which_product
+</span> <span class="k">*</span> how_to_get_started{&quot;product&quot;: &quot;core&quot;}
+   <span class="k">-</span> utter_explain_core
+   <span class="k">-</span> utter_anything_else
+</pre></div>
+</div>
+<p>The above example mostly leverages intents to guide the flow, however you can also
+guide the flow with entities and slots. For example, if the user gives you the
+information that they’re new to Rasa at the beginning, you may want to skip this
+question by storing this information in a slot.</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="k">*</span> how_to_get_started{&quot;user_type&quot;: &quot;new&quot;}
+  <span class="k">-</span> slot{&quot;user_type&quot;:&quot;new&quot;}
+  <span class="k">-</span> action_set_onboarding
+  <span class="k">-</span> slot{&quot;onboarding&quot;: true}
+  <span class="k">-</span> utter_getstarted_new
+  <span class="k">-</span> utter_built_bot_before
+</pre></div>
+</div>
+<p>For this to work, keep in mind that the slot has to be featurized in your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>
+file. This time we can use the <code class="docutils literal notranslate"><span class="pre">text</span></code> slot type, as we only care about whether the
+<a class="reference external" href="https://rasa.com/docs/rasa/core/slots/">slot was set or not</a>.</p>
+<div class="section" id="augmentedmemoizationpolicy">
+<h4><a class="toc-backref" href="#id20">AugmentedMemoizationPolicy</a><a class="headerlink" href="#augmentedmemoizationpolicy" title="Permalink to this headline">¶</a></h4>
+<p>To make your bot more robust to interjections, you can replace the MemoizationPolicy
+with the AugmentedMemoizationPolicy. It works the same way as the MemoizationPolicy,
+but if no exact match is found it additionally has a mechanism that forgets a certain
+amount of steps in the conversation history to find a match in your stories (read more
+<a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy">here</a>)</p>
+</div>
+<div class="section" id="using-ml-to-generalise">
+<h4><a class="toc-backref" href="#id21">Using ML to generalise</a><a class="headerlink" href="#using-ml-to-generalise" title="Permalink to this headline">¶</a></h4>
+<p>Aside from the more rule-based policies we described above, Core also has some ML
+policies you can use. These come in as an additional layer in your policy configuration,
+and only jump in if the user follows a path that you have not anticipated. <strong>It is important
+to understand that using these policies does not mean letting go of control over your
+assistant.</strong> If a rule based policy is able to make a prediction, that prediction will
+always have a higher priority (read more <a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#action-selection">here</a>) and predict the next action. The
+ML based policies give your assistant the chance not to fail, whereas if they are not
+used your assistant will definitely fail, like in state machine based dialogue systems.</p>
+<p>These types of unexpected user behaviors are something our <a class="reference external" href="https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/">TEDPolicy</a> deals with
+very well. It can learn to bring the user back on track after some
+interjections during the main user goal the user is trying to complete. For example,
+in the conversation below (extracted from a conversation on <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/review-conversations/">Rasa X</a>):</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">## Story from conversation with a2baab6c83054bfaa8d598459c659d2a on November 28th 2019</span>
+<span class="k">*</span> greet
+  <span class="k">-</span> action_greet_user
+  <span class="k">-</span> slot{&quot;shown_privacy&quot;:true}
+<span class="k">*</span> ask_whoisit
+  <span class="k">-</span> action_chitchat
+<span class="k">*</span> ask_whatspossible
+  <span class="k">-</span> action_chitchat
+<span class="k">*</span> telljoke
+  <span class="k">-</span> action_chitchat
+<span class="k">*</span> how_to_get_started{&quot;product&quot;:&quot;x&quot;}
+  <span class="k">-</span> slot{&quot;product&quot;:&quot;x&quot;}
+  <span class="k">-</span> utter_explain_x
+  <span class="k">-</span> utter_also_explain_nlucore
+<span class="k">*</span> affirm
+  <span class="k">-</span> utter_explain_nlu
+  <span class="k">-</span> utter_explain_core
+  <span class="k">-</span> utter_direct_to_step2
+</pre></div>
+</div>
+<p>Here we can see the user has completed a few chitchat tasks first, and then ultimately
+asks how they can get started with Rasa X. The TEDPolicy correctly predicts that
+Rasa X should be explained to the user, and then also takes them down the getting started
+path, without asking all the qualifying questions first.</p>
+<p>Since the ML policy generalized well in this situation, it makes sense to add this story
+to your training data to continuously improve your bot and help the ML generalize even
+better in future. <a class="reference external" href="https://rasa.com/docs/rasa-x/">Rasa X</a> is a tool that can help
+you improve your bot and make it more contextual.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>

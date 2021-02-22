@@ -1,0 +1,821 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploying a Rasa Open Source Assistant in Docker Compose</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Cloud Storage" href="../../cloud-storage/" />
+    <link rel="prev" title="Building a Rasa Assistant in Docker" href="../building-in-docker/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Deploying a Rasa Open Source Assistant in Docker Compose" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/user-guide/docker/deploying-in-docker-compose" />
+  
+    <meta name="description" content="Use Docker Compose to deploy a Rasa Open Source assistant" />
+    <meta itemprop="description" content="Use Docker Compose to deploy a Rasa Open Source assistant">
+    <meta name="twitter:description" content="Use Docker Compose to deploy a Rasa Open Source assistant" />
+    <meta property="og:description" content="Use Docker Compose to deploy a Rasa Open Source assistant" />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Deploying a Rasa Open Source Assistant in Docker Compose">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/user-guide/docker/deploying-in-docker-compose/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.23
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../../1.10.23/user-guide/docker/deploying-in-docker-compose/">1.10.23</a>
+              <a href="../../../../1.10.22/user-guide/docker/deploying-in-docker-compose/">1.10.22</a>
+              <a href="../../../../1.10.21/user-guide/docker/deploying-in-docker-compose/">1.10.21</a>
+              <a href="../../../../1.10.20/user-guide/docker/deploying-in-docker-compose/">1.10.20</a>
+              <a href="../../../../1.10.19/user-guide/docker/deploying-in-docker-compose/">1.10.19</a>
+              <a href="../../../../1.10.18/user-guide/docker/deploying-in-docker-compose/">1.10.18</a>
+              <a href="../../../../1.10.17/user-guide/docker/deploying-in-docker-compose/">1.10.17</a>
+              <a href="../../../../1.10.16/user-guide/docker/deploying-in-docker-compose/">1.10.16</a>
+              <a href="../../../../1.10.15/user-guide/docker/deploying-in-docker-compose/">1.10.15</a>
+              <a href="../../../../1.10.14/user-guide/docker/deploying-in-docker-compose/">1.10.14</a>
+              <a href="../../../../1.10.13/user-guide/docker/deploying-in-docker-compose/">1.10.13</a>
+              <a href="../../../../1.10.12/user-guide/docker/deploying-in-docker-compose/">1.10.12</a>
+              <a href="../../../../1.10.11/user-guide/docker/deploying-in-docker-compose/">1.10.11</a>
+              <a href="../../../../1.10.10/user-guide/docker/deploying-in-docker-compose/">1.10.10</a>
+              <a href="../../../../1.10.9/user-guide/docker/deploying-in-docker-compose/">1.10.9</a>
+              <a href="../../../../1.10.8/user-guide/docker/deploying-in-docker-compose/">1.10.8</a>
+              <a href="../../../../1.10.7/user-guide/docker/deploying-in-docker-compose/">1.10.7</a>
+              <a href="../../../../1.10.6/user-guide/docker/deploying-in-docker-compose/">1.10.6</a>
+              <a href="../../../../1.10.5/user-guide/docker/deploying-in-docker-compose/">1.10.5</a>
+              <a href="../../../../1.10.4/user-guide/docker/deploying-in-docker-compose/">1.10.4</a>
+              <a href="../../../../1.10.3/user-guide/docker/deploying-in-docker-compose/">1.10.3</a>
+              <a href="../../../../1.10.2/user-guide/docker/deploying-in-docker-compose/">1.10.2</a>
+              <a href="../../../../1.10.1/user-guide/docker/deploying-in-docker-compose/">1.10.1</a>
+              <a href="../../../../1.10.0/user-guide/docker/deploying-in-docker-compose/">1.10.0</a>
+              <a href="../../../../1.9.7/user-guide/docker/deploying-in-docker-compose/">1.9.7</a>
+              <a href="../../../../1.9.6/user-guide/docker/deploying-in-docker-compose/">1.9.6</a>
+              <a href="../../../../1.9.5/user-guide/docker/deploying-in-docker-compose/">1.9.5</a>
+              <a href="../../../../1.9.4/user-guide/docker/deploying-in-docker-compose/">1.9.4</a>
+              <a href="../../../../1.9.3/user-guide/docker/deploying-in-docker-compose/">1.9.3</a>
+              <a href="../../../../1.9.2/user-guide/docker/deploying-in-docker-compose/">1.9.2</a>
+              <a href="../../../../1.9.1/user-guide/docker/deploying-in-docker-compose/">1.9.1</a>
+              <a href="../../../../1.9.0/user-guide/docker/deploying-in-docker-compose/">1.9.0</a>
+              <a href="../../../../1.8.3/user-guide/docker/deploying-in-docker-compose/">1.8.3</a>
+              <a href="../../../../1.8.2/index/">1.8.2</a>
+              <a href="../../../../1.8.1/index/">1.8.1</a>
+              <a href="../../../../1.8.0/index/">1.8.0</a>
+              <a href="../../../../1.7.4/index/">1.7.4</a>
+              <a href="../../../../1.7.3/index/">1.7.3</a>
+              <a href="../../../../1.7.2/index/">1.7.2</a>
+              <a href="../../../../1.7.1/index/">1.7.1</a>
+              <a href="../../../../1.7.0/index/">1.7.0</a>
+              <a href="../../../../1.6.2/index/">1.6.2</a>
+              <a href="../../../../1.5.3/index/">1.5.3</a>
+              <a href="../../../../1.4.6/index/">1.4.6</a>
+              <a href="../../../../1.3.10/index/">1.3.10</a>
+              <a href="../../../../1.2.9/index/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="deploying-a-rasa-open-source-assistant-in-docker-compose">
+<span id="deploying-rasa-in-docker-compose"></span><h1>Deploying a Rasa Open Source Assistant in Docker Compose<a class="headerlink" href="#deploying-a-rasa-open-source-assistant-in-docker-compose" title="Permalink to this headline">¶</a></h1>
+<p>If you would like to deploy your assistant without Rasa X, you can do so by deploying it in Docker Compose.
+To deploy Rasa X and your assistant together, see the <a class="reference internal" href="../../how-to-deploy/#recommended-deployment-methods"><span class="std std-ref">Recommended Deployment Methods</span></a>.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#installing-docker" id="id2">Installing Docker</a></p></li>
+<li><p><a class="reference internal" href="#configuring-channels" id="id3">Configuring Channels</a></p></li>
+<li><p><a class="reference internal" href="#using-docker-compose-to-run-multiple-services" id="id4">Using Docker Compose to Run Multiple Services</a></p></li>
+<li><p><a class="reference internal" href="#configuring-a-tracker-store" id="id5">Configuring a Tracker Store</a></p></li>
+</ul>
+</div>
+<div class="section" id="installing-docker">
+<h2><a class="toc-backref" href="#id2">Installing Docker</a><a class="headerlink" href="#installing-docker" title="Permalink to this headline">¶</a></h2>
+<p>If you’re not sure if you have Docker installed, you can check by running:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker -v <span class="o">&amp;&amp;</span> docker-compose -v
+<span class="c1"># Docker version 18.09.2, build 6247962</span>
+<span class="c1"># docker-compose version 1.23.2, build 1110ad01</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>If Docker is installed on your machine, the output should show you your installed
+versions of Docker and Docker Compose. If the command doesn’t work, you’ll have to
+install Docker.
+See <a class="reference external" href="https://docs.docker.com/install/">Docker Installation</a> for details.</p>
+</div>
+<div class="section" id="configuring-channels">
+<span id="docker-compose-configuring-channels"></span><h2><a class="toc-backref" href="#id3">Configuring Channels</a><a class="headerlink" href="#configuring-channels" title="Permalink to this headline">¶</a></h2>
+<p>To run your AI assistant in production, don’t forget to configure your required
+<a class="reference internal" href="../../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">Messaging and Voice Channels</span></a> in <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>. For example, to add a
+REST channel, uncomment this section in the <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rest</span><span class="p">:</span>
+  <span class="c1"># you don&#39;t need to provide anything here - this channel doesn&#39;t</span>
+  <span class="c1"># require any credentials</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The REST channel will open your bot up to incoming requests at the <code class="docutils literal notranslate"><span class="pre">/webhooks/rest/webhook</span></code> endpoint.</p>
+</div>
+<div class="section" id="using-docker-compose-to-run-multiple-services">
+<span id="running-multiple-services"></span><h2><a class="toc-backref" href="#id4">Using Docker Compose to Run Multiple Services</a><a class="headerlink" href="#using-docker-compose-to-run-multiple-services" title="Permalink to this headline">¶</a></h2>
+<p>Docker Compose provides an easy way to run multiple containers together without
+having to run multiple commands or configure networks. This is essential when you
+want to deploy an assistant that also has an action server.</p>
+<p>Start by creating a file called <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>touch docker-compose.yml
+</pre></div>
+</div>
+</div></blockquote>
+<p>Add the following content to the file:</p>
+<blockquote>
+<div><pre class="literal-block">version: '3.0'
+services:
+  rasa:
+    image: rasa/rasa:1.10.23-full
+    ports:
+      - 5005:5005
+    volumes:
+      - ./:/app
+    command:
+      - run</pre>
+</div></blockquote>
+<p>The file starts with the version of the Docker Compose specification that you
+want to use.
+Each container is declared as a <code class="docutils literal notranslate"><span class="pre">service</span></code> within the <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>.
+The first service is the <code class="docutils literal notranslate"><span class="pre">rasa</span></code> service, which runs your Rasa server.</p>
+<p>To add the action server, add the image of your action server code. To learn how to deploy
+an action server image, see <a class="reference internal" href="../../how-to-deploy/#building-an-action-server-image"><span class="std std-ref">Building an Action Server Image</span></a>.</p>
+<blockquote>
+<div><pre class="literal-block">version: '3.0'
+services:
+  rasa:
+    image: rasa/rasa:1.10.23-full
+    ports:
+      - 5005:5005
+    volumes:
+      - ./:/app
+    command:
+      - run
+  app:
+    image: &lt;image:tag&gt;
+    expose: 5055</pre>
+</div></blockquote>
+<p>The <code class="docutils literal notranslate"><span class="pre">expose:</span> <span class="pre">5005</span></code> is what allows the <code class="docutils literal notranslate"><span class="pre">rasa</span></code> service to reach the <code class="docutils literal notranslate"><span class="pre">app</span></code> service on that port.
+To instruct the <code class="docutils literal notranslate"><span class="pre">rasa</span></code> service to send its action requests to that endpoint, add it to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">action_endpoint</span><span class="p">:</span>
+  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://app:5055/webhook</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To run the services configured in your <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> execute:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker-compose up
+</pre></div>
+</div>
+</div></blockquote>
+<p>You should then be able to interact with your bot via requests to port 5005, on the webhook endpoint that
+corresponds to a <a class="reference internal" href="#docker-compose-configuring-channels"><span class="std std-ref">configured channel</span></a>:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl -XPOST http://localhost:5005/webhooks/rest/webhook <span class="se">\</span>
+  -H <span class="s2">&quot;Content-type: application/json&quot;</span> <span class="se">\</span>
+  -d <span class="s1">&#39;{&quot;sender&quot;: &quot;test&quot;, &quot;message&quot;: &quot;hello&quot;}&#39;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="configuring-a-tracker-store">
+<h2><a class="toc-backref" href="#id5">Configuring a Tracker Store</a><a class="headerlink" href="#configuring-a-tracker-store" title="Permalink to this headline">¶</a></h2>
+<p>By default, all conversations are saved in memory. This means that all
+conversations are lost as soon as you restart the Rasa server.
+If you want to persist your conversations, you can use a different
+<a class="reference internal" href="../../../api/tracker-stores/#tracker-stores"><span class="std std-ref">Tracker Store</span></a>.</p>
+<p>To add a tracker store to a Docker Compose deployment, you need to add a new
+service to your <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> and modify the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> to add
+the new tracker store, pointing to your new service. More information about how
+to do so can be found in the tracker store documentation:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#sql-tracker-store"><span class="std std-ref">SQLTrackerStore</span></a></p></li>
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#redis-tracker-store"><span class="std std-ref">RedisTrackerStore</span></a></p></li>
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#mongo-tracker-store"><span class="std std-ref">MongoTrackerStore</span></a></p></li>
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#custom-tracker-store"><span class="std std-ref">Custom Tracker Store</span></a></p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>
