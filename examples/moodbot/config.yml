@@ -1,17 +1,16 @@
 language: en
 
 pipeline:
-#  - name: "SpacyNLP"
-  - name: "WhitespaceTokenizer"
-  - name: "CountVectorsFeaturizer"
-#  - name: "DIETClassifier"
-#    entity_recognition: False
-#    epochs: 50
+  - name: "SpacyNLP"
+  - name: "SpacyTokenizer"
+  - name: "SpacyFeaturizer"
+  - name: "DIETClassifier"
+    entity_recognition: False
+    epochs: 50
 
 policies:
   - name: TEDPolicy
     max_history: 5
     epochs: 100
-#    batch_strategy: sequence
   - name: MemoizationPolicy
   - name: RulePolicy
