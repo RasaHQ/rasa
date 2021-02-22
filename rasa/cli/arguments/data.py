@@ -99,18 +99,26 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "--num-intents",
-        type=int,
-        default=5,
-        help="Number of intents per performance criterion for which to perform data augmentation.",
+        "--intent-proportion",
+        type=float,
+        default=0.5,
+        help="The proportion of intents (out of all intents) considered for data augmentation. The actual number of intents considered for data augmentation is determined on the basis of several factors, such as their current performance statistics or the number of available training examples.",
     )
 
     parser.add_argument(
-        "--paraphrase-score-threshold",
+        "--min-paraphrase-sim-score",
         type=float,
         default=0.8,
-        help="Quality score threshold for paraphrases, i.e. any paraphrase with a score < paraphrase-score-threshold "
+        help="Minimum similarity score threshold for paraphrases, i.e. any paraphrase with a score < min-paraphrase-sim-score "
         "will be discarded.",
+    )
+
+    parser.add_argument(
+        "--max-paraphrase-sim-score",
+        type=float,
+        default=0.98,
+        help="Maximum similarity threshold for paraphrases, i.e. any paraphrases with a score > max-paraphrase-sim-score "
+             "will be discarded."
     )
 
     add_out_param(

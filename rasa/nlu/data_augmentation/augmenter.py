@@ -21,7 +21,7 @@ import rasa.utils.plotting
 
 def collect_intents_for_data_augmentation(
     nlu_training_data: TrainingData,
-    num_intents_to_augment: int,
+    intent_proportion: float,
     classification_report: Dict[Text, Dict[Text, Any]],
 ) -> Set[Text]:
     """Collects intents for which to perform data augmentation.
@@ -37,12 +37,15 @@ def collect_intents_for_data_augmentation(
 
     Args:
         nlu_training_data: The existing NLU training data.
-        num_intents_to_augment: The number of intents to pick per criterion.
+        intent_proportion: The proportion of intents (out of all intents) considered for data augmentation. The actual number of intents considered for data augmentation is determined on the basis of several factors, such as their current performance statistics or the number of available training examples.
         classification_report: An existing classification report (without data augmentation).
 
     Returns:
         The set of intent names for which data augmentation will be performed.
     """
+    num_intents = len(nlu_training_data.number_of_examples_per_intent)
+    num_intents_to_augment = round(num_intents * intent_proportion)
+    
     # Determine low data, low performing and frequently confused intents
     low_data_intents = sorted(
         nlu_training_data.number_of_examples_per_intent.items(),
@@ -93,14 +96,16 @@ def collect_intents_for_data_augmentation(
 def create_paraphrase_pool(
     paraphrases: TrainingData,
     pooled_intents: Set[Text],
-    paraphrase_quality_threshold: float,
+    min_paraphrase_sim_score: float,
+    max_paraphrase_sim_score: float,
 ) -> Dict[Text, List]:
     """Determines all suitable paraphrases for data augmentation for the given intents.
 
     Args:
         paraphrases: The paraphrases for data augmentation.
         pooled_intents: The intents for which to perform data augmentation.
-        paraphrase_quality_threshold: Accept/Reject threshold for individual paraphrases.
+        min_paraphrase_sim_score: Accept/Reject minimum similarity threshold for individual paraphrases.
+        max_paraphrase_sim_score: Accept/Reject maximum similarity threshold for individual paraphrases.
 
     Returns:
         The pool of suitable paraphrases for data augmentation.
@@ -115,7 +120,7 @@ def create_paraphrase_pool(
         paraphrase_scores = p.data["metadata"]["example"]["scores"]
 
         for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
-            if paraphrase == "" or float(score) < paraphrase_quality_threshold:
+            if paraphrase == "" or float(score) < min_paraphrase_sim_score or float(score) > max_paraphrase_sim_score:
                 continue
 
             paraphrase_pool[p.data["intent"]].append(
@@ -561,9 +566,10 @@ def augment_nlu_data(
     paraphrases: TrainingData,
     classification_report: Dict[Text, Dict[Text, float]],
     config: Text,
-    num_intents_to_augment: int,
+    intent_proportion: float,
     random_seed: int,
-    paraphrase_sim_score_threshold: float,
+    min_paraphrase_sim_score: float,
+    max_paraphrase_sim_score: float,
     output_directory: Text,
 ) -> None:
     """Performs data augmentation for NLU by evaluating two augmentation strategies.
@@ -574,21 +580,22 @@ def augment_nlu_data(
         paraphrases: The generated paraphrases with similarity scores obtained from https://github.com/RasaHQ/paraphraser.
         classification_report: Classification report of the model run *without* data augmentation.
         config: NLU model config.
-        num_intents_to_augment: Number of intents to choose for augmentation (per criterion).
+        intent_proportion: The proportion of intents (out of all intents) considered for data augmentation. The actual number of intents considered for data augmentation is determined on the basis of several factors, such as their current performance statistics or the number of available training examples.
         random_seed: Random seed for sampling the paraphrases.
-        paraphrase_sim_score_threshold: Minimum required similarity for a generated paraphrase to be considered for data augmentation.
+        min_paraphrase_sim_score: Minimum required similarity for a generated paraphrase to be considered for data augmentation.
+        max_paraphrase_sim_score: Maximum similarity for a generated paraphrase to be considered for data augmentation.
         output_directory: Directory to store the output files in.
     """
     # Determine intents for which to perform data augmentation
     pooled_intents = collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
-        num_intents_to_augment=num_intents_to_augment,
+        intent_proportion=intent_proportion,
         classification_report=classification_report,
     )
 
     # Retrieve paraphrase pool and training data pool
     paraphrase_pool = create_paraphrase_pool(
-        paraphrases, pooled_intents, paraphrase_sim_score_threshold
+        paraphrases, pooled_intents, min_paraphrase_sim_score, max_paraphrase_sim_score
     )
     (training_data_pool, training_data_vocab_per_intent,) = create_training_data_pool(
         nlu_training_data, pooled_intents

@@ -301,9 +301,10 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
         paraphrases=paraphrases,
         classification_report=classification_report,
         config=args.config,
-        num_intents_to_augment=args.num_intents,
+        intent_proportion=args.intent_proportion,
         random_seed=args.random_seed,
-        paraphrase_sim_score_threshold=args.paraphrase_score_threshold,
+        min_paraphrase_sim_score=args.min_paraphrase_sim_score,
+        max_paraphrase_sim_score=args.max_paraphrase_sim_score,
         output_directory=args.out,
     )
 
