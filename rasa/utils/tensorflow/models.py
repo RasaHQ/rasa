@@ -204,7 +204,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         loading: bool = False,
-        eager: bool = False,
+        eager: bool = True,
     ) -> None:
         """Fit model data."""
         # don't setup tensorboard writers when training during loading
@@ -339,7 +339,7 @@ class RasaModel(tf.keras.models.Model):
 
     @profile
     def build_for_predict(
-        self, predict_data: RasaModelData, eager: bool = False
+        self, predict_data: RasaModelData, eager: bool = True
     ) -> None:
         self._training = False  # needed for tf graph mode
         self.prepare_for_predict()
