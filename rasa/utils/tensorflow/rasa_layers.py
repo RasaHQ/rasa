@@ -508,7 +508,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
     This layer combines all features for an attribute and embeds them using a
     transformer. The layer is meant only for attributes with sequence-level features,
-    such as `text` and `action_text`.
+    such as `text`, `response` and `action_text`.
 
     Internally, this layer extends `RasaFeatureCombiningLayer` and applies the following
     steps:
