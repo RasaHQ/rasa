@@ -26,7 +26,7 @@ class KafkaEventBroker(EventBroker):
         client_id=None,
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
-        **kwargs,
+        group_id=None,
     ) -> None:
 
         self.producer = None
@@ -40,6 +40,12 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
+
+        if group_id is not None:
+            raise_warning(
+                "The endpoint config includes the  `group_id` parameter for the `KafkaEventBroker`, \
+                            which is only used by Kafka consumers, not Kafka producers."
+            )
 
         logging.getLogger("kafka").setLevel(loglevel)
 
@@ -157,7 +163,7 @@ class KafkaProducer(KafkaEventBroker):
         topic="rasa_core_events",
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
-        **kwargs,
+        group_id=None,
     ) -> None:
         raise_warning(
             "The `KafkaProducer` class is deprecated, please inherit "
@@ -178,5 +184,5 @@ class KafkaProducer(KafkaEventBroker):
             topic,
             security_protocol,
             loglevel,
-            **kwargs,
+            group_id,
         )
