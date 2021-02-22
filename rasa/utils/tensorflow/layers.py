@@ -199,15 +199,39 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
 
     def __init__(self, sparsity: float = 0.8, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.sparsity = sparsity
+
+        if sparsity < 0.0 or sparsity > 1.0:
+            raise TFLayerConfigException("Layer sparsity must be in [0, 1].")
+
+        self.density = 1.0 - sparsity
 
     def build(self, input_shape: tf.TensorShape) -> None:
         super().build(input_shape)
-        # create random mask to set fraction of the `kernel` weights to zero
-        kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
-        kernel_mask = tf.cast(
-            tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
-        )
+
+        # Create random mask to set fraction of the `kernel` weights to zero
+        # Each column of the mask must contain at least one 1
+        kernel_shape = tf.shape(self.kernel)
+        num_rows = kernel_shape[0].numpy()
+        num_cols = kernel_shape[1].numpy()
+        num_connected_per_row = max(1, tf.math.ceil(self.density * num_rows))
+        num_disconnected_per_row = num_rows - num_connected_per_row
+        # To ensure each column has at least one 1, we create each column separately
+        # as [1 1 1 ... 1 0 0 0 ... 0] and then shuffle it randomly
+        kernel_mask_cols = [
+            tf.random.shuffle(
+                tf.concat(
+                    [
+                        tf.ones(shape=num_connected_per_row, dtype=self.kernel.dtype),
+                        tf.zeros(
+                            shape=num_disconnected_per_row, dtype=self.kernel.dtype
+                        ),
+                    ],
+                    axis=0,
+                )
+            )
+            for _ in range(num_cols)
+        ]
+        kernel_mask = tf.transpose(tf.stack(kernel_mask_cols, axis=0))
         self.kernel_mask = tf.Variable(
             initial_value=kernel_mask, trainable=False, name="kernel_mask"
         )
