@@ -113,6 +113,8 @@ def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
         # didn't provide a path to a model. In this case we try to load the latest
         # model from the output directory (that's usually models/).
         return args.out
+    else:
+        return args.finetune
 
 
 def train_core(
