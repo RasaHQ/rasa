@@ -112,7 +112,7 @@ def test_file_path_to_load(
         data_chunks, lambda x: RasaModelData(), batch_size=2, shuffle=False
     )
 
-    file_path, examples_processed_so_far = data_generator._file_path_to_load(start, end)
+    file_path, examples_processed_so_far = data_generator._chunk_index(start, end)
 
     assert str(file_path) == expected_file_path
     assert examples_processed_so_far == expected_examples_processed_so_far

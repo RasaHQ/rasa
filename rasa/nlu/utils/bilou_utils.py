@@ -21,7 +21,7 @@ from rasa.shared.nlu.constants import (
 
 if TYPE_CHECKING:
     from rasa.nlu.tokenizers.tokenizer import Token
-    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+    from rasa.shared.nlu.training_data.training_data import NLUPipelineTrainingData
     from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
 
 
 def build_tag_id_dict(
-    training_data: "TrainingDataFull", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+    training_data: "NLUPipelineTrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
@@ -153,7 +153,7 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: "TrainingDataFull") -> None:
+def apply_bilou_schema(training_data: "NLUPipelineTrainingData") -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:
@@ -219,10 +219,8 @@ def bilou_tags_from_offsets(
     """Creates BILOU tags for the given tokens and entities.
 
     Args:
-        message: The message object.
         tokens: The list of tokens.
         entities: The list of start, end, and tag tuples.
-        missing: The tag for missing entities.
 
     Returns:
         BILOU tags.

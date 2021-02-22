@@ -44,6 +44,7 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import (
     TrainingDataFull,
     TrainingDataChunk,
+    NLUPipelineTrainingData,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
@@ -106,7 +107,6 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow.data_generator import (
     DataChunkFile,
     RasaDataChunkFileGenerator,
-    RasaBatchDataGenerator,
 )
 
 logger = logging.getLogger(__name__)
@@ -388,7 +388,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     # training data helpers:
     @staticmethod
     def _label_id_index_mapping(
-        training_data: TrainingDataFull, attribute: Text
+        training_data: NLUPipelineTrainingData, attribute: Text
     ) -> Dict[Text, int]:
         """Create label_id dictionary."""
         distinct_label_ids = {
@@ -403,14 +403,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return {value: key for key, value in mapping.items()}
 
     def _create_label_index_mappings(
-        self, training_data: TrainingDataFull, attribute: Text
+        self, training_data: NLUPipelineTrainingData, attribute: Text
     ) -> None:
         self.label_id_index_mapping = self._label_id_index_mapping(
             training_data, attribute=attribute
         )
         self.index_label_id_mapping = self._invert_mapping(self.label_id_index_mapping)
 
-    def _create_entity_tag_specs(self, training_data: TrainingDataFull) -> None:
+    def _create_entity_tag_specs(self, training_data: NLUPipelineTrainingData) -> None:
         """Create entity tag specifications with their respective tag id mappings."""
         _tag_specs = []
 
@@ -438,7 +438,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def _tag_id_index_mapping_for(
-        tag_name: Text, training_data: TrainingDataFull
+        tag_name: Text, training_data: NLUPipelineTrainingData
     ) -> Optional[Dict[Text, int]]:
         """Create mapping from tag name to id."""
         if tag_name == ENTITY_ATTRIBUTE_ROLE:
@@ -599,7 +599,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _create_label_data(
         self,
-        training_data: TrainingDataFull,
+        training_data: NLUPipelineTrainingData,
         label_id_dict: Dict[Text, int],
         attribute: Text,
     ) -> RasaModelData:
@@ -770,7 +770,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
     # train helpers
-    def preprocess_train_data(self, training_data: TrainingDataFull) -> RasaModelData:
+    def preprocess_train_data(
+        self, training_data: NLUPipelineTrainingData
+    ) -> RasaModelData:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
@@ -853,7 +855,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_chunk_files,
             _load_data_func,
             batch_size=self.component_config[BATCH_SIZES],
-            batch_strategy=self.component_config[BATCH_STRATEGY],
+            epochs=self.component_config[EPOCHS],
             shuffle=True,
         )
 
@@ -870,6 +872,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             epochs=self.component_config[EPOCHS],
             callbacks=callbacks,
             verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
         )
 
     def train(

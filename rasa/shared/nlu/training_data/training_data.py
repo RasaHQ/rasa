@@ -196,9 +196,9 @@ class NLUPipelineTrainingData:
         """
         entities = []
 
-        def _append_entity(entity: Dict[Text, Any], attribute: Text) -> None:
-            if attribute in entity:
-                _value = entity.get(attribute)
+        def _append_entity(_entity: Message, attribute: Text) -> None:
+            if attribute in _entity:
+                _value = _entity.get(attribute)
                 if _value is not None and _value != NO_ENTITY_TAG:
                     entities.append(f"{attribute} '{_value}'")
 
@@ -230,6 +230,34 @@ class NLUPipelineTrainingData:
             self.intent_examples,
             key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
         )
+
+    def fingerprint(self) -> Text:
+        """Fingerprint the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data.
+        """
+        relevant_attributes = {
+            "training_examples": list(
+                sorted(e.fingerprint() for e in self.training_examples)
+            )
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
+
+    def label_fingerprint(self) -> Text:
+        """Fingerprints the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        labels = {
+            "intents": sorted(self.intents),
+            "entities": sorted(self.entities),
+            "entity_groups": sorted(self.entity_groups),
+            "entity_roles": sorted(self.entity_roles),
+            "actions": sorted(self.action_names),
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(labels)
 
     def validate(self) -> None:
         """Ensures that the loaded training data is valid.
@@ -439,23 +467,7 @@ class TrainingDataFull(NLUPipelineTrainingData):
             "lookup_tables": self.lookup_tables,
             "responses": self.responses,
         }
-
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
-
-    def label_fingerprint(self) -> Text:
-        """Fingerprints the labels in the training data.
-
-        Returns:
-            hex string as a fingerprint of the training data labels.
-        """
-        labels = {
-            "intents": sorted(self.intents),
-            "entities": sorted(self.entities),
-            "entity_groups": sorted(self.entity_groups),
-            "entity_roles": sorted(self.entity_roles),
-            "actions": sorted(self.action_names),
-        }
-        return rasa.shared.utils.io.deep_container_fingerprint(labels)
 
     def merge(self, *others: Optional["TrainingDataFull"]) -> "TrainingDataFull":
         """Return merged instance of this data with other training data.
