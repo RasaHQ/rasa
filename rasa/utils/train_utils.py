@@ -397,7 +397,7 @@ def validate_configuration_settings(
 
     Args:
         component_config: Configuration to validate.
-        component_name: Name of the component for which configuration has to be validated
+        component_name: Name of the component for which configuration has to be validated.
     """
     _check_loss_setting(component_config)
     if not component_name == "TEDPolicy":
@@ -430,7 +430,7 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] == COSINE:
         rasa.shared.utils.io.raise_deprecation_warning(
             f"{MODEL_CONFIDENCE} is set to `{COSINE}`. This option will be deprecated in "
-            f"Rasa Open Source 2.4. It is recommended to try using "
+            f"Rasa Open Source 2.4.0. It is recommended to try using "
             f"`{MODEL_CONFIDENCE}={INNER}` to make it easier to tune fallback thresholds.",
             warn_until_version="2.4.0",
         )

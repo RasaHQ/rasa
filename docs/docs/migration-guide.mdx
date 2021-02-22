@@ -26,7 +26,7 @@ Also, a new option `model_confidence` has been added to `DIETClassifier` and `Re
 The default value is `softmax`, but we recommend trying `inner` as it should be easier to tune thresholds for NLU fallback.
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
-With both the above recommendations, users should experiment by configuring their ML component, e.g. `DIETClassifier`, as:
+With both the above recommendations, users are encouraged to experiment by configuring their ML component, e.g. `DIETClassifier`, as:
 ```
 - name: DIETClassifier
   model_confidence: inner
