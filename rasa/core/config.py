@@ -49,7 +49,7 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
 
     config_data = {}
     if isinstance(config_file, str) and os.path.isfile(config_file):
-        config_data = rasa.shared.utils.io.read_config_file(config_file)
+        config_data = rasa.shared.utils.io.read_model_configuration(config_file)
     elif isinstance(config_file, Dict):
         config_data = config_file
 
