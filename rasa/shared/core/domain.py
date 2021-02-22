@@ -632,36 +632,26 @@ class Domain:
                 global_params = session_config.global_not_intent
                 if not isinstance(global_params, list):
                     global_params = [global_params]
-                for global_value in global_params:
-                    # looping through all the available forms, their slots and their
+                for global_val in global_params:
+                    # looping through all the available forms, their slots and
                     # all their slot's types and updating the `not_intent` key
                     # with the `global_not_intent` value.
-                    for form_count, _ in enumerate(list(forms.keys())):
-                        form_slots = list(forms.values())[form_count]
-                        for _, slot_name in enumerate(form_slots):
-                            slot_params = form_slots[slot_name]
-                            for type_count, type_name in enumerate(slot_params):
+                    for form_key, form_val in forms.items():
+                        for slot_key, slot_val in form_val.items():
+                            for slot in slot_val:
                                 key = "not_intent"
                                 # check that `not_intent` param is present
-                                if key in slot_params[type_count]:
+                                if key in slot.keys():
                                     # check that the value of `not_intent` is a list
-                                    if isinstance(slot_params[type_count][key], list):
+                                    if isinstance(slot[key], list):
                                         # check that global_not_intent is in the list
-                                        if (
-                                            global_value
-                                            not in slot_params[type_count][key]
-                                        ):
-                                            slot_params[type_count][key].append(
-                                                global_value
-                                            )
+                                        if global_val not in slot[key]:
+                                            slot[key].append(global_val)
                                     else:
-                                        if global_value != slot_params[type_count][key]:
-                                            slot_params[type_count][key] = [
-                                                slot_params[type_count][key],
-                                                global_value,
-                                            ]
+                                        if global_val != slot[key]:
+                                            slot[key] = [slot[key], global_val]
                                 else:
-                                    slot_params[type_count][key] = global_value
+                                    slot[key] = global_val
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
