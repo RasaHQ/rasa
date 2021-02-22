@@ -524,7 +524,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             processed.
         attribute_signature: A dictionary containing two lists of `FeatureSignature`s,
             one for each feature type of the given attribute.
-        config: A model config used for correctly parametrising the underlying layers.
+        config: A model config used for correctly parameterising the underlying layers.
 
     Input shape:
         Tuple of four tensor inputs:
