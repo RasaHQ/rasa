@@ -651,9 +651,8 @@ def _print_success_message(new_rules: List["StoryStep"], output_file: Path) -> N
         verb = "was"
 
     rasa.shared.utils.cli.print_success(
-        f"Finished migrating your policy configuration 🎉."
+        "Finished migrating your policy configuration 🎉."
     )
-
     if len(new_rules) == 0:
         rasa.shared.utils.cli.print_success(
             f"The migration generated {len(new_rules)} {suffix} so no {suffix} "
