@@ -26,6 +26,7 @@ from rasa.shared.utils.io import is_logging_disabled
 import rasa.utils.io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
+    LABEL,
     SEQUENCE,
     SENTENCE,
     SEQUENCE_LENGTH,
@@ -727,6 +728,13 @@ class TransformerRasaModel(RasaModel):
 
     def _prepare_layers(self) -> None:
         raise NotImplementedError
+
+    def _prepare_label_classification_layers(self, predictor_attribute: Text) -> None:
+        """Prepares layers & loss for the final label prediction step."""
+        self._prepare_embed_layers(predictor_attribute)
+        self._prepare_embed_layers(LABEL)
+
+        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_embed_layers(self, name: Text, prefix: Text = "embed") -> None:
         self._tf_layers[f"{prefix}.{name}"] = layers.Embed(

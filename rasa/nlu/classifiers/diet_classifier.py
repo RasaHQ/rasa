@@ -1345,7 +1345,7 @@ class DIET(TransformerRasaModel):
                 self.config[DROP_RATE],
             )
 
-            self._prepare_label_classification_layers()
+            self._prepare_label_classification_layers(TEXT)
 
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
@@ -1360,12 +1360,6 @@ class DIET(TransformerRasaModel):
         # mask loss is additional loss
         # set scaling to False, so that it doesn't overpower other losses
         self._prepare_dot_product_loss(f"{name}_mask", scale_loss=False)
-
-    def _prepare_label_classification_layers(self) -> None:
-        self._prepare_embed_layers(TEXT)
-        self._prepare_embed_layers(LABEL)
-
-        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _create_bow(
         self,

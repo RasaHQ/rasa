@@ -256,8 +256,9 @@ class TEDPolicy(Policy):
         SPARSE_INPUT_DROPOUT: True,
         # If 'True' apply dropout to dense input tensors
         DENSE_INPUT_DROPOUT: True,
-        # If 'True' random tokens of the input message will be masked and the model
-        # should predict those tokens.
+        # If 'True' random tokens of the input message will be masked. Since there is no
+        # related loss term used inside TED, the masking effectively becomes just input
+        # dropout applied to the text of user utterances.
         MASKED_LM: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
@@ -945,10 +946,7 @@ class TED(TransformerRasaModel):
             unidirectional=not self.max_history_featurizer_is_used,
         )
 
-        self._prepare_embed_layers(DIALOGUE)
-        self._prepare_embed_layers(LABEL)
-
-        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
+        self._prepare_label_classification_layers(DIALOGUE)
 
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()

@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
 )
 from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 
 # TODO: use this? it's in layers.py
@@ -76,7 +77,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         config: Dict[Text, Any],
     ) -> None:
         if not feature_type_signature:
-            raise RasaException(
+            raise TFLayerConfigException(
                 "The feature type signature must contain some feature signatures."
             )
 
@@ -234,7 +235,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             attribute_signature.get(SENTENCE, [])
             or attribute_signature.get(SEQUENCE, [])
         ):
-            raise RasaException(
+            raise TFLayerConfigException(
                 "The attribute signature must contain some feature signatures."
             )
 
@@ -541,8 +542,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
     Output shape:
         outputs: `(batch_size, seq_length, units)` where `units` matches the underlying
             transformer's output size if the transformer has some layers, otherwise
-            `units` matches that of the `Ffnn` block applied to the combined features, or
-            it's the output size of the underlying `RasaFeatureCombiningLayer` if the
+            `units` matches that of the `Ffnn` block applied to the combined features,
+            or it's the output size of the underlying `RasaFeatureCombiningLayer` if the
             `Ffnn` block has 0 layers. `seq_length` is the sum of the sequence dimension
             sizes of sequence- and sentence-level features (for details, see the output
             shape of `RasaFeatureCombiningLayer`). If both feature types are present,
@@ -552,9 +553,10 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             the output size of the underlying `Ffnn` block, or the output size of the
             underlying `RasaFeatureCombiningLayer` if the `Ffnn` block has 0 layers.
         mask_combined_sequence_sentence: `(batch_size, seq_length, hidden_dim)`
-        token_ids: `(batch_size, seq_length, id_dim)` where `id_dim` is unimportant and
-            it's the last-dimension size of the first sequence-level dense feature
-            if any is present, and 2 otherwise. Empty tensor if not doing MLM.
+        token_ids: `(batch_size, seq_length, id_dim)`. `id_dim` is 2 when no dense
+            sequence-level features are present. Otherwise, it's arbitrarily chosen to
+            match the last dimension size of the first dense sequence-level feature in
+            the input list of features.
         mlm_boolean_mask: `(batch_size, seq_length, 1)`, empty tensor if not doing MLM.
         attention_weights: `(transformer_layers, batch_size, num_transformer_heads,
             seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
@@ -571,9 +573,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         config: Dict[Text, Any],
     ) -> None:
         if not attribute_signature or not attribute_signature.get(SEQUENCE, []):
-            raise RasaException(
-                "The attribute signature must contain some sequence-level feature\
-                signatures but none were found."
+            raise TFLayerConfigException(
+                "The attribute signature must contain some sequence-level feature"
+                "signatures but none were found."
             )
 
         super().__init__(name=f"rasa_sequence_layer_{attribute}")
@@ -591,6 +593,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             ),
         }
 
+        self._enables_mlm = False
+        # When used within TED, masked language modeling becomes just input dropout,
+        # since there is no loss term associated with predicting the masked tokens.
         self._prepare_masked_language_modeling(attribute, attribute_signature, config)
 
         transformer_layers, transformer_units = self._get_transformer_dimensions(
@@ -676,8 +681,6 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                     trainable=False,
                     name=f"sparse_to_dense_token_ids.{attribute}",
                 )
-        else:
-            self._enables_mlm = False
 
     def _calculate_output_units(
         self,
@@ -817,7 +820,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         seq_sent_features = self._tf_layers["ffnn"](seq_sent_features, training)
 
         # If using masked language modeling, mask the transformer inputs and get labels
-        # for the masked tokens and a boolean mask.
+        # for the masked tokens and a boolean mask. Note that TED does not use MLM loss,
+        # hence using masked language modeling (if enabled) becomes just input dropout.
         if self._enables_mlm and training:
             mask_sequence = _compute_mask(sequence_feature_lengths)
             seq_sent_features, token_ids, mlm_boolean_mask = self._create_mlm_tensors(
