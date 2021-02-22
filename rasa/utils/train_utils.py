@@ -377,16 +377,16 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
     Returns:
         updated model configuration
     """
-    # TODO: Use value AUTO once cosine is removed as a possible value for model_confidence.
     if (
         component_config[LOSS_TYPE] == MARGIN
         and component_config[MODEL_CONFIDENCE] == SOFTMAX
     ):
         rasa.shared.utils.io.raise_warning(
             f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
-            f"{COSINE} as {LOSS_TYPE} is set to {MARGIN} in the configuration."
+            f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. This means that "
+            f"model's confidences will be computed as cosine similarities"
         )
-        component_config[MODEL_CONFIDENCE] = COSINE
+        component_config[MODEL_CONFIDENCE] = AUTO
     return component_config
 
 
@@ -406,6 +406,11 @@ def validate_configuration_settings(
 
 
 def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
+    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, INNER, AUTO]:
+        raise InvalidConfigException(
+            f"{MODEL_CONFIDENCE}={component_config[MODEL_CONFIDENCE]} is not a valid "
+            f"setting. Possible values: `{SOFTMAX}`, `{INNER}`."
+        )
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
             f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
@@ -426,14 +431,6 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
                 f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
                 f"only with {SIMILARITY_TYPE}={INNER}."
             )
-    # TODO: Remove this once cosine as model_confidence is deprecated.
-    if component_config[MODEL_CONFIDENCE] == COSINE:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"{MODEL_CONFIDENCE} is set to `{COSINE}`. This option will be deprecated in "
-            f"Rasa Open Source 2.4.0. It is recommended to try using "
-            f"`{MODEL_CONFIDENCE}={INNER}` to make it easier to tune fallback thresholds.",
-            warn_until_version="2.4.0",
-        )
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:

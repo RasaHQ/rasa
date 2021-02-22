@@ -729,12 +729,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         Returns:
             similarity between input and label embeddings and model's prediction confidence for each label.
         """
-        # If model's prediction confidence is configured to be cosine similarity,
-        # then normalize embeddings to unit vectors.
-        if self.model_confidence == COSINE:
-            input_embeddings = tf.nn.l2_normalize(input_embeddings, axis=-1)
-            label_embeddings = tf.nn.l2_normalize(label_embeddings, axis=-1)
-
         similarities = self.sim(input_embeddings, label_embeddings, mask)
         confidences = similarities
         if self.model_confidence == SOFTMAX:
