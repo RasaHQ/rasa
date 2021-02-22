@@ -106,6 +106,8 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     BILOU_FLAG,
+    COSINE,
+    INNER,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -350,11 +352,29 @@ class TEDPolicy(Policy):
 
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
 
-        rasa.utils.train_utils.validate_configuration_settings(self.config)
+        rasa.utils.train_utils.validate_configuration_settings(
+            self.config, type(self).__name__
+        )
 
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
+        self._raise_warning_for_invalid_confidence_types()
+
+    # TODO: Remove this once ensemble logic is fixed to work with INNER
+    def _raise_warning_for_invalid_confidence_types(self):
+        """Raise warning if `model_confidence` is set to cosine or inner.
+
+        This is done only for `TEDPolicy` at the moment as using
+        those values breaks the action selection logic in ensemble.
+        """
+        if self.config[MODEL_CONFIDENCE] in [COSINE, INNER]:
+            rasa.shared.utils.io.raise_warning(
+                f"{MODEL_CONFIDENCE} is set to `{self.config[MODEL_CONFIDENCE]}`. Please change it back to {SOFTMAX} "
+                f"as ensemble of policies will not work properly with the selected value. This will be fixed in the "
+                f"future Rasa Open Source minor version releases.",
+                category=UserWarning,
+            )
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter

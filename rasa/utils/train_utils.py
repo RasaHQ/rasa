@@ -377,7 +377,7 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
     Returns:
         updated model configuration
     """
-    # TODO: Remove this once model_confidence is set to cosine by default.
+    # TODO: Use value AUTO once cosine is removed as a possible value for model_confidence.
     if (
         component_config[LOSS_TYPE] == MARGIN
         and component_config[MODEL_CONFIDENCE] == SOFTMAX
@@ -390,14 +390,18 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
     return component_config
 
 
-def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
+def validate_configuration_settings(
+    component_config: Dict[Text, Any], component_name: Text
+) -> None:
     """Performs checks to validate that combination of parameters in the configuration are correctly set.
 
     Args:
         component_config: Configuration to validate.
+        component_name: Name of the component for which configuration has to be validated
     """
     _check_loss_setting(component_config)
-    _check_confidence_setting(component_config)
+    if not component_name == "TEDPolicy":
+        _check_confidence_setting(component_config)
     _check_similarity_loss_setting(component_config)
 
 
@@ -405,8 +409,7 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
             f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
-            f"to set it to `cosine`. It will be set to `cosine` by default, "
-            f"Rasa Open Source 3.0.0 onwards.",
+            f"to try using `{MODEL_CONFIDENCE}={INNER}` to make it easier to tune fallback thresholds.",
             category=UserWarning,
         )
         if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
@@ -423,6 +426,14 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
                 f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
                 f"only with {SIMILARITY_TYPE}={INNER}."
             )
+    # TODO: Remove this once cosine as model_confidence is deprecated.
+    if component_config[MODEL_CONFIDENCE] == COSINE:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"{MODEL_CONFIDENCE} is set to `{COSINE}`. This option will be deprecated in "
+            f"Rasa Open Source 2.4. It is recommended to try using "
+            f"`{MODEL_CONFIDENCE}={INNER}` to make it easier to tune fallback thresholds.",
+            warn_until_version="2.4.0",
+        )
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
