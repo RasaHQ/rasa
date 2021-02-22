@@ -194,7 +194,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             processed.
         attribute_signature: A dictionary containing two lists of `FeatureSignature`s,
             one for each feature type of the given attribute.
-        config: A model config used for correctly parametrising the the layer and the
+        config: A model config used for correctly parameterising the layer and the
             `ConcatenateSparseDenseFeatures` layer it creates internally.
 
     Input shape:
@@ -508,9 +508,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
     This layer combines all features for an attribute and embeds them using a
     transformer. The layer is meant only for attributes with sequence-level features,
-    such as `text` and `action_text`.
+    such as `text`, `response` and `action_text`.
 
-    Internally, this layer extends `RasaFeatureCombiningLayer` and applies the following
+    Internally, this layer uses `RasaFeatureCombiningLayer` and applies the following
     steps:
     1. Combine features using `RasaFeatureCombiningLayer`.
     2. Apply a dense layer(s) to the combined features.
@@ -524,7 +524,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             processed.
         attribute_signature: A dictionary containing two lists of `FeatureSignature`s,
             one for each feature type of the given attribute.
-        config: A model config used for correctly parametrising the underlying layers.
+        config: A model config used for correctly parameterising the underlying layers.
 
     Input shape:
         Tuple of four tensor inputs:
@@ -552,7 +552,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             the output size of the underlying `Ffnn` block, or the output size of the
             underlying `RasaFeatureCombiningLayer` if the `Ffnn` block has 0 layers.
         mask_combined_sequence_sentence: `(batch_size, seq_length, hidden_dim)`
-        token_ids: `(batch_size, seq_length, id_dim)` where id_dim is unimportant and
+        token_ids: `(batch_size, seq_length, id_dim)` where `id_dim` is unimportant and
             it's the last-dimension size of the first sequence-level dense feature
             if any is present, and 2 otherwise. Empty tensor if not doing MLM.
         mlm_boolean_mask: `(batch_size, seq_length, 1)`, empty tensor if not doing MLM.
@@ -560,7 +560,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
 
     Raises:
-        A RasaException if no feature signatures for sequence-level features are
+        A `RasaException` if no feature signatures for sequence-level features are
             provided.
     """
 
