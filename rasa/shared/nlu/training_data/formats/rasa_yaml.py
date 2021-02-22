@@ -20,10 +20,10 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 import rasa.shared.utils.io
-
+import rasa.shared.nlu.training_data.util
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.util import has_string_escape_chars
+
 
 logger = logging.getLogger(__name__)
 
@@ -487,7 +487,10 @@ class RasaYAMLWriter(TrainingDataWriter):
 
             examples_have_metadata = any(KEY_METADATA in ex for ex in converted)
             example_texts_have_escape_chars = any(
-                has_string_escape_chars(ex.get(KEY_INTENT_TEXT, "")) for ex in converted
+                rasa.shared.nlu.training_data.util.has_string_escape_chars(
+                    ex.get(KEY_INTENT_TEXT, "")
+                )
+                for ex in converted
             )
 
             if examples_have_metadata or example_texts_have_escape_chars:

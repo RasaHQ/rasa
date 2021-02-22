@@ -3,7 +3,7 @@ from typing import Text
 
 import pytest
 import tempfile
-import hashlib
+import pathlib
 
 from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
@@ -523,18 +523,17 @@ def test_responses_text_multiline_is_preserved():
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
 
 
-def test_intent_examples_multiline_consistency():
+def test_intent_examples_multiline_consistency(tmp_path: pathlib.Path):
     """Test that multiline examples are written back as multiline examples."""
 
-    training_data_file = "data/test_multiline_intent_examples_yaml/nlu.yml"
+    training_data_file = (
+        pathlib.Path("data") / "test_multiline_intent_examples_yaml" / "nlu.yml"
+    )
     training_data_from_disc = RasaYAMLReader().read(filename=training_data_file)
 
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
-    tmpfile.close()
-    RasaYAMLWriter().dump(tmpfile.name, training_data_from_disc)
-    with open(tmpfile.name, "r", encoding="utf-8") as f:
-        rewritten_file_content = f.read()
-    with open(training_data_file, "r", encoding="utf-8") as f:
-        original_file_content = f.read()
+    tmp_file = tmp_path / "nlu.yml"
+    RasaYAMLWriter().dump(tmp_file, training_data_from_disc)
+    rewritten_file_content = tmp_file.read_text(encoding="utf-8")
+    original_file_content = training_data_file.read_text(encoding="utf-8")
 
     assert original_file_content == rewritten_file_content

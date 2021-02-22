@@ -1,5 +1,6 @@
 from rasa.shared.nlu.training_data.util import has_string_escape_chars
 import pytest
+from typing import Text
 
 
 @pytest.mark.parametrize(
@@ -10,7 +11,8 @@ import pytest
         ("A\tB", True),
         ("Hey,\rmy name is Thomas", True),
         ("Hey, my name is Thomas", False),
+        ("Hey,\nI\ncan\nwrite\nmany\nlines.", True),
     ],
 )
-def test_has_string_escape_chars(s, result):
-    assert has_string_escape_chars(s) == result
+def test_has_string_escape_chars(s: Text, has_escaped_char: bool):
+    assert has_string_escape_chars(s) == has_escaped_char
