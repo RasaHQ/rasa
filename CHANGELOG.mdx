@@ -104,6 +104,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0 . Use `loss_type=cross_entropy` instead.
 
   The default [auto-configuration](model-configuration.mdx#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
+  **EDIT**: From some post-release experiments we found that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. Hence this option has been removed from Rasa Open Source version `2.3.3`. You can read more about the change [here](CHANGELOG.mdx#233---2021-02-11).
 - [#7817](https://github.com/rasahq/rasa/issues/7817): Use simple random uniform distribution of integers in negative sampling, because
   negative sampling with `tf.while_loop` and random shuffle inside creates a memory leak.
 - [#7848](https://github.com/rasahq/rasa/issues/7848): Added support to configure `exchange_name` for [pika event broker](event-brokers.mdx#pika-event-broker).

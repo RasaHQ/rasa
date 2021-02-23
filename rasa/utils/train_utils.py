@@ -51,6 +51,7 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
         ranked = sorted(new_values, reverse=True)
         new_values[new_values < ranked[ranking_length - 1]] = 0
 
+    new_values = np.clip(new_values, 0, max(new_values))
     if np.sum(new_values) > 0:
         new_values = new_values / np.sum(new_values)
 
