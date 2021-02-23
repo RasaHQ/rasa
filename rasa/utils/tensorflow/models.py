@@ -847,28 +847,14 @@ class TransformerRasaModel(RasaModel):
         sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
         return self._compute_mask(sequence_lengths)
 
-    # TODO: remove when refactoring response selectors (should switch to using
-    # `_get_sequence_feature_lengths` instead.)
-    @staticmethod
-    def _get_sequence_lengths(
-        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
-        key: Text,
-        sub_key: Text,
-        batch_dim: int = 1,
-    ) -> tf.Tensor:
-        # sentence features have a sequence lengths of 1
-        # if sequence features are present we add the sequence lengths of those
-
-        # TODO: check this unused code
-        sequence_lengths = tf.ones([batch_dim], dtype=tf.int32)
-        if key in tf_batch_data and sub_key in tf_batch_data[key]:
-            sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
-
-        return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32) + 1
-
     def _get_sequence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
+        """Fetches the sequence lengths of real tokens per input example.
+
+        The number of real tokens for an example is the same as the length of the
+        sequence of the sequence-level (token-level) features for that input example.
+        """
         if key in tf_batch_data and SEQUENCE_LENGTH in tf_batch_data[key]:
             return tf.cast(tf_batch_data[key][SEQUENCE_LENGTH][0], dtype=tf.int32)
 
@@ -878,6 +864,12 @@ class TransformerRasaModel(RasaModel):
     def _get_sentence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
     ) -> tf.Tensor:
+        """Fetches the sequence lengths of sentence-level features per input example.
+
+        This is needed because we treat sentence-level features as token-level features
+        with 1 token per input example. Hence, the sequence lengths returned by this
+        function are all 1s if sentence-level features are present, and 0s otherwise.
+        """
         batch_dim = self._get_batch_dim(tf_batch_data[key])
 
         if key in tf_batch_data and SENTENCE in tf_batch_data[key]:

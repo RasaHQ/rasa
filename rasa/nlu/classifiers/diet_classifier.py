@@ -1345,7 +1345,7 @@ class DIET(TransformerRasaModel):
                 self.config[DROP_RATE],
             )
 
-            self._prepare_label_classification_layers(TEXT)
+            self._prepare_label_classification_layers(predictor_attribute=TEXT)
 
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
