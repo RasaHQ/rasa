@@ -306,6 +306,8 @@ jobs:
         run: |
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
 
+          OUTPUT="${OUTPUT}  test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.01)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\` "
+
           # Return false if negative value found in OUTPUT.
           # Otherwise, return true.
           if [[ "${OUTPUT}" =~ \(-[0-9]+.[0-9]+\) ]]; then
