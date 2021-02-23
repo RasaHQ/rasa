@@ -1,7 +1,6 @@
 import numpy as np
 
-from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer

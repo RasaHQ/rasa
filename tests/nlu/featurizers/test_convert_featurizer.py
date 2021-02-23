@@ -8,8 +8,8 @@ from _pytest.monkeypatch import MonkeyPatch
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (
     ConveRTFeaturizer,

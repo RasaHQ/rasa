@@ -139,20 +139,6 @@ class Tokenizer(Component):
 
         raise NotImplementedError
 
-    def train_chunk(
-        self,
-        training_data_chunk: TrainingDataChunk,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-        """Train this component on the given chunk.
-
-        See parent class for more information.
-        """
-        raise RasaTrainChunkException(
-            "This method should neither be called nor implemented in our code."
-        )
-
     def train(
         self,
         training_data: TrainingDataFull,

@@ -8,7 +8,6 @@ import logging
 from _pytest.logging import LogCaptureFixture
 
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
@@ -20,7 +19,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import TEXT, INTENT, TOKENS_NAMES
 
 
 def skip_on_CI(model_name: Text, model_weights: Text) -> bool:

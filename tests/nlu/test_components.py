@@ -18,6 +18,7 @@ from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -246,31 +247,31 @@ def test_if_train_chunk_raises(component_class: Type[Component]):
     ):
         return
 
-    # Create dummy training data chunk
-    training_data_chunk = TrainingDataChunk(
-        [Message(text="some text", intent="some_intent")]
-    )
     # create an instance of component
     component = component_class()
     # check that those components cannot be trained in chunks
-    if (
-        isinstance(component, Tokenizer)
-        or isinstance(component, MitieIntentClassifier)
+    if isinstance(component, Featurizer):
+        # because components depend on each other `train_chunk` can raise
+        # exceptions if other components are not trained,
+        # however they should not raise RasaTrainChunkException
+        try:
+            # Create dummy training data chunk
+            training_data_chunk = TrainingDataChunk(
+                [Message(text="some text", intent="some_intent")]
+            )
+            component.train_chunk(training_data_chunk)
+        except Exception as e:
+            assert not isinstance(e, RasaTrainChunkException)
+    elif (
+        isinstance(component, MitieIntentClassifier)
         or isinstance(component, MitieEntityExtractor)
         or isinstance(component, KeywordIntentClassifier)
         or isinstance(component, SklearnIntentClassifier)
         or isinstance(component, CRFEntityExtractor)
     ):
         with pytest.raises(RasaTrainChunkException):
-            component.train_on_chunks(training_data_chunk)
-    else:
-        # because components depend on each other `train_chunk` can raise
-        # exceptions if other components are not trained,
-        # however they should not raise RasaTrainChunkException
-        try:
-            component.train_chunk(training_data_chunk)
-        except Exception as e:
-            assert not isinstance(e, RasaTrainChunkException)
+            # pass empty list of chunk files
+            component.train_on_chunks([])
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)

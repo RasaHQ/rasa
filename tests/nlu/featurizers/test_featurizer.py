@@ -91,6 +91,7 @@ def test_flexible_nlu_pipeline():
     classifier = DIETClassifier(
         component_config={FEATURIZERS: ["cvf_word", "LexicalSyntacticFeaturizer"]}
     )
+    classifier.prepare_partial_training(training_data)
     model_data = classifier.preprocess_train_data(training_data)
 
     assert len(model_data.get(TEXT).get(SENTENCE)) == 1
