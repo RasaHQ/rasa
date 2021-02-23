@@ -462,3 +462,13 @@ def test_sentry_strips_absolute_path_from_dist_packages():
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
     assert stack_frames[0]["filename"] == f"dist-packages{os.path.sep}rasa\\train.py"
+
+
+def test_context_contains_os():
+    context = telemetry._default_context_fields()
+
+    assert "os" in context
+
+    context.pop("os")
+
+    assert "os" in telemetry._default_context_fields()
