@@ -47,9 +47,9 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
     Other values will be set to 0.
     """
     new_values = values.copy()  # prevent mutation of the input
-    if 0 < ranking_length < len(new_values):
-        ranked = sorted(new_values, reverse=True)
-        new_values[new_values < ranked[ranking_length - 1]] = 0
+    # if 0 < ranking_length < len(new_values):
+    #     ranked = sorted(new_values, reverse=True)
+    #     new_values[new_values < ranked[ranking_length - 1]] = 0
 
     new_values = np.clip(new_values, 0, max(new_values))
     if np.sum(new_values) > 0:
