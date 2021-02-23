@@ -429,6 +429,19 @@ class NLUPipelineTrainingData:
         """Checks if there are any training examples from e2e stories."""
         return any(message.is_e2e_message() for message in self.training_examples)
 
+    def filter_training_examples(
+        self, condition: Callable[[Message], bool]
+    ) -> "NLUPipelineTrainingData":
+        """Filter training examples.
+
+        Args:
+            condition: A function that will be applied to filter training examples.
+
+        Returns:
+            NLUPipelineTrainingData: A TrainingData with filtered training examples.
+        """
+        return TrainingDataFull(list(filter(condition, self.training_examples)),)
+
 
 class TrainingDataFull(NLUPipelineTrainingData):
     """Holds loaded intent and entity training data."""

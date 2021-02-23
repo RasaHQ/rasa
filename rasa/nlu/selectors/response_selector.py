@@ -11,7 +11,10 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    NLUPipelineTrainingData,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -325,7 +328,9 @@ class ResponseSelector(DIETClassifier):
             add_to_output=True,
         )
 
-    def preprocess_train_data(self, training_data: TrainingDataFull) -> RasaModelData:
+    def preprocess_train_data(
+        self, training_data: NLUPipelineTrainingData
+    ) -> RasaModelData:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
@@ -333,8 +338,9 @@ class ResponseSelector(DIETClassifier):
         Args:
             training_data: training data to preprocessed.
         """
-        # Collect all retrieval intents present in the data before filtering
-        self.all_retrieval_intents = list(training_data.retrieval_intents)
+        # If no labels are present we cannot train the model
+        if not self.index_label_mapping:
+            return RasaModelData()
 
         if self.retrieval_intent:
             training_data = training_data.filter_training_examples(
@@ -348,28 +354,7 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
-        label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
-
-        if self.index_label_mapping is None:
-            self._create_label_index_mappings(training_data, label_attribute)
-
-        # If no labels are present we cannot train the mdoel
-        if not self.index_label_mapping:
-            return RasaModelData()
-
-        self.responses = training_data.responses
-
-        self._label_data = self._create_label_data(
-            training_data, attribute=label_attribute
-        )
-
-        model_data = self._create_model_data(
-            training_data.intent_examples, label_attribute=label_attribute
-        )
-
-        self._check_input_dimension_consistency(model_data)
-
-        return model_data
+        return self._create_model_data(training_data.intent_examples)
 
     def _resolve_intent_response_key(
         self, label: Dict[Text, Optional[Text]]
@@ -384,9 +369,7 @@ class ResponseSelector(DIETClassifier):
             It is always guaranteed to have a match, otherwise that case should have been caught
             earlier and a warning should have been raised.
         """
-
         for key, responses in self.responses.items():
-
             # First check if the predicted label was the key itself
             search_key = util.template_key_to_intent_response_key(key)
             if hash(search_key) == label.get("id"):
@@ -396,7 +379,6 @@ class ResponseSelector(DIETClassifier):
             for response in responses:
                 if hash(response.get(TEXT, "")) == label.get("id"):
                     return search_key
-        return None
 
     def prepare_partial_training(
         self,
@@ -408,8 +390,15 @@ class ResponseSelector(DIETClassifier):
 
         See parent class for more information.
         """
-        label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
-        self._create_label_index_mappings(training_data, label_attribute)
+        self._label_attribute = (
+            RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
+        )
+        self._create_label_index_mappings(training_data)
+
+        # Collect all retrieval intents present in the data before filtering
+        self.all_retrieval_intents = list(training_data.retrieval_intents)
+
+        self.responses = training_data.responses
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
