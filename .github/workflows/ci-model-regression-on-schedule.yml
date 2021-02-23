@@ -309,10 +309,10 @@ jobs:
           # Return false if negative value found in OUTPUT.
           # Otherwise, return true.
           if [[ "${OUTPUT}" =~ \(-[0-9]+.[0-9]+\) ]]; then
-            echo "No test performance drops."
+            echo "Some test performance scores decreased."
             echo "::set-output name=is_dropped::true"
           else
-            echo "Some test performance scores decreased."
+            echo "No test performance drops."
             echo "::set-output name=is_dropped::false"
           fi
 
