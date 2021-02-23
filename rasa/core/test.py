@@ -702,26 +702,18 @@ async def _collect_story_predictions(
             success.append(predicted_tracker)
 
     logger.info("Finished collecting predictions.")
-    with warnings.catch_warnings():
-        from sklearn.exceptions import UndefinedMetricWarning
-
-        warnings.simplefilter("ignore", UndefinedMetricWarning)
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            [1] * len(completed_trackers), correct_dialogues
-        )
 
     in_training_data_fraction = _in_training_data_fraction(action_list)
 
-    _log_evaluation_table(
-        [1] * len(completed_trackers),
-        "END-TO-END" if use_e2e else "CONVERSATION",
-        report,
-        precision,
-        f1,
-        accuracy,
-        in_training_data_fraction,
-        include_report=False,
+    num_convs = len(correct_dialogues)
+    num_correct = sum(correct_dialogues)
+    accuracy = num_correct / num_convs if num_convs else 0.0
+
+    logger.info(
+        f"Evaluation Results on {'END-TO-END' if use_e2e else 'CONVERSATION'} level:"
     )
+    logger.info(f"\tCorrect:          {num_correct} / {num_convs}")
+    logger.info(f"\tAccuracy:         {accuracy:.3f}")
 
     return (
         StoryEvaluation(
@@ -799,6 +791,16 @@ async def test(
                 targets, predictions, output_dict=True
             )
 
+            # Add conversation level accuracy to story report.
+            num_failed = len(story_evaluation.failed_stories)
+            num_correct = len(story_evaluation.successful_stories)
+            num_convs = num_failed + num_correct
+            conv_acc = num_correct / num_correct if num_correct else 0.0
+            report["conversation_accuracy"] = {
+                "accuracy": conv_acc,
+                "correct": num_correct,
+                "total": num_convs,
+            }
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
