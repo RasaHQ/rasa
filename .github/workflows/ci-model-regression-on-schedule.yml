@@ -310,7 +310,7 @@ jobs:
 
           # Return false if negative value found in OUTPUT.
           # Otherwise, return true.
-          if [[ "${OUTPUT}" =~ \(-[0-9]+.[0-9]+\) ]]; then
+          if [[ "${OUTPUT}" =~ \((?!-0.00)(-[0-9]+.[0-9]+)\) ]]; then
             echo "Some test performance scores decreased."
             echo "::set-output name=is_dropped::true"
           else
