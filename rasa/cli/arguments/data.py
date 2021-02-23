@@ -121,6 +121,13 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
              "will be discarded."
     )
 
+    parser.add_argument(
+        "--augmentation-factor",
+        type=float,
+        default=5.,
+        help="Specifies by how much any intents should be augmented. It is specified as a multiple of the original number of training examples of a given intent. For example if intent A has 10 original training examples, passing --augmentation-factor 5, results in 50 paraphrases to be added to the training data. Pass -1 to use all available paraphrases for data augmentation."
+    )
+
     add_out_param(
         parser,
         default="nlu_augment",
