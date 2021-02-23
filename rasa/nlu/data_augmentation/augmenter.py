@@ -151,29 +151,6 @@ def create_paraphrase_pool(
     return paraphrase_pool
 
 
-def create_training_data_pool(
-    nlu_training_data: TrainingData, pooled_intents: Set
-) -> Tuple[Dict[Text, List], Dict[Text, Set]]:
-    """Determines the existing available training data for the given set of intents and extracts their vocabulary.
-
-    Args:
-        nlu_training_data: The existing NLU training data.
-        pooled_intents: The intents for which to perform data augmentation.
-
-    Returns:
-        The available existing training data for the given set of intents and their vocabulary
-    """
-    training_data_pool = collections.defaultdict(list)
-    training_data_vocab_per_intent = collections.defaultdict(set)
-    for m in nlu_training_data.intent_examples:
-        training_data_pool[m.data["intent"]].append(m)
-        if m.data["intent"] in pooled_intents:
-            training_data_vocab_per_intent[m.data["intent"]] |= set(
-                m.data["text"].lower().split()
-            )
-    return training_data_pool, training_data_vocab_per_intent
-
-
 def _resolve_augmentation_factor(nlu_training_data: TrainingData, augmentation_factor: float) -> Dict[Text, int]:
     """Calculates how many paraphrases should maximally be added to the training data.
 
