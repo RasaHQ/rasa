@@ -11,7 +11,7 @@ on:
     types: [opened, synchronize, labeled]
 
 env:
-  GKE_ZONE: us-central1-a
+  GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
 
 jobs:
