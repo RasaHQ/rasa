@@ -90,18 +90,16 @@ def test_file_loading_data_generator(model_data: RasaModelData):
 
 
 @pytest.mark.parametrize(
-    "start, end, expected_file_path, expected_examples_processed_so_far",
+    "index, expected_start, expected_end, expected_file_path",
     [
-        (4, 6, "chunk1.tfrecord", 0),
-        (0, 2, "chunk1.tfrecord", 0),
-        (6, 8, "chunk2.tfrecord", 5),
+        (0, 0, 2, "chunk1.tfrecord"),
+        (1, 2, 4, "chunk1.tfrecord"),
+        (2, 4, 6, "chunk1.tfrecord"),
+        (3, 0, 2, "chunk2.tfrecord"),
     ],
 )
 def test_file_path_to_load(
-    start: int,
-    end: int,
-    expected_file_path: Text,
-    expected_examples_processed_so_far: int,
+    index: int, expected_start: int, expected_end: int, expected_file_path: Text
 ):
     data_chunks = [
         DataChunkFile(Path("chunk1.tfrecord"), 5),
@@ -111,11 +109,14 @@ def test_file_path_to_load(
     data_generator = RasaDataChunkFileGenerator(
         data_chunks, lambda x: RasaModelData(), batch_size=2, shuffle=False
     )
+    assert len(data_generator) == 4
 
-    file_path, examples_processed_so_far = data_generator._chunk_index(start, end)
+    chunk_index, start, end = data_generator._get_chunk_index(index)
+    file_path = data_generator.data_chunks[chunk_index].file_path
 
     assert str(file_path) == expected_file_path
-    assert examples_processed_so_far == expected_examples_processed_so_far
+    assert start == expected_start
+    assert end == expected_end
 
 
 @pytest.mark.parametrize(
