@@ -5,6 +5,7 @@ on:
   schedule:
     # Run once a week
     - cron:  '1 23 * * */7'
+  pull_request:
 
 env:
   GKE_ZONE: us-central1-a
