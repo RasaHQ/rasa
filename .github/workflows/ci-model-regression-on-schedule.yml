@@ -259,6 +259,92 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
+  notify_slack_when_performance_drops:
+    name: Notify Slack when Performance Drops
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+    - deploy_runner_gpu
+    - model_regression_test_gpu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download an artifact with the results for the schedule version
+        run: |
+          # Get ID of the schedule workflow
+          SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+
+          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+
+          DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
+            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+
+          # Download the artifact
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+
+          # Unzip and change name
+          unzip report.json.zip && mv report.json report_main.json
+
+      - name: Download the report
+        uses: actions/download-artifact@v2
+        with:
+          name: report.json
+
+      - name: Download gomplate
+        run: |-
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
+
+      - name: analyze performance 🔍
+        id: performance
+        run: |
+          OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
+
+          # Return false if negative value found in OUTPUT.
+          # Otherwise, return true.
+          if [[ "${OUTPUT}" =~ \(-[0-9]+.[0-9]+\) ]]; then
+            echo "No test performance drops."
+            echo "::set-output name=is_dropped::true"
+          else
+            echo "Some test performance scores decreased."
+            echo "::set-output name=is_dropped::false"
+          fi
+
+      - name: Notify Slack 💬
+        if: steps.performance.output.is_dropped == 'true'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "Model regression tests CI",
+              attachments: [{
+                fallback: 'fallback',
+                color: 'danger',
+                title: `${process.env.AS_WORKFLOW}`,
+                text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
+                fields: [{
+                  title: 'Notes',
+                  value: 'Please checkout metabase for further information and logs.',
+                  short: false
+                },
+                {
+                  title: 'GitHub Action',
+                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+                  short: true
+                }],
+                actions: [{
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}
+
   remove_runner_gpu:
     name: Delete Github Runner - GPU
     if: always()
