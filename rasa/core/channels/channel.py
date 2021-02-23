@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from asyncio import AbstractEventLoop
 from sanic import Sanic, Blueprint
 from sanic.request import Request
 from typing import (
@@ -84,12 +85,20 @@ def register(
     async def handler(*args, **kwargs):
         await app.agent.handle_message(*args, **kwargs)
 
+    def on_agent_ready(channel: InputChannel):
+        async def _on_agent_ready(app: Sanic, loop: AbstractEventLoop):
+            channel.on_agent_ready(handler, app, loop)
+
+        return _on_agent_ready
+
     for channel in input_channels:
         if route:
             p = urljoin(route, channel.url_prefix())
         else:
             p = None
+
         app.blueprint(channel.blueprint(handler), url_prefix=p)
+        app.register_listener(on_agent_ready(channel), "after_server_start")
 
     app.input_channels = input_channels
 
@@ -156,12 +165,33 @@ class InputChannel:
         """
         pass
 
+    def on_agent_ready(
+        self,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        app: Sanic,
+        loop: AbstractEventLoop
+    ):
+        """Runs automatically once the Rasa Agent is ready to be called.
+        
+        Implementing this function is not required. It would be useful, however,
+        to run code just as soon as a message can be handled. An example would
+        be to start receiving messages in some way other than regular HTTP.
+
+        Args:
+            on_new_message: callback that, once called, will forward the message
+            to the Agent.
+            app: the underlying Sanic application object.
+            loop: the application's underlying event loop.
+        """
+        pass
+
 
 class OutputChannel:
     """Output channel base class.
 
     Provides sane implementation of the send methods
-    for text only output channels."""
+    for text only output channels.
+    """
 
     @classmethod
     def name(cls) -> Text:
