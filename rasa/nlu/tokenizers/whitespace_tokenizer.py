@@ -5,7 +5,8 @@ import re
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.shared.nlu.training_data.message import Message
 
 

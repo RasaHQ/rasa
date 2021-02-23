@@ -163,7 +163,7 @@ def test_lookup_tables_without_use_word_boundaries(
     labeled_tokens: List[float],
 ):
     from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.tokens import Token
 
     lookups = [
         {"name": "cites", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},

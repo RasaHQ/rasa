@@ -10,7 +10,8 @@ from rasa.nlu.components import Component, UnsupportedLanguageError
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (

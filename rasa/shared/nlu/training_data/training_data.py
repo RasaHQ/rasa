@@ -36,6 +36,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.tokens import Token
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -1124,8 +1125,6 @@ class TrainingDataChunk(NLUPipelineTrainingData):
 
     @classmethod
     def _decode_message_data(cls, example: tf.train.Example, key: Text) -> Any:
-        from rasa.nlu.tokenizers.tokenizer import Token
-
         bytes_list = example.features.feature[key].bytes_list.value[0]
         text = bytes_list.decode(DEFAULT_ENCODING)
 

@@ -714,7 +714,7 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     tokens: List[Tuple[Text, int]],
     expected_feature_tokens: List[Tuple[Text, int]],
 ):
-    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.tokens import Token
 
     config = {
         "model_name": "bert",

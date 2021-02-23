@@ -20,7 +20,7 @@ from rasa.shared.nlu.constants import (
 )
 
 if TYPE_CHECKING:
-    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.tokens import Token
     from rasa.shared.nlu.training_data.training_data import NLUPipelineTrainingData
     from rasa.shared.nlu.training_data.message import Message
 

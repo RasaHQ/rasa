@@ -44,7 +44,7 @@ from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
-    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.tokens import Token
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:

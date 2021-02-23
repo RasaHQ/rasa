@@ -16,7 +16,7 @@ from rasa.shared.nlu.constants import (
     ACTION_NAME,
     TOKENS_NAMES,
 )
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (

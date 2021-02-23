@@ -7,7 +7,8 @@ import os
 import rasa.shared.utils.io
 import rasa.core.utils
 from rasa.utils import common
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.nlu.model import Metadata
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component

@@ -1,7 +1,8 @@
 import typing
 from typing import Text, List, Any, Type, Optional
 
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.nlu.components import Component
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.shared.nlu.training_data.message import Message

@@ -7,8 +7,7 @@ import scipy.sparse
 import pytest
 
 import rasa.shared.utils.io
-from nlu.constants import TOKENS_NAMES
-from nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -21,6 +20,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     INTENT,
     ACTION_NAME,
+    TOKENS_NAMES,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -839,31 +839,6 @@ def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: 
                 or num_examples == ideal_size - 1
             )
         assert sum(num_examples_across_chunks) == intent_count
-
-
-def test_training_data_chunk_exception():
-
-    with pytest.raises(RasaException) as error:
-        _ = TrainingDataChunk(lookup_tables=[{"test_key": "test_val"}])
-        assert (
-            "TrainingDataChunk cannot have entity synonyms, regex "
-            "features or lookup tables set. This is to reduce the memory overhead."
-            in str(error.value)
-        )
-    with pytest.raises(RasaException) as error:
-        _ = TrainingDataChunk(entity_synonyms={"test_key": "test_val"})
-        assert (
-            "TrainingDataChunk cannot have entity synonyms, regex "
-            "features or lookup tables set. This is to reduce the memory overhead."
-            in str(error.value)
-        )
-    with pytest.raises(RasaException) as error:
-        _ = TrainingDataChunk(regex_features=[{"test_key": "test_val"}])
-        assert (
-            "TrainingDataChunk cannot have entity synonyms, regex "
-            "features or lookup tables set. This is to reduce the memory overhead."
-            in str(error.value)
-        )
 
 
 @pytest.mark.parametrize(
