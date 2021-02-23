@@ -587,57 +587,41 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
         ]
 
-    def _get_label_examples_from_chunks(
-        self, data_chunk_files: List[DataChunkFile]
+    def _get_label_example_from_chunks(
+        self, label_name: Text, data_chunk_files: List[DataChunkFile]
+    ) -> Optional[Message]:
+        # find data chunk that contains label example
+        for data_chunk in data_chunk_files:
+            training_data_chunk = TrainingDataChunk.load_chunk(data_chunk.file_path)
+            label_example = self._find_example_for_label(
+                label_name, training_data_chunk.intent_examples, self._label_attribute,
+            )
+            if label_example is not None:
+                return label_example
+
+    def _get_index_label_examples(
+        self,
+        training_data: Union[TrainingDataFull, TrainingDataChunk],
+        data_chunk_files: Optional[List[DataChunkFile]] = None,
     ) -> List[Tuple[int, Message]]:
         # Collect one example for each label
-        label_idx_examples = []
-        current_chunk_file_path = None
-        training_data_chunk = None
-        for label_name, idx in self._label_index_mapping.items():
-            label_example = None
-            # find data chunk that contains label example
-            for data_chunk in data_chunk_files:
-                # most probably the first chunk is enough
-                # so avoid reloading the same data chunk
-                if (
-                    data_chunk.file_path != current_chunk_file_path
-                    or training_data_chunk is None
-                ):
-                    current_chunk_file_path = data_chunk.file_path
-                    training_data_chunk = TrainingDataChunk.load_chunk(
-                        current_chunk_file_path
-                    )
-
-                label_example = self._find_example_for_label(
-                    label_name,
-                    training_data_chunk.intent_examples,
-                    self._label_attribute,
-                )
-                if label_example is not None:
-                    break
-
-            label_idx_examples.append((idx, label_example))
-
-        # Sort the list of tuples based on label_idx
-        return sorted(label_idx_examples, key=lambda x: x[0])
-
-    def _get_label_examples_from_data(
-        self, training_data: TrainingDataFull
-    ) -> List[Tuple[int, Message]]:
-        # Collect one example for each label
-        label_idx_examples = []
+        index_label_examples = []
         for label_name, idx in self._label_index_mapping.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, self._label_attribute
             )
-            label_idx_examples.append((idx, label_example))
+            if label_example is None and data_chunk_files:
+                label_example = self._get_label_example_from_chunks(
+                    label_name, data_chunk_files
+                )
+
+            index_label_examples.append((idx, label_example))
 
         # Sort the list of tuples based on label_idx
-        return sorted(label_idx_examples, key=lambda x: x[0])
+        return sorted(index_label_examples, key=lambda x: x[0])
 
     def _create_label_data(
-        self, label_idx_examples: List[Tuple[int, Message]]
+        self, index_label_examples: List[Tuple[int, Message]]
     ) -> RasaModelData:
         """Create matrix with label_ids encoded in rows as bag of words.
 
@@ -646,7 +630,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         If the features are already computed, fetch them from the message object
         else compute a one hot encoding for the label as the feature vector.
         """
-        label_examples = [example for (_, example) in label_idx_examples]
+        label_examples = [example for (_, example) in index_label_examples]
 
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(label_examples):
@@ -669,7 +653,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 "No label features are present. Please check your configuration file."
             )
 
-        label_ids = np.array([idx for (idx, _) in label_idx_examples])
+        label_ids = np.array([idx for (idx, _) in index_label_examples])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(
@@ -890,11 +874,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
             return
 
-        self._label_data = self._create_label_data(
-            self._get_label_examples_from_chunks(data_chunk_files)
-        )
         # load one chunk so that we can instantiate the model
-        sample_model_data = self._load_data_func(data_chunk_files[0].file_path)
+        sample_data_chunk = TrainingDataChunk.load_chunk(data_chunk_files[0].file_path)
+
+        self._label_data = self._create_label_data(
+            self._get_index_label_examples(sample_data_chunk, data_chunk_files)
+        )
+
+        sample_model_data = self.preprocess_train_data(sample_data_chunk)
 
         data_generator = RasaDataChunkFileGenerator(
             data_chunk_files,
@@ -915,7 +902,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Train the embedding intent classifier on a data set."""
         self.prepare_partial_training(training_data, config, **kwargs)
         self._label_data = self._create_label_data(
-            self._get_label_examples_from_data(training_data)
+            self._get_index_label_examples(training_data)
         )
 
         model_data = self.preprocess_train_data(training_data)
