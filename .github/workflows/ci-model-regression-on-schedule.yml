@@ -174,6 +174,9 @@ jobs:
         run: |-
           poetry run rasa --version
 
+          # Run GPUs in a deterministic mode
+          export TF_DETERMINISTIC_OPS=1
+
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           cd ${{ github.workspace }}/dataset
           poetry run rasa train nlu --quiet -u $DATASET/train -c configs/$CONFIG --out models/$DATASET/$CONFIG
