@@ -933,12 +933,14 @@ class TED(TransformerRasaModel):
             self._prepare_input_layers(name, self.label_signature[name])
             self._prepare_encoding_layers(name)
 
-        self._prepare_transformer_layer(
-            DIALOGUE,
-            self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE],
-            self.config[TRANSFORMER_SIZE][DIALOGUE],
-            self.config[DROP_RATE_DIALOGUE],
-            self.config[DROP_RATE_ATTENTION],
+        self._tf_layers[
+            f"transformer.{DIALOGUE}"
+        ] = rasa_layers.prepare_transformer_layer(
+            attribute_name=DIALOGUE,
+            config=self.config,
+            num_layers=self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE],
+            units=self.config[TRANSFORMER_SIZE][DIALOGUE],
+            drop_rate=self.config[DROP_RATE_DIALOGUE],
             # use bidirectional transformer, because
             # we will invert dialogue sequence so that the last turn is located
             # at the first position and would always have
@@ -966,7 +968,8 @@ class TED(TransformerRasaModel):
             )
         # Attributes without sequence-level features require some actual feature
         # processing only if they have sentence-level features. Attributes with no
-        # sequence- and sentence-level features (e.g. entity_tags) are skipped here.
+        # sequence- and sentence-level features (dialogue, entity_tags, label) are
+        # skipped here.
         elif SENTENCE in attribute_signature:
             self._tf_layers[
                 f"sparse_dense_concat_layer.{attribute_name}"
@@ -1073,7 +1076,7 @@ class TED(TransformerRasaModel):
             also the attention weights.
         """
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
-        mask = self._compute_mask(dialogue_lengths)
+        mask = rasa_layers.compute_mask(dialogue_lengths)
 
         if self.max_history_featurizer_is_used:
             # invert dialogue sequence so that the last turn would always have
@@ -1497,7 +1500,7 @@ class TED(TransformerRasaModel):
             [text_output, dialogue_transformer_output], axis=-1
         )
 
-        text_mask = tf.squeeze(self._compute_mask(text_sequence_lengths), axis=1)
+        text_mask = tf.squeeze(rasa_layers.compute_mask(text_sequence_lengths), axis=1)
         # add zeros to match the shape of text_transformed, because
         # max sequence length might differ, since it is calculated dynamically
         # based on a subset of sequence lengths

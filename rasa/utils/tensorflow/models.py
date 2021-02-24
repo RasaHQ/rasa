@@ -61,6 +61,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
 )
 from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 
 if TYPE_CHECKING:
@@ -758,36 +759,6 @@ class TransformerRasaModel(RasaModel):
             layer_name_suffix=name,
         )
 
-    def _prepare_transformer_layer(
-        self,
-        name: Text,
-        num_layers: int,
-        units: int,
-        drop_rate: float,
-        drop_rate_attention: float,
-        unidirectional: bool,
-        prefix: Text = "transformer",
-    ):
-        if num_layers > 0:
-            self._tf_layers[f"{prefix}.{name}"] = TransformerEncoder(
-                num_layers,
-                units,
-                self.config[NUM_HEADS],
-                units * 4,
-                self.config[REGULARIZATION_CONSTANT],
-                dropout_rate=drop_rate,
-                attention_dropout_rate=drop_rate_attention,
-                sparsity=self.config[WEIGHT_SPARSITY],
-                unidirectional=unidirectional,
-                use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
-                use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
-                max_relative_position=self.config[MAX_RELATIVE_POSITION],
-                name=f"{name}_encoder",
-            )
-        else:
-            # create lambda so that it can be used later without the check
-            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: (x, None)
-
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
@@ -821,13 +792,6 @@ class TransformerRasaModel(RasaModel):
             )
 
     @staticmethod
-    def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
-        mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
-        # explicitly add last dimension to mask
-        # to track correctly dynamic sequences
-        return tf.expand_dims(mask, -1)
-
-    @staticmethod
     def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
         last_sequence_index = tf.maximum(0, sequence_lengths - 1)
         batch_index = tf.range(tf.shape(last_sequence_index)[0])
@@ -845,7 +809,7 @@ class TransformerRasaModel(RasaModel):
             return None
 
         sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
-        return self._compute_mask(sequence_lengths)
+        return rasa_layers.compute_mask(sequence_lengths)
 
     def _get_sequence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text

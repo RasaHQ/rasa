@@ -468,7 +468,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         sequence_feature_lengths = inputs[2]
 
         # This mask is specifically for sequence-level features.
-        mask_sequence = _compute_mask(sequence_feature_lengths)
+        mask_sequence = compute_mask(sequence_feature_lengths)
 
         sequence_features_combined = self._combine_sequence_level_features(
             sequence_features, mask_sequence, training
@@ -481,7 +481,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             sentence_features, sequence_feature_lengths, training
         )
 
-        mask_combined_sequence_sentence = _compute_mask(
+        mask_combined_sequence_sentence = compute_mask(
             combined_sequence_sentence_feature_lengths
         )
 
@@ -598,41 +598,14 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # since there is no loss term associated with predicting the masked tokens.
         self._prepare_masked_language_modeling(attribute, attribute_signature, config)
 
-        transformer_layers, transformer_units = self._get_transformer_dimensions(
+        transformer_layers, transformer_units = self._prepare_transformer(
             attribute, config
         )
-        self._prepare_transformer(
-            attribute, config, transformer_layers, transformer_units
-        )
+        self._has_transformer = transformer_layers > 0
 
         self.output_units = self._calculate_output_units(
             attribute, transformer_layers, transformer_units, config
         )
-
-    def _prepare_transformer(
-        self,
-        attribute: Text,
-        config: Dict[Text, Any],
-        transformer_layers: int,
-        transformer_units: int,
-    ) -> None:
-        """Prepares a transformer if the config specifies >0 transformer layers."""
-        if transformer_layers > 0:
-            self._tf_layers["transformer"] = TransformerEncoder(
-                num_layers=transformer_layers,
-                units=transformer_units,
-                num_heads=config[NUM_HEADS],
-                filter_units=transformer_units * 4,
-                reg_lambda=config[REGULARIZATION_CONSTANT],
-                dropout_rate=config[DROP_RATE],
-                attention_dropout_rate=config[DROP_RATE_ATTENTION],
-                sparsity=config[WEIGHT_SPARSITY],
-                unidirectional=config[UNIDIRECTIONAL_ENCODER],
-                use_key_relative_position=config[KEY_RELATIVE_ATTENTION],
-                use_value_relative_position=config[VALUE_RELATIVE_ATTENTION],
-                max_relative_position=config[MAX_RELATIVE_POSITION],
-                name=f"{attribute}_encoder",
-            )
 
     @staticmethod
     def _get_transformer_dimensions(
@@ -650,6 +623,23 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
 
+        return transformer_layers, transformer_units
+
+    def _prepare_transformer(
+        self, attribute: Text, config: Dict[Text, Any]
+    ) -> Tuple[int, int]:
+        """Creates a transformer layer & returns its # of layers and output units."""
+        transformer_layers, transformer_units = self._get_transformer_dimensions(
+            attribute, config
+        )
+        self._tf_layers["transformer"] = prepare_transformer_layer(
+            attribute_name=attribute,
+            config=config,
+            num_layers=transformer_layers,
+            units=transformer_units,
+            drop_rate=config[DROP_RATE],
+            unidirectional=config[UNIDIRECTIONAL_ENCODER],
+        )
         return transformer_layers, transformer_units
 
     def _prepare_masked_language_modeling(
@@ -823,7 +813,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # for the masked tokens and a boolean mask. Note that TED does not use MLM loss,
         # hence using masked language modeling (if enabled) becomes just input dropout.
         if self._enables_mlm and training:
-            mask_sequence = _compute_mask(sequence_feature_lengths)
+            mask_sequence = compute_mask(sequence_feature_lengths)
             seq_sent_features, token_ids, mlm_boolean_mask = self._create_mlm_tensors(
                 sequence_features,
                 seq_sent_features,
@@ -838,7 +828,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
         # Apply the transformer (if present), hence reducing a sequences of features per
         # input example into a simple fixed-size embedding.
-        if "transformer" in self._tf_layers:
+        if self._has_transformer:
             mask_padding = 1 - mask_combined_sequence_sentence
             outputs, attention_weights = self._tf_layers["transformer"](
                 seq_sent_features, mask_padding, training
@@ -858,7 +848,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         )
 
 
-def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
+def compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
     """Computes binary mask given real sequence lengths.
 
     Takes a 1-D tensor of shape `(batch_size,)` containing the lengths of real feature
@@ -867,3 +857,32 @@ def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
     """
     mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
     return tf.expand_dims(mask, -1)
+
+
+def prepare_transformer_layer(
+    attribute_name: Text,
+    config: Dict[Text, Any],
+    num_layers: int,
+    units: int,
+    drop_rate: float,
+    unidirectional: bool,
+):
+    """Creates & returns a transformer encoder, potentially with 0 layers."""
+    if num_layers > 0:
+        return TransformerEncoder(
+            num_layers,
+            units,
+            config[NUM_HEADS],
+            units * 4,
+            config[REGULARIZATION_CONSTANT],
+            dropout_rate=drop_rate,
+            attention_dropout_rate=config[DROP_RATE_ATTENTION],
+            sparsity=config[WEIGHT_SPARSITY],
+            unidirectional=unidirectional,
+            use_key_relative_position=config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=config[MAX_RELATIVE_POSITION],
+            name=f"{attribute_name}_encoder",
+        )
+    # create lambda so that it can be used later without the check
+    return lambda x, mask, training: (x, None)
