@@ -13,7 +13,7 @@ how you can migrate from one version to another.
 ## Rasa 2.3.2 to Rasa 2.3.3
 
 :::caution
-This is a release **breaking backwards compatibility of ML models**.
+This is a release **breaking backwards compatibility of machine learning models**.
 It is not possible to load previously trained models if the model was trained with `model_confidence=cosine` setting. Please make sure to retrain a
 model before trying to use it with this improved version.
 
@@ -36,9 +36,9 @@ components `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
 2. The default loss function (`loss_type=cross_entropy`) can add an optional sigmoid cross-entropy loss of all similarity values to constrain
 them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
 
-Also, a new option `model_confidence` has been added to `DIETClassifier` and `ResponseSelector`. It affects how the model's confidence for each label is computed during inference. It can take one of two values:
+Also, a new option `model_confidence` has been added to each ML component. It affects how the model's confidence for each label is computed during inference. It can take one of two values:
 1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
-2. `inner` - Dot product similarity between input and label embeddings. Confidence for each label in the range `[0,1]`.
+2. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in the range `[0,1]`.
 The default value is `softmax`, but we recommend trying `inner` as it should be easier to tune thresholds for fallback.
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
