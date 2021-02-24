@@ -736,7 +736,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         if self.model_confidence == INNER:
             # Clip negative values to 0 and linearly normalize to bring the predictions in the range [0,1].
             clipped_similarities = tf.nn.relu(similarities)
-            confidences = clipped_similarities / tf.reduce_sum(clipped_similarities)
+            confidences = clipped_similarities / tf.reduce_sum(
+                clipped_similarities, axis=-1
+            )
         return similarities, confidences
 
     def _train_sim(

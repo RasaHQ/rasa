@@ -378,10 +378,7 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
     Returns:
         updated model configuration
     """
-    if (
-        component_config[LOSS_TYPE] == MARGIN
-        and component_config[MODEL_CONFIDENCE] == SOFTMAX
-    ):
+    if component_config[LOSS_TYPE] == MARGIN:
         rasa.shared.utils.io.raise_warning(
             f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
             f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. This means that "
