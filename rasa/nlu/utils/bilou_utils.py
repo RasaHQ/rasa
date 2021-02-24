@@ -127,16 +127,7 @@ def build_tag_id_dict(
 
     Returns: a mapping of tags to ids
     """
-    bilou_key = get_bilou_key_for_tag(tag_name)
-
-    distinct_tags = set(
-        [
-            tag_without_prefix(e)
-            for example in training_data.nlu_examples
-            if example.get(bilou_key)
-            for e in example.get(bilou_key)
-        ]
-    ) - {NO_ENTITY_TAG}
+    distinct_tags = training_data.distinct_entity_tags(tag_name)
 
     if not distinct_tags:
         return None

@@ -165,6 +165,24 @@ class NLUPipelineTrainingData:
         entity_types = [e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()]
         return set(entity_types)
 
+    def distinct_entity_tags(self, tag_name: Text) -> Set[Text]:
+        """Returns the set of entity tags for given tag name.
+
+        Args:
+            tag_name: The name of the tag.
+
+        Returns:
+            The set of entity tags for given tag name.
+        """
+        if tag_name == ENTITY_ATTRIBUTE_ROLE:
+            distinct_tags = self.entity_roles
+        elif tag_name == ENTITY_ATTRIBUTE_GROUP:
+            distinct_tags = self.entity_groups
+        else:
+            distinct_tags = self.entities
+
+        return distinct_tags - {NO_ENTITY_TAG} - {None}
+
     @lazy_property
     def entity_roles(self) -> Set[Text]:
         """Returns the set of entity roles in the training data."""

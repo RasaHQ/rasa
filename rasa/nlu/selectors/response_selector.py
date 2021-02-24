@@ -328,7 +328,7 @@ class ResponseSelector(DIETClassifier):
             add_to_output=True,
         )
 
-    def preprocess_train_data(
+    def _preprocess_train_data(
         self, training_data: NLUPipelineTrainingData
     ) -> RasaModelData:
         """Prepares data for training.
@@ -338,10 +338,6 @@ class ResponseSelector(DIETClassifier):
         Args:
             training_data: training data to preprocessed.
         """
-        # If no labels are present we cannot train the model
-        if not self.index_label_mapping:
-            return RasaModelData()
-
         if self.retrieval_intent:
             training_data = training_data.filter_training_examples(
                 lambda ex: self.retrieval_intent == ex.get(INTENT)

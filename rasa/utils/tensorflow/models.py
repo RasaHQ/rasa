@@ -71,6 +71,9 @@ class RasaModel(TmpKerasModel):
     Cannot be used as tf.keras.Model.
     """
 
+    def get_config(self):
+        pass
+
     def __init__(self, random_seed: Optional[int] = None, **kwargs,) -> None:
         """Initialize the RasaModel.
 
@@ -454,10 +457,13 @@ class TransformerRasaModel(RasaModel):
 
         self._check_data()
 
-        label_batch = RasaDataGenerator.prepare_batch(label_data.data)
-        self.tf_label_data = self.batch_to_model_data_format(
-            label_batch, self.label_signature
-        )
+        if not label_data.is_empty():
+            label_batch = RasaDataGenerator.prepare_batch(label_data.data)
+            self.tf_label_data = self.batch_to_model_data_format(
+                label_batch, self.label_signature
+            )
+        else:
+            self.tf_label_data = {}
 
         # set up tf layers
         self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
