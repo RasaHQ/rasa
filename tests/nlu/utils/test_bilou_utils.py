@@ -71,12 +71,26 @@ def test_build_tag_id_dict():
         text="Germany is part of the European Union", intent="inform"
     )
     message_1.set(
-        BILOU_ENTITIES,
-        ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
+        ENTITIES,
+        [
+            {"start": 0, "end": 7, "value": "Germany", "entity": "location"},
+            {
+                "start": 23,
+                "end": 37,
+                "value": "European Union",
+                "entity": "organisation",
+            },
+        ],
     )
 
     message_2 = Message.build(text="Berlin is the capital of Germany", intent="inform")
-    message_2.set(BILOU_ENTITIES, ["U-location", "O", "O", "O", "O", "U-location"])
+    message_2.set(
+        ENTITIES,
+        [
+            {"start": 0, "end": 6, "value": "Berlin", "entity": "location"},
+            {"start": 25, "end": 32, "value": "Germany", "entity": "location"},
+        ],
+    )
 
     training_data = TrainingDataFull([message_1, message_2])
 
