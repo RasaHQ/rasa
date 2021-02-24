@@ -77,8 +77,7 @@ class RasaModel(tf.keras.models.Model):
     Cannot be used as tf.keras.Model
     """
 
-
-    @profile
+    # @profile
     def __init__(
         self,
         random_seed: Optional[int] = None,
@@ -121,8 +120,7 @@ class RasaModel(tf.keras.models.Model):
                 model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
             )
 
-
-    @profile
+    # @profile
     def _set_up_tensorboard_writer(self) -> None:
         if self.tensorboard_log_dir is not None:
             if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
@@ -151,8 +149,7 @@ class RasaModel(tf.keras.models.Model):
                 f"/model_summary.txt"
             )
 
-
-    @profile
+    # @profile
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
@@ -166,8 +163,7 @@ class RasaModel(tf.keras.models.Model):
         """
         raise NotImplementedError
 
-
-    @profile
+    # @profile
     def prepare_for_predict(self) -> None:
         """Prepares tf graph fpr prediction.
 
@@ -177,8 +173,7 @@ class RasaModel(tf.keras.models.Model):
         """
         pass
 
-
-    @profile
+    # @profile
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
@@ -192,8 +187,7 @@ class RasaModel(tf.keras.models.Model):
         """
         raise NotImplementedError
 
-
-    @profile
+    # @profile
     def fit(
         self,
         model_data: RasaModelData,
@@ -227,7 +221,9 @@ class RasaModel(tf.keras.models.Model):
             model_data, evaluation_model_data = model_data.split(
                 evaluate_on_num_examples, self.random_seed
             )
-
+        logger.debug(
+            "NOTE: just before it would usually say `Building tensorflow train graph`"
+        )
         (
             train_dataset_function,
             tf_train_on_batch_function,
@@ -298,8 +294,7 @@ class RasaModel(tf.keras.models.Model):
         if not disable:
             logger.info("Finished training.")
 
-
-    @profile
+    # @profile
     def train_on_batch(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> None:
@@ -336,8 +331,7 @@ class RasaModel(tf.keras.models.Model):
 
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-
-    @profile
+    # @profile
     def build_for_predict(
         self, predict_data: RasaModelData, eager: bool = True
     ) -> None:
@@ -347,8 +341,7 @@ class RasaModel(tf.keras.models.Model):
             predict_data.as_tf_dataset, self.batch_predict, eager, "prediction"
         )
 
-
-    @profile
+    # @profile
     def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
         if self._predict_function is None:
             logger.debug("There is no tensorflow prediction graph.")
@@ -360,13 +353,11 @@ class RasaModel(tf.keras.models.Model):
         self._training = False  # needed for eager mode
         return self._predict_function(batch_in)
 
-
-    @profile
+    # @profile
     def save(self, model_file_name: Text, overwrite: bool = True) -> None:
         self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
 
-
-    @profile
+    # @profile
     def copy_best(self, model_file_name: Text) -> None:
         checkpoint_directory, checkpoint_file = os.path.split(self.best_model_file)
         checkpoint_path = Path(checkpoint_directory)
@@ -432,8 +423,7 @@ class RasaModel(tf.keras.models.Model):
         logger.debug("Finished loading the model.")
         return model
 
-
-    @profile
+    # @profile
     def _total_batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
@@ -445,8 +435,7 @@ class RasaModel(tf.keras.models.Model):
 
         return total_loss
 
-
-    @profile
+    # @profile
     def _batch_loop(
         self,
         dataset_function: Callable,
@@ -469,7 +458,6 @@ class RasaModel(tf.keras.models.Model):
                 self._log_metrics_for_tensorboard(step, writer)
 
             step += 1
-
         return step
 
     @staticmethod
@@ -481,10 +469,10 @@ class RasaModel(tf.keras.models.Model):
     ) -> Callable:
         """Convert functions to tensorflow functions."""
         if eager:
+            logger.debug("NOTE: eager, not building tf graph")
             return call_model_function
 
         logger.debug(f"Building tensorflow {phase} graph...")
-
         init_dataset = dataset_function(1)
         tf_call_model_function = tf.function(
             call_model_function, input_signature=[init_dataset.element_spec]
@@ -495,13 +483,15 @@ class RasaModel(tf.keras.models.Model):
 
         return tf_call_model_function
 
-    @profile
+    # @profile
     def _get_tf_train_functions(
         self, eager: bool, model_data: RasaModelData, batch_strategy: Text
     ) -> Tuple[Callable, Callable]:
         """Create train tensorflow functions."""
+        logger.debug("NOTE: _get_tf_train_functions")
 
         def train_dataset_function(_batch_size: int) -> tf.data.Dataset:
+            logger.debug("NOTE: train_dataset_function")
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
 
         self._training = True  # needed for tf graph mode
@@ -512,8 +502,7 @@ class RasaModel(tf.keras.models.Model):
             ),
         )
 
-
-    @profile
+    # @profile
     def _get_tf_evaluation_functions(
         self, eager: bool, evaluation_model_data: Optional[RasaModelData]
     ) -> Tuple[Optional[Callable], Optional[Callable]]:
@@ -534,8 +523,7 @@ class RasaModel(tf.keras.models.Model):
             ),
         )
 
-
-    @profile
+    # @profile
     def _get_metric_results(self, prefix: Optional[Text] = None) -> Dict[Text, Text]:
         """Get the metrics results"""
         prefix = prefix or ""
@@ -546,8 +534,7 @@ class RasaModel(tf.keras.models.Model):
             if metric.name in self.metrics_to_log
         }
 
-
-    @profile
+    # @profile
     def _log_metrics_for_tensorboard(
         self, step: int, writer: Optional["ResourceSummaryWriter"] = None
     ) -> None:
@@ -557,8 +544,7 @@ class RasaModel(tf.keras.models.Model):
                     if metric.name in self.metrics_to_log:
                         tf.summary.scalar(metric.name, metric.result(), step=step)
 
-
-    @profile
+    # @profile
     def _does_model_improve(self, current_results: Dict[Text, Text]) -> bool:
         # Initialize best_metrics_so_far with the first results
         if not self.best_metrics_so_far:
@@ -581,8 +567,7 @@ class RasaModel(tf.keras.models.Model):
                 self.best_metrics_so_far[key] = float(current_results[key])
         return all_improved
 
-
-    @profile
+    # @profile
     def _save_model_checkpoint(
         self, current_results: Dict[Text, Text], epoch: int
     ) -> None:
@@ -662,8 +647,7 @@ class RasaModel(tf.keras.models.Model):
         else:
             return int(batch_size[0])
 
-
-    @profile
+    # @profile
     def _write_model_summary(self):
         total_number_of_variables = np.sum(
             [np.prod(v.shape) for v in self.trainable_variables]
@@ -683,64 +667,55 @@ class RasaModel(tf.keras.models.Model):
             file.write("\n")
             file.write(f"Total size of variables: {total_number_of_variables}")
 
-
-    @profile
+    # @profile
     def compile(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def evaluate(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def test_on_batch(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def predict_on_batch(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def fit_generator(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def evaluate_generator(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def predict_generator(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def call(self, *args, **kwargs) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
-
-    @profile
+    # @profile
     def get_config(self) -> None:
         raise Exception(
             "This method should neither be called nor implemented in our code."
@@ -778,18 +753,15 @@ class TransformerRasaModel(RasaModel):
         # set up tf layers
         self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
 
-
-    @profile
+    # @profile
     def _check_data(self) -> None:
         raise NotImplementedError
 
-
-    @profile
+    # @profile
     def _prepare_layers(self) -> None:
         raise NotImplementedError
 
-
-    @profile
+    # @profile
     def _prepare_embed_layers(self, name: Text, prefix: Text = "embed") -> None:
         self._tf_layers[f"{prefix}.{name}"] = layers.Embed(
             self.config[EMBEDDING_DIMENSION],
@@ -797,8 +769,7 @@ class TransformerRasaModel(RasaModel):
             name,
         )
 
-
-    @profile
+    # @profile
     def _prepare_ffnn_layer(
         self,
         name: Text,
@@ -814,8 +785,7 @@ class TransformerRasaModel(RasaModel):
             layer_name_suffix=name,
         )
 
-
-    @profile
+    # @profile
     def _prepare_transformer_layer(
         self,
         name: Text,
@@ -846,8 +816,7 @@ class TransformerRasaModel(RasaModel):
             # create lambda so that it can be used later without the check
             self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: (x, None)
 
-
-    @profile
+    # @profile
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
@@ -864,8 +833,7 @@ class TransformerRasaModel(RasaModel):
             model_confidence=self.config[MODEL_CONFIDENCE],
         )
 
-
-    @profile
+    # @profile
     def _prepare_sparse_dense_dropout_layers(
         self, name: Text, drop_rate: float
     ) -> None:
@@ -876,8 +844,7 @@ class TransformerRasaModel(RasaModel):
             rate=drop_rate
         )
 
-
-    @profile
+    # @profile
     def _prepare_sparse_dense_layers(
         self, data_signature: List[FeatureSignature], name: Text, dense_dim: int
     ) -> None:
@@ -904,8 +871,7 @@ class TransformerRasaModel(RasaModel):
                     name=f"sparse_to_dense_ids.{name}",
                 )
 
-
-    @profile
+    # @profile
     def _prepare_input_layers(self, name: Text) -> None:
         self._prepare_ffnn_layer(
             name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
@@ -933,8 +899,7 @@ class TransformerRasaModel(RasaModel):
                 prefix="concat_layer",
             )
 
-
-    @profile
+    # @profile
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
 
@@ -955,8 +920,7 @@ class TransformerRasaModel(RasaModel):
             self.config[UNIDIRECTIONAL_ENCODER],
         )
 
-
-    @profile
+    # @profile
     def _prepare_entity_recognition_layers(self) -> None:
         for tag_spec in self._entity_tag_specs:
             name = tag_spec.tag_name
@@ -973,8 +937,7 @@ class TransformerRasaModel(RasaModel):
                 f"tags.{name}",
             )
 
-
-    @profile
+    # @profile
     def _combine_sparse_dense_features(
         self,
         features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
@@ -1013,8 +976,7 @@ class TransformerRasaModel(RasaModel):
 
         return tf.concat(dense_features, axis=-1) * mask
 
-
-    @profile
+    # @profile
     def _combine_sequence_sentence_features(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -1051,8 +1013,7 @@ class TransformerRasaModel(RasaModel):
             "No features are present. Please check your configuration file."
         )
 
-
-    @profile
+    # @profile
     def _concat_sequence_sentence_features(
         self,
         sequence_x: tf.Tensor,
@@ -1086,8 +1047,7 @@ class TransformerRasaModel(RasaModel):
         # (4) sum up sequence features and sentence features
         return sequence_x + sentence_x
 
-
-    @profile
+    # @profile
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
     ) -> Optional[tf.Tensor]:
@@ -1112,8 +1072,7 @@ class TransformerRasaModel(RasaModel):
 
         return None
 
-
-    @profile
+    # @profile
     def _create_sequence(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -1186,8 +1145,7 @@ class TransformerRasaModel(RasaModel):
         indices = tf.stack([batch_index, last_sequence_index], axis=1)
         return tf.gather_nd(x, indices)
 
-
-    @profile
+    # @profile
     def _get_mask_for(
         self,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
@@ -1223,8 +1181,7 @@ class TransformerRasaModel(RasaModel):
 
         return tf.shape(attribute_data[SENTENCE][0])[0]
 
-
-    @profile
+    # @profile
     def _calculate_entity_loss(
         self,
         inputs: tf.Tensor,
@@ -1252,8 +1209,7 @@ class TransformerRasaModel(RasaModel):
 
         return loss, f1, logits
 
-
-    @profile
+    # @profile
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
@@ -1267,8 +1223,7 @@ class TransformerRasaModel(RasaModel):
         """
         raise NotImplementedError
 
-
-    @profile
+    # @profile
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
