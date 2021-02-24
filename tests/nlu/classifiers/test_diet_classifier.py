@@ -373,12 +373,6 @@ async def test_softmax_normalization(
     "classifier_params, prediction_min, prediction_max, output_length",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"},
-            -1,
-            1,
-            LABEL_RANKING_LENGTH,
-        ),
-        (
             {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"},
             -1e9,
             1e9,

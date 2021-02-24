@@ -35,6 +35,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     COSINE,
     INNER,
+    AUTO,
 )
 from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -271,7 +272,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         assert trained_policy.config[SIMILARITY_TYPE] == COSINE
 
     def test_confidence_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[MODEL_CONFIDENCE] == COSINE
+        assert trained_policy.config[MODEL_CONFIDENCE] == AUTO
 
     def test_normalization(
         self,
@@ -347,56 +348,6 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         )
 
         mock.normalize.assert_not_called()
-
-
-class TestTEDPolicyCosineConfidence(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{MODEL_CONFIDENCE: COSINE}
-        )
-
-    def test_confidence_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[MODEL_CONFIDENCE] == COSINE
-
-    def test_normalization(
-        self,
-        trained_policy: Policy,
-        tracker: DialogueStateTracker,
-        default_domain: Domain,
-        monkeypatch: MonkeyPatch,
-    ):
-        # first check the output is what we expect
-        predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        ).probabilities
-        # there should be no normalization
-        confidence_in_range = [
-            -1 <= confidence <= 1 for confidence in predicted_probabilities
-        ]
-        assert all(confidence_in_range)
-
-        # also check our function is not called
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-
-        mock.normalize.assert_not_called()
-
-    def test_prediction_on_empty_tracker(
-        self, trained_policy: Policy, default_domain: Domain
-    ):
-        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
-        prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-        assert not prediction.is_end_to_end_prediction
-        assert len(prediction.probabilities) == default_domain.num_actions
-        assert max(prediction.probabilities) <= 1.0
-        assert min(prediction.probabilities) >= -1.0
 
 
 class TestTEDPolicyInnerConfidence(TestTEDPolicy):
