@@ -74,6 +74,7 @@ async def test_training_data_is_reproducible():
         assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
 
 
+@pytest.mark.timeout(300)
 @pytest.mark.trains_model
 async def test_agent_train(trained_moodbot_path: Text):
     moodbot_domain = Domain.load("examples/moodbot/domain.yml")
