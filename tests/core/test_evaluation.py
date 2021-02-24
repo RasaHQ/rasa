@@ -54,12 +54,9 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     assert os.path.isfile(confusion_matrix_path)
 
 
-@pytest.mark.parametrize(
-    "test_file", [END_TO_END_STORY_FILE, "data/test_evaluations/end_to_end_story.yml"]
-)
 @pytest.mark.trains_model
-async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Text):
-    generator = await _create_data_generator(test_file, default_agent, use_e2e=True)
+async def test_end_to_end_evaluation_script(default_agent: Agent):
+    generator = await _create_data_generator(END_TO_END_STORY_FILE, default_agent, use_e2e=True)
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, num_stories = await _collect_story_predictions(
