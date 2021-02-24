@@ -365,7 +365,7 @@ jobs:
       - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
           version: "${{ env.GCLOUD_VERSION }}"
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU_RASA_CI_CD }}
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
 
       # Get the GKE credentials so we can deploy to the cluster
