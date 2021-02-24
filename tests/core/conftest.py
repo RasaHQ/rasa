@@ -38,7 +38,7 @@ SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
-INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
+INCORRECT_NLU_DATA = "data/test/incorrect_nlu_format.yml"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 

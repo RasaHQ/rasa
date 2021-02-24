@@ -309,25 +309,25 @@ def as_pipeline(*components):
     [
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             10,
             True,
         ),  # default config
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
         ),  # no normalization
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             3,
             True,
         ),  # lower than default ranking_length
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
@@ -412,7 +412,7 @@ async def test_cross_entropy_without_normalization(
     (trained_model, _, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/test/many_intents.md",
+        data="data/test/many_intents.yml",
         component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -463,7 +463,7 @@ async def test_margin_loss_is_not_normalized(
     (trained_model, _, persisted_path) = await train(
         _config,
         path=str(tmpdir),
-        data="data/test/many_intents.md",
+        data="data/test/many_intents.yml",
         component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -627,7 +627,7 @@ async def test_train_persist_load_with_composite_entities(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data="data/test/demo-rasa-composite-entities.md",
+        data="data/test/demo-rasa-composite-entities.yml",
         component_builder=component_builder,
     )
 
