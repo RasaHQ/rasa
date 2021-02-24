@@ -91,9 +91,8 @@ class StoryStepBuilder:
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
-            prefix = GENERATED_CHECKPOINT_PREFIX + "OR_"
-            generated_checkpoint = rasa.shared.core.training_data.structures.generate_id(
-                prefix, GENERATED_HASH_LENGTH
+            generated_checkpoint = self._generate_checkpoint_name_for_or_statement(
+                messages
             )
             updated_steps = []
             for t in self.current_steps:
@@ -143,3 +142,23 @@ class StoryStepBuilder:
             )
         ]
         return current_turns
+
+    def _generate_checkpoint_name_for_or_statement(
+        self, messages: List[UserUttered]
+    ) -> str:
+        """Generates a checkpoint name for an or statement based on the
+         current story/rule name, the current place in the story,
+         and the involved intents/e2e messages"""
+        messages_texts_or_intents = sorted([m.text or m.intent_name for m in messages])
+
+        current_steps_event_counts = [str(len(s.events)) for s in self.current_steps]
+        # name: to identify the current story or rule
+        # current steps event counts: to identify the event position
+        #                             within the current story/rule
+        # messages texts or intents: identifying the members of the or statement
+        unique_id = (
+            f"{self.name}_<>_{','.join(current_steps_event_counts)}"
+            f"_<>_{'@@@'.join(messages_texts_or_intents)}"
+        )
+        hashed_id = rasa.shared.utils.io.get_text_hash(unique_id)[:8]
+        return f"{GENERATED_CHECKPOINT_PREFIX}OR_{hashed_id}"
