@@ -322,6 +322,13 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
+fix_yaml_loader()
+_parsers: Dict[Union[Text, FrozenSet[Text]], Any] = {}
+_default_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
+_default_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
+ENV_VAR_REGEX = re.compile(r"\$\{[\S]+\}")
+
+
 class YAMLParser(yaml.YAML):
     """A custom parser for YAML.
 
@@ -343,7 +350,6 @@ class YAMLParser(yaml.YAML):
             replace_env_vars: Indicates if environment variables need to be replaced.
         """
         super().__init__(typ=reader_type)
-        self._save_default_yaml_parameters()
 
         if replace_env_vars:
             replace_environment_variables()
@@ -355,16 +361,11 @@ class YAMLParser(yaml.YAML):
         self._save_modified_yaml_parameters()
         self.restore_default_yaml_parameters()
 
-    def _save_default_yaml_parameters(self) -> None:
-        self._default_yaml_implicit_resolvers = (
-            yaml.Resolver.yaml_implicit_resolvers.copy()
-        )
-        self._default_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
-
-    def restore_default_yaml_parameters(self) -> None:
+    @staticmethod
+    def restore_default_yaml_parameters() -> None:
         """Restores the `ruamel.yaml` parameters that were specified before."""
-        yaml.Resolver.yaml_implicit_resolvers = self._default_yaml_implicit_resolvers
-        yaml.SafeConstructor.yaml_constructors = self._default_yaml_constructors
+        yaml.Resolver.yaml_implicit_resolvers = _default_yaml_implicit_resolvers
+        yaml.SafeConstructor.yaml_constructors = _default_yaml_constructors
 
     def _save_modified_yaml_parameters(self) -> None:
         self._modified_yaml_implicit_resolvers = (
@@ -389,11 +390,6 @@ class YAMLParser(yaml.YAML):
         return super().load(stream)
 
 
-fix_yaml_loader()
-_parsers: Dict[Union[Text, FrozenSet[Text]], YAMLParser] = {}
-ENV_VAR_REGEX = re.compile(r"\$\{[\S]+\}")
-
-
 def _get_yaml_parser(
     reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False
 ) -> YAMLParser:
@@ -406,9 +402,7 @@ def _get_yaml_parser(
     if key in _parsers:
         return _parsers[key]
 
-    new_parser = YAMLParser(reader_type=reader_type)
-    _parsers[key] = new_parser
-    return new_parser
+    return _parsers.setdefault(key, YAMLParser(reader_type=reader_type))
 
 
 def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
@@ -436,7 +430,7 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
     yaml_parser.preserve_quotes = True
 
     content = yaml_parser.load(content) or {}
-    yaml_parser.restore_default_yaml_parameters()
+    YAMLParser.restore_default_yaml_parameters()
     return content
 
 
