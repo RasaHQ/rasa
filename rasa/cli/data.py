@@ -306,7 +306,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
         min_paraphrase_sim_score=args.min_paraphrase_sim_score,
         max_paraphrase_sim_score=args.max_paraphrase_sim_score,
         output_directory=args.out,
-        augmentation_factor=args.augmentation_factor
+        augmentation_factor=args.augmentation_factor,
     )
 
     telemetry.track_data_augment()
