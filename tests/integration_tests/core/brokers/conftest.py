@@ -1,0 +1,8 @@
+import os
+
+
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "")
+RABBITMQ_DEFAULT_QUEUE = "queue1"

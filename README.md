@@ -200,6 +200,30 @@ These test are then run separately in the CI using the make commands `make test-
 
 The command `make test-non-training` will fail if training occurs.
 
+
+### Running the Integration Tests
+
+In order to run the integration tests, make sure that you have the development requirements installed:
+
+```bash
+make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
+make prepare-tests-macos  # Only on macOS
+```
+
+Then, you'll need to start services with the following command which uses
+[Docker Compose](https://docs.docker.com/compose/install/):
+
+```bash
+make run-integration-containers
+```
+
+Finally, you can run the integration tests like this:
+
+```bash
+make test-integration
+```
+
+
 ### Resolving merge conflicts
 
 Poetry doesn't include any solution that can help to resolve merge conflicts in
