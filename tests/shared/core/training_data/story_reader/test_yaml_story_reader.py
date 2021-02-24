@@ -209,6 +209,7 @@ async def test_is_yaml_file(file: Text, is_yaml_file: bool):
     [
         ("data/test_yaml_stories/stories.yml", ["stories"], True),
         ("data/test_yaml_stories/stories.yml", ["stories", "something_else"], False),
+        ("data/test_domains/default_retrieval_intents.yml", ["intents", "responses"], True),
         ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
         ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
         ("data/test_stories/stories.md", ["something"], False),
