@@ -1164,7 +1164,7 @@ class TED(TransformerRasaModel):
             # transformer
             text_units = self._tf_layers[f"sequence_layer.{attribute}"].output_units
             text_output = tf.zeros((0, 0, text_units), dtype=tf.float32)
-            text_sequence_lengths = tf.zeros((0, 1), dtype=tf.int32)
+            text_sequence_lengths = tf.zeros((0,), dtype=tf.int32)
         else:
             # simulate None with empty tensor of zeros
             text_output = tf.zeros((0,))
@@ -1236,16 +1236,17 @@ class TED(TransformerRasaModel):
         text_sequence_lengths = tf.zeros((0,))
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
-            # sequence_feature_lengths contain `0` for "fake" features, while
-            # tf_batch_data[attribute] contain only "real" features
-            sequence_feature_lengths = tf_batch_data[attribute][SEQUENCE_LENGTH][0]
-            # extract only nonzero lengths and cast to int
-            sequence_feature_lengths = tf.cast(
-                tf.boolean_mask(sequence_feature_lengths, sequence_feature_lengths),
-                dtype=tf.int32,
+            # get lengths of real token sequences as a 3D tensor
+            sequence_feature_lengths = self._get_sequence_feature_lengths(
+                tf_batch_data, attribute
             )
-            # boolean mask returns flat tensor
-            sequence_feature_lengths = tf.expand_dims(sequence_feature_lengths, axis=-1)
+
+            # sequence_feature_lengths contain `0` for "fake" features, while
+            # tf_batch_data[attribute] contains only "real" features. Hence, we need to
+            # get rid of the lengths that are 0. This step produces a 1D tensor.
+            sequence_feature_lengths = tf.boolean_mask(
+                sequence_feature_lengths, sequence_feature_lengths
+            )
 
             attribute_features, _, _, _, _, _ = self._tf_layers[
                 f"sequence_layer.{attribute}"
@@ -1253,7 +1254,7 @@ class TED(TransformerRasaModel):
                 (
                     tf_batch_data[attribute][SEQUENCE],
                     tf_batch_data[attribute][SENTENCE],
-                    tf.squeeze(sequence_feature_lengths, axis=-1),
+                    sequence_feature_lengths,
                 ),
                 training=self._training,
             )
@@ -1281,8 +1282,7 @@ class TED(TransformerRasaModel):
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = tf.expand_dims(
                 self._last_token(
-                    attribute_features,
-                    tf.squeeze(combined_sentence_sequence_feature_lengths, axis=-1),
+                    attribute_features, combined_sentence_sequence_feature_lengths,
                 ),
                 axis=1,
             )
@@ -1499,8 +1499,8 @@ class TED(TransformerRasaModel):
         text_transformed = tf.concat(
             [text_output, dialogue_transformer_output], axis=-1
         )
+        text_mask = rasa_layers.compute_mask(text_sequence_lengths)
 
-        text_mask = tf.squeeze(rasa_layers.compute_mask(text_sequence_lengths), axis=1)
         # add zeros to match the shape of text_transformed, because
         # max sequence length might differ, since it is calculated dynamically
         # based on a subset of sequence lengths
