@@ -30,7 +30,7 @@ import rasa.utils.plotting
 logger = logging.getLogger(__name__)
 
 
-def collect_intents_for_data_augmentation(
+def _collect_intents_for_data_augmentation(
     nlu_training_data: TrainingData,
     intent_proportion: float,
     classification_report: Dict[Text, Dict[Text, Any]],
@@ -104,7 +104,7 @@ def collect_intents_for_data_augmentation(
     return pooled_intents
 
 
-def create_paraphrase_pool(
+def _create_paraphrase_pool(
     paraphrases: TrainingData,
     intents_to_augment: Set[Text],
     min_paraphrase_sim_score: float,
@@ -189,8 +189,10 @@ def _build_diverse_augmentation_pool(
     """Selects paraphrases for data augmentation on the basis of maximum vocabulary expansion between the existing training data for a given intent and the generated paraphrases.
 
     Args:
+        nlu_training_data: NLU training data (without augmentation).
         paraphrase_pool: Paraphrases for intents that should be augmented.
-        training_data_vocab_per_intent: Vocabulary per intent.
+        intents_to_augment: Intents that should be augmented.
+        augmentation_factor: Amount of data augmentation per intent.
 
     Returns:
         Paraphrases, sorted (DESC) by vocabulary expansion, for data augmentation.
@@ -230,15 +232,19 @@ def _build_diverse_augmentation_pool(
 
 
 def _build_random_augmentation_pool(
-    paraphrase_pool: Dict[Text, List],
     nlu_training_data: TrainingData,
+    paraphrase_pool: Dict[Text, List],
+    intents_to_augment: Set[Text],
     augmentation_factor: Dict[Text, int],
     random_seed: int,
 ) -> TrainingData:
-    """Randomly selects paraphrases for data augmentation from the generated pool.
+    """Randomly selects paraphrases for data augmentation from the generated paraphrase pool.
 
     Args:
+        nlu_training_data: NLU training data (without augmentation).
         paraphrase_pool: Paraphrases for intents that should be augmented.
+        intents_to_augment: Intents that should be augmented.
+        augmentation_factor: Amount of data augmentation per intent.
         random_seed: Random seed for sampling paraphrases.
 
     Returns:
@@ -247,7 +253,7 @@ def _build_random_augmentation_pool(
 
     random.seed(random_seed)
     new_training_data = []
-    for intent in paraphrase_pool.keys():
+    for intent in intents_to_augment:
         random.shuffle(paraphrase_pool[intent])
         new_training_data.extend(
             [
@@ -261,34 +267,6 @@ def _build_random_augmentation_pool(
     )
 
     return augmented_training_data
-
-
-def _build_augmented_training_data(
-    nlu_training_data: TrainingData,
-    training_data_pool: Dict[Text, List],
-    data_augmentation_pool: Dict[Text, List],
-) -> TrainingData:
-    """Creates a TrainingData object from the existing training data and the data augmentation pool.
-
-    Args:
-        nlu_training_data: Existing NLU training data.
-        data_augmentation_pool: Paraphrases chosen for data augmentation.
-
-    Return:
-        Augmented TrainingData.
-
-    """
-    augmented_training_set = []
-    for intent in nlu_training_data.intents:
-        augmented_training_set.extend(training_data_pool[intent])
-        if intent in data_augmentation_pool.keys():
-            print(data_augmentation_pool[intent][0][0].as_dict())
-            exit(1)
-            augmented_training_set.extend(
-                [item[0] for item in data_augmentation_pool[intent]]
-            )
-
-    return TrainingData(training_examples=augmented_training_set)
 
 
 def _train_test_nlu_model(
@@ -513,7 +491,9 @@ def run_data_augmentation(
     Also, generate reports and plots summarising the impact of data augmentation on model performance.
 
     Args:
-        nlu_training_data: NLU training data (with data augmentation).
+        nlu_training_data: The augmented NLU training data.
+        intents_to_augment: The intents that were chosen for data augmentation.
+        nlu_training_file: The file for storing the augmented NLU training data.
         output_directory: Directory to store the output files in.
         config: NLU model config.
         nlu_evaluation_data: NLU evaluation data.
@@ -576,7 +556,7 @@ def augment_nlu_data(
         augmentation_factor: Factor - as a multiple of the number of training data per intent - to determine the amount of paraphrases used for data augmentation.
     """
     # Determine intents for which to perform data augmentation
-    intents_to_augment = collect_intents_for_data_augmentation(
+    intents_to_augment = _collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
         intent_proportion=intent_proportion,
         classification_report=classification_report,
@@ -587,7 +567,7 @@ def augment_nlu_data(
     )
 
     # Retrieve paraphrase pool and training data pool
-    paraphrase_pool = create_paraphrase_pool(
+    paraphrase_pool = _create_paraphrase_pool(
         paraphrases=paraphrases,
         intents_to_augment=intents_to_augment,
         min_paraphrase_sim_score=min_paraphrase_sim_score,
@@ -633,6 +613,7 @@ def augment_nlu_data(
     nlu_random_augmentation_data = _build_random_augmentation_pool(
         nlu_training_data=nlu_training_data,
         paraphrase_pool=paraphrase_pool,
+        intents_to_augment=intents_to_augment,
         augmentation_factor=augmentation_factor_per_intent,
         random_seed=random_seed,
     )
