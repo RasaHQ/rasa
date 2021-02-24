@@ -126,7 +126,7 @@ def _create_paraphrase_pool(
     for p in paraphrases.intent_examples:
 
         paraphrases_for_example = (
-            p.get(METADATA).get(METADATA_EXAMPLE, {}).get("paraphrases", {})
+            p.get(METADATA, {}).get(METADATA_EXAMPLE, {}).get("paraphrases", {})
         )
         if p.get(INTENT) not in intents_to_augment or not paraphrases_for_example:
             continue
