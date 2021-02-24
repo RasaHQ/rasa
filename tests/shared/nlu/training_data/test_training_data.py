@@ -96,17 +96,16 @@ def test_lookup_table_json():
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
 
 
-def test_lookup_table_md():
-    lookup_fname = "data/test/lookup_tables/plates.txt"
-    td_lookup = load_data("data/test/lookup_tables/lookup_table.md")
+def test_lookup_table_yaml():
+    td_lookup = load_data("data/test/lookup_tables/lookup_table.yml")
     assert not td_lookup.is_empty()
     assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
-    assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
+    assert len(td_lookup.lookup_tables[0]["elements"]) == 5
 
 
 def test_composite_entities_data():
-    td = load_data("data/test/demo-rasa-composite-entities.md")
+    td = load_data("data/test/demo-rasa-composite-entities.yml")
     assert not td.is_empty()
     assert len(td.entity_examples) == 11
     assert len(td.intent_examples) == 45
@@ -544,7 +543,7 @@ def cmp_dict_list(firsts, seconds):
         ),
         (
             "data/test/training_data_containing_special_chars.json",
-            "data/test/json_with_special_chars_convered_to_md.md",
+            "data/test/json_with_special_chars_converted_to_md.md",
             "md",
             None,
         ),

@@ -1,0 +1,3 @@
+version: "2.0"
+nlu:
+  - test: 123
