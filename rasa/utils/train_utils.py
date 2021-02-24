@@ -406,6 +406,7 @@ def create_data_generators(
             epochs=epochs,
             batch_strategy=batch_strategy,
             shuffle=True,
+            random_seed=random_seed,
         )
 
     data_generator = RasaBatchDataGenerator(
@@ -414,6 +415,7 @@ def create_data_generators(
         epochs=epochs,
         batch_strategy=batch_strategy,
         shuffle=True,
+        random_seed=random_seed,
     )
 
     return data_generator, validation_data_generator

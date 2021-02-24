@@ -19,7 +19,11 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
     """Abstract data generator."""
 
     def __init__(
-        self, batch_size: Union[int, List[int]], epochs: int = 1, shuffle: bool = True,
+        self,
+        batch_size: Union[int, List[int]],
+        epochs: int = 1,
+        shuffle: bool = True,
+        random_seed: Optional[int] = None,
     ):
         """Initializes the data generator.
 
@@ -33,6 +37,7 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
                 "The provided batch size is a list, this data generator will use a "
                 "linear increasing batch size."
             )
+        self._set_random_seed(random_seed)
 
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -45,6 +50,12 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
         self._current_batch_size = None
 
         self.on_epoch_end()
+
+    @staticmethod
+    def _set_random_seed(random_seed: Optional[int]):
+        random.seed(random_seed)
+        tf.random.set_seed(random_seed)
+        np.random.seed(random_seed)
 
     def __len__(self) -> int:
         """Number of batches in the Sequence.
@@ -363,6 +374,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         epochs: int = 1,
         batch_strategy: Text = SEQUENCE,
         shuffle: bool = True,
+        random_seed: Optional[int] = None,
     ):
         """Initializes the increasing batch size data generator.
 
@@ -378,7 +390,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         # create separate data variable that will store modified data for each batch
         self._data = None
 
-        super().__init__(batch_size, epochs, shuffle)
+        super().__init__(batch_size, epochs, shuffle, random_seed)
 
     def __len__(self) -> int:
         """Number of batches in the Sequence.
@@ -447,6 +459,7 @@ class RasaDataChunkFileGenerator(RasaDataGenerator):
         batch_size: Union[List[int], int],
         epochs: int = 1,
         shuffle: bool = True,
+        random_seed: Optional[int] = None,
     ):
         """Initializes the increasing batch size data generator.
 
@@ -467,7 +480,7 @@ class RasaDataChunkFileGenerator(RasaDataGenerator):
         # optimization to not load same data twice
         self._data = None
 
-        super().__init__(batch_size, epochs, shuffle)
+        super().__init__(batch_size, epochs, shuffle, random_seed)
 
     def _get_max_batch_number_per_chunk(self):
         def _len(number_of_examples: int, batch_size: int) -> int:

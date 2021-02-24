@@ -878,6 +878,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             batch_size=self.component_config[BATCH_SIZES],
             epochs=self.component_config[EPOCHS],
             shuffle=True,
+            random_seed=self.component_config[RANDOM_SEED],
         )
 
         self._train_model(sample_model_data, data_generator)
