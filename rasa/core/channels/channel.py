@@ -169,10 +169,10 @@ class InputChannel:
         self,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
         app: Sanic,
-        loop: AbstractEventLoop
+        loop: AbstractEventLoop,
     ):
         """Runs automatically once the Rasa Agent is ready to be called.
-        
+
         Implementing this function is not required. It would be useful, however,
         to run code just as soon as a message can be handled. An example would
         be to start receiving messages in some way other than regular HTTP.
