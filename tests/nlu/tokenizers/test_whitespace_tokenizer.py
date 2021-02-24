@@ -3,8 +3,13 @@ import pytest
 import rasa.shared.utils.io
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    ACTION_TEXT,
+    ACTION_NAME,
+    TOKENS_NAMES,
+)
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer

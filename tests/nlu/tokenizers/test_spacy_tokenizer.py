@@ -2,8 +2,7 @@ import pytest
 
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
 

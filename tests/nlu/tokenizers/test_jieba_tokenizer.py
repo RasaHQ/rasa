@@ -7,8 +7,7 @@ import pytest
 
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import TEXT, INTENT, TOKENS_NAMES
 
 
 @pytest.mark.parametrize(
