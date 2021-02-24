@@ -179,7 +179,7 @@ async def _train_persist_load_with_different_settings(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        data="data/examples/rasa/demo-rasa-multi-intent.yml",
         component_builder=component_builder,
     )
 
@@ -549,7 +549,7 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
     await train(
         _config,
         path=tmpdir.strpath,
-        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        data="data/examples/rasa/demo-rasa-multi-intent.yml",
         component_builder=component_builder,
     )
 
@@ -587,7 +587,7 @@ async def test_train_model_checkpointing(
     await train(
         _config,
         path=str(tmpdir),
-        data="data/examples/rasa/demo-rasa.md",
+        data="data/examples/rasa/demo-rasa.yml",
         component_builder=component_builder,
         fixed_model_name=model_name,
     )

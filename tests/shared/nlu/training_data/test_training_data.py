@@ -145,11 +145,11 @@ def test_template_key_to_intent_response_key():
     [
         [
             "data/examples/rasa/demo-rasa.json",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
         [
-            "data/examples/rasa/demo-rasa.md",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
     ],
 )
@@ -194,11 +194,11 @@ def test_demo_data(files: List[Text]):
     [
         [
             "data/examples/rasa/demo-rasa.json",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
         [
-            "data/examples/rasa/demo-rasa.md",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
     ],
 )
@@ -224,7 +224,7 @@ def test_demo_data_filter_out_retrieval_intents(files):
 
 @pytest.mark.parametrize(
     "filepaths",
-    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+    [["data/examples/rasa/demo-rasa.yml", "data/examples/rasa/demo-rasa-responses.yml"]],
 )
 def test_train_test_split(filepaths: List[Text]):
     from rasa.shared.importers.utils import training_data_from_paths
@@ -291,7 +291,7 @@ def test_train_test_split(filepaths: List[Text]):
 
 @pytest.mark.parametrize(
     "filepaths",
-    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+    [["data/examples/rasa/demo-rasa.yml", "data/examples/rasa/demo-rasa-responses.yml"]],
 )
 def test_train_test_split_with_random_seed(filepaths):
     from rasa.shared.importers.utils import training_data_from_paths
@@ -314,8 +314,8 @@ def test_train_test_split_with_random_seed(filepaths):
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
-        ("data/examples/rasa/demo-rasa.md", "data/test/multiple_files_markdown"),
-        ("data/examples/rasa/demo-rasa.md", "data/test/duplicate_intents_markdown"),
+        ("data/examples/rasa/demo-rasa.yml", "data/test/multiple_files_markdown"),
+        ("data/examples/rasa/demo-rasa.yml", "data/test/duplicate_intents_markdown"),
     ],
 )
 def test_data_merging(files):
@@ -531,7 +531,7 @@ def cmp_dict_list(firsts, seconds):
             "es",
         ),
         (
-            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa.yml",
             "data/test/md_converted_to_json.json",
             "json",
             None,
@@ -588,7 +588,7 @@ def test_training_data_conversion(
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
-        ("data/examples/rasa/demo-rasa.md", rasa.shared.data.markdown_file_extension()),
+        ("data/examples/rasa/demo-rasa.yml", rasa.shared.data.markdown_file_extension()),
         ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],
 )
@@ -670,8 +670,8 @@ def test_fingerprint_is_same_when_loading_data_again():
     from rasa.shared.importers.utils import training_data_from_paths
 
     files = [
-        "data/examples/rasa/demo-rasa.md",
-        "data/examples/rasa/demo-rasa-responses.md",
+        "data/examples/rasa/demo-rasa.yml",
+        "data/examples/rasa/demo-rasa-responses.yml",
     ]
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
