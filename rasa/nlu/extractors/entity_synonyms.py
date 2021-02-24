@@ -66,8 +66,8 @@ class EntitySynonymMapper(EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train this component."""
-        self._add_synonyms_from_data(training_data)
-        self._process_entity_examples(training_data.entity_synonyms)
+        self.prepare_partial_training(training_data, config, **kwargs)
+        self._process_entity_examples(training_data.entity_examples)
 
     def train_on_chunks(
         self,
