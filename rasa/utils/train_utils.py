@@ -47,11 +47,10 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
     Other values will be set to 0.
     """
     new_values = values.copy()  # prevent mutation of the input
-    # if 0 < ranking_length < len(new_values):
-    #     ranked = sorted(new_values, reverse=True)
-    #     new_values[new_values < ranked[ranking_length - 1]] = 0
+    if 0 < ranking_length < len(new_values):
+        ranked = sorted(new_values, reverse=True)
+        new_values[new_values < ranked[ranking_length - 1]] = 0
 
-    new_values = np.clip(new_values, 0, max(new_values))
     if np.sum(new_values) > 0:
         new_values = new_values / np.sum(new_values)
 
@@ -370,8 +369,9 @@ def override_defaults(
 
 
 def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Set model confidence to cosine if margin loss is used.
+    """Set model confidence to auto if margin loss is used.
 
+    Option `auto` is reserved for margin loss type. It will be removed once margin loss is deprecated.
     Args:
         component_config: model configuration
 
@@ -385,28 +385,32 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
         rasa.shared.utils.io.raise_warning(
             f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
             f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. This means that "
-            f"model's confidences will be computed as cosine similarities"
+            f"model's confidences will be computed as cosine similarities. "
+            f"Users are encouraged to shift to cross entropy loss by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
         )
         component_config[MODEL_CONFIDENCE] = AUTO
     return component_config
 
 
-def validate_configuration_settings(
-    component_config: Dict[Text, Any], component_name: Text
-) -> None:
+def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
     """Performs checks to validate that combination of parameters in the configuration are correctly set.
 
     Args:
         component_config: Configuration to validate.
-        component_name: Name of the component for which configuration has to be validated.
     """
     _check_loss_setting(component_config)
-    if not component_name == "TEDPolicy":
-        _check_confidence_setting(component_config)
+    _check_confidence_setting(component_config)
     _check_similarity_loss_setting(component_config)
 
 
 def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
+    if component_config[MODEL_CONFIDENCE] == COSINE:
+        raise InvalidConfigException(
+            f"{MODEL_CONFIDENCE}={COSINE} was introduced in Rasa Open Source 2.3.0 but post-release "
+            f"experiments revealed that using cosine similarity can change the order of predicted labels. "
+            f"Since this is not ideal, using `{MODEL_CONFIDENCE}={COSINE}` has been removed in versions post `2.3.3`. "
+            f"Please use either `{SOFTMAX}` or `{INNER}` as possible values."
+        )
     if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, INNER, AUTO]:
         raise InvalidConfigException(
             f"{MODEL_CONFIDENCE}={component_config[MODEL_CONFIDENCE]} is not a valid "
