@@ -146,9 +146,12 @@ class StoryStepBuilder:
     def _generate_checkpoint_name_for_or_statement(
         self, messages: List[UserUttered]
     ) -> str:
-        """Generates a checkpoint name for an or statement based on the
-         current story/rule name, the current place in the story,
-         and the involved intents/e2e messages"""
+        """Generates a unique checkpoint name for an or statement.
+
+         The name is based on the current story/rule name,
+         the current place in the story,
+         and the involved intents/e2e messages."""
+
         messages_texts_or_intents = sorted([m.text or m.intent_name for m in messages])
 
         current_steps_event_counts = [str(len(s.events)) for s in self.current_steps]
