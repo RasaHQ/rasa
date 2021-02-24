@@ -176,10 +176,10 @@ test: clean
 
 test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-ifeq (,$(wildcard deployment/.env))
+ifeq (,$(wildcard tests_deployment/.env))
 	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
 else
-	set -o allexport; source deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
 endif
 
 generate-pending-changelog:
@@ -247,14 +247,14 @@ build-docker-spacy-de:
 	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
 
-build-deployment-env: ## Create environment files (.env) for docker-compose.
-	cd deployment && \
+build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
+	cd tests_deployment && \
 	test -f .env || cat .env.example >> .env
 
-run-integration-containers: build-deployment-env ## Run the integration test containers.
-	cd deployment && \
+run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
+	cd tests_deployment && \
 	docker-compose -f docker-compose.integration.yml up &
 
 stop-integration-containers: ## Stop the integration test containers.
-	cd deployment && \
+	cd tests_deployment && \
 	docker-compose -f docker-compose.integration.yml down
