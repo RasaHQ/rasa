@@ -578,12 +578,12 @@ def augment_nlu_data(
     )
 
     # Run data augmentation with diverse augmentation
-    logger.info("Running diversity promoting augmentation strategy...")
-    output_directory_diverse = os.path.join(output_directory, "augmentation_diverse")
+    logger.info("Running augmentation strategy by maximising vocabulary expansion per intent...")
+    output_directory_diverse = os.path.join(output_directory, "augmentation_max_vocab_expansion")
     rasa.shared.utils.io.create_directory(output_directory_diverse)
 
     nlu_training_file_diverse = os.path.join(
-        output_directory_diverse, "nlu_train_augmented_diverse.yml"
+        output_directory_diverse, "nlu_train_augmented_max_vocab_expansion.yml"
     )
     nlu_max_vocab_augmentation_data = _build_diverse_augmentation_pool(
         nlu_training_data=nlu_training_data,
