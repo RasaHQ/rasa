@@ -1,8 +1,0 @@
-allowempty: True
-mapping:
-  language:
-    type: "str"
-    required: True
-  pipeline:
-    type: "any"
-    required: True

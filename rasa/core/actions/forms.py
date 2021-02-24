@@ -435,6 +435,8 @@ class FormAction(LoopAction):
         return DialogueStateTracker.from_events(
             current_tracker.sender_id,
             current_tracker.events_after_latest_restart()
+            # Insert SlotSet event to make sure REQUESTED_SLOT belongs to active form.
+            + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
             # Insert form execution event so that it's clearly distinguishable which
             # events were newly added.
             + [ActionExecuted(self.name())] + additional_events,
