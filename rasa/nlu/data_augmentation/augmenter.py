@@ -18,7 +18,13 @@ from rasa.nlu.test import (
     remove_pretrained_extractors,
     get_intent_errors,
 )
-from rasa.shared.nlu.constants import INTENT, METADATA, METADATA_EXAMPLE, METADATA_VOCABULARY, TEXT
+from rasa.shared.nlu.constants import (
+    INTENT,
+    METADATA,
+    METADATA_EXAMPLE,
+    METADATA_VOCABULARY,
+    TEXT,
+)
 import rasa.utils.plotting
 
 logger = logging.getLogger(__name__)
@@ -50,7 +56,7 @@ def collect_intents_for_data_augmentation(
     """
     num_intents = len(nlu_training_data.number_of_examples_per_intent)
     num_intents_to_augment = round(num_intents * intent_proportion)
-    
+
     # Determine low data, low performing and frequently confused intents
     low_data_intents = sorted(
         nlu_training_data.number_of_examples_per_intent.items(),
@@ -135,23 +141,27 @@ def create_paraphrase_pool(
             )
 
         for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
-            if paraphrase == "" or float(score) < min_paraphrase_sim_score or float(score) > max_paraphrase_sim_score:
+            if (
+                paraphrase == ""
+                or float(score) < min_paraphrase_sim_score
+                or float(score) > max_paraphrase_sim_score
+            ):
                 continue
 
             # Create Message-compatible data representation for the paraphrases
             data = {
                 TEXT: paraphrase,
                 INTENT: p.get(INTENT),
-                METADATA: {
-                    METADATA_VOCABULARY: set(paraphrase.lower().split())
-                }
+                METADATA: {METADATA_VOCABULARY: set(paraphrase.lower().split())},
             }
             paraphrase_pool[p.get(INTENT)].append(Message(data=data))
 
     return paraphrase_pool
 
 
-def _resolve_augmentation_factor(nlu_training_data: TrainingData, augmentation_factor: float) -> Dict[Text, int]:
+def _resolve_augmentation_factor(
+    nlu_training_data: TrainingData, augmentation_factor: float
+) -> Dict[Text, int]:
     """Calculates how many paraphrases should maximally be added to the training data.
 
     Args:
@@ -174,7 +184,7 @@ def _build_diverse_augmentation_pool(
     nlu_training_data: TrainingData,
     paraphrase_pool: Dict[Text, List],
     intents_to_augment: Set[Text],
-    augmentation_factor: Dict[Text, int]
+    augmentation_factor: Dict[Text, int],
 ) -> TrainingData:
     """Selects paraphrases for data augmentation on the basis of maximum vocabulary expansion between the existing training data for a given intent and the generated paraphrases.
 
@@ -203,20 +213,27 @@ def _build_diverse_augmentation_pool(
 
             max_vocab_expansion.append((num_new_words, m))
 
-        new_training_data.extend([item[1] for item in sorted(
-            max_vocab_expansion, key=operator.itemgetter(0), reverse=True
-        )[:augmentation_factor[intent]]])
+        new_training_data.extend(
+            [
+                Message(data={TEXT: item[1].get(TEXT), INTENT: item[1].get(INTENT)})
+                for item in sorted(
+                    max_vocab_expansion, key=operator.itemgetter(0), reverse=True
+                )[: augmentation_factor[intent]]
+            ]
+        )
 
-        print(len(new_training_data))
-    print(new_training_data)
-
-    augmented_training_data = TrainingData(training_examples=new_training_data + nlu_training_data.intent_examples)
+    augmented_training_data = TrainingData(
+        training_examples=new_training_data + nlu_training_data.intent_examples
+    )
 
     return augmented_training_data
 
 
 def _build_random_augmentation_pool(
-    paraphrase_pool: Dict[Text, List], nlu_training_data: TrainingData, augmentation_factor: Dict[Text, int], random_seed: int
+    paraphrase_pool: Dict[Text, List],
+    nlu_training_data: TrainingData,
+    augmentation_factor: Dict[Text, int],
+    random_seed: int,
 ) -> TrainingData:
     """Randomly selects paraphrases for data augmentation from the generated pool.
 
@@ -232,9 +249,16 @@ def _build_random_augmentation_pool(
     new_training_data = []
     for intent in paraphrase_pool.keys():
         random.shuffle(paraphrase_pool[intent])
-        new_training_data.extend(paraphrase_pool[intent][:augmentation_factor[intent]])
+        new_training_data.extend(
+            [
+                Message(data={TEXT: item.get(TEXT), INTENT: item.get(INTENT)})
+                for item in paraphrase_pool[intent][: augmentation_factor[intent]]
+            ]
+        )
 
-    augmented_training_data = TrainingData(training_examples=new_training_data + nlu_training_data.intent_examples)
+    augmented_training_data = TrainingData(
+        training_examples=new_training_data + nlu_training_data.intent_examples
+    )
 
     return augmented_training_data
 
@@ -558,53 +582,67 @@ def augment_nlu_data(
         classification_report=classification_report,
     )
 
-    logger.info(f"Picked {len(intents_to_augment)} intents for augmentation - {intents_to_augment}")
+    logger.info(
+        f"Picked {len(intents_to_augment)} intents for augmentation - {intents_to_augment}"
+    )
 
     # Retrieve paraphrase pool and training data pool
     paraphrase_pool = create_paraphrase_pool(
-        paraphrases, intents_to_augment, min_paraphrase_sim_score, max_paraphrase_sim_score
+        paraphrases=paraphrases,
+        intents_to_augment=intents_to_augment,
+        min_paraphrase_sim_score=min_paraphrase_sim_score,
+        max_paraphrase_sim_score=max_paraphrase_sim_score,
     )
-    augmentation_factor_per_intent = _resolve_augmentation_factor(nlu_training_data, augmentation_factor)
-
-
-    # TODO: Make sure all metadata are removed before serialising the data.
+    augmentation_factor_per_intent = _resolve_augmentation_factor(
+        nlu_training_data=nlu_training_data, augmentation_factor=augmentation_factor
+    )
 
     # Run data augmentation with diverse augmentation
     logger.info("Running diversity promoting augmentation strategy...")
     output_directory_diverse = os.path.join(output_directory, "augmentation_diverse")
     rasa.shared.utils.io.create_directory(output_directory_diverse)
 
-    nlu_training_file_diverse = os.path.join(output_directory_diverse, "nlu_train_augmented_diverse.yml")
-    nlu_max_vocab_augmentation_data = _build_diverse_augmentation_pool(nlu_training_data=nlu_training_data,
-                                                                       paraphrase_pool=paraphrase_pool,
-                                                                       intents_to_augment=intents_to_augment,
-                                                                       augmentation_factor=augmentation_factor_per_intent)
+    nlu_training_file_diverse = os.path.join(
+        output_directory_diverse, "nlu_train_augmented_diverse.yml"
+    )
+    nlu_max_vocab_augmentation_data = _build_diverse_augmentation_pool(
+        nlu_training_data=nlu_training_data,
+        paraphrase_pool=paraphrase_pool,
+        intents_to_augment=intents_to_augment,
+        augmentation_factor=augmentation_factor_per_intent,
+    )
 
-    run_data_augmentation(nlu_training_data=nlu_max_vocab_augmentation_data,
-                          nlu_evaluation_data=nlu_evaluation_data,
-                          nlu_training_file=nlu_training_file_diverse,
-                          output_directory=output_directory_diverse,
-                          classification_report=classification_report,
-                          intents_to_augment=intents_to_augment,
-                          config=config)
-
+    run_data_augmentation(
+        nlu_training_data=nlu_max_vocab_augmentation_data,
+        nlu_evaluation_data=nlu_evaluation_data,
+        nlu_training_file=nlu_training_file_diverse,
+        output_directory=output_directory_diverse,
+        classification_report=classification_report,
+        intents_to_augment=intents_to_augment,
+        config=config,
+    )
 
     # Run data augmentation with random sampling augmentation
     logger.info("Running augmentation by picking random paraphrases...")
     output_directory_random = os.path.join(output_directory, "augmentation_random")
     rasa.shared.utils.io.create_directory(output_directory_random)
 
-    nlu_training_file_random = os.path.join(output_directory_random, "nlu_train_augmented_random.yml")
-    nlu_random_augmentation_data = _build_random_augmentation_pool(nlu_training_data=nlu_training_data,
-                                                                   paraphrase_pool=paraphrase_pool,
-                                                                   augmentation_factor=augmentation_factor_per_intent,
-                                                                   random_seed=random_seed)
+    nlu_training_file_random = os.path.join(
+        output_directory_random, "nlu_train_augmented_random.yml"
+    )
+    nlu_random_augmentation_data = _build_random_augmentation_pool(
+        nlu_training_data=nlu_training_data,
+        paraphrase_pool=paraphrase_pool,
+        augmentation_factor=augmentation_factor_per_intent,
+        random_seed=random_seed,
+    )
 
-    run_data_augmentation(nlu_training_data=nlu_random_augmentation_data,
-                          nlu_evaluation_data=nlu_evaluation_data,
-                          nlu_training_file=nlu_training_file_random,
-                          output_directory=output_directory_random,
-                          classification_report=classification_report,
-                          intents_to_augment=intents_to_augment,
-                          config=config)
-
+    run_data_augmentation(
+        nlu_training_data=nlu_random_augmentation_data,
+        nlu_evaluation_data=nlu_evaluation_data,
+        nlu_training_file=nlu_training_file_random,
+        output_directory=output_directory_random,
+        classification_report=classification_report,
+        intents_to_augment=intents_to_augment,
+        config=config,
+    )
