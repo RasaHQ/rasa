@@ -215,6 +215,7 @@ def _build_diverse_augmentation_pool(
 
             max_vocab_expansion.append((num_new_words, m))
 
+        # Creates `Message` objects from the list of all paraphrases, sorted by their vocabulary expansion
         new_training_data.extend(
             [
                 Message(data={TEXT: item[1].get(TEXT), INTENT: item[1].get(INTENT)})
@@ -255,6 +256,8 @@ def _build_random_augmentation_pool(
     new_training_data = []
     for intent in intents_to_augment:
         random.shuffle(paraphrase_pool[intent])
+
+        # Creates `Message` objects from the randomly shuffled list of paraphrases
         new_training_data.extend(
             [
                 Message(data={TEXT: item.get(TEXT), INTENT: item.get(INTENT)})
