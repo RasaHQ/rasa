@@ -60,10 +60,10 @@ from tests.nlu.classifiers.test_diet_classifier import as_pipeline
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -115,10 +115,10 @@ def test_preprocess_selector_multiple_retrieval_intents():
 
     # use some available data
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_extra_intent = TrainingData(
         [
@@ -150,10 +150,10 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -181,10 +181,10 @@ def test_resolve_intent_response_key_from_label(
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -266,7 +266,7 @@ async def _train_persist_load_with_different_settings(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa.md",
+        data="data/examples/rasa/demo-rasa.yml",
         component_builder=component_builder,
     )
 
