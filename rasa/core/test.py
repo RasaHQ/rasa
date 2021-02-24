@@ -667,7 +667,7 @@ async def _collect_story_predictions(
     use_e2e: bool = False,
 ) -> Tuple[StoryEvaluation, int]:
     """Test the stories from a file, running them through the stored model."""
-    from rasa.test import get_evaluation_metrics
+    from sklearn.metrics import accuracy_score
     from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
@@ -705,15 +705,16 @@ async def _collect_story_predictions(
 
     in_training_data_fraction = _in_training_data_fraction(action_list)
 
-    num_convs = len(correct_dialogues)
-    num_correct = sum(correct_dialogues)
-    accuracy = num_correct / num_convs if num_convs else 0.0
+    if len(correct_dialogues):
+        accuracy = accuracy_score([1] * len(correct_dialogues), correct_dialogues)
+    else:
+        accuracy = 0
 
-    logger.info(
-        f"Evaluation Results on {'END-TO-END' if use_e2e else 'CONVERSATION'} level:"
+    _log_evaluation_table(
+        [1] * len(correct_dialogues),
+        "END-TO-END" if use_e2e else "CONVERSATION",
+        accuracy,
     )
-    logger.info(f"\tCorrect:          {num_correct} / {num_convs}")
-    logger.info(f"\tAccuracy:         {accuracy:.3f}")
 
     return (
         StoryEvaluation(
@@ -787,7 +788,7 @@ async def test(
         targets, predictions = evaluation_store.serialise()
 
         if out_directory:
-            report, precision, f1, accuracy = get_evaluation_metrics(
+            report, precision, f1, action_accuracy = get_evaluation_metrics(
                 targets, predictions, output_dict=True
             )
 
@@ -795,17 +796,18 @@ async def test(
             num_failed = len(story_evaluation.failed_stories)
             num_correct = len(story_evaluation.successful_stories)
             num_convs = num_failed + num_correct
-            conv_acc = num_correct / num_correct if num_correct else 0.0
-            report["conversation_accuracy"] = {
-                "accuracy": conv_acc,
-                "correct": num_correct,
-                "total": num_convs,
-            }
+            if num_convs:
+                conv_accuracy = num_correct / num_convs
+                report["conversation_accuracy"] = {
+                    "accuracy": conv_accuracy,
+                    "correct": num_correct,
+                    "total": num_convs,
+                }
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
         else:
-            report, precision, f1, accuracy = get_evaluation_metrics(
+            report, precision, f1, action_accuracy = get_evaluation_metrics(
                 targets, predictions, output_dict=True
             )
 
@@ -814,12 +816,10 @@ async def test(
     _log_evaluation_table(
         evaluation_store.action_targets,
         "ACTION",
-        report,
-        precision,
-        f1,
-        accuracy,
-        story_evaluation.in_training_data_fraction,
-        include_report=False,
+        action_accuracy,
+        precision=precision,
+        f1=f1,
+        in_training_data_fraction=story_evaluation.in_training_data_fraction,
     )
 
     if not disable_plotting and out_directory:
@@ -844,7 +844,7 @@ async def test(
         "report": report,
         "precision": precision,
         "f1": f1,
-        "accuracy": accuracy,
+        "accuracy": action_accuracy,
         "actions": story_evaluation.action_list,
         "in_training_data_fraction": story_evaluation.in_training_data_fraction,
         "is_end_to_end_evaluation": e2e,
@@ -854,22 +854,25 @@ async def test(
 def _log_evaluation_table(
     golds: List[Any],
     name: Text,
-    report: Dict[Text, Any],
-    precision: float,
-    f1: float,
     accuracy: float,
-    in_training_data_fraction: float,
+    report: Optional[Dict[Text, Any]] = None,
+    precision: Optional[float] = None,
+    f1: Optional[float] = None,
+    in_training_data_fraction: Optional[float] = None,
     include_report: bool = True,
 ) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
     logger.info(f"Evaluation Results on {name} level:")
     logger.info(f"\tCorrect:          {int(len(golds) * accuracy)} / {len(golds)}")
-    logger.info(f"\tF1-Score:         {f1:.3f}")
-    logger.info(f"\tPrecision:        {precision:.3f}")
+    if f1 is not None:
+        logger.info(f"\tF1-Score:         {f1:.3f}")
+    if precision is not None:
+        logger.info(f"\tPrecision:        {precision:.3f}")
     logger.info(f"\tAccuracy:         {accuracy:.3f}")
-    logger.info(f"\tIn-data fraction: {in_training_data_fraction:.3g}")
+    if in_training_data_fraction is not None:
+        logger.info(f"\tIn-data fraction: {in_training_data_fraction:.3g}")
 
-    if include_report:
+    if include_report and report is not None:
         logger.info(f"\tClassification report: \n{report}")
 
 
