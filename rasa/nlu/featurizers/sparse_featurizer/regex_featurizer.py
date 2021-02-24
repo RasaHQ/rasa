@@ -174,7 +174,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
         See parent class for more information.
         """
-        self.known_patterns = pattern_utils.extract_patterns(
+        new_patterns = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
@@ -182,9 +182,9 @@ class RegexFeaturizer(SparseFeaturizer):
         )
         if self.finetune_mode:
             # Merge patterns extracted from data with known patterns
-            self._merge_new_patterns(self.known_patterns)
+            self._merge_new_patterns(new_patterns)
         else:
-            self.known_patterns = self.known_patterns
+            self.known_patterns = new_patterns
 
     def train_chunk(
         self,
