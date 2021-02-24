@@ -148,9 +148,10 @@ class StoryStepBuilder:
     ) -> str:
         """Generates a unique checkpoint name for an or statement.
 
-         The name is based on the current story/rule name,
-         the current place in the story,
-         and the involved intents/e2e messages."""
+        The name is based on the current story/rule name,
+        the current place in the story,
+        and the involved intents/e2e messages.
+        """
 
         messages_texts_or_intents = sorted([m.text or m.intent_name for m in messages])
 
