@@ -204,8 +204,8 @@ If you want to fine-tune your model, start by modifying the following parameters
 
 * `model_confidence`:
   This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-  1. `softmax`: Confidences are in the range `[0, 1]` (old behaviour and current default)
-  2. `inner`: Confidences in an unbounded range.
+  1. `softmax`: Confidences are in the range `[0, 1]` (old behaviour and current default). Computed similarities are normalized with the `softmax` activation function.
+  2. `inner`: Confidences are in the range `[0, 1]`. Computed similarities are normalized with a linear function.
   It is recommended to try using `inner` as the value for `model_confidence` as it should be easier to tune thresholds for fallback then.
 
 The above configuration parameters are the ones you should configure to fit your model to your data.

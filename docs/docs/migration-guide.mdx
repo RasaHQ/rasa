@@ -10,6 +10,22 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.3.2 to Rasa 2.3.3
+
+:::caution
+This is a release **breaking backwards compatibility of ML models**.
+It is not possible to load previously trained models if the model was trained with `model_confidence=cosine` setting. Please make sure to retrain a
+model before trying to use it with this improved version.
+
+:::
+
+### Machine Learning Components
+
+Rasa Open Source `2.3.0` introduced the option of using cosine similarities for model confidences by setting `model_confidence=cosine`. Some post-release experiments revealed that doing so can change the order of predicted labels. Since this is wrong, the option `model_confidence=cosine` has been removed and no longer available. If the assistant was trained with that option, it should be re-trained with the option removed.
+
+Setting `model_confidence=inner` will now produce confidence values in the range `[0,1]`.
+
+
 ## Rasa 2.2 to Rasa 2.3
 
 ### Machine Learning Components
@@ -22,8 +38,8 @@ them to an approximate range. You can turn on this option by setting `constrain_
 
 Also, a new option `model_confidence` has been added to `DIETClassifier` and `ResponseSelector`. It affects how the model's confidence for each label is computed during inference. It can take one of two values:
 1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
-2. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in an unbounded range.
-The default value is `softmax`, but we recommend trying `inner` as it should be easier to tune thresholds for NLU fallback.
+2. `inner` - Dot product similarity between input and label embeddings. Confidence for each label in the range `[0,1]`.
+The default value is `softmax`, but we recommend trying `inner` as it should be easier to tune thresholds for fallback.
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
 With both the above recommendations, users are encouraged to experiment by configuring their ML component, e.g. `DIETClassifier`, as:
