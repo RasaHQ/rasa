@@ -537,13 +537,13 @@ def cmp_dict_list(firsts, seconds):
         ),
         (
             "data/examples/rasa/demo-rasa.json",
-            "data/test/json_converted_to_md.md",
+            "data/test_md/json_converted_to_md.md",
             "md",
             None,
         ),
         (
             "data/test/training_data_containing_special_chars.json",
-            "data/test/json_with_special_chars_converted_to_md.md",
+            "data/test_md/json_with_special_chars_converted_to_md.md",
             "md",
             None,
         ),
