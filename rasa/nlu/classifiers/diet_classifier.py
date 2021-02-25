@@ -845,6 +845,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
+    def _no_data_debug_log(self):
+        logger.debug(
+            f"Cannot train '{self.__class__.__name__}'. No data was provided. "
+            f"Skipping training of the classifier."
+        )
+
     def train_on_chunks(
         self,
         data_chunk_files: List[DataChunkFile],
@@ -858,10 +864,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             config: The model configuration parameters.
         """
         if not data_chunk_files or not self.index_label_mapping:
-            logger.debug(
-                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the classifier."
-            )
+            self._no_data_debug_log()
             return
 
         # load one chunk so that we can instantiate the model
@@ -892,10 +895,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> None:
         """Train the embedding intent classifier on a data set."""
         if not training_data.nlu_examples:
-            logger.debug(
-                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the classifier."
-            )
+            self._no_data_debug_log()
             return
 
         self.prepare_partial_training(training_data, config, **kwargs)
@@ -923,10 +923,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _can_train_model(self, model_data: RasaModelData) -> bool:
         if model_data.is_empty():
-            logger.debug(
-                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the classifier."
-            )
+            self._no_data_debug_log()
             return False
 
         if self.component_config.get(INTENT_CLASSIFICATION):
