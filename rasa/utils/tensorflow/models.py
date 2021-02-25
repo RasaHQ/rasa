@@ -72,13 +72,28 @@ class RasaModel(TmpKerasModel):
     """
 
     def get_config(self):
+        """Returns the config of the layer.
+
+        A layer config is a Python dictionary (serializable)
+        containing the configuration of a layer.
+        The same layer can be reinstantiated later
+        (without its trained weights) from this configuration.
+
+        The config of a layer does not include connectivity
+        information, nor the layer class name. These are handled
+        by `Network` (one layer of abstraction above).
+
+        Returns:
+            Python dictionary.
+        """
+        # TODO: figure out whether it can/needs to be implemented
         pass
 
     def __init__(self, random_seed: Optional[int] = None, **kwargs,) -> None:
         """Initialize the RasaModel.
 
         Args:
-            random_seed: set the random seed to get reproducible results
+            random_seed: Set the random seed to get reproducible results.
         """
         # make sure that keras releases resources from previously trained model
         tf.keras.backend.clear_session()

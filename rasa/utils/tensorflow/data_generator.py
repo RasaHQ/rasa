@@ -31,6 +31,7 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
             batch_size: The batch size(s).
             epochs: The total number of epochs.
             shuffle: If 'True', data should be shuffled.
+            random_seed: Set the random seed to get reproducible results.
         """
         if isinstance(batch_size, list):
             logger.debug(
@@ -384,6 +385,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
             epochs: The total number of epochs.
             batch_strategy: The batch strategy.
             shuffle: If 'True', data will be shuffled.
+            random_seed: Set the random seed to get reproducible results.
         """
         self.batch_strategy = batch_strategy
         self.model_data = model_data
@@ -470,6 +472,7 @@ class RasaDataChunkFileGenerator(RasaDataGenerator):
             batch_size: The batch size.
             epochs: The total number of epochs.
             shuffle: If 'Ture', data will be shuffled.
+            random_seed: Set the random seed to get reproducible results.
         """
         self.data_chunks = data_chunks
         self.load_data_func = load_data_func
