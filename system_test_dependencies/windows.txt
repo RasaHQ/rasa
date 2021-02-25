@@ -1,2 +1,2 @@
-graphviz --version 2.38.0.20190211
-wget --version 1.20.3.20190531
+graphviz@2.46.1
+wget@1.20.3.20190531
