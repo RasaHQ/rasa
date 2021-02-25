@@ -1,8 +1,7 @@
 import numpy as np
 import logging
-import typing
 
-from typing import Any, Optional, Text, List, Type, Dict, Tuple
+from typing import Any, Optional, Text, List, Type, Dict, Tuple, TYPE_CHECKING
 
 import rasa.core.utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -33,7 +32,7 @@ from rasa.shared.nlu.constants import (
 from rasa.utils import train_utils
 from rasa.shared.core.domain import Domain
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 
@@ -101,6 +100,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         domain: Optional[Domain] = None,
     ) -> "DenseFeaturizer":
         """Creates this component (e.g. before a training is started)."""
+        from rasa.nlu.model import Metadata
+
         language = model_config.language
         if not cls.can_handle_language(language):
             # check failed
