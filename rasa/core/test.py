@@ -711,7 +711,7 @@ async def _collect_story_predictions(
         accuracy = 0
 
     _log_evaluation_table(
-        [1] * len(correct_dialogues),
+        [1] * len(completed_trackers),
         "END-TO-END" if use_e2e else "CONVERSATION",
         accuracy,
     )
