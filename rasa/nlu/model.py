@@ -430,6 +430,7 @@ class Interpreter:
         text: Text,
         time: Optional[datetime.datetime] = None,
         only_output_properties: bool = True,
+        time_zone: Text = None
     ) -> Dict[Text, Any]:
         """Parse the input text, classify it and return pipeline result.
 
@@ -447,7 +448,7 @@ class Interpreter:
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=time)
+        message = Message(data=data, time=time, time_zone=time_zone)
 
         for component in self.pipeline:
             component.process(message, **self.context)

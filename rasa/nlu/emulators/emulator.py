@@ -29,6 +29,7 @@ class Emulator:
                 _data["model"] = data["model"]
 
         _data["time"] = data["time"] if "time" in data else None
+        _data["time_zone"] = data["time_zone"] if "time_zone" in data else None
         return _data
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:

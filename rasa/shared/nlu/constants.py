@@ -1,4 +1,5 @@
 TEXT = "text"
+TIME_ZONE = "time_zone"
 INTENT = "intent"
 RESPONSE = "response"
 RESPONSE_SELECTOR = "response_selector"

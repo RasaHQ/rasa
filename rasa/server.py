@@ -1292,7 +1292,9 @@ def create_app(
             data = emulator.normalise_request_json(request.json)
             try:
                 parsed_data = await app.agent.parse_message_using_nlu_interpreter(
-                    data.get("text")
+                    data.get("text"),
+                    None,
+                    data.get("time_zone")
                 )
             except Exception as e:
                 logger.debug(traceback.format_exc())

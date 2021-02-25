@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Text, Dict
 
 import rasa.utils.endpoints as endpoints_utils
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.shared.nlu.constants import ENTITIES, TEXT
+from rasa.shared.nlu.constants import ENTITIES, TEXT, TIME_ZONE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -103,17 +103,17 @@ class DucklingEntityExtractor(EntityExtractor):
 
         return self.component_config.get("url")
 
-    def _payload(self, text: Text, reference_time: int) -> Dict[Text, Any]:
+    def _payload(self, text: Text, time_zone: Text, reference_time: int) -> Dict[Text, Any]:
         dimensions = self.component_config["dimensions"]
         return {
             "text": text,
             "locale": self._locale(),
-            "tz": self.component_config.get("timezone"),
+            "tz": time_zone if time_zone else self.component_config.get("timezone"),
             "dims": json.dumps(dimensions),
             "reftime": reference_time,
         }
 
-    def _duckling_parse(self, text: Text, reference_time: int) -> List[Dict[Text, Any]]:
+    def _duckling_parse(self, text: Text, time_zone: Text, reference_time: int) -> List[Dict[Text, Any]]:
         """Sends the request to the duckling server and parses the result.
 
         Args:
@@ -125,7 +125,7 @@ class DucklingEntityExtractor(EntityExtractor):
         """
         parse_url = endpoints_utils.concat_url(self._url(), "/parse")
         try:
-            payload = self._payload(text, reference_time)
+            payload = self._payload(text, time_zone, reference_time)
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
@@ -177,7 +177,7 @@ class DucklingEntityExtractor(EntityExtractor):
 
         if self._url() is not None:
             reference_time = self._reference_time_from_message(message)
-            matches = self._duckling_parse(message.get(TEXT), reference_time)
+            matches = self._duckling_parse(message.get(TEXT), message.get(TIME_ZONE), reference_time)
             all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
             extracted = DucklingEntityExtractor.filter_irrelevant_entities(

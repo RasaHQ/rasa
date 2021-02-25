@@ -477,7 +477,10 @@ class Agent:
         return self.tracker_store is not None and self.interpreter is not None
 
     async def parse_message_using_nlu_interpreter(
-        self, message_data: Text, tracker: DialogueStateTracker = None
+        self,
+        message_data: Text,
+        tracker: DialogueStateTracker = None,
+        time_zone: Text = None
     ) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
@@ -505,7 +508,7 @@ class Agent:
         """
 
         processor = self.create_processor()
-        message = UserMessage(message_data)
+        message = UserMessage(message_data, metadata={"time_zone": time_zone})
         return await processor.parse_message(message, tracker)
 
     async def handle_message(
