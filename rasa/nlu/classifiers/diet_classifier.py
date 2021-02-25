@@ -798,7 +798,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         See parent class for more information.
         """
-
         self._label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
         )
