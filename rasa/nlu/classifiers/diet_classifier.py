@@ -869,6 +869,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # load one chunk so that we can instantiate the model
         sample_data_chunk = TrainingDataChunk.load_chunk(data_chunk_files[0].file_path)
+        # we do stratified split of nlu examples, if the first one doesn't contain
+        # nlu examples, then no chunk contains them
+        if not sample_data_chunk.nlu_examples:
+            self._no_data_debug_log()
+            return
 
         self._label_data = self._create_label_data(
             self._get_index_label_examples(sample_data_chunk, data_chunk_files)
