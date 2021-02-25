@@ -18,7 +18,7 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     AUTO,
     INNER,
-    LINEAR_NORM_INNER,
+    LINEAR_NORM,
     COSINE,
     CROSS_ENTROPY,
     TRANSFORMER_SIZE,
@@ -407,24 +407,24 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
             f"{MODEL_CONFIDENCE}={COSINE} was introduced in Rasa Open Source 2.3.0 but post-release "
             f"experiments revealed that using cosine similarity can change the order of predicted labels. "
             f"Since this is not ideal, using `{MODEL_CONFIDENCE}={COSINE}` has been removed in versions post `2.3.3`. "
-            f"Please use either `{SOFTMAX}` or `{LINEAR_NORM_INNER}` as possible values."
+            f"Please use either `{SOFTMAX}` or `{LINEAR_NORM}` as possible values."
         )
     if component_config[MODEL_CONFIDENCE] == INNER:
         raise InvalidConfigException(
-            f"{MODEL_CONFIDENCE}={INNER} is deprecated as it produces unbounded range of "
+            f"{MODEL_CONFIDENCE}={INNER} is deprecated as it produces an unbounded range of "
             f"confidences which can break the logic of assistants in various other places. "
-            f"Please use `{MODEL_CONFIDENCE}={LINEAR_NORM_INNER}` which will produce a "
+            f"Please use `{MODEL_CONFIDENCE}={LINEAR_NORM}` which will produce a "
             f"linearly normalized version of dot product similarities with each value in the range `[0,1]`."
         )
-    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM_INNER, AUTO]:
+    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM, AUTO]:
         raise InvalidConfigException(
             f"{MODEL_CONFIDENCE}={component_config[MODEL_CONFIDENCE]} is not a valid "
-            f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM_INNER}`."
+            f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM}`."
         )
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
             f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
-            f"to try using `{MODEL_CONFIDENCE}={LINEAR_NORM_INNER}` to make it easier to tune fallback thresholds.",
+            f"to try using `{MODEL_CONFIDENCE}={LINEAR_NORM}` to make it easier to tune fallback thresholds.",
             category=UserWarning,
         )
         if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:

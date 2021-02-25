@@ -65,7 +65,7 @@ SOFTMAX = "softmax"
 MARGIN = "margin"
 AUTO = "auto"
 INNER = "inner"
-LINEAR_NORM_INNER = "linear_norm_inner"
+LINEAR_NORM = "linear_norm"
 COSINE = "cosine"
 CROSS_ENTROPY = "cross_entropy"
 

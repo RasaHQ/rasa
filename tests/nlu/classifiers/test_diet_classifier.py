@@ -33,7 +33,7 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
-    LINEAR_NORM_INNER,
+    LINEAR_NORM,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -377,7 +377,7 @@ async def test_softmax_normalization(
             {
                 RANDOM_SEED: 42,
                 EPOCHS: 1,
-                MODEL_CONFIDENCE: LINEAR_NORM_INNER,
+                MODEL_CONFIDENCE: LINEAR_NORM,
                 RANKING_LENGTH: -1,
             },
             DEFAULT_NLU_DATA,

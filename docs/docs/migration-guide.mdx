@@ -14,16 +14,31 @@ how you can migrate from one version to another.
 
 :::caution
 This is a release **breaking backwards compatibility of machine learning models**.
-It is not possible to load previously trained models if they were trained with `model_confidence=cosine` setting. Please make sure to retrain a
-model before trying to use it with this improved version.
+It is not possible to load previously trained models if they were trained with `model_confidence=cosine` or
+`model_confidence=inner` setting. Please make sure to retrain the assistant before trying to use it with this improved version.
 
 :::
 
 ### Machine Learning Components
 
-Rasa Open Source `2.3.0` introduced the option of using cosine similarities for model confidences by setting `model_confidence=cosine`. Some post-release experiments revealed that doing so can change the order of predicted labels. Since this is wrong, the option `model_confidence=cosine` has been removed and is no longer available. If the assistant was trained with that option, it should be re-trained by either removing the `model_confidence` option from the configuration or setting it to `inner`.
+Rasa Open Source `2.3.0` introduced the option of using cosine similarities for model confidences by setting
+`model_confidence=cosine`. Some post-release experiments revealed that doing so can change the order of predicted
+labels. Since this is wrong, the option `model_confidence=cosine` has been removed and is no longer available.
 
-Setting `model_confidence=inner` will now produce confidence values in the range `[0,1]` and is helpful in tuning fallback thresholds.
+Also, `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break
+the logic of assistants in various other places. Users are now encouraged to try `model_confidence=linear_norm`
+which will produce a linearly normalized version of dot product similarities with
+each value in the range `[0,1]`. Setting `model_confidence` to `linear_norm` will be helpful when trying to tune
+fallback thresholds.
+
+If the assistant was trained with `model_confidence=cosine` or `model_confidence=inner` setting, it should be
+re-trained by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`, as:
+```
+- name: DIETClassifier
+  model_confidence: linear_norm
+  constrain_similarities: True
+  ...
+```
 
 
 ## Rasa 2.2 to Rasa 2.3
@@ -37,15 +52,15 @@ components `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
 them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
 
 Also, a new option `model_confidence` has been added to each ML component. It affects how the model's confidence for each label is computed during inference. It can take one of two values:
-1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
-2. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in the range `[0,1]`.
-The default value is `softmax`, but we recommend trying `inner` as it should be easier to tune thresholds for fallback with it.
+1. `softmax` - Dot product similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
+2. `linear_norm` - Dot product similarities between input and label embeddings are post-processed with a linear normalization function. Confidence for each label will be in the range `[0,1]`.
+The default value is `softmax`, but we recommend trying `linear_norm` as it should be easier to tune thresholds for fallback with it.
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
 With both the above recommendations, users are encouraged to experiment by configuring their ML component, e.g. `DIETClassifier`, as:
 ```
 - name: DIETClassifier
-  model_confidence: inner
+  model_confidence: linear_norm
   constrain_similarities: True
   ...
 ```

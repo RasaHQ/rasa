@@ -10,7 +10,7 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     COSINE,
     INNER,
-    LINEAR_NORM_INNER,
+    LINEAR_NORM,
     CROSS_ENTROPY,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
@@ -582,7 +582,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Model confidence to be returned during inference.
-                Possible values - 'softmax', 'cosine' and 'inner'.
+                Possible values - 'softmax' and 'linear_norm'.
 
         Raises:
             LayerConfigException: When `similarity_type` is not one of 'cosine' or 'inner'.
@@ -734,7 +734,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         confidences = similarities
         if self.model_confidence == SOFTMAX:
             confidences = tf.nn.softmax(similarities)
-        if self.model_confidence == LINEAR_NORM_INNER:
+        if self.model_confidence == LINEAR_NORM:
             # Clip negative values to 0 and linearly normalize to bring the predictions in the range [0,1].
             clipped_similarities = tf.nn.relu(similarities)
             confidences = clipped_similarities / tf.reduce_sum(
