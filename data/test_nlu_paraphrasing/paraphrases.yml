@@ -494,7 +494,7 @@ nlu:
         paraphrases:
         - Why do you have to go about that?
         - Who has remained behind on those scores?
-        - This: What is left of that countdown?"
+        - "This: What is left of that countdown?"
         scores:
         - 0.789
         - 0.389
