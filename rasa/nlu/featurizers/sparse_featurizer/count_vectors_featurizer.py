@@ -358,10 +358,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     @staticmethod
     def _get_starting_empty_index(vocabulary: Dict[Text, int]) -> int:
-        buffer_indices = []
-        for key, value in vocabulary.items():
-            if key.startswith(BUFFER_SLOTS_PREFIX):
-                buffer_indices.append(value)
+        buffer_indices = [
+            index
+            for key, index in vocabulary.items()
+            if key.startswith(BUFFER_SLOTS_PREFIX)
+        ]
 
         if not buffer_indices:
             return len(vocabulary)
