@@ -352,7 +352,9 @@ def _create_augmentation_summary(
         intent_summary["accuracy"] = {"accuracy_change": accuracy_change}
 
     for intent in (
-            intents_to_augment | changed_intents | {"micro avg", "macro avg", "weighted avg"}
+        intents_to_augment
+        | changed_intents
+        | {"micro avg", "macro avg", "weighted avg"}
     ):
         if intent not in classification_report:
             continue
