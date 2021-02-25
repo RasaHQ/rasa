@@ -358,10 +358,15 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     @staticmethod
     def _get_starting_empty_index(vocabulary: Dict[Text, int]) -> int:
-        for key in vocabulary.keys():
+        buffer_indices = []
+        for key, value in vocabulary.items():
             if key.startswith(BUFFER_SLOTS_PREFIX):
-                return int(key.split(BUFFER_SLOTS_PREFIX)[1])
-        return len(vocabulary)
+                buffer_indices.append(value)
+
+        if not buffer_indices:
+            return len(vocabulary)
+
+        return min(buffer_indices)
 
     def _update_vectorizer_vocabulary(
         self, attribute: Text, new_vocabulary: Set[Text]
