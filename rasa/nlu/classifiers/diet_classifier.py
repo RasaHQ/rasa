@@ -798,6 +798,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         See parent class for more information.
         """
+
         self._label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
         )
@@ -890,6 +891,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
+        if not training_data.nlu_examples:
+            logger.debug(
+                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the classifier."
+            )
+            return
+
         self.prepare_partial_training(training_data, config, **kwargs)
         self._label_data = self._create_label_data(
             self._get_index_label_examples(training_data)

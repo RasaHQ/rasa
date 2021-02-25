@@ -8,10 +8,7 @@ import rasa.utils.train_utils
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.shared.nlu.training_data.training_data import (
-    TrainingDataFull,
-    TrainingDataChunk,
-)
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import COMPONENT_INDEX
