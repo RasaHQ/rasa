@@ -423,66 +423,6 @@ async def test_inner_linear_normalization(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, prediction_min, prediction_max, output_length",
-    [
-        (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"},
-            -1e9,
-            1e9,
-            LABEL_RANKING_LENGTH,
-        ),
-    ],
-)
-async def test_cross_entropy_without_normalization(
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
-    classifier_params: Dict[Text, Any],
-    prediction_min: float,
-    prediction_max: float,
-    output_length: int,
-    monkeypatch: MonkeyPatch,
-):
-    pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
-    )
-    assert pipeline[2]["name"] == "DIETClassifier"
-    pipeline[2].update(classifier_params)
-
-    _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
-        _config,
-        path=str(tmp_path),
-        data="data/test/many_intents.md",
-        component_builder=component_builder,
-    )
-    loaded = Interpreter.load(persisted_path, component_builder)
-
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    parse_data = loaded.parse("hello")
-    intent_ranking = parse_data.get("intent_ranking")
-
-    # check that the output was correctly truncated
-    assert len(intent_ranking) == output_length
-
-    intent_confidences = [intent.get("confidence") for intent in intent_ranking]
-
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in intent_confidences
-    ]
-    assert all(confidence_in_range)
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
-
-    # check whether the normalization of rankings is reflected in intent prediction
-    assert parse_data.get("intent") == intent_ranking[0]
-
-
-@pytest.mark.parametrize(
     "classifier_params, output_length",
     [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1}, LABEL_RANKING_LENGTH)],
 )
