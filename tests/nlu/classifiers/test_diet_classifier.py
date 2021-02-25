@@ -33,6 +33,7 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
+    LINEAR_NORM_INNER,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -367,6 +368,58 @@ async def test_softmax_normalization(
 
     # check whether the normalization of rankings is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
+
+
+@pytest.mark.parametrize(
+    "classifier_params, data_path",
+    [
+        (
+            {
+                RANDOM_SEED: 42,
+                EPOCHS: 1,
+                MODEL_CONFIDENCE: LINEAR_NORM_INNER,
+                RANKING_LENGTH: -1,
+            },
+            DEFAULT_NLU_DATA,
+        ),
+    ],
+)
+async def test_inner_linear_normalization(
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    classifier_params: Dict[Text, Any],
+    data_path: Text,
+    monkeypatch: MonkeyPatch,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
+    )
+    assert pipeline[2]["name"] == "DIETClassifier"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    mock = Mock()
+    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+
+    parse_data = loaded.parse("hello")
+    intent_ranking = parse_data.get("intent_ranking")
+
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in intent_ranking]
+    ) == pytest.approx(1)
+    assert output_sums_to_1
+
+    # check whether the normalization of rankings is reflected in intent prediction
+    assert parse_data.get("intent") == intent_ranking[0]
+
+    # normalize shouldn't have been called
+    mock.normalize.assert_not_called()
 
 
 @pytest.mark.parametrize(

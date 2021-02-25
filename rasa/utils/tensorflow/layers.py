@@ -10,6 +10,7 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     COSINE,
     INNER,
+    LINEAR_NORM_INNER,
     CROSS_ENTROPY,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
@@ -733,7 +734,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         confidences = similarities
         if self.model_confidence == SOFTMAX:
             confidences = tf.nn.softmax(similarities)
-        if self.model_confidence == INNER:
+        if self.model_confidence == LINEAR_NORM_INNER:
             # Clip negative values to 0 and linearly normalize to bring the predictions in the range [0,1].
             clipped_similarities = tf.nn.relu(similarities)
             confidences = clipped_similarities / tf.reduce_sum(

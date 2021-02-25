@@ -254,7 +254,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values -
-        # 'softmax', 'inner'.
+        # 'softmax' and 'linear_norm_inner'.
         MODEL_CONFIDENCE: SOFTMAX,
     }
 

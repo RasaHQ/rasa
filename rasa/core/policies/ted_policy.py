@@ -106,8 +106,6 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     BILOU_FLAG,
-    COSINE,
-    INNER,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -288,7 +286,7 @@ class TEDPolicy(Policy):
         # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values -
-        # 'softmax', 'cosine' and 'inner'.
+        # 'softmax' and 'linear_norm_inner'.
         MODEL_CONFIDENCE: SOFTMAX,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
