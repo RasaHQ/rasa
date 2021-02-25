@@ -223,7 +223,12 @@ def test_demo_data_filter_out_retrieval_intents(files):
 
 @pytest.mark.parametrize(
     "filepaths",
-    [["data/examples/rasa/demo-rasa.yml", "data/examples/rasa/demo-rasa-responses.yml"]],
+    [
+        [
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
+        ]
+    ],
 )
 def test_train_test_split(filepaths: List[Text]):
     from rasa.shared.importers.utils import training_data_from_paths
@@ -290,7 +295,12 @@ def test_train_test_split(filepaths: List[Text]):
 
 @pytest.mark.parametrize(
     "filepaths",
-    [["data/examples/rasa/demo-rasa.yml", "data/examples/rasa/demo-rasa-responses.yml"]],
+    [
+        [
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
+        ]
+    ],
 )
 def test_train_test_split_with_random_seed(filepaths):
     from rasa.shared.importers.utils import training_data_from_paths
