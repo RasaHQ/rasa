@@ -42,6 +42,8 @@ INCORRECT_NLU_DATA = "data/test/incorrect_nlu_format.yml"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.yml"
 
+END_TO_END_STORY_MD_FILE = "data/test_evaluations/end_to_end_story.md"
+
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.yml"
 
 STORY_FILE_TRIPS_CIRCUIT_BREAKER = (

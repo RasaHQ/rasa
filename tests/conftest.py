@@ -42,7 +42,7 @@ from tests.core.conftest import (
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
     DOMAIN_WITH_CATEGORICAL_SLOT,
-    END_TO_END_STORY_FILE,
+    END_TO_END_STORY_MD_FILE,
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
 )
@@ -189,8 +189,8 @@ def incorrect_nlu_data() -> Text:
 
 
 @pytest.fixture(scope="session")
-def end_to_end_test_story_file() -> Text:
-    return END_TO_END_STORY_FILE
+def end_to_end_test_story_md_file() -> Text:
+    return END_TO_END_STORY_MD_FILE
 
 
 @pytest.fixture(scope="session")
