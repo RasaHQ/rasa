@@ -166,22 +166,22 @@ class YAMLStoryReader(StoryReader):
 
     @classmethod
     def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        """Check if all keys are contained in the root object of the yaml file.
+        """Check if any of the keys is contained in the root object of the yaml file.
 
         Arguments:
             file_path: path to the yaml file
             keys: keys to look for
 
         Returns:
-              `True` if all the keys are contained in the file, `False` otherwise.
+              `True` if at least one of the keys is found, `False` otherwise.
 
         Raises:
             FileNotFoundException: if the file cannot be found.
         """
         try:
             with open(file_path) as file:
-                return all(
-                    any(line.startswith(f"{key}:") for line in file) for key in keys
+                return any(
+                    any(line.startswith(f"{key}:") for key in keys) for line in file
                 )
         except FileNotFoundError:
             raise FileNotFoundException(
