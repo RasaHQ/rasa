@@ -15,6 +15,7 @@ from rasa.shared.core.slots import (
     CategoricalSlot,
     bool_from_any,
     AnySlot,
+    InvalidSlotConfigError,
 )
 
 
@@ -163,13 +164,13 @@ class TestFloatSlot(SlotTestCollection):
 
     @pytest.fixture(
         params=[
-            (None, [0]),
-            (True, [1]),
-            (2.0, [1]),
-            (1.0, [1]),
-            (0.5, [0.5]),
-            (0, [0]),
-            (-0.5, [0.0]),
+            (None, [0, 0]),
+            (True, [1, 1]),
+            (2.0, [1, 1]),
+            (1.0, [1, 1]),
+            (0.5, [1, 0.5]),
+            (0, [1, 0]),
+            (-0.5, [1, 0.0]),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -202,7 +203,7 @@ class TestUnfeaturizedSlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
     def test_deprecation_warning(self):
@@ -291,7 +292,7 @@ class TestAnySlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
 

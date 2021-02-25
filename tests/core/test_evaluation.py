@@ -107,6 +107,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
+@pytest.mark.timeout(300)
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
         "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
@@ -130,11 +131,11 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
         max_stories=None,
         e2e=False,
     )
-
+    story_file_unknown_entity = Path(E2E_STORY_FILE_UNKNOWN_ENTITY).absolute()
     failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     assert (
-        f"story: simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
+        f"story: simple_story_with_unknown_entity ({story_file_unknown_entity})"
         in failed_stories
     )
 
@@ -242,3 +243,50 @@ def test_event_has_proper_implementation(
     actual_entities = _clean_entity_results(text, [entity])
 
     assert actual_entities[0] == expected_entity
+
+
+@pytest.mark.timeout(600)
+@pytest.mark.parametrize(
+    "test_file",
+    [
+        ("data/test_yaml_stories/test_full_retrieval_intent_story.yml"),
+        ("data/test_yaml_stories/test_base_retrieval_intent_story.yml"),
+    ],
+)
+async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
+    generator = await _create_data_generator(
+        test_file, response_selector_agent, use_e2e=True,
+    )
+    test_stories = generator.generate_story_trackers()
+
+    story_evaluation, num_stories = await _collect_story_predictions(
+        test_stories, response_selector_agent, use_e2e=True
+    )
+    # check that test story can either specify base intent or full retrieval intent
+    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+
+
+@pytest.mark.parametrize(
+    "test_file",
+    [
+        ("data/test_yaml_stories/test_full_retrieval_intent_wrong_prediction.yml"),
+        ("data/test_yaml_stories/test_base_retrieval_intent_wrong_prediction.yml"),
+    ],
+)
+async def test_retrieval_intent_wrong_prediction(
+    tmpdir: Path, response_selector_agent: Agent, test_file: Text
+):
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=response_selector_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+
+    # check if the predicted entry contains full retrieval intent
+    assert "# predicted: chitchat/ask_name" in failed_stories

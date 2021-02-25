@@ -9,6 +9,7 @@ from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarStri
 import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+import rasa.shared.core.events
 from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
@@ -30,6 +31,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_OR,
     KEY_USER_MESSAGE,
     KEY_ACTIVE_LOOP,
+    KEY_BOT_END_TO_END_MESSAGE,
     KEY_RULES,
     KEY_RULE_FOR_CONVERSATION_START,
     KEY_WAIT_FOR_USER_INPUT_AFTER_RULE,
@@ -102,6 +104,7 @@ class YAMLStoryWriter(StoryWriter):
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
+            is_test_story: `True` if the story is an end-to-end conversation test story.
         """
         from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
@@ -185,13 +188,6 @@ class YAMLStoryWriter(StoryWriter):
         )
 
     @staticmethod
-    def _text_is_real_message(user_utterance: UserUttered) -> bool:
-        return (
-            not user_utterance.intent
-            or user_utterance.text != user_utterance.as_story_string()
-        )
-
-    @staticmethod
     def process_user_utterance(
         user_utterance: UserUttered, is_test_story: bool = False
     ) -> OrderedDict:
@@ -206,21 +202,29 @@ class YAMLStoryWriter(StoryWriter):
             Dict with a user utterance.
         """
         result = CommentedMap()
-        result[KEY_USER_INTENT] = user_utterance.intent["name"]
+        if user_utterance.intent_name and not user_utterance.use_text_for_featurization:
+            result[KEY_USER_INTENT] = user_utterance.intent_name
 
         if hasattr(user_utterance, "inline_comment"):
             result.yaml_add_eol_comment(
                 user_utterance.inline_comment(), KEY_USER_INTENT
             )
 
-        if (
-            is_test_story
-            and YAMLStoryWriter._text_is_real_message(user_utterance)
-            and user_utterance.text
+        if user_utterance.text and (
+            # We only print the utterance text if it was an end-to-end prediction
+            user_utterance.use_text_for_featurization
+            # or if we want to print a conversation test story.
+            or is_test_story
         ):
-            result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
+            result[KEY_USER_MESSAGE] = LiteralScalarString(
+                rasa.shared.core.events.format_message(
+                    user_utterance.text,
+                    user_utterance.intent_name,
+                    user_utterance.entities,
+                )
+            )
 
-        if len(user_utterance.entities):
+        if len(user_utterance.entities) and not is_test_story:
             entities = []
             for entity in user_utterance.entities:
                 if entity["value"]:
@@ -245,10 +249,18 @@ class YAMLStoryWriter(StoryWriter):
             return None
 
         result = CommentedMap()
-        result[KEY_ACTION] = action.action_name
+        if action.action_name:
+            result[KEY_ACTION] = action.action_name
+        elif action.action_text:
+            result[KEY_BOT_END_TO_END_MESSAGE] = action.action_text
 
         if hasattr(action, "inline_comment"):
-            result.yaml_add_eol_comment(action.inline_comment(), KEY_ACTION)
+            if KEY_ACTION in result:
+                result.yaml_add_eol_comment(action.inline_comment(), KEY_ACTION)
+            elif KEY_BOT_END_TO_END_MESSAGE in result:
+                result.yaml_add_eol_comment(
+                    action.inline_comment(), KEY_BOT_END_TO_END_MESSAGE
+                )
 
         return result
 

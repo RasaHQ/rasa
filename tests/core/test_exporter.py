@@ -273,7 +273,7 @@ def test_publish_with_headers_non_pika_event_broker():
     event_broker.publish.assert_called_with(event)
 
 
-def test_publishing_error():
+async def test_publishing_error():
     # mock event broker so it raises on `publish()`
     event_broker = Mock()
     event_broker.publish.side_effect = ValueError()
@@ -288,5 +288,32 @@ def test_publishing_error():
 
     # run the export function
     with pytest.raises(PublishingError):
-        # noinspection PyProtectedMember
-        exporter.publish_events()
+        await exporter.publish_events()
+
+
+async def test_closing_broker():
+    exporter = MockExporter(event_broker=SQLEventBroker())
+
+    # noinspection PyProtectedMember
+    exporter._fetch_events_within_time_range = Mock(return_value=[])
+
+    # run the export function
+    with pytest.warns(None) as warnings:
+        await exporter.publish_events()
+
+    assert len(warnings) == 0
+
+
+async def test_closing_broker_sync():
+    class TestBroker(SQLEventBroker):
+        def close(self) -> None:
+            pass
+
+    exporter = MockExporter(event_broker=TestBroker())
+
+    # noinspection PyProtectedMember
+    exporter._fetch_events_within_time_range = Mock(return_value=[])
+
+    # run the export function
+    with pytest.warns(FutureWarning):
+        await exporter.publish_events()

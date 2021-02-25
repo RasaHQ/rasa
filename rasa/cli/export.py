@@ -7,6 +7,7 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 import rasa.core.utils
 import rasa.shared.utils.cli
+import rasa.utils.common
 from rasa.cli.arguments import export as arguments
 from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORES
 from rasa.exceptions import PublishingError
@@ -70,7 +71,7 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
     return TrackerStore.create(endpoints.tracker_store)
 
 
-def _get_event_broker(endpoints: "AvailableEndpoints") -> "EventBroker":
+async def _get_event_broker(endpoints: "AvailableEndpoints") -> "EventBroker":
     """Get `EventBroker` from `endpoints`.
 
     Prints an error and exits if no event broker could be loaded.
@@ -84,7 +85,7 @@ def _get_event_broker(endpoints: "AvailableEndpoints") -> "EventBroker":
     """
     from rasa.core.brokers.broker import EventBroker
 
-    broker = EventBroker.create(endpoints.event_broker)
+    broker = await EventBroker.create(endpoints.event_broker)
 
     if not broker:
         rasa.shared.utils.cli.print_error_and_exit(
@@ -170,13 +171,17 @@ def export_trackers(args: argparse.Namespace) -> None:
 
     Args:
         args: Command-line arguments to process.
-
     """
+    rasa.utils.common.run_in_loop(_export_trackers(args))
+
+
+async def _export_trackers(args: argparse.Namespace) -> None:
+
     _assert_max_timestamp_is_greater_than_min_timestamp(args)
 
     endpoints = rasa.core.utils.read_endpoints_from_path(args.endpoints)
     tracker_store = _get_tracker_store(endpoints)
-    event_broker = _get_event_broker(endpoints)
+    event_broker = await _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
 
@@ -192,7 +197,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     )
 
     try:
-        published_events = exporter.publish_events()
+        published_events = await exporter.publish_events()
         telemetry.track_tracker_export(published_events, tracker_store, event_broker)
         rasa.shared.utils.cli.print_success(
             f"Done! Successfully published {published_events} events 🎉"

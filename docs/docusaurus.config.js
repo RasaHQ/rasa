@@ -35,6 +35,7 @@ module.exports = {
       label: 'Legacy 1.x',
       href: 'https://legacy-docs-v1.rasa.com',
       target: '_blank',
+      rel: 'nofollow noopener noreferrer',
     }],
     redocPages: [
       {
@@ -151,7 +152,7 @@ module.exports = {
     ['@docusaurus/plugin-content-docs/', {
       routeBasePath,
       sidebarPath: require.resolve('./sidebars.js'),
-      editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
+      editUrl: 'https://github.com/rasahq/rasa/edit/main/docs/',
       showLastUpdateTime: true,
       showLastUpdateAuthor: true,
       rehypePlugins: [

@@ -5,8 +5,10 @@ import pytest
 
 from rasa.nlu import registry, train
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
-from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -98,7 +100,7 @@ async def test_example_component(component_builder: ComponentBuilder, tmp_path: 
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        data="./data/examples/rasa/demo-rasa.json",
+        data=DEFAULT_DATA_PATH,
         path=str(tmp_path),
         component_builder=component_builder,
     )
@@ -196,7 +198,21 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
         {"pipeline": [{"parameter": 4}]}
     )
 
-    with pytest.raises(InvalidConfigError):
+    with pytest.raises(InvalidConfigException):
         await train(
-            _config, data="./data/examples/rasa/demo-rasa.json", path=str(tmp_path),
+            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
         )
+
+
+async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: Path,):
+    _config = RasaNLUModelConfig(
+        # config with a component that does not have a `confidence_threshold ` property
+        {"pipeline": [{"name": "WhitespaceTokenizer", "confidence_threshold": 0.7}]}
+    )
+
+    with pytest.warns(UserWarning) as record:
+        await train(
+            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
+        )
+
+    assert "You have provided an invalid key" in record[0].message.args[0]

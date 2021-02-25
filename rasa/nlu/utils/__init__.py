@@ -1,5 +1,4 @@
 import os
-import re
 from typing import Any, Optional, Text
 from pathlib import Path
 
@@ -47,12 +46,25 @@ def is_model_dir(model_dir: Text) -> bool:
 
 
 def is_url(resource_name: Text) -> bool:
-    """Return True if string is an http, ftp, or file URL path.
+    """Check whether the url specified is a well formed one.
 
-    This implementation is the same as the one used by matplotlib"""
+    Args:
+        resource_name: Remote URL to validate
 
-    URL_REGEX = re.compile(r"http://|https://|ftp://|file://|file:\\")
-    return URL_REGEX.match(resource_name) is not None
+    Returns:
+        `True` if valid, otherwise `False`.
+    """
+    from urllib import parse
+
+    try:
+        result = parse.urlparse(resource_name)
+    except Exception:
+        return False
+
+    if result.scheme == "file":
+        return bool(result.path)
+
+    return bool(result.scheme in ["http", "https", "ftp", "ftps"] and result.netloc)
 
 
 def remove_model(model_dir: Text) -> bool:
