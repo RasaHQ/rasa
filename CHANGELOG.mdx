@@ -119,7 +119,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
   The default [auto-configuration](model-configuration.mdx#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
 
-  **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. Hence, this option has been removed starting with Rasa Open Source version `2.3.3`. Also, `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break the logic of assistants in various other places. Please use `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. Please read more about this change under the notes for release `2.3.3`.
+  **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. Hence, this option has been removed starting with Rasa Open Source version `2.3.3`. Also, `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break the logic of assistants in various other places. Please use `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. Please read more about this change under the notes for release `2.3.4`.
 
 - [#7817](https://github.com/rasahq/rasa/issues/7817): Use simple random uniform distribution of integers in negative sampling, because
   negative sampling with `tf.while_loop` and random shuffle inside creates a memory leak.
