@@ -47,9 +47,7 @@ async def test_can_read_test_story(default_domain: Domain):
     assert tracker.events[4] == ActionExecuted("action_listen")
 
 
-async def test_can_read_test_story_with_checkpoint_after_or(
-    default_domain: Domain
-):
+async def test_can_read_test_story_with_checkpoint_after_or(default_domain: Domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/stories_checkpoint_after_or.yml",
         default_domain,
@@ -61,7 +59,9 @@ async def test_can_read_test_story_with_checkpoint_after_or(
 
 
 async def test_read_story_file_with_cycles(default_domain: Domain):
-    graph = await training.extract_story_graph("data/test_yaml_stories/stories_with_cycle.yml", default_domain)
+    graph = await training.extract_story_graph(
+        "data/test_yaml_stories/stories_with_cycle.yml", default_domain
+    )
 
     assert len(graph.story_steps) == 5
 
@@ -76,12 +76,12 @@ async def test_read_story_file_with_cycles(default_domain: Domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
-async def test_generate_training_data_with_cycles(
-    default_domain: Domain
-):
+async def test_generate_training_data_with_cycles(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = await training.load_data(
-        "data/test_yaml_stories/stories_with_cycle.yml", default_domain, augmentation_factor=0
+        "data/test_yaml_stories/stories_with_cycle.yml",
+        default_domain,
+        augmentation_factor=0,
     )
 
     _, label_ids, _ = featurizer.featurize_trackers(
@@ -100,10 +100,10 @@ async def test_generate_training_data_with_cycles(
     assert Counter(all_label_ids) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
 
 
-async def test_generate_training_data_with_unused_checkpoints(
-    default_domain: Domain
-):
-    training_trackers = await training.load_data("data/test_yaml_stories/stories_unused_checkpoints.yml", default_domain)
+async def test_generate_training_data_with_unused_checkpoints(default_domain: Domain):
+    training_trackers = await training.load_data(
+        "data/test_yaml_stories/stories_unused_checkpoints.yml", default_domain
+    )
     # there are 3 training stories:
     #   2 with unused end checkpoints -> training_trackers
     #   1 with unused start checkpoints -> ignored
@@ -111,10 +111,12 @@ async def test_generate_training_data_with_unused_checkpoints(
 
 
 async def test_generate_training_data_original_and_augmented_trackers(
-    default_domain: Domain
+    default_domain: Domain,
 ):
     training_trackers = await training.load_data(
-        "data/test_yaml_stories/stories_defaultdomain.yml", default_domain, augmentation_factor=3
+        "data/test_yaml_stories/stories_defaultdomain.yml",
+        default_domain,
+        augmentation_factor=3,
     )
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
@@ -128,10 +130,10 @@ async def test_generate_training_data_original_and_augmented_trackers(
     assert len(training_trackers) <= 34
 
 
-async def test_visualize_training_data_graph(
-    tmp_path: Path, default_domain: Domain
-):
-    graph = await training.extract_story_graph("data/test_yaml_stories/stories_with_cycle.yml", default_domain)
+async def test_visualize_training_data_graph(tmp_path: Path, default_domain: Domain):
+    graph = await training.extract_story_graph(
+        "data/test_yaml_stories/stories_with_cycle.yml", default_domain
+    )
 
     graph = graph.with_cycles_removed()
 
