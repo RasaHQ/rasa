@@ -184,11 +184,11 @@ endif
 
 test-non-training: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	RAISE_ON_TRAIN=True OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "not trains_model"
+	RAISE_ON_TRAIN=True OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "not trains_model" --ignore $(INTEGRATION_TEST_FOLDER)
 
 test-training: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "trains_model"
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "trains_model" --ignore $(INTEGRATION_TEST_FOLDER)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
