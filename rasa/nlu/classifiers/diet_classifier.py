@@ -863,7 +863,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_chunk_files: List of data chunk files.
             config: The model configuration parameters.
         """
-        if not data_chunk_files or not self.index_label_mapping:
+        if not data_chunk_files:
             self._no_data_debug_log()
             return
 
