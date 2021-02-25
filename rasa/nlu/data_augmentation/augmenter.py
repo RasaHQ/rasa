@@ -180,7 +180,7 @@ def _resolve_augmentation_factor(
     return aug_factor
 
 
-def _build_diverse_augmentation_pool(
+def _create_augmented_training_data_max_vocab_expansion(
     nlu_training_data: TrainingData,
     paraphrase_pool: Dict[Text, List],
     intents_to_augment: Set[Text],
@@ -195,7 +195,7 @@ def _build_diverse_augmentation_pool(
         augmentation_factor: Amount of data augmentation per intent.
 
     Returns:
-        Paraphrases, sorted (DESC) by vocabulary expansion, for data augmentation.
+        Augmented training data based on the maximum vocabulary expansion strategy
     """
 
     # Extract intent-level vocabulary for all intents that should be augmented
@@ -232,7 +232,7 @@ def _build_diverse_augmentation_pool(
     return augmented_training_data
 
 
-def _build_random_augmentation_pool(
+def _create_augmented_training_data_random_sampling(
     nlu_training_data: TrainingData,
     paraphrase_pool: Dict[Text, List],
     intents_to_augment: Set[Text],
@@ -318,7 +318,7 @@ def _train_test_nlu_model(
 
 
 def _create_augmentation_summary(
-    pooled_intents: Set[Text],
+    intents_to_augment: Set[Text],
     changed_intents: Set[Text],
     classification_report: Dict[Text, Dict[Text, float]],
     intent_report: Dict[Text, float],
@@ -329,7 +329,7 @@ def _create_augmentation_summary(
     with that information.
 
     Args:
-        pooled_intents: The intents that have been selected for data augmentation.
+        intents_to_augment: The intents that have been selected for data augmentation.
         changed_intents: The intents that have been affected by data augmentation.
         classification_report: Classification report of the model run *without* data augmentation.
         intent_report: Report of the model run *with* data augmentation.
@@ -352,7 +352,7 @@ def _create_augmentation_summary(
         intent_summary["accuracy"] = {"accuracy_change": accuracy_change}
 
     for intent in (
-        pooled_intents | changed_intents | {"micro avg", "macro avg", "weighted avg"}
+            intents_to_augment | changed_intents | {"micro avg", "macro avg", "weighted avg"}
     ):
         if intent not in classification_report:
             continue
@@ -592,7 +592,7 @@ def augment_nlu_data(
     nlu_training_file_diverse = os.path.join(
         output_directory_diverse, "nlu_train_augmented_max_vocab_expansion.yml"
     )
-    nlu_max_vocab_augmentation_data = _build_diverse_augmentation_pool(
+    nlu_max_vocab_augmentation_data = _create_augmented_training_data_max_vocab_expansion(
         nlu_training_data=nlu_training_data,
         paraphrase_pool=paraphrase_pool,
         intents_to_augment=intents_to_augment,
@@ -617,7 +617,7 @@ def augment_nlu_data(
     nlu_training_file_random = os.path.join(
         output_directory_random, "nlu_train_augmented_random.yml"
     )
-    nlu_random_augmentation_data = _build_random_augmentation_pool(
+    nlu_random_augmentation_data = _create_augmented_training_data_random_sampling(
         nlu_training_data=nlu_training_data,
         paraphrase_pool=paraphrase_pool,
         intents_to_augment=intents_to_augment,
