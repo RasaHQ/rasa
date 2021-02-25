@@ -552,7 +552,7 @@ async def test_train_with_retrieval_events_success(
         )
         responses_file = stack.enter_context(open("data/test_responses/default.yml"))
         nlu_file = stack.enter_context(
-            open("data/test_stories/stories_default_retrieval_intents.yml")
+            open("data/test/stories_default_retrieval_intents.yml")
         )
 
         payload = dict(

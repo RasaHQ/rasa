@@ -319,7 +319,7 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default_retrieval_intents.yml"
     data_paths = [
-        "data/test_stories/stories_default_retrieval_intents.yml",
+        "data/test/stories_default_retrieval_intents.yml",
         "data/test_responses/default.yml",
     ]
     importer = TrainingDataImporter.load_from_dict(
