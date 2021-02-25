@@ -323,86 +323,7 @@ def replace_environment_variables() -> None:
 
 
 fix_yaml_loader()
-_parsers: Dict[Union[Text, FrozenSet[Text]], Any] = {}
-_default_yaml_implicit_resolvers = yaml.Resolver.yaml_implicit_resolvers.copy()
-_default_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
-ENV_VAR_REGEX = re.compile(r"\$\{[\S]+\}")
-
-
-class YAMLParser(yaml.YAML):
-    """A custom parser for YAML.
-
-    It's used because `ruamel.yaml` stores all its information globally.
-    Which means it's impossible to create different parsers with different constructors
-    and resolvers without remembering the previous configuration and restoring it once
-    it's needed. That's exactly what this class does.
-    """
-
-    def __init__(
-        self,
-        reader_type: Union[Text, List[Text]] = "safe",
-        replace_env_vars: bool = False,
-    ) -> None:
-        """Creates an instance of YAMLParser.
-
-        Args:
-            reader_type: YAML reader type.
-            replace_env_vars: Indicates if environment variables need to be replaced.
-        """
-        super().__init__(typ=reader_type)
-
-        if replace_env_vars:
-            replace_environment_variables()
-        else:
-            # we need to do this because `yaml` adds contains a global `implicit_resolvers` list
-            # and the resolves from there cannot be de-registered
-            yaml.SafeConstructor.add_constructor("!env_var", lambda _, node: node.value)
-
-        self._save_modified_yaml_parameters()
-        self.restore_default_yaml_parameters()
-
-    @staticmethod
-    def restore_default_yaml_parameters() -> None:
-        """Restores the `ruamel.yaml` parameters that were specified before."""
-        yaml.Resolver.yaml_implicit_resolvers = _default_yaml_implicit_resolvers
-        yaml.SafeConstructor.yaml_constructors = _default_yaml_constructors
-
-    def _save_modified_yaml_parameters(self) -> None:
-        self._modified_yaml_implicit_resolvers = (
-            yaml.Resolver.yaml_implicit_resolvers.copy()
-        )
-        self._modified_yaml_constructors = yaml.SafeConstructor.yaml_constructors.copy()
-
-    def _restore_modified_yaml_parameters(self) -> None:
-        yaml.Resolver.yaml_implicit_resolvers = self._modified_yaml_implicit_resolvers
-        yaml.SafeConstructor.yaml_constructors = self._modified_yaml_constructors
-
-    def load(self, stream: Union[Path, Any]) -> Any:
-        """Loads the YAML content.
-
-        Args:
-            stream: Any content or stream to parse.
-
-        Returns:
-            Parsed YAML.
-        """
-        self._restore_modified_yaml_parameters()
-        return super().load(stream)
-
-
-def _get_yaml_parser(
-    reader_type: Union[Text, List[Text]] = "safe", replace_env_vars: bool = False
-) -> YAMLParser:
-    # we cannot reuse the existing parser in `_parsers` when `replace_env_vars` is `True`
-    # because the set of env variables might change
-    if replace_env_vars:
-        return YAMLParser(reader_type=reader_type, replace_env_vars=True)
-
-    key = frozenset(reader_type) if isinstance(reader_type, list) else reader_type
-    if key in _parsers:
-        return _parsers[key]
-
-    return _parsers.setdefault(key, YAMLParser(reader_type=reader_type))
+replace_environment_variables()
 
 
 def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
@@ -425,13 +346,11 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
             .decode("utf-16")
         )
 
-    yaml_parser = _get_yaml_parser(reader_type, bool(ENV_VAR_REGEX.search(content)))
+    yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
 
-    content = yaml_parser.load(content) or {}
-    YAMLParser.restore_default_yaml_parameters()
-    return content
+    return yaml_parser.load(content) or {}
 
 
 def _is_ascii(text: Text) -> bool:

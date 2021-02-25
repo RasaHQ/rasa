@@ -217,7 +217,7 @@ async def test_is_yaml_file(file: Text, is_yaml_file: bool):
         ),
         ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
         ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
-        ("data/test_stories/stories.md", ["something"], False)
+        ("data/test_stories/stories.md", ["something"], False),
     ],
 )
 async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
