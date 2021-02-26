@@ -439,7 +439,9 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
             DenseWithSparseWeights(
-                units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity
+                units=filter_units,
+                activation=tf.keras.activations.gelu,
+                sparsity=sparsity,
             ),  # (batch_size, length, filter_units)
             tf.keras.layers.Dropout(dropout_rate),
             DenseWithSparseWeights(
