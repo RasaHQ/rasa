@@ -64,6 +64,12 @@ ALL_DOMAIN_KEYS = [
     KEY_E2E_ACTIONS,
 ]
 
+DISALLOWED_DOMAIN_KEYS = [
+    "nlu",
+    "stories",
+    "rules",
+]
+
 PREV_PREFIX = "prev_"
 
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
@@ -1588,6 +1594,9 @@ class Domain:
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
         except (ValueError, YamlSyntaxException):
+            return False
+
+        if any(key in content for key in DISALLOWED_DOMAIN_KEYS):
             return False
 
         return any(key in content for key in ALL_DOMAIN_KEYS)

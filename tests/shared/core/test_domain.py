@@ -34,6 +34,7 @@ from rasa.shared.core.domain import (
     Domain,
     KEY_FORMS,
     KEY_E2E_ACTIONS,
+    DISALLOWED_DOMAIN_KEYS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -1299,6 +1300,23 @@ def test_is_valid_domain_doesnt_raise_with_valid_domain(tmpdir: Path):
         domain_path,
     )
     assert Domain.is_domain_file(domain_path)
+
+
+@pytest.mark.parametrize("disallowed_key", DISALLOWED_DOMAIN_KEYS)
+def test_is_valid_domain_false_with_nlu_file(disallowed_key, tmpdir: Path):
+    domain_path = str(tmpdir / "domain.yml")
+    rasa.shared.utils.io.write_text_file(
+        f"""
+        responses:
+          utter_greet:
+            - text: hey there!
+        {disallowed_key}:
+          - intent: greet
+            examples: |
+              - hello""",
+        domain_path,
+    )
+    assert not Domain.is_domain_file(domain_path)
 
 
 def test_is_valid_domain_doesnt_raise_with_invalid_domain(tmpdir: Path):
