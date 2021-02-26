@@ -171,7 +171,9 @@ We cannot use `dict.update` method because configs contain nested dicts.
 update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
-Set model confidence to cosine if margin loss is used.
+Set model confidence to auto if margin loss is used.
+
+Option `auto` is reserved for margin loss type. It will be removed once margin loss is deprecated.
 
 **Arguments**:
 

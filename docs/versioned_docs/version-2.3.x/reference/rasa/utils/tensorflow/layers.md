@@ -376,7 +376,7 @@ Declare instance variables with default values.
   ensure that similarity values are approximately bounded.
   Used inside _loss_cross_entropy() only.
 - `model_confidence` - Model confidence to be returned during inference.
-  Possible values - &#x27;softmax&#x27;, &#x27;cosine&#x27; and &#x27;inner&#x27;.
+  Possible values - &#x27;softmax&#x27; and &#x27;linear_norm&#x27;.
   
 
 **Raises**:
