@@ -25,7 +25,7 @@ Rasa Open Source `2.3.0` introduced the option of using cosine similarities for 
 `model_confidence=cosine`. Some post-release experiments revealed that doing so can change the order of predicted
 labels. Since this is wrong, the option `model_confidence=cosine` has been removed and is no longer available.
 
-Also, `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break
+`model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break
 the logic of assistants in various other places. Users are now encouraged to try `model_confidence=linear_norm`
 which will produce a linearly normalized version of dot product similarities with
 each value in the range `[0,1]`. Setting `model_confidence` to `linear_norm` will be helpful when trying to tune
