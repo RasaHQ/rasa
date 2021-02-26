@@ -21,9 +21,7 @@ It is not possible to load previously trained models if they were trained with `
 
 ### Machine Learning Components
 
-Rasa Open Source `2.3.0` introduced the option of using cosine similarities for model confidences by setting
-`model_confidence=cosine`. Some post-release experiments revealed that doing so can change the order of predicted
-labels. Since this is wrong, the option `model_confidence=cosine` has been removed and is no longer available.
+Rasa Open Source `2.3.0` introduced the option of using cosine similarities for model confidences by setting `model_confidence=cosine`. Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.4`.
 
 `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break
 the logic of assistants in various other places. Users are now encouraged to try `model_confidence=linear_norm`
