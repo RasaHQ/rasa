@@ -26,19 +26,16 @@ Rasa Open Source `2.3.0` introduced the option of using cosine similarities for 
 labels. Since this is wrong, the option `model_confidence=cosine` has been removed and is no longer available.
 
 Also, `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break
-the logic of assistants in various other places. Users are now encouraged to try `model_confidence=linear_norm`
-which will produce a linearly normalized version of dot product similarities with
-each value in the range `[0,1]`. Setting `model_confidence` to `linear_norm` will be helpful when trying to tune
-fallback thresholds.
+the logic of assistants in various other places.
 
-If the assistant was trained with `model_confidence=cosine` or `model_confidence=inner` setting, it should be
-re-trained by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`, as:
+We encourage you to try `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. This can be done with the following config:
 ```
 - name: DIETClassifier
-  model_confidence: linear_norm
-  constrain_similarities: True
-  ...
+   model_confidence: linear_norm
+   constrain_similarities: True
 ```
+
+If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Open Source, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
 
 
 ## Rasa 2.2 to Rasa 2.3
@@ -51,10 +48,11 @@ components `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
 2. The default loss function (`loss_type=cross_entropy`) can add an optional sigmoid cross-entropy loss of all similarity values to constrain
 them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
 
-Also, a new option `model_confidence` has been added to each ML component. It affects how the model's confidence for each label is computed during inference. It can take one of two values:
+Also, a new option `model_confidence` has been added to each ML component. It affects how the model's confidence for each label is computed during inference. It can take one of three values:
 1. `softmax` - Dot product similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
-2. `linear_norm` - Dot product similarities between input and label embeddings are post-processed with a linear normalization function. Confidence for each label will be in the range `[0,1]`.
-The default value is `softmax`, but we recommend trying `linear_norm` as it should be easier to tune thresholds for fallback with it.
+2. `cosine` - Cosine similarity between input and label embeddings. Confidence for each label will be in the range `[-1,1]`.
+3. `linear_norm` - Dot product similarities between input and label embeddings are post-processed with a linear normalization function. Confidence for each label will be in the range `[0,1]`.
+The default value is `softmax`, but we recommend trying `linear_norm`. This should make it easier to [tune thresholds for fallback](./fallback-handoff.mdx#fallbacks).
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
 With both the above recommendations, users are encouraged to experiment by configuring their ML component, e.g. `DIETClassifier`, as:
@@ -64,7 +62,7 @@ With both the above recommendations, users are encouraged to experiment by confi
   constrain_similarities: True
   ...
 ```
-Once the assistant is re-trained with the above configuration, users should also tune fallback confidence thresholds.
+Once the assistant is re-trained with the above configuration, users should also [tune fallback confidence thresholds](./fallback-handoff.mdx#fallbacks).
 
 
 ## Rasa 2.1 to Rasa 2.2
