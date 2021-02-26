@@ -4,6 +4,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 
+
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 
