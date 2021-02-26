@@ -702,6 +702,7 @@ def test_temporary_tracker():
     assert extra_slot in temp_tracker.slots.keys()
     assert list(temp_tracker.events) == [
         *previous_events,
+        SlotSet(REQUESTED_SLOT),
         ActionExecuted(form_action.name()),
         *new_events,
     ]

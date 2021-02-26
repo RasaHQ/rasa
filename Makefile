@@ -1,6 +1,8 @@
 .PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
 JOBS ?= 1
+INTEGRATION_TEST_FOLDER = tests/integration_tests/
+INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
 
 help:
 	@echo "make"
@@ -32,10 +34,13 @@ help:
 	@echo "        Download all additional resources needed to use spacy as part of Rasa."
 	@echo "    prepare-mitie"
 	@echo "        Download all additional resources needed to use mitie as part of Rasa."
-	@echo "    prepare-transformers:"
+	@echo "    prepare-transformers"
 	@echo "        Download all models needed for testing LanguageModelFeaturizer."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
+	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
+	@echo "    test-integration"
+	@echo "        Run integration tests using pytest."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
@@ -43,6 +48,10 @@ help:
 	@echo "        Prepare a release."
 	@echo "    build-docker"
 	@echo "        Build Rasa Open Source Docker image."
+	@echo "    run-integration-containers"
+	@echo "        Run the integration test containers."
+	@echo "    stop-integration-containers"
+	@echo "        Stop the integration test containers."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -141,7 +150,8 @@ endif
 prepare-transformers:
 	CACHE_DIR=$(HOME)/.cache/torch/transformers;\
 	mkdir -p "$$CACHE_DIR";\
-	while read URL; do read -r CACHE_FILE; wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; done < "data/test/hf_transformers_models.txt"
+    i=0;\
+	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
 
 prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 
@@ -162,7 +172,15 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+
+test-integration:
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+ifeq (,$(wildcard tests_deployment/.env))
+	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
+else
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
+endif
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
@@ -228,3 +246,15 @@ build-docker-spacy-de:
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
+
+build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
+	cd tests_deployment && \
+	test -f .env || cat .env.example >> .env
+
+run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
+	cd tests_deployment && \
+	docker-compose -f docker-compose.integration.yml up &
+
+stop-integration-containers: ## Stop the integration test containers.
+	cd tests_deployment && \
+	docker-compose -f docker-compose.integration.yml down
