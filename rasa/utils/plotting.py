@@ -278,7 +278,6 @@ def plot_intent_augmentation_summary(
 
     Args:
         augmentation_summary: Performance summary dictionary.
-        changed_intents: Intents that have not been augmented, but where performance changed.
         metric: Metric to plot, must be one of "precision", "recall", or "f1-score".
         output_file: Output file for plot.
     """
@@ -301,6 +300,7 @@ def plot_intent_augmentation_summary(
     num_intents = len(intents)
     ind = np.arange(num_intents)
 
+    # Try to autoscale the figure size to leave enough room for all intents
     fig_size = (10, 10)
     if 30 <= num_intents < 60:
         fig_size = (12, 20)
@@ -338,7 +338,12 @@ def plot_intent_augmentation_summary(
 
 
 def _autolabel(rects: Axes.bar) -> None:
-    """Attach a text label above each bar in *rects*, displaying its height."""
+    """Attach a text label above each bar in *rects*, displaying its height.
+
+    Args:
+        rects: The barplot object.
+
+    """
     import matplotlib.pyplot as plt
 
     for rect in rects:
