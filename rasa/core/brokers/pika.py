@@ -6,6 +6,7 @@ import ssl
 from asyncio import AbstractEventLoop
 from collections import deque
 from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
+from urllib.parse import urlparse
 
 import aio_pika
 
@@ -161,7 +162,9 @@ class PikaEventBroker(EventBroker):
         # The `url` parameter will take precedence over parameters like `login` or
         # `password`.
         if self.host.startswith("amqp"):
-            url = self.host
+
+            host_ob = urlparse(self.host)
+            url =  f'{host_ob.scheme}://{self.username}:{self.password}@{host_ob.netloc}:{self.port}'
 
         ssl_options = _create_rabbitmq_ssl_options(self.host)
         logger.info("Connecting to RabbitMQ ...")
