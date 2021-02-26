@@ -1481,7 +1481,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
   * `model_confidence`:
     This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behaviour and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
     * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
 
     Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
@@ -2705,7 +2705,7 @@ Selectors predict a bot response from a set of candidate responses.
 
   * `model_confidence`:
     This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behaviour and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
     * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
 
     Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
