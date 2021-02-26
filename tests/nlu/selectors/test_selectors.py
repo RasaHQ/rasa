@@ -327,12 +327,9 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
 
 @pytest.mark.parametrize(
     "classifier_params, prediction_min, prediction_max, output_length",
-    [
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"}, -1, 1, 9),
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9),
-    ],
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 0, 1, 9)],
 )
-async def test_cross_entropy_without_normalization(
+async def test_cross_entropy_with_linear_norm(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
@@ -367,12 +364,9 @@ async def test_cross_entropy_without_normalization(
 
     response_confidences = [response.get("confidence") for response in response_ranking]
 
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in response_confidences
-    ]
-    assert all(confidence_in_range)
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
+    assert output_sums_to_1
 
     # normalize shouldn't have been called
     mock.normalize.assert_not_called()
