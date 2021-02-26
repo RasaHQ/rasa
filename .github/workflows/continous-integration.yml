@@ -280,6 +280,13 @@ jobs:
         make install-full
         make prepare-tests-windows
 
+    - name: Upload choco logs 🍫
+      uses: actions/upload-artifact@v2
+      if: failure() && needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
+      with:
+        name: chocolatey.log
+        path: C:\ProgramData\chocolatey\logs\chocolatey.log
+
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
       env:
