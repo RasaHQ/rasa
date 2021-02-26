@@ -15,7 +15,7 @@ how you can migrate from one version to another.
 :::caution
 This is a release **breaking backwards compatibility of machine learning models**.
 It is not possible to load previously trained models if they were trained with `model_confidence=cosine` or
-`model_confidence=inner` setting. Please make sure to retrain the assistant before trying to use it with this improved version.
+`model_confidence=inner` setting. Please make sure to re-train the assistant before trying to use it with this improved version.
 
 :::
 
@@ -29,8 +29,8 @@ the logic of assistants in various other places.
 We encourage you to try `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. This can be done with the following config:
 ```
 - name: DIETClassifier
-   model_confidence: linear_norm
-   constrain_similarities: True
+  model_confidence: linear_norm
+  constrain_similarities: True
 ```
 
 If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Open Source, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
@@ -50,10 +50,11 @@ Also, a new option `model_confidence` has been added to each ML component. It af
 1. `softmax` - Dot product similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
 2. `cosine` - Cosine similarity between input and label embeddings. Confidence for each label will be in the range `[-1,1]`.
 3. `linear_norm` - Dot product similarities between input and label embeddings are post-processed with a linear normalization function. Confidence for each label will be in the range `[0,1]`.
-The default value is `softmax`, but we recommend trying `linear_norm`. This should make it easier to [tune thresholds for fallback](./fallback-handoff.mdx#fallbacks).
+
+The default value is `softmax`, but we recommend trying `linear_norm`. This should make it easier to [tune thresholds for triggering fallback](./fallback-handoff.mdx#fallbacks).
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
-With both the above recommendations, users are encouraged to experiment by configuring their ML component, e.g. `DIETClassifier`, as:
+We encourage you to try both the above recommendations. This can be done with the following config:
 ```
 - name: DIETClassifier
   model_confidence: linear_norm
@@ -62,7 +63,7 @@ With both the above recommendations, users are encouraged to experiment by confi
 ```
 Once the assistant is re-trained with the above configuration, users should also [tune fallback confidence thresholds](./fallback-handoff.mdx#fallbacks).
 
-**EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.3`.
+**EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.4`.
 
 ## Rasa 2.1 to Rasa 2.2
 
