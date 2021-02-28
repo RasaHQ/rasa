@@ -545,7 +545,6 @@ class TEDPolicy(Policy):
                 self._entity_tag_specs,
             )
         logger.debug(f"NOTE: {datetime.datetime.now()} self.model.fit")
-        exit()
         self.model.fit(
             model_data,
             self.config[EPOCHS],

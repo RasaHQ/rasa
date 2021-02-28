@@ -232,7 +232,6 @@ class RasaModel(tf.keras.models.Model):
             evaluation_dataset_function,
             tf_evaluation_on_batch_function,
         ) = self._get_tf_evaluation_functions(eager, evaluation_model_data)
-
         val_results = {}  # validation is not performed every epoch
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
@@ -451,6 +450,8 @@ class RasaModel(tf.keras.models.Model):
         step = offset
 
         self._training = training  # needed for eager mode
+        num_batches = len(list(dataset_function(batch_size).as_numpy_iterator()))
+        logger.debug(f"NOTE: {num_batches} BATCHES")
         for batch_in in dataset_function(batch_size):
             call_model_function(batch_in)
 
@@ -458,6 +459,9 @@ class RasaModel(tf.keras.models.Model):
                 self._log_metrics_for_tensorboard(step, writer)
 
             step += 1
+            logger.debug(f"NOTE: step {step} in _batch_loop")
+            if step >= num_batches / 2:
+                exit()
         return step
 
     @staticmethod
