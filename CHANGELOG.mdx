@@ -17,7 +17,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [2.3.4] - 2021-02-26
-
+                       
 
 ### Bugfixes
 - [#8014](https://github.com/rasahq/rasa/issues/8014): Setting `model_confidence=cosine` in `DIETClassifier`, `ResponseSelector` and `TEDPolicy` is deprecated and will no longer be available. This was introduced in Rasa Open Source version `2.3.0` but post-release experiments suggest that using cosine similarity as model's confidences can change the ranking of predicted labels which is wrong.
@@ -38,21 +38,21 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.3.3] - 2021-02-25
-
+                       
 
 ### Bugfixes
 - [#8001](https://github.com/rasahq/rasa/issues/8001): Fixed bug where the conversation does not lock before handling a reminder event.
 
 
 ## [2.3.2] - 2021-02-22
-
+                       
 
 ### Bugfixes
 - [#7972](https://github.com/rasahq/rasa/issues/7972): Fix a bug where, if a user injects an intent using the HTTP API, slot auto-filling is not performed on the entities provided.
 
 
 ## [2.3.1] - 2021-02-17
-
+                       
 
 ### Bugfixes
 - [#7970](https://github.com/rasahq/rasa/issues/7970): Fixed a YAML validation error which happened when executing multiple validations
@@ -61,7 +61,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.3.0] - 2021-02-11
-
+                       
 
 ### Improvements
 - [#5673](https://github.com/rasahq/rasa/issues/5673): Expose diagnostic data for action and NLU predictions.
@@ -88,8 +88,8 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   - `rasa.shared.utils.validation.validate_training_data` now raises a `SchemaValidationError` when validation fails
     (this error inherits `jsonschema.ValidationError`, ensuring backwards compatibility).
 - [#7303](https://github.com/rasahq/rasa/issues/7303): Allow `PolicyEnsemble` in cases where calling individual policy's `load` method returns `None`.
-- [#7420](https://github.com/rasahq/rasa/issues/7420): User message metadata can now be accessed via the default slot
-  `session_started_metadata` during the execution of a
+- [#7420](https://github.com/rasahq/rasa/issues/7420): User message metadata can now be accessed via the default slot 
+  `session_started_metadata` during the execution of a 
   [custom `action_session_start`](default-actions.mdx#customization).
 
   ```python
@@ -160,8 +160,8 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 - [#7749](https://github.com/rasahq/rasa/issues/7749): Fix the bug when `RulePolicy` handling loop predictions are overwritten by e2e `TEDPolicy`.
 - [#7751](https://github.com/rasahq/rasa/issues/7751): When switching forms, the next form is cleanly activated.
 
-  Before, the next form was correctly activated, but the previous form had wrongly uttered
-  the response that asked for the requested slot when slot validation for that slot
+  Before, the next form was correctly activated, but the previous form had wrongly uttered 
+  the response that asked for the requested slot when slot validation for that slot 
   had failed.
 - [#7829](https://github.com/rasahq/rasa/issues/7829): Fix a bug in incremental training when passing a specific model path with the `--finetune` argument.
 - [#7867](https://github.com/rasahq/rasa/issues/7867): Fix the role of `unidirectional_encoder` in TED. This parameter is only applied to
@@ -172,7 +172,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.2.10] - 2021-02-08
-
+                        
 
 ### Improvements
 - [#7069](https://github.com/rasahq/rasa/issues/7069): Updated error message when using incompatible model versions.
@@ -189,22 +189,22 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.2.9] - 2021-02-02
-
+                       
 
 ### Bugfixes
-- [#7861](https://github.com/rasahq/rasa/issues/7861): Correctly include the `confused_with` field in the test report for the
+- [#7861](https://github.com/rasahq/rasa/issues/7861): Correctly include the `confused_with` field in the test report for the 
   [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) endpoint.
 
 
 ## [2.2.8] - 2021-01-28
-
+                       
 
 ### Bugfixes
 - [#7764](https://github.com/rasahq/rasa/issues/7764): Fixes a bug in [forms](forms.mdx) where the next slot asked was not consistent after returning to a form from an unhappy path.
 
 
 ## [2.2.7] - 2021-01-25
-
+                       
 
 ### Improvements
 - [#7731](https://github.com/rasahq/rasa/issues/7731): Add support for in `RasaYAMLWriter` for writing intent and example metadata back
@@ -215,7 +215,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.2.6] - 2021-01-21
-
+                       
 
 ### Bugfixes
 - [#7717](https://github.com/rasahq/rasa/issues/7717): Fix wrong warning `The method 'EventBroker.close' was changed to be asynchronous` when
@@ -226,7 +226,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.2.5] - 2021-01-12
-
+                       
 
 ### Bugfixes
 - [#7603](https://github.com/rasahq/rasa/issues/7603): Fixed key-error bug on `rasa data validate stories`.
@@ -236,27 +236,27 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.2.4] - 2021-01-08
-
+                       
 
 ### Improvements
-- [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated
+- [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated 
   [MappingPolicy](policies.mdx#mapping-policy) are missing
   from the model's `policies` configuration. Changed the info log to a warning as one
   of this policies should be added to the model configuration.
 
 ### Bugfixes
-- [#7692](https://github.com/rasahq/rasa/issues/7692): Explicitly specify the `crypto` extra dependency of `pyjwt` to ensure that the
+- [#7692](https://github.com/rasahq/rasa/issues/7692): Explicitly specify the `crypto` extra dependency of `pyjwt` to ensure that the 
   `cryptography` dependency is installed. `cryptography` is strictly required to be able
   to be able to verify JWT tokens.
 
 
 ## [2.2.3] - 2021-01-06
-
+                       
 
 ### Bugfixes
 - [#7622](https://github.com/rasahq/rasa/issues/7622): Correctly retrieve intent ranking from `UserUttered` even during default affirmation
   action implementation.
-- [#7684](https://github.com/rasahq/rasa/issues/7684): Fixed a problem when using the `POST /model/test/intents` endpoint together with a
+- [#7684](https://github.com/rasahq/rasa/issues/7684): Fixed a problem when using the `POST /model/test/intents` endpoint together with a 
   [model server](model-storage.mdx#load-model-from-server). The error looked as follows:
 
   ```
@@ -268,7 +268,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [2.2.2] - 2020-12-21
-
+                       
 
 ### Bugfixes
 - [#7592](https://github.com/rasahq/rasa/issues/7592): Fixed incompatibility between Rasa Open Source 2.2.x and Rasa X < 0.35.
@@ -1341,6 +1341,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ## [1.10.23] - 2021-02-22
+
 ### Bugfixes
 - `#7895 <https://github.com/rasahq/rasa/issues/7895>`_: Fixed bug where the conversation does not lock before handling a reminder event.
 
