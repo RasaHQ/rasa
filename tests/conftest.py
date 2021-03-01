@@ -47,7 +47,7 @@ from tests.core.conftest import (
 )
 from rasa.shared.exceptions import RasaException
 
-DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
+DEFAULT_CONFIG_PATH = "rasa/shared/importers/default_config.yml"
 
 DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.yml"
 
@@ -287,11 +287,7 @@ async def trained_core_model(
 
 @pytest.fixture(scope="session")
 async def trained_nlu_model(
-    trained_async: Callable,
-    default_domain_path: Text,
-    default_config: List[Policy],
-    default_nlu_data: Text,
-    default_stories_file: Text,
+    trained_async: Callable, default_domain_path: Text, default_nlu_data: Text,
 ) -> Text:
     trained_nlu_model_path = await trained_async(
         domain=default_domain_path,
