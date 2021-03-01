@@ -830,6 +830,7 @@ class Agent:
             self.policy_ensemble,
             self.domain,
             self.tracker_store,
+            self.lock_store,
             self.nlg,
             action_endpoint=self.action_endpoint,
             message_preprocessor=preprocessor,

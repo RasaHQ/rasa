@@ -28,7 +28,7 @@ import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot
+from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 
@@ -749,6 +749,7 @@ class Domain:
         self._add_requested_slot()
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
+        self._add_session_metadata_slot()
 
     def _add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
@@ -832,6 +833,11 @@ class Domain:
             f"call superfluous."
         )
         self._add_knowledge_base_slots()
+
+    def _add_session_metadata_slot(self) -> None:
+        self.slots.append(
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+        )
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Looks up which action index corresponds to this action name."""

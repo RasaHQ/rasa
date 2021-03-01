@@ -1,11 +1,12 @@
 import asyncio
-
 import datetime
+import freezegun
 import pytest
 import time
 import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any, Tuple
 from unittest.mock import patch, Mock
@@ -19,7 +20,7 @@ from rasa.core.actions.action import (
 import rasa.core.policies.policy
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
-from tests.utilities import latest_request
+import tests.utilities
 
 from rasa.core import jobs
 from rasa.core.agent import Agent
@@ -28,7 +29,7 @@ from rasa.core.channels.channel import (
     UserMessage,
     OutputChannel,
 )
-from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -48,8 +49,9 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.core.policies import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import Slot, AnySlot
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
@@ -60,6 +62,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
+    SESSION_START_METADATA_SLOT,
 )
 
 import logging
@@ -133,11 +136,15 @@ async def test_http_parsing():
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
-            await MessageProcessor(inter, None, None, None, None).parse_message(message)
+            await MessageProcessor(inter, None, None, None, None, None).parse_message(
+                message
+            )
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 
-        r = latest_request(mocked, "POST", "https://interpreter.com/model/parse")
+        r = tests.utilities.latest_request(
+            mocked, "POST", "https://interpreter.com/model/parse"
+        )
 
         assert r
 
@@ -199,6 +206,29 @@ async def test_reminder_scheduled(
         f"{EXTERNAL_MESSAGE_PREFIX}remind",
         intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
+
+
+async def test_reminder_lock(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    caplog: LogCaptureFixture,
+):
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        sender_id = uuid.uuid4().hex
+
+        reminder = ReminderScheduled("remind", datetime.datetime.now())
+        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_schedule_reminder"))
+        tracker.update(reminder)
+
+        default_processor.tracker_store.save(tracker)
+
+        await default_processor.handle_reminder(reminder, sender_id, default_channel)
+
+        assert f"Deleted lock for conversation '{sender_id}'." in caplog.text
 
 
 async def test_trigger_external_latest_input_channel(
@@ -520,35 +550,68 @@ async def test_update_tracker_session(
     ]
 
 
-# noinspection PyProtectedMember
 async def test_update_tracker_session_with_metadata(
-    default_channel: CollectingOutputChannel,
-    default_processor: MessageProcessor,
-    monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
-
-    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
-    # does something
-    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
-
     metadata = {"metadataTestKey": "metadataTestValue"}
+    message = UserMessage(
+        text="hi",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+        metadata=metadata,
+    )
+    await default_processor.handle_message(message)
 
-    await default_processor._update_tracker_session(tracker, default_channel, metadata)
-
-    # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
-
-    # inspect tracker events and make sure SessionStarted event is present
-    # and has metadata.
     tracker = default_processor.tracker_store.retrieve(sender_id)
-    assert tracker.events.count(SessionStarted()) == 1
+    events = list(tracker.events)
 
-    session_started_event_idx = tracker.events.index(SessionStarted())
-    session_started_event_metadata = tracker.events[session_started_event_idx].metadata
+    assert events[0] == SlotSet(SESSION_START_METADATA_SLOT, metadata)
+    assert tracker.slots[SESSION_START_METADATA_SLOT].value == metadata
 
-    assert session_started_event_metadata == metadata
+    assert events[1] == ActionExecuted(ACTION_SESSION_START_NAME)
+    assert events[2] == SessionStarted()
+    assert events[2].metadata == metadata
+    assert events[3] == SlotSet(SESSION_START_METADATA_SLOT, metadata)
+    assert events[4] == ActionExecuted(ACTION_LISTEN_NAME)
+    assert isinstance(events[5], UserUttered)
+
+
+@freezegun.freeze_time("2020-02-01")
+async def test_custom_action_session_start_with_metadata(
+    default_processor: MessageProcessor,
+):
+    domain = Domain.from_dict({KEY_ACTIONS: [ACTION_SESSION_START_NAME]})
+    default_processor.domain = domain
+    action_server_url = "http://some-url"
+    default_processor.action_endpoint = EndpointConfig(action_server_url)
+
+    sender_id = uuid.uuid4().hex
+    metadata = {"metadataTestKey": "metadataTestValue"}
+    message = UserMessage(
+        text="hi",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+        metadata=metadata,
+    )
+
+    with aioresponses() as mocked:
+        mocked.post(action_server_url, payload={"events": []})
+        await default_processor.handle_message(message)
+
+    last_request = tests.utilities.latest_request(mocked, "post", action_server_url)
+    tracker_for_custom_action = tests.utilities.json_of_latest_request(last_request)[
+        "tracker"
+    ]
+
+    assert tracker_for_custom_action["events"] == [
+        {
+            "event": "slot",
+            "timestamp": 1580515200.0,
+            "name": SESSION_START_METADATA_SLOT,
+            "value": metadata,
+        }
+    ]
 
 
 # noinspection PyProtectedMember
@@ -817,7 +880,12 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
     domain = Domain.empty()
 
     processor = MessageProcessor(
-        test_interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+        test_interpreter,
+        ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
+        Mock(),
     )
 
     # This should not raise
@@ -847,7 +915,12 @@ def test_get_next_action_probabilities_pass_policy_predictions_without_interpret
     domain = Domain.empty()
 
     processor = MessageProcessor(
-        interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+        interpreter,
+        ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
+        Mock(),
     )
 
     with pytest.warns(DeprecationWarning):
@@ -1135,11 +1208,13 @@ async def test_logging_of_end_to_end_action():
                 return PolicyPrediction.for_action_name(domain, ACTION_LISTEN_NAME)
 
     tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
     processor = MessageProcessor(
         RegexInterpreter(),
         ConstantEnsemble(),
         domain,
         tracker_store,
+        lock_store,
         NaturalLanguageGenerator.create(None, domain),
     )
 

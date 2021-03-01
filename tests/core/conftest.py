@@ -21,6 +21,7 @@ from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
+from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
@@ -142,11 +143,13 @@ def default_channel() -> OutputChannel:
 @pytest.fixture
 async def default_processor(default_agent: Agent) -> MessageProcessor:
     tracker_store = InMemoryTrackerStore(default_agent.domain)
+    lock_store = InMemoryLockStore()
     return MessageProcessor(
         default_agent.interpreter,
         default_agent.policy_ensemble,
         default_agent.domain,
         tracker_store,
+        lock_store,
         TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
     )
 
