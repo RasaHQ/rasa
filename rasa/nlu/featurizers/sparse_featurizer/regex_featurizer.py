@@ -54,7 +54,16 @@ class RegexFeaturizer(SparseFeaturizer):
     ) -> None:
 
         self.known_patterns = training_data.regex_features
-        self._add_lookup_table_regexes(training_data.lookup_tables)
+        valid_lookup_tables = self._add_lookup_table_regexes(
+            training_data.lookup_tables
+        )
+        if not valid_lookup_tables:
+            common_utils.raise_warning(
+                "No lookup tables or regexes defined in the training data that have "
+                "a name equal to any entity in the training data. In order for this "
+                "component to work you need to define valid lookup tables or regexes "
+                "in the training data."
+            )
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE]:
@@ -73,12 +82,15 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _add_lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Union[Text, List]]]
-    ) -> None:
+    ) -> bool:
+        some_feature_found = False
         """appends the regex features from the lookup tables to self.known_patterns"""
         for table in lookup_tables:
+            some_feature_found = True
             regex_pattern = self._generate_lookup_regex(table)
             lookup_regex = {"name": table["name"], "pattern": regex_pattern}
             self.known_patterns.append(lookup_regex)
+        return some_feature_found
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
