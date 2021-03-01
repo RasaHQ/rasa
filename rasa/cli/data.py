@@ -644,10 +644,10 @@ def _backup(path: Path) -> None:
 
 def _print_success_message(new_rules: List["StoryStep"], output_file: Path) -> None:
     if len(new_rules) > 1 or len(new_rules) == 0:
-        suffix = "rules"
+        rules_text = "rules"
         verb = "were"
     else:
-        suffix = "rule"
+        rules_text = "rule"
         verb = "was"
 
     rasa.shared.utils.cli.print_success(
@@ -655,11 +655,11 @@ def _print_success_message(new_rules: List["StoryStep"], output_file: Path) -> N
     )
     if len(new_rules) == 0:
         rasa.shared.utils.cli.print_success(
-            f"The migration generated {len(new_rules)} {suffix} so no {suffix} "
+            f"The migration generated {len(new_rules)} {rules_text} so no {rules_text} "
             f"{verb} added to '{output_file}'."
         )
     else:
         rasa.shared.utils.cli.print_success(
-            f"The migration generated {len(new_rules)} {suffix} which {verb} added to "
-            f"'{output_file}'."
+            f"The migration generated {len(new_rules)} {rules_text} which {verb} added "
+            f"to '{output_file}'."
         )
