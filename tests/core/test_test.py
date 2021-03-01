@@ -188,12 +188,12 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
     if skip_field != "f1":
         assert f"F1-Score:         {kwargs['f1']:5.3f}" in caplog.text
     else:
-        assert f"F1-Score:" not in caplog.text
+        assert "F1-Score:" not in caplog.text
 
     if skip_field != "precision":
         assert f"Precision:        {kwargs['precision']:5.3f}" in caplog.text
     else:
-        assert f"Precision:" not in caplog.text
+        assert "Precision:" not in caplog.text
 
     if skip_field != "in_training_data_fraction":
         assert (
@@ -201,9 +201,9 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
             in caplog.text
         )
     else:
-        assert f"In-data fraction:" not in caplog.text
+        assert "In-data fraction:" not in caplog.text
 
     if skip_field != "report" and skip_field != "include_report":
         assert f"Classification report: \n{kwargs['report']}" in caplog.text
     else:
-        assert f"Classification report:" not in caplog.text
+        assert "Classification report:" not in caplog.text
