@@ -323,7 +323,7 @@ jobs:
           fi
 
       - name: Notify Slack 💬
-        if: steps.performance.output.is_dropped == 'true'
+        if: steps.performance.outputs.is_dropped == 'true'
         uses: 8398a7/action-slack@v3
         with:
           status: custom
