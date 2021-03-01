@@ -6,6 +6,7 @@ import time
 import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any, Tuple
 from unittest.mock import patch, Mock
@@ -50,6 +51,7 @@ from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot, AnySlot
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
@@ -134,7 +136,9 @@ async def test_http_parsing():
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
-            await MessageProcessor(inter, None, None, None, None).parse_message(message)
+            await MessageProcessor(inter, None, None, None, None, None).parse_message(
+                message
+            )
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 
@@ -202,6 +206,29 @@ async def test_reminder_scheduled(
         f"{EXTERNAL_MESSAGE_PREFIX}remind",
         intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
+
+
+async def test_reminder_lock(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    caplog: LogCaptureFixture,
+):
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        sender_id = uuid.uuid4().hex
+
+        reminder = ReminderScheduled("remind", datetime.datetime.now())
+        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_schedule_reminder"))
+        tracker.update(reminder)
+
+        default_processor.tracker_store.save(tracker)
+
+        await default_processor.handle_reminder(reminder, sender_id, default_channel)
+
+        assert f"Deleted lock for conversation '{sender_id}'." in caplog.text
 
 
 async def test_trigger_external_latest_input_channel(
@@ -853,7 +880,12 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
     domain = Domain.empty()
 
     processor = MessageProcessor(
-        test_interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+        test_interpreter,
+        ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
+        Mock(),
     )
 
     # This should not raise
@@ -883,7 +915,12 @@ def test_get_next_action_probabilities_pass_policy_predictions_without_interpret
     domain = Domain.empty()
 
     processor = MessageProcessor(
-        interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+        interpreter,
+        ensemble,
+        domain,
+        InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
+        Mock(),
     )
 
     with pytest.warns(DeprecationWarning):
@@ -1173,11 +1210,13 @@ async def test_logging_of_end_to_end_action():
                 return PolicyPrediction.for_action_name(domain, ACTION_LISTEN_NAME)
 
     tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
     processor = MessageProcessor(
         RegexInterpreter(),
         ConstantEnsemble(),
         domain,
         tracker_store,
+        lock_store,
         NaturalLanguageGenerator.create(None, domain),
     )
 
