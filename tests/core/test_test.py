@@ -2,6 +2,7 @@ import asyncio
 import json
 import pathlib
 import pytest
+import logging
 from typing import Text, Any, Dict
 
 from rasa.core.agent import Agent
@@ -154,3 +155,55 @@ actions:
 
     actual_results = json.loads(story_report_path.read_text("utf8"))
     assert actual_results == expected_results
+
+
+@pytest.mark.parametrize(
+    "skip_field,skip_value",
+    [
+        [None, None,],
+        ["precision", None,],
+        ["f1", None,],
+        ["in_training_data_fraction", None,],
+        ["report", None,],
+        ["include_report", False,],
+    ],
+)
+def test_log_evaluation_table(caplog, skip_field, skip_value):
+    arr = [1, 1, 1, 0]
+    acc = 0.75
+    kwargs = {
+        "precision": 0.5,
+        "f1": 0.6,
+        "in_training_data_fraction": 0.1,
+        "report": {"macro f1": 0.7},
+    }
+    if skip_field:
+        kwargs[skip_field] = skip_value
+    caplog.set_level(logging.INFO)
+    rasa.core.test._log_evaluation_table(arr, "CONVERSATION", acc, **kwargs)
+
+    assert f"Correct:          {int(len(arr) * acc)} / {len(arr)}" in caplog.text
+    assert f"Accuracy:         {acc:.3f}" in caplog.text
+
+    if skip_field != "f1":
+        assert f"F1-Score:         {kwargs['f1']:5.3f}" in caplog.text
+    else:
+        assert f"F1-Score:" not in caplog.text
+
+    if skip_field != "precision":
+        assert f"Precision:        {kwargs['precision']:5.3f}" in caplog.text
+    else:
+        assert f"Precision:" not in caplog.text
+
+    if skip_field != "in_training_data_fraction":
+        assert (
+            f"In-data fraction: {kwargs['in_training_data_fraction']:.3g}"
+            in caplog.text
+        )
+    else:
+        assert f"In-data fraction:" not in caplog.text
+
+    if skip_field != "report" and skip_field != "include_report":
+        assert f"Classification report: \n{kwargs['report']}" in caplog.text
+    else:
+        assert f"Classification report:" not in caplog.text
