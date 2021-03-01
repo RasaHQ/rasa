@@ -1557,6 +1557,29 @@ async def test_trigger_intent(rasa_app: SanicASGITestClient):
     assert parsed_content["messages"]
 
 
+async def test_trigger_intent_with_entity(rasa_app: SanicASGITestClient):
+    entity_name = "name"
+    entity_value = "Sara"
+    data = {INTENT_NAME_KEY: "greet", "entities": {entity_name: entity_value}}
+    _, response = await rasa_app.post(
+        "/conversations/test_trigger/trigger_intent", json=data
+    )
+
+    assert response.status == HTTPStatus.OK
+
+    parsed_content = response.json()
+    last_slot_set_event = [
+        event
+        for event in parsed_content["tracker"]["events"]
+        if event["event"] == "slot"
+    ][-1]
+
+    assert parsed_content["tracker"]
+    assert parsed_content["messages"]
+    assert last_slot_set_event["name"] == entity_name
+    assert last_slot_set_event["value"] == entity_value
+
+
 async def test_trigger_intent_with_missing_intent_name(rasa_app: SanicASGITestClient):
     test_sender = "test_trigger_intent_with_missing_action_name"
 
