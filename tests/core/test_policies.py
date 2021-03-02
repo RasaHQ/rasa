@@ -89,26 +89,26 @@ class PolicyTestCollection:
     ) -> Policy:
         raise NotImplementedError
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
         featurizer = MaxHistoryTrackerFeaturizer(
             SingleStateFeaturizer(), max_history=self.max_history
         )
         return featurizer
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def priority(self) -> int:
         return 1
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def default_domain(self) -> Domain:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def tracker(self, default_domain: Domain) -> DialogueStateTracker:
         return DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     async def trained_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
@@ -201,7 +201,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             gs.return_value = gs  # for __init__
             yield gs
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     async def trackers(self, default_domain: Domain) -> List[TrackerWithCachedStates]:
         return await train_trackers(default_domain, augmentation_factor=20)
 
@@ -572,7 +572,7 @@ class TestMappingPolicy(PolicyTestCollection):
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert loaded.featurizer is None
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def domain_with_mapping(self) -> Domain:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
 
