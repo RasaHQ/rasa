@@ -18,9 +18,7 @@ from rasa.shared.core.training_data.visualization import visualize_stories
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
-async def test_story_visualization(
-    default_domain: Domain, tmp_path: Path
-):
+async def test_story_visualization(default_domain: Domain, tmp_path: Path):
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
@@ -40,9 +38,7 @@ async def test_story_visualization(
     assert len(generated_graph.edges()) == 56
 
 
-async def test_story_visualization_with_merging(
-    default_domain: Domain
-):
+async def test_story_visualization_with_merging(default_domain: Domain):
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(

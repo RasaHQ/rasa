@@ -200,7 +200,9 @@ async def test_verify_correct_e2e_story_structure_with_intents(tmp_path: Path):
 async def test_verify_story_structure_ignores_rules():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_yaml_stories/stories_with_rules_conflicting.yml"],
+        training_data_paths=[
+            "data/test_yaml_stories/stories_with_rules_conflicting.yml"
+        ],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)

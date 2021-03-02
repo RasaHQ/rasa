@@ -80,9 +80,7 @@ def test_common_action_prefix_unequal():
     assert num_common == 0
 
 
-async def test_graph_persistence(
-    default_domain: Domain, tmp_path: Path
-):
+async def test_graph_persistence(default_domain: Domain, tmp_path: Path):
     from os.path import isfile
     from networkx.drawing import nx_pydot
     import rasa.shared.core.training_data.loading as core_loading
