@@ -16,11 +16,16 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.interpreter import RegexInterpreter
 
 
-@pytest.fixture(scope="session")
-def out_directory(tmpdir_factory):
-    """Output directory for logging info."""
-    fn = tmpdir_factory.mktemp("results")
-    return fn
+@pytest.fixture(scope="function")
+def out_directory(tmpdir: pathlib.Path):
+    """Output directory for logging policy results."""
+    return tmpdir
+
+
+@pytest.fixture(scope="function")
+def stories_path(tmpdir: pathlib.Path):
+    """Path for writing test stories."""
+    return tmpdir / "stories.yml"
 
 
 @pytest.mark.parametrize(
@@ -98,13 +103,12 @@ stories:
     ],
 )
 async def test_test(
-    tmpdir_factory: pathlib.Path,
+    stories_path: pathlib.Path,
     out_directory: pathlib.Path,
     stories_yaml: Text,
     expected_results: Dict[Text, Dict[Text, Any]],
 ) -> None:
 
-    stories_path = tmpdir_factory.mktemp("test_rasa_core_test").join("eval_stories.yml")
     stories_path.write_text(stories_yaml, "utf8")
 
     domain = Domain.from_yaml(
