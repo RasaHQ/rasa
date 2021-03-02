@@ -12,8 +12,10 @@ class Object:
     pass
 
 
-# noinspection PyPep8Naming
-async def test_list_method_method_in_AWS_persistor(component_builder, tmp_path):
+@pytest.mark.trains_model
+async def test_list_method_method_in_AWS_persistor(  # noinspection PyPep8Naming
+    component_builder, tmp_path
+):
     with mock_s3():
         # artificially create a persisted model
         _config = RasaNLUModelConfig(
