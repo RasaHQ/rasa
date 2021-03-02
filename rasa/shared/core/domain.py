@@ -624,6 +624,8 @@ class Domain:
             # looping through all the available forms and checking if a
             # `global_not_intent` variable is present.
             for form_name, form_data in forms.items():
+                if form_data is None:
+                    continue
                 if "global_not_intent" in form_data:
                     global_params = forms[form_name].get("global_not_intent")
                     # accessing the form slots by using keyword `required_slots`
@@ -1717,6 +1719,9 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
     for form_name, form_data in forms.items():
+        if form_data is None:
+            continue
+
         if "required_slots" in form_data:
             slots = forms[form_name].get("required_slots")
         elif "global_not_intent" in form_data and "required_slots" not in form_data:
@@ -1728,8 +1733,6 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             )
         else:
             slots = form_data
-        if slots is None:
-            continue
 
         if not isinstance(slots, Dict):
             raise InvalidDomain(
