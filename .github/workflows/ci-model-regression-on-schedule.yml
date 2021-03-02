@@ -308,7 +308,9 @@ jobs:
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
 
           # Fake string for testing, will delete later
-          OUTPUT="${OUTPUT}  test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.00)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\` "
+          OUTPUT="${OUTPUT}\n test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.01)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\` "
+
+          echo "::set-output name=report::${OUTPUT}"
 
           # Remove all (-0.00) from OUTPUT. We don't want to count (-0.00) as a performance drop
           OUTPUT=${OUTPUT//(-0.00)/}
@@ -321,6 +323,39 @@ jobs:
             echo "No test performance drops."
             echo "::set-output name=is_dropped::false"
           fi
+
+      - name: Pick an assignee randomly
+        id: pick_assignee
+        run: |
+          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
+          # Randomly select an item from assignees list
+          ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
+          echo "::set-output name=assignee::$ASSIGNEE"
+
+      - name: Open GitHub Issue 📬
+        uses: rishabhgupta/git-action-issue@v2
+        id: open_issue
+        with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            title: "Scheduled Model Regression Test Performance Drops"
+            body: "Some test performance scores decreased. Please look at the following table for the details.\n${{ steps.performance.outputs.report }}"
+            assignees: ${{ steps.pick_assignee.outputs.assignee }}
+
+      - name: Add Label to the Issue
+        id: add_label
+        env:
+          LABEL: "type:bug :bug:"
+        run: |
+          # Get issue number
+          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq '.number')
+          echo "::set-output name=issue_number::$ISSUE_NUMBER"
+          # Add label to the issue
+          curl \
+            -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
+            -d '{"labels":["${{ env.LABEL }}"]}'
 
       - name: Notify Slack 💬
         if: steps.performance.outputs.is_dropped == 'true'
@@ -336,9 +371,9 @@ jobs:
                 title: `${process.env.AS_WORKFLOW}`,
                 text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
                 fields: [{
-                  title: 'Notes',
-                  value: 'Please checkout metabase for further information and logs.',
-                  short: false
+                  title: 'GitHub Issue',
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.add_label.outputs.issue_number }}`,
+                  short: true
                 },
                 {
                   title: 'GitHub Action',
