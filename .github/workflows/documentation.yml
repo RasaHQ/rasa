@@ -64,7 +64,7 @@ jobs:
       run: make install install-docs
 
     - name: Pre-build Docs 🧶
-      run: cd $DOCS_FOLDER && poetry run yarn pre-build
+      run: make prepare-docs
 
     - name: Build & Publish Docs 🏃‍♀️
       env:
