@@ -145,6 +145,7 @@ def test_lock_expiration(lock_store: LockStore):
     assert lock.issue_ticket(10) == 1
 
 
+@pytest.mark.trains_model
 async def test_multiple_conversation_ids(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
 
@@ -163,6 +164,7 @@ async def test_multiple_conversation_ids(default_agent: Agent):
     sys.platform == "win32",
     reason="This test sometimes fails on Windows. We want to investigate it further",
 )
+@pytest.mark.trains_model
 async def test_message_order(tmp_path: Path, default_agent: Agent):
     start_time = time.time()
     n_messages = 10
@@ -237,6 +239,7 @@ async def test_message_order(tmp_path: Path, default_agent: Agent):
     sys.platform == "win32",
     reason="This test sometimes fails on Windows. We want to investigate it further",
 )
+@pytest.mark.trains_model
 async def test_lock_error(default_agent: Agent):
     lock_lifetime = 0.01
     wait_time_in_seconds = 0.01
