@@ -153,7 +153,7 @@ class StoryStepBuilder:
         the name of the starting checkpoints,
         and the involved intents/e2e messages.
         """
-        messages_texts_or_intents = sorted([m.text or m.intent_name for m in messages])
+        messages_texts_or_intents = sorted([str(m) for m in messages])
         start_checkpoint_names = sorted(
             list({chk.name for s in self.current_steps for chk in s.start_checkpoints})
         )
