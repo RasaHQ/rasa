@@ -329,7 +329,8 @@ jobs:
       - name: Pick an assignee randomly
         id: pick_assignee
         run: |
-          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
+          # ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
+          ASSIGNEES_LIST=("hotthoughts")
           # Randomly select an item from assignees list
           ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
           echo "::set-output name=assignee::$ASSIGNEE"
