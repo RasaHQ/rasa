@@ -495,7 +495,7 @@ def _get_processor_entity_evaluation_result(
     prediction: PolicyPrediction,
 ):
     previous_event = tracker.events[-1]
-    if isinstance(previous_event, (UserUttered)):
+    if isinstance(previous_event, UserUttered):
         entity_predictions = [
             entity
             for prediction_event in prediction.events
@@ -1024,6 +1024,7 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
     generator = await _create_data_generator(stories_file, agent)
     completed_trackers = generator.generate_story_trackers()
 
+    # Entities are ignored here as we only compare number of correct stories.
     story_eval_store, number_of_stories, _ = await _collect_story_predictions(
         completed_trackers, agent
     )
