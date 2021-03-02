@@ -352,6 +352,7 @@ jobs:
           # Get issue number
           ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq '.number')
           echo "::set-output name=issue_number::$ISSUE_NUMBER"
+
           # Add label to the issue
           curl \
             -X POST \
@@ -359,6 +360,18 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
             -d '{"labels":["${{ env.LABEL }}"]}'
+
+      - name: Assign Issue to Project Column
+        run: |
+          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq '.id')
+
+          # Add this issue to a project column
+          curl \
+            -X POST \
+            -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H 'Accept: application/vnd.github.inertia-preview+json' \
+            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
+            "https://api.github.com/projects/columns/${{ secrets.INFRA_BOARD_INBOX_COLUMN_ID }}/cards"
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true'
