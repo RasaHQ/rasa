@@ -263,6 +263,7 @@ class TrainingData:
         return entity_types - {NO_ENTITY_TAG}
 
     def entity_roles_groups_used(self) -> bool:
+    """Returns if any entity roles or groups are used anywhere in the training data."""
         entity_groups_used = (
             self.entity_groups is not None and len(self.entity_groups) > 0
         )
