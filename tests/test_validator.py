@@ -54,7 +54,7 @@ async def test_verify_valid_responses_in_rules():
         domain_path="data/test_domains/default.yml",
         training_data_paths=[
             DEFAULT_NLU_DATA,
-            "data/test_stories/rules_without_stories_and_wrong_names.md",
+            "data/test_yaml_stories/rules_without_stories_and_wrong_names.yml",
         ],
     )
     validator = await Validator.from_importer(importer)
@@ -200,7 +200,7 @@ async def test_verify_correct_e2e_story_structure_with_intents(tmp_path: Path):
 async def test_verify_story_structure_ignores_rules():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_with_rules_conflicting.md"],
+        training_data_paths=["data/test_yaml_stories/stories_with_rules_conflicting.yml"],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
