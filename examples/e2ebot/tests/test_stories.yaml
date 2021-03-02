@@ -59,4 +59,3 @@ stories:
       I had that yesterday
     intent: deny
   - action: utter_suggest_cuisine
-  
