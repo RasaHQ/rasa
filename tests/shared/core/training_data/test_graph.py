@@ -81,5 +81,9 @@ async def test_unique_checkpoint_names():
         chk.name for s in story_steps for chk in s.start_checkpoints
     }
 
+    # first story:
     # START_CHECKPOINT, GENR_OR_XXXXX for first OR, GENR_OR_YYYYY for second OR
-    assert len(start_checkpoint_names) == 3
+
+    # additional in second story:
+    # GENR_OR_ZZZZZ as entities are different from first OR in first story
+    assert len(start_checkpoint_names) == 4
