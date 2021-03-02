@@ -75,6 +75,8 @@ class TrainingData:
             "lookup_tables": self.lookup_tables,
             "responses": self.responses,
         }
+        print("ALWX")
+        print(relevant_attributes)
 
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
