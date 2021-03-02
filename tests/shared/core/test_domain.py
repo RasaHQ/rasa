@@ -34,8 +34,6 @@ from rasa.shared.core.domain import (
     Domain,
     KEY_FORMS,
     KEY_E2E_ACTIONS,
-    SESSION_CONFIG_KEY,
-    GLOBAL_NOT_INTENT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -1325,12 +1323,14 @@ def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
 
 
 @pytest.mark.parametrize(
-    "global_not_intent_value, slot_not_intent_key, slot_not_intent_value, "
+    "global_not_intent_key, global_not_intent_value, "
+    "slot_not_intent_key, slot_not_intent_value, "
     "expected_not_intent_value",
     [
         (
             # The `global_not_intent` parameter has the same values as the `not_intent`
             # value at slot level. It should not change the slot's `not_intent` value.
+            "global_not_intent",
             "some_not_intent",
             "not_intent",
             "some_not_intent",
@@ -1341,6 +1341,7 @@ def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
             # value at slot level.
             # It should make the `not_intent` parameter of the slot have a list
             # like this one [individual `not_intent`, global `not_intent` value]
+            "global_not_intent",
             "some_not_intent",
             "not_intent",
             "other_not_intent",
@@ -1350,97 +1351,157 @@ def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
             # The `global_not_intent` parameter and a slot that has a `not_intent`
             # parameter with a list of values (all different than the global one).
             # It should append the global value to the list of `not_intent` values.
+            "global_not_intent",
             "one_not_intent",
             "not_intent",
             ["some_not_intent", "other_not_intent"],
             ["some_not_intent", "other_not_intent", "one_not_intent"],
         ),
         (
-            # The `global_not_intent` parameter and a slot no `not_intent`
-            # parameter.
-            # It should add the `not_intent` parameter at the slot and fill the
+            # There is a `global_not_intent` parameter but no `not_intent`
+            # parameter at slot level.
+            # It should create the `not_intent` parameter in the slot and fill the
             # value found in the global parameter.
+            "global_not_intent",
             "some_not_intent",
             "",
             "",
             "some_not_intent",
         ),
         (
-            # The `global_not_intent` parameter that has a list of values and
-            # a slot that has a `not_intent` parameter with a list of values
+            # The `global_not_intent` parameter has a list of values and
+            # the slot has a `not_intent` parameter with a list of values
             # (different than the global one).
-            # It should append the global value to the list of `not_intent` values.
+            # It should append the global values to the list of `not_intent` values.
+            "global_not_intent",
             ["one_not_intent", "two_not_intent"],
             "not_intent",
             ["some_not_intent", "other_not_intent"],
             ["some_not_intent", "other_not_intent", "one_not_intent", "two_not_intent"],
         ),
         (
-            # The `global_not_intent` parameter that has a list of values and
-            # a slot that has a `not_intent` parameter with the same list of values.
-            # Nothing should change in the slot's `not_intent` value.
+            # The `global_not_intent` parameter has a list of values and
+            # the slot has a `not_intent` parameter with the same list of values.
+            # Nothing should change in the slot's `not_intent` list.
+            "global_not_intent",
             ["some_not_intent", "other_not_intent"],
             "not_intent",
             ["some_not_intent", "other_not_intent"],
             ["some_not_intent", "other_not_intent"],
         ),
         (
-            # The `global_not_intent` parameter that has a list of values and
-            # a slot that has a `not_intent` parameter with a different value.
+            # The `global_not_intent` parameter has a list of values and
+            # the slot has a `not_intent` parameter with a different value.
             # It should make the `not_intent` parameter of the slot have a list
             # like this one [individual `not_intent` value,
             # global `not_intent` values,...]
+            "global_not_intent",
             ["one_not_intent", "two_not_intent"],
             "not_intent",
             "some_not_intent",
             ["some_not_intent", "one_not_intent", "two_not_intent"],
         ),
         (
-            # The `global_not_intent` parameter that has a list of values and
-            # a slot that has a `not_intent` parameter with a value that exists
+            # The `global_not_intent` parameter has a list of values and
+            # the slot has a `not_intent` parameter with a value that exists
             # already in the global list.
             # It should make the `not_intent` parameter of the slot have a list
             # like this one [individual `not_intent` value,
-            # global `not_intent` values (that are not equal to individual),...]
+            # global `not_intent` values (that are not present in the slot),...]
+            "global_not_intent",
             ["one_not_intent", "some_not_intent"],
             "not_intent",
             "some_not_intent",
             ["some_not_intent", "one_not_intent"],
         ),
+        (
+            # no `global_not_intent` parameter.
+            # slot's not intent should stay as it is.
+            # mostly to check that if keyword 'required_slots' without a global
+            # is working correctly.
+            "",
+            "",
+            "not_intent",
+            "some_not_intent",
+            "some_not_intent",
+        ),
     ],
 )
 def test_global_not_intent_slot_mappings(
+    global_not_intent_key: Optional[Text],
     global_not_intent_value: Union[Text, List[Text], None],
     slot_not_intent_key: Optional[Text],
     slot_not_intent_value: Union[Text, List[Text], None],
     expected_not_intent_value: Union[Text, List[Text], None],
 ):
-    if slot_not_intent_key:
+    if global_not_intent_key and slot_not_intent_key:
         domain_as_dict = {
-            SESSION_CONFIG_KEY: {GLOBAL_NOT_INTENT: global_not_intent_value},
             KEY_FORMS: {
                 "my_form": {
-                    "slot_x": [
-                        {
-                            "type": "from_entity",
-                            "entity": "name",
-                            slot_not_intent_key: slot_not_intent_value,
-                        }
-                    ]
+                    global_not_intent_key: global_not_intent_value,
+                    "required_slots": {
+                        "slot_x": [
+                            {
+                                "type": "from_entity",
+                                "entity": "name",
+                                slot_not_intent_key: slot_not_intent_value,
+                            }
+                        ]
+                    },
+                }
+            },
+        }
+    elif not global_not_intent_key and slot_not_intent_key:
+        domain_as_dict = {
+            KEY_FORMS: {
+                "my_form": {
+                    "required_slots": {
+                        "slot_x": [
+                            {
+                                "type": "from_entity",
+                                "entity": "name",
+                                slot_not_intent_key: slot_not_intent_value,
+                            }
+                        ]
+                    }
                 }
             },
         }
     else:
         domain_as_dict = {
-            SESSION_CONFIG_KEY: {GLOBAL_NOT_INTENT: global_not_intent_value},
             KEY_FORMS: {
-                "my_form": {"slot_x": [{"type": "from_entity", "entity": "name",}]}
+                "my_form": {
+                    global_not_intent_key: global_not_intent_value,
+                    "required_slots": {
+                        "slot_x": [{"type": "from_entity", "entity": "name",}]
+                    },
+                }
             },
         }
     domain = Domain.from_dict(domain_as_dict)
-    # Checking that the slot's `not_intent` parameter has been updated from the
-    # `global_not_intent` parameter or not accordingly.
+    # Checking that the slot's `not_intent` parameter has the correct value/s.
     assert (
-        domain.slot_mapping_for_form("my_form")["slot_x"][0]["not_intent"]
+        domain.slot_mapping_for_form("my_form")["required_slots"]["slot_x"][0][
+            "not_intent"
+        ]
         == expected_not_intent_value
     )
+
+
+def test_global_not_intent_slot_mappings_invalid_domain():
+    domain_as_dict = {
+        KEY_FORMS: {
+            "my_form": {
+                "global_not_intent": "some_not_intent",
+                "slot_x": [
+                    {
+                        "type": "from_entity",
+                        "entity": "name",
+                        "not_intent": "other_not_intent",
+                    }
+                ],
+            }
+        },
+    }
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)

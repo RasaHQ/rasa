@@ -586,19 +586,6 @@ call, or to start the conversation with a bot message. The docs on
 
 :::
 
-### Global not intent
-
-An additional parameter available under the `session_config` key is the `global_not_intent`.
-This global parameter will affect all slots of all the forms that are present in the domain.
-More specifically, it will update/add the `not_intent` key of all individual slots with the specified value (or list of values) of the global parameter.
-
-For example, if we want to fill the `not_intent` key of all slots with `chitchat` then we would need to define the following :
-
-```yaml-rasa
-session_config:
-  global_not_intent: chitchat
-```
-
 ## Config
 
 The `config` key in the domain file maintains the `store_entities_as_slots` parameter.

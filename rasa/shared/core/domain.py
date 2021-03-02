@@ -44,7 +44,6 @@ IGNORE_ENTITIES_KEY = "ignore_entities"
 IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 ENTITY_ROLES_KEY = "roles"
 ENTITY_GROUPS_KEY = "groups"
-GLOBAL_NOT_INTENT = "global_not_intent"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -89,7 +88,6 @@ class SessionConfig(NamedTuple):
 
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
-    global_not_intent: Optional[Union[Text, List[Text]]] = None
 
     @staticmethod
     def default() -> "SessionConfig":
@@ -204,11 +202,7 @@ class Domain:
             rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
         )
 
-        global_not_intent = session_config.get(GLOBAL_NOT_INTENT)
-
-        return SessionConfig(
-            session_expiration_time_min, carry_over_slots, global_not_intent,
-        )
+        return SessionConfig(session_expiration_time_min, carry_over_slots)
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
@@ -540,7 +534,7 @@ class Domain:
         )
 
         self.form_names, self.forms, overridden_form_actions = self._initialize_forms(
-            forms, session_config
+            forms
         )
         action_names += overridden_form_actions
 
@@ -608,7 +602,7 @@ class Domain:
 
     @staticmethod
     def _initialize_forms(
-        forms: Union[Dict[Text, Any], List[Text]], session_config: SessionConfig
+        forms: Union[Dict[Text, Any], List[Text]]
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
@@ -627,24 +621,30 @@ class Domain:
             `FormAction` which is implemented in the Rasa SDK.
         """
         if isinstance(forms, dict):
-            # Updating the `not_intent` parameter of each slot with `global_not_intent`
-            if session_config.global_not_intent is not None:
-                global_params = session_config.global_not_intent
-                if not isinstance(global_params, list):
-                    global_params = [global_params]
-                for global_val in global_params:
-                    # looping through all the available forms, their slots and
-                    # all their slot's types and updating the `not_intent` key
-                    # with the `global_not_intent` value.
-                    for form_key, form_val in forms.items():
-                        for slot_key, slot_val in form_val.items():
+            # looping through all the available forms and checking if a
+            # `global_not_intent` variable is present.
+            for form_name, form_data in forms.items():
+                if "global_not_intent" in form_data:
+                    global_params = forms[form_name].get("global_not_intent")
+                    # accessing the form slots by using keyword `required_slots`
+                    if "required_slots" in form_data:
+                        form_data = forms[form_name].get("required_slots")
+                    # checking if the global parameter is a list or not and always
+                    # making it a list.
+                    if not isinstance(global_params, list):
+                        global_params = [global_params]
+                    # looping through the form's global params.
+                    for global_val in global_params:
+                        # Updating the `not_intent` parameter of each slot with
+                        # `global_not_intent` value.
+                        for slot_key, slot_val in form_data.items():
                             for slot in slot_val:
                                 key = "not_intent"
-                                # check that `not_intent` param is present
+                                # check that `not_intent` param is present in the slot
                                 if key in slot.keys():
                                     # check that the value of `not_intent` is a list
                                     if isinstance(slot[key], list):
-                                        # check that global_not_intent is in the list
+                                        # check that `global_not_intent` is in the list
                                         if global_val not in slot[key]:
                                             slot[key].append(global_val)
                                     else:
@@ -1716,7 +1716,18 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
-    for form_name, slots in forms.items():
+    for form_name, form_data in forms.items():
+        if "required_slots" in form_data:
+            slots = forms[form_name].get("required_slots")
+        elif "global_not_intent" in form_data and "required_slots" not in form_data:
+            raise InvalidDomain(
+                f"When you have a `global_not_intent` parameter, you need to add "
+                f"the keyword `required_slots` after it to define where your slot"
+                f" mappings begin. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
+                f"for more information."
+            )
+        else:
+            slots = form_data
         if slots is None:
             continue
 
