@@ -261,8 +261,8 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
-  notify_slack_when_performance_drops:
-    name: Notify Slack when Performance Drops
+  analyse performance:
+    name: Analyse Performance
     runs-on: ubuntu-latest
     if: always()
     needs:
@@ -302,13 +302,13 @@ jobs:
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
-      - name: analyze performance 🔍
+      - name: analyse performance 🔍
         id: performance
         run: |
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
 
           # Fake string for testing, will delete later
-          OUTPUT="${OUTPUT}\n test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.01)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\` "
+          OUTPUT="${OUTPUT}\n test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.01)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\`"
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
@@ -359,7 +359,7 @@ jobs:
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
             -d '{"labels":["${{ env.LABEL }}"]}'
 
-      - name: Notify Slack 💬
+      - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true'
         uses: 8398a7/action-slack@v3
         with:
