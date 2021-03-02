@@ -310,7 +310,9 @@ jobs:
           # Fake string for testing, will delete later
           OUTPUT="${OUTPUT}\n test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.01)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\` "
 
-          echo "::set-output name=report::${OUTPUT}"
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=report_description::${OUTPUT}"
 
           # Remove all (-0.00) from OUTPUT. We don't want to count (-0.00) as a performance drop
           OUTPUT=${OUTPUT//(-0.00)/}
@@ -338,7 +340,7 @@ jobs:
         with:
             token: ${{ secrets.GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Performance Drops"
-            body: "Some test performance scores decreased. Please look at the following table for the details.\n${{ steps.performance.outputs.report }}"
+            body: "Some test performance scores decreased. Please look at the following table for the details.\n${{ steps.performance.outputs.report_description }}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
 
       - name: Add Label to the Issue
