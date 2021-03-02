@@ -106,7 +106,7 @@ async def test_find_conflicts_slots_that_break():
 
 async def test_find_conflicts_slots_that_dont_break():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_5.yml"
+        "data/test_domains/default.yml", "data/test_yaml_stories/stories_conflicting_5.yml"
     )
 
     # Create a list of `StoryConflict` objects
@@ -117,7 +117,7 @@ async def test_find_conflicts_slots_that_dont_break():
 
 async def test_find_conflicts_multiple_stories():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_6.yml"
+        "data/test_domains/default.yml", "data/test_yaml_stories/stories_conflicting_6.yml"
     )
 
     # Create a list of `StoryConflict` objects

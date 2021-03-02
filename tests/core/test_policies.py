@@ -549,8 +549,6 @@ class TestFormPolicy(TestMemoizationPolicy):
                 assert recalled is None
             elif is_no_validation:
                 assert recalled == active_form
-            else:
-                assert recalled is None
 
         nums = np.random.randn(domain.num_states)
         random_states = [{f: num for f, num in zip(domain.input_states, nums)}]
