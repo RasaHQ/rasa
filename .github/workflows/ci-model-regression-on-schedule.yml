@@ -302,7 +302,7 @@ jobs:
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
-      - name: analyse performance 🔍
+      - name: analyse_performance 🔍
         id: performance
         run: |
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
