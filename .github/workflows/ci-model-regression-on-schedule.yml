@@ -308,7 +308,7 @@ jobs:
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
 
           # Fake string for testing, will delete later
-          OUTPUT="${OUTPUT}  test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.01)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\` "
+          OUTPUT="${OUTPUT}  test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.00)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\` "
 
           # Remove all (-0.00) from OUTPUT. We don't want to count (-0.00) as a performance drop
           OUTPUT=${OUTPUT//(-0.00)/}
