@@ -68,3 +68,18 @@ async def test_consistent_fingerprints():
     fingerprint_2 = story_graph_2.fingerprint()
 
     assert fingerprint == fingerprint_2
+
+
+async def test_unique_checkpoint_names():
+    stories_path = "data/test_yaml_stories/story_with_two_equal_or_statements.yml"
+    domain_path = "data/test_domains/default_with_slots.yml"
+    domain = Domain.load(domain_path)
+    story_steps = await rasa.shared.core.training_data.loading.load_data_from_resource(
+        stories_path, domain
+    )
+    start_checkpoint_names = {
+        chk.name for s in story_steps for chk in s.start_checkpoints
+    }
+
+    # START_CHECKPOINT, GENR_OR_XXXXX for first OR, GENR_OR_YYYYY for second OR
+    assert len(start_checkpoint_names) == 3

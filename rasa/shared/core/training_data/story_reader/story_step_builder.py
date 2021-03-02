@@ -149,19 +149,28 @@ class StoryStepBuilder:
         """Generates a unique checkpoint name for an or statement.
 
         The name is based on the current story/rule name,
-        the current place in the story,
+        the current place in the story since the last checkpoint or start,
+        the name of the starting checkpoints,
         and the involved intents/e2e messages.
         """
         messages_texts_or_intents = sorted([m.text or m.intent_name for m in messages])
-
+        start_checkpoint_names = sorted(
+            list({chk.name for s in self.current_steps for chk in s.start_checkpoints})
+        )
         current_steps_event_counts = [str(len(s.events)) for s in self.current_steps]
         # name: to identify the current story or rule
         # current steps event counts: to identify the event position
         #                             within the current story/rule
+        # start checkpoint names: to identify the section
+        #                         within the current story/rule when there are
+        #                         multiple internal checkpoints
         # messages texts or intents: identifying the members of the or statement
         unique_id = (
             f"{self.name}_<>_{','.join(current_steps_event_counts)}"
+            f"_<>_{'@@@'.join(start_checkpoint_names)}"
             f"_<>_{'@@@'.join(messages_texts_or_intents)}"
         )
-        hashed_id = rasa.shared.utils.io.get_text_hash(unique_id)[:8]
+        hashed_id = rasa.shared.utils.io.get_text_hash(unique_id)[
+            :GENERATED_HASH_LENGTH
+        ]
         return f"{GENERATED_CHECKPOINT_PREFIX}OR_{hashed_id}"
