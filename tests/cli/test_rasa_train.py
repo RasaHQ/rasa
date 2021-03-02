@@ -28,6 +28,7 @@ from rasa.shared.constants import (
 )
 
 
+@pytest.mark.trains_model
 def test_train(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
@@ -69,6 +70,7 @@ def test_train_finetune(
     assert "No NLU model for finetuning found" in output
 
 
+@pytest.mark.trains_model
 def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
@@ -100,6 +102,7 @@ def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult])
     )
 
 
+@pytest.mark.trains_model
 def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
@@ -144,6 +147,7 @@ def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
     assert model_files[0].endswith("tar.gz")
 
 
+@pytest.mark.trains_model
 def test_train_no_domain_exists(
     run_in_simple_project: Callable[..., RunResult]
 ) -> None:
@@ -172,6 +176,7 @@ def test_train_no_domain_exists(
     assert os.path.exists(metadata_path)
 
 
+@pytest.mark.trains_model
 def test_train_skip_on_model_not_changed(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
@@ -190,6 +195,7 @@ def test_train_skip_on_model_not_changed(
     assert file_name == files[0]
 
 
+@pytest.mark.trains_model
 def test_train_force(run_in_simple_project_with_model: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
@@ -204,6 +210,7 @@ def test_train_force(run_in_simple_project_with_model: Callable[..., RunResult])
     assert len(files) == 2
 
 
+@pytest.mark.trains_model
 def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
@@ -217,6 +224,7 @@ def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult
     assert output.ret == 0
 
 
+@pytest.mark.trains_model
 def test_train_dry_run_failure(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
@@ -243,6 +251,7 @@ def test_train_dry_run_failure(
     ) and (output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING)
 
 
+@pytest.mark.trains_model
 def test_train_dry_run_force(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
@@ -258,6 +267,7 @@ def test_train_dry_run_force(
     assert output.ret == CODE_FORCED_TRAINING
 
 
+@pytest.mark.trains_model
 def test_train_with_only_nlu_data(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = Path.cwd()
 
@@ -273,6 +283,7 @@ def test_train_with_only_nlu_data(run_in_simple_project: Callable[..., RunResult
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
+@pytest.mark.trains_model
 def test_train_with_only_core_data(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
@@ -287,6 +298,7 @@ def test_train_with_only_core_data(run_in_simple_project: Callable[..., RunResul
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
+@pytest.mark.trains_model
 def test_train_core(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project(
         "train",
@@ -329,6 +341,7 @@ def test_train_core_no_domain_exists(run_in_simple_project: Callable[..., RunRes
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
+@pytest.mark.trains_model
 def test_train_nlu(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project(
         "train",
@@ -354,6 +367,7 @@ def test_train_nlu(run_in_simple_project: Callable[..., RunResult]):
     )
 
 
+@pytest.mark.trains_model
 def test_train_nlu_persist_nlu_data(
     run_in_simple_project: Callable[..., RunResult]
 ) -> None:
