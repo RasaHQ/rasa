@@ -341,7 +341,7 @@ jobs:
         with:
             token: ${{ secrets.GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Performance Drops"
-            body: "Some test performance scores decreased. Please look at the following table for more details.\n${{ steps.performance.outputs.report_description }}\n**Github Action Run**: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            body: "Some test performance scores decreased. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }} <br> *This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
 
       - name: Add Label to the Issue
