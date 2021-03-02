@@ -340,7 +340,7 @@ jobs:
         with:
             token: ${{ secrets.GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Performance Drops"
-            body: "Some test performance scores decreased. Please look at the following table for the details.\n${{ steps.performance.outputs.report_description }}"
+            body: "Some test performance scores decreased. Please look at the following table for more details.\n${{ steps.performance.outputs.report_description }}\n**Github Action Run**: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
 
       - name: Add Label to the Issue
@@ -375,12 +375,12 @@ jobs:
                 fields: [{
                   title: 'GitHub Issue',
                   value: `https://github.com/${{ github.repository }}/issues/${{ steps.add_label.outputs.issue_number }}`,
-                  short: true
+                  short: false
                 },
                 {
                   title: 'GitHub Action',
                   value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-                  short: true
+                  short: false
                 }],
                 actions: [{
                 }]
