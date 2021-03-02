@@ -1094,7 +1094,7 @@ class TED(TransformerRasaModel):
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
         ](dialogue_in, 1 - mask, self._training)
-        dialogue_transformed = tf.keras.activations.gelu(dialogue_transformed)
+        dialogue_transformed = tf.nn.gelu(dialogue_transformed)
 
         if self.max_history_featurizer_is_used:
             # pick last vector if max history featurizer is used, since we inverted

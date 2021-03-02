@@ -1078,7 +1078,7 @@ class TransformerRasaModel(RasaModel):
 
         if num_layers > 0:
             # apply activation
-            outputs = tfa.activations.gelu(outputs)
+            outputs = tf.nn.gelu(outputs)
 
         return outputs, inputs, seq_ids, lm_mask_bool, attention_weights
 

@@ -257,7 +257,7 @@ class Ffnn(tf.keras.layers.Layer):
                 DenseWithSparseWeights(
                     units=layer_size,
                     sparsity=sparsity,
-                    activation=tfa.activations.gelu,
+                    activation=tf.nn.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
                 )
