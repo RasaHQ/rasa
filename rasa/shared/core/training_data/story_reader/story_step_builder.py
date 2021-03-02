@@ -157,16 +157,16 @@ class StoryStepBuilder:
         start_checkpoint_names = sorted(
             list({chk.name for s in self.current_steps for chk in s.start_checkpoints})
         )
-        current_steps_event_counts = [str(len(s.events)) for s in self.current_steps]
+        events = [str(e) for s in self.current_steps for e in s.events]
         # name: to identify the current story or rule
-        # current steps event counts: to identify the event position
-        #                             within the current story/rule
+        # events: to identify what has happened so far
+        #         within the current story/rule
         # start checkpoint names: to identify the section
         #                         within the current story/rule when there are
         #                         multiple internal checkpoints
         # messages texts or intents: identifying the members of the or statement
         unique_id = (
-            f"{self.name}_<>_{','.join(current_steps_event_counts)}"
+            f"{self.name}_<>_{'@@@'.join(events)}"
             f"_<>_{'@@@'.join(start_checkpoint_names)}"
             f"_<>_{'@@@'.join(messages_texts_or_intents)}"
         )
