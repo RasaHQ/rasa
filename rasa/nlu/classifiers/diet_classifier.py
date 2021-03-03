@@ -254,7 +254,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values -
-        # 'softmax', 'cosine', 'inner'.
+        # 'softmax' and 'linear_norm'.
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
@@ -880,7 +880,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message_sim = train_utils.normalize(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
-
         message_sim[::-1].sort()
         message_sim = message_sim.tolist()
 

@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Union
+from typing import Any, Dict, List, Optional, Text, Type, Union, FrozenSet
 import warnings
 
 from ruamel import yaml as yaml
@@ -297,13 +297,14 @@ def fix_yaml_loader() -> None:
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
+    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:
     """Enable yaml loader to process the environment variables in the yaml."""
     # eg. ${USER_NAME}, ${PASSWORD}
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
-    yaml.add_implicit_resolver("!env_var", env_var_pattern)
+    yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
     def env_var_constructor(loader, node):
         """Process environment variables found in the YAML."""
@@ -321,25 +322,21 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
+fix_yaml_loader()
+replace_environment_variables()
+
+
 def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
         reader_type: Reader type to use. By default "safe" will be used
+        replace_env_vars: Specifies if environment variables need to be replaced
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
-    fix_yaml_loader()
-
-    replace_environment_variables()
-
-    yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
-    yaml.allow_duplicate_keys = False
-
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
         content = (
@@ -348,6 +345,10 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
             .encode("utf-16", "surrogatepass")
             .decode("utf-16")
         )
+
+    yaml_parser = yaml.YAML(typ=reader_type)
+    yaml_parser.version = YAML_VERSION
+    yaml_parser.preserve_quotes = True
 
     return yaml_parser.load(content) or {}
 
