@@ -669,16 +669,17 @@ class DIET2DIET(DIET):
             training=self._training,
         )
 
-        # Lengths of sequences of sentence-level features are either all 1s (if some
-        # features are present) or 0s. These lengths are needed to correctly identify
-        # the total sequence lengths (of combined sequence- and sentence-level features)
-        # in order to extract the last
-        # TODO
-        # sentence_feature_lengths = self._get_sentence_feature_lengths(
-        #     self.tf_label_data, LABEL,
-        # )
+        # Last token is taken from the last position with real features, determined
+        # - by the number of real tokens, i.e. by the sequence length of sequence-level
+        #   features, and
+        # - by the presence or absence of sentence-level features (reflected in the
+        #   effective sequence length of these features being 1 or 0.
+        # We need to combine the two lengths to correctly get the last position.
+        sentence_feature_lengths = self._get_sentence_feature_lengths(
+            self.tf_label_data, LABEL,
+        )
         sentence_label = self._last_token(
-            label_transformed, sequence_feature_lengths + 1
+            label_transformed, sequence_feature_lengths + sentence_feature_lengths
         )
 
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](sentence_label)
@@ -690,39 +691,14 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        # batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
-        # sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
-        # sequence_lengths_text = self._get_sequence_lengths(
-        #     tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
-        # )
-        # mask_text = self._compute_mask(sequence_lengths_text)
-
+        # Process all features for text.
         sequence_feature_lengths_text = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT
         )
-
-        # (
-        #     text_transformed,
-        #     text_in,
-        #     text_seq_ids,
-        #     lm_mask_bool_text,
-        #     _,
-        # ) = self._create_sequence(
-        #     tf_batch_data[TEXT][SEQUENCE],
-        #     tf_batch_data[TEXT][SENTENCE],
-        #     sequence_mask_text,
-        #     mask_text,
-        #     self.text_name,
-        #     sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
-        #     dense_dropout=self.config[DENSE_INPUT_DROPOUT],
-        #     masked_lm_loss=self.config[MASKED_LM],
-        #     sequence_ids=True,
-        # )
-
         (
             text_transformed,
             text_in,
-            # mask_combined_sequence_sentence,
+            _,
             text_seq_ids,
             mlm_mask_booleanean_text,
             _,
@@ -735,25 +711,11 @@ class DIET2DIET(DIET):
             training=self._training,
         )
 
-        # sequence_mask_label = super()._get_mask_for(
-        #     tf_batch_data, LABEL, SEQUENCE_LENGTH
-        # )
-        # sequence_lengths_label = self._get_sequence_lengths(
-        #     tf_batch_data, LABEL, SEQUENCE_LENGTH, batch_dim
-        # )
-        # mask_label = self._compute_mask(sequence_lengths_label)
-
-        # label_transformed, _, _, _, _ = self._create_sequence(
-        #     tf_batch_data[LABEL][SEQUENCE],
-        #     tf_batch_data[LABEL][SENTENCE],
-        #     sequence_mask_label,
-        #     mask_label,
-        #     self.label_name,
-        # )
+        # Process all features for labels.
         sequence_feature_lengths_label = self._get_sequence_feature_lengths(
             tf_batch_data, LABEL
         )
-        (label_transformed, _, _, _, _, _) = self._tf_layers[
+        label_transformed, _, _, _, _, _ = self._tf_layers[
             f"sequence_layer.{self.label_name}"
         ](
             (
@@ -779,12 +741,24 @@ class DIET2DIET(DIET):
             self.mask_acc.update_state(acc)
             losses.append(loss)
 
-        # get sentence feature vector for label classification
+        # Get sentence feature vector for label classification. The vector is extracted
+        # from the last position with real features. To determine this position, we
+        # combine the sequence lengths of sequence- and sentence-level features.
+        sentence_feature_lengths_text = self._get_sentence_feature_lengths(
+            tf_batch_data, TEXT
+        )
         sentence_vector_text = self._last_token(
-            text_transformed, sequence_feature_lengths_text + 1
+            text_transformed,
+            sequence_feature_lengths_text + sentence_feature_lengths_text,
+        )
+
+        # Extract sentence vector for the label attribute in the same way.
+        sentence_feature_lengths_label = self._get_sentence_feature_lengths(
+            tf_batch_data, LABEL
         )
         sentence_vector_label = self._last_token(
-            label_transformed, sequence_feature_lengths_label + 1
+            label_transformed,
+            sequence_feature_lengths_label + sentence_feature_lengths_label,
         )
         label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
@@ -804,19 +778,6 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        # sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
-        # sequence_lengths_text = self._get_sequence_lengths(
-        #     tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim=1
-        # )
-        # mask_text = self._compute_mask(sequence_lengths_text)
-
-        # text_transformed, _, _, _, attention_weights = self._create_sequence(
-        #     tf_batch_data[TEXT][SEQUENCE],
-        #     tf_batch_data[TEXT][SENTENCE],
-        #     sequence_mask_text,
-        #     mask_text,
-        #     self.text_name,
-        # )
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT
         )

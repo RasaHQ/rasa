@@ -265,7 +265,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         return {
             feature_type: (
                 feature_type in attribute_signature
-                and attribute_signature[feature_type]
+                and len(attribute_signature[feature_type]) > 0
             )
             for feature_type in [SEQUENCE, SENTENCE]
         }
@@ -382,7 +382,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         sequence_tensor = tf.pad(sequence_tensor, [[0, 0], [0, 1], [0, 0]])
 
         # Sequence- and sentence-level features effectively get concatenated by
-        # summing the two padded feature arrays like this (batch size  = 1):
+        # summing the two padded feature arrays like this (batch size = 1):
         # [[seq1, seq2, seq3, 0, 0]] + [[0, 0, 0, sent1, 0]] =
         # = [[seq1, seq2, seq3, sent1, 0]]
         return sequence_tensor + sentence_tensor
@@ -594,7 +594,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         }
 
         self._enables_mlm = False
-        # When used within TED, masked language modeling becomes just input dropout,
+        # Note: Within TED, masked language modeling becomes just input dropout,
         # since there is no loss term associated with predicting the masked tokens.
         self._prepare_masked_language_modeling(attribute, attribute_signature, config)
 
@@ -763,7 +763,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         ],
         training: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-        """Combines all attribute features into one and embed using a transformer.
+        """Combines all attribute features into one and embeds using a transformer.
 
         Arguments:
             inputs: Tuple containing:
@@ -771,12 +771,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                     features.
                 sentence_features: List of 3-D dense or sparse tensors with sentence-
                     level features.
-                mask_sequence: a 3-D tensor mask that has 1s at real and 0s at padded
-                    positions corresponding to tokens in `sequence_features`.
-                mask_combined_sequence_sentence: a 3-D tensor mask similar to
-                    `mask_sequence` but having each sequence of 1s longer by 1 to
-                    account for sequence lengths of sequence- and sentence-level
-                    features being combined.
+                sequence_feature_lengths: A 1-D tensor containing the lengths of
+                    sequences of real token for each example in the batch.
             training: Python boolean indicating whether the layer should behave in
                 training mode (applying dropout to sparse tensors if applicable) or in
                 inference mode (not applying dropout).
@@ -786,6 +782,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 doing MLM) and embedded by a transformer.
             seq_sent_features: 3-D tensor, like `outputs`, but without masking and
                 transformer applied.
+            mask_combined_sequence_sentence: 3-D tensor with 1s in place of real
+                features (whether sequence- or sentence-level ones) and 0s elsewhere.
             token_ids: 3-D tensor with dense token-level features which can serve as
                 unique embeddings/IDs of all the different tokens found in the batch.
                 Empty tensor if not doing MLM.
