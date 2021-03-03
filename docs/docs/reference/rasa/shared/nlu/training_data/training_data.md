@@ -208,6 +208,14 @@ Returns the set of entity roles in the training data.
 
 Returns the set of entity groups in the training data.
 
+#### entity\_roles\_groups\_used
+
+```python
+ | entity_roles_groups_used() -> bool
+```
+
+Returns if any entity roles or groups are used anywhere in the training data.
+
 #### number\_of\_examples\_per\_entity
 
 ```python
