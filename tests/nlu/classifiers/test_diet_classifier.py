@@ -33,6 +33,7 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
+    LINEAR_NORM,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -376,30 +377,25 @@ async def test_softmax_normalization(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, prediction_min, prediction_max, output_length",
+    "classifier_params, data_path",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"},
-            -1,
-            1,
-            LABEL_RANKING_LENGTH,
-        ),
-        (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"},
-            -1e9,
-            1e9,
-            LABEL_RANKING_LENGTH,
+            {
+                RANDOM_SEED: 42,
+                EPOCHS: 1,
+                MODEL_CONFIDENCE: LINEAR_NORM,
+                RANKING_LENGTH: -1,
+            },
+            DEFAULT_NLU_DATA,
         ),
     ],
 )
 @pytest.mark.trains_model
-async def test_cross_entropy_without_normalization(
+async def test_inner_linear_normalization(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    prediction_min: float,
-    prediction_max: float,
-    output_length: int,
+    data_path: Text,
     monkeypatch: MonkeyPatch,
 ):
     pipeline = as_pipeline(
@@ -410,10 +406,7 @@ async def test_cross_entropy_without_normalization(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
-        _config,
-        path=str(tmp_path),
-        data="data/test/many_intents.yml",
-        component_builder=component_builder,
+        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
@@ -423,23 +416,17 @@ async def test_cross_entropy_without_normalization(
     parse_data = loaded.parse("hello")
     intent_ranking = parse_data.get("intent_ranking")
 
-    # check that the output was correctly truncated
-    assert len(intent_ranking) == output_length
-
-    intent_confidences = [intent.get("confidence") for intent in intent_ranking]
-
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in intent_confidences
-    ]
-    assert all(confidence_in_range)
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in intent_ranking]
+    ) == pytest.approx(1)
+    assert output_sums_to_1
 
     # check whether the normalization of rankings is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
+
+    # normalize shouldn't have been called
+    mock.normalize.assert_not_called()
 
 
 @pytest.mark.parametrize(
