@@ -2,12 +2,14 @@ import logging
 import uuid
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
+from rasa.core import constants
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from socketio import AsyncServer
+import jwt
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +130,8 @@ class SocketIOInput(InputChannel):
             credentials.get("namespace"),
             credentials.get("session_persistence", False),
             credentials.get("socketio_path", "/socket.io"),
+            credentials.get("jwt_key"),
+            credentials.get("jwt_method", "HS256"),
         )
 
     def __init__(
@@ -137,6 +141,8 @@ class SocketIOInput(InputChannel):
         namespace: Optional[Text] = None,
         session_persistence: bool = False,
         socketio_path: Optional[Text] = "/socket.io",
+        jwt_key: Optional[Text] = None,
+        jwt_method: Optional[Text] = "HS256",
     ):
         self.bot_message_evt = bot_message_evt
         self.session_persistence = session_persistence
@@ -144,6 +150,9 @@ class SocketIOInput(InputChannel):
         self.namespace = namespace
         self.socketio_path = socketio_path
         self.sio = None
+
+        self.jwt_key = jwt_key
+        self.jwt_algorithm = jwt_method
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
         if self.sio is None:
@@ -156,6 +165,23 @@ class SocketIOInput(InputChannel):
             )
             return
         return SocketIOOutput(self.sio, self.bot_message_evt)
+
+    def _decode_jwt(self, bearer_token: Text) -> Dict:
+        authorization_header_value = bearer_token.replace(
+            constants.BEARER_TOKEN_PREFIX, ""
+        )
+        return jwt.decode(
+            authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm
+        )
+
+    async def _decode_bearer_token(self, bearer_token: Text) -> Optional[Dict]:
+        # noinspection PyBroadException
+        try:
+            return self._decode_jwt(bearer_token)
+        except jwt.exceptions.InvalidSignatureError:
+            logger.error("JWT public key invalid.")
+        except Exception:
+            logger.exception("Failed to decode bearer token.")
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -175,8 +201,17 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(sid: Text, _) -> None:
-            logger.debug(f"User {sid} connected to socketIO endpoint.")
+        async def connect(sid: Text, environ: Dict) -> None:
+            jwt_payload = None
+            if environ.get("HTTP_AUTHORIZATION"):
+                jwt_payload = await self._decode_bearer_token(
+                    environ.get("HTTP_AUTHORIZATION")
+                )
+
+            if jwt_payload:
+                logger.debug(f"User {sid} connected to socketIO endpoint.")
+            else:
+                return False
 
         @sio.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
