@@ -4,7 +4,7 @@ from typing import Text
 
 
 @pytest.mark.parametrize(
-    "s, result",
+    "s, has_escaped_char",
     [
         ("Hey,\nmy name is Christof", True),
         ("Howdy!", False),
