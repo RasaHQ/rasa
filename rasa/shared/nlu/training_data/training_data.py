@@ -62,12 +62,15 @@ class TrainingData:
 
     @staticmethod
     def _load_lookup_table(lookup_table: Dict[Text, Any]) -> Dict[Text, Any]:
-        """Checks if the specified lookup table contains a filename in
+        """Loads the actual lookup table from file if there is a file specified.
+
+        Checks if the specified lookup table contains a filename in
         `elements` and replaces it with actual elements from the file.
         Returns the unchanged lookup table otherwise.
 
         Params:
             lookup_table: A lookup table.
+
         Returns:
             Updated lookup table where filenames are replaced with the contents of these files.
         """
