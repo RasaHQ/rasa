@@ -255,7 +255,6 @@ jobs:
       with:
         path: ${{ env.CHOCO_CACHE_LOCATION }}
         key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.txt') }}
-        restore-keys: ${{ runner.os }}-system
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'

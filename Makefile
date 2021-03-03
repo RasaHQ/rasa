@@ -129,7 +129,9 @@ static-checks: lint lint-security types
 
 CHOCO_CACHE_LOCATION ?= %TEMP%
 prepare-tests-windows-dependencies:
-	cat ./system_test_dependencies/windows.txt | xargs -r bash -c 'for dependency; do IFS="@" read -r NAME VERSION <<< "$$dependency"; choco install $$NAME --version $$VERSION --cache-location=$(CHOCO_CACHE_LOCATION); done' bash
+	echo $(CHOCO_CACHE_LOCATION)
+	mkdir $(CHOCO_CACHE_LOCATION)
+	cat ./system_test_dependencies/windows.txt | xargs -r bash -c 'for dependency; do IFS="@" read -r NAME VERSION <<< "$$dependency"; choco install $$NAME --version $$VERSION; done' bash
 
 prepare-tests-macos-dependencies:
 	# FIXME: why do we do '|| true' ?
