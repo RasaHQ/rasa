@@ -1722,15 +1722,18 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
         if form_data is None:
             continue
 
-        if "required_slots" in form_data:
-            slots = forms[form_name].get("required_slots")
-        elif "global_not_intent" in form_data and "required_slots" not in form_data:
-            raise InvalidDomain(
-                f"When you have a `global_not_intent` parameter, you need to add "
-                f"the keyword `required_slots` after it to define where your slot"
-                f" mappings begin. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
-                f"for more information."
-            )
+        if hasattr(form_data, "__iter__"):
+            if "required_slots" in form_data:
+                slots = forms[form_name].get("required_slots")
+            elif "global_not_intent" in form_data and "required_slots" not in form_data:
+                raise InvalidDomain(
+                    f"When you have a `global_not_intent` parameter, you need to add "
+                    f"the keyword `required_slots` after it to define where your slot"
+                    f" mappings begin. Please see {rasa.shared.constants.DOCS_URL_FORMS}"
+                    f" for more information."
+                )
+            else:
+                slots = form_data
         else:
             slots = form_data
 
