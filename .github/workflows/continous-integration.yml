@@ -253,8 +253,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       uses: actions/cache@v1
       with:
-        path: ${{ env.CHOCO_CACHE_LOCATION }}
-        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.txt') }}
+        path: ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
+        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.txt') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -282,13 +282,6 @@ jobs:
         # Set chocolatey cache directory
         choco config set cacheLocation ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
         make prepare-tests-windows
-
-    - name: Upload choco logs 🍫
-      uses: actions/upload-artifact@v2
-      if: failure() && needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
-      with:
-        name: chocolatey.log
-        path: C:\ProgramData\chocolatey\logs\chocolatey.log
 
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
