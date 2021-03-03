@@ -390,8 +390,8 @@ async def test_eval_data(
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config_path,
         training_data_paths=[
-            "data/examples/rasa/demo-rasa.md",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
     )
 
@@ -460,10 +460,10 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
 @pytest.mark.trains_model
 def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
 

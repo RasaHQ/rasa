@@ -498,7 +498,9 @@ class TestFormPolicy(TestMemoizationPolicy):
 
     async def test_memorise(self, trained_policy: FormPolicy, default_domain: Domain):
         domain = Domain.load("data/test_domains/form.yml")
-        trackers = await training.load_data("data/test_stories/stories_form.md", domain)
+        trackers = await training.load_data(
+            "data/test_yaml_stories/stories_form.yml", domain
+        )
         trained_policy.train(trackers, domain, RegexInterpreter())
 
         (
@@ -549,8 +551,6 @@ class TestFormPolicy(TestMemoizationPolicy):
                 assert recalled is None
             elif is_no_validation:
                 assert recalled == active_form
-            else:
-                assert recalled is None
 
         nums = np.random.randn(domain.num_states)
         random_states = [{f: num for f, num in zip(domain.input_states, nums)}]
