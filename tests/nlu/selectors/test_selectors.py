@@ -56,13 +56,14 @@ from tests.nlu.classifiers.test_diet_classifier import as_pipeline
         ],
     ],
 )
+@pytest.mark.trains_model
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -110,10 +111,10 @@ def test_preprocess_selector_multiple_retrieval_intents():
 
     # use some available data
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_extra_intent = TrainingData(
         [
@@ -145,10 +146,10 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -176,10 +177,10 @@ def test_resolve_intent_response_key_from_label(
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -202,6 +203,7 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
+@pytest.mark.trains_model
 async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path
 ):
@@ -260,7 +262,7 @@ async def _train_persist_load_with_different_settings(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa.md",
+        data="data/examples/rasa/demo-rasa.yml",
         component_builder=component_builder,
     )
 
@@ -278,6 +280,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
+@pytest.mark.trains_model
 async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -292,6 +295,7 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
+@pytest.mark.trains_model
 async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
     """Tests if processing a message returns attention weights as numpy array."""
 
@@ -323,12 +327,10 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
 
 @pytest.mark.parametrize(
     "classifier_params, prediction_min, prediction_max, output_length",
-    [
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"}, -1, 1, 9),
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9),
-    ],
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 0, 1, 9)],
 )
-async def test_cross_entropy_without_normalization(
+@pytest.mark.trains_model
+async def test_cross_entropy_with_linear_norm(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
@@ -363,12 +365,9 @@ async def test_cross_entropy_without_normalization(
 
     response_confidences = [response.get("confidence") for response in response_ranking]
 
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in response_confidences
-    ]
-    assert all(confidence_in_range)
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
+    assert output_sums_to_1
 
     # normalize shouldn't have been called
     mock.normalize.assert_not_called()
@@ -377,6 +376,7 @@ async def test_cross_entropy_without_normalization(
 @pytest.mark.parametrize(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
+@pytest.mark.trains_model
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch,
     component_builder: ComponentBuilder,
@@ -419,6 +419,7 @@ async def test_margin_loss_is_not_normalized(
         ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, "data/test_selectors", 2),
     ],
 )
+@pytest.mark.trains_model
 async def test_softmax_ranking(
     component_builder: ComponentBuilder,
     tmp_path: Path,

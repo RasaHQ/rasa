@@ -38,6 +38,7 @@ from tests.test_model import _fingerprint
         {"model_name": None, "prefix": None},
     ],
 )
+@pytest.mark.trains_model
 def test_package_model(trained_rasa_model: Text, parameters: Dict):
     output_path = tempfile.mkdtemp()
     train_path = rasa.model.unpack_model(trained_rasa_model)
@@ -80,6 +81,7 @@ def count_temp_rasa_files(directory: Text) -> int:
     )
 
 
+@pytest.mark.trains_model
 def test_train_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -117,6 +119,7 @@ def test_train_temp_files(
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
 
+@pytest.mark.trains_model
 def test_train_core_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -139,6 +142,7 @@ def test_train_core_temp_files(
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
 
+@pytest.mark.trains_model
 def test_train_nlu_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -173,6 +177,7 @@ def test_train_nlu_wrong_format_error_message(
     assert "Please verify the data format" in captured.out
 
 
+@pytest.mark.trains_model
 def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
 
@@ -190,6 +195,7 @@ def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
     )
 
 
+@pytest.mark.trains_model
 def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
     domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
@@ -226,6 +232,7 @@ def test_train_nlu_no_nlu_file_error_message(
     assert "No NLU data given" in captured.out
 
 
+@pytest.mark.trains_model
 def test_trained_interpreter_passed_to_core_training(
     monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_rasa_model: Text
 ):
@@ -254,6 +261,7 @@ def test_trained_interpreter_passed_to_core_training(
     assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
 
 
+@pytest.mark.trains_model
 def test_interpreter_of_old_model_passed_to_core_training(
     monkeypatch: MonkeyPatch, tmp_path: Path, trained_rasa_model: Text
 ):
@@ -379,6 +387,7 @@ def new_model_path_in_same_dir(old_model_path: Text) -> Text:
 
 
 class TestE2e:
+    @pytest.mark.trains_model
     def test_e2e_gives_experimental_warning(
         self,
         monkeypatch: MonkeyPatch,
@@ -407,6 +416,7 @@ class TestE2e:
             ]
         )
 
+    @pytest.mark.trains_model
     def test_models_not_retrained_if_no_new_data(
         self,
         monkeypatch: MonkeyPatch,
@@ -429,6 +439,7 @@ class TestE2e:
         mocked_core_training.assert_not_called()
         mocked_nlu_training.assert_not_called()
 
+    @pytest.mark.trains_model
     def test_retrains_nlu_and_core_if_new_e2e_example(
         self,
         monkeypatch: MonkeyPatch,
@@ -459,6 +470,7 @@ class TestE2e:
         mocked_core_training.assert_called_once()
         mocked_nlu_training.assert_called_once()
 
+    @pytest.mark.trains_model
     def test_retrains_only_core_if_new_e2e_example_seen_before(
         self,
         monkeypatch: MonkeyPatch,
@@ -517,6 +529,7 @@ class TestE2e:
         output = str(tmp_path / "models")
         return output
 
+    @pytest.mark.trains_model
     def test_new_nlu_data_retrains_core_if_there_are_e2e_stories(
         self,
         monkeypatch: MonkeyPatch,
@@ -547,6 +560,7 @@ class TestE2e:
         mocked_core_training.assert_called_once()
         mocked_nlu_training.assert_called_once()
 
+    @pytest.mark.trains_model
     def test_new_nlu_data_does_not_retrain_core_if_there_are_no_e2e_stories(
         self,
         monkeypatch: MonkeyPatch,
@@ -610,6 +624,7 @@ class TestE2e:
 
 @pytest.mark.timeout(300)
 @pytest.mark.parametrize("use_latest_model", [True, False])
+@pytest.mark.trains_model
 def test_model_finetuning(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -653,6 +668,7 @@ def test_model_finetuning(
 
 @pytest.mark.timeout(300)
 @pytest.mark.parametrize("use_latest_model", [True, False])
+@pytest.mark.trains_model
 def test_model_finetuning_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -707,6 +723,7 @@ def test_model_finetuning_core(
     assert ted.finetune_mode
 
 
+@pytest.mark.trains_model
 def test_model_finetuning_core_with_default_epochs(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
@@ -740,6 +757,7 @@ def test_model_finetuning_core_with_default_epochs(
     assert ted.config[EPOCHS] == TEDPolicy.defaults[EPOCHS] * 2
 
 
+@pytest.mark.trains_model
 def test_model_finetuning_core_new_domain_label(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
@@ -767,6 +785,7 @@ def test_model_finetuning_core_new_domain_label(
     mocked_core_training.assert_not_called()
 
 
+@pytest.mark.trains_model
 def test_model_finetuning_new_domain_label_stops_all_training(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
@@ -801,6 +820,7 @@ def test_model_finetuning_new_domain_label_stops_all_training(
 
 @pytest.mark.timeout(300)
 @pytest.mark.parametrize("use_latest_model", [True, False])
+@pytest.mark.trains_model
 def test_model_finetuning_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -859,6 +879,7 @@ def test_model_finetuning_nlu(
     assert new_diet_metadata[EPOCHS] == 2
 
 
+@pytest.mark.trains_model
 def test_model_finetuning_nlu_new_label(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
@@ -885,6 +906,7 @@ def test_model_finetuning_nlu_new_label(
     mocked_nlu_training.assert_not_called()
 
 
+@pytest.mark.trains_model
 def test_model_finetuning_nlu_new_entity(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
@@ -911,6 +933,7 @@ def test_model_finetuning_nlu_new_entity(
     mocked_nlu_training.assert_not_called()
 
 
+@pytest.mark.trains_model
 def test_model_finetuning_nlu_new_label_already_in_domain(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -943,6 +966,7 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     mocked_nlu_training.assert_not_called()
 
 
+@pytest.mark.trains_model
 def test_model_finetuning_nlu_new_label_to_domain_only(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
@@ -969,6 +993,7 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
 
 
 @pytest.mark.timeout(200)
+@pytest.mark.trains_model
 def test_model_finetuning_nlu_with_default_epochs(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):

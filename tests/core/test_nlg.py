@@ -63,6 +63,7 @@ def http_nlg(loop, sanic_client):
     return loop.run_until_complete(sanic_client(nlg_app()))
 
 
+@pytest.mark.trains_model
 async def test_nlg(http_nlg, trained_rasa_model):
     sender = str(uuid.uuid1())
 

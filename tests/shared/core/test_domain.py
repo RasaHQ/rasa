@@ -137,7 +137,7 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
 
 async def test_create_train_data_unfeaturized_entities():
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
-    stories_file = "data/test_stories/stories_unfeaturized_entities.md"
+    stories_file = "data/test_yaml_stories/stories_unfeaturized_entities.yml"
     domain = Domain.load(domain_file)
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(

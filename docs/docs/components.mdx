@@ -1474,6 +1474,19 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
+  * `constrain_similarities`:
+    This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
+    This helps in keeping similarities between input and negative labels to smaller values.
+    This should help in better generalization of the model to real world test sets.
+
+  * `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
+
+    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
+
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -1623,16 +1636,13 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"        | Affects how model's confidence for each intent               |
-|                                 |                  | is computed. It can take three values                        |
+|                                 |                  | is computed. It can take two values:                         |
 |                                 |                  | 1. `softmax` - Similarities between input and intent         |
 |                                 |                  | embeddings are post-processed with a softmax function,       |
 |                                 |                  | as a result of which confidence for all intents sum up to 1. |
-|                                 |                  | 2. `cosine` - Cosine similarity between input and intent     |
-|                                 |                  | embeddings. Confidence for each intent is in the             |
-|                                 |                  | range `[-1,1]`.                                              |
-|                                 |                  | 3. `inner` - Dot product similarity between input and intent |
-|                                 |                  | embeddings. Confidence for each intent is in an unbounded    |
-|                                 |                  | range.                                                       |
+|                                 |                  | 2. `linear_norm` - Linearly normalized dot product similarity|
+|                                 |                  | between input and intent embeddings. Confidence for each     |
+|                                 |                  | intent will be in the range `[0,1]`                          |
 |                                 |                  | This parameter does not affect the confidence for entity     |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
@@ -2688,6 +2698,18 @@ Selectors predict a bot response from a set of candidate responses.
     set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
+  * `constrain_similarities`:
+    This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
+    This helps in keeping similarities between input and negative labels to smaller values.
+    This should help in better generalization of the model to real world test sets.
+
+  * `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
+
+    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
+
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
   Default is `None`, i.e. the model is trained for all retrieval intents.
@@ -2840,16 +2862,13 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"         | Affects how model's confidence for each response label       |
-|                                 |                   | is computed. It can take three values                        |
+|                                 |                   | is computed. It can take two values:                         |
 |                                 |                   | 1. `softmax` - Similarities between input and response label |
 |                                 |                   | embeddings are post-processed with a softmax function,       |
 |                                 |                   | as a result of which confidence for all labels sum up to 1.  |
-|                                 |                   | 2. `cosine` - Cosine similarity between input and response   |
-|                                 |                   | label embeddings. Confidence for each label is in the        |
-|                                 |                   | range `[-1,1]`.                                              |
-|                                 |                   | 3. `inner` - Dot product similarity between input and        |
-|                                 |                   | response label embeddings. Confidence for each label is in an|
-|                                 |                   | unbounded range.                                             |
+|                                 |                   | 2. `linear_norm` - Linearly normalized dot product similarity|
+|                                 |                   | between input and response label embeddings. Confidence for  |
+|                                 |                   | each label is in the range `[0, 1]`.                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 ```
 
