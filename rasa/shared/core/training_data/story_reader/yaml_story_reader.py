@@ -181,7 +181,8 @@ class YAMLStoryReader(StoryReader):
         try:
             with open(file_path) as file:
                 return any(
-                    any(line.lstrip().startswith(f"{key}:") for key in keys) for line in file
+                    any(line.lstrip().startswith(f"{key}:") for key in keys)
+                    for line in file
                 )
         except FileNotFoundError:
             raise FileNotFoundException(
