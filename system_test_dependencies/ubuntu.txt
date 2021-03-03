@@ -1,3 +1,3 @@
-graphviz=2.40.1-2
+graphviz=2.42.2-3build2
 graphviz-dev
-python-tk=2.7.17-1~18.04
+python-tk=2.7.18-1
