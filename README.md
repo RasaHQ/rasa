@@ -68,7 +68,7 @@ the docs for the version you installed.
 Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
 questions.
 
-### README Contents:
+### README Contents 📄:
 - [How to contribute](#how-to-contribute)
 - [Development Internals](#development-internals)
 - [License](#license)
