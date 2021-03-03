@@ -280,7 +280,6 @@ jobs:
         make install-full
 
         # Set chocolatey cache directory
-        choco config set cacheLocation ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
         ls ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}\
         make prepare-tests-windows
 
