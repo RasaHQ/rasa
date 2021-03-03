@@ -31,7 +31,7 @@ env:
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: '3.7'
-  CHOCO_CACHE_LOCATION: ./system_dependencies_cache
+  CHOCO_CACHE_LOCATION: system_dependencies_cache
 
 jobs:
   changes:
@@ -278,6 +278,9 @@ jobs:
           New-Item -Path $spacy_data_dir -Type Directory
         }
         make install-full
+
+        # Set chocolatey cache directory
+        choco config set cacheLocation ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
         make prepare-tests-windows
 
     - name: Upload choco logs 🍫
