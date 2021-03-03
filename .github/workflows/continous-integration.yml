@@ -254,7 +254,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
-        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.txt') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.txt') }}-${{ secrets.WINDOWS_SYSTEM_CACHE_VERSION }}
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -281,6 +281,7 @@ jobs:
 
         # Set chocolatey cache directory
         choco config set cacheLocation ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
+        ls ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}\
         make prepare-tests-windows
 
     - name: Test Code 🔍
