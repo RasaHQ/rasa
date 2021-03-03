@@ -189,6 +189,7 @@ Parses yaml from a text.
 
 - `content` - A text containing yaml content.
 - `reader_type` - Reader type to use. By default &quot;safe&quot; will be used
+- `replace_env_vars` - Specifies if environment variables need to be replaced
   
 
 **Raises**:

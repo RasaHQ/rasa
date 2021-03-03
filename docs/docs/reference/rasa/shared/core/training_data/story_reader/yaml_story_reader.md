@@ -112,7 +112,7 @@ Check if file contains Core training data or rule data in YAML format.
  | is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool
 ```
 
-Check if all keys are contained in the parsed dictionary from a yaml file.
+Check if any of the keys is contained in the root object of the yaml file.
 
 **Arguments**:
 
@@ -122,13 +122,12 @@ Check if all keys are contained in the parsed dictionary from a yaml file.
 
 **Returns**:
 
-  `True` if all the keys are contained in the file, `False` otherwise.
+  `True` if at least one of the keys is found, `False` otherwise.
   
 
 **Raises**:
 
-- `YamlException` - if the file seems to be a YAML file (extension) but
-  can not be read / parsed.
+- `FileNotFoundException` - if the file cannot be found.
 
 #### is\_test\_stories\_file
 
