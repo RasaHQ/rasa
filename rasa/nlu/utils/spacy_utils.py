@@ -93,8 +93,8 @@ class SpacyNLP(Component):
 
     @classmethod
     def check_model_fallback(cls, spacy_model_name, language_name, warn=False):
-        """
-        This method checks if the `spacy_model_name` is missing and attempts to do a fallback.
+        """This method checks if the `spacy_model_name` is missing and attempts to do a fallback.
+
         This feature is a measure to support spaCy 3.0 without breaking on users. In the future
         spaCy will no longer support `spacy link`.
         """
@@ -137,14 +137,15 @@ class SpacyNLP(Component):
         return spacy_model_name
 
     def provide_context(self) -> Dict[Text, Any]:
+        """Creates a context dictionary from spaCy nlp object."""
         return {"spacy_nlp": self.nlp}
 
     def doc_for_text(self, text: Text) -> "Doc":
-
+        """Makes a spaCy doc object from a string of text."""
         return self.nlp(self.preprocess_text(text))
 
     def preprocess_text(self, text: Optional[Text]) -> Text:
-
+        """Process the text before it is handled by spaCy."""
         if text is None:
             # converted to empty string so that it can still be passed to spacy.
             # Another option could be to neglect tokenization of the attribute of
