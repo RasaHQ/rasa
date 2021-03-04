@@ -28,7 +28,7 @@ def get_test_params_for_component(component: Text) -> Dict[Text, Union[Text, int
 
 def as_pipeline(*components) -> List[Dict[Text, Dict]]:
     return [
-        {**{"name": c}, **get_test_params_for_component(c)} if isinstance(c, str) else c
+        {"name": c, **get_test_params_for_component(c)} if isinstance(c, str) else c
         for c in components
     ]
 
