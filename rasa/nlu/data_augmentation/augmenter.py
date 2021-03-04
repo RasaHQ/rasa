@@ -471,8 +471,6 @@ def _get_intents_with_performance_changes(
     """
     changed_intents = set()
     for intent_key in all_intents:
-        # if intent_key not in intent_report:
-        #    continue
         for metric in ["precision", "recall", "f1-score"]:
             rounded_original = round(
                 classification_report[intent_key][metric], significant_figures
