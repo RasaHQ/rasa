@@ -593,13 +593,13 @@ def augment_nlu_data(
     logger.info(
         "Running augmentation strategy by maximising vocabulary expansion per intent..."
     )
-    output_directory_diverse = os.path.join(
+    max_vocab_expansion_training_file_path = os.path.join(
         output_directory, "augmentation_max_vocab_expansion"
     )
-    rasa.shared.utils.io.create_directory(output_directory_diverse)
+    rasa.shared.utils.io.create_directory(max_vocab_expansion_training_file_path)
 
     nlu_training_file_diverse = os.path.join(
-        output_directory_diverse, "nlu_train_augmented_max_vocab_expansion.yml"
+        max_vocab_expansion_training_file_path, "nlu_train_augmented_max_vocab_expansion.yml"
     )
     nlu_max_vocab_augmentation_data = _create_augmented_training_data_max_vocab_expansion(
         nlu_training_data=nlu_training_data,
@@ -612,7 +612,7 @@ def augment_nlu_data(
         nlu_training_data=nlu_max_vocab_augmentation_data,
         nlu_evaluation_data=nlu_evaluation_data,
         nlu_training_file=nlu_training_file_diverse,
-        output_directory=output_directory_diverse,
+        output_directory=max_vocab_expansion_training_file_path,
         classification_report=classification_report,
         intents_to_augment=intents_to_augment,
         config=config,
@@ -620,11 +620,11 @@ def augment_nlu_data(
 
     # Run data augmentation with random sampling augmentation
     logger.info("Running augmentation by picking random paraphrases...")
-    output_directory_random = os.path.join(output_directory, "augmentation_random")
-    rasa.shared.utils.io.create_directory(output_directory_random)
+    random_training_file_path = os.path.join(output_directory, "augmentation_random")
+    rasa.shared.utils.io.create_directory(random_training_file_path)
 
     nlu_training_file_random = os.path.join(
-        output_directory_random, "nlu_train_augmented_random.yml"
+        random_training_file_path, "nlu_train_augmented_random.yml"
     )
     nlu_random_augmentation_data = _create_augmented_training_data_random_sampling(
         nlu_training_data=nlu_training_data,
@@ -638,7 +638,7 @@ def augment_nlu_data(
         nlu_training_data=nlu_random_augmentation_data,
         nlu_evaluation_data=nlu_evaluation_data,
         nlu_training_file=nlu_training_file_random,
-        output_directory=output_directory_random,
+        output_directory=random_training_file_path,
         classification_report=classification_report,
         intents_to_augment=intents_to_augment,
         config=config,
