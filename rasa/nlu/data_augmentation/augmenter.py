@@ -11,6 +11,9 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.train import train_nlu
+from rasa.nlu.components import Component, ComponentBuilder
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.model import Interpreter
 from rasa.nlu.test import (
     create_intent_report,
@@ -22,8 +25,8 @@ from rasa.shared.nlu.constants import (
     INTENT,
     METADATA,
     METADATA_EXAMPLE,
-    METADATA_VOCABULARY,
     TEXT,
+    VOCABULARY,
 )
 import rasa.utils.plotting
 
@@ -108,6 +111,34 @@ def _collect_intents_for_data_augmentation(
     return pooled_intents
 
 
+def _create_tokenizer_from_config(config_path: Text) -> Component:
+    """
+    Loads the given config file and creates the tokenizer from the given pipeline.
+
+    The tokenizer is required for the augmentation strategy based on maximum vocabulary expansion where the paraphrases
+    as well as the originally supplied training data need to be tokenized.
+
+    Args:
+         config_path: Path to the config file.
+
+    Returns:
+        The tokenizer from the config file or the WhitespaceTokenizer if no tokenizer was found in the config file.
+    """
+    config = rasa.shared.utils.io.read_config_file(config_path)
+    pipeline = config.get("pipeline", [])
+    tokenizer_config = {"name": "WhitespaceTokenizer"}
+    for component in pipeline:
+        if component.get("name", "").lower().endswith("tokenizer"):
+            tokenizer_config = component
+            break
+
+    tokenizer = ComponentBuilder().create_component(
+        tokenizer_config, RasaNLUModelConfig(config)
+    )
+
+    return tokenizer
+
+
 def _create_paraphrase_pool(
     paraphrases: TrainingData,
     intents_to_augment: Set[Text],
@@ -158,11 +189,7 @@ def _create_paraphrase_pool(
                 continue
 
             # Create Message-compatible data representation for the paraphrases
-            data = {
-                TEXT: paraphrase,
-                INTENT: paraphrase_msg.get(INTENT),
-                METADATA: {METADATA_VOCABULARY: set(paraphrase.lower().split())},
-            }
+            data = {TEXT: paraphrase, INTENT: paraphrase_msg.get(INTENT)}
             paraphrase_pool[paraphrase_msg.get(INTENT)].append(Message(data=data))
 
     return paraphrase_pool
@@ -196,6 +223,7 @@ def _create_augmented_training_data_max_vocab_expansion(
     paraphrase_pool: Dict[Text, List],
     intents_to_augment: Set[Text],
     augmentation_factor: Dict[Text, int],
+    config: Text,
 ) -> TrainingData:
     """Selects paraphrases for data augmentation on the basis of maximum vocabulary expansion between the existing
         training data for a given intent and the generated paraphrases.
@@ -210,6 +238,15 @@ def _create_augmented_training_data_max_vocab_expansion(
         Augmented training data based on the maximum vocabulary expansion strategy
     """
 
+    tokenizer = _create_tokenizer_from_config(config_path=config)
+    for intent in intents_to_augment:
+        for message in paraphrase_pool[intent]:
+            tokenizer.process(message)
+            message_tokens = [
+                token.text.lower() for token in message.get(TOKENS_NAMES[TEXT])
+            ]
+            message.set(VOCABULARY, set(message_tokens))
+
     # Extract intent-level vocabulary for all intents that should be augmented
     intent_vocab = collections.defaultdict(set)
     filtered_training_data = nlu_training_data.filter_training_examples(
@@ -217,14 +254,20 @@ def _create_augmented_training_data_max_vocab_expansion(
     )
     for message in filtered_training_data.intent_examples:
         intent = message.get(INTENT)
-        intent_vocab[intent] |= set(message.get(TEXT, "").lower().split())
+
+        tokenizer.process(message)
+        message_tokens = [
+            token.text.lower() for token in message.get(TOKENS_NAMES[TEXT])
+        ]
+
+        intent_vocab[intent] |= set(message_tokens)
 
     # Select paraphrases that maximise vocabulary expansion
     new_training_data = []
     for intent in paraphrase_pool.keys():
         max_vocab_expansion = []
         for message in paraphrase_pool[intent]:
-            paraphrase_vocab = message.get(METADATA, {}).get(METADATA_VOCABULARY, set())
+            paraphrase_vocab = message.get(VOCABULARY, set())
             num_new_words = len(paraphrase_vocab - intent_vocab[intent])
 
             max_vocab_expansion.append((num_new_words, message))
@@ -616,6 +659,7 @@ def augment_nlu_data(
         paraphrase_pool=paraphrase_pool,
         intents_to_augment=intents_to_augment,
         augmentation_factor=augmentation_factor_per_intent,
+        config=config,
     )
 
     _run_data_augmentation(
