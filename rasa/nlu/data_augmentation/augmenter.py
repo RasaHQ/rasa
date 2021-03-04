@@ -440,11 +440,11 @@ def _plot_summary_report(
         output_directory: Directory to store the summary plot in.
     """
     for metric in ["precision", "recall", "f1-score"]:
-        output_file_diverse = os.path.join(output_directory, f"{metric}_changes.png")
+        output_file = os.path.join(output_directory, f"{metric}_changes.png")
         rasa.utils.plotting.plot_intent_augmentation_summary(
             augmentation_summary=intent_summary,
             metric=metric,
-            output_file=output_file_diverse,
+            output_file=output_file,
         )
 
 
