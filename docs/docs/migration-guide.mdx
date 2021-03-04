@@ -10,6 +10,33 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.2 to Rasa 2.3
+
+### Machine Learning Components
+
+A few changes have been made to the loss function inside machine learning (ML)
+components `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
+1. Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0. Use `loss_type=cross_entropy` instead.
+2. The default loss function (`loss_type=cross_entropy`) can add an optional sigmoid cross-entropy loss of all similarity values to constrain
+them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
+
+Also, a new option `model_confidence` has been added to each ML component. It affects how a model's confidence for each label is computed during inference. It can take one of three values:
+1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
+2. `cosine` - Cosine similarity between input and label embeddings. Confidence for each label will be in the range `[-1,1]`.
+3. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in an unbounded range.
+The default value is `softmax`, but we recommend using `cosine` as that will be the new default value from Rasa Open Source 3.0.0 onwards.
+The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
+
+With both the above recommendations, users should configure their ML component, e.g. `DIETClassifier`, as:
+```
+- name: DIETClassifier
+  model_confidence: cosine
+  constrain_similarities: True
+  ...
+```
+Once the assistant is re-trained with the above configuration, users should also tune fallback confidence thresholds.
+
+
 ## Rasa 2.1 to Rasa 2.2
 
 ### General
@@ -1000,7 +1027,7 @@ model before trying to use it with this improved version.
 * The `--num_threads` parameter was removed from the `run` command. The
   server will always run single-threaded, but will now run asynchronously. If you want to
   make use of multiple processes, feel free to check out the [Sanic server
-  documentation](https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn).
+  documentation](https://sanic.readthedocs.io/en/stable/sanic/deploying.html#running-via-gunicorn).
 
 * To avoid conflicts in script parameter names, connectors in the `run` command now need to be specified with
   `--connector`, as `-c` is no longer supported. The maximum history in the `rasa visualize` command needs to be

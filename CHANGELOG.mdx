@@ -16,6 +16,162 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.3.3] - 2021-02-25
+                       
+
+### Bugfixes
+- [#8001](https://github.com/rasahq/rasa/issues/8001): Fixed bug where the conversation does not lock before handling a reminder event.
+
+
+## [2.3.2] - 2021-02-22
+                       
+
+### Bugfixes
+- [#7972](https://github.com/rasahq/rasa/issues/7972): Fix a bug where, if a user injects an intent using the HTTP API, slot auto-filling is not performed on the entities provided.
+
+
+## [2.3.1] - 2021-02-17
+                       
+
+### Bugfixes
+- [#7970](https://github.com/rasahq/rasa/issues/7970): Fixed a YAML validation error which happened when executing multiple validations
+  concurrently. This could e.g. happen when sending concurrent requests to server
+  endpoints which process YAML training data.
+
+
+## [2.3.0] - 2021-02-11
+                       
+
+### Improvements
+- [#5673](https://github.com/rasahq/rasa/issues/5673): Expose diagnostic data for action and NLU predictions.
+
+  Add `diagnostic_data` field to the [Message](./reference/rasa/shared/nlu/training_data/message.md#message-objects)
+  and [Prediction](./reference/rasa/core/policies/policy.md#policyprediction-objects) objects, which contain
+  information about attention weights and other intermediate results of the inference computation.
+  This information can be used for debugging and fine-tuning, e.g. with [RasaLit](https://github.com/RasaHQ/rasalit).
+
+  For examples of how to access the diagnostic data, see [here](https://gist.github.com/JEM-Mosig/c6e15b81ee70561cb72e361aff310d7e).
+- [#5986](https://github.com/rasahq/rasa/issues/5986): Using the `TrainingDataImporter` interface to load the data in `rasa test core`.
+
+  Failed test stories are now referenced by their absolute path instead of the relative path.
+- [#7292](https://github.com/rasahq/rasa/issues/7292): Improve error handling and Sentry tracking:
+  - Raise `MarkdownException` when training data in Markdown format cannot be read.
+  - Raise `InvalidEntityFormatException` error instead of `json.JSONDecodeError` when entity format is in valid
+    in training data.
+  - Gracefully handle empty sections in endpoint config files.
+  - Introduce `ConnectionException` error and raise it when `TrackerStore` and `EventBroker`
+    cannot connect to 3rd party services, instead of raising exceptions from 3rd party libraries.
+  - Improve `rasa.shared.utils.common.class_from_module_path` function by making sure it always returns a class.
+    The function currently raises a deprecation warning if it detects an anomaly.
+  - Ignore `MemoryError` and `asyncio.CancelledError` in Sentry.
+  - `rasa.shared.utils.validation.validate_training_data` now raises a `SchemaValidationError` when validation fails
+    (this error inherits `jsonschema.ValidationError`, ensuring backwards compatibility).
+- [#7303](https://github.com/rasahq/rasa/issues/7303): Allow `PolicyEnsemble` in cases where calling individual policy's `load` method returns `None`.
+- [#7420](https://github.com/rasahq/rasa/issues/7420): User message metadata can now be accessed via the default slot 
+  `session_started_metadata` during the execution of a 
+  [custom `action_session_start`](default-actions.mdx#customization).
+
+  ```python
+  from typing import Any, Text, Dict, List
+  from rasa_sdk import Action, Tracker
+  from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
+
+
+  class ActionSessionStart(Action):
+      def name(self) -> Text:
+          return "action_session_start"
+
+      async def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+      ) -> List[Dict[Text, Any]]:
+          metadata = tracker.get_slot("session_started_metadata")
+
+          # Do something with the metadata
+          print(metadata)
+
+          # the session should begin with a `session_started` event and an `action_listen`
+          # as a user message follows
+          return [SessionStarted(), ActionExecuted("action_listen")]
+  ```
+- [#7579](https://github.com/rasahq/rasa/issues/7579): Add BILOU tagging schema for entity extraction in end-to-end TEDPolicy.
+- [#7616](https://github.com/rasahq/rasa/issues/7616): Added two new parameters `constrain_similarities` and `model_confidence` to machine learning (ML) components - [DIETClassifier](components.mdx#dietclassifier), [ResponseSelector](components.mdx#dietclassifier) and [TEDPolicy](policies.mdx#ted-policy).
+
+  Setting `constrain_similarities=True` adds a sigmoid cross-entropy loss on all similarity values to restrict them to an approximate range in `DotProductLoss`. This should help the models to perform better on real world test sets.
+  By default, the parameter is set to `False` to preserve the old behaviour, but users are encouraged to set it to `True` and re-train their assistants as it will be set to `True` by default from Rasa Open Source 3.0.0 onwards.
+
+  Parameter `model_confidence` affects how model's confidence for each label is computed during inference. It can take three values:
+  1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
+  2. `cosine` - Cosine similarity between input label embeddings. Confidence for each label will be in the range `[-1,1]`.
+  3. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in an unbounded range.
+
+  Setting `model_confidence=cosine` should help users tune the fallback thresholds of their assistant better. The default value is `softmax` to preserve the old behaviour, but we recommend using `cosine` as that will be the new default value from Rasa Open Source 3.0.0 onwards. The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
+
+  With both the above recommendations, users should configure their ML component, e.g. `DIETClassifier`, as
+  ```yaml
+  - name: DIETClassifier
+    model_confidence: cosine
+    constrain_similarities: True
+    ...
+  ```
+  Once the assistant is re-trained with the above configuration, users should also tune fallback confidence thresholds.
+
+  Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0 . Use `loss_type=cross_entropy` instead.
+
+  The default [auto-configuration](model-configuration.mdx#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
+- [#7817](https://github.com/rasahq/rasa/issues/7817): Use simple random uniform distribution of integers in negative sampling, because
+  negative sampling with `tf.while_loop` and random shuffle inside creates a memory leak.
+- [#7848](https://github.com/rasahq/rasa/issues/7848): Added support to configure `exchange_name` for [pika event broker](event-brokers.mdx#pika-event-broker).
+- [#7867](https://github.com/rasahq/rasa/issues/7867): If `MaxHistoryTrackerFeaturizer` is used, invert the dialogue sequence before passing
+  it to the transformer so that the last dialogue input becomes the first one and
+  therefore always have the same positional encoding.
+
+### Bugfixes
+- [#7420](https://github.com/rasahq/rasa/issues/7420): Fixed an error when using the endpoint `GET /conversations/<conversation_id:path>/story`
+  with a tracker which contained slots.
+- [#7707](https://github.com/rasahq/rasa/issues/7707): Add the option to configure whether extracted entities should be split by comma (`","`) or not to TEDPolicy. Fixes
+  crash when this parameter is accessed during extraction.
+- [#7710](https://github.com/rasahq/rasa/issues/7710): When switching forms, the next form will always correctly ask for the first required slot.
+
+  Before, the next form did not ask for the slot if it was the same slot as the requested slot of the previous form.
+- [#7749](https://github.com/rasahq/rasa/issues/7749): Fix the bug when `RulePolicy` handling loop predictions are overwritten by e2e `TEDPolicy`.
+- [#7751](https://github.com/rasahq/rasa/issues/7751): When switching forms, the next form is cleanly activated.
+
+  Before, the next form was correctly activated, but the previous form had wrongly uttered 
+  the response that asked for the requested slot when slot validation for that slot 
+  had failed.
+- [#7829](https://github.com/rasahq/rasa/issues/7829): Fix a bug in incremental training when passing a specific model path with the `--finetune` argument.
+- [#7867](https://github.com/rasahq/rasa/issues/7867): Fix the role of `unidirectional_encoder` in TED. This parameter is only applied to
+  transformers for `text`, `action_text` and `label_action_text`.
+
+### Miscellaneous internal changes
+- [#7420](https://github.com/rasahq/rasa/issues/7420), [#7515](https://github.com/rasahq/rasa/issues/7515), [#7574](https://github.com/rasahq/rasa/issues/7574), [#7601](https://github.com/rasahq/rasa/issues/7601)
+
+
+## [2.2.10] - 2021-02-08
+                        
+
+### Improvements
+- [#7069](https://github.com/rasahq/rasa/issues/7069): Updated error message when using incompatible model versions.
+
+### Bugfixes
+- [#7885](https://github.com/rasahq/rasa/issues/7885): Limit `numpy` version to `< 1.2` as `tensorflow` is not compatible with `numpy`
+  versions `>= 1.2`. `pip` versions `<= 20.2` don't resolve dependencies conflicts
+  correctly which could result in an incompatible `numpy` version and the following
+  error:
+
+  ```bash
+  NotImplementedError: Cannot convert a symbolic Tensor (strided_slice_6:0) to a numpy array. This error may indicate that you're trying to pass a Tensor to a NumPy call, which is not supported
+  ```
+
+
+## [2.2.9] - 2021-02-02
+                       
+
+### Bugfixes
+- [#7861](https://github.com/rasahq/rasa/issues/7861): Correctly include the `confused_with` field in the test report for the 
+  [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) endpoint.
+
+
 ## [2.2.8] - 2021-01-28
                        
 

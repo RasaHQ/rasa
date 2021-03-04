@@ -9,6 +9,7 @@ from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
@@ -144,6 +145,7 @@ responses:
         default_agent.policy_ensemble,
         domain,
         InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
         TemplatedNaturalLanguageGenerator(domain.templates),
     )
 
@@ -700,6 +702,7 @@ def test_temporary_tracker():
     assert extra_slot in temp_tracker.slots.keys()
     assert list(temp_tracker.events) == [
         *previous_events,
+        SlotSet(REQUESTED_SLOT),
         ActionExecuted(form_action.name()),
         *new_events,
     ]
