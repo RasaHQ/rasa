@@ -434,6 +434,8 @@ Data augmentation is one strategy that can help produce more training data for i
 
 We are evaluating two strategies for selecting paraphrases, firstly by simply randomly choosing a subset of paraphrases, and secondly, by maximising vocabulary expansion, i.e. preferring paraphrases that add new words to a given intent.
 
+The output of each strategy will be stored in individual directories inside the given `output_dir`. The output of the strategy that maximises vocabulary expansion will be inside `augmentation_max_vocab_expansion` and the output based on random sampling will be inside `augmentation_random`. The output includes intent classification reports that highlight the performance changes for each indiviual intent, the augmented training files, the trained models, and plots that highlight the changes in precision, recall and F1-score.
+
 The paraphrases should be pre-processed and supplied with similarity scores in order to ensure that noise is minimised (see the [paraphraser repository](https://github.com/RasaHQ/paraphraser) for more details).
 
 :::note
