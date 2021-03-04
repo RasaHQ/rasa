@@ -376,7 +376,7 @@ stories:
         ],
     ],
 )
-async def test_story_results(
+async def test_story_report(
     tmpdir: Path,
     core_agent: Agent,
     stories_yaml: Text,
@@ -397,7 +397,7 @@ async def test_story_results(
     assert actual_results == expected_results
 
 
-async def test_story_results_with_empty_stories(
+async def test_story_report_with_empty_stories(
     tmpdir: Path, core_agent: Agent,
 ) -> None:
     """Check that story_results.json contains empty dictionary when stories.yml is empty."""
