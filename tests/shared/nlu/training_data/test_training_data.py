@@ -733,16 +733,6 @@ def test_fingerprint_is_different_when_lookup_table_has_changed(
     assert fingerprint1 != fingerprint2
 
 
-def test_fingerprint_when_changing_lookup_table_files():
-    from rasa.shared.importers.utils import training_data_from_paths
-
-    files = [
-        "data/test/lookup_tables/lookup_table.json",
-    ]
-    td1 = training_data_from_paths(files, language="en")
-    assert td1.fingerprint() == []
-
-
 @pytest.mark.parametrize(
     "message",
     [
