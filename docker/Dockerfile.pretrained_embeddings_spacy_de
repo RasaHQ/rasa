@@ -23,7 +23,6 @@ RUN . /opt/venv/bin/activate && poetry build -f wheel -n && \
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# spacy link is deprecated in v3.0
 RUN python -m spacy download de_core_news_sm
 
 # start a new build stage
