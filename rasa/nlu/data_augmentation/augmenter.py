@@ -186,7 +186,8 @@ def _create_augmented_training_data_max_vocab_expansion(
     intents_to_augment: Set[Text],
     augmentation_factor: Dict[Text, int],
 ) -> TrainingData:
-    """Selects paraphrases for data augmentation on the basis of maximum vocabulary expansion between the existing training data for a given intent and the generated paraphrases.
+    """Selects paraphrases for data augmentation on the basis of maximum vocabulary expansion between the existing
+        training data for a given intent and the generated paraphrases.
 
     Args:
         nlu_training_data: NLU training data (without augmentation).
@@ -335,7 +336,8 @@ def _create_augmentation_summary(
         intent_report: Report of the model run *with* data augmentation.
 
     Returns:
-        A tuple representing a summary of the changed intents as well as a modified version of the original classification report with performance changes for all affected intents.
+        A tuple representing a summary of the changed intents as well as a modified version of the original
+            classification report with performance changes for all affected intents.
     """
 
     intent_summary = collections.defaultdict(dict)
@@ -459,7 +461,8 @@ def _get_intents_with_performance_changes(
         classification_report: Classification report of the model run *without* data augmentation.
         intent_report: Report of the model run *with* data augmentation.
         all_intents: List of all intents.
-        significant_figures: Significant figures to be taken into account when assessing whether the performance of an intent has changed.
+        significant_figures: Significant figures to be taken into account when assessing whether the performance of an
+            intent has changed.
 
     Returns:
         Set of intents that have changed - i.e. that were affected by data augmentation.
@@ -553,12 +556,16 @@ def augment_nlu_data(
             from https://github.com/RasaHQ/paraphraser.
         classification_report: Classification report of the model run *without* data augmentation.
         config: NLU model config.
-        intent_proportion: The proportion of intents (out of all intents) considered for data augmentation. The actual number of intents considered for data augmentation is determined on the basis of several factors, such as their current performance statistics or the number of available training examples.
+        intent_proportion: The proportion of intents (out of all intents) considered for data augmentation.
+            The actual number of intents considered for data augmentation is determined on the basis of several factors,
+            such as their current performance statistics or the number of available training examples.
         random_seed: Random seed for sampling the paraphrases.
-        min_paraphrase_sim_score: Minimum required similarity for a generated paraphrase to be considered for data augmentation.
+        min_paraphrase_sim_score: Minimum required similarity for a generated paraphrase to be considered for data
+            augmentation.
         max_paraphrase_sim_score: Maximum similarity for a generated paraphrase to be considered for data augmentation.
         output_directory: Directory to store the output files in.
-        augmentation_factor: Factor - as a multiple of the number of training data per intent - to determine the amount of paraphrases used for data augmentation.
+        augmentation_factor: Factor - as a multiple of the number of training data per intent - to determine the amount
+            of paraphrases used for data augmentation.
     """
     # Determine intents for which to perform data augmentation
     intents_to_augment = _collect_intents_for_data_augmentation(
