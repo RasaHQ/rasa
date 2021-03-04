@@ -22,11 +22,15 @@ DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
 
 @pytest.fixture
 def redis_lock_store() -> Iterator[RedisLockStore]:
-    lock_store = RedisLockStore(REDIS_HOST, REDIS_PORT)
+    # we need one redis database per worker, otherwise
+    # tests conflicts with each others when databases are flushed
+    pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
+    redis_database = int(pytest_worker_id.replace("gw", ""))
+    lock_store = RedisLockStore(REDIS_HOST, REDIS_PORT, redis_database)
     try:
         yield lock_store
     finally:
-        lock_store.red.flushall()
+        lock_store.red.flushdb()
 
 
 @pytest.fixture
