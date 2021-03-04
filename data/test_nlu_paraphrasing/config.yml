@@ -9,5 +9,5 @@ pipeline:
     max_ngram: 4
   - name: DIETClassifier
     epochs: 3
-    entity_recognition: True
+    entity_recognition: False
     intent_classification: True
