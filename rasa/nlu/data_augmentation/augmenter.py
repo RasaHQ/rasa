@@ -48,7 +48,11 @@ def _collect_intents_for_data_augmentation(
 
     Args:
         nlu_training_data: The existing NLU training data.
-        intent_proportion: The proportion of intents (out of all intents) considered for data augmentation. The actual number of intents considered for data augmentation is determined on the basis of several factors, such as their current performance statistics or the number of available training examples.
+        intent_proportion: The proportion of intents (out of all intents)
+            considered for data augmentation. The actual number of intents
+            considered for data augmentation is determined on the basis of several
+            factors, such as their current performance statistics or the number of
+            available training examples.
         classification_report: An existing classification report (without data augmentation).
 
     Returns:
