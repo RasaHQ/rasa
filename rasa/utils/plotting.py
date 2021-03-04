@@ -342,7 +342,6 @@ def _autolabel(rects: Axes.bar) -> None:
 
     Args:
         rects: The barplot object.
-
     """
     import matplotlib.pyplot as plt
 
