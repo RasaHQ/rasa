@@ -83,8 +83,6 @@ class SpacyNLP(Component):
         cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
 
-        # Fallback, use the language name, e.g. "en",
-        # as the model name if no explicit name is defined
         spacy_model_name = cls.check_model_fallback(
             component_meta.get("model"), model_metadata.language, warn=True
         )
@@ -99,13 +97,6 @@ class SpacyNLP(Component):
         spaCy will no longer support `spacy link`.
         """
         if not spacy_model_name:
-            if warn:
-                warnings.warn(
-                    "SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`."
-                )
-                warnings.warn(
-                    f"Will try to recover a model based on language name: '{language_name}'."
-                )
             fallback_mapping = {
                 "zh": "zh_core_web_md",
                 "da": "da_core_news_md",
@@ -125,14 +116,35 @@ class SpacyNLP(Component):
                 "ru": "ru_core_news_md",
                 "es": "es_core_news_md",
             }
+            if warn:
+                warnings.warn(
+                    UserWarning(
+                        "SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`."
+                    )
+                )
+                warnings.warn(
+                    UserWarning(
+                        f"Will try to recover a model based on language name: '{language_name}'."
+                    )
+                )
+            if language_name not in fallback_mapping.keys():
+                raise InvalidModelError(
+                    f"There is no fallback model for language '{language_name}'."
+                    f" Please add a `model` property to `SpacyNLP` manually to prevent this."
+                )
+
             spacy_model_name = fallback_mapping[language_name]
             if warn:
                 warnings.warn(
-                    f"Will use '{spacy_model_name}' as a fallback spaCy model."
+                    UserWarning(
+                        f"Will use '{spacy_model_name}' as a fallback spaCy model."
+                    )
                 )
                 warnings.warn(
-                    "Please update the configuraton as soon as possible. "
-                    "This fallback will be deprecated in Rasa 3.0"
+                    UserWarning(
+                        "Please update the configuraton as soon as possible. "
+                        "This fallback will be deprecated in Rasa 3.0"
+                    )
                 )
         return spacy_model_name
 
