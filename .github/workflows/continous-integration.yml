@@ -270,6 +270,8 @@ jobs:
       # We create symlinks for spacy models, that's why we need to clean them up
       # before caching the dependencies directory.
       # More information: https://github.com/actions/cache/issues/120
+      env:
+        CHOCO_CACHE_LOCATION: ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
       run: |
         $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
         if (Test-Path $spacy_data_dir) {
@@ -280,10 +282,10 @@ jobs:
         make install-full
 
         # Set chocolatey cache directory
-        choco config set cacheLocation ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
+        choco config set cacheLocation ${{ env.CHOCO_CACHE_LOCATION }}
         choco feature enable -n downloadCache
 
-        ls ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
+        ls ${{ env.CHOCO_CACHE_LOCATION }}
         make prepare-tests-windows
 
     - name: Test Code 🔍
