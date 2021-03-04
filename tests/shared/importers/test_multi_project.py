@@ -319,6 +319,7 @@ def test_single_additional_file(tmp_path: Path):
     assert selector.is_imported(str(additional_file))
 
 
+@pytest.mark.trains_model
 async def test_multi_project_training(trained_async):
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
