@@ -96,6 +96,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
+@pytest.mark.trains_model
 async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 

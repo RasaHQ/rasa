@@ -266,30 +266,30 @@ class TrainingData:
     @lazy_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
-        entity_types = [e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()]
-        return set(entity_types)
+        return {e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()}
 
     @lazy_property
     def entity_roles(self) -> Set[Text]:
         """Returns the set of entity roles in the training data."""
-        entity_types = [
+        entity_types = {
             e.get(ENTITY_ATTRIBUTE_ROLE)
             for e in self.sorted_entities()
             if ENTITY_ATTRIBUTE_ROLE in e
-        ]
-        return set(entity_types) - {NO_ENTITY_TAG}
+        }
+        return entity_types - {NO_ENTITY_TAG}
 
     @lazy_property
     def entity_groups(self) -> Set[Text]:
         """Returns the set of entity groups in the training data."""
-        entity_types = [
+        entity_types = {
             e.get(ENTITY_ATTRIBUTE_GROUP)
             for e in self.sorted_entities()
             if ENTITY_ATTRIBUTE_GROUP in e
-        ]
-        return set(entity_types) - {NO_ENTITY_TAG}
+        }
+        return entity_types - {NO_ENTITY_TAG}
 
     def entity_roles_groups_used(self) -> bool:
+        """Returns if any entity roles or groups are used anywhere in the training data."""
         entity_groups_used = (
             self.entity_groups is not None and len(self.entity_groups) > 0
         )

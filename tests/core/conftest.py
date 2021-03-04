@@ -38,18 +38,20 @@ SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
-INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
+INCORRECT_NLU_DATA = "data/test/incorrect_nlu_format.yml"
 
-END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
+END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.yml"
 
-E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
+END_TO_END_STORY_MD_FILE = "data/test_md/end_to_end_story.md"
+
+E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.yml"
 
 STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/stories_trip_circuit_breaker.md"
+    "data/test_evaluations/stories_trip_circuit_breaker.yml"
 )
 
 E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/end_to_end_trips_circuit_breaker.md"
+    "data/test_evaluations/end_to_end_trips_circuit_breaker.yml"
 )
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
