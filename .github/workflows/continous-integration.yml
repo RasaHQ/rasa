@@ -281,6 +281,9 @@ jobs:
 
         # Set chocolatey cache directory
         choco config set cacheLocation ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
+        choco feature enable -n downloadCache
+
+        ls ${{ github.workspace }}\${{ env.CHOCO_CACHE_LOCATION }}
         make prepare-tests-windows
 
     - name: Test Code 🔍
