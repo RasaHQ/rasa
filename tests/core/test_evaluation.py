@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+import json
+import logging
 from typing import Any, Text, Dict
 
 import pytest
@@ -299,3 +301,168 @@ async def test_retrieval_intent_wrong_prediction(
 
     # check if the predicted entry contains full retrieval intent
     assert "# predicted: chitchat/ask_name" in failed_stories
+
+
+@pytest.mark.parametrize(
+    "stories_yaml,expected_results",
+    [
+        [
+            """
+stories:
+  - story: story1
+    steps:
+    - intent: greet
+    - action: utter_greet
+  - story: story2
+    steps:
+    - intent: goodbye
+    - action: utter_goodbye
+  - story: story3
+    steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: goodbye
+    - action: utter_default
+            """,
+            {
+                "utter_goodbye": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1-score": 1.0,
+                    "support": 1,
+                },
+                "action_listen": {
+                    "precision": 1.0,
+                    "recall": 0.75,
+                    "f1-score": 0.8571428571428571,
+                    "support": 4,
+                },
+                "utter_greet": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1-score": 1.0,
+                    "support": 2,
+                },
+                "utter_default": {
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1-score": 0.0,
+                    "support": 1,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.75,
+                    "f1-score": 0.8571428571428571,
+                    "support": 8,
+                },
+                "macro avg": {
+                    "precision": 0.75,
+                    "recall": 0.6875,
+                    "f1-score": 0.7142857142857143,
+                    "support": 8,
+                },
+                "weighted avg": {
+                    "precision": 0.875,
+                    "recall": 0.75,
+                    "f1-score": 0.8035714285714286,
+                    "support": 8,
+                },
+                "conversation_accuracy": {
+                    "accuracy": 2.0 / 3.0,
+                    "total": 3,
+                    "correct": 2,
+                },
+            },
+        ],
+    ],
+)
+async def test_story_results(
+    tmpdir: Path,
+    core_agent: Agent,
+    stories_yaml: Text,
+    expected_results: Dict[Text, Dict[Text, Any]],
+) -> None:
+    """Check story_results.json file contains correct result keys/values."""
+
+    stories_path = tmpdir / "stories.yml"
+    stories_path.write_text(stories_yaml, "utf8")
+    out_directory = tmpdir / "results"
+    out_directory.mkdir()
+
+    await evaluate_stories(stories_path, core_agent, out_directory=out_directory)
+    story_report_path = out_directory / "story_report.json"
+    assert story_report_path.exists()
+
+    actual_results = json.loads(story_report_path.read_text("utf8"))
+    assert actual_results == expected_results
+
+
+async def test_story_results_with_empty_stories(
+    tmpdir: Path, core_agent: Agent,
+) -> None:
+    """Check that story_results.json contains empty dictionary when stories.yml is empty."""
+
+    stories_path = tmpdir / "stories.yml"
+    stories_path.write_text("", "utf8")
+    out_directory = tmpdir / "results"
+    out_directory.mkdir()
+
+    await evaluate_stories(stories_path, core_agent, out_directory=out_directory)
+    story_report_path = out_directory / "story_report.json"
+    assert story_report_path.exists()
+
+    actual_results = json.loads(story_report_path.read_text("utf8"))
+    assert actual_results == {}
+
+
+@pytest.mark.parametrize(
+    "skip_field,skip_value",
+    [
+        [None, None,],
+        ["precision", None,],
+        ["f1", None,],
+        ["in_training_data_fraction", None,],
+        ["report", None,],
+        ["include_report", False,],
+    ],
+)
+def test_log_evaluation_table(caplog, skip_field, skip_value):
+    """Check that _log_evaluation_table correctly omits/includes optional args."""
+    arr = [1, 1, 1, 0]
+    acc = 0.75
+    kwargs = {
+        "precision": 0.5,
+        "f1": 0.6,
+        "in_training_data_fraction": 0.1,
+        "report": {"macro f1": 0.7},
+    }
+    if skip_field:
+        kwargs[skip_field] = skip_value
+    caplog.set_level(logging.INFO)
+    rasa.core.test._log_evaluation_table(arr, "CONVERSATION", acc, **kwargs)
+
+    assert f"Correct:          {int(len(arr) * acc)} / {len(arr)}" in caplog.text
+    assert f"Accuracy:         {acc:.3f}" in caplog.text
+
+    if skip_field != "f1":
+        assert f"F1-Score:         {kwargs['f1']:5.3f}" in caplog.text
+    else:
+        assert "F1-Score:" not in caplog.text
+
+    if skip_field != "precision":
+        assert f"Precision:        {kwargs['precision']:5.3f}" in caplog.text
+    else:
+        assert "Precision:" not in caplog.text
+
+    if skip_field != "in_training_data_fraction":
+        assert (
+            f"In-data fraction: {kwargs['in_training_data_fraction']:.3g}"
+            in caplog.text
+        )
+    else:
+        assert "In-data fraction:" not in caplog.text
+
+    if skip_field != "report" and skip_field != "include_report":
+        assert f"Classification report: \n{kwargs['report']}" in caplog.text
+    else:
+        assert "Classification report:" not in caplog.text
