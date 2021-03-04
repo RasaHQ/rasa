@@ -2,10 +2,39 @@ import os
 from typing import Callable
 
 from _pytest.pytester import RunResult, Testdir
+from rasa.nlu.components import Component
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
+from rasa.shared.nlu.constants import (
+    INTENT,
+    TEXT,
+    VOCABULARY,
+)
+
+
+def test_augmenter_create_tokenizer(run: Callable[..., RunResult],):
+    from rasa.nlu.data_augmentation.augmenter import _create_tokenizer_from_config
+
+    data_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
+    config_path = os.path.join(data_root, "data/test_nlu_paraphrasing/config.yml")
+
+    tokenizer = _create_tokenizer_from_config(config_path=config_path)
+
+    assert isinstance(tokenizer, Component)
+
+    # Test Config has a simple WhitespaceTokenizer
+    expected_tokens = ["xxx", "yyy", "zzz"]
+    message = Message(data={TEXT: "xxx yyy zzz", INTENT: "abc"})
+
+    tokenizer.process(message)
+    tokens = [token.text for token in message.get(TOKENS_NAMES[TEXT])]
+
+    assert tokens == expected_tokens
 
 
 def test_augmenter_intent_collection(run: Callable[..., RunResult],):
@@ -13,7 +42,9 @@ def test_augmenter_intent_collection(run: Callable[..., RunResult],):
         _collect_intents_for_data_augmentation,
     )
 
-    data_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    data_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
     report_file = os.path.join(
         data_root, "data/test_nlu_paraphrasing/nlu_classification_report.json"
     )
@@ -38,7 +69,9 @@ def test_augmenter_intent_collection(run: Callable[..., RunResult],):
 def test_augmenter_paraphrase_pool_creation(run: Callable[..., RunResult],):
     from rasa.nlu.data_augmentation.augmenter import _create_paraphrase_pool
 
-    data_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    data_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
 
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(
         os.path.join(data_root, "data/test_nlu_paraphrasing/paraphrases.yml")
@@ -90,12 +123,12 @@ def test_augmenter_paraphrase_pool_creation(run: Callable[..., RunResult],):
     assert len(pool["ask_transfer_charge"]) == 1
 
 
-def test_augmenter_augmentation_factor_resolution(
-    run: Callable[..., RunResult],
-):
+def test_augmenter_augmentation_factor_resolution(run: Callable[..., RunResult],):
     from rasa.nlu.data_augmentation.augmenter import _resolve_augmentation_factor
 
-    data_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    data_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
 
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         os.path.join(data_root, "data/test_nlu_paraphrasing/nlu_train.yml")
@@ -134,11 +167,14 @@ def test_augmenter_build_max_vocab_expansion_training_set(
         _create_augmented_training_data_max_vocab_expansion,
     )
 
-    data_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    data_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
 
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         os.path.join(data_root, "data/test_nlu_paraphrasing/nlu_train.yml")
     )
+    config_path = os.path.join(data_root, "data/test_nlu_paraphrasing/config.yml")
 
     intent_to_check = "check_earnings"
     three_new_words = "xxx yyy zzz"
@@ -156,23 +192,23 @@ def test_augmenter_build_max_vocab_expansion_training_set(
         "check_earnings": [
             Message(
                 data={
-                    "intent": intent_to_check,
-                    "text": one_new_word,
-                    "metadata": {"vocabulary": set(one_new_word.split())},
+                    INTENT: intent_to_check,
+                    TEXT: one_new_word,
+                    VOCABULARY: set(one_new_word.split()),
                 }
             ),
             Message(
                 data={
-                    "intent": intent_to_check,
-                    "text": three_new_words,
-                    "metadata": {"vocabulary": set(three_new_words.split())},
+                    INTENT: intent_to_check,
+                    TEXT: three_new_words,
+                    VOCABULARY: set(three_new_words.split()),
                 }
             ),
             Message(
                 data={
-                    "intent": intent_to_check,
-                    "text": two_new_words,
-                    "metadata": {"vocabulary": set(two_new_words.split())},
+                    INTENT: intent_to_check,
+                    TEXT: two_new_words,
+                    VOCABULARY: set(two_new_words.split()),
                 }
             ),
         ]
@@ -186,29 +222,30 @@ def test_augmenter_build_max_vocab_expansion_training_set(
         paraphrase_pool=paraphrase_pool,
         intents_to_augment=intents_to_augment,
         augmentation_factor=augmentation_factor,
+        config=config_path,
     )
     num_examples = 0
-    for m in augmented_data.intent_examples:
-        if m.get("intent") == intent_to_check:
+    for message in augmented_data.intent_examples:
+        if message.get(INTENT) == intent_to_check:
             num_examples += 1
-            if m.get("text") in augmented_data_should_contain:
-                augmented_data_should_contain[m.get("text")] = True
-            if m.get("text") in augmented_data_should_not_contain:
-                augmented_data_should_not_contain[m.get("text")] = True
+            if message.get(TEXT) in augmented_data_should_contain:
+                augmented_data_should_contain[message.get(TEXT)] = True
+            if message.get(TEXT) in augmented_data_should_not_contain:
+                augmented_data_should_not_contain[message.get(TEXT)] = True
 
     assert num_examples == should_have_num_examples_after_augmentation
     assert all(augmented_data_should_contain.values())
     assert not all(augmented_data_should_not_contain.values())
 
 
-def test_augmenter_build_random_sampling_training_set(
-    run: Callable[..., RunResult],
-):
+def test_augmenter_build_random_sampling_training_set(run: Callable[..., RunResult],):
     from rasa.nlu.data_augmentation.augmenter import (
         _create_augmented_training_data_random_sampling,
     )
 
-    data_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    data_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
 
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         os.path.join(data_root, "data/test_nlu_paraphrasing/nlu_train.yml")
@@ -230,23 +267,23 @@ def test_augmenter_build_random_sampling_training_set(
         "check_earnings": [
             Message(
                 data={
-                    "intent": intent_to_check,
-                    "text": one_new_word,
-                    "metadata": {"vocabulary": set(one_new_word.split())},
+                    INTENT: intent_to_check,
+                    TEXT: one_new_word,
+                    VOCABULARY: set(one_new_word.split()),
                 }
             ),
             Message(
                 data={
-                    "intent": intent_to_check,
-                    "text": three_new_words,
-                    "metadata": {"vocabulary": set(three_new_words.split())},
+                    INTENT: intent_to_check,
+                    TEXT: three_new_words,
+                    VOCABULARY: set(three_new_words.split()),
                 }
             ),
             Message(
                 data={
-                    "intent": intent_to_check,
-                    "text": two_new_words,
-                    "metadata": {"vocabulary": set(two_new_words.split())},
+                    INTENT: intent_to_check,
+                    TEXT: two_new_words,
+                    VOCABULARY: set(two_new_words.split()),
                 }
             ),
         ]
@@ -263,9 +300,9 @@ def test_augmenter_build_random_sampling_training_set(
     num_examples = 0
     num_augmented_examples = 0
     for m in augmented_data.intent_examples:
-        if m.get("intent") == intent_to_check:
+        if m.get(INTENT) == intent_to_check:
             num_examples += 1
-            if m.get("text") in {three_new_words, two_new_words, one_new_word}:
+            if m.get(TEXT) in {three_new_words, two_new_words, one_new_word}:
                 num_augmented_examples += 1
 
     assert num_examples == should_have_num_examples_after_augmentation
