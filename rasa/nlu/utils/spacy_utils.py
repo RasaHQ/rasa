@@ -1,5 +1,6 @@
-import logging
 import typing
+import logging
+import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
@@ -99,10 +100,10 @@ class SpacyNLP(Component):
         """
         if not spacy_model_name:
             if warn:
-                logger.warning(
+                warnings.warn(
                     "SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`."
                 )
-                logger.warning(
+                warnings.warn(
                     f"Will try to recover a model based on language name: '{language_name}'."
                 )
             fallback_mapping = {
@@ -126,10 +127,10 @@ class SpacyNLP(Component):
             }
             spacy_model_name = fallback_mapping[language_name]
             if warn:
-                logger.warning(
+                warnings.warn(
                     f"Will use '{spacy_model_name}' as a fallback spaCy model."
                 )
-                logger.warning(
+                warnings.warn(
                     "Please update the configuraton as soon as possible. "
                     "This fallback will be deprecated in Rasa 3.0"
                 )
@@ -320,8 +321,8 @@ class SpacyNLP(Component):
             # it did not load the model from disk.
             # In this case `nlp` is an unusable stub.
             raise Exception(
-                "Failed to load spacy language model for "
+                f"Failed to load spacy language model for "
                 f"lang '{nlp.lang}'. Make sure you have downloaded the "
-                "correct model (https://spacy.io/docs/usage/)."
+                f"correct model (https://spacy.io/docs/usage/)."
                 ""
             )
