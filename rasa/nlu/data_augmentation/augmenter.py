@@ -130,9 +130,14 @@ def _create_paraphrase_pool(
     for paraphrase_msg in paraphrases.intent_examples:
 
         paraphrases_for_example = (
-            paraphrase_msg.get(METADATA, {}).get(METADATA_EXAMPLE, {}).get("paraphrases", {})
+            paraphrase_msg.get(METADATA, {})
+            .get(METADATA_EXAMPLE, {})
+            .get("paraphrases", {})
         )
-        if paraphrase_msg.get(INTENT) not in intents_to_augment or not paraphrases_for_example:
+        if (
+            paraphrase_msg.get(INTENT) not in intents_to_augment
+            or not paraphrases_for_example
+        ):
             continue
 
         paraphrase_scores = (
@@ -207,10 +212,12 @@ def _create_augmented_training_data_max_vocab_expansion(
 
     # Extract intent-level vocabulary for all intents that should be augmented
     intent_vocab = collections.defaultdict(set)
-    for message in nlu_training_data.intent_examples:
+    filtered_training_data = nlu_training_data.filter_training_examples(
+        condition=lambda ex: ex.get(INTENT) in intents_to_augment
+    )
+    for message in filtered_training_data.intent_examples:
         intent = message.get(INTENT)
-        if intent in intents_to_augment:
-            intent_vocab[intent] |= set(message.get(TEXT, "").lower().split())
+        intent_vocab[intent] |= set(message.get(TEXT, "").lower().split())
 
     # Select paraphrases that maximise vocabulary expansion
     new_training_data = []
@@ -359,7 +366,11 @@ def _create_augmentation_summary(
         intent_report["accuracy"] = acc_dict
         intent_summary["accuracy"] = {"accuracy_change": accuracy_change}
 
-    intents_affected_by_augmentation = intents_to_augment | changed_intents | {"micro avg", "macro avg", "weighted avg"}
+    intents_affected_by_augmentation = (
+        intents_to_augment
+        | changed_intents
+        | {"micro avg", "macro avg", "weighted avg"}
+    )
     for intent in intents_affected_by_augmentation:
         if intent not in classification_report:
             continue
@@ -444,9 +455,7 @@ def _plot_summary_report(
     for metric in ["precision", "recall", "f1-score"]:
         output_file = os.path.join(output_directory, f"{metric}_changes.png")
         rasa.utils.plotting.plot_intent_augmentation_summary(
-            augmentation_summary=intent_summary,
-            metric=metric,
-            output_file=output_file,
+            augmentation_summary=intent_summary, metric=metric, output_file=output_file,
         )
 
 
@@ -599,7 +608,8 @@ def augment_nlu_data(
     rasa.shared.utils.io.create_directory(max_vocab_expansion_training_file_path)
 
     nlu_training_file_diverse = os.path.join(
-        max_vocab_expansion_training_file_path, "nlu_train_augmented_max_vocab_expansion.yml"
+        max_vocab_expansion_training_file_path,
+        "nlu_train_augmented_max_vocab_expansion.yml",
     )
     nlu_max_vocab_augmentation_data = _create_augmented_training_data_max_vocab_expansion(
         nlu_training_data=nlu_training_data,
