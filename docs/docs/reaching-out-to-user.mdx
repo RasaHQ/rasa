@@ -283,6 +283,7 @@ names in your training data, since Spacy has a `PERSON` dimension:
 pipeline:
 # other components
 - name: SpacyNLP
+  model: en_core_web_md
 - name: SpacyEntityExtractor
   dimensions: ["PERSON"]
 ```
