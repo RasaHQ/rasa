@@ -484,7 +484,7 @@ def _get_intents_with_performance_changes(
     return changed_intents
 
 
-def run_data_augmentation(
+def _run_data_augmentation(
     nlu_training_data: TrainingData,
     intents_to_augment: Set[Text],
     nlu_training_file: Text,
@@ -608,7 +608,7 @@ def augment_nlu_data(
         augmentation_factor=augmentation_factor_per_intent,
     )
 
-    run_data_augmentation(
+    _run_data_augmentation(
         nlu_training_data=nlu_max_vocab_augmentation_data,
         nlu_evaluation_data=nlu_evaluation_data,
         nlu_training_file=nlu_training_file_diverse,
@@ -634,7 +634,7 @@ def augment_nlu_data(
         random_seed=random_seed,
     )
 
-    run_data_augmentation(
+    _run_data_augmentation(
         nlu_training_data=nlu_random_augmentation_data,
         nlu_evaluation_data=nlu_evaluation_data,
         nlu_training_file=nlu_training_file_random,
