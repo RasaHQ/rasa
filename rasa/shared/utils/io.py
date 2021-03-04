@@ -18,12 +18,15 @@ from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    CONFIG_SCHEMA_FILE,
+    MODEL_CONFIG_SCHEMA_FILE,
 )
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     YamlSyntaxException,
 )
+import rasa.shared.utils.validation
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -518,29 +521,68 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
-    """Parses a yaml configuration file. Content needs to be a dictionary
+def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
+    """Validates YAML file content and returns parsed content.
 
     Args:
         filename: The path to the file which should be read.
-    """
-    content = read_yaml_file(filename)
+        schema: The path to the schema file which should be used for validating the
+            file content.
 
-    if content is None:
-        return {}
-    elif isinstance(content, dict):
-        return content
-    else:
-        raise YamlSyntaxException(
-            filename,
-            ValueError(
-                f"Tried to load configuration file '{filename}'. "
-                f"Expected a key value mapping but found a {type(content).__name__}"
-            ),
-        )
+    Returns:
+        The parsed file content.
+
+    Raises:
+        YamlValidationException: In case the model configuration doesn't match the
+            expected schema.
+    """
+    content = read_file(filename)
+
+    rasa.shared.utils.validation.validate_yaml_schema(content, schema)
+    return read_yaml(content)
+
+
+def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary.
+
+    Args:
+        filename: The path to the file which should be read.
+
+    Raises:
+        YamlValidationException: In case file content is not a `Dict`.
+
+    Returns:
+        Parsed config file.
+    """
+    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE)
+
+
+def read_model_configuration(filename: Union[Path, Text]) -> Dict[Text, Any]:
+    """Parses a model configuration file.
+
+    Args:
+        filename: The path to the file which should be read.
+
+    Raises:
+        YamlValidationException: In case the model configuration doesn't match the
+            expected schema.
+
+    Returns:
+        Parsed config file.
+    """
+    return read_validated_yaml(filename, MODEL_CONFIG_SCHEMA_FILE)
 
 
 def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    """Checks if `path` is a subdirectory of `potential_parent_directory`.
+
+    Args:
+        path: Path to a file or directory.
+        potential_parent_directory: Potential parent directory.
+
+    Returns:
+        `True` if `path` is a subdirectory of `potential_parent_directory`.
+    """
     if path is None or potential_parent_directory is None:
         return False
 

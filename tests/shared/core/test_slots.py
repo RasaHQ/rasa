@@ -15,6 +15,7 @@ from rasa.shared.core.slots import (
     CategoricalSlot,
     bool_from_any,
     AnySlot,
+    InvalidSlotConfigError,
 )
 
 
@@ -202,7 +203,7 @@ class TestUnfeaturizedSlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
     def test_deprecation_warning(self):
@@ -291,7 +292,7 @@ class TestAnySlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
 

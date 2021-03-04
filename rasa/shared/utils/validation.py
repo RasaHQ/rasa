@@ -154,9 +154,15 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
         PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
     )
 
+    # Load schema content using our YAML loader as `pykwalify` uses a global instance
+    # which can fail when used concurrently
+    schema_content = rasa.shared.utils.io.read_yaml_file(schema_file)
+    schema_utils_content = rasa.shared.utils.io.read_yaml_file(schema_utils_file)
+    schema_content = dict(schema_content, **schema_utils_content)
+
     c = Core(
         source_data=source_data,
-        schema_files=[schema_file, schema_utils_file],
+        schema_data=schema_content,
         extensions=[schema_extensions],
     )
 
