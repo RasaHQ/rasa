@@ -8,7 +8,7 @@ import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 
 
-def test_rasa_data_augment_nlu_intent_collection(run: Callable[..., RunResult],):
+def test_augmenter_intent_collection(run: Callable[..., RunResult],):
     from rasa.nlu.data_augmentation.augmenter import (
         _collect_intents_for_data_augmentation,
     )
@@ -35,7 +35,7 @@ def test_rasa_data_augment_nlu_intent_collection(run: Callable[..., RunResult],)
     assert len(intents_to_augment) <= num_intents
 
 
-def test_rasa_data_augment_nlu_paraphrase_pool_creation(run: Callable[..., RunResult],):
+def test_augmenter_paraphrase_pool_creation(run: Callable[..., RunResult],):
     from rasa.nlu.data_augmentation.augmenter import _create_paraphrase_pool
 
     data_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -90,7 +90,7 @@ def test_rasa_data_augment_nlu_paraphrase_pool_creation(run: Callable[..., RunRe
     assert len(pool["ask_transfer_charge"]) == 1
 
 
-def test_rasa_data_augment_nlu_augmentation_factor_resolution(
+def test_augmenter_augmentation_factor_resolution(
     run: Callable[..., RunResult],
 ):
     from rasa.nlu.data_augmentation.augmenter import _resolve_augmentation_factor
@@ -127,7 +127,7 @@ def test_rasa_data_augment_nlu_augmentation_factor_resolution(
     assert all([assert_dict[key] == resolved_dict[key] for key in assert_dict.keys()])
 
 
-def test_rasa_data_augment_nlu_build_max_vocab_expansion_training_set(
+def test_augmenter_build_max_vocab_expansion_training_set(
     run: Callable[..., RunResult],
 ):
     from rasa.nlu.data_augmentation.augmenter import (
@@ -201,7 +201,7 @@ def test_rasa_data_augment_nlu_build_max_vocab_expansion_training_set(
     assert not all(augmented_data_should_not_contain.values())
 
 
-def test_rasa_data_augment_nlu_build_random_sampling_training_set(
+def test_augmenter_build_random_sampling_training_set(
     run: Callable[..., RunResult],
 ):
     from rasa.nlu.data_augmentation.augmenter import (
