@@ -32,14 +32,12 @@ The following example form `restaurant_form` will fill the slot
 ```yaml-rasa
 forms:
   restaurant_form:
-    global_not_intent: intent
-    required_slots:
-        cuisine:
-          - type: from_entity
-            entity: cuisine
-        num_people:
-          - type: from_entity
-            entity: number
+    cuisine:
+      - type: from_entity
+        entity: cuisine
+    num_people:
+      - type: from_entity
+        entity: number
 ```
 
 There is also an optional parameter that can be defined in each form which is called
@@ -48,14 +46,14 @@ affect all slots that are present in that form. More specifically, it will updat
 the `not_intent` key of all individual slots with the specified value (or list of values)
 found in the global parameter.
 
-For example, if you want to fill the `not_intent` key of all slots with `intent` then
-you would need to define the following after the form_name and before the definition
-of the slot mappings:
+For example, if you do not want any of the slots of the specific form to be filled with
+intent `chitchat` then you would need to define the following (after the form_name and
+before the definition of the slot mappings):
 
 ```yaml-rasa
 forms:
   restaurant_form:
-    global_not_intent: intent
+    global_not_intent: chitchat
     required_slots:
         cuisine:
           - type: from_entity
@@ -64,10 +62,10 @@ forms:
           - type: from_entity
             entity: number
 ```
+
 Note that if you decide to use the `global_not_intent` parameter then the keyword
 `required_slots` should precede the definition of slot mappings as shown in the above
-example. This global parameter is very convenient in case you want to fill the `not_intent`
-key of all slots of a form with the same value.
+example.
 
 Once the form action gets called for the first time, the form gets activated and will
 prompt the user for the next required slot value. It does this by

@@ -600,9 +600,44 @@ class Domain:
         }
         return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
 
-    @staticmethod
+    @classmethod
+    def _update_slots_with_global_not_intent_parameter(
+        cls, form_data: Optional[Union[Dict[Dict, Text]]] = None,
+    ) -> Dict:
+        # breakpoint()
+        if "global_not_intent" in form_data:
+            global_params = form_data.get("global_not_intent")
+            # accessing the form slots by using keyword `required_slots`
+            if "required_slots" in form_data:
+                form_data = form_data.get("required_slots")
+            # checking if the global parameter is a list or not and always
+            # making it a list.
+            if not isinstance(global_params, list):
+                global_params = [global_params]
+            # looping through the form's global params.
+            for global_val in global_params:
+                # Updating the `not_intent` parameter of each slot with
+                # `global_not_intent` value.
+                for slot_key, slot_val in form_data.items():
+                    for slot in slot_val:
+                        key = "not_intent"
+                        # check that `not_intent` param is present in the slot
+                        if key in slot.keys():
+                            # check that the value of `not_intent` is a list
+                            if isinstance(slot[key], list):
+                                # check that `global_not_intent` is in the list
+                                if global_val not in slot[key]:
+                                    slot[key].append(global_val)
+                            else:
+                                if global_val != slot[key]:
+                                    slot[key] = [slot[key], global_val]
+                        else:
+                            slot[key] = global_val
+        return form_data
+
+    @classmethod
     def _initialize_forms(
-        forms: Union[Dict[Text, Any], List[Text]]
+        cls, forms: Union[Dict[Text, Any], List[Text]]
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
@@ -621,39 +656,12 @@ class Domain:
             `FormAction` which is implemented in the Rasa SDK.
         """
         if isinstance(forms, dict):
-            # looping through all the available forms and checking if a
-            # `global_not_intent` variable is present.
+            # looping through all the available forms
             for form_name, form_data in forms.items():
                 if form_data is None:
                     continue
-                if "global_not_intent" in form_data:
-                    global_params = forms[form_name].get("global_not_intent")
-                    # accessing the form slots by using keyword `required_slots`
-                    if "required_slots" in form_data:
-                        form_data = forms[form_name].get("required_slots")
-                    # checking if the global parameter is a list or not and always
-                    # making it a list.
-                    if not isinstance(global_params, list):
-                        global_params = [global_params]
-                    # looping through the form's global params.
-                    for global_val in global_params:
-                        # Updating the `not_intent` parameter of each slot with
-                        # `global_not_intent` value.
-                        for slot_key, slot_val in form_data.items():
-                            for slot in slot_val:
-                                key = "not_intent"
-                                # check that `not_intent` param is present in the slot
-                                if key in slot.keys():
-                                    # check that the value of `not_intent` is a list
-                                    if isinstance(slot[key], list):
-                                        # check that `global_not_intent` is in the list
-                                        if global_val not in slot[key]:
-                                            slot[key].append(global_val)
-                                    else:
-                                        if global_val != slot[key]:
-                                            slot[key] = [slot[key], global_val]
-                                else:
-                                    slot[key] = global_val
+                else:
+                    cls._update_slots_with_global_not_intent_parameter(form_data)
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
@@ -1722,7 +1730,7 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
         if form_data is None:
             continue
 
-        if hasattr(form_data, "__iter__"):
+        if isinstance(form_data, Dict):
             if "required_slots" in form_data:
                 slots = forms[form_name].get("required_slots")
             elif "global_not_intent" in form_data and "required_slots" not in form_data:
@@ -1735,7 +1743,12 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             else:
                 slots = form_data
         else:
-            slots = form_data
+            raise InvalidDomain(
+                f"The data for form '{form_name}' were specified "
+                f"as '{type(form_data)}'. They need to be specified "
+                f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
+                f"for more information."
+            )
 
         if not isinstance(slots, Dict):
             raise InvalidDomain(
