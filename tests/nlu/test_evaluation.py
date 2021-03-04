@@ -357,6 +357,7 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
+@pytest.mark.trains_model
 async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     result = await run_evaluation(
         DEFAULT_DATA_PATH,
@@ -369,6 +370,7 @@ async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     assert result.get("intent_evaluation")
 
 
+@pytest.mark.trains_model
 async def test_eval_data(
     component_builder: ComponentBuilder, tmp_path: Path, project: Text
 ):
@@ -388,8 +390,8 @@ async def test_eval_data(
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config_path,
         training_data_paths=[
-            "data/examples/rasa/demo-rasa.md",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
     )
 
@@ -414,6 +416,7 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
+@pytest.mark.trains_model
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
@@ -437,6 +440,11 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
     assert all(key in intent_results.evaluation for key in ["errors", "report"])
+    assert any(
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
+        for intent_report in intent_results.evaluation["report"].values()
+    )
 
     assert len(entity_results.train["CRFEntityExtractor"]["Accuracy"]) == n_folds
     assert len(entity_results.train["CRFEntityExtractor"]["Precision"]) == n_folds
@@ -449,12 +457,13 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+@pytest.mark.trains_model
 def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
 
@@ -478,6 +487,7 @@ def test_run_cv_evaluation_with_response_selector():
         successes=False,
         errors=False,
         disable_plotting=True,
+        report_as_dict=True,
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -487,6 +497,11 @@ def test_run_cv_evaluation_with_response_selector():
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
     assert all(key in intent_results.evaluation for key in ["errors", "report"])
+    assert any(
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
+        for intent_report in intent_results.evaluation["report"].values()
+    )
 
     assert len(response_selection_results.train["Accuracy"]) == n_folds
     assert len(response_selection_results.train["Precision"]) == n_folds
@@ -496,6 +511,11 @@ def test_run_cv_evaluation_with_response_selector():
     assert len(response_selection_results.test["F1-score"]) == n_folds
     assert all(
         key in response_selection_results.evaluation for key in ["errors", "report"]
+    )
+    assert any(
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
+        for intent_report in response_selection_results.evaluation["report"].values()
     )
 
     assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
@@ -919,6 +939,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
+@pytest.mark.trains_model
 async def test_nlu_comparison(tmp_path: Path):
     config = {
         "language": "en",

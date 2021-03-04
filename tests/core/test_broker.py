@@ -48,6 +48,7 @@ async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
     assert actual.host == "localhost"
     assert actual.username == "username"
     assert actual.queues == ["queue-1"]
+    assert actual.exchange_name == "exchange"
 
 
 def test_pika_message_property_app_id_without_env_set(monkeypatch: MonkeyPatch):

@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 import numpy as np
 from typing import List, Dict, Text, Any
+from mock import Mock
+from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 from rasa.nlu import train
@@ -19,12 +21,18 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
     CHECKPOINT_MODEL,
+    MODEL_CONFIDENCE,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    LOSS_TYPE,
 )
+from rasa.utils import train_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from tests.nlu.classifiers.test_diet_classifier import as_pipeline
 
 
 @pytest.mark.parametrize(
@@ -48,13 +56,14 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
         ],
     ],
 )
+@pytest.mark.trains_model
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -106,10 +115,10 @@ def test_preprocess_selector_multiple_retrieval_intents():
 
     # use some available data
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_extra_intent = TrainingData(
         [
@@ -141,10 +150,10 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -172,10 +181,10 @@ def test_resolve_intent_response_key_from_label(
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -198,6 +207,7 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
+@pytest.mark.trains_model
 async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path
 ):
@@ -256,7 +266,7 @@ async def _train_persist_load_with_different_settings(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa.md",
+        data="data/examples/rasa/demo-rasa.yml",
         component_builder=component_builder,
     )
 
@@ -274,6 +284,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
+@pytest.mark.trains_model
 async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -288,6 +299,7 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
+@pytest.mark.trains_model
 async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
     """Tests if processing a message returns attention weights as numpy array."""
 
@@ -315,3 +327,123 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
     assert "attention_weights" in diagnostic_data[name]
     # By default, ResponseSelector has `number_of_transformer_layers = 0`
     assert diagnostic_data[name].get("attention_weights") is None
+
+
+@pytest.mark.parametrize(
+    "classifier_params, prediction_min, prediction_max, output_length",
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 0, 1, 9)],
+)
+@pytest.mark.trains_model
+async def test_cross_entropy_with_linear_norm(
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    classifier_params: Dict[Text, Any],
+    prediction_min: float,
+    prediction_max: float,
+    output_length: int,
+    monkeypatch: MonkeyPatch,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    )
+    assert pipeline[2]["name"] == "ResponseSelector"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/test_selectors",
+        component_builder=component_builder,
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    mock = Mock()
+    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+
+    parse_data = loaded.parse("hello")
+    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
+
+    # check that the output was correctly truncated
+    assert len(response_ranking) == output_length
+
+    response_confidences = [response.get("confidence") for response in response_ranking]
+
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
+    assert output_sums_to_1
+
+    # normalize shouldn't have been called
+    mock.normalize.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
+)
+@pytest.mark.trains_model
+async def test_margin_loss_is_not_normalized(
+    monkeypatch: MonkeyPatch,
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    classifier_params: Dict[Text, int],
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    )
+    assert pipeline[2]["name"] == "ResponseSelector"
+    pipeline[2].update(classifier_params)
+
+    mock = Mock()
+    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/test_selectors",
+        component_builder=component_builder,
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    parse_data = loaded.parse("hello")
+    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
+
+    # check that the output was not normalized
+    mock.normalize.assert_not_called()
+
+    # check that the output was correctly truncated
+    assert len(response_ranking) == 9
+
+
+@pytest.mark.parametrize(
+    "classifier_params, data_path, output_length",
+    [
+        ({RANDOM_SEED: 42, EPOCHS: 1}, "data/test_selectors", 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1}, "data/test_selectors", 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, "data/test_selectors", 2),
+    ],
+)
+@pytest.mark.trains_model
+async def test_softmax_ranking(
+    component_builder: ComponentBuilder,
+    tmp_path: Path,
+    classifier_params: Dict[Text, int],
+    data_path: Text,
+    output_length: int,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    )
+    assert pipeline[2]["name"] == "ResponseSelector"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    parse_data = loaded.parse("hello")
+    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
+    # check that the output was correctly truncated after normalization
+    assert len(response_ranking) == output_length
