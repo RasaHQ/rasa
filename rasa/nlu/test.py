@@ -627,7 +627,7 @@ def create_intent_report(
     intent_results: List[IntentEvaluationResult],
     output_directory: Optional[Text],
     report_as_dict: Optional[bool] = None,
-) -> Dict:  # pragma: no cover
+) -> Dict[Text, Any]:  # pragma: no cover
     """Creates summary statistics for intents.
 
     Only considers those examples with a set intent. Others are filtered out.
