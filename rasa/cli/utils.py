@@ -225,8 +225,7 @@ def get_valid_config(
     if not os.path.exists(config):
         print_error(
             "The config file '{}' does not exist. Use '--config' to specify a "
-            "valid config file."
-            "".format(config)
+            "valid config file.".format(config)
         )
         sys.exit(1)
 
