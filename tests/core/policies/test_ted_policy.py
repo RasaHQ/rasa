@@ -32,8 +32,14 @@ from rasa.utils.tensorflow.constants import (
     SCALE_LOSS,
     SIMILARITY_TYPE,
     VALUE_RELATIVE_ATTENTION,
+    MODEL_CONFIDENCE,
+    COSINE,
+    INNER,
+    AUTO,
+    LINEAR_NORM,
 )
 from tests.core.test_policies import PolicyTestCollection
+from rasa.shared.constants import DEFAULT_SENDER_ID
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -69,6 +75,7 @@ def test_diagnostics():
 
 
 class TestTEDPolicy(PolicyTestCollection):
+    @pytest.mark.trains_model
     def test_train_model_checkpointing(self, tmp_path: Path):
         model_name = "core-checkpointed-model"
         best_model_file = tmp_path / (model_name + ".tar.gz")
@@ -76,7 +83,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
         train_core(
             domain="data/test_domains/default.yml",
-            stories="data/test_stories/stories_defaultdomain.md",
+            stories="data/test_yaml_stories/stories_defaultdomain.yaml",
             output=str(tmp_path),
             fixed_model_name=model_name,
             config="data/test_config/config_ted_policy_model_checkpointing.yml",
@@ -264,7 +271,10 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         )
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[SIMILARITY_TYPE] == "cosine"
+        assert trained_policy.config[SIMILARITY_TYPE] == COSINE
+
+    def test_confidence_type(self, trained_policy: TEDPolicy):
+        assert trained_policy.config[MODEL_CONFIDENCE] == AUTO
 
     def test_normalization(
         self,
@@ -282,6 +292,18 @@ class TestTEDPolicyMargin(TestTEDPolicy):
 
         # function should not get called for margin loss_type
         mock.normalize.assert_not_called()
+
+    def test_prediction_on_empty_tracker(
+        self, trained_policy: Policy, default_domain: Domain
+    ):
+        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
+        prediction = trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        )
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert max(prediction.probabilities) <= 1.0
+        assert min(prediction.probabilities) >= -1.0
 
 
 class TestTEDPolicyWithEval(TestTEDPolicy):
@@ -328,6 +350,54 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         )
 
         mock.normalize.assert_not_called()
+
+
+class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
+    def create_policy(
+        self, featurizer: Optional[TrackerFeaturizer], priority: int
+    ) -> Policy:
+        return TEDPolicy(
+            featurizer=featurizer, priority=priority, **{MODEL_CONFIDENCE: LINEAR_NORM}
+        )
+
+    def test_confidence_type(self, trained_policy: TEDPolicy):
+        assert trained_policy.config[MODEL_CONFIDENCE] == LINEAR_NORM
+
+    def test_normalization(
+        self,
+        trained_policy: Policy,
+        tracker: DialogueStateTracker,
+        default_domain: Domain,
+        monkeypatch: MonkeyPatch,
+    ):
+        # first check the output is what we expect
+        predicted_probabilities = trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        ).probabilities
+
+        output_sums_to_1 = sum(predicted_probabilities) == pytest.approx(1)
+        assert output_sums_to_1
+
+        # also check our function is not called
+        mock = Mock()
+        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+        trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        )
+
+        mock.normalize.assert_not_called()
+
+    def test_prediction_on_empty_tracker(
+        self, trained_policy: Policy, default_domain: Domain
+    ):
+        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
+        prediction = trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        )
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert max(prediction.probabilities) <= 1.0
+        assert min(prediction.probabilities) >= 0.0
 
 
 class TestTEDPolicyLowRankingLength(TestTEDPolicy):

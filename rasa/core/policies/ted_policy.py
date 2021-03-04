@@ -82,7 +82,7 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SOFTMAX,
+    CROSS_ENTROPY,
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_DIR,
@@ -102,6 +102,9 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     FEATURIZERS,
     ENTITY_RECOGNITION,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
     BILOU_FLAG,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
@@ -212,10 +215,11 @@ class TEDPolicy(Policy):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
-        # Number of top actions to normalize scores for loss type 'softmax'.
-        # Set to 0 to turn off normalization.
+        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        LOSS_TYPE: CROSS_ENTROPY,
+        # Number of top actions to normalize scores for. Applicable with
+        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+        # to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
@@ -277,6 +281,13 @@ class TEDPolicy(Policy):
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
         ENTITY_RECOGNITION: True,
+        # if 'True' applies sigmoid on all similarity terms and adds
+        # it to the loss function to ensure that similarity values are
+        # approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: False,
+        # Model confidence to be returned during inference. Possible values -
+        # 'softmax' and 'linear_norm'.
+        MODEL_CONFIDENCE: SOFTMAX,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
         # examples per entity are required.
@@ -336,6 +347,12 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.override_defaults(
             self.defaults, new_config
         )
+
+        self.config = rasa.utils.train_utils.update_confidence_type(self.config)
+
+        rasa.utils.train_utils.validate_configuration_settings(self.config)
+
+        self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
@@ -606,7 +623,9 @@ class TEDPolicy(Policy):
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
-        if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
+        if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
+            # TODO: This should be removed in 3.0 when softmax as
+            #  model confidence and normalization is completely deprecated.
             confidence = rasa.utils.train_utils.normalize(
                 confidence, self.config[RANKING_LENGTH]
             )
@@ -790,7 +809,10 @@ class TEDPolicy(Policy):
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
         )
+        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
+        meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
+        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
         meta[EPOCHS] = epoch_override
 
@@ -1710,15 +1732,14 @@ class TED(TransformerRasaModel):
         ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        sim_all, scores = self._tf_layers[
+            f"loss.{LABEL}"
+        ].similarity_confidence_from_embeddings(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             dialogue_mask,
         )
 
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
-        )
         predictions = {
             "action_scores": scores,
             "similarities": sim_all,

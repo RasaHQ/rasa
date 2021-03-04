@@ -31,6 +31,7 @@ from tests.core.conftest import (
 )
 
 
+@pytest.mark.trains_model
 async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
@@ -53,11 +54,11 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     assert os.path.isfile(confusion_matrix_path)
 
 
-@pytest.mark.parametrize(
-    "test_file", [END_TO_END_STORY_FILE, "data/test_evaluations/end_to_end_story.yml"]
-)
-async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Text):
-    generator = await _create_data_generator(test_file, default_agent, use_e2e=True)
+@pytest.mark.trains_model
+async def test_end_to_end_evaluation_script(default_agent: Agent):
+    generator = await _create_data_generator(
+        END_TO_END_STORY_FILE, default_agent, use_e2e=True
+    )
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, num_stories = await _collect_story_predictions(
@@ -92,6 +93,7 @@ async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Tex
     assert num_stories == 3
 
 
+@pytest.mark.trains_model
 async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent):
     generator = await _create_data_generator(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True
@@ -107,9 +109,13 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
+@pytest.mark.timeout(300)
+@pytest.mark.trains_model
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
-        "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
+        "data/test_evaluations/form_end_to_end_stories.yml",
+        form_bot_agent,
+        use_e2e=True,
     )
     test_stories = generator.generate_story_trackers()
 
@@ -120,6 +126,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
 
 
+@pytest.mark.trains_model
 async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
@@ -139,6 +146,7 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     )
 
 
+@pytest.mark.trains_model
 async def test_end_to_evaluation_trips_circuit_breaker():
     agent = Agent(
         domain="data/test_domains/default.yml",
@@ -252,6 +260,7 @@ def test_event_has_proper_implementation(
         ("data/test_yaml_stories/test_base_retrieval_intent_story.yml"),
     ],
 )
+@pytest.mark.trains_model
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = await _create_data_generator(
         test_file, response_selector_agent, use_e2e=True,
@@ -272,6 +281,7 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
         ("data/test_yaml_stories/test_base_retrieval_intent_wrong_prediction.yml"),
     ],
 )
+@pytest.mark.trains_model
 async def test_retrieval_intent_wrong_prediction(
     tmpdir: Path, response_selector_agent: Agent, test_file: Text
 ):
