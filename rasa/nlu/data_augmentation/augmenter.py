@@ -170,7 +170,8 @@ def _resolve_augmentation_factor(
 
     Args:
         nlu_training_data: The existing NLU training data.
-        augmentation_factor: Factor - as a multiple of the number of training data per intent - to determine the amount of paraphrases used for data augmentation.
+        augmentation_factor: Factor - as a multiple of the number of training data per intent - to determine the amount
+            of paraphrases used for data augmentation.
 
     Returns:
         A dictionary specifying how many paraphrases may maximally be added per intent.
@@ -178,7 +179,8 @@ def _resolve_augmentation_factor(
     aug_factor = {}
     for key, val in nlu_training_data.number_of_examples_per_intent.items():
         augmentation_size = int(round(val * augmentation_factor))
-        # Use `None` if the user passes e.g. -1 (indicating that all paraphrases should be used), because `None` doesn't affect slicing, i.e. my_list == my_list[:] == my_list[:None]
+        # Use `None` if the user passes e.g. -1 (indicating that all paraphrases should be used), because `None` d
+        # oesn't affect slicing, i.e. my_list == my_list[:] == my_list[:None]
         aug_factor[key] = augmentation_size if augmentation_size > 0 else None
 
     return aug_factor
