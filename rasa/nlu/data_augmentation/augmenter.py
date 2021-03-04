@@ -391,7 +391,7 @@ def _create_summary_report(
     training_intents: List[Text],
     pooled_intents: Set[Text],
     output_directory: Text,
-) -> Tuple[Dict[Text, Dict[Text, float]], Set[Text]]:
+) -> Dict[Text, Dict[Text, float]]:
     """Creates a summary of the effect of data augmentation.
 
     Args:
@@ -426,7 +426,7 @@ def _create_summary_report(
         os.path.join(output_directory, "intent_report.json"), intent_report,
     )
 
-    return intent_summary, changed_intents
+    return intent_summary
 
 
 def _plot_summary_report(
@@ -520,7 +520,7 @@ def _run_data_augmentation(
     )
 
     # Create data augmentation summary
-    (intent_summary, _) = _create_summary_report(
+    intent_summary = _create_summary_report(
         intent_report=intent_report,
         classification_report=classification_report,
         training_intents=nlu_training_data.intents,
