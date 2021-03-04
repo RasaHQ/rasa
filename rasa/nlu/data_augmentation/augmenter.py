@@ -123,21 +123,21 @@ def _create_paraphrase_pool(
     """
 
     paraphrase_pool = collections.defaultdict(list)
-    for p in paraphrases.intent_examples:
+    for paraphrase_msg in paraphrases.intent_examples:
 
         paraphrases_for_example = (
-            p.get(METADATA, {}).get(METADATA_EXAMPLE, {}).get("paraphrases", {})
+            paraphrase_msg.get(METADATA, {}).get(METADATA_EXAMPLE, {}).get("paraphrases", {})
         )
-        if p.get(INTENT) not in intents_to_augment or not paraphrases_for_example:
+        if paraphrase_msg.get(INTENT) not in intents_to_augment or not paraphrases_for_example:
             continue
 
         paraphrase_scores = (
-            p.get(METADATA, {}).get(METADATA_EXAMPLE, {}).get("scores", {})
+            paraphrase_msg.get(METADATA, {}).get(METADATA_EXAMPLE, {}).get("scores", {})
         )
 
         if not paraphrase_scores:
             logger.debug(
-                f"""Skipping "{p.get(TEXT)}" as no similarity scores were found for its paraphrases."""
+                f"""Skipping "{paraphrase_msg.get(TEXT)}" as no similarity scores were found for its paraphrases."""
             )
 
         for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
@@ -151,10 +151,10 @@ def _create_paraphrase_pool(
             # Create Message-compatible data representation for the paraphrases
             data = {
                 TEXT: paraphrase,
-                INTENT: p.get(INTENT),
+                INTENT: paraphrase_msg.get(INTENT),
                 METADATA: {METADATA_VOCABULARY: set(paraphrase.lower().split())},
             }
-            paraphrase_pool[p.get(INTENT)].append(Message(data=data))
+            paraphrase_pool[paraphrase_msg.get(INTENT)].append(Message(data=data))
 
     return paraphrase_pool
 
@@ -201,20 +201,20 @@ def _create_augmented_training_data_max_vocab_expansion(
 
     # Extract intent-level vocabulary for all intents that should be augmented
     intent_vocab = collections.defaultdict(set)
-    for m in nlu_training_data.intent_examples:
-        intent = m.get(INTENT)
+    for message in nlu_training_data.intent_examples:
+        intent = message.get(INTENT)
         if intent in intents_to_augment:
-            intent_vocab[intent] |= set(m.get(TEXT, "").lower().split())
+            intent_vocab[intent] |= set(message.get(TEXT, "").lower().split())
 
     # Select paraphrases that maximise vocabulary expansion
     new_training_data = []
     for intent in paraphrase_pool.keys():
         max_vocab_expansion = []
-        for m in paraphrase_pool[intent]:
-            paraphrase_vocab = m.get(METADATA, {}).get(METADATA_VOCABULARY, set())
+        for message in paraphrase_pool[intent]:
+            paraphrase_vocab = message.get(METADATA, {}).get(METADATA_VOCABULARY, set())
             num_new_words = len(paraphrase_vocab - intent_vocab[intent])
 
-            max_vocab_expansion.append((num_new_words, m))
+            max_vocab_expansion.append((num_new_words, message))
 
         # Creates `Message` objects from the list of all paraphrases, sorted by their vocabulary expansion
         new_training_data.extend(
