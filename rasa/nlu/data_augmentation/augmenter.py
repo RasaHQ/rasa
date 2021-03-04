@@ -494,7 +494,7 @@ def run_data_augmentation(
     classification_report: Dict[Text, Dict[Text, float]],
 ) -> None:
     """
-    Runs the NLU train/test cycle with data augmentation
+    Runs the NLU train/test cycle with data augmentation.
 
     Also, generate reports and plots summarising the impact of data augmentation on model performance.
 
