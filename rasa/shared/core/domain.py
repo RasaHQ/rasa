@@ -602,9 +602,8 @@ class Domain:
 
     @classmethod
     def _update_slots_with_global_not_intent_parameter(
-        cls, form_data: Optional[Union[Dict[Dict, Text]]] = None,
-    ) -> Dict:
-        # breakpoint()
+        cls, form_data: Union[Dict[Text, Any], List[Text]],
+    ) -> Union[Dict[Text, Any], List[Text]]:
         if "global_not_intent" in form_data:
             global_params = form_data.get("global_not_intent")
             # accessing the form slots by using keyword `required_slots`
