@@ -120,6 +120,7 @@ class SpacyNLP(Component):
                 warnings.warn(
                     UserWarning(
                         "SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`."
+                        "More informaton can be found on https://rasa.com/docs/rasa/components#spacynlp"
                     )
                 )
                 warnings.warn(
