@@ -37,6 +37,29 @@ def test_augmenter_create_tokenizer(run: Callable[..., RunResult],):
     assert tokens == expected_tokens
 
 
+def test_augmenter_create_tokenizer_empty_config(run: Callable[..., RunResult],):
+    from rasa.nlu.data_augmentation.augmenter import _create_tokenizer_from_config
+
+    data_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
+    config_path = os.path.join(data_root, "data/test_nlu_paraphrasing/empty_config.yml")
+
+    # Should fallback to a WhitespaceTokenizer
+    tokenizer = _create_tokenizer_from_config(config_path=config_path)
+
+    assert isinstance(tokenizer, Component)
+
+    # Test Config has a simple WhitespaceTokenizer
+    expected_tokens = ["xxx", "yyy", "zzz"]
+    message = Message(data={TEXT: "xxx yyy zzz", INTENT: "abc"})
+
+    tokenizer.process(message)
+    tokens = [token.text for token in message.get(TOKENS_NAMES[TEXT])]
+
+    assert tokens == expected_tokens
+
+
 def test_augmenter_intent_collection(run: Callable[..., RunResult],):
     from rasa.nlu.data_augmentation.augmenter import (
         _collect_intents_for_data_augmentation,
