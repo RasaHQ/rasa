@@ -489,28 +489,28 @@ def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None:
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
-def _get_processor_entity_evaluation_result(
+def _get_e2e_entity_evaluation_result(
     processor: "MessageProcessor",
     tracker: DialogueStateTracker,
     prediction: PolicyPrediction,
 ):
     previous_event = tracker.events[-1]
     if isinstance(previous_event, UserUttered):
-        entity_predictions = [
+        entities_predicted_by_policies = [
             entity
             for prediction_event in prediction.events
             if isinstance(prediction_event, EntitiesAdded)
             for entity in prediction_event.entities
         ]
         entity_targets = previous_event.entities
-        if entity_targets or entity_predictions:
+        if entity_targets or entities_predicted_by_policies:
             text = previous_event.text
             parsed_message = processor.interpreter.featurize_message(
                 Message(data={TEXT: text})
             )
             tokens = parsed_message.get(TOKENS_NAMES[TEXT])
             return EntityEvaluationResult(
-                entity_targets, entity_predictions, tokens, text
+                entity_targets, entities_predicted_by_policies, tokens, text
             )
 
 
@@ -529,7 +529,7 @@ def _collect_action_executed_predictions(
     gold_action_text = event.action_text
     gold = gold_action_name or gold_action_text
 
-    entity_result = None
+    policy_entity_result = None
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
@@ -538,7 +538,7 @@ def _collect_action_executed_predictions(
         action, prediction = processor.predict_next_action(partial_tracker)
         predicted = action.name()
 
-        entity_result = _get_processor_entity_evaluation_result(
+        policy_entity_result = _get_e2e_entity_evaluation_result(
             processor, partial_tracker, prediction
         )
 
@@ -599,7 +599,7 @@ def _collect_action_executed_predictions(
             )
         )
 
-    return action_executed_eval_store, prediction, entity_result
+    return action_executed_eval_store, prediction, policy_entity_result
 
 
 def _form_might_have_been_rejected(
@@ -638,7 +638,7 @@ async def _predict_tracker_actions(
     tracker_actions = []
     should_predict_another_action = True
     num_predicted_actions = 0
-    entity_results = []
+    policy_entity_results = []
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
@@ -658,7 +658,7 @@ async def _predict_tracker_actions(
             )
 
             if entity_result:
-                entity_results.append(entity_result)
+                policy_entity_results.append(entity_result)
 
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
@@ -695,7 +695,7 @@ async def _predict_tracker_actions(
         if isinstance(event, UserUttered):
             num_predicted_actions = 0
 
-    return tracker_eval_store, partial_tracker, tracker_actions, entity_results
+    return tracker_eval_store, partial_tracker, tracker_actions, policy_entity_results
 
 
 def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
