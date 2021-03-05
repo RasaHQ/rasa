@@ -74,10 +74,13 @@ class TrainingData:
         Returns:
             Updated lookup table where filenames are replaced with the contents of these files.
         """
-        if Path(lookup_table["elements"]).is_file():
+        elements = lookup_table["elements"]
+        potential_file = elements if isinstance(elements, str) else elements[0]
+
+        if Path(potential_file).is_file():
             try:
                 lookup_table["elements"] = rasa.shared.utils.io.read_file(
-                    lookup_table["elements"], "utf8"
+                    potential_file, "utf8"
                 )
                 return lookup_table
             except (FileNotFoundError, UnicodeDecodeError):

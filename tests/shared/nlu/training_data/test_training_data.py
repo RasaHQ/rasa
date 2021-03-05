@@ -692,6 +692,13 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
             },
         ),
         (
+            {"name": "plates", "elements": ["data/test/lookup_tables/plates.txt"]},
+            {
+                "name": "plates",
+                "elements": "tacos\nbeef\nmapo tofu\nburrito\nlettuce wrap",
+            },
+        ),
+        (
             {
                 "name": "plates",
                 "elements": "data/test/lookup_tables/not-existing-file.txt",
