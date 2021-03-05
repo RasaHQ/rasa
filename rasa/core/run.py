@@ -76,7 +76,7 @@ def _create_single_channel(channel, credentials) -> Any:
 
 
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
-    app = Sanic(__name__, configure_logging=False)
+    app = Sanic(__name__, configure_logging=True)
     server.add_root_route(app)
     server.configure_cors(app, cors)
     return app
@@ -224,6 +224,8 @@ def serve_application(
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
         workers=number_of_workers,
+        debug=True,
+        access_log=True,
     )
 
 

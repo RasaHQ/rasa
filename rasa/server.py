@@ -639,7 +639,7 @@ def create_app(
 ):
     """Class representing a Rasa HTTP server."""
 
-    app = Sanic(__name__)
+    app = Sanic(__name__, configure_logging=True)
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
 
