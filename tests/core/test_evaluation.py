@@ -303,6 +303,7 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
+@pytest.mark.trains_model
 @pytest.mark.parametrize(
     "stories_yaml,expected_results",
     [
@@ -397,6 +398,7 @@ async def test_story_report(
     assert actual_results == expected_results
 
 
+@pytest.mark.trains_model
 async def test_story_report_with_empty_stories(
     tmpdir: Path, core_agent: Agent,
 ) -> None:
