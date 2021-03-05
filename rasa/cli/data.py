@@ -472,7 +472,7 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
     if fallback_rule:
         new_rules.append(fallback_rule)
 
-    if new_rules:
+    if new_rules or model_configuration["policies"]:
         _backup(configuration_file)
         rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
         _dump_rules(rule_output_file, new_rules)
@@ -643,15 +643,23 @@ def _backup(path: Path) -> None:
 
 
 def _print_success_message(new_rules: List["StoryStep"], output_file: Path) -> None:
-    if len(new_rules) > 1:
-        suffix = "rule"
-        verb = "was"
-    else:
-        suffix = "rules"
+    if len(new_rules) > 1 or len(new_rules) == 0:
+        rules_text = "rules"
         verb = "were"
+    else:
+        rules_text = "rule"
+        verb = "was"
 
     rasa.shared.utils.cli.print_success(
-        f"Finished migrating your policy configuration 🎉.\n"
-        f"The migration generated {len(new_rules)} {suffix} which {verb} added to "
-        f"'{output_file}'."
+        "Finished migrating your policy configuration 🎉."
     )
+    if len(new_rules) == 0:
+        rasa.shared.utils.cli.print_success(
+            f"The migration generated {len(new_rules)} {rules_text} so no {rules_text} "
+            f"{verb} added to '{output_file}'."
+        )
+    else:
+        rasa.shared.utils.cli.print_success(
+            f"The migration generated {len(new_rules)} {rules_text} which {verb} added "
+            f"to '{output_file}'."
+        )
