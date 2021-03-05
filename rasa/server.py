@@ -1481,6 +1481,8 @@ def _training_payload_from_json(
         force_training=request_payload.get(
             "force", request.args.get("force_training", False)
         ),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
@@ -1541,6 +1543,8 @@ def _training_payload_from_yaml(
         training_files=str(temp_dir),
         output=model_output_directory,
         force_training=request.args.get("force_training", False),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
@@ -1554,3 +1558,15 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
             f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA,
         )
+
+
+def _extract_core_additional_arguments(request: Request) -> Dict:
+    return {
+        "augmentation_factor": request.args.get("augmentation", 50),
+    }
+
+
+def _extract_nlu_additional_arguments(request: Request) -> Dict:
+    return {
+        "num_threads": request.args.get("num_threads", 1),
+    }
