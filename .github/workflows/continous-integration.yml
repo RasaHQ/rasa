@@ -194,6 +194,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
+        test: [test-non-training, test-training]
 
     steps:
     - name: Checkout git repository 🕝
@@ -277,7 +278,7 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        make test
+        make ${{ matrix.test }}
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'

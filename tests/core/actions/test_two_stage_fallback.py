@@ -74,6 +74,7 @@ async def test_ask_affirmation(events: List[Event]):
     assert isinstance(events[1], BotUttered)
 
 
+@pytest.mark.trains_model
 async def test_1st_affirmation_is_successful(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
         "some-sender",
@@ -178,6 +179,7 @@ async def test_ask_rephrase_after_failed_affirmation():
     assert bot_utterance.text == rephrase_text
 
 
+@pytest.mark.trains_model
 async def test_ask_rephrasing_successful(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
         "some-sender",
@@ -254,6 +256,7 @@ async def test_ask_affirm_after_rephrasing():
     assert isinstance(events[0], BotUttered)
 
 
+@pytest.mark.trains_model
 async def test_2nd_affirm_successful(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
         "some-sender",

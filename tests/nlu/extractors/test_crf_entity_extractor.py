@@ -20,6 +20,7 @@ def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
     return [{"name": c} for c in components]
 
 
+@pytest.mark.trains_model
 async def test_train_persist_load_with_composite_entities(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
@@ -30,7 +31,7 @@ async def test_train_persist_load_with_composite_entities(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/test/demo-rasa-composite-entities.md",
+        data="data/test/demo-rasa-composite-entities.yml",
         component_builder=component_builder,
     )
 
@@ -87,6 +88,7 @@ async def test_train_persist_load_with_composite_entities(
         ),
     ],
 )
+@pytest.mark.trains_model
 async def test_train_persist_with_different_configurations(
     config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmp_path: Path
 ):

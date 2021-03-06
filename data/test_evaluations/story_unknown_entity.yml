@@ -1,0 +1,6 @@
+stories:
+- story: simple_story_with_unknown_entity
+  steps:
+  - user: |
+      I am [rasa](name)
+    intent: utter_greet
