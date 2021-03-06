@@ -205,7 +205,7 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
 
-    return request.args.get(name, str(default)).lower() == "true"
+    return str(request.args.get(name, default)).lower() == "true"
 
 
 def float_arg(
@@ -213,8 +213,8 @@ def float_arg(
 ) -> Optional[float]:
     """Return a passed argument cast as a float or None.
 
-    Checks the `name` parameter of the request if it contains a valid
-    float value. If not, `None` is returned."""
+    Checks the `key` parameter of the request if it contains a valid
+    float value. If not, `default` is returned."""
 
     arg = request.args.get(key, default)
 
@@ -225,4 +225,24 @@ def float_arg(
         return float(str(arg))
     except (ValueError, TypeError):
         logger.warning(f"Failed to convert '{arg}' to float.")
+        return default
+
+
+def int_arg(
+    request: Request, key: Text, default: Optional[int] = None
+) -> Optional[int]:
+    """Return a passed argument cast as an int or None.
+
+    Checks the `key` parameter of the request if it contains a valid
+    int value. If not, `default` is returned."""
+
+    arg = request.args.get(key, default)
+
+    if arg is default:
+        return arg
+
+    try:
+        return int(str(arg))
+    except (ValueError, TypeError):
+        logger.warning(f"Failed to convert '{arg}' to int.")
         return default
