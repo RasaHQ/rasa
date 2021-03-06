@@ -464,6 +464,18 @@ paths:
           type: boolean
           default: False
           description: Force a model training even if the data has not changed
+      - in: query
+        name: augmentation
+        schema:
+          type: string
+          default: 50
+          description: How much data augmentation to use during training
+      - in: query
+        name: num_threads
+        schema:
+          type: string
+          default: 1
+          description: Maximum amount of threads to use when training
       - $ref: '#/components/parameters/callback_url'
       requestBody:
         required: true
