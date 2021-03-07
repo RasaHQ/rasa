@@ -203,8 +203,8 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     """Return a passed boolean argument of the request or a default.
 
     Checks the `name` parameter of the request if it contains a valid
-    boolean value. If not, `default` is returned."""
-
+    boolean value. If not, `default` is returned.
+    """
     return str(request.args.get(name, default)).lower() == "true"
 
 
@@ -214,8 +214,8 @@ def float_arg(
     """Return a passed argument cast as a float or None.
 
     Checks the `key` parameter of the request if it contains a valid
-    float value. If not, `default` is returned."""
-
+    float value. If not, `default` is returned.
+    """
     arg = request.args.get(key, default)
 
     if arg is default:
@@ -234,8 +234,8 @@ def int_arg(
     """Return a passed argument cast as an int or None.
 
     Checks the `key` parameter of the request if it contains a valid
-    int value. If not, `default` is returned."""
-
+    int value. If not, `default` is returned.
+    """
     arg = request.args.get(key, default)
 
     if arg is default:

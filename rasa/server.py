@@ -699,7 +699,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
-
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = float_arg(request, "until")
 
