@@ -817,12 +817,16 @@ def _write_stories_to_file(
         append_write = "w"  # make a new file if not
 
     interactive_story_prefix = "interactive_story_"
-    with open(
-        export_story_path, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
-    ) as f:
-        interactive_story_counter = (
-            sum(1 for s in f if interactive_story_prefix in s) + 1
-        )  # count the times string 'interactive story' occur in file
+
+    try:
+        f = open(export_story_path, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING)
+    except OSError:
+        interactive_story_counter = 1
+    else:
+        with f:
+            interactive_story_counter = (
+                sum(1 for s in f if interactive_story_prefix in s) + 1
+            )  # count the times string 'interactive story' occur in file
 
     with open(
         export_story_path, append_write, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
