@@ -381,7 +381,7 @@ steps + get the PR merged.
 
 ## License
 Licensed under the Apache License, Version 2.0.
-Copyright 2020 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2021 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the
