@@ -704,6 +704,39 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
+@pytest.mark.parametrize(
+    "headers, expected",
+    [
+        ({}, {"augmentation_factor": 50}),
+        ({"augmentation": "25"}, {"augmentation_factor": 25}),
+    ],
+)
+def test_training_payload_from_yaml_core_arguments(
+    headers: Dict, expected: bool, tmp_path: Path
+):
+    request = Mock()
+    request.body = b""
+    request.args = headers
+
+    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
+    assert payload.get("core_additional_arguments") == expected
+
+
+@pytest.mark.parametrize(
+    "headers, expected",
+    [({}, {"num_threads": 1}), ({"num_threads": "2"}, {"num_threads": 2})],
+)
+def test_training_payload_from_yaml_nlu_arguments(
+    headers: Dict, expected: bool, tmp_path: Path
+):
+    request = Mock()
+    request.body = b""
+    request.args = headers
+
+    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
+    assert payload.get("nlu_additional_arguments") == expected
+
+
 @pytest.mark.trains_model
 async def test_train_missing_config(rasa_app: SanicASGITestClient):
     payload = dict(domain="domain data", config=None)
