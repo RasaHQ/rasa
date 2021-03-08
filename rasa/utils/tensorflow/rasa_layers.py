@@ -3,7 +3,6 @@ import tensorflow_addons as tfa
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
 from rasa.core.constants import DIALOGUE
-from rasa.shared.exceptions import TFLayerConfigException
 from rasa.shared.nlu.constants import TEXT
 from rasa.utils.tensorflow.model_data import FeatureSignature
 from rasa.utils.tensorflow.constants import (
