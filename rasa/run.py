@@ -12,50 +12,8 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
 
-
-def run(
-    model: Text,
-    endpoints: Text,
-    connector: Text = None,
-    credentials: Text = None,
-    **kwargs: Dict,
-):
-    """Runs a Rasa model.
-
-    Args:
-        model: Path to model archive.
-        endpoints: Path to endpoints file.
-        connector: Connector which should be use (overwrites `credentials`
-        field).
-        credentials: Path to channel credentials file.
-        **kwargs: Additional arguments which are passed to
-        `rasa.core.run.serve_application`.
-
-    """
-    import rasa.core.run
-    import rasa.nlu.run
-    from rasa.core.utils import AvailableEndpoints
-
-    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
-
-    if not connector and not credentials:
-        connector = "rest"
-        print_warning(
-            f"No chat connector configured, falling back to the "
-            f"REST input channel. To connect your bot to another channel, "
-            f"read the docs here: {DOCS_BASE_URL}/messaging-and-voice-channels"
-        )
-
-    kwargs = rasa.shared.utils.common.minimal_kwargs(
-        kwargs, rasa.core.run.serve_application
-    )
-    rasa.core.run.serve_application(
-        model,
-        channel=connector,
-        credentials=credentials,
-        endpoints=_endpoints,
-        **kwargs,
-    )
+# backwards compatibility
+run = rasa.run
 
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":

@@ -9,7 +9,6 @@ def test_cli_start(run: Callable[..., RunResult]):
     Checks that a call to ``rasa --help`` does not take longer than 7 seconds
     (10 seconds on Windows).
     """
-    import time
 
     start = time.time()
     run("--help")

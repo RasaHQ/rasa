@@ -17,7 +17,6 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
 )
-from rasa.core.test import FAILED_STORIES_FILE
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
 import rasa.utils.common
@@ -70,6 +69,7 @@ def add_subparser(
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
+    from rasa.core.test import FAILED_STORIES_FILE
 
     stories = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH

@@ -470,7 +470,6 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
-    import tensorflow as tf
 
     global TELEMETRY_CONTEXT
 
@@ -482,7 +481,6 @@ def _default_context_fields() -> Dict[Text, Any]:
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
-            "gpu": len(tf.config.list_physical_devices("GPU")),
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
         }
