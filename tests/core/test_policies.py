@@ -1,14 +1,15 @@
 from pathlib import Path
 from typing import Type, List, Text, Tuple, Optional, Any
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.channels import OutputChannel
+from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.generator import TrackerWithCachedStates
+import rasa.shared.utils.io
 
 from rasa.core import training
 import rasa.core.actions.action
@@ -30,7 +31,12 @@ from rasa.shared.core.constants import (
     USER,
 )
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, ConversationPaused, Event
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ConversationPaused,
+    Event,
+    UserUttered,
+)
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
@@ -48,18 +54,6 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy, Memoizati
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.markdown import INTENT
-from rasa.utils.tensorflow.constants import (
-    SIMILARITY_TYPE,
-    RANKING_LENGTH,
-    LOSS_TYPE,
-    SCALE_LOSS,
-    EVAL_NUM_EXAMPLES,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
-)
-from rasa.train import train_core
-from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -95,26 +89,26 @@ class PolicyTestCollection:
     ) -> Policy:
         raise NotImplementedError
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
         featurizer = MaxHistoryTrackerFeaturizer(
             SingleStateFeaturizer(), max_history=self.max_history
         )
         return featurizer
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def priority(self) -> int:
         return 1
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def default_domain(self) -> Domain:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def tracker(self, default_domain: Domain) -> DialogueStateTracker:
         return DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     async def trained_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
@@ -136,11 +130,20 @@ class PolicyTestCollection:
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
+    @pytest.mark.parametrize("should_finetune", [False, True])
     async def test_persist_and_load(
-        self, trained_policy: Policy, default_domain: Domain, tmp_path: Path
+        self,
+        trained_policy: Policy,
+        default_domain: Domain,
+        tmp_path: Path,
+        should_finetune: bool,
     ):
         trained_policy.persist(str(tmp_path))
-        loaded = trained_policy.__class__.load(str(tmp_path))
+        loaded = trained_policy.__class__.load(
+            str(tmp_path), should_finetune=should_finetune
+        )
+        assert loaded.finetune_mode == should_finetune
+
         trackers = await train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
@@ -156,12 +159,13 @@ class PolicyTestCollection:
         self, trained_policy: Policy, default_domain: Domain
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
-        probabilities = trained_policy.predict_action_probabilities(
+        prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        ).probabilities
-        assert len(probabilities) == default_domain.num_actions
-        assert max(probabilities) <= 1.0
-        assert min(probabilities) >= 0.0
+        )
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert max(prediction.probabilities) <= 1.0
+        assert min(prediction.probabilities) >= 0.0
 
     @pytest.mark.filterwarnings(
         "ignore:.*without a trained model present.*:UserWarning"
@@ -180,7 +184,7 @@ class PolicyTestCollection:
             tracker, domain, RegexInterpreter()
         ).probabilities
         index = scores.index(max(scores))
-        return domain.action_names[index]
+        return domain.action_names_or_texts[index]
 
 
 class TestSklearnPolicy(PolicyTestCollection):
@@ -197,7 +201,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             gs.return_value = gs  # for __init__
             yield gs
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     async def trackers(self, default_domain: Domain) -> List[TrackerWithCachedStates]:
         return await train_trackers(default_domain, augmentation_factor=20)
 
@@ -297,13 +301,14 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(
             new_trackers, domain=default_domain, interpreter=RegexInterpreter()
         )
-        predicted_probabilities = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        ).probabilities
+        )
 
-        assert len(predicted_probabilities) == default_domain.num_actions
-        assert np.allclose(sum(predicted_probabilities), 1.0)
-        for i, prob in enumerate(predicted_probabilities):
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert np.allclose(sum(prediction.probabilities), 1.0)
+        for i, prob in enumerate(prediction.probabilities):
             if i in classes:
                 assert prob >= 0.0
             else:
@@ -335,320 +340,23 @@ class TestSklearnPolicy(PolicyTestCollection):
         # does not raise
         policy.train(trackers, domain=default_domain, interpreter=RegexInterpreter())
 
-
-class TestTEDPolicy(PolicyTestCollection):
-    def test_train_model_checkpointing(self, tmp_path: Path):
-        model_name = "core-checkpointed-model"
-        best_model_file = tmp_path / (model_name + ".tar.gz")
-        assert not best_model_file.exists()
-
-        train_core(
-            domain="data/test_domains/default.yml",
-            stories="data/test_stories/stories_defaultdomain.md",
-            output=str(tmp_path),
-            fixed_model_name=model_name,
-            config="data/test_config/config_ted_policy_model_checkpointing.yml",
-        )
-
-        assert best_model_file.exists()
-
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(featurizer=featurizer, priority=priority)
-
-    def test_similarity_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[SIMILARITY_TYPE] == "inner"
-
-    def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 10
-
-    def test_normalization(
+    def test_finetune_after_load(
         self,
-        trained_policy: TEDPolicy,
-        tracker: DialogueStateTracker,
+        trained_policy: SklearnPolicy,
+        trackers: List[TrackerWithCachedStates],
         default_domain: Domain,
-        monkeypatch: MonkeyPatch,
+        tmp_path: Path,
     ):
-        # first check the output is what we expect
-        predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        ).probabilities
-        # count number of non-zero confidences
-        assert (
-            sum([confidence > 0 for confidence in predicted_probabilities])
-            == trained_policy.config[RANKING_LENGTH]
-        )
-        # check that the norm is still 1
-        assert sum(predicted_probabilities) == pytest.approx(1)
 
-        # also check our function is called
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
+        trained_policy.persist(tmp_path)
 
-        mock.normalize.assert_called_once()
+        loaded_policy = SklearnPolicy.load(tmp_path, should_finetune=True)
 
-    async def test_gen_batch(self, trained_policy: TEDPolicy, default_domain: Domain):
-        training_trackers = await train_trackers(default_domain, augmentation_factor=0)
-        interpreter = RegexInterpreter()
-        training_data, label_ids = trained_policy.featurize_for_training(
-            training_trackers, default_domain, interpreter
-        )
-        label_data, all_labels = trained_policy._create_label_data(
-            default_domain, interpreter
-        )
-        model_data = trained_policy._create_model_data(
-            training_data, label_ids, all_labels
-        )
-        batch_size = 2
-        (
-            batch_label_ids,
-            batch_entities_mask,
-            batch_entities_sentence_1,
-            batch_entities_sentence_2,
-            batch_entities_sentence_3,
-            batch_intent_mask,
-            batch_intent_sentence_1,
-            batch_intent_sentence_2,
-            batch_intent_sentence_3,
-            batch_slots_mask,
-            batch_slots_sentence_1,
-            batch_slots_sentence_2,
-            batch_slots_sentence_3,
-            batch_action_name_mask,
-            batch_action_name_sentence_1,
-            batch_action_name_sentence_2,
-            batch_action_name_sentence_3,
-            batch_dialogue_length,
-        ) = next(model_data._gen_batch(batch_size=batch_size))
+        assert loaded_policy.finetune_mode
 
-        assert (
-            batch_intent_mask.shape[0] == batch_size
-            and batch_action_name_mask.shape[0] == batch_size
-            and batch_entities_mask.shape[0] == batch_size
-            and batch_slots_mask.shape[0] == batch_size
-        )
-        assert (
-            batch_intent_sentence_3[1]
-            == batch_action_name_sentence_3[1]
-            == batch_entities_sentence_3[1]
-            == batch_slots_sentence_3[1]
-        )
+        loaded_policy.train(trackers, default_domain, RegexInterpreter())
 
-        (
-            batch_label_ids,
-            batch_entities_mask,
-            batch_entities_sentence_1,
-            batch_entities_sentence_2,
-            batch_entities_sentence_3,
-            batch_intent_mask,
-            batch_intent_sentence_1,
-            batch_intent_sentence_2,
-            batch_intent_sentence_3,
-            batch_slots_mask,
-            batch_slots_sentence_1,
-            batch_slots_sentence_2,
-            batch_slots_sentence_3,
-            batch_action_name_mask,
-            batch_action_name_sentence_1,
-            batch_action_name_sentence_2,
-            batch_action_name_sentence_3,
-            batch_dialogue_length,
-        ) = next(
-            model_data._gen_batch(
-                batch_size=batch_size, batch_strategy="balanced", shuffle=True
-            )
-        )
-
-        assert (
-            batch_intent_mask.shape[0] == batch_size
-            and batch_action_name_mask.shape[0] == batch_size
-            and batch_entities_mask.shape[0] == batch_size
-            and batch_slots_mask.shape[0] == batch_size
-        )
-        assert (
-            batch_intent_sentence_3[1]
-            == batch_action_name_sentence_3[1]
-            == batch_entities_sentence_3[1]
-            == batch_slots_sentence_3[1]
-        )
-
-
-class TestTEDPolicyMargin(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{LOSS_TYPE: "margin"}
-        )
-
-    def test_similarity_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[SIMILARITY_TYPE] == "cosine"
-
-    def test_normalization(
-        self,
-        trained_policy: Policy,
-        tracker: DialogueStateTracker,
-        default_domain: Domain,
-        monkeypatch: MonkeyPatch,
-    ):
-        # Mock actual normalization method
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-
-        # function should not get called for margin loss_type
-        mock.normalize.assert_not_called()
-
-
-class TestTEDPolicyWithEval(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            priority=priority,
-            **{SCALE_LOSS: False, EVAL_NUM_EXAMPLES: 4},
-        )
-
-
-class TestTEDPolicyNoNormalization(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{RANKING_LENGTH: 0}
-        )
-
-    def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 0
-
-    def test_normalization(
-        self,
-        trained_policy: Policy,
-        tracker: DialogueStateTracker,
-        default_domain: Domain,
-        monkeypatch: MonkeyPatch,
-    ):
-        # first check the output is what we expect
-        predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        ).probabilities
-        # there should be no normalization
-        assert all([confidence > 0 for confidence in predicted_probabilities])
-
-        # also check our function is not called
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-
-        mock.normalize.assert_not_called()
-
-
-class TestTEDPolicyLowRankingLength(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{RANKING_LENGTH: 3}
-        )
-
-    def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 3
-
-
-class TestTEDPolicyHighRankingLength(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{RANKING_LENGTH: 11}
-        )
-
-    def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 11
-
-
-class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        # use standard featurizer from TEDPolicy,
-        # since it is using MaxHistoryTrackerFeaturizer
-        # if max_history is not specified
-        return TEDPolicy(priority=priority)
-
-    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
-        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
-        assert isinstance(
-            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
-        )
-        trained_policy.persist(str(tmp_path))
-        loaded = trained_policy.__class__.load(str(tmp_path))
-        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
-        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
-
-
-class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        # use standard featurizer from TEDPolicy,
-        # since it is using MaxHistoryTrackerFeaturizer
-        # if max_history is specified
-        return TEDPolicy(priority=priority, max_history=self.max_history)
-
-    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
-        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
-        assert trained_policy.featurizer.max_history == self.max_history
-        assert isinstance(
-            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
-        )
-        trained_policy.persist(str(tmp_path))
-        loaded = trained_policy.__class__.load(str(tmp_path))
-        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
-        assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
-
-
-class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            priority=priority,
-            **{
-                KEY_RELATIVE_ATTENTION: True,
-                VALUE_RELATIVE_ATTENTION: True,
-                MAX_RELATIVE_POSITION: 5,
-            },
-        )
-
-
-class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
-
-    max_history = 1
-
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            priority=priority,
-            **{
-                KEY_RELATIVE_ATTENTION: True,
-                VALUE_RELATIVE_ATTENTION: True,
-                MAX_RELATIVE_POSITION: 5,
-            },
-        )
+        assert loaded_policy.model
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
@@ -720,6 +428,44 @@ class TestMemoizationPolicy(PolicyTestCollection):
         recalled = trained_policy.recall(states, tracker, default_domain)
         assert recalled is not None
 
+    async def test_finetune_after_load(
+        self, trained_policy: MemoizationPolicy, default_domain: Domain, tmp_path: Path
+    ):
+
+        trained_policy.persist(tmp_path)
+
+        loaded_policy = MemoizationPolicy.load(tmp_path, should_finetune=True)
+
+        assert loaded_policy.finetune_mode
+
+        new_story = TrackerWithCachedStates.from_events(
+            "channel",
+            domain=default_domain,
+            slots=default_domain.slots,
+            evts=[
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": "why"}),
+                ActionExecuted("utter_channel"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+        )
+        original_train_data = await train_trackers(
+            default_domain, augmentation_factor=20
+        )
+        loaded_policy.train(
+            original_train_data + [new_story], default_domain, RegexInterpreter()
+        )
+
+        # Get the hash of the tracker state of new story
+        new_story_states, _ = loaded_policy.featurizer.training_states_and_actions(
+            [new_story], default_domain
+        )
+
+        # Feature keys for each new state should be present in the lookup
+        for states in new_story_states:
+            state_key = loaded_policy._create_feature_key(states)
+            assert state_key in loaded_policy.lookup
+
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     def create_policy(
@@ -752,7 +498,9 @@ class TestFormPolicy(TestMemoizationPolicy):
 
     async def test_memorise(self, trained_policy: FormPolicy, default_domain: Domain):
         domain = Domain.load("data/test_domains/form.yml")
-        trackers = await training.load_data("data/test_stories/stories_form.md", domain)
+        trackers = await training.load_data(
+            "data/test_yaml_stories/stories_form.yml", domain
+        )
         trained_policy.train(trackers, domain, RegexInterpreter())
 
         (
@@ -803,8 +551,6 @@ class TestFormPolicy(TestMemoizationPolicy):
                 assert recalled is None
             elif is_no_validation:
                 assert recalled == active_form
-            else:
-                assert recalled is None
 
         nums = np.random.randn(domain.num_states)
         random_states = [{f: num for f, num in zip(domain.input_states, nums)}]
@@ -826,7 +572,7 @@ class TestMappingPolicy(PolicyTestCollection):
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert loaded.featurizer is None
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def domain_with_mapping(self) -> Domain:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
 
@@ -884,13 +630,14 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="policy_0_MappingPolicy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        ).probabilities
-        index = scores.index(max(scores))
-        action_planned = domain_with_mapping.action_names[index]
+        )
+        index = prediction.probabilities.index(max(prediction.probabilities))
+        action_planned = domain_with_mapping.action_names_or_texts[index]
+        assert not prediction.is_end_to_end_prediction
         assert action_planned == ACTION_LISTEN_NAME
-        assert scores != [0] * domain_with_mapping.num_actions
+        assert prediction.probabilities != [0] * domain_with_mapping.num_actions
 
     def test_do_not_follow_other_policy(
         self,
@@ -905,10 +652,11 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="other_policy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        ).probabilities
-        assert scores == [0] * domain_with_mapping.num_actions
+        )
+        assert prediction.probabilities == [0] * domain_with_mapping.num_actions
+        assert not prediction.is_end_to_end_prediction
 
 
 class TestFallbackPolicy(PolicyTestCollection):
@@ -1016,8 +764,8 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "greet" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == (
-            "## sender\n* greet\n    - utter_hello\n* greet\n"
+        assert tracker.export_stories(MarkdownStoryWriter(), e2e=True) == (
+            "## sender\n* greet: Random\n    - utter_hello\n* greet: Random\n"
         )
 
     def test_ask_rephrase(self, trained_policy: Policy, default_domain: Domain):
@@ -1145,8 +893,8 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == (
-            "## sender\n* greet\n    - utter_hello\n* bye\n"
+        assert tracker.export_stories(MarkdownStoryWriter(), e2e=True) == (
+            "## sender\n* greet: Random\n    - utter_hello\n* bye: Random\n"
         )
 
     def test_unknown_instead_affirmation(
@@ -1229,3 +977,34 @@ def test_get_training_trackers_for_policy(
 def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
     with pytest.warns(FutureWarning):
         policy(None)
+
+
+class PolicyWithoutInitKwargs(Policy):
+    def __init__(self, *args: Any) -> None:
+        pass
+
+    def persist(self, _) -> None:
+        pass
+
+    @classmethod
+    def _metadata_filename(cls) -> Text:
+        return "no_finetune_policy"
+
+
+def test_loading_policy_with_no_constructor_kwargs(tmp_path: Path):
+    rasa.shared.utils.io.write_text_file(
+        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
+    )
+    with pytest.raises(UnsupportedDialogueModelError) as execinfo:
+        PolicyWithoutInitKwargs.load(str(tmp_path), should_finetune=True)
+    assert "`PolicyWithoutInitKwargs.__init__` does not accept `**kwargs`." in str(
+        execinfo.value
+    )
+
+
+def test_loading_policy_with_no_constructor_kwargs_but_required_args(tmp_path: Path):
+    rasa.shared.utils.io.write_text_file(
+        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
+    )
+    with pytest.warns(FutureWarning):
+        PolicyWithoutInitKwargs.load(str(tmp_path))

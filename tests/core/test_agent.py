@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from typing import Any, Dict, Text, List, Callable, Optional
 from unittest.mock import Mock
 
@@ -52,9 +53,9 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
 
 @pytest.fixture()
 def model_server(
-    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_moodbot_path: Text
+    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_rasa_model: Text
 ) -> TestClient:
-    app = model_server_app(trained_moodbot_path, model_hash="somehash")
+    app = model_server_app(trained_rasa_model, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))
 
 
@@ -73,12 +74,14 @@ async def test_training_data_is_reproducible():
         assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
 
 
+@pytest.mark.timeout(300)
+@pytest.mark.trains_model
 async def test_agent_train(trained_moodbot_path: Text):
     moodbot_domain = Domain.load("examples/moodbot/domain.yml")
     loaded = Agent.load(trained_moodbot_path)
 
     # test domain
-    assert loaded.domain.action_names == moodbot_domain.action_names
+    assert loaded.domain.action_names_or_texts == moodbot_domain.action_names_or_texts
     assert loaded.domain.intents == moodbot_domain.intents
     assert loaded.domain.entities == moodbot_domain.entities
     assert loaded.domain.templates == moodbot_domain.templates
@@ -120,6 +123,7 @@ async def test_agent_train(trained_moodbot_path: Text):
         ),
     ],
 )
+@pytest.mark.trains_model
 async def test_agent_parse_message_using_nlu_interpreter(
     default_agent: Agent, text_message_data: Text, expected: Dict[Text, Any]
 ):
@@ -127,6 +131,7 @@ async def test_agent_parse_message_using_nlu_interpreter(
     assert result == expected
 
 
+@pytest.mark.trains_model
 async def test_agent_handle_text(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
@@ -135,6 +140,7 @@ async def test_agent_handle_text(default_agent: Agent):
     ]
 
 
+@pytest.mark.trains_model
 async def test_agent_handle_message(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     message = UserMessage(text, sender_id="test_agent_handle_message")
@@ -156,8 +162,9 @@ def test_agent_wrong_use_of_load():
         agent.load(training_data_file)
 
 
+@pytest.mark.trains_model
 async def test_agent_with_model_server_in_thread(
-    model_server: TestClient, moodbot_domain: Domain, moodbot_metadata: Any
+    model_server: TestClient, default_domain: Domain, unpacked_trained_rasa_model: Text
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}
@@ -171,18 +178,22 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
-    assert hash(agent.domain) == hash(moodbot_domain)
+    assert agent.domain.as_dict() == default_domain.as_dict()
+
+    expected_policies = PolicyEnsemble.load_metadata(
+        str(Path(unpacked_trained_rasa_model, "core"))
+    )["policy_names"]
 
     agent_policies = {
         rasa.shared.utils.common.module_path_from_instance(p)
         for p in agent.policy_ensemble.policies
     }
-    moodbot_policies = set(moodbot_metadata["policy_names"])
-    assert agent_policies == moodbot_policies
+    assert agent_policies == set(expected_policies)
     assert model_server.app.number_of_model_requests == 1
     jobs.kill_scheduler()
 
 
+@pytest.mark.trains_model
 async def test_wait_time_between_pulls_without_interval(
     model_server: TestClient, monkeypatch: MonkeyPatch
 ):
@@ -199,6 +210,7 @@ async def test_wait_time_between_pulls_without_interval(
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
 
 
+@pytest.mark.trains_model
 async def test_pull_model_with_invalid_domain(
     model_server: TestClient, monkeypatch: MonkeyPatch, caplog: LogCaptureFixture
 ):
@@ -221,6 +233,7 @@ async def test_pull_model_with_invalid_domain(
     assert error_message in caplog.text
 
 
+@pytest.mark.trains_model
 async def test_load_agent(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
 
@@ -238,7 +251,7 @@ def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
             domain=Domain.from_dict({"forms": ["restaurant_form"]}),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "haven't added the FormPolicy" in str(execinfo.value)
+    assert "neither added the 'RulePolicy' nor the 'FormPolicy'" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -365,6 +378,7 @@ def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, An
     )
 
 
+@pytest.mark.trains_model
 async def test_agent_update_model_none_domain(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
     agent.update_model(

@@ -1,3 +1,5 @@
+import asyncio
+from pathlib import Path
 from typing import Text, List
 
 import pytest
@@ -12,10 +14,13 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITIES,
+    INTENT,
+    ACTION_NAME,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
@@ -25,6 +30,10 @@ from rasa.shared.nlu.training_data.util import (
 )
 
 import rasa.shared.data
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
 
 
 def test_luis_data():
@@ -87,17 +96,16 @@ def test_lookup_table_json():
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
 
 
-def test_lookup_table_md():
-    lookup_fname = "data/test/lookup_tables/plates.txt"
-    td_lookup = load_data("data/test/lookup_tables/lookup_table.md")
+def test_lookup_table_yaml():
+    td_lookup = load_data("data/test/lookup_tables/lookup_table.yml")
     assert not td_lookup.is_empty()
     assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
-    assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
+    assert len(td_lookup.lookup_tables[0]["elements"]) == 5
 
 
 def test_composite_entities_data():
-    td = load_data("data/test/demo-rasa-composite-entities.md")
+    td = load_data("data/test/demo-rasa-composite-entities.yml")
     assert not td.is_empty()
     assert len(td.entity_examples) == 11
     assert len(td.intent_examples) == 45
@@ -136,11 +144,11 @@ def test_template_key_to_intent_response_key():
     [
         [
             "data/examples/rasa/demo-rasa.json",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
         [
-            "data/examples/rasa/demo-rasa.md",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
     ],
 )
@@ -185,11 +193,11 @@ def test_demo_data(files: List[Text]):
     [
         [
             "data/examples/rasa/demo-rasa.json",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
         [
-            "data/examples/rasa/demo-rasa.md",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
     ],
 )
@@ -215,7 +223,12 @@ def test_demo_data_filter_out_retrieval_intents(files):
 
 @pytest.mark.parametrize(
     "filepaths",
-    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+    [
+        [
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
+        ]
+    ],
 )
 def test_train_test_split(filepaths: List[Text]):
     from rasa.shared.importers.utils import training_data_from_paths
@@ -282,7 +295,12 @@ def test_train_test_split(filepaths: List[Text]):
 
 @pytest.mark.parametrize(
     "filepaths",
-    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+    [
+        [
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
+        ]
+    ],
 )
 def test_train_test_split_with_random_seed(filepaths):
     from rasa.shared.importers.utils import training_data_from_paths
@@ -305,8 +323,8 @@ def test_train_test_split_with_random_seed(filepaths):
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
-        ("data/examples/rasa/demo-rasa.md", "data/test/multiple_files_markdown"),
-        ("data/examples/rasa/demo-rasa.md", "data/test/duplicate_intents_markdown"),
+        ("data/examples/rasa/demo-rasa.yml", "data/test/multiple_files_markdown"),
+        ("data/examples/rasa/demo-rasa.yml", "data/test/duplicate_intents_yaml"),
     ],
 )
 def test_data_merging(files):
@@ -522,20 +540,20 @@ def cmp_dict_list(firsts, seconds):
             "es",
         ),
         (
-            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa.yml",
             "data/test/md_converted_to_json.json",
             "json",
             None,
         ),
         (
             "data/examples/rasa/demo-rasa.json",
-            "data/test/json_converted_to_md.md",
+            "data/test_md/json_converted_to_md.md",
             "md",
             None,
         ),
         (
             "data/test/training_data_containing_special_chars.json",
-            "data/test/json_with_special_chars_convered_to_md.md",
+            "data/test_md/json_with_special_chars_converted_to_md.md",
             "md",
             None,
         ),
@@ -579,7 +597,11 @@ def test_training_data_conversion(
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
-        ("data/examples/rasa/demo-rasa.md", rasa.shared.data.markdown_file_extension()),
+        (
+            "data/test_md/default_retrieval_intents.md",
+            rasa.shared.data.markdown_file_extension(),
+        ),
+        ("data/examples/rasa/demo-rasa.yml", rasa.shared.data.yaml_file_extension()),
         ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],
 )
@@ -623,13 +645,69 @@ def test_custom_attributes(tmp_path):
     assert example.get("sentiment") == 0.8
 
 
+async def test_without_additional_e2e_examples(tmp_path: Path):
+    domain_path = tmp_path / "domain.yml"
+    domain_path.write_text(Domain.empty().as_yaml())
+
+    config_path = tmp_path / "config.yml"
+    config_path.touch()
+
+    existing = TrainingDataImporter.load_from_dict(
+        {}, str(config_path), str(domain_path), []
+    )
+
+    stories = StoryGraph(
+        [
+            StoryStep(
+                events=[
+                    UserUttered(None, {"name": "greet_from_stories"}),
+                    ActionExecuted("utter_greet_from_stories"),
+                ]
+            )
+        ]
+    )
+
+    # Patch to return our test stories
+    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+
+    importer = E2EImporter(existing)
+
+    training_data = await importer.get_nlu_data()
+
+    assert training_data.training_examples
+    assert not training_data.is_empty()
+    assert len(training_data.nlu_examples) == 0
+
+
 def test_fingerprint_is_same_when_loading_data_again():
     from rasa.shared.importers.utils import training_data_from_paths
 
     files = [
-        "data/examples/rasa/demo-rasa.md",
-        "data/examples/rasa/demo-rasa-responses.md",
+        "data/examples/rasa/demo-rasa.yml",
+        "data/examples/rasa/demo-rasa-responses.yml",
     ]
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        Message({INTENT: "intent2"}),
+        Message({ENTITIES: [{"entity": "entity2"}]}),
+        Message({ENTITIES: [{"entity": "entity1", "group": "new_group"}]}),
+        Message({ENTITIES: [{"entity": "entity1", "role": "new_role"}]}),
+        Message({ACTION_NAME: "action_name2"}),
+    ],
+)
+def test_label_fingerprints(message: Message):
+    training_data1 = TrainingData(
+        [
+            Message({INTENT: "intent1"}),
+            Message({ENTITIES: [{"entity": "entity1"}]}),
+            Message({ACTION_NAME: "action_name1"}),
+        ]
+    )
+    training_data2 = training_data1.merge(TrainingData([message]))
+    assert training_data1.label_fingerprint() != training_data2.label_fingerprint()

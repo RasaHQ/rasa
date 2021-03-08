@@ -1,24 +1,11 @@
-from typing import Text
-
 import pytest
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-from tests.nlu.utilities import write_file_config
+
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
-
-
-@pytest.fixture(scope="session")
-def component_builder():
-    return ComponentBuilder()
-
-
-@pytest.fixture(scope="session")
-def spacy_nlp(component_builder, blank_config):
-    spacy_nlp_config = {"name": "SpacyNLP"}
-    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
 
 
 @pytest.fixture(scope="session")
