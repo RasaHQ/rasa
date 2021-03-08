@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
 from rasa.core.constants import DIALOGUE
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import TFLayerConfigException
 from rasa.shared.nlu.constants import TEXT
 from rasa.utils.tensorflow.model_data import FeatureSignature
 from rasa.utils.tensorflow.constants import (
@@ -56,8 +56,9 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         config: A model config for correctly parametrising the layer.
 
     Input shape:
-        List of N-D tensors, each with shape: `(batch_size, ..., input_dim)`.
-        All tensors must have the same shape, except the last dimension.
+        Tuple containing one list of N-D tensors, each with shape: `(batch_size, ...,
+        input_dim)`.
+        All dense tensors must have the same shape, possibly except the last dimension.
         All sparse tensors must have the same shape including the last dimension.
 
     Output shape:
@@ -66,7 +67,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         contributing `config[DENSE_DIMENSION][attribute]` units each.
 
     Raises:
-        `RasaException` if no feature signatures are provided.
+        A `TFLayerConfigException` if no feature signatures are provided.
     """
 
     def __init__(
@@ -222,7 +223,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             `(batch_size, sequence_length, 1)`.
 
     Raises:
-        A `RasaException` if no feature signatures are provided.
+        A `TFLayerConfigException` if no feature signatures are provided.
     """
 
     def __init__(
@@ -552,7 +553,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         seq_sent_features: `(batch_size, seq_length, hidden_dim)`, where `hidden_dim` is
             the output size of the underlying `Ffnn` block, or the output size of the
             underlying `RasaFeatureCombiningLayer` if the `Ffnn` block has 0 layers.
-        mask_combined_sequence_sentence: `(batch_size, seq_length, hidden_dim)`
+        mask_combined_sequence_sentence: `(batch_size, seq_length, 1)`
         token_ids: `(batch_size, seq_length, id_dim)`. `id_dim` is 2 when no dense
             sequence-level features are present. Otherwise, it's arbitrarily chosen to
             match the last dimension size of the first dense sequence-level feature in
@@ -562,8 +563,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
 
     Raises:
-        A `RasaException` if no feature signatures for sequence-level features are
-            provided.
+        A `TFLayerConfigException` if no feature signatures for sequence-level features
+            are provided.
     """
 
     def __init__(
