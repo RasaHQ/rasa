@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Text, List
+from typing import Text, List, Dict, Any
 from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -714,7 +714,9 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
         ),
     ],
 )
-def test_load_lookup_table(source_lookup_table, expected_lookup_table):
+def test_load_lookup_table(
+    source_lookup_table: Dict[Text, Any], expected_lookup_table: Dict[Text, Any]
+):
     assert TrainingData._load_lookup_table(source_lookup_table) == expected_lookup_table
 
 
