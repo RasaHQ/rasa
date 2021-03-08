@@ -8,6 +8,7 @@ from rasa.cli import SubParsersAction
 import rasa.train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path
+from rasa.cli.telemetry import inform_about_telemetry
 from rasa.shared.utils.cli import print_success, print_error_and_exit
 from rasa.shared.constants import (
     DOCS_BASE_URL,
@@ -233,24 +234,9 @@ def run(args: argparse.Namespace) -> None:
 
     init_project(args, path)
 
-    _verify_telemetry()
+    print_telemetry_info(args)
 
 
-def _verify_telemetry():
-
-    if telemetry.is_telemetry_enabled():
-        print(
-            "Just so you know! "
-            "You're currently sharing anonymous statistics with us.\n"
-            "It helps us make Rasa better.\n"
-            "Thanks! If you don't want to share data, run:\n\n"
-            "rasa telemetry disable"
-        )
-    else:
-        print(
-            "Just so you know! "
-            "You can share anonymous statistics with us.\n"
-            "It will help us make Rasa better.\n"
-            "To do this run:\n\n"
-            "rasa telemetry enable"
-        )
+def print_telemetry_info(args: argparse.Namespace) -> None:
+    print("Just for you to know! 👇🏽")
+    inform_about_telemetry(args)
