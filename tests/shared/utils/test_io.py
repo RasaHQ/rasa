@@ -213,6 +213,15 @@ def test_environment_variable_with_dollar_char():
     assert content["model"]["test2"] == "test2"
 
 
+def test_environment_variable_with_dollar_char_in_the_middle():
+    os.environ["variable1"] = "test$123"
+    content = "model: \n  test1: ${variable1}"
+
+    content = rasa.shared.utils.io.read_yaml(content)
+
+    assert content["model"]["test1"] == "test$123"
+
+
 def test_emojis_in_yaml():
     test_data = """
     data:
