@@ -358,6 +358,7 @@ def test_drop_intents_below_freq():
 
 
 @pytest.mark.trains_model
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     result = await run_evaluation(
         DEFAULT_DATA_PATH,

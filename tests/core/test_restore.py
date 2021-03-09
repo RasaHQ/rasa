@@ -8,6 +8,7 @@ from rasa.shared.nlu.constants import ACTION_NAME
 
 
 @pytest.mark.trains_model
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
