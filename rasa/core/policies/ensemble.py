@@ -70,9 +70,12 @@ class PolicyEnsemble:
         self._check_priorities()
         self._check_for_important_policies()
 
-        self._rule_only_slots, self._rule_only_loops = self._get_rule_only_slots_loops()
+        (
+            self._rule_only_slots,
+            self._rule_only_loops,
+        ) = self._get_rule_only_slots_and_loops()
 
-    def _get_rule_only_slots_loops(self) -> Tuple[List[Text], List[Text]]:
+    def _get_rule_only_slots_and_loops(self) -> Tuple[List[Text], List[Text]]:
         for policy in self.policies:
             if isinstance(policy, RulePolicy):
                 return policy.get_rule_only_slots_loops()
@@ -217,7 +220,7 @@ class PolicyEnsemble:
             (
                 self._rule_only_slots,
                 self._rule_only_loops,
-            ) = self._get_rule_only_slots_loops()
+            ) = self._get_rule_only_slots_and_loops()
         else:
             logger.info("Skipped training, because there are no training samples.")
 
