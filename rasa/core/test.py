@@ -493,7 +493,7 @@ def _get_e2e_entity_evaluation_result(
     processor: "MessageProcessor",
     tracker: DialogueStateTracker,
     prediction: PolicyPrediction,
-):
+) -> Optional[EntityEvaluationResult]:
     previous_event = tracker.events[-1]
     if isinstance(previous_event, UserUttered):
         entities_predicted_by_policies = [

@@ -292,18 +292,18 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
-async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmpdir: Path):
+async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
 
     await evaluate_stories(
         stories=test_file,
         agent=e2e_bot_agent,
-        out_directory=str(tmpdir),
+        out_directory=str(tmp_path),
         max_stories=None,
         e2e=True,
     )
 
-    report = rasa.shared.utils.io.read_json_file(tmpdir / "TEDPolicy_report.json")
+    report = rasa.shared.utils.io.read_json_file(tmp_path / "TEDPolicy_report.json")
     assert report["name"] == {
         "precision": 1.0,
         "recall": 1.0,
@@ -318,6 +318,6 @@ async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmpdir: Path):
         "support": 2,
         "confused_with": {},
     }
-    errors = rasa.shared.utils.io.read_json_file(tmpdir / "TEDPolicy_errors.json")
+    errors = rasa.shared.utils.io.read_json_file(tmp_path / "TEDPolicy_errors.json")
     assert len(errors) == 1
     assert errors[0]["text"] == "today I was very cranky"
