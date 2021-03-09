@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import functools
 import os
 import random
 import pytest
@@ -41,13 +42,13 @@ from tests.core.conftest import (
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
     DOMAIN_WITH_CATEGORICAL_SLOT,
-    END_TO_END_STORY_FILE,
+    END_TO_END_STORY_MD_FILE,
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
 )
 from rasa.shared.exceptions import RasaException
 
-DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
+DEFAULT_CONFIG_PATH = "rasa/shared/importers/default_config.yml"
 
 DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.yml"
 
@@ -188,8 +189,8 @@ def incorrect_nlu_data() -> Text:
 
 
 @pytest.fixture(scope="session")
-def end_to_end_test_story_file() -> Text:
-    return END_TO_END_STORY_FILE
+def end_to_end_test_story_md_file() -> Text:
+    return END_TO_END_STORY_MD_FILE
 
 
 @pytest.fixture(scope="session")
@@ -287,11 +288,7 @@ async def trained_core_model(
 
 @pytest.fixture(scope="session")
 async def trained_nlu_model(
-    trained_async: Callable,
-    default_domain_path: Text,
-    default_config: List[Policy],
-    default_nlu_data: Text,
-    default_stories_file: Text,
+    trained_async: Callable, default_domain_path: Text, default_nlu_data: Text,
 ) -> Text:
     trained_nlu_model_path = await trained_async(
         domain=default_domain_path,
@@ -452,3 +449,34 @@ class AsyncMock(Mock):
 
     async def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return super().__call__(*args, **kwargs)
+
+
+def raise_on_unexpected_train(f: Callable) -> Callable:
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if os.environ.get("RAISE_ON_TRAIN") == "True":
+            raise ValueError(
+                "Training called and RAISE_ON_TRAIN is set. "
+                "See https://github.com/RasaHQ/rasa#tests-that-train"
+            )
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+def wrap_training_methods() -> None:
+    """Wrap methods that train so they fail if RAISE_ON_TRAIN is set.
+
+        See "Tests that train" section in rasa/README.md.
+    """
+    import rasa.nlu as nlu
+    import rasa.core as core
+    from rasa.nlu.model import Trainer
+    from rasa.core.agent import Agent
+
+    for training_module in [nlu, core, Trainer, Agent]:
+        training_module.train = raise_on_unexpected_train(training_module.train)
+
+
+def pytest_configure():
+    wrap_training_methods()

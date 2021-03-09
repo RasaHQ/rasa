@@ -30,6 +30,7 @@ env:
   BOTO_CONFIG: /dev/null
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
+  DEFAULT_PYTHON_VERSION: '3.7'
 
 jobs:
   changes:
@@ -57,11 +58,11 @@ jobs:
       if: needs.changes.outputs.docs == 'true'
       uses: actions/checkout@v2
 
-    - name: Set up Python 3.7 🐍
+    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.docs == 'true'
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
     - name: Set up Node 12.x 🦙
       if: needs.changes.outputs.docs == 'true'
@@ -86,8 +87,8 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.7
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
 
     - name: Load Yarn Cached Packages ⬇
       if: needs.changes.outputs.docs == 'true'
@@ -124,11 +125,11 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
-    - name: Set up Python 3.7 🐍
+    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
     - name: Read Poetry Version 🔢
       if: needs.changes.outputs.backend == 'true'
@@ -147,8 +148,8 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.7
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
 
     - name: Install Dependencies 📦
       if: needs.changes.outputs.backend == 'true'
@@ -193,6 +194,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
+        test: [test-non-training, test-training]
 
     steps:
     - name: Checkout git repository 🕝
@@ -276,7 +278,7 @@ jobs:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        make test
+        make ${{ matrix.test }}
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
@@ -284,6 +286,137 @@ jobs:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
       run: poetry run coveralls
+
+  integration_test:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    needs: [changes]
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBITMQ_HOST: localhost
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
+
+      postgres:
+        image: postgres:13
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
+
+      rabbitmq:
+        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
+        image: healthcheck/rabbitmq
+        ports:
+          - 5672:5672
+
+    steps:
+    - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install poetry 🦄
+      if: needs.changes.outputs.backend == 'true'
+      uses: Gr1N/setup-poetry@v4
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v2
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+      run: rm -r .venv
+
+      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+      # The virtualenv simply doesn't work on Windows with our setup,
+      # that's why we use venv to create virtual environment
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      # Poetry on Windows cannot pick up the virtual environments directory properly,
+      # and it creates a new one every time the pipeline runs.
+      # This step solves this problem — it tells poetry to always use `.venv` directory inside
+      # the project itself, which also makes it easier for us to determine the correct directory
+      # that needs to be cached.
+      run: poetry config virtualenvs.in-project true
+
+    - name: Install Dependencies (Linux) 📦
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full | tee .output
+        if grep 'The lock file is not up to date' .output; then exit 1; fi
+        make prepare-tests-ubuntu
+
+    - name: Test Code with Services 🩺
+      if: needs.changes.outputs.backend == 'true'
+      env:
+        JOBS: 2
+        INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        make test-integration
+
+    # these integration tests need to be ran in a sequential fashion,
+    # due to environment constraints, so we're running them in a single process.
+    - name: Test Code with Services 🩺 (sequential)
+      if: needs.changes.outputs.backend == 'true'
+      env:
+        JOBS: 1
+        INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        make test-integration
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
@@ -333,7 +466,7 @@ jobs:
         # Fetch branch history
         git fetch --prune --unshallow
         LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
-        CURRENT_TAG=${GITHUB_TAG/refs\/tags\//}
+        CURRENT_TAG=${GITHUB_REF#refs/tags/}
         # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
         IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
           | sort -V -C && echo true || echo false) || true)
@@ -529,7 +662,7 @@ jobs:
             RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
           fi
 
-          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$GITHUB_TAG'/latest/g')
+          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
 
           docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
           docker push rasa/rasa:${LATEST_TAG}
