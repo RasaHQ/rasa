@@ -929,10 +929,10 @@ class RulePolicy(MemoizationPolicy):
             )
             return (
                 ACTION_LISTEN_NAME,
-                LOOP_RULES
-                + active_loop_name
-                + LOOP_RULES_SEPARATOR
-                + ACTION_LISTEN_NAME,
+                (
+                    f"{LOOP_RULES}{active_loop_name}"
+                    f"{LOOP_RULES_SEPARATOR}{ACTION_LISTEN_NAME}"
+                ),
             )
 
         return None, None
