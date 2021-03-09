@@ -650,6 +650,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
             is_no_user_prediction=best_prediction.is_no_user_prediction,
             diagnostic_data=best_prediction.diagnostic_data,
+            hide_rule_turn=best_prediction.hide_rule_turn,
         )
 
     def _best_policy_prediction(
