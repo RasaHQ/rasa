@@ -665,7 +665,7 @@ class RulePolicy(MemoizationPolicy):
             interpreter: Interpreter which can be used by the polices for featurization.
 
         Returns:
-             The list of rules that are not present in the stories.
+             Rules that are not present in the stories.
         """
         logger.debug("Started checking rules and stories for contradictions.")
         # during training we run `predict_action_probabilities` to check for
