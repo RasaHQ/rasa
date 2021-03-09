@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa import telemetry
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
+from rasa.shared.core.constants import POLICIES_THAT_EXTRACT_ENTITIES
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -868,7 +869,7 @@ async def test(
 
         evaluate_entities(
             entity_results,
-            {"TEDPolicy"},
+            POLICIES_THAT_EXTRACT_ENTITIES,
             out_directory,
             successes,
             errors,
