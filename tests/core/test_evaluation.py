@@ -402,8 +402,6 @@ async def test_story_report(
 async def test_story_report_with_empty_stories(
     tmpdir: Path, core_agent: Agent,
 ) -> None:
-    """Check that story_report.json contains empty dictionary when stories.yml is empty."""
-
     stories_path = tmpdir / "stories.yml"
     stories_path.write_text("", "utf8")
     out_directory = tmpdir / "results"

@@ -386,8 +386,8 @@ class ResponseSelector(DIETClassifier):
 
         Returns:
             The match for the label that was found in the known responses.
-            It is always guaranteed to have a match, otherwise that case should have been caught
-            earlier and a warning should have been raised.
+            It is always guaranteed to have a match, otherwise that case should have
+            been caught earlier and a warning should have been raised.
         """
 
         for key, responses in self.responses.items():
@@ -404,7 +404,16 @@ class ResponseSelector(DIETClassifier):
         return None
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely response, the associated intent_response_key and its similarity to the input."""
+        """Selects most like response for message.
+
+        Args:
+            message: Latest user message.
+            kwargs: Additional key word arguments.
+
+        Returns:
+            the most likely response, the associated intent_response_key and its
+            similarity to the input.
+        """
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 

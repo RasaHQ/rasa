@@ -838,7 +838,8 @@ class TEDPolicy(Policy):
                     feature_name: features
                     for feature_name, features in model_data_example.items()
                     if feature_name
-                    # we need to remove label features for prediction if they are present
+                    # we need to remove label features for prediction if they are
+                    # present
                     in PREDICTION_FEATURES
                 },
             )
