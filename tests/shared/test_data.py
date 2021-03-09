@@ -8,7 +8,6 @@ import pytest
 import rasa.shared
 
 import rasa.shared.data
-from rasa.shared.constants import DEFAULT_E2E_TESTS_PATH
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.utils.io import write_text_file, json_to_string
 from tests.conftest import DEFAULT_NLU_DATA
@@ -82,7 +81,15 @@ def test_default_story_files_are_story_files():
 
 
 def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
+    e2e_path = tmpdir / "test_stories.yml"
+    e2e_story = """stories:"""
+    write_text_file(e2e_story, e2e_path)
+
+    assert rasa.shared.data.is_test_stories_file(str(e2e_path))
+
+
+def test_conversation_tests_in_a_directory(tmpdir: Path):
+    parent = tmpdir / "tests"
     Path(parent).mkdir(parents=True)
 
     e2e_path = parent / "test_stories.yml"
@@ -94,10 +101,7 @@ def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
 
 def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
     # can be removed once conversation tests MD support is removed
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
-    Path(parent).mkdir(parents=True)
-
-    e2e_path = parent / "conversation_tests.md"
+    e2e_path = tmpdir / "conversation_tests.md"
     e2e_story = """## my story test"""
     write_text_file(e2e_story, e2e_path)
 
@@ -105,10 +109,7 @@ def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
 
 
 def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
-    Path(parent).mkdir(parents=True)
-
-    nlu_path = parent / "nlu.md"
+    nlu_path = tmpdir / "nlu.md"
     nlu_data = """
 ## intent: greet
 - hello
@@ -121,11 +122,7 @@ def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
 
 
 def test_domain_files_are_not_conversation_tests(tmpdir: Path):
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
-    Path(parent).mkdir(parents=True)
-
-    domain_path = parent / "domain.yml"
-
+    domain_path = tmpdir / "domain.yml"
     assert not rasa.shared.data.is_test_stories_file(str(domain_path))
 
 

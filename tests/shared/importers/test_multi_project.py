@@ -6,7 +6,6 @@ import os
 
 import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DEFAULT_E2E_TESTS_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
@@ -259,7 +258,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     )
 
     story_test_file = (
-        tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / test_stories_filename
+        tmp_path / "bots" / "Bot A" / test_stories_filename
     )
     story_test_file.parent.mkdir(parents=True)
     rasa.shared.utils.io.write_text_file(test_story, story_test_file)
@@ -291,7 +290,7 @@ def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
     rasa.shared.utils.io.write_text_file("""## story""", story_file)
 
     story_test_file = (
-        tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_stories.yml"
+        tmp_path / "bots" / "Bot A" / "test_stories.yml"
     )
     story_test_file.parent.mkdir(parents=True)
     rasa.shared.utils.io.write_text_file("""stories:""", story_test_file)
