@@ -1,0 +1,15 @@
+stories:
+- story: story_trips_circuit_breaker
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet
+  - action: utter_greet

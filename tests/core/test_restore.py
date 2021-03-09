@@ -1,5 +1,7 @@
 from typing import Text
 
+import pytest
+
 from rasa.core import restore
 from rasa.core.agent import Agent
 from rasa.shared.nlu.constants import ACTION_NAME
@@ -7,6 +9,7 @@ import pytest
 
 
 @pytest.mark.timeout(600)
+@pytest.mark.trains_model
 async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
