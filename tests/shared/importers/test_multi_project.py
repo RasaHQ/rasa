@@ -227,7 +227,7 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
         """,
         ),
         (
-            "test_conversation.md",
+            "conversation_tests.md",
             """
         ## story test
         * greet : "hello"
