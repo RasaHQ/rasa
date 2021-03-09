@@ -67,6 +67,7 @@ class TrainingData:
         Checks if the specified lookup table contains a filename in
         `elements` and replaces it with actual elements from the file.
         Returns the unchanged lookup table otherwise.
+        It works with Markdown and JSON training data.
 
         Params:
             lookup_table: A lookup table.
@@ -80,7 +81,7 @@ class TrainingData:
         if Path(potential_file).is_file():
             try:
                 lookup_table["elements"] = rasa.shared.utils.io.read_file(
-                    potential_file, "utf8"
+                    potential_file
                 )
                 return lookup_table
             except (FileNotFoundError, UnicodeDecodeError):
