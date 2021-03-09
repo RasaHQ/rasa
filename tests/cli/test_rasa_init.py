@@ -38,43 +38,39 @@ def test_expand_init_dbl_dot_path(run_with_stdin: Callable[..., RunResult]):
     expandable_path = "./workspace/test/../test2"
     expanded_path = os.path.realpath(os.path.expanduser(expandable_path))
 
-    run_with_stdin(
-        "init", "--init-dir", expandable_path, stdin=b"\nYN"
-    ) 
+    run_with_stdin("init", "--init-dir", expandable_path, stdin=b"\nYN")
 
     assert os.path.isdir(expanded_path)
 
 
-def test_expand_init_tilde_path(run_with_stdin: Callable[..., RunResult], monkeypatch: MonkeyPatch, tmp_path: Path):
-
+def test_expand_init_tilde_path(
+    run_with_stdin: Callable[..., RunResult], monkeypatch: MonkeyPatch, tmp_path: Path
+):
     def mockreturn(path):
         return tmp_path
 
-    monkeypatch.setattr(os.path, 'expanduser', mockreturn)
+    monkeypatch.setattr(os.path, "expanduser", mockreturn)
 
     expandable_path = "~/workspace"
     expanded_path = os.path.realpath(os.path.expanduser(expandable_path))
 
-
-    run_with_stdin(
-        "init", "--init-dir", expandable_path, stdin=b"\nN\n"
-    ) 
+    run_with_stdin("init", "--init-dir", expandable_path, stdin=b"\nN\n")
 
     assert os.path.isdir(expanded_path)
 
-def test_expand_init_vars_path(run_with_stdin: Callable[..., RunResult], monkeypatch: MonkeyPatch, tmp_path: Path):
 
+def test_expand_init_vars_path(
+    run_with_stdin: Callable[..., RunResult], monkeypatch: MonkeyPatch, tmp_path: Path
+):
     def mockreturn(path):
         return tmp_path
 
-    monkeypatch.setattr(os.path, 'expandvars', mockreturn)
+    monkeypatch.setattr(os.path, "expandvars", mockreturn)
 
     expandable_path = "$HOME/workspace"
     expanded_path = os.path.realpath(os.path.expanduser(expandable_path))
 
-    run_with_stdin(
-        "init", "--init-dir", expandable_path, stdin=b"\nN\n"
-    ) 
+    run_with_stdin("init", "--init-dir", expandable_path, stdin=b"\nN\n")
 
     assert os.path.isdir(expanded_path)
 
