@@ -310,7 +310,9 @@ def replace_environment_variables() -> None:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
         expanded_vars = os.path.expandvars(value)
-        not_expanded = [w for w in expanded_vars.split() if w.startswith("$") and w in value]
+        not_expanded = [
+            w for w in expanded_vars.split() if w.startswith("$") and w in value
+        ]
         if not_expanded:
             raise ValueError(
                 "Error when trying to expand the environment variables"
