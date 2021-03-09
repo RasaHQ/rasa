@@ -7,6 +7,7 @@ import pytest
 import sys
 import uuid
 
+from _pytest.python import Function
 from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
@@ -59,6 +60,31 @@ pytest_plugins = ["pytester"]
 
 # these tests are run separately
 collect_ignore_glob = ["docs/*.py"]
+
+# Defines how tests are parallelized in the CI
+PATH_PYTEST_MARKER_MAPPINGS = {
+    "category_cli": [Path("tests", "cli").absolute()],
+    "category_core_featurizers": [Path("tests", "core", "featurizers").absolute()],
+    "category_policies": [
+        Path("tests", "core", "test_policies.py").absolute(),
+        Path("tests", "core", "policies").absolute(),
+    ],
+    "category_nlu_featurizers": [
+        Path("tests", "nlu", "featurizers").absolute(),
+        Path("tests", "nlu", "utils").absolute(),
+    ],
+    "category_nlu_predictors": [
+        Path("tests", "nlu", "classifiers").absolute(),
+        Path("tests", "nlu", "extractors").absolute(),
+        Path("tests", "nlu", "selectors").absolute(),
+    ],
+    "category_full_model_training": [
+        Path("tests", "test_train.py").absolute(),
+        Path("tests", "nlu", "test_train.py").absolute(),
+        Path("tests", "core", "test_training.py").absolute(),
+        Path("tests", "core", "test_examples.py").absolute(),
+    ],
+}
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
@@ -478,5 +504,36 @@ def wrap_training_methods() -> None:
         training_module.train = raise_on_unexpected_train(training_module.train)
 
 
-def pytest_configure():
+def pytest_configure() -> None:
     wrap_training_methods()
+
+
+def _get_marker_for_ci_matrix(item: Function) -> Text:
+    """Returns pytest marker which is used to parallelize the tests in GitHub actions.
+
+    Args:
+        item: The test case.
+
+    Returns:
+        A marker for this test based on which directory / python module the test is in.
+    """
+    test_path = Path(item.fspath).absolute()
+
+    for marker, paths_for_marker in PATH_PYTEST_MARKER_MAPPINGS.items():
+        if any(
+            path == test_path or path in test_path.parents for path in paths_for_marker
+        ):
+            return marker
+
+    return "category_other_unit_tests"
+
+
+def pytest_collection_modifyitems(items: List[Function]) -> None:
+    """Adds pytest markers dynamically when the tests are run.
+
+    Args:
+        items: The list of tests to be run.
+    """
+    for item in items:
+        marker = _get_marker_for_ci_matrix(item)
+        item.add_marker(marker)
