@@ -21,6 +21,7 @@ from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
+from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
@@ -37,18 +38,20 @@ SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
-INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
+INCORRECT_NLU_DATA = "data/test/incorrect_nlu_format.yml"
 
-END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
+END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.yml"
 
-E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
+END_TO_END_STORY_MD_FILE = "data/test_md/end_to_end_story.md"
+
+E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.yml"
 
 STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/stories_trip_circuit_breaker.md"
+    "data/test_evaluations/stories_trip_circuit_breaker.yml"
 )
 
 E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/end_to_end_trips_circuit_breaker.md"
+    "data/test_evaluations/end_to_end_trips_circuit_breaker.yml"
 )
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
@@ -142,11 +145,13 @@ def default_channel() -> OutputChannel:
 @pytest.fixture
 async def default_processor(default_agent: Agent) -> MessageProcessor:
     tracker_store = InMemoryTrackerStore(default_agent.domain)
+    lock_store = InMemoryLockStore()
     return MessageProcessor(
         default_agent.interpreter,
         default_agent.policy_ensemble,
         default_agent.domain,
         tracker_store,
+        lock_store,
         TemplatedNaturalLanguageGenerator(default_agent.domain.templates),
     )
 

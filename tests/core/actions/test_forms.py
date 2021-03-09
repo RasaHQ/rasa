@@ -9,6 +9,7 @@ from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
@@ -95,6 +96,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
+@pytest.mark.trains_model
 async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
@@ -144,6 +146,7 @@ responses:
         default_agent.policy_ensemble,
         domain,
         InMemoryTrackerStore(domain),
+        InMemoryLockStore(),
         TemplatedNaturalLanguageGenerator(domain.templates),
     )
 
