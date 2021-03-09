@@ -15,6 +15,7 @@ from rasa.shared.constants import (
     LEGACY_DOCS_BASE_URL,
     DOCS_URL_STORIES,
     DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+    TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.events import UserUttered
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -341,6 +342,20 @@ class MarkdownStoryReader(StoryReader):
             return False
 
     @staticmethod
+    def _is_tests_file(file_path: Text) -> bool:
+        """Check if the filename of a file at a path is a tests file.
+
+        Arguments:
+            file_path: path to the file
+
+        Returns:
+            `True` if the filename indicates that it's a test file, `False` otherwise.
+        """
+        return Path(file_path).name.startswith(TEST_STORIES_FILE_PREFIX) or Path(
+            file_path
+        ).name.endswith("_tests.md")
+
+    @staticmethod
     def is_test_stories_file(file_path: Union[Text, Path]) -> bool:
         """Checks if a file contains test stories.
 
@@ -353,9 +368,9 @@ class MarkdownStoryReader(StoryReader):
         if not rasa.shared.data.is_likely_markdown_file(file_path):
             return False
 
-        dirname = os.path.dirname(file_path)
         return (
-            rasa.shared.data.is_story_file(file_path)
+            MarkdownStoryReader._is_tests_file(file_path)
+            and rasa.shared.data.is_story_file(file_path)
             and not rasa.shared.data.is_nlu_file(file_path)
         )
 

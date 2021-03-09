@@ -227,7 +227,7 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
         """,
         ),
         (
-            "conversation_tests.md",
+            "test_conversation.md",
             """
         ## story test
         * greet : "hello"
@@ -260,7 +260,6 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     story_test_file = (
         tmp_path / "bots" / "Bot A" / test_stories_filename
     )
-    story_test_file.parent.mkdir(parents=True)
     rasa.shared.utils.io.write_text_file(test_story, story_test_file)
 
     selector = MultiProjectImporter(config_path)
@@ -292,7 +291,6 @@ def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
     story_test_file = (
         tmp_path / "bots" / "Bot A" / "test_stories.yml"
     )
-    story_test_file.parent.mkdir(parents=True)
     rasa.shared.utils.io.write_text_file("""stories:""", story_test_file)
 
     selector = MultiProjectImporter(config_path)
