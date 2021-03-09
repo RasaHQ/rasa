@@ -199,7 +199,8 @@ class MemoizationPolicy(Policy):
         states: List[State],
         tracker: DialogueStateTracker,
         domain: Domain,
-        **kwargs: Any,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -207,6 +208,8 @@ class MemoizationPolicy(Policy):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             The name of the action.
@@ -236,11 +239,25 @@ class MemoizationPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
+        rule_only_slots = kwargs.get("rule_only_slots")
+        rule_only_loops = kwargs.get("rule_only_loops")
+
         result = self._default_predictions(domain)
 
-        states = self.prediction_states(tracker, domain, **kwargs)
+        states = self._prediction_states(
+            tracker,
+            domain,
+            rule_only_slots=rule_only_slots,
+            rule_only_loops=rule_only_loops,
+        )
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
-        predicted_action_name = self.recall(states, tracker, domain, **kwargs)
+        predicted_action_name = self.recall(
+            states,
+            tracker,
+            domain,
+            rule_only_slots=rule_only_slots,
+            rule_only_loops=rule_only_loops,
+        )
         if predicted_action_name is not None:
             logger.debug(f"There is a memorised next action '{predicted_action_name}'")
             result = self._prediction_result(predicted_action_name, tracker, domain)
@@ -319,7 +336,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         old_states: List[State],
         tracker: DialogueStateTracker,
         domain: Domain,
-        **kwargs,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> Optional[Text]:
         """Applies to the future idea to change the past and get the new future.
 
@@ -330,6 +348,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             old_states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             The name of the action.
@@ -338,7 +358,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
-            states = self.prediction_states(mcfly_tracker, domain, **kwargs)
+            states = self._prediction_states(
+                mcfly_tracker,
+                domain,
+                rule_only_slots=rule_only_slots,
+                rule_only_loops=rule_only_loops,
+            )
 
             if old_states != states:
                 # check if we like new futures
@@ -360,7 +385,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         states: List[State],
         tracker: DialogueStateTracker,
         domain: Domain,
-        **kwargs: Any,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -371,6 +397,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             The name of the action.
@@ -378,6 +406,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain, **kwargs)
+            return self._recall_using_delorean(
+                states,
+                tracker,
+                domain,
+                rule_only_slots=rule_only_slots,
+                rule_only_loops=rule_only_loops,
+            )
         else:
             return predicted_action_name

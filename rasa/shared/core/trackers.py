@@ -284,13 +284,11 @@ class DialogueStateTracker:
         """Generate the past states of this tracker based on the history.
 
         Args:
-            domain: a :class:`rasa.shared.core.domain.Domain`.
+            domain: The Domain.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
-            rule_only_slots: The list of slot names,
-                which only occur in rules but not in stories.
-            rule_only_loops: The list of loop names,
-                which only occur in rules but not in stories.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             a list of states
@@ -575,7 +573,7 @@ class DialogueStateTracker:
                 break
 
             if isinstance(
-                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization,),
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization),
             ):
                 del done_events[-1 - offset]
             else:

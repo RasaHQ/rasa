@@ -492,7 +492,7 @@ class TEDPolicy(Policy):
             return
 
         # dealing with training data
-        tracker_state_features, label_ids, entity_tags = self.featurize_for_training(
+        tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
             interpreter,
@@ -547,19 +547,21 @@ class TEDPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
+        rule_only_slots,
+        rule_only_loops,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
         # and second - an optional one (see conditions below),
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
-        tracker_state_features = self.featurize_for_prediction(
+        tracker_state_features = self._featurize_for_prediction(
             tracker,
             domain,
             interpreter,
             use_text_for_last_user_input=self.only_e2e,
-            **kwargs,
+            rule_only_slots=rule_only_slots,
+            rule_only_loops=rule_only_loops,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -567,12 +569,13 @@ class TEDPolicy(Policy):
             and TEXT in self.fake_features
             and not self.only_e2e
         ):
-            tracker_state_features += self.featurize_for_prediction(
+            tracker_state_features += self._featurize_for_prediction(
                 tracker,
                 domain,
                 interpreter,
                 use_text_for_last_user_input=True,
-                **kwargs,
+                rule_only_slots=rule_only_slots,
+                rule_only_loops=rule_only_loops,
             )
         return tracker_state_features
 
@@ -629,12 +632,15 @@ class TEDPolicy(Policy):
 
         See the docstring of the parent class `Policy` for more information.
         """
+        rule_only_slots = kwargs.get("rule_only_slots")
+        rule_only_loops = kwargs.get("rule_only_loops")
+
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker
         tracker_state_features = self._featurize_tracker_for_e2e(
-            tracker, domain, interpreter, **kwargs
+            tracker, domain, interpreter, rule_only_slots, rule_only_loops
         )
         model_data = self._create_model_data(tracker_state_features)
 

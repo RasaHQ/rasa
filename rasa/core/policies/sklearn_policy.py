@@ -234,7 +234,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        tracker_state_features, label_ids, _ = self.featurize_for_training(
+        tracker_state_features, label_ids, _ = self._featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         training_data, zero_state_features = model_data_utils.convert_to_data_format(
@@ -284,7 +284,15 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        X = self.featurize_for_prediction(tracker, domain, interpreter, **kwargs)
+        rule_only_slots = kwargs.get("rule_only_slots")
+        rule_only_loops = kwargs.get("rule_only_loops")
+        X = self._featurize_for_prediction(
+            tracker,
+            domain,
+            interpreter,
+            rule_only_slots=rule_only_slots,
+            rule_only_loops=rule_only_loops,
+        )
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )

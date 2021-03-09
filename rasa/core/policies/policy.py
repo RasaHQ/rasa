@@ -151,7 +151,7 @@ class Policy:
         logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
 
-    def featurize_for_training(
+    def _featurize_for_training(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
@@ -201,12 +201,13 @@ class Policy:
 
         return state_features, label_ids, entity_tags
 
-    def prediction_states(
+    def _prediction_states(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
-        **kwargs: Any,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[State]:
         """Transforms tracker to states for prediction.
 
@@ -215,6 +216,8 @@ class Policy:
             domain: The Domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             A list of states.
@@ -224,17 +227,18 @@ class Policy:
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_slots=kwargs.get("rule_only_slots"),
-            rule_only_loops=kwargs.get("rule_only_loops"),
+            rule_only_slots=rule_only_slots,
+            rule_only_loops=rule_only_loops,
         )[0]
 
-    def featurize_for_prediction(
+    def _featurize_for_prediction(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         use_text_for_last_user_input: bool = False,
-        **kwargs: Any,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Transforms training tracker into a vector representation.
 
@@ -247,6 +251,8 @@ class Policy:
             interpreter: The NLU interpreter.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -261,8 +267,8 @@ class Policy:
             interpreter,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_slots=kwargs.get("rule_only_slots"),
-            rule_only_loops=kwargs.get("rule_only_loops"),
+            rule_only_slots=rule_only_slots,
+            rule_only_loops=rule_only_loops,
         )
 
     def train(
@@ -296,6 +302,9 @@ class Policy:
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
+        Keyword Args:
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).

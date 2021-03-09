@@ -1120,10 +1120,8 @@ class Domain:
             tracker: Instance of `DialogueStateTracker` to featurize.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
-            rule_only_slots: The list of slot names,
-                which only occur in rules but not in stories.
-            rule_only_loops: The list of loop names,
-                which only occur in rules but not in stories.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Return:
             A list of states.

@@ -965,7 +965,7 @@ class RulePolicy(MemoizationPolicy):
             # the text or the intent
             return None, None, False
 
-        states = self.prediction_states(tracker, domain, use_text_for_last_user_input)
+        states = self._prediction_states(tracker, domain, use_text_for_last_user_input)
 
         current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")

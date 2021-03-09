@@ -107,7 +107,8 @@ class FormPolicy(MemoizationPolicy):
         states: List[State],
         tracker: DialogueStateTracker,
         domain: Domain,
-        **kwargs: Any,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -115,6 +116,8 @@ class FormPolicy(MemoizationPolicy):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             The name of the action.
@@ -126,7 +129,7 @@ class FormPolicy(MemoizationPolicy):
         # since it is assumed that training stories contain
         # only unhappy paths, notify the form that
         # it should not be validated if predicted by other policy
-        states = self.prediction_states(tracker, domain)
+        states = self._prediction_states(tracker, domain)
 
         memorized_form = self.recall(states, tracker, domain)
 
