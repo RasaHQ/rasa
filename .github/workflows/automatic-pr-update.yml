@@ -13,7 +13,7 @@ jobs:
       - uses: rasahq/update-pr-branch@601ac3dadf708b14e7f0252d98230538235f99d9
         if: github.repository == 'RasaHQ/rasa'
         with:
-          token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN || secrets.GITHUB_TOKEN}}
+          token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}
           # required parameter by original action - 
           # check is already done through protected branches so not needed for us
           required_approval_count: 0
