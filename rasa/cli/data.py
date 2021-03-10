@@ -450,6 +450,8 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
     Args:
         args: The commandline args with the required paths.
     """
+    import rasa.core.config
+
     configuration_file = Path(args.config)
     model_configuration = _get_configuration(configuration_file)
 
