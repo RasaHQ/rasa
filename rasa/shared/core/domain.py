@@ -1083,8 +1083,7 @@ class Domain:
         # remove slots which only occur in rules but not in stories
         if rule_only_slots:
             for slot in rule_only_slots:
-                if state.get(rasa.shared.core.constants.SLOTS, {}).get(slot):
-                    del state[rasa.shared.core.constants.SLOTS][slot]
+                state.get(rasa.shared.core.constants.SLOTS, {}).pop(slot, None)
         # remove active loop which only occur in rules but not in stories
         if (
             rule_only_loops
