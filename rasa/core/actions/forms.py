@@ -389,8 +389,8 @@ class FormAction(LoopAction):
         them. Otherwise there is no validation.
 
         Args:
-            slot_candidates: Extracted slots which are candidates to fill the slots required
-                by the form.
+            slot_candidates: Extracted slots which are candidates to fill the slots
+                required by the form.
             tracker: The current conversation tracker.
             domain: The current model domain.
             output_channel: The output channel which can be used to send messages
@@ -605,7 +605,7 @@ class FormAction(LoopAction):
     # helpers
     @staticmethod
     def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it is not a list, `None` converted to empty list."""
+        """Convert object to a list if it isn't."""
         if x is None:
             x = []
         elif not isinstance(x, list):

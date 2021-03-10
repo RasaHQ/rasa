@@ -5,6 +5,8 @@ import uuid
 from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, Text, List, Set, Any, Dict
+from _pytest.monkeypatch import MonkeyPatch
+from mock import Mock
 
 import pytest
 
@@ -198,6 +200,26 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     content = rasa.shared.utils.io.read_yaml(content)
 
     assert content["model"]["test"] == "dir/test/dir"
+
+
+def test_environment_variable_with_dollar_char():
+    os.environ["variable1"] = "$test1"
+    os.environ["variable2"] = "test2"
+    content = "model: \n  test1: ${variable1}\n  test2: ${variable2}"
+
+    content = rasa.shared.utils.io.read_yaml(content)
+
+    assert content["model"]["test1"] == "$test1"
+    assert content["model"]["test2"] == "test2"
+
+
+def test_environment_variable_with_dollar_char_in_the_middle():
+    os.environ["variable1"] = "test$123"
+    content = "model: \n  test1: ${variable1}"
+
+    content = rasa.shared.utils.io.read_yaml(content)
+
+    assert content["model"]["test1"] == "test$123"
 
 
 def test_emojis_in_yaml():

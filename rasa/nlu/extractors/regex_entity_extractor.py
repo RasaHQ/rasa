@@ -42,7 +42,7 @@ class RegexEntityExtractor(EntityExtractor):
         component_config: Optional[Dict[Text, Any]] = None,
         patterns: Optional[List[Dict[Text, Text]]] = None,
     ):
-        """Extracts entities using the lookup tables and/or regexes defined in the training data."""
+        """Extracts entities using the lookup tables and/or regexes defined."""
         super(RegexEntityExtractor, self).__init__(component_config)
 
         self.case_sensitive = self.component_config["case_sensitive"]
