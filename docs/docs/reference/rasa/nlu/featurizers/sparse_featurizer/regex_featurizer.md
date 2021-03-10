@@ -21,7 +21,8 @@ Constructs new features for regexes and lookup table using regex expressions.
 
 - `component_config` - Configuration for the component
 - `known_patterns` - Regex Patterns the component should pre-load itself with.
-- `pattern_vocabulary_stats` - Statistics about number of pattern slots filled and total number available.
+- `pattern_vocabulary_stats` - Statistics about number of pattern slots filled
+  and total number available.
 - `finetune_mode` - Load component in finetune mode.
 
 #### vocabulary\_stats
@@ -47,7 +48,8 @@ Trains the component with all patterns extracted from training data.
 
 **Arguments**:
 
-- `training_data` - Training data consisting of training examples and patterns available.
+- `training_data` - Training data consisting of training examples and patterns
+  available.
 - `config` - NLU Pipeline config
 - `**kwargs` - Any other arguments
 
@@ -66,7 +68,8 @@ Loads a previously trained component.
 - `model_dir` - Path where trained pipeline is stored.
 - `model_metadata` - Metadata for the trained pipeline.
 - `cached_component` - Previously cached component(if any).
-- `should_finetune` - Indicates whether to load the component for further finetuning.
+- `should_finetune` - Indicates whether to load the component for further
+  finetuning.
 - `**kwargs` - Any other arguments.
 
 #### persist

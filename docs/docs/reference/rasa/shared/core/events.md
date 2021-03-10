@@ -257,8 +257,10 @@ Returns text representation of event.
  | as_sub_state() -> Dict[Text, Union[None, Text, List[Optional[Text]]]]
 ```
 
-Turns a UserUttered event into a substate containing information about entities,
-intent and text of the UserUttered
+Turns a UserUttered event into features.
+
+The substate contains information about entities, intent and text of the
+`UserUttered` event.
 
 **Returns**:
 
@@ -794,13 +796,16 @@ Cancel certain jobs.
 Creates a ReminderCancelled event.
 
 If all arguments are `None`, this will cancel all reminders.
-are to be cancelled. If no arguments are supplied, this will cancel all reminders.
+are to be cancelled. If no arguments are supplied, this will cancel all
+reminders.
 
 **Arguments**:
 
 - `name` - Name of the reminder to be cancelled.
-- `intent` - Intent name that is to be used to identify the reminders to be cancelled.
-- `entities` - Entities that are to be used to identify the reminders to be cancelled.
+- `intent` - Intent name that is to be used to identify the reminders to be
+  cancelled.
+- `entities` - Entities that are to be used to identify the reminders to be
+  cancelled.
 - `timestamp` - Optional timestamp.
 - `metadata` - Optional event metadata.
 
@@ -834,7 +839,7 @@ Returns text representation of event.
  | cancels_job_with_name(job_name: Text, sender_id: Text) -> bool
 ```
 
-Determines if this `ReminderCancelled` event should cancel the job with the given name.
+Determines if this event should cancel the job with the given name.
 
 **Arguments**:
 
@@ -844,8 +849,8 @@ Determines if this `ReminderCancelled` event should cancel the job with the give
 
 **Returns**:
 
-  `True`, if this `ReminderCancelled` event should cancel the job with the given name,
-  and `False` otherwise.
+  `True`, if this `ReminderCancelled` event should cancel the job with the
+  given name, and `False` otherwise.
 
 #### as\_story\_string
 
@@ -1245,7 +1250,7 @@ Returns serialized event.
 class ActiveLoop(Event)
 ```
 
-If `name` is not None: activates a loop with `name` else deactivates active loop.
+If `name` is given: activates a loop with `name` else deactivates active loop.
 
 #### \_\_init\_\_
 

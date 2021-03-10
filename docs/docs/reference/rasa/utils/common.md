@@ -44,8 +44,7 @@ a default log level will be used.
 update_tensorflow_log_level() -> None
 ```
 
-Set the log level of Tensorflow to the log level specified in the environment
-variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
+Sets Tensorflow log level based on env variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 
 #### update\_sanic\_log\_level
 

@@ -160,8 +160,8 @@ them. Otherwise there is no validation.
 
 **Arguments**:
 
-- `slot_candidates` - Extracted slots which are candidates to fill the slots required
-  by the form.
+- `slot_candidates` - Extracted slots which are candidates to fill the slots
+  required by the form.
 - `tracker` - The current conversation tracker.
 - `domain` - The current model domain.
 - `output_channel` - The output channel which can be used to send messages

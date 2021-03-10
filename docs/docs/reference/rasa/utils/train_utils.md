@@ -34,7 +34,7 @@ on the LOSS_TYPE.
 update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
-If LOSS_TYPE is set to &#x27;softmax&#x27;, update it to &#x27;cross_entropy&#x27; since former is deprecated.
+Updates LOSS_TYPE to &#x27;cross_entropy&#x27; if it is set to &#x27;softmax&#x27;.
 
 **Arguments**:
 
@@ -221,7 +221,8 @@ update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
 
 Set model confidence to auto if margin loss is used.
 
-Option `auto` is reserved for margin loss type. It will be removed once margin loss is deprecated.
+Option `auto` is reserved for margin loss type. It will be removed once margin loss
+is deprecated.
 
 **Arguments**:
 
@@ -238,7 +239,7 @@ Option `auto` is reserved for margin loss type. It will be removed once margin l
 validate_configuration_settings(component_config: Dict[Text, Any]) -> None
 ```
 
-Performs checks to validate that combination of parameters in the configuration are correctly set.
+Validates that combination of parameters in the configuration are correctly set.
 
 **Arguments**:
 

@@ -28,7 +28,7 @@ Normalization can be applied by setting `normalize=True`.
 plot_histogram(hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None) -> None
 ```
 
-Plot a side-by-side comparative histogram of the confidence distribution (misses and hits).
+Plots a side-by-side comparative histogram of the confidence distribution.
 
 **Arguments**:
 

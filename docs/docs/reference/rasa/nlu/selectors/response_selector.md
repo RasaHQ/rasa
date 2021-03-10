@@ -65,7 +65,18 @@ Performs sanity checks on training data, extracts encodings for labels.
  | process(message: Message, **kwargs: Any) -> None
 ```
 
-Return the most likely response, the associated intent_response_key and its similarity to the input.
+Selects most like response for message.
+
+**Arguments**:
+
+- `message` - Latest user message.
+- `kwargs` - Additional key word arguments.
+  
+
+**Returns**:
+
+  the most likely response, the associated intent_response_key and its
+  similarity to the input.
 
 #### persist
 

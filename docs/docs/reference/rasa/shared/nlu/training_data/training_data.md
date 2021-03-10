@@ -214,7 +214,7 @@ Returns the set of entity groups in the training data.
  | entity_roles_groups_used() -> bool
 ```
 
-Returns if any entity roles or groups are used anywhere in the training data.
+Checks if any entity roles or groups are used in the training data.
 
 #### number\_of\_examples\_per\_entity
 

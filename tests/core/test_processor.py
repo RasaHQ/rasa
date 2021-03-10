@@ -964,7 +964,8 @@ async def test_restart_triggers_session_start(
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
 ):
-    # The rule policy is trained and used so as to allow the default action ActionRestart to be predicted
+    # The rule policy is trained and used so as to allow the default action
+    # ActionRestart to be predicted
     rule_policy = RulePolicy()
     rule_policy.train([], default_processor.domain, RegexInterpreter())
     monkeypatch.setattr(

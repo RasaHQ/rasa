@@ -353,7 +353,8 @@ Declare instance variables with default values.
 
 - `num_neg` - Positive integer, the number of incorrect labels;
   the algorithm will minimize their similarity to the input.
-- `loss_type` - The type of the loss function, either &#x27;cross_entropy&#x27; or &#x27;margin&#x27;.
+- `loss_type` - The type of the loss function, either &#x27;cross_entropy&#x27; or
+  &#x27;margin&#x27;.
 - `mu_pos` - Float, indicates how similar the algorithm should
   try to make embedding vectors for correct labels;
   should be 0.0 &lt; ... &lt; 1.0 for &#x27;cosine&#x27; similarity type.
@@ -381,7 +382,8 @@ Declare instance variables with default values.
 
 **Raises**:
 
-- `LayerConfigException` - When `similarity_type` is not one of &#x27;cosine&#x27; or &#x27;inner&#x27;.
+- `LayerConfigException` - When `similarity_type` is not one of &#x27;cosine&#x27; or
+  &#x27;inner&#x27;.
 
 #### sim
 
@@ -397,7 +399,9 @@ Calculate similarity between given tensors.
  | similarity_confidence_from_embeddings(input_embeddings: tf.Tensor, label_embeddings: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
-Computes similarity between input and label embeddings and model&#x27;s confidence.
+Computes similarity.
+
+Calculates similary between input and label embeddings and model&#x27;s confidence.
 
 First compute the similarity from embeddings and then apply an activation
 function if needed to get the confidence.
@@ -411,7 +415,8 @@ function if needed to get the confidence.
 
 **Returns**:
 
-  similarity between input and label embeddings and model&#x27;s prediction confidence for each label.
+  similarity between input and label embeddings and model&#x27;s prediction
+  confidence for each label.
 
 #### call
 

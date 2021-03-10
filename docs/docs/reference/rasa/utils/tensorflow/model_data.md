@@ -11,11 +11,12 @@ class FeatureArray(np.ndarray)
 
 Stores any kind of features ready to be used by a RasaModel.
 
-Next to the input numpy array of features, it also received the number of dimensions of the features.
-As our features can have 1 to 4 dimensions we might have different number of numpy arrays stacked.
-The number of dimensions helps us to figure out how to handle this particular feature array.
-Also, it is automatically determined whether the feature array is sparse or not and the number of units
-is determined as well.
+Next to the input numpy array of features, it also received the number of
+dimensions of the features.
+As our features can have 1 to 4 dimensions we might have different number of numpy
+arrays stacked. The number of dimensions helps us to figure out how to handle this
+particular feature array. Also, it is automatically determined whether the feature
+array is sparse or not and the number of units is determined as well.
 
 Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
 
@@ -49,7 +50,7 @@ to function FeatureArray.__init__ &#x27;
  | __array_finalize__(obj: Any) -> None
 ```
 
-This method is called whenever the system internally allocates a new array from obj.
+This method is called when the system allocates a new array from obj.
 
 **Arguments**:
 
@@ -323,7 +324,7 @@ Add incoming data to data.
  | update_key(from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text) -> None
 ```
 
-Copies the features under the given keys to the new keys and deletes the old keys.
+Copies the features under the given keys to the new keys and deletes the old.
 
 **Arguments**:
 

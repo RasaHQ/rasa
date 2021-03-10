@@ -9,7 +9,7 @@ title: rasa.shared.nlu.training_data.formats.markdown_nlg
 class NLGMarkdownReader(MarkdownReader)
 ```
 
-Reads markdown training data containing NLG stories and creates a TrainingData object.
+Reads markdown training data with NLG stories and creates TrainingData object.
 
 #### \_\_init\_\_
 

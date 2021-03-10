@@ -219,7 +219,8 @@ Return only the templates which are defined for retrieval intents
 
 Check if the response template is for a retrieval intent.
 
-These templates have a `/` symbol in their name. Use that to filter them from the rest.
+These templates have a `/` symbol in their name. Use that to filter them from
+the rest.
 
 #### add\_categorical\_slot\_default\_value
 

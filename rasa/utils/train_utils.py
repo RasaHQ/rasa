@@ -83,7 +83,7 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
 
 def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """If LOSS_TYPE is set to 'softmax', update it to 'cross_entropy' since former is deprecated.
+    """Updates LOSS_TYPE to 'cross_entropy' if it is set to 'softmax'.
 
     Args:
         config: model configuration
@@ -472,7 +472,8 @@ def create_common_callbacks(
 def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]:
     """Set model confidence to auto if margin loss is used.
 
-    Option `auto` is reserved for margin loss type. It will be removed once margin loss is deprecated.
+    Option `auto` is reserved for margin loss type. It will be removed once margin loss
+    is deprecated.
     Args:
         component_config: model configuration
 
@@ -491,7 +492,7 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
 
 
 def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
-    """Performs checks to validate that combination of parameters in the configuration are correctly set.
+    """Validates that combination of parameters in the configuration are correctly set.
 
     Args:
         component_config: Configuration to validate.
@@ -504,17 +505,21 @@ def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
 def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] == COSINE:
         raise InvalidConfigException(
-            f"{MODEL_CONFIDENCE}={COSINE} was introduced in Rasa Open Source 2.3.0 but post-release "
-            f"experiments revealed that using cosine similarity can change the order of predicted labels. "
-            f"Since this is not ideal, using `{MODEL_CONFIDENCE}={COSINE}` has been removed in versions post `2.3.3`. "
+            f"{MODEL_CONFIDENCE}={COSINE} was introduced in Rasa Open Source 2.3.0 "
+            f"but post-release experiments revealed that using cosine similarity can "
+            f"change the order of predicted labels. "
+            f"Since this is not ideal, using `{MODEL_CONFIDENCE}={COSINE}` has been "
+            f"removed in versions post `2.3.3`. "
             f"Please use either `{SOFTMAX}` or `{LINEAR_NORM}` as possible values."
         )
     if component_config[MODEL_CONFIDENCE] == INNER:
         raise InvalidConfigException(
-            f"{MODEL_CONFIDENCE}={INNER} is deprecated as it produces an unbounded range of "
-            f"confidences which can break the logic of assistants in various other places. "
+            f"{MODEL_CONFIDENCE}={INNER} is deprecated as it produces an unbounded "
+            f"range of confidences which can break the logic of assistants in various "
+            f"other places. "
             f"Please use `{MODEL_CONFIDENCE}={LINEAR_NORM}` which will produce a "
-            f"linearly normalized version of dot product similarities with each value in the range `[0,1]`."
+            f"linearly normalized version of dot product similarities with each value "
+            f"in the range `[0,1]`."
         )
     if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM, AUTO]:
         raise InvalidConfigException(
@@ -524,7 +529,8 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         rasa.shared.utils.io.raise_warning(
             f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
-            f"to try using `{MODEL_CONFIDENCE}={LINEAR_NORM}` to make it easier to tune fallback thresholds.",
+            f"to try using `{MODEL_CONFIDENCE}={LINEAR_NORM}` to make it easier to "
+            f"tune fallback thresholds.",
             category=UserWarning,
         )
         if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
@@ -550,7 +556,8 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
     ]:
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
-            f"to set it to `True` when using cross-entropy loss. It will be set to `True` by default, "
+            f"to set it to `True` when using cross-entropy loss. It will be set to "
+            f"`True` by default, "
             f"Rasa Open Source 3.0.0 onwards.",
             category=UserWarning,
         )

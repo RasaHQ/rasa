@@ -179,5 +179,6 @@ Tokenize and featurize the input message
 
 **Returns**:
 
-- `message` - it contains the tokens and features which are the output of the NLU pipeline;
+- `message` - it contains the tokens and features which are the output of the
+  NLU pipeline;
 

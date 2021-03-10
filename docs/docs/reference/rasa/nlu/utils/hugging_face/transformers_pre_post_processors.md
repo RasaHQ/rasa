@@ -13,7 +13,8 @@ Utility method to apply delimiter based cleanup on list of tokens.
 
 **Arguments**:
 
-- `token_ids_string` - List of tuples with each tuple containing (token id, token string).
+- `token_ids_string` - List of tuples with each tuple containing
+  (token id, token string).
 - `delimiter` - character/string to be cleaned from token strings.
   
 
@@ -119,7 +120,8 @@ sentence representation.
 
 **Arguments**:
 
-- `sequence_embeddings` - Sequence of token level embeddings received as output from BERT.
+- `sequence_embeddings` - Sequence of token level embeddings received as output from
+  BERT.
   
 
 **Returns**:
@@ -139,7 +141,8 @@ representation.
 
 **Arguments**:
 
-- `sequence_embeddings` - Sequence of token level embeddings received as output from GPT.
+- `sequence_embeddings` - Sequence of token level embeddings received as output from
+  GPT.
   
 
 **Returns**:
@@ -160,7 +163,8 @@ to special tokens from the sequence embeddings.
 
 **Arguments**:
 
-- `sequence_embeddings` - Sequence of token level embeddings received as output from XLNet.
+- `sequence_embeddings` - Sequence of token level embeddings received as output from
+  XLNet.
   
 
 **Returns**:
@@ -181,7 +185,8 @@ corresponding to special tokens from the sequence embeddings.
 
 **Arguments**:
 
-- `sequence_embeddings` - Sequence of token level embeddings received as output from Roberta
+- `sequence_embeddings` - Sequence of token level embeddings received as output from
+  Roberta
   
 
 **Returns**:
@@ -202,7 +207,8 @@ corresponding to special tokens from the sequence embeddings.
 
 **Arguments**:
 
-- `sequence_embeddings` - Sequence of token level embeddings received as output from XLM
+- `sequence_embeddings` - Sequence of token level embeddings received as output from
+  XLM
   
 
 **Returns**:
@@ -217,7 +223,8 @@ bert_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[Li
 
 Token cleanup method for BERT.
 
-Clean up tokens with the extra delimiters(##) BERT adds while breaking a token into sub-tokens.
+Clean up tokens with the extra delimiters(##) BERT adds while breaking a token into
+sub-tokens.
 
 **Arguments**:
 
@@ -237,7 +244,8 @@ openaigpt_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tup
 
 Token cleanup method for GPT.
 
-Clean up tokens with the extra delimiters(&lt;/w&gt;) OpenAIGPT adds while breaking a token into sub-tokens.
+Clean up tokens with the extra delimiters(&lt;/w&gt;) OpenAIGPT adds while breaking a
+token into sub-tokens.
 
 **Arguments**:
 
@@ -257,7 +265,8 @@ gpt2_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[Li
 
 Token cleanup method for GPT2.
 
-Clean up tokens with the extra delimiters(Ġ) GPT2 adds while breaking a token into sub-tokens.
+Clean up tokens with the extra delimiters(Ġ) GPT2 adds while breaking a token into
+sub-tokens.
 
 **Arguments**:
 
@@ -277,7 +286,8 @@ xlnet_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[L
 
 Token cleanup method for XLNet.
 
-Clean up tokens with the extra delimiters(▁) XLNet adds while breaking a token into sub-tokens.
+Clean up tokens with the extra delimiters(▁) XLNet adds while breaking a token into
+sub-tokens.
 
 **Arguments**:
 

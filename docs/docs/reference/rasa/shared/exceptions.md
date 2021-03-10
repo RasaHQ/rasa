@@ -129,7 +129,7 @@ Raised if the format of an entity is invalid.
  | create_from(cls, other: json.JSONDecodeError, msg: Text) -> "InvalidEntityFormatException"
 ```
 
-Create an instance of `InvalidEntityFormatException` from a `JSONDecodeError`.
+Creates `InvalidEntityFormatException` from `JSONDecodeError`.
 
 ## ConnectionException Objects
 
