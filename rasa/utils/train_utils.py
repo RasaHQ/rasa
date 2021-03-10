@@ -1,5 +1,4 @@
 from pathlib import Path
-import tensorflow as tf
 import copy
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
@@ -46,6 +45,7 @@ from rasa.shared.exceptions import InvalidConfigException
 if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
+    from tensorflow.keras.callbacks import Callback
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -425,7 +425,7 @@ def create_common_callbacks(
     tensorboard_log_dir: Optional[Text] = None,
     tensorboard_log_level: Optional[Text] = None,
     checkpoint_dir: Optional[Path] = None,
-) -> List[tf.keras.callbacks.Callback]:
+) -> List["Callback"]:
     """Create common callbacks.
 
     The following callbacks are created:
@@ -443,6 +443,8 @@ def create_common_callbacks(
     Returns:
         A list of callbacks.
     """
+    import tensorflow as tf
+
     callbacks = [RasaTrainingLogger(epochs, silent=False)]
 
     if tensorboard_log_dir:

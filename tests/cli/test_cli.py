@@ -1,23 +1,26 @@
+from pathlib import Path
+import shutil
 from typing import Callable
-from _pytest.pytester import RunResult
+from _pytest.pytester import RunResult, Testdir
 import pytest
 import sys
 
 
-def test_cli_start(run: Callable[..., RunResult]):
+def test_cli_start_is_fast(testdir: Testdir):
     """
-    Checks that a call to ``rasa --help`` does not take longer than 7 seconds
-    (10 seconds on Windows).
+    Checks that a call to ``rasa --help`` does not import any slow imports.
     """
 
-    start = time.time()
-    run("--help")
-    end = time.time()
+    rasa_path = str(
+        (Path(__file__).parent / ".." / ".." / "rasa" / "__main__.py").absolute()
+    )
+    args = [shutil.which("python3"), "-X", "importtime", rasa_path, "--help"]
+    result = testdir.run(*args)
 
-    duration = end - start
+    assert result.ret == 0
 
-    # it sometimes takes a bit more time to start it on Windows
-    assert duration <= 20 if sys.platform == "win32" else 10
+    # tensorflow is slow -> can't get imported when running basic CLI commands
+    result.stderr.no_fnmatch_line("*tensorflow.python.eager")
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):

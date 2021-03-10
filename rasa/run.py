@@ -1,10 +1,8 @@
 import logging
 import typing
-from typing import Dict, Text
+from typing import Text
 
 import rasa.shared.utils.common
-from rasa.shared.utils.cli import print_warning
-from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core.lock_store import LockStore
 
 logger = logging.getLogger(__name__)

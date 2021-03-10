@@ -11,7 +11,6 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
-import rasa.nlu.convert
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
@@ -295,6 +294,8 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
+    import rasa.nlu.convert
+
     from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
         NLUMarkdownToYamlConverter,
     )
