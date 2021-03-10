@@ -165,7 +165,14 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        """From dict."""
+        """Deserializes and creates domain.
+
+        Args:
+            data: The serialized domain.
+
+        Returns:
+            The instantiated `Domain` object.
+        """
         responses = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})

@@ -214,8 +214,7 @@ class Action:
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        """
-        Execute the side effects of this action.
+        """Execute the side effects of this action.
 
         Args:
             nlg: which ``nlg`` to use for response generation
@@ -225,12 +224,10 @@ class Action:
                 ``tracker.get_slot(slot_name)`` and the most recent user
                 message is ``tracker.latest_message.text``.
             domain (Domain): the bot's domain
-            metadata: dictionary that can be sent to action server with custom
-            data.
-        Returns:
-            List[Event]: A list of :class:`rasa.core.events.Event` instances
-        """
 
+        Returns:
+            A list of :class:`rasa.core.events.Event` instances
+        """
         raise NotImplementedError
 
     def __str__(self) -> Text:
@@ -420,6 +417,7 @@ class ActionBack(ActionBotResponse):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -442,6 +440,7 @@ class ActionListen(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         return []
 
 
@@ -466,6 +465,7 @@ class ActionRestart(ActionBotResponse):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -504,6 +504,7 @@ class ActionSessionStart(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         _events = [SessionStarted(metadata=self.metadata)]
 
         if domain.session_config.carry_over_slots:
@@ -532,6 +533,7 @@ class ActionDefaultFallback(ActionBotResponse):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -551,6 +553,7 @@ class ActionDeactivateLoop(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
@@ -652,6 +655,7 @@ class RemoteAction(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         json_body = self._action_call_format(tracker, domain)
         if not self.action_endpoint:
             raise RasaException(
@@ -754,6 +758,7 @@ class ActionRevertFallbackEvents(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         from rasa.core.policies.two_stage_fallback import has_user_rephrased
 
         # User rephrased
@@ -833,6 +838,7 @@ class ActionDefaultAskAffirmation(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
         intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
 
         intent_ranking = tracker.latest_message.parse_data.get(INTENT_RANKING_KEY, [])
