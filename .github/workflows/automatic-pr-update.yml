@@ -9,7 +9,7 @@ jobs:
   mergepal:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: rasahq/update-pr-branch@601ac3dadf708b14e7f0252d98230538235f99d9
         if: github.repository == 'RasaHQ/rasa'
         with:
