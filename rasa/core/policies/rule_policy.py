@@ -445,12 +445,9 @@ class RulePolicy(MemoizationPolicy):
         )
 
     def _predict_next_action(
-        self,
-        tracker: TrackerWithCachedStates,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        self, tracker: TrackerWithCachedStates, domain: Domain
     ) -> Tuple[Optional[Text], Optional[Text]]:
-        prediction = self.predict_action_probabilities(tracker, domain, interpreter)
+        prediction, prediction_source = self._predict(tracker, domain)
         probabilities = prediction.probabilities
         # do not raise an error if RulePolicy didn't predict anything for stories;
         # however for rules RulePolicy should always predict an action
@@ -463,17 +460,13 @@ class RulePolicy(MemoizationPolicy):
                 np.argmax(probabilities)
             ]
 
-        return predicted_action_name, prediction.prediction_source
+        return predicted_action_name, prediction_source
 
     def _predicted_action_name(
-        self,
-        tracker: TrackerWithCachedStates,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        gold_action_name: Text,
+        self, tracker: TrackerWithCachedStates, domain: Domain, gold_action_name: Text
     ) -> Tuple[Optional[Text], Optional[Text]]:
         predicted_action_name, prediction_source = self._predict_next_action(
-            tracker, domain, interpreter
+            tracker, domain
         )
         # if there is an active_loop,
         # RulePolicy will always predict active_loop first,
@@ -485,7 +478,7 @@ class RulePolicy(MemoizationPolicy):
         ):
             rasa.core.test.emulate_loop_rejection(tracker)
             predicted_action_name, prediction_source = self._predict_next_action(
-                tracker, domain, interpreter
+                tracker, domain
             )
 
         return predicted_action_name, prediction_source
@@ -558,7 +551,6 @@ class RulePolicy(MemoizationPolicy):
         self,
         trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         collect_sources: bool,
     ) -> Tuple[List[Text], Set[Text]]:
         if collect_sources:
@@ -596,7 +588,7 @@ class RulePolicy(MemoizationPolicy):
 
                 gold_action_name = event.action_name or event.action_text
                 predicted_action_name, prediction_source = self._predicted_action_name(
-                    running_tracker, domain, interpreter, gold_action_name
+                    running_tracker, domain, gold_action_name
                 )
                 if collect_sources:
                     self._collect_sources(
@@ -627,31 +619,20 @@ class RulePolicy(MemoizationPolicy):
         return error_messages, rules_used_in_stories
 
     def _collect_rule_sources(
-        self,
-        rule_trackers: List[TrackerWithCachedStates],
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        self, rule_trackers: List[TrackerWithCachedStates], domain: Domain
     ) -> None:
-        self._run_prediction_on_trackers(
-            rule_trackers, domain, interpreter, collect_sources=True
-        )
+        self._run_prediction_on_trackers(rule_trackers, domain, collect_sources=True)
 
     def _find_contradicting_and_used_in_stories_rules(
-        self,
-        trackers: List[TrackerWithCachedStates],
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        self, trackers: List[TrackerWithCachedStates], domain: Domain
     ) -> Tuple[List[Text], Set[Text]]:
-        return self._run_prediction_on_trackers(
-            trackers, domain, interpreter, collect_sources=False
-        )
+        return self._run_prediction_on_trackers(trackers, domain, collect_sources=False)
 
     def _analyze_rules(
         self,
         rule_trackers: List[TrackerWithCachedStates],
         all_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
     ) -> List[Text]:
         """Analyze learned rules by running prediction on training trackers.
 
@@ -676,13 +657,11 @@ class RulePolicy(MemoizationPolicy):
 
         # we need to run prediction on rule trackers twice, because we need to collect
         # the information about which rule snippets contributed to the learned rules
-        self._collect_rule_sources(rule_trackers, domain, interpreter)
+        self._collect_rule_sources(rule_trackers, domain)
         (
             error_messages,
             rules_used_in_stories,
-        ) = self._find_contradicting_and_used_in_stories_rules(
-            all_trackers, domain, interpreter
-        )
+        ) = self._find_contradicting_and_used_in_stories_rules(all_trackers, domain)
 
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
@@ -779,7 +758,7 @@ class RulePolicy(MemoizationPolicy):
             # using trackers here might not be the most efficient way, however
             # it allows us to directly test `predict_action_probabilities` method
             self.lookup[RULES_NOT_IN_STORIES] = self._analyze_rules(
-                rule_trackers, training_trackers, domain, interpreter
+                rule_trackers, training_trackers, domain
             )
 
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
@@ -1051,8 +1030,14 @@ class RulePolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> "RulePolicyPrediction":
+    ) -> "PolicyPrediction":
         """Predicts the next action (see parent class for more information)."""
+        prediction, _ = self._predict(tracker, domain)
+        return prediction
+
+    def _predict(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Tuple[PolicyPrediction, Text]:
         (
             rules_action_name_from_text,
             prediction_source_from_text,
@@ -1072,8 +1057,11 @@ class RulePolicy(MemoizationPolicy):
         # text has priority over intents including default,
         # however loop happy path has priority over rules prediction
         if default_action_name and not rules_action_name_from_text:
-            return self._rule_prediction(
-                self._prediction_result(default_action_name, tracker, domain),
+            return (
+                self._rule_prediction(
+                    self._prediction_result(default_action_name, tracker, domain),
+                    default_prediction_source,
+                ),
                 default_prediction_source,
             )
 
@@ -1088,19 +1076,29 @@ class RulePolicy(MemoizationPolicy):
         if loop_happy_path_action_name:
             # this prediction doesn't use user input
             # and happy user input anyhow should be ignored during featurization
-            return self._rule_prediction(
-                self._prediction_result(loop_happy_path_action_name, tracker, domain),
+            return (
+                self._rule_prediction(
+                    self._prediction_result(
+                        loop_happy_path_action_name, tracker, domain
+                    ),
+                    loop_happy_path_prediction_source,
+                    is_no_user_prediction=True,
+                ),
                 loop_happy_path_prediction_source,
-                is_no_user_prediction=True,
             )
 
         # predict rules from text first
         if rules_action_name_from_text:
-            return self._rule_prediction(
-                self._prediction_result(rules_action_name_from_text, tracker, domain),
+            return (
+                self._rule_prediction(
+                    self._prediction_result(
+                        rules_action_name_from_text, tracker, domain
+                    ),
+                    prediction_source_from_text,
+                    returning_from_unhappy_path=returning_from_unhappy_path_from_text,
+                    is_end_to_end_prediction=True,
+                ),
                 prediction_source_from_text,
-                returning_from_unhappy_path=returning_from_unhappy_path_from_text,
-                is_end_to_end_prediction=True,
             )
 
         (
@@ -1118,16 +1116,19 @@ class RulePolicy(MemoizationPolicy):
         else:
             probabilities = self._default_predictions(domain)
 
-        return self._rule_prediction(
-            probabilities,
-            prediction_source_from_intent,
-            returning_from_unhappy_path=(
-                # returning_from_unhappy_path is a negative condition,
-                # so `or` should be applied
-                returning_from_unhappy_path_from_text
-                or returning_from_unhappy_path_from_intent
+        return (
+            self._rule_prediction(
+                probabilities,
+                prediction_source_from_intent,
+                returning_from_unhappy_path=(
+                    # returning_from_unhappy_path is a negative condition,
+                    # so `or` should be applied
+                    returning_from_unhappy_path_from_text
+                    or returning_from_unhappy_path_from_intent
+                ),
+                is_end_to_end_prediction=False,
             ),
-            is_end_to_end_prediction=False,
+            prediction_source_from_intent,
         )
 
     def _rule_prediction(
@@ -1137,8 +1138,8 @@ class RulePolicy(MemoizationPolicy):
         returning_from_unhappy_path: bool = False,
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
-    ) -> "RulePolicyPrediction":
-        return RulePolicyPrediction(
+    ) -> PolicyPrediction:
+        return PolicyPrediction(
             probabilities,
             self.__class__.__name__,
             self.priority,
@@ -1150,7 +1151,6 @@ class RulePolicy(MemoizationPolicy):
                 if prediction_source in self.lookup.get(RULES_NOT_IN_STORIES, [])
                 else False
             ),
-            prediction_source=prediction_source,
         )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
@@ -1184,60 +1184,4 @@ class RulePolicy(MemoizationPolicy):
         return (
             self.lookup.get(RULE_ONLY_SLOTS, []),
             self.lookup.get(RULE_ONLY_LOOPS, []),
-        )
-
-
-class RulePolicyPrediction(PolicyPrediction):
-    """Stores information about the prediction of a `RulePolicy`."""
-
-    def __init__(
-        self,
-        probabilities: List[float],
-        policy_name: Optional[Text],
-        policy_priority: int = 1,
-        events: Optional[List[Event]] = None,
-        optional_events: Optional[List[Event]] = None,
-        is_end_to_end_prediction: bool = False,
-        is_no_user_prediction: bool = False,
-        diagnostic_data: Optional[Dict[Text, Any]] = None,
-        hide_rule_turn: bool = False,
-        prediction_source: Optional[Text] = None,
-    ) -> None:
-        """Creates a `RulePolicyPrediction`.
-
-        Args:
-            probabilities: The probabilities for each action.
-            policy_name: Name of the policy which made the prediction.
-            policy_priority: The priority of the policy which made the prediction.
-            events: Events which the `Policy` needs to have applied to the tracker
-                after the prediction. These events are applied independent of whether
-                the policy wins against other policies or not. Be careful which events
-                you return as they can potentially influence the conversation flow.
-            optional_events: Events which the `Policy` needs to have applied to the
-                tracker after the prediction in case it wins. These events are only
-                applied in case the policy's prediction wins. Be careful which events
-                you return as they can potentially influence the conversation flow.
-            is_end_to_end_prediction: `True` if the prediction used the text of the
-                user message instead of the intent.
-            is_no_user_prediction: `True` if the prediction uses neither the text
-                of the user message nor the intent. This is for the example the case
-                for happy loop paths.
-            diagnostic_data: Intermediate results or other information that is not
-                necessary for Rasa to function, but intended for debugging and
-                fine-tuning purposes.
-            hide_rule_turn: `True` if the prediction was made by the rules which
-                do not appear in the stories
-            prediction_source: A description of the matching rule.
-        """
-        self.prediction_source = prediction_source
-        super().__init__(
-            probabilities,
-            policy_name,
-            policy_priority,
-            events,
-            optional_events,
-            is_end_to_end_prediction,
-            is_no_user_prediction,
-            diagnostic_data,
-            hide_rule_turn,
         )
