@@ -192,9 +192,16 @@ jobs:
     needs: [changes]
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: [3.6, 3.7, 3.8]
-        test: [test-non-training, test-training]
+        test:
+        - test-cli
+        - test-core-featurizers
+        - test-policies
+        - test-nlu-featurizers
+        - test-nlu-predictors
+        - test-full-model-training
+        - test-other-unit-tests
+        os: [ ubuntu-latest, windows-latest ]
+        python-version: [ 3.6, 3.7, 3.8 ]
 
     steps:
     - name: Checkout git repository 🕝
@@ -285,6 +292,7 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
+        COVERALLS_PARALLEL: true
       run: poetry run coveralls
 
   integration_test:
