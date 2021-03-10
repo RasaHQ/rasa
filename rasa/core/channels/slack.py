@@ -383,18 +383,21 @@ class SlackInput(InputChannel):
         return response.text("")
 
     def get_metadata(self, request: Request) -> Dict[Text, Any]:
-        """Extracts the metadata from a slack API event (https://api.slack.com/types/event).
+        """Extracts the metadata from a slack API event.
+
+        Slack Documentation: https://api.slack.com/types/event
 
         Args:
             request: A `Request` object that contains a slack API event in the body.
 
         Returns:
-            Metadata extracted from the sent event payload. This includes the output channel for the response,
-            and users that have installed the bot.
+            Metadata extracted from the sent event payload. This includes the output
+                channel for the response, and users that have installed the bot.
         """
         content_type = request.headers.get("content-type")
 
-        # Slack API sends either a JSON-encoded or a URL-encoded body depending on the content
+        # Slack API sends either a JSON-encoded or a URL-encoded body depending on the
+        # content
         if content_type == "application/json":
             # if JSON-encoded message is received
             slack_event = request.json
@@ -544,7 +547,8 @@ class SlackInput(InputChannel):
                             request, on_new_message, text, sender_id, metadata
                         )
                     if payload["actions"][0]["type"] == "button":
-                        # link buttons don't have "value", don't send their clicks to bot
+                        # link buttons don't have "value", don't send their clicks to
+                        # bot
                         return response.text("User clicked link button")
                 return response.text(
                     "The input message could not be processed.",

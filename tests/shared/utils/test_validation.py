@@ -1,3 +1,6 @@
+from typing import Text
+from threading import Thread
+
 import pytest
 
 from pep440_version_utils import Version
@@ -12,6 +15,7 @@ from rasa.shared.constants import (
     DOMAIN_SCHEMA_FILE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
+from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 
@@ -36,10 +40,9 @@ def test_validate_yaml_schema(file, schema):
         ("data/test_domains/wrong_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/wrong_custom_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/empty_response_format.yml", DOMAIN_SCHEMA_FILE),
-        ("data/test_config/example_config.yaml", CONFIG_SCHEMA_FILE),
     ],
 )
-def test_validate_yaml_schema_raise_exception(file, schema):
+def test_validate_yaml_schema_raise_exception(file: Text, schema: Text):
     with pytest.raises(YamlException):
         validation_utils.validate_yaml_schema(
             rasa.shared.utils.io.read_file(file), schema
@@ -181,3 +184,55 @@ async def test_invalid_training_data_format_version_warns():
     for version in [invalid_version_1, invalid_version_2]:
         with pytest.warns(UserWarning):
             assert validation_utils.validate_training_data_format_version(version, "")
+
+
+def test_concurrent_schema_validation():
+    successful_results = []
+
+    def validate() -> None:
+        payload = """
+version: "2.0"
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - moin
+    - hey there
+    - let's go
+    - hey dude
+    - goodmorning
+    - goodevening
+    - good afternoon
+- intent: goodbye
+  examples: |
+    - good afternoon
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+        """
+        rasa.shared.utils.validation.validate_yaml_schema(payload, NLU_SCHEMA_FILE)
+        successful_results.append(True)
+
+    threads = []
+    for i in range(10):
+        threads.append(Thread(target=validate))
+
+    for thread in threads:
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    assert len(successful_results) == len(threads)

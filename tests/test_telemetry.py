@@ -35,6 +35,7 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
+@pytest.mark.trains_model
 async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events
@@ -461,3 +462,13 @@ def test_sentry_strips_absolute_path_from_dist_packages():
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
     assert stack_frames[0]["filename"] == f"dist-packages{os.path.sep}rasa\\train.py"
+
+
+def test_context_contains_os():
+    context = telemetry._default_context_fields()
+
+    assert "os" in context
+
+    context.pop("os")
+
+    assert "os" in telemetry._default_context_fields()
