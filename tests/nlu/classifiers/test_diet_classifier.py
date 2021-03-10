@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Text
 
 import numpy as np
 import pytest
@@ -508,10 +509,11 @@ async def test_set_random_seed(component_builder, tmpdir):
 
 
 @pytest.mark.trains_model
-async def test_train_tensorboard_logging(component_builder, tmpdir):
-    from pathlib import Path
-
-    tensorboard_log_dir = Path(tmpdir.strpath) / "tensorboard"
+@pytest.mark.parametrize("log_level", ["epoch", "batch", "minibatch"])
+async def test_train_tensorboard_logging(
+    log_level: Text, component_builder: ComponentBuilder, tmpdir: Path
+):
+    tensorboard_log_dir = Path(tmpdir / "tensorboard")
 
     assert not tensorboard_log_dir.exists()
 
@@ -522,8 +524,8 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
                 {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 3,
-                    TENSORBOARD_LOG_LEVEL: "epoch",
+                    EPOCHS: 1,
+                    TENSORBOARD_LOG_LEVEL: log_level,
                     TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
                     EVAL_NUM_EXAMPLES: 15,
                     EVAL_NUM_EPOCHS: 1,
@@ -535,7 +537,7 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
 
     await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmpdir),
         data="data/examples/rasa/demo-rasa-multi-intent.yml",
         component_builder=component_builder,
     )
@@ -543,7 +545,7 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
     assert tensorboard_log_dir.exists()
 
     all_files = list(tensorboard_log_dir.rglob("*.*"))
-    assert len(all_files) == 3
+    assert len(all_files) == 2
 
 
 @pytest.mark.trains_model
@@ -582,7 +584,8 @@ async def test_train_model_checkpointing(
     assert best_model_file.exists()
 
     """
-    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+    Tricky to validate the *exact* number of files that should be there, however there
+    must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
