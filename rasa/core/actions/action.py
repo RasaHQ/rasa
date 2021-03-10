@@ -782,7 +782,7 @@ def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
 
     last_user_event = tracker.get_last_event_for(UserUttered)
     if not last_user_event:
-        return revert_events
+        raise TypeError("Cannot find last event to revert to.")
 
     last_user_event = copy.deepcopy(last_user_event)
     last_user_event.parse_data["intent"]["confidence"] = 1.0
@@ -802,6 +802,9 @@ def _revert_single_affirmation_events() -> List[Event]:
 
 def _revert_successful_rephrasing(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
+    if not last_user_event:
+        raise TypeError("Cannot find last event to revert to.")
+
     last_user_event = copy.deepcopy(last_user_event)
     return _revert_rephrasing_events() + [last_user_event]
 
