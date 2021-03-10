@@ -99,7 +99,6 @@ async def test_training_data_is_reproducible():
         ),
     ],
 )
-@pytest.mark.trains_model
 async def test_agent_parse_message_using_nlu_interpreter(
     default_agent: Agent, text_message_data: Text, expected: Dict[Text, Any]
 ):
@@ -107,7 +106,6 @@ async def test_agent_parse_message_using_nlu_interpreter(
     assert result == expected
 
 
-@pytest.mark.trains_model
 async def test_agent_handle_text(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
@@ -116,7 +114,6 @@ async def test_agent_handle_text(default_agent: Agent):
     ]
 
 
-@pytest.mark.trains_model
 async def test_agent_handle_message(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     message = UserMessage(text, sender_id="test_agent_handle_message")
@@ -138,7 +135,6 @@ def test_agent_wrong_use_of_load():
         agent.load(training_data_file)
 
 
-@pytest.mark.trains_model
 async def test_agent_with_model_server_in_thread(
     model_server: TestClient, default_domain: Domain, unpacked_trained_rasa_model: Text
 ):
@@ -169,7 +165,6 @@ async def test_agent_with_model_server_in_thread(
     jobs.kill_scheduler()
 
 
-@pytest.mark.trains_model
 async def test_wait_time_between_pulls_without_interval(
     model_server: TestClient, monkeypatch: MonkeyPatch
 ):
@@ -186,7 +181,6 @@ async def test_wait_time_between_pulls_without_interval(
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
 
 
-@pytest.mark.trains_model
 async def test_pull_model_with_invalid_domain(
     model_server: TestClient, monkeypatch: MonkeyPatch, caplog: LogCaptureFixture
 ):
@@ -209,7 +203,6 @@ async def test_pull_model_with_invalid_domain(
     assert error_message in caplog.text
 
 
-@pytest.mark.trains_model
 async def test_load_agent(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
 
@@ -354,7 +347,6 @@ def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, An
     )
 
 
-@pytest.mark.trains_model
 async def test_agent_update_model_none_domain(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
     agent.update_model(

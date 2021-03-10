@@ -357,7 +357,6 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-@pytest.mark.trains_model
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     result = await run_evaluation(
@@ -371,7 +370,6 @@ async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     assert result.get("intent_evaluation")
 
 
-@pytest.mark.trains_model
 async def test_eval_data(
     component_builder: ComponentBuilder, tmp_path: Path, project: Text
 ):
@@ -417,7 +415,6 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
-@pytest.mark.trains_model
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
@@ -458,7 +455,6 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
-@pytest.mark.trains_model
 def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.yml"
@@ -940,7 +936,6 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-@pytest.mark.trains_model
 async def test_nlu_comparison(tmp_path: Path):
     config = {
         "language": "en",
