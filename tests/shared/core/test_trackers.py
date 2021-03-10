@@ -176,7 +176,6 @@ async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
     }
 
 
-@pytest.mark.trains_model
 async def test_tracker_state_regression_without_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
@@ -195,7 +194,6 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
     )
 
 
-@pytest.mark.trains_model
 async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
@@ -221,7 +219,6 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     assert [e.as_story_string() for e in tracker.events] == expected
 
 
-@pytest.mark.trains_model
 async def test_bot_utterance_comes_after_action_event(default_agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
@@ -507,7 +504,6 @@ def test_tracker_init_copy(default_domain: Domain):
     assert tracker.sender_id == tracker_copy.sender_id
 
 
-@pytest.mark.trains_model
 async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
     trackers = await default_agent.load_data(DEFAULT_STORIES_FILE)
 
@@ -524,7 +520,6 @@ async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
         assert restored_tracker == tracker
 
 
-@pytest.mark.trains_model
 def test_read_json_dump(default_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
@@ -543,7 +538,6 @@ def test_read_json_dump(default_agent: Agent):
     assert restored_state == tracker_json
 
 
-@pytest.mark.trains_model
 def test_current_state_after_restart(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
@@ -562,7 +556,6 @@ def test_current_state_after_restart(default_agent):
     assert state.get("events") == events_after_restart
 
 
-@pytest.mark.trains_model
 def test_current_state_all_events(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
@@ -581,7 +574,6 @@ def test_current_state_all_events(default_agent):
     assert state.get("events") == evts
 
 
-@pytest.mark.trains_model
 def test_current_state_no_events(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
@@ -596,7 +588,6 @@ def test_current_state_no_events(default_agent):
     assert state.get("events") is None
 
 
-@pytest.mark.trains_model
 def test_current_state_applied_events(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
@@ -619,7 +610,6 @@ def test_current_state_applied_events(default_agent):
     assert state.get("events") == applied_events
 
 
-@pytest.mark.trains_model
 def test_session_started_not_part_of_applied_events(default_agent: Agent):
     # take tracker dump and insert a SessionStarted event sequence
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
