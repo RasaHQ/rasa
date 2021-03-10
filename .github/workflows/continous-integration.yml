@@ -292,6 +292,7 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
+        COVERALLS_PARALLEL: true
       run: poetry run coveralls
 
   integration_test:
