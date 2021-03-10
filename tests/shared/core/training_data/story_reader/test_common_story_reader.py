@@ -19,13 +19,9 @@ from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME
 from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
-)
-async def test_can_read_test_story(stories_file: Text, default_domain: Domain):
+async def test_can_read_test_story(default_domain: Domain):
     trackers = await training.load_data(
-        stories_file,
+        "data/test_yaml_stories/stories.yml",
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -106,7 +102,7 @@ async def test_generate_training_data_with_cycles(
 ):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = await training.load_data(
-        stories_file, default_domain, augmentation_factor=0
+        stories_file, default_domain, augmentation_factor=0,
     )
 
     _, label_ids, _ = featurizer.featurize_trackers(
@@ -153,7 +149,7 @@ async def test_generate_training_data_original_and_augmented_trackers(
     stories_file: Text, default_domain: Domain
 ):
     training_trackers = await training.load_data(
-        stories_file, default_domain, augmentation_factor=3
+        stories_file, default_domain, augmentation_factor=3,
     )
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
@@ -200,10 +196,10 @@ async def test_visualize_training_data_graph(
 @pytest.mark.parametrize(
     "stories_resources",
     [
-        ["data/test_stories/stories.md", "data/test_multifile_stories"],
+        ["data/test_stories/stories.md", "data/test_multifile_md_stories"],
         ["data/test_yaml_stories/stories.yml", "data/test_multifile_yaml_stories"],
         ["data/test_stories/stories.md", "data/test_multifile_yaml_stories"],
-        ["data/test_yaml_stories/stories.yml", "data/test_multifile_stories"],
+        ["data/test_yaml_stories/stories.yml", "data/test_multifile_md_stories"],
         ["data/test_stories/stories.md", "data/test_mixed_yaml_md_stories"],
     ],
 )

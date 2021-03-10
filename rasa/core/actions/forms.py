@@ -389,8 +389,8 @@ class FormAction(LoopAction):
         them. Otherwise there is no validation.
 
         Args:
-            slot_candidates: Extracted slots which are candidates to fill the slots required
-                by the form.
+            slot_candidates: Extracted slots which are candidates to fill the slots
+                required by the form.
             tracker: The current conversation tracker.
             domain: The current model domain.
             output_channel: The output channel which can be used to send messages
@@ -435,6 +435,8 @@ class FormAction(LoopAction):
         return DialogueStateTracker.from_events(
             current_tracker.sender_id,
             current_tracker.events_after_latest_restart()
+            # Insert SlotSet event to make sure REQUESTED_SLOT belongs to active form.
+            + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
             # Insert form execution event so that it's clearly distinguishable which
             # events were newly added.
             + [ActionExecuted(self.name())] + additional_events,
@@ -603,7 +605,7 @@ class FormAction(LoopAction):
     # helpers
     @staticmethod
     def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it is not a list, `None` converted to empty list."""
+        """Convert object to a list if it isn't."""
         if x is None:
             x = []
         elif not isinstance(x, list):

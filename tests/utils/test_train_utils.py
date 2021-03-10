@@ -20,6 +20,8 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     CROSS_ENTROPY,
     MARGIN,
+    AUTO,
+    LINEAR_NORM,
 )
 from rasa.shared.exceptions import InvalidConfigException
 
@@ -93,12 +95,15 @@ def test_init_split_entities_config(
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, True),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: SOFTMAX}, False),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, False),
-        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, False),
-        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: SOFTMAX}, False),
-        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, False),
-        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: MARGIN}, False),
-        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: SOFTMAX}, False),
-        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: CROSS_ENTROPY}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: SOFTMAX}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, False),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: SOFTMAX}, True),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: CROSS_ENTROPY}, True),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: SOFTMAX}, True),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, True),
     ],
 )
 def test_confidence_loss_settings(
@@ -117,10 +122,8 @@ def test_confidence_loss_settings(
     [
         ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: INNER}, False),
         ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: COSINE}, True),
-        ({MODEL_CONFIDENCE: COSINE, SIMILARITY_TYPE: INNER}, False),
-        ({MODEL_CONFIDENCE: COSINE, SIMILARITY_TYPE: COSINE}, False),
-        ({MODEL_CONFIDENCE: INNER, SIMILARITY_TYPE: INNER}, False),
-        ({MODEL_CONFIDENCE: INNER, SIMILARITY_TYPE: COSINE}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: INNER}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: COSINE}, False),
     ],
 )
 def test_confidence_similarity_settings(
@@ -137,10 +140,10 @@ def test_confidence_similarity_settings(
 @pytest.mark.parametrize(
     "component_config, model_confidence",
     [
-        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, COSINE),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, AUTO),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, SOFTMAX),
-        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, COSINE),
-        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, COSINE),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, LINEAR_NORM,),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, AUTO),
     ],
 )
 def test_update_confidence_type(

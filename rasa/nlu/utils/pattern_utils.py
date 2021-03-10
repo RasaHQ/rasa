@@ -134,7 +134,7 @@ def extract_patterns(
         use_regexes: Boolean indicating whether to use regex features or not.
         use_lookup_tables: Boolean indicating whether to use lookup tables or not.
         use_word_boundaries: Boolean indicating whether to use `\b` around the lookup
-          table regex expressions
+            table regex expressions.
 
     Returns:
         The list of regex patterns.

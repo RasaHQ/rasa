@@ -721,8 +721,7 @@ class Component(metaclass=ComponentMetaclass):
             `True` if component can handle specific language, `False` otherwise.
         """
         # If both `supported_language_list` and `not_supported_language_list`
-        # are set to `None`,
-        # it means: support all languages
+        # are set to `None`, it means: support all languages
         if language is None or (
             cls.supported_language_list is None
             and cls.not_supported_language_list is None
@@ -731,8 +730,8 @@ class Component(metaclass=ComponentMetaclass):
 
         # check language supporting settings
         if cls.supported_language_list and cls.not_supported_language_list:
-            # When user set both language supporting settings to not None, it will
-            # lead to ambiguity.
+            # When user set both language supporting settings to not None,
+            # it will lead to ambiguity.
             raise RasaException(
                 "Only one of `supported_language_list` and "
                 "`not_supported_language_list` can be set to not None"

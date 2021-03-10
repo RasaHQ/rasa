@@ -7,7 +7,8 @@ import pytest
 
 
 @pytest.mark.timeout(600)
-async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):
+@pytest.mark.trains_model
+async def test_restoring_tracker(trained_moodbot_path: Text):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
     agent = Agent.load(trained_moodbot_path)
