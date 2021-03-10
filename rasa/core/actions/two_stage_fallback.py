@@ -1,6 +1,6 @@
 import copy
 import time
-from typing import List, Text, Optional, cast
+from typing import List, Text, Optional
 
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
@@ -171,7 +171,14 @@ def _second_affirmation_failed(tracker: DialogueStateTracker) -> bool:
 
 
 def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
-    clarification = copy.deepcopy(cast(Event, tracker.latest_message))
+    latest_message = tracker.latest_message
+    if not latest_message:
+        raise TypeError(
+            "Cannot issue message clarification because "
+            "latest message is not on tracker."
+        )
+
+    clarification = copy.deepcopy(latest_message)
     clarification.parse_data["intent"]["confidence"] = 1.0
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]
