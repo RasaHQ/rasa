@@ -82,8 +82,10 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     RESPONSE_SELECTOR_RESPONSES_KEY,
+    RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
+    RESPONSE_SELECTOR_UTTER_ACTION_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
 )
@@ -417,24 +419,24 @@ class ResponseSelector(DIETClassifier):
         top_label, label_ranking = self._predict_label(out)
 
         # Get the exact intent_response_key and the associated
-        # response templates for the top predicted label
+        # responses for the top predicted label
         label_intent_response_key = (
             self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
         )
-        label_response_templates = self.responses.get(
+        label_responses = self.responses.get(
             util.intent_response_key_to_template_key(label_intent_response_key)
         )
 
-        if label_intent_response_key and not label_response_templates:
-            # response templates seem to be unavailable,
+        if label_intent_response_key and not label_responses:
+            # responses seem to be unavailable,
             # likely an issue with the training data
             # we'll use a fallback instead
             rasa.shared.utils.io.raise_warning(
-                f"Unable to fetch response templates for {label_intent_response_key} "
+                f"Unable to fetch responses for {label_intent_response_key} "
                 f"This means that there is likely an issue with the training data."
-                f"Please make sure you have added response templates for this intent."
+                f"Please make sure you have added responses for this intent."
             )
-            label_response_templates = [{TEXT: label_intent_response_key}]
+            label_responses = [{TEXT: label_intent_response_key}]
 
         for label in label_ranking:
             label[INTENT_RESPONSE_KEY] = (
@@ -455,15 +457,20 @@ class ResponseSelector(DIETClassifier):
             f"Adding following selector key to message property: {selector_key}"
         )
 
+        # TODO: remove `RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY` and
+        # `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
+        utter_action_key = util.intent_response_key_to_template_key(
+            label_intent_response_key
+        )
         prediction_dict = {
             RESPONSE_SELECTOR_PREDICTION_KEY: {
                 "id": top_label["id"],
-                RESPONSE_SELECTOR_RESPONSES_KEY: label_response_templates,
+                RESPONSE_SELECTOR_RESPONSES_KEY: label_responses,
+                RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY: label_responses,
                 PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                 INTENT_RESPONSE_KEY: label_intent_response_key,
-                RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: util.intent_response_key_to_template_key(
-                    label_intent_response_key
-                ),
+                RESPONSE_SELECTOR_UTTER_ACTION_KEY: utter_action_key,
+                RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: utter_action_key,
             },
             RESPONSE_SELECTOR_RANKING_KEY: label_ranking,
         }

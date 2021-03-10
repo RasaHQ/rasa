@@ -62,14 +62,6 @@ Checks intents used in stories.
 Verifies if the intents used in the stories are valid, and whether
 all valid intents are used in the stories.
 
-#### verify\_utterances
-
-```python
- | verify_utterances(ignore_warnings: bool = True) -> bool
-```
-
-Compares list of utterances in actions with utterances in responses.
-
 #### verify\_utterances\_in\_stories
 
 ```python

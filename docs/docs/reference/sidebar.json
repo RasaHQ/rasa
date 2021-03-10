@@ -395,9 +395,9 @@
             {
               "items": [
                 "reference/rasa/core/nlg/generator",
+                "reference/rasa/core/nlg/response",
                 "reference/rasa/core/nlg/interpolator",
-                "reference/rasa/core/nlg/callback",
-                "reference/rasa/core/nlg/template"
+                "reference/rasa/core/nlg/callback"
               ],
               "label": "rasa.core.nlg",
               "type": "category"

@@ -30,6 +30,24 @@ The domain specifies the universe in which the bot&#x27;s policy acts.
 A Domain subclass provides the actions the bot can take, the intents
 and entities it can recognise.
 
+#### from\_dict
+
+```python
+ | @classmethod
+ | from_dict(cls, data: Dict) -> "Domain"
+```
+
+Deserializes and creates domain.
+
+**Arguments**:
+
+- `data` - The serialized domain.
+  
+
+**Returns**:
+
+  The instantiated `Domain` object.
+
 #### from\_directory
 
 ```python
@@ -104,7 +122,7 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
- | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], templates: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
+ | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
 ```
 
 Creates a `Domain`.
@@ -114,7 +132,7 @@ Creates a `Domain`.
 - `intents` - Intent labels.
 - `entities` - The names of entities which might be present in user messages.
 - `slots` - Slots to store information during the conversation.
-- `templates` - Bot responses. If an action with the same name is executed, it
+- `responses` - Bot responses. If an action with the same name is executed, it
   will send the matching response to the user.
 - `action_names` - Names of custom actions.
 - `forms` - Form names and their slot mappings.
@@ -208,18 +226,48 @@ Number of used input states for the action prediction.
  | retrieval_intent_templates() -> Dict[Text, List[Dict[Text, Any]]]
 ```
 
-Return only the templates which are defined for retrieval intents
+Return only the responses which are defined for retrieval intents.
+
+#### retrieval\_intent\_responses
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | retrieval_intent_responses() -> Dict[Text, List[Dict[Text, Any]]]
+```
+
+Return only the responses which are defined for retrieval intents.
+
+#### templates
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | templates() -> Dict[Text, List[Dict[Text, Any]]]
+```
+
+Temporary property before templates become completely deprecated.
 
 #### is\_retrieval\_intent\_template
 
 ```python
  | @staticmethod
- | is_retrieval_intent_template(template: Tuple[Text, List[Dict[Text, Any]]]) -> bool
+ | is_retrieval_intent_template(response: Tuple[Text, List[Dict[Text, Any]]]) -> bool
 ```
 
-Check if the response template is for a retrieval intent.
+Check if the response is for a retrieval intent.
 
 These templates have a `/` symbol in their name. Use that to filter them from
+the rest.
+
+#### is\_retrieval\_intent\_response
+
+```python
+ | @staticmethod
+ | is_retrieval_intent_response(response: Tuple[Text, List[Dict[Text, Any]]]) -> bool
+```
+
+Check if the response is for a retrieval intent.
+
+These responses have a `/` symbol in their name. Use that to filter them from
 the rest.
 
 #### add\_categorical\_slot\_default\_value
@@ -495,7 +543,15 @@ from domain warnings in case they are not featurized.
  | check_missing_templates() -> None
 ```
 
-Warn user of utterance names which have no specified template.
+Warn user of utterance names which have no specified response.
+
+#### check\_missing\_responses
+
+```python
+ | check_missing_responses() -> None
+```
+
+Warn user of utterance names which have no specified response.
 
 #### is\_empty
 

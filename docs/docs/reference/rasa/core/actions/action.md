@@ -121,12 +121,11 @@ Execute the side effects of this action.
   ``tracker.get_slot(slot_name)`` and the most recent user
   message is ``tracker.latest_message.text``.
 - `domain` _Domain_ - the bot&#x27;s domain
-- `metadata` - dictionary that can be sent to action server with custom
-  data.
+  
 
 **Returns**:
 
-- `List[Event]` - A list of :class:`rasa.core.events.Event` instances
+  A list of :class:`rasa.core.events.Event` instances
 
 #### \_\_str\_\_
 
@@ -153,16 +152,13 @@ Event which should be logged for the successful execution of this action.
 
   Event which should be logged onto the tracker.
 
-## ActionUtterTemplate Objects
+## ActionBotResponse Objects
 
 ```python
-class ActionUtterTemplate(Action)
+class ActionBotResponse(Action)
 ```
 
-An action which only effect is to utter a template when it is run.
-
-Both, name and utter template, need to be specified using
-the `name` method.
+An action which only effect is to utter a response when it is run.
 
 #### \_\_init\_\_
 
@@ -184,7 +180,7 @@ Creates action.
  | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
-Simple run implementation uttering a (hopefully defined) template.
+Simple run implementation uttering a (hopefully defined) response.
 
 #### name
 
@@ -250,7 +246,7 @@ Event which should be logged for the successful execution of this action.
 ## ActionRetrieveResponse Objects
 
 ```python
-class ActionRetrieveResponse(ActionUtterTemplate)
+class ActionRetrieveResponse(ActionBotResponse)
 ```
 
 An action which queries the Response Selector for the appropriate response.
@@ -300,10 +296,34 @@ Returns action name.
 ## ActionBack Objects
 
 ```python
-class ActionBack(ActionUtterTemplate)
+class ActionBack(ActionBotResponse)
 ```
 
 Revert the tracker state by two user utterances.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action back name.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Initializes action back.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
 
 ## ActionListen Objects
 
@@ -316,15 +336,47 @@ The first action in any turn - bot waits for a user message.
 The bot should stop taking further actions and wait for the user to say
 something.
 
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
+
 ## ActionRestart Objects
 
 ```python
-class ActionRestart(ActionUtterTemplate)
+class ActionRestart(ActionBotResponse)
 ```
 
 Resets the tracker to its initial state.
 
 Utters the restart response if available.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action restart name.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Initializes action restart.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
 
 ## ActionSessionStart Objects
 
@@ -337,14 +389,45 @@ Applies a conversation session start.
 Takes all `SlotSet` events from the previous session and applies them to the new
 session.
 
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
+
 ## ActionDefaultFallback Objects
 
 ```python
-class ActionDefaultFallback(ActionUtterTemplate)
+class ActionDefaultFallback(ActionBotResponse)
 ```
 
-Executes the fallback action and goes back to the previous state
-of the dialogue
+Executes the fallback action and goes back to the prev state of the dialogue.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action default fallback name.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Initializes action default fallback.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
 
 ## ActionDeactivateLoop Objects
 
@@ -353,6 +436,14 @@ class ActionDeactivateLoop(Action)
 ```
 
 Deactivates an active loop.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
 
 ## RemoteAction Objects
 
@@ -371,6 +462,14 @@ Expected response schema for an Action endpoint.
 
 Used for validation of the response returned from the
 Action endpoint.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
 
 ## ActionExecutionRejection Objects
 
@@ -395,6 +494,14 @@ write custom stories for the different paths, but only of the happy
 path. This is deprecated and can be removed once the
 `TwoStageFallbackPolicy` is removed.
 
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
+
 ## ActionDefaultAskAffirmation Objects
 
 ```python
@@ -407,11 +514,35 @@ It is suggested to overwrite this default action with a custom action
 to have more meaningful prompts for the affirmations. E.g. have a
 description of the intent instead of its identifier name.
 
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
+
 ## ActionDefaultAskRephrase Objects
 
 ```python
-class ActionDefaultAskRephrase(ActionUtterTemplate)
+class ActionDefaultAskRephrase(ActionBotResponse)
 ```
 
 Default implementation which asks the user to rephrase his intent.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action default ask rephrase name.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Initializes action default ask rephrase.
 

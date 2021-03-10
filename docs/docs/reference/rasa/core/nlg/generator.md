@@ -14,13 +14,13 @@ Generate bot utterances based on a dialogue state.
 #### generate
 
 ```python
- | async generate(template_name: Text, tracker: "DialogueStateTracker", output_channel: Text, **kwargs: Any, ,) -> Optional[Dict[Text, Any]]
+ | async generate(utter_action: Text, tracker: "DialogueStateTracker", output_channel: Text, **kwargs: Any, ,) -> Optional[Dict[Text, Any]]
 ```
 
-Generate a response for the requested template.
+Generate a response for the requested utter action.
 
 There are a lot of different methods to implement this, e.g. the
-generation can be based on templates or be fully ML based by feeding
+generation can be based on responses or be fully ML based by feeding
 the dialogue state into a machine learning NLG model.
 
 #### create

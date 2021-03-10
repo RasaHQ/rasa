@@ -13,7 +13,7 @@ from unittest.mock import patch, Mock
 
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.actions.action import (
-    ActionUtterTemplate,
+    ActionBotResponse,
     ActionListen,
     ActionExecutionRejection,
 )
@@ -811,7 +811,7 @@ async def test_handle_message_with_session_start(
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
+        BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
@@ -835,7 +835,7 @@ async def test_handle_message_with_session_start(
         ActionExecuted("utter_greet"),
         BotUttered(
             "hey there post-session start hello!",
-            metadata={"template_name": "utter_greet"},
+            metadata={"utter_action": "utter_greet"},
         ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
@@ -982,7 +982,7 @@ async def test_restart_triggers_session_start(
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there name1!", metadata={"template_name": "utter_greet"}),
+        BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
@@ -1012,9 +1012,7 @@ async def test_handle_message_if_action_manually_rejects(
     async def mocked_run(self, *args: Any, **kwargs: Any) -> List[Event]:
         return rejection_events
 
-    monkeypatch.setattr(
-        ActionUtterTemplate, ActionUtterTemplate.run.__name__, mocked_run
-    )
+    monkeypatch.setattr(ActionBotResponse, ActionBotResponse.run.__name__, mocked_run)
     await default_processor.handle_message(message)
 
     tracker = default_processor.tracker_store.retrieve(conversation_id)
@@ -1183,7 +1181,7 @@ async def test_logging_of_end_to_end_action():
         intents=["greet"],
         entities=[],
         slots=[],
-        templates={},
+        responses={},
         action_names=[],
         forms={},
         action_texts=[end_to_end_action],

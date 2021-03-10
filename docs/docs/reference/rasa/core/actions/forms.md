@@ -191,7 +191,7 @@ Subclass this method to add custom validation and rejection logic
  | async request_next_slot(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, events_so_far: List[Event]) -> List[Event]
 ```
 
-Request the next slot and utter template if needed, else return `None`.
+Request the next slot and response if needed, else return `None`.
 
 #### activate
 

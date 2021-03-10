@@ -152,7 +152,7 @@ async def default_processor(default_agent: Agent) -> MessageProcessor:
         default_agent.domain,
         tracker_store,
         lock_store,
-        TemplatedNaturalLanguageGenerator(default_agent.domain.templates),
+        TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
     )
 
 
@@ -199,7 +199,7 @@ def tracker_with_six_scheduled_reminders(
 
 @pytest.fixture
 def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
-    return TemplatedNaturalLanguageGenerator(default_domain.templates)
+    return TemplatedNaturalLanguageGenerator(default_domain.responses)
 
 
 @pytest.fixture

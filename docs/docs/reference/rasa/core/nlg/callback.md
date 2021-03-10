@@ -13,18 +13,10 @@ Expected response schema for an NLG endpoint.
 
 Used for validation of the response returned from the NLG endpoint.
 
-#### nlg\_request\_format\_spec
-
-```python
-nlg_request_format_spec() -> Dict[Text, Any]
-```
-
-Expected request schema for requests sent to an NLG endpoint.
-
 #### nlg\_request\_format
 
 ```python
-nlg_request_format(template_name: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
+nlg_request_format(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
 ```
 
 Create the json body for the NLG json body for the request.
@@ -45,10 +37,10 @@ the bot.
 #### generate
 
 ```python
- | async generate(template_name: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
+ | async generate(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
 ```
 
-Retrieve a named template from the domain using an endpoint.
+Retrieve a named response from the domain using an endpoint.
 
 #### validate\_response
 
