@@ -531,8 +531,10 @@ def _get_marker_for_ci_matrix(item: Function) -> Text:
 def pytest_collection_modifyitems(items: List[Function]) -> None:
     """Adds pytest markers dynamically when the tests are run.
 
+    This is automatically called by pytest during its execution.
+
     Args:
-        items: The list of tests to be run.
+        items: Tests to be run.
     """
     for item in items:
         marker = _get_marker_for_ci_matrix(item)
