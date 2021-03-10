@@ -237,11 +237,23 @@ class MemoizationPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        rule_only_slots: Optional[List[Text]] = None,
+        rule_only_loops: Optional[List[Text]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        rule_only_slots = kwargs.get("rule_only_slots")
-        rule_only_loops = kwargs.get("rule_only_loops")
+        """Predicts the next action the bot should take after seeing the tracker.
 
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+            rule_only_slots: Slot names, which only occur in rules but not in stories.
+            rule_only_loops: Loop names, which only occur in rules but not in stories.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
+        """
         result = self._default_predictions(domain)
 
         states = self._prediction_states(

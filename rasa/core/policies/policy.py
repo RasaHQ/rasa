@@ -302,9 +302,6 @@ class Policy:
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
-        Keyword Args:
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
