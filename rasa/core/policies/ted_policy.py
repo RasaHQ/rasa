@@ -868,7 +868,6 @@ class TEDPolicy(Policy):
             finetune_mode=should_finetune,
         )
 
-
         return cls(
             featurizer=featurizer,
             priority=priority,
