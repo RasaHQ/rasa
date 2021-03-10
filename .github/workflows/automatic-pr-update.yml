@@ -16,4 +16,4 @@ jobs:
           token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN || secrets.GITHUB_TOKEN}}
           # required parameter by original action - 
           # check is already done through protected branches so not needed for us
-          required_approval_count: 0   
+          required_approval_count: 0
