@@ -101,7 +101,7 @@ class InvalidEntityFormatException(RasaException, json.JSONDecodeError):
     def create_from(
         cls, other: json.JSONDecodeError, msg: Text
     ) -> "InvalidEntityFormatException":
-        """Create an instance of `InvalidEntityFormatException` from a `JSONDecodeError`."""
+        """Creates `InvalidEntityFormatException` from `JSONDecodeError`."""
         return cls(msg, other.doc, other.pos)
 
 

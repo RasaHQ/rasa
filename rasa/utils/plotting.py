@@ -120,7 +120,7 @@ def plot_confusion_matrix(
 def plot_histogram(
     hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None
 ) -> None:
-    """Plot a side-by-side comparative histogram of the confidence distribution (misses and hits).
+    """Plots a side-by-side comparative histogram of the confidence distribution.
 
     Args:
         hist_data: histogram data
