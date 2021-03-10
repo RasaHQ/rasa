@@ -743,20 +743,3 @@ jobs:
         pip install -U github3.py pep440-version-utils
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
-
-  mergepal-merge: # run merge pal in the end
-    runs-on: ubuntu-latest
-    needs: [quality, test, documentation, docker]
-    steps:
-      - uses: actions/checkout@v1
-      - name: Make sure there is a github token
-        shell: bash
-        run: |
-          if [ -z "${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" ]; then
-            echo "MERGE_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-          else
-            echo "MERGE_TOKEN=${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" >> $GITHUB_ENV
-          fi
-      - uses: rasahq/merge-pal-action@master
-        with:
-          token: ${{ env.MERGE_TOKEN }}
