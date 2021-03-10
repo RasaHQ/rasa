@@ -142,7 +142,7 @@ class RasaNLUInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter)
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
 
-        result = self.interpreter.parse(text, time_zone=metadata.get("time_zone"))
+        result = self.interpreter.parse(text, metadata=metadata)
 
         return result
 
