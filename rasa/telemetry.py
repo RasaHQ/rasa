@@ -474,6 +474,8 @@ def _default_context_fields() -> Dict[Text, Any]:
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
+        # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+        # if you change / add context
         TELEMETRY_CONTEXT = {
             "os": {"name": platform.system(), "version": platform.release()},
             "ci": in_continuous_integration(),
@@ -700,6 +702,8 @@ async def track_model_training(
 
     training_id = uuid.uuid4().hex
 
+    # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+    # if you change / add any properties
     _track(
         TRAINING_STARTED_EVENT,
         {
