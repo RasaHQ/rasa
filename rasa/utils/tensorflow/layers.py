@@ -276,30 +276,32 @@ def periodic_padding(tensor, axis, padding=1):
     return tensor
 
 
-class LocallyConnectedDense(tf.keras.layers.LocallyConnected1D):
-    def __init__(self, kernel_size, **kwargs):
+class LocallyConnectedDense(tf.keras.layers.Layer):
+    def __init__(self, kernel_size: int, **kwargs):
+        self.kernel_size = kernel_size
         if kernel_size % 2 == 0:
             raise InvalidParameterException(
                 f"`kernel_size = {kernel_size}` must be an odd integer."
             )
-        super(LocallyConnectedDense, self).__init__(
+        super(LocallyConnectedDense, self).__init__(**kwargs)
+        self._locally_connected_layer = tf.keras.layers.LocallyConnected1D(
             filters=1, kernel_size=kernel_size, data_format="channels_last", **kwargs
         )
 
-    def build(self, input_shape: tf.TensorShape):
-        kernel_size = self.kernel_size[0]
+    def build(self, input_shape: tf.TensorShape) -> None:
+        super(LocallyConnectedDense, self).build(input_shape=input_shape)
         self.input_size = input_shape[-1]
-        _input_shape = tf.TensorShape([None, self.input_size + kernel_size - 1, 1])
-        super(LocallyConnectedDense, self).build(input_shape=_input_shape)
+        self._locally_connected_layer.build(
+            input_shape=[None, self.input_size + self.kernel_size - 1, 1]
+        )
 
-    def call(self, inputs):
-        kernel_size = self.kernel_size[0]
-        x = tf.reshape(inputs, (-1, self.input_size))
-        x = periodic_padding(inputs, axis=1, padding=((kernel_size - 1) // 2))
+    def call(self, inputs) -> tf.TensorShape:
+        x = tf.reshape(inputs, [-1, tf.shape(inputs)[-1]])
+        x = periodic_padding(x, axis=-1, padding=((self.kernel_size - 1) // 2))
         x = tf.expand_dims(x, axis=-1)
-        x = super(LocallyConnectedDense, self).call(x)
+        x = self._locally_connected_layer(x)
         x = tf.squeeze(x, axis=-1)
-        x = tf.reshape(x, inputs.shape)
+        x = tf.reshape(x, tf.shape(inputs))
         return x
 
 
