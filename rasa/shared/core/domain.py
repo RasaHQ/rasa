@@ -701,7 +701,7 @@ class Domain:
     def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
         """Return only the responses which are defined for retrieval intents."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed Rasa Open Source 3.0.0."
+            "The terminology 'template' is deprecated and replaced by 'response', call `retrieval_intent_responses` instead of `retrieval_intent_templates`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
         )
         return self.retrieval_intent_responses
 
@@ -730,7 +730,7 @@ class Domain:
         These responses have a `/` symbol in their name. Use that to filter them from the rest.
         """
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed Rasa Open Source 3.0.0."
+            "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
         )
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
@@ -1570,9 +1570,9 @@ class Domain:
     def check_missing_templates(self) -> None:
         """Warn user of utterance names which have no specified response."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed Rasa Open Source 3.0.0."
+            "The terminology 'template' is deprecated and replaced by 'response'. Please use `check_missing_responses` instead of `check_missing_templates`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
         )
-        self.check_missing_responses
+        self.check_missing_responses()
 
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""

@@ -63,7 +63,7 @@ def _create_from_endpoint_config(
         nlg = TemplatedNaturalLanguageGenerator(domain.responses)
     elif endpoint_config.type.lower() == "template":
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed in the Rasa Open Source 3.0.0."
+            "Please change the NLG endpoint config type from `template` to `response`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
         )
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
