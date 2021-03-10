@@ -701,7 +701,8 @@ class Domain:
     def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
         """Return only the responses which are defined for retrieval intents."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response', call `retrieval_intent_responses` instead of `retrieval_intent_templates`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
+            "The terminology 'template' is deprecated and replaced by 'response', call `retrieval_intent_responses` instead of `retrieval_intent_templates`.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return self.retrieval_intent_responses
 
@@ -717,7 +718,8 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. This will be removed in the future."
+            "The terminology 'template' is deprecated and replaced by 'response'. Instead of using the `templates` property, please use the `responses` property instead.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return self.responses
 
@@ -730,7 +732,8 @@ class Domain:
         These responses have a `/` symbol in their name. Use that to filter them from the rest.
         """
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
+            "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
@@ -1570,7 +1573,8 @@ class Domain:
     def check_missing_templates(self) -> None:
         """Warn user of utterance names which have no specified response."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. Please use `check_missing_responses` instead of `check_missing_templates`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
+            "The terminology 'template' is deprecated and replaced by 'response'. Please use `check_missing_responses` instead of `check_missing_templates`.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         self.check_missing_responses()
 

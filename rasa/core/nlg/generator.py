@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Union, Text, Any, Dict
 
 import rasa.shared.utils.common
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -63,7 +64,8 @@ def _create_from_endpoint_config(
         nlg = TemplatedNaturalLanguageGenerator(domain.responses)
     elif endpoint_config.type.lower() == "template":
         rasa.shared.utils.io.raise_deprecation_warning(
-            "Please change the NLG endpoint config type from `template` to `response`. Please see https://rasa.com/docs/rasa/migration-guide/ for more detailed instructions."
+            "Please change the NLG endpoint config type from `template` to `response`.",
+            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
