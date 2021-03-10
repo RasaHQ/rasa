@@ -752,12 +752,13 @@ def test_get_form_action(slot_mapping: Text):
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    actions:
-    - my_action
-    forms:
-      {form_action_name}:
-        {slot_mapping}
-    """
+            version: "2.0"
+            actions:
+            - my_action
+            forms:
+              {form_action_name}:
+                {slot_mapping}
+            """
         )
     )
 
@@ -771,11 +772,12 @@ def test_get_form_action_with_rasa_open_source_1_forms():
         domain = Domain.from_yaml(
             textwrap.dedent(
                 f"""
-        actions:
-        - my_action
-        forms:
-        - {form_action_name}
-        """
+                version: "2.0"
+                actions:
+                - my_action
+                forms:
+                - {form_action_name}
+                """
             )
         )
 
@@ -788,12 +790,13 @@ def test_overridden_form_action():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    actions:
-    - my_action
-    - {form_action_name}
-    forms:
-        {form_action_name}:
-    """
+            version: "2.0"
+            actions:
+            - my_action
+            - {form_action_name}
+            forms:
+                {form_action_name}:
+            """
         )
     )
 
@@ -806,9 +809,10 @@ def test_get_form_action_if_not_in_forms():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-    actions:
-    - my_action
-    """
+            version: "2.0"
+            actions:
+            - my_action
+            """
         )
     )
 
@@ -823,12 +827,13 @@ def test_get_end_to_end_utterance_action(end_to_end_utterance: Text):
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    actions:
-    - my_action
-    {KEY_E2E_ACTIONS}:
-    - {end_to_end_utterance}
-    - Bye Bye
-"""
+            version: "2.0"
+            actions:
+            - my_action
+            {KEY_E2E_ACTIONS}:
+            - {end_to_end_utterance}
+            - Bye Bye
+            """
         )
     )
 
@@ -844,12 +849,13 @@ async def test_run_end_to_end_utterance_action():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    actions:
-    - my_action
-    {KEY_E2E_ACTIONS}:
-    - {end_to_end_utterance}
-    - Bye Bye
-"""
+            version: "2.0"
+            actions:
+            - my_action
+            {KEY_E2E_ACTIONS}:
+            - {end_to_end_utterance}
+            - Bye Bye
+            """
         )
     )
 

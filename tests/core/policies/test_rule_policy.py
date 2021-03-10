@@ -110,12 +110,12 @@ def test_potential_contradiction_resolved_by_conversation_start():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-- {utter_anti_greet_action}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {utter_anti_greet_action}
+        """
     )
     policy = RulePolicy()
     greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
@@ -163,16 +163,16 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-- {utter_anti_greet_action}
-slots:
-  {some_slot}:
-    type: text
-    initial_value: {some_slot_initial_value}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {utter_anti_greet_action}
+        slots:
+          {some_slot}:
+            type: text
+            initial_value: {some_slot_initial_value}
+        """
     )
     policy = RulePolicy()
     greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
@@ -234,16 +234,16 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-- {utter_anti_greet_action}
-slots:
-  {some_slot}:
-    type: text
-    initial_value: {some_slot_initial_value}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {utter_anti_greet_action}
+        slots:
+          {some_slot}:
+            type: text
+            initial_value: {some_slot_initial_value}
+        """
     )
     policy = RulePolicy()
     greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
@@ -298,11 +298,11 @@ def test_restrict_multiple_user_inputs_in_rules():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        """
     )
     policy = RulePolicy()
     greet_events = [
@@ -330,14 +330,14 @@ def test_incomplete_rules_due_to_slots():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {some_action}
-slots:
-  {some_slot}:
-    type: text
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {some_action}
+        slots:
+          {some_slot}:
+            type: text
+        """
     )
     policy = RulePolicy()
     complete_rule = TrackerWithCachedStates.from_events(
@@ -398,16 +398,16 @@ def test_no_incomplete_rules_due_to_slots_after_listen():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {some_action}
-entities:
-- {some_slot}
-slots:
-  {some_slot}:
-    type: text
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {some_action}
+        entities:
+        - {some_slot}
+        slots:
+          {some_slot}:
+            type: text
+        """
     )
     policy = RulePolicy()
     complete_rule = TrackerWithCachedStates.from_events(
@@ -460,16 +460,16 @@ def test_no_incomplete_rules_due_to_additional_slots_set():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {some_action}
-slots:
-  {some_slot}:
-    type: text
-  {some_other_slot}:
-    type: text
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {some_action}
+        slots:
+          {some_slot}:
+            type: text
+          {some_other_slot}:
+            type: text
+        """
     )
     policy = RulePolicy()
     simple_rule = TrackerWithCachedStates.from_events(
@@ -511,11 +511,11 @@ def test_incomplete_rules_due_to_loops():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-forms:
-  {some_form}:
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        forms:
+          {some_form}:
+        """
     )
     policy = RulePolicy()
     complete_rule = TrackerWithCachedStates.from_events(
@@ -575,12 +575,12 @@ def test_contradicting_rules():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-- {utter_anti_greet_action}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {utter_anti_greet_action}
+        """
     )
     policy = RulePolicy()
     anti_greet_rule = TrackerWithCachedStates.from_events(
@@ -615,12 +615,12 @@ def test_contradicting_rules_and_stories():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-- {utter_anti_greet_action}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {utter_anti_greet_action}
+        """
     )
     policy = RulePolicy()
     anti_greet_story = TrackerWithCachedStates.from_events(
@@ -757,11 +757,11 @@ def test_faq_rule():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        """
     )
 
     policy = RulePolicy()
@@ -803,17 +803,17 @@ async def test_predict_form_action_if_in_form():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-    intents:
-    - {GREET_INTENT_NAME}
-    actions:
-    - {UTTER_GREET_ACTION}
-    - some-action
-    slots:
-      {REQUESTED_SLOT}:
-        type: unfeaturized
-    forms:
-      {form_name}:
-"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+          {form_name}:
+        """
     )
 
     policy = RulePolicy()
@@ -846,17 +846,17 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-    intents:
-    - {GREET_INTENT_NAME}
-    actions:
-    - {UTTER_GREET_ACTION}
-    - some-action
-    slots:
-      {REQUESTED_SLOT}:
-        type: unfeaturized
-    forms:
-      {loop_name}:
-"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+          {loop_name}:
+        """
     )
     e2e_rule = TrackerWithCachedStates.from_events(
         "bla",
@@ -900,18 +900,18 @@ async def test_predict_form_action_if_multiple_turns():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-    intents:
-    - {GREET_INTENT_NAME}
-    - {other_intent}
-    actions:
-    - {UTTER_GREET_ACTION}
-    - some-action
-    slots:
-      {REQUESTED_SLOT}:
-        type: unfeaturized
-    forms:
-      {form_name}:
-"""
+        intents:
+        - {GREET_INTENT_NAME}
+        - {other_intent}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+          {form_name}:
+        """
     )
 
     policy = RulePolicy()
@@ -960,7 +960,7 @@ async def test_predict_action_listen_after_form():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     policy = RulePolicy()
@@ -997,17 +997,17 @@ async def test_dont_predict_form_if_already_finished():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-    intents:
-    - {GREET_INTENT_NAME}
-    actions:
-    - {UTTER_GREET_ACTION}
-    - some-action
-    slots:
-      {REQUESTED_SLOT}:
-        type: unfeaturized
-    forms:
-      {form_name}:
-"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+          {form_name}:
+        """
     )
 
     policy = RulePolicy()
@@ -1058,7 +1058,7 @@ async def test_form_unhappy_path():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     policy = RulePolicy()
@@ -1103,7 +1103,7 @@ async def test_form_unhappy_path_from_general_rule():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     policy = RulePolicy()
@@ -1161,7 +1161,7 @@ async def test_form_unhappy_path_from_in_form_rule():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     unhappy_rule = TrackerWithCachedStates.from_events(
@@ -1237,7 +1237,7 @@ async def test_form_unhappy_path_from_story():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     unhappy_story = TrackerWithCachedStates.from_events(
@@ -1312,7 +1312,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     unhappy_rule = TrackerWithCachedStates.from_events(
@@ -1404,7 +1404,7 @@ async def test_form_unhappy_path_no_validation_from_story():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     unhappy_story = TrackerWithCachedStates.from_events(
@@ -1474,7 +1474,7 @@ async def test_form_unhappy_path_without_rule():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     policy = RulePolicy()
@@ -1519,7 +1519,7 @@ async def test_form_activation_rule():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     form_activation_rule = _form_activation_rule(domain, form_name, other_intent)
@@ -1559,7 +1559,7 @@ async def test_failing_form_activation_due_to_no_rule():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     policy = RulePolicy()
@@ -1599,7 +1599,7 @@ def test_form_submit_rule():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     form_submit_rule = _form_submit_rule(domain, submit_action_name, form_name)
@@ -1657,7 +1657,7 @@ def test_immediate_submit():
           {form_name}:
         entities:
         - {entity}
-    """
+        """
     )
 
     form_activation_rule = _form_activation_rule(domain, form_name, GREET_INTENT_NAME)
@@ -1748,7 +1748,7 @@ async def test_one_stage_fallback_rule():
         - {DEFAULT_NLU_FALLBACK_INTENT_NAME}
         actions:
         - {UTTER_GREET_ACTION}
-    """
+        """
     )
 
     fallback_recover_rule = TrackerWithCachedStates.from_events(
@@ -1831,11 +1831,11 @@ def test_default_actions(intent_name: Text, expected_action_name: Text):
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        """
     )
     policy = RulePolicy()
     policy.train([GREET_RULE], domain, RegexInterpreter())
@@ -1862,11 +1862,11 @@ def test_e2e_beats_default_actions(intent_name: Text):
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-intents:
-- {GREET_INTENT_NAME}
-actions:
-- {UTTER_GREET_ACTION}
-    """
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        """
     )
 
     e2e_rule = TrackerWithCachedStates.from_events(
@@ -1923,12 +1923,12 @@ def test_predict_core_fallback(
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-    intents:
-    - {GREET_INTENT_NAME}
-    - {other_intent}
-    actions:
-    - {UTTER_GREET_ACTION}
-    - my_core_fallback
+        intents:
+        - {GREET_INTENT_NAME}
+        - {other_intent}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - my_core_fallback
         """
     )
     rule_policy.train([GREET_RULE], domain, RegexInterpreter())
@@ -1955,11 +1955,11 @@ def test_predict_nothing_if_fallback_disabled():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-    intents:
-    - {GREET_INTENT_NAME}
-    - {other_intent}
-    actions:
-    - {UTTER_GREET_ACTION}
+        intents:
+        - {GREET_INTENT_NAME}
+        - {other_intent}
+        actions:
+        - {UTTER_GREET_ACTION}
         """
     )
     policy = RulePolicy(enable_fallback_prediction=False)
@@ -1984,14 +1984,13 @@ def test_hide_rule_turn():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-
         intents:
         - {GREET_INTENT_NAME}
         - {chitchat}
         actions:
         - {UTTER_GREET_ACTION}
         - {action_chitchat}
-    """
+        """
     )
     chitchat_story = TrackerWithCachedStates.from_events(
         "chitchat story",
@@ -2065,17 +2064,17 @@ def test_hide_rule_turn_with_slots():
     domain = Domain.from_yaml(
         f"""
         version: "2.0"
-    intents:
-    - {some_intent}
-    - {some_other_intent}
-    actions:
-    - {some_action}
-    - {some_other_action}
-    slots:
-      {slot_which_is_only_in_rule}:
-        type: text
-      {slot_which_is_also_in_story}:
-        type: text
+        intents:
+        - {some_intent}
+        - {some_other_intent}
+        actions:
+        - {some_action}
+        - {some_other_action}
+        slots:
+          {slot_which_is_only_in_rule}:
+            type: text
+          {slot_which_is_also_in_story}:
+            type: text
         """
     )
 
@@ -2194,7 +2193,7 @@ def test_hide_rule_turn_no_last_action_listen():
         slots:
           {followup_on_chitchat}:
             type: bool
-    """
+        """
     )
     simple_rule_no_last_action_listen = TrackerWithCachedStates.from_events(
         "simple rule without action listen in the end",
@@ -2284,7 +2283,7 @@ def test_hide_rule_turn_with_loops():
         forms:
           {form_name}:
           {another_form_name}:
-    """
+        """
     )
 
     form_activation_rule = _form_activation_rule(domain, form_name, activate_form)
@@ -2383,7 +2382,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     form_activation_rule = _form_activation_rule(domain, form_name, activate_form)
@@ -2443,7 +2442,7 @@ def test_hide_rule_turn_with_loops_as_followup_action():
             type: unfeaturized
         forms:
           {form_name}:
-    """
+        """
     )
 
     form_activation_rule = _form_activation_rule(domain, form_name, activate_form)
