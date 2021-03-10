@@ -615,7 +615,8 @@ class TrainingDataFull(NLUPipelineTrainingData):
     def _fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories."""
         for example in self.training_examples:
-            # if intent_response_key is None, that means the corresponding intent is not a
+            # if intent_response_key is None,
+            # that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
             # If intent_response_key is set, fetch the corresponding response text
             if example.get(INTENT_RESPONSE_KEY) is None:
@@ -920,7 +921,8 @@ class TrainingDataFull(NLUPipelineTrainingData):
         distribution of the complete dataset.
 
         Args:
-            num_chunks: The total number of chunks into which the training data should be broken.
+            num_chunks: The total number of chunks into which
+                the training data should be broken.
 
         Returns:
             A list of all training data chunks.
