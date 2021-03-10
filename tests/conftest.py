@@ -450,7 +450,7 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
     )
 
 
-def pytest_runtest_setup(item) -> None:
+def pytest_runtest_setup(item: Function) -> None:
     if (
         "skip_on_windows" in [mark.name for mark in item.iter_markers()]
         and sys.platform == "win32"
@@ -519,13 +519,24 @@ def _get_marker_for_ci_matrix(item: Function) -> Text:
     """
     test_path = Path(item.fspath).absolute()
 
-    for marker, paths_for_marker in PATH_PYTEST_MARKER_MAPPINGS.items():
+    matching_markers = [
+        marker
+        for marker, paths_for_marker in PATH_PYTEST_MARKER_MAPPINGS.items()
         if any(
             path == test_path or path in test_path.parents for path in paths_for_marker
-        ):
-            return marker
+        )
+    ]
 
-    return "category_other_unit_tests"
+    if not matching_markers:
+        return "category_other_unit_tests"
+    if len(matching_markers) > 1:
+        raise ValueError(
+            f"Each test should only be in one category. Test '{item.name}' is assigned "
+            f"to these categories: {matching_markers}. Please fix the "
+            "mapping in `PATH_PYTEST_MARKER_MAPPINGS`."
+        )
+
+    return matching_markers[0]
 
 
 def pytest_collection_modifyitems(items: List[Function]) -> None:
