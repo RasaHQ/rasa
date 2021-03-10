@@ -148,45 +148,17 @@ class Validator:
         }
         return responses | {
             utterance
-            for utterance in self.domain.templates.keys()
+            for utterance in self.domain.responses.keys()
             if utterance in self.domain.action_names_or_texts
         }
-
-    def verify_utterances(self, ignore_warnings: bool = True) -> bool:
-        """Compares list of utterances in actions with utterances in responses."""
-        actions = self.domain.action_names_or_texts
-        utterance_templates = set(self.domain.templates)
-        everything_is_alright = True
-
-        for utterance in utterance_templates:
-            if utterance not in actions:
-                logger.debug(
-                    f"The utterance '{utterance}' is not listed under 'actions' in the "
-                    f"domain file. It can only be used as a template."
-                )
-                everything_is_alright = ignore_warnings and everything_is_alright
-
-        for action in actions:
-            if action.startswith(UTTER_PREFIX):
-                if action not in utterance_templates:
-                    rasa.shared.utils.io.raise_warning(
-                        f"There is no template for the utterance action '{action}'. "
-                        f"The action is listed in your domains action list, but "
-                        f"there is no template defined with this name. You should "
-                        f"add a template with this key.",
-                        docs=DOCS_URL_ACTIONS + "#utterance-actions",
-                    )
-                    everything_is_alright = False
-
-        return everything_is_alright
 
     def verify_utterances_in_stories(self, ignore_warnings: bool = True) -> bool:
         """Verifies usage of utterances in stories.
 
         Checks whether utterances used in the stories are valid,
-        and whether all valid utterances are used in stories."""
-
-        everything_is_alright = self.verify_utterances()
+        and whether all valid utterances are used in stories.
+        """
+        everything_is_alright = True
 
         utterance_actions = self._gather_utterance_actions()
         stories_utterances = set()
