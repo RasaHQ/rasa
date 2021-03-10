@@ -7,6 +7,8 @@ from typing import Text, Iterator, List, Dict, Any, Set, Optional
 
 import pytest
 from sanic.request import Request
+from _pytest.monkeypatch import MonkeyPatch
+from unittest.mock import Mock
 
 import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
@@ -416,7 +418,7 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
+def test_run_cv_evaluation(monkeypatch: MonkeyPatch, pretrained_embeddings_spacy_config: RasaNLUModelConfig):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
     )
@@ -432,7 +434,7 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
         report_as_dict=True,
     )
 
-    assert len(intent_results.train["Accuracy"]) == n_folds
+    assert len(intent_results.train["Accuracy"]) == n_folds * 2
     assert len(intent_results.train["Precision"]) == n_folds
     assert len(intent_results.train["F1-score"]) == n_folds
     assert len(intent_results.test["Accuracy"]) == n_folds
@@ -456,7 +458,7 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
-def test_run_cv_evaluation_with_response_selector():
+def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.yml"
     )
@@ -476,6 +478,12 @@ def test_run_cv_evaluation_with_response_selector():
             ],
         }
     )
+
+    # mock training
+    trainer = Trainer(nlu_config)
+    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
+    mock = Mock(return_value=Interpreter(trainer.pipeline, None))
+    monkeypatch.setattr(Trainer, "train", mock)
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
