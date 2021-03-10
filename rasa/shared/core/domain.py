@@ -165,6 +165,7 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
+        """From dict."""
         responses = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
@@ -717,6 +718,7 @@ class Domain:
 
     @rasa.shared.utils.common.lazy_property
     def templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Temporary property before templates become completely deprecated."""
         rasa.shared.utils.io.raise_deprecation_warning(
             "The terminology 'template' is deprecated and replaced by 'response'. Instead of using the `templates` property, please use the `responses` property instead.",
             docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
@@ -744,7 +746,8 @@ class Domain:
     ) -> bool:
         """Check if the response is for a retrieval intent.
 
-        These responses have a `/` symbol in their name. Use that to filter them from the rest.
+        These responses have a `/` symbol in their name. Use that to filter them from
+        the rest.
         """
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
@@ -1479,10 +1482,12 @@ class Domain:
 
     def _check_domain_sanity(self) -> None:
         """Make sure the domain is properly configured.
+
         If the domain contains any duplicate slots, intents, actions
         or entities, an InvalidDomain error is raised.  This error
         is also raised when intent-action mappings are incorrectly
-        named or a response is missing."""
+        named or a response is missing.
+        """
 
         def get_duplicates(my_items):
             """Returns a list of duplicate items in my_items."""

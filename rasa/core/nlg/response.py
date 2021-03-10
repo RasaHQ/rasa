@@ -18,6 +18,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     """
 
     def __init__(self, responses: Dict[Text, List[Dict[Text, Any]]]) -> None:
+        """Creates a Template Natural Language Generator.
+
+        Args:
+            responses: responses that will be used to generate messages.
+        """
         self.responses = responses
 
     def _responses_for_utter_action(

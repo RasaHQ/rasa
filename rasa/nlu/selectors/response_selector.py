@@ -457,7 +457,8 @@ class ResponseSelector(DIETClassifier):
             f"Adding following selector key to message property: {selector_key}"
         )
 
-        # TODO: remove `RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY` and `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
+        # TODO: remove `RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY` and
+        # `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
         utter_action_key = util.intent_response_key_to_template_key(
             label_intent_response_key
         )

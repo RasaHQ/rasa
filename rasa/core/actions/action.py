@@ -406,9 +406,11 @@ class ActionBack(ActionBotResponse):
     """Revert the tracker state by two user utterances."""
 
     def name(self) -> Text:
+        """Returns action back name."""
         return ACTION_BACK_NAME
 
     def __init__(self) -> None:
+        """Initializes action back."""
         super().__init__("utter_back", silent_fail=True)
 
     async def run(
@@ -450,9 +452,11 @@ class ActionRestart(ActionBotResponse):
     """
 
     def name(self) -> Text:
+        """Returns action restart name."""
         return ACTION_RESTART_NAME
 
     def __init__(self) -> None:
+        """Initializes action restart."""
         super().__init__("utter_restart", silent_fail=True)
 
     async def run(
@@ -511,12 +515,14 @@ class ActionSessionStart(Action):
 
 
 class ActionDefaultFallback(ActionBotResponse):
-    """Executes the fallback action and goes back to the previous state of the dialogue."""
+    """Executes the fallback action and goes back to the prev state of the dialogue."""
 
     def name(self) -> Text:
+        """Returns action default fallback name."""
         return ACTION_DEFAULT_FALLBACK_NAME
 
     def __init__(self) -> None:
+        """Initializes action default fallback."""
         super().__init__("utter_default", silent_fail=True)
 
     async def run(
@@ -854,7 +860,9 @@ class ActionDefaultAskRephrase(ActionBotResponse):
     """Default implementation which asks the user to rephrase his intent."""
 
     def name(self) -> Text:
+        """Returns action default ask rephrase name."""
         return ACTION_DEFAULT_ASK_REPHRASE_NAME
 
     def __init__(self) -> None:
+        """Initializes action default ask rephrase."""
         super().__init__("utter_ask_rephrase", silent_fail=True)
