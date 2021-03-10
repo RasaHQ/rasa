@@ -23,7 +23,7 @@ NLG_MARKDOWN_MARKER_REGEX = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
 class NLGMarkdownReader(MarkdownReader):
-    """Reads markdown training data containing NLG stories and creates a TrainingData object."""
+    """Reads markdown training data with NLG stories and creates TrainingData object."""
 
     def __init__(self, ignore_deprecation_warning: bool = False) -> None:
         """Creates reader. See parent class docstring for more information."""

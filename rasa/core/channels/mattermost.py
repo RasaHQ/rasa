@@ -98,9 +98,8 @@ class MattermostBot(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
-
         # buttons are a list of objects: [(option_name, payload)]
-        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons
+        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons # noqa: W505
 
         actions = [
             {

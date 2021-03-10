@@ -245,7 +245,8 @@ async def test_train_model_checkpointing(
     assert best_model_file.exists()
 
     """
-    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+    Tricky to validate the *exact* number of files that should be there, however there
+    must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
