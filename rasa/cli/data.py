@@ -20,6 +20,10 @@ from rasa.shared.constants import (
 )
 import rasa.shared.data
 from rasa.shared.core.constants import (
+    POLICY_NAME_FALLBACK,
+    POLICY_NAME_FORM,
+    POLICY_NAME_MAPPING,
+    POLICY_NAME_TWO_STAGE_FALLBACK,
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_DEFAULT_FALLBACK_NAME,
 )
@@ -480,8 +484,6 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
 
 
 def _get_configuration(path: Path) -> Dict:
-    from rasa.core.policies.form_policy import FormPolicy
-
     config = {}
     try:
         config = rasa.shared.utils.io.read_model_configuration(path)
@@ -498,50 +500,41 @@ def _get_configuration(path: Path) -> Dict:
     _assert_two_stage_fallback_policy_is_migratable(config)
     _assert_only_one_fallback_policy_present(policy_names)
 
-    if FormPolicy.__name__ in policy_names:
+    if POLICY_NAME_FORM in policy_names:
         _warn_about_manual_forms_migration()
 
     return config
 
 
 def _assert_config_needs_migration(policies: List[Text]) -> None:
-    from rasa.core.policies.mapping_policy import MappingPolicy
-    from rasa.core.policies.fallback import FallbackPolicy
-    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-
     migratable_policies = {
-        MappingPolicy.__name__,
-        FallbackPolicy.__name__,
-        TwoStageFallbackPolicy.__name__,
+        POLICY_NAME_MAPPING,
+        POLICY_NAME_FALLBACK,
+        POLICY_NAME_TWO_STAGE_FALLBACK,
     }
 
     if not migratable_policies.intersection((set(policies))):
         rasa.shared.utils.cli.print_error_and_exit(
             f"No policies were found which need migration. This command can migrate "
-            f"'{MappingPolicy.__name__}', '{FallbackPolicy.__name__}' and "
-            f"'{TwoStageFallbackPolicy.__name__}'."
+            f"'{POLICY_NAME_MAPPING}', '{POLICY_NAME_FALLBACK}' and "
+            f"'{POLICY_NAME_TWO_STAGE_FALLBACK}'."
         )
 
 
 def _warn_about_manual_forms_migration() -> None:
-    from rasa.core.policies.form_policy import FormPolicy
-
     rasa.shared.utils.cli.print_warning(
-        f"Your model configuration contains the '{FormPolicy.__name__}'. "
-        f"Note that this command does not migrate the '{FormPolicy.__name__}' and "
-        f"you have to migrate the '{FormPolicy.__name__}' manually. "
+        f"Your model configuration contains the '{POLICY_NAME_FORM}'. "
+        f"Note that this command does not migrate the '{POLICY_NAME_FORM}' and "
+        f"you have to migrate the '{POLICY_NAME_FORM}' manually. "
         f"Please see the migration guide for further details: "
         f"{DOCS_URL_MIGRATION_GUIDE}"
     )
 
 
 def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
-    from rasa.core.policies.fallback import FallbackPolicy
-    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-
     if not config.get("pipeline") and any(
         policy in policy_names
-        for policy in [FallbackPolicy.__name__, TwoStageFallbackPolicy.__name__]
+        for policy in [POLICY_NAME_FALLBACK, POLICY_NAME_TWO_STAGE_FALLBACK]
     ):
         rasa.shared.utils.cli.print_error_and_exit(
             "The model configuration has to include an NLU pipeline. This is required "
@@ -550,13 +543,11 @@ def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
 
 
 def _assert_two_stage_fallback_policy_is_migratable(config: Dict) -> None:
-    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-
     two_stage_fallback_config = next(
         (
             policy_config
             for policy_config in config.get("policies", [])
-            if policy_config.get("name") == TwoStageFallbackPolicy.__name__
+            if policy_config.get("name") == POLICY_NAME_TWO_STAGE_FALLBACK
         ),
         None,
     )
@@ -593,13 +584,7 @@ def _assert_two_stage_fallback_policy_is_migratable(config: Dict) -> None:
 
 
 def _assert_only_one_fallback_policy_present(policies: List[Text]) -> None:
-    from rasa.core.policies.fallback import FallbackPolicy
-    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-
-    if (
-        FallbackPolicy.__name__ in policies
-        and TwoStageFallbackPolicy.__name__ in policies
-    ):
+    if POLICY_NAME_FALLBACK in policies and POLICY_NAME_TWO_STAGE_FALLBACK in policies:
         rasa.shared.utils.cli.print_error_and_exit(
             "Your policy configuration contains two configured policies for handling "
             "fallbacks. Please decide on one."
