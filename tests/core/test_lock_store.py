@@ -307,14 +307,14 @@ async def test_acquire_lock_debug_message(
         )
 
     assert any(
-        f"because 1 other item for this conversation ID have to be finished processing "
-        f"first. Retrying in {wait_time_in_seconds} seconds ..." in message
+        f"because 1 other item(s) for this conversation ID have to be finished "
+        f"processing first. Retrying in {wait_time_in_seconds} seconds ..." in message
         for message in caplog.messages
     )
 
     assert any(
-        f"because 2 other items for this conversation ID have to be finished processing "
-        f"first. Retrying in {wait_time_in_seconds} seconds ..." in message
+        f"because 2 other item(s) for this conversation ID have to be finished "
+        f"processing first. Retrying in {wait_time_in_seconds} seconds ..." in message
         for message in caplog.messages
     )
 
