@@ -727,7 +727,10 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
 def test_load_lookup_table(
     source_lookup_table: Dict[Text, Any], expected_lookup_table: Dict[Text, Any]
 ):
-    assert TrainingData._load_lookup_table(source_lookup_table) == expected_lookup_table
+    assert (
+        TrainingDataFull._load_lookup_table(source_lookup_table)
+        == expected_lookup_table
+    )
 
 
 def test_fingerprint_is_same_when_loading_data_again():
