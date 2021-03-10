@@ -132,6 +132,15 @@ def test(
     output: "Text" = rasa.shared.constants.DEFAULT_RESULTS_PATH,
     additional_arguments: "Optional[Dict]" = None,
 ) -> None:
+    """Test a Rasa model against a set of test data.
+
+    Args:
+        model: model to test
+        stories: path to the dialogue test data
+        nlu_data: path to the NLU test data
+        output: path to folder where all output will be stored
+        additional_arguments: additional arguments for the test call
+    """
     from rasa.test import test_core
     import rasa.utils.common
     from rasa.test import test_nlu

@@ -353,6 +353,7 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
 
 def _migrate_responses(args: argparse.Namespace) -> None:
     """Migrate retrieval intent responses to the new 2.0 format.
+
     It does so modifying the stories and domain files.
     """
     from rasa.core.training.converters.responses_prefix_converter import (

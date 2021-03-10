@@ -15,6 +15,12 @@ run = rasa.run
 
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":
+    """Create an agent instance based on a stored model.
+
+    Args:
+        model: file path to the stored model
+        endpoints: file path to the used endpoint configuration
+    """
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.utils import AvailableEndpoints
     from rasa.core.agent import Agent
