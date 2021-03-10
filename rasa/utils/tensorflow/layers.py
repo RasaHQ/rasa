@@ -13,6 +13,7 @@ from rasa.utils.tensorflow.constants import (
     CROSS_ENTROPY,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
+from rasa.shared.exceptions import InvalidParameterException
 
 logger = logging.getLogger(__name__)
 
@@ -242,6 +243,64 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         # set fraction of the `kernel` weights to zero according to precomputed mask
         self.kernel.assign(self.kernel * self.kernel_mask)
         return super().call(inputs)
+
+
+def periodic_padding(tensor, axis, padding=1):
+    """
+        Add periodic padding to a tensor for specified axis
+        tensor: input tensor
+        axis: one or multiple axis to pad along, int or tuple
+        padding: number of cells to pad, int or tuple
+
+        return: padded tensor
+
+        Based on https://stackoverflow.com/a/54674149/6760298
+    """
+    if isinstance(axis, int):
+        axis = (axis,)
+    if isinstance(padding, int):
+        padding = (padding,)
+
+    ndim = len(tensor.shape)
+    for ax, p in zip(axis, padding):
+        # create a slice object that selects everything from all axes,
+        # except only 0:p for the specified for right, and -p: for left
+
+        ind_right = [slice(-p, None) if i == ax else slice(None) for i in range(ndim)]
+        ind_left = [slice(0, p) if i == ax else slice(None) for i in range(ndim)]
+        right = tensor[ind_right]
+        left = tensor[ind_left]
+        middle = tensor
+        tensor = tf.concat([right, middle, left], axis=ax)
+
+    return tensor
+
+
+class LocallyConnectedDense(tf.keras.layers.LocallyConnected1D):
+    def __init__(self, kernel_size, **kwargs):
+        if kernel_size % 2 == 0:
+            raise InvalidParameterException(
+                f"`kernel_size = {kernel_size}` must be an odd integer."
+            )
+        super(LocallyConnectedDense, self).__init__(
+            filters=1, kernel_size=kernel_size, data_format="channels_last", **kwargs
+        )
+
+    def build(self, input_shape: tf.TensorShape):
+        kernel_size = self.kernel_size[0]
+        self.input_size = input_shape[-1]
+        _input_shape = tf.TensorShape([None, self.input_size + kernel_size - 1, 1])
+        super(LocallyConnectedDense, self).build(input_shape=_input_shape)
+
+    def call(self, inputs):
+        kernel_size = self.kernel_size[0]
+        x = tf.reshape(inputs, (-1, self.input_size))
+        x = periodic_padding(inputs, axis=1, padding=((kernel_size - 1) // 2))
+        x = tf.expand_dims(x, axis=-1)
+        x = super(LocallyConnectedDense, self).call(x)
+        x = tf.squeeze(x, axis=-1)
+        x = tf.reshape(x, inputs.shape)
+        return x
 
 
 class Ffnn(tf.keras.layers.Layer):
