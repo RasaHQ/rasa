@@ -508,18 +508,12 @@ async def test_set_random_seed(component_builder, tmpdir):
     assert result_a == result_b
 
 
-@pytest.mark.parametrize(
-    "log_level", ["epoch", "batch", "minibatch",],
-)
+@pytest.mark.trains_model
+@pytest.mark.parametrize("log_level", ["epoch", "batch", "minibatch"])
 async def test_train_tensorboard_logging(
     log_level: Text, component_builder: ComponentBuilder, tmpdir: Path
 ):
     tensorboard_log_dir = Path(tmpdir / "tensorboard")
-@pytest.mark.trains_model
-async def test_train_tensorboard_logging(component_builder, tmpdir):
-    from pathlib import Path
-
-    tensorboard_log_dir = Path(tmpdir.strpath) / "tensorboard"
 
     assert not tensorboard_log_dir.exists()
 
