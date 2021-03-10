@@ -1,9 +1,7 @@
 from pathlib import Path
-from typing import List, Text
 from unittest.mock import Mock
-
-import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from typing import Text
 
 from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
 from rasa.core.policies.rule_policy import RulePolicy
@@ -13,6 +11,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 
 from rasa.shared.core.training_data.visualization import visualize_stories
 
@@ -121,33 +120,34 @@ async def test_training_script_with_restart_stories(tmp_path: Path, domain_path:
     assert True
 
 
-def configs_for_random_seed_test() -> List[Text]:
-    # define the configs for the random_seed tests
-    return ["data/test_config/ted_random_seed.yaml"]
+async def test_random_seed(tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text):
+    policies_config = {
+        "policies": [
+            {"name": TEDPolicy.__name__, "random_seed": 42},
+            {"name": RulePolicy.__name__},
+        ]
+    }
 
+    policy_train = Mock()
+    monkeypatch.setattr(TEDPolicy, "train", policy_train)
 
-@pytest.mark.parametrize("config_file", configs_for_random_seed_test())
-async def test_random_seed(
-    tmp_path: Path, config_file: Text, domain_path: Text, stories_path: Text
-):
-    # set random seed in config file to
-    # generate a reproducible training result
+    interpreter = Mock(spec=RasaNLUInterpreter)
 
     agent_1 = await train(
         domain_path,
         stories_path,
-        str(tmp_path / "1"),
-        interpreter=RegexInterpreter(),
-        policy_config=config_file,
+        str(tmp_path),
+        interpreter=interpreter,
+        policy_config=policies_config,
         additional_arguments={},
     )
 
     agent_2 = await train(
         domain_path,
         stories_path,
-        str(tmp_path / "2"),
-        interpreter=RegexInterpreter(),
-        policy_config=config_file,
+        str(tmp_path),
+        interpreter=interpreter,
+        policy_config=policies_config,
         additional_arguments={},
     )
 
@@ -162,8 +162,6 @@ async def test_random_seed(
 async def test_trained_interpreter_passed_to_policies(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
-    from rasa.core.policies.ted_policy import TEDPolicy
-
     policies_config = {
         "policies": [{"name": TEDPolicy.__name__}, {"name": RulePolicy.__name__}]
     }

@@ -418,7 +418,9 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(monkeypatch: MonkeyPatch, pretrained_embeddings_spacy_config: RasaNLUModelConfig):
+def test_run_cv_evaluation(
+    monkeypatch: MonkeyPatch, pretrained_embeddings_spacy_config: RasaNLUModelConfig
+):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
     )

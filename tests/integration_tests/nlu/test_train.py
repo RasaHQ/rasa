@@ -34,7 +34,7 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
 @pytest.mark.skip_on_windows
 @pytest.mark.trains_model
 async def test_train_persist_load_parse_non_windows(
-        language, pipeline, component_builder, tmpdir
+    language, pipeline, component_builder, tmpdir
 ):
     await test_train_persist_load_parse(language, pipeline, component_builder, tmpdir)
 
@@ -59,6 +59,6 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
 @pytest.mark.skip_on_windows
 @pytest.mark.trains_model
 def test_train_model_without_data_non_windows(
-        language, pipeline, component_builder, tmpdir
+    language, pipeline, component_builder, tmpdir
 ):
     test_train_model_without_data(language, pipeline, component_builder, tmpdir)
