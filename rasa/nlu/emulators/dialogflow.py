@@ -15,8 +15,9 @@ from rasa.nlu.emulators.emulator import Emulator
 
 
 class DialogflowEmulator(Emulator):
-    """Emulates the response format of the DialogFlow projects.agent.environments.users.sessions.detectIntent
+    """Emulates the response format of the DialogFlow.
 
+    # noqa: W505
     https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/projects.agent.environments.users.sessions/detectIntent
     https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse
     """
