@@ -305,14 +305,14 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
     @staticmethod
     def _construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
-        """List names of all retrieval actions corresponding to passed retrieval intents.
+        """Lists names of all retrieval actions related to passed retrieval intents.
 
         Args:
-            retrieval_intents: List of retrieval intents defined in the NLU training data.
+            retrieval_intents: List of retrieval intents defined in the NLU training
+                data.
 
         Returns: Names of corresponding retrieval actions
         """
-
         return [
             f"{rasa.shared.constants.UTTER_PREFIX}{intent}"
             for intent in retrieval_intents
@@ -372,7 +372,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Update NLU data with responses for retrieval intents defined in the domain."""
+        """Updates NLU data with responses for retrieval intents from domain."""
         existing_nlu_data = await self._importer.get_nlu_data(language)
         existing_domain = await self._importer.get_domain()
 

@@ -124,7 +124,8 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     for cls in registry.component_classes:
         if "convert" in cls.name.lower():
             # TODO
-            #   skip ConveRTTokenizer and ConveRTFeaturizer as the ConveRT model is not publicly available anymore
+            #   skip ConveRTTokenizer and ConveRTFeaturizer as the ConveRT model is not
+            #   publicly available anymore
             #   (see https://github.com/RasaHQ/rasa/issues/6806)
             continue
         assert (

@@ -200,7 +200,8 @@ class Validator:
 
         Args:
             ignore_warnings: When `True`, return `True` even if conflicts were found.
-            max_history: Maximal number of events to take into account for conflict identification.
+            max_history: Maximal number of events to take into account for conflict
+                identification.
 
         Returns:
             `False` is a conflict was found and `ignore_warnings` is `False`.

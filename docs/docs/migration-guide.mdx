@@ -60,6 +60,12 @@ If you trained a model with `model_confidence=cosine` or `model_confidence=inner
 
 ## Rasa 2.2 to Rasa 2.3
 
+### General
+
+If you want to use Tensorboard for `DIETClassifier`, `ResponseSelector`, or `TEDPolicy` and log metrics after
+every (mini)batch, please use 'batch' instead of 'minibatch' as 'tensorboard_log_level'.
+
+
 ### Machine Learning Components
 
 A few changes have been made to the loss function inside machine learning (ML)

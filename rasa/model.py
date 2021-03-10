@@ -455,12 +455,12 @@ def should_retrain(
         old_model: Path to the old zipped model file.
         train_path: Path to the directory in which the new model will be trained.
         has_e2e_examples: Whether the new training data contains e2e examples.
-        force_training: Indicates if the model needs to be retrained even if the data has not changed.
+        force_training: Indicates if the model needs to be retrained even if the data
+            has not changed.
 
     Returns:
-        A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa NLU needs
-        to be retrained or not.
-
+        A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa
+        NLU needs to be retrained or not.
     """
     fingerprint_comparison = FingerprintComparisonResult()
 

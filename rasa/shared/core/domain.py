@@ -729,7 +729,8 @@ class Domain:
     ) -> bool:
         """Check if the response is for a retrieval intent.
 
-        These responses have a `/` symbol in their name. Use that to filter them from the rest.
+        These templates have a `/` symbol in their name. Use that to filter them from
+        the rest.
         """
         rasa.shared.utils.io.raise_deprecation_warning(
             "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`.",

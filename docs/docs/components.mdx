@@ -1607,7 +1607,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
 |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-|                                 |                  | training step ('minibatch').                                 |
+|                                 |                  | training step ('batch').                                 |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | featurizers                     | []               | List of featurizer names (alias names). Only features        |
 |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -2488,7 +2488,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   +---------------------------------+------------------+--------------------------------------------------------------+
   | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
   |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-  |                                 |                  | training step ('minibatch').                                 |
+  |                                 |                  | training step ('batch').                                 |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | featurizers                     | []               | List of featurizer names (alias names). Only features        |
   |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -2845,7 +2845,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("minibatch").                                 |
+|                                 |                   | training step ("batch").                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |
