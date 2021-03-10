@@ -13,4 +13,4 @@ pipeline:
     epochs: 1
 policies:
 - name: TEDPolicy
-  epochs: 4
+  epochs: 5
