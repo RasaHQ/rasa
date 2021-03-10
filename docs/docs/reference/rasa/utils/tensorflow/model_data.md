@@ -103,30 +103,6 @@ Sets the state.
   elements version, shape, dtype, isFortan, rawdata.
 - `**kwargs` - Any additional parameter
 
-#### get\_shape\_type\_info
-
-```python
- | get_shape_type_info() -> Tuple[
- |         List[
- |             Union[
- |                 int,
- |                 Tuple[None],
- |                 Tuple[None, int],
- |                 Tuple[None, None, int],
- |                 Tuple[None, None, None, int],
- |             ]
- |         ],
- |         List[int],
- |     ]
-```
-
-Returns shapes and types needed to convert this feature array into tensors.
-
-**Returns**:
-
-  A list of shape tuples.
-  A list of type tuples.
-
 ## FeatureSignature Objects
 
 ```python
@@ -420,44 +396,43 @@ Signature stores the shape and whether features are sparse or not for every key.
   A dictionary of key and sub-key to a list of feature signatures
   (same structure as the data attribute).
 
-#### as\_tf\_dataset
+#### shuffled\_data
 
 ```python
- | as_tf_dataset(batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False) -> tf.data.Dataset
+ | shuffled_data(data: Data) -> Data
 ```
 
-Create tf dataset.
+Shuffle model data.
 
 **Arguments**:
 
-- `batch_size` - The batch size to use.
-- `batch_strategy` - The batch strategy to use.
-- `shuffle` - Boolean indicating whether the data should be shuffled or not.
+- `data` - The data to shuffle
   
 
 **Returns**:
 
-  The tf.data.Dataset.
+  The shuffled data.
 
-#### prepare\_batch
+#### balanced\_data
 
 ```python
- | prepare_batch(data: Optional[Data] = None, start: Optional[int] = None, end: Optional[int] = None, tuple_sizes: Optional[Dict[Text, int]] = None) -> Tuple[Optional[np.ndarray]]
+ | balanced_data(data: Data, batch_size: int, shuffle: bool) -> Data
 ```
 
-Slices model data into batch using given start and end value.
+Mix model data to account for class imbalance.
+
+This batching strategy puts rare classes approximately in every other batch,
+by repeating them. Mimics stratified batching, but also takes into account
+that more populated classes should appear more often.
 
 **Arguments**:
 
-- `data` - The data to prepare.
-- `start` - The start index of the batch
-- `end` - The end index of the batch
-- `tuple_sizes` - In case the feature is not present we propagate the batch with
-  None. Tuple sizes contains the number of how many None values to add for
-  what kind of feature.
+- `data` - The data.
+- `batch_size` - The batch size.
+- `shuffle` - Boolean indicating whether to shuffle the data or not.
   
 
 **Returns**:
 
-  The features of the batch.
+  The balanced data.
 

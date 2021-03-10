@@ -165,6 +165,54 @@ We cannot use `dict.update` method because configs contain nested dicts.
 
   updated config
 
+#### create\_data\_generators
+
+```python
+create_data_generators(model_data: RasaModelData, batch_sizes: Union[int, List[int]], epochs: int, batch_strategy: Text = SEQUENCE, eval_num_examples: int = 0, random_seed: Optional[int] = None) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]
+```
+
+Create data generators for train and optional validation data.
+
+**Arguments**:
+
+- `model_data` - The model data to use.
+- `batch_sizes` - The batch size(s).
+- `epochs` - The number of epochs to train.
+- `batch_strategy` - The batch strategy to use.
+- `eval_num_examples` - Number of examples to use for validation data.
+- `random_seed` - The random seed.
+  
+
+**Returns**:
+
+  The training data generator and optional validation data generator.
+
+#### create\_common\_callbacks
+
+```python
+create_common_callbacks(epochs: int, tensorboard_log_dir: Optional[Text] = None, tensorboard_log_level: Optional[Text] = None, checkpoint_dir: Optional[Path] = None) -> List[tf.keras.callbacks.Callback]
+```
+
+Create common callbacks.
+
+The following callbacks are created:
+- RasaTrainingLogger callback
+- Optional TensorBoard callback
+- Optional RasaModelCheckpoint callback
+
+**Arguments**:
+
+- `epochs` - the number of epochs to train
+- `tensorboard_log_dir` - optional directory that should be used for tensorboard
+- `tensorboard_log_level` - defines when training metrics for tensorboard should be
+  logged. Valid values: &#x27;epoch&#x27; and &#x27;batch&#x27;.
+- `checkpoint_dir` - optional directory that should be used for model checkpointing
+  
+
+**Returns**:
+
+  A list of callbacks.
+
 #### update\_confidence\_type
 
 ```python

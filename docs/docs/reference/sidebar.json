@@ -166,9 +166,11 @@
                 "reference/rasa/utils/tensorflow/layers",
                 "reference/rasa/utils/tensorflow/exceptions",
                 "reference/rasa/utils/tensorflow/model_data",
+                "reference/rasa/utils/tensorflow/callback",
                 "reference/rasa/utils/tensorflow/crf",
                 "reference/rasa/utils/tensorflow/transformer",
-                "reference/rasa/utils/tensorflow/numpy",
+                "reference/rasa/utils/tensorflow/temp_keras_modules",
+                "reference/rasa/utils/tensorflow/data_generator",
                 "reference/rasa/utils/tensorflow/model_data_utils"
               ],
               "label": "rasa.utils.tensorflow",
