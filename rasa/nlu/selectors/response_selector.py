@@ -6,9 +6,11 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.shared.constants import DIAGNOSTIC_DATA
+import rasa.utils.tensorflow.numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
-from rasa.nlu.config import InvalidConfigError
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
@@ -19,11 +21,11 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_KEY,
     LABEL_SUB_KEY,
-    EntityTagSpec,
     SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE,
 )
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -64,7 +66,7 @@ from rasa.utils.tensorflow.constants import (
     MAX_RELATIVE_POSITION,
     RETRIEVAL_INTENT,
     USE_TEXT_AS_LABEL,
-    SOFTMAX,
+    CROSS_ENTROPY,
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_DIR,
@@ -73,6 +75,9 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     CHECKPOINT_MODEL,
     DENSE_DIMENSION,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
+    SOFTMAX,
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -169,10 +174,11 @@ class ResponseSelector(DIETClassifier):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: SOFTMAX,
-        # Number of top actions to normalize scores for loss type 'softmax'.
-        # Set to 0 to turn off normalization.
+        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        LOSS_TYPE: CROSS_ENTROPY,
+        # Number of top actions to normalize scores for. Applicable with
+        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+        # to turn off normalization.
         RANKING_LENGTH: 10,
         # Indicates how similar the algorithm should try to make embedding vectors
         # for correct labels.
@@ -230,6 +236,13 @@ class ResponseSelector(DIETClassifier):
         FEATURIZERS: [],
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
+        # if 'True' applies sigmoid on all similarity terms and adds it
+        # to the loss function to ensure that similarity values are
+        # approximately bounded. Used inside softmax loss only.
+        CONSTRAIN_SIMILARITIES: False,
+        # Model confidence to be returned during inference. Possible values -
+        # 'softmax' and 'linear_norm'.
+        MODEL_CONFIDENCE: SOFTMAX,
     }
 
     def __init__(
@@ -240,8 +253,20 @@ class ResponseSelector(DIETClassifier):
         model: Optional[RasaModel] = None,
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
+        finetune_mode: bool = False,
     ) -> None:
+        """Declare instance variables with default values.
 
+        Args:
+            component_config: Configuration for the component.
+            index_label_id_mapping: Mapping between label and index used for encoding.
+            entity_tag_specs: Format specification all entity tags.
+            model: Model architecture.
+            all_retrieval_intents: All retrieval intents defined in the data.
+            responses: All responses defined in the data.
+            finetune_mode: If `True` loads the model with pre-trained weights,
+                otherwise initializes it with random weights.
+        """
         component_config = component_config or {}
 
         # the following properties cannot be adapted for the ResponseSelector
@@ -256,7 +281,11 @@ class ResponseSelector(DIETClassifier):
         self.use_text_as_label = False
 
         super().__init__(
-            component_config, index_label_id_mapping, entity_tag_specs, model
+            component_config,
+            index_label_id_mapping,
+            entity_tag_specs,
+            model,
+            finetune_mode=finetune_mode,
         )
 
     @property
@@ -376,7 +405,6 @@ class ResponseSelector(DIETClassifier):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
-
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
@@ -434,6 +462,12 @@ class ResponseSelector(DIETClassifier):
 
         self._set_message_property(message, prediction_dict, selector_key)
 
+        if out and DIAGNOSTIC_DATA in out:
+            message.add_diagnostic_data(
+                self.unique_name,
+                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
+            )
+
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
@@ -458,6 +492,7 @@ class ResponseSelector(DIETClassifier):
         label_data: RasaModelData,
         entity_tag_specs: List[EntityTagSpec],
         meta: Dict[Text, Any],
+        finetune_mode: bool = False,
     ) -> "RasaModel":
 
         return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
@@ -467,6 +502,7 @@ class ResponseSelector(DIETClassifier):
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             config=copy.deepcopy(meta),
+            finetune_mode=finetune_mode,
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
@@ -540,14 +576,16 @@ class DIET2BOW(DIET):
 
 
 class DIET2DIET(DIET):
+    """Diet 2 Diet transformer implementation."""
+
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if LABEL not in self.data_signature:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
@@ -614,7 +652,7 @@ class DIET2DIET(DIET):
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
-        label_transformed, _, _, _ = self._create_sequence(
+        label_transformed, _, _, _, _ = self._create_sequence(
             self.tf_label_data[LABEL][SEQUENCE],
             self.tf_label_data[LABEL][SENTENCE],
             sequence_mask_label,
@@ -632,7 +670,7 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        batch_dim = self._get_batch_dim(tf_batch_data)
+        batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
         sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths_text = self._get_sequence_lengths(
             tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
@@ -644,6 +682,7 @@ class DIET2DIET(DIET):
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
+            _,
         ) = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
@@ -664,7 +703,7 @@ class DIET2DIET(DIET):
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
-        label_transformed, _, _, _ = self._create_sequence(
+        label_transformed, _, _, _, _ = self._create_sequence(
             tf_batch_data[LABEL][SEQUENCE],
             tf_batch_data[LABEL][SENTENCE],
             sequence_mask_label,
@@ -716,7 +755,7 @@ class DIET2DIET(DIET):
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, _, _, _, attention_weights = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             sequence_mask_text,
@@ -726,6 +765,11 @@ class DIET2DIET(DIET):
 
         out = {}
 
+        out[DIAGNOSTIC_DATA] = {
+            "attention_weights": attention_weights,
+            "text_transformed": text_transformed,
+        }
+
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()
 
@@ -733,12 +777,11 @@ class DIET2DIET(DIET):
         sentence_vector = self._last_token(text_transformed, sequence_lengths_text)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        _, scores = self._tf_layers[
+            f"loss.{LABEL}"
+        ].similarity_confidence_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
-        )
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
         )
         out["i_scores"] = scores
 

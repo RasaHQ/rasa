@@ -1,6 +1,8 @@
-.PHONY: clean test lint init docs
+.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
 JOBS ?= 1
+INTEGRATION_TEST_FOLDER = tests/integration_tests/
+INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
 
 help:
 	@echo "make"
@@ -18,6 +20,8 @@ help:
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
 	@echo "        Check for type errors using mypy."
+	@echo "    static-checks"
+	@echo "        Run all python static checks."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -26,13 +30,28 @@ help:
 	@echo "        Install system requirements for running tests on Windows."
 	@echo "    prepare-tests-files"
 	@echo "        Download all additional project files needed to run tests."
+	@echo "    prepare-spacy"
+	@echo "        Download all additional resources needed to use spacy as part of Rasa."
+	@echo "    prepare-mitie"
+	@echo "        Download all additional resources needed to use mitie as part of Rasa."
+	@echo "    prepare-transformers"
+	@echo "        Download all models needed for testing LanguageModelFeaturizer."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
+	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
+	@echo "    test-integration"
+	@echo "        Run integration tests using pytest."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
 	@echo "    release"
 	@echo "        Prepare a release."
+	@echo "    build-docker"
+	@echo "        Build Rasa Open Source Docker image."
+	@echo "    run-integration-containers"
+	@echo "        Run the integration test containers."
+	@echo "    stop-integration-containers"
+	@echo "        Stop the integration test containers."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -66,17 +85,21 @@ lint:
 	poetry run black --check rasa tests
 	make lint-docstrings
 
-# Compare against `master` if no branch was provided
-BRANCH ?= "master"
+# Compare against `main` if no branch was provided
+BRANCH ?= main
 lint-docstrings:
-	# Lint docstrings only against the the diff to avoid too many errors.
-	# Check only production code. Ignore other flake errors which are captured by `lint`
-	# Diff of committed changes (shows only changes introduced by your branch)
-	if [[ -n "$(BRANCH)" ]]; then \
-	    git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff; \
-	fi
+# Lint docstrings only against the the diff to avoid too many errors.
+# Check only production code. Ignore other flake errors which are captured by `lint`
+# Diff of committed changes (shows only changes introduced by your branch
+ifneq ($(strip $(BRANCH)),)
+	git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff
+endif
+
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
+
+lint-security:
+	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
 types:
 	# FIXME: working our way towards removing these
@@ -99,13 +122,35 @@ types:
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 
-prepare-tests-files:
+static-checks: lint lint-security types
+
+prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
 	poetry run python -m spacy link en_core_web_md en --force
 	poetry run python -m spacy link de_core_news_sm de --force
-	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
+prepare-mitie:
+	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+ifeq ($(OS),Windows_NT)
+	7z x data/MITIE-models-v0.2.tar.bz2 -bb3
+	7z x MITIE-models-v0.2.tar -bb3
+	cp MITIE-models/english/total_word_feature_extractor.dat data/
+	rm -r MITIE-models
+	rm MITIE-models-v0.2.tar
+else
+	tar -xvjf data/MITIE-models-v0.2.tar.bz2 --strip-components 2 -C data/ MITIE-models/english/total_word_feature_extractor.dat
+endif
+	rm data/MITIE*.bz2
+
+prepare-transformers:
+	CACHE_DIR=$(HOME)/.cache/torch/transformers;\
+	mkdir -p "$$CACHE_DIR";\
+    i=0;\
+	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
+
+prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 
 prepare-wget-macos:
 	brew install wget || true
@@ -124,7 +169,23 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+
+test-integration:
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+ifeq (,$(wildcard tests_deployment/.env))
+	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
+else
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
+endif
+
+test-non-training: clean
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	RAISE_ON_TRAIN=True OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "not trains_model" --ignore $(INTEGRATION_TEST_FOLDER)
+
+test-training: clean
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "trains_model" --ignore $(INTEGRATION_TEST_FOLDER)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
@@ -141,11 +202,64 @@ test-docs: generate-pending-changelog docs
 	poetry run pytest tests/docs/*
 	cd docs && yarn mdx-lint
 
-docs:
-	cd docs/ && poetry run yarn pre-build && yarn build
+prepare-docs:
+	cd docs/ && poetry run yarn pre-build
+
+docs: prepare-docs
+	cd docs/ && yarn build
 
 livedocs:
 	cd docs/ && poetry run yarn start
 
 release:
 	poetry run python scripts/release.py
+
+build-docker:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl default
+
+build-docker-full:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base-images && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl full
+
+build-docker-mitie-en:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base-images && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl mitie-en
+
+build-docker-spacy-en:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl spacy-en
+
+build-docker-spacy-de:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl spacy-de
+
+build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
+	cd tests_deployment && \
+	test -f .env || cat .env.example >> .env
+
+run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
+	cd tests_deployment && \
+	docker-compose -f docker-compose.integration.yml up &
+
+stop-integration-containers: ## Stop the integration test containers.
+	cd tests_deployment && \
+	docker-compose -f docker-compose.integration.yml down

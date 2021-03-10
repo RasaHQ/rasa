@@ -1,11 +1,12 @@
 import asyncio
 import os
 
+from rasa.utils.endpoints import EndpointConfig
 from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Generator
+from typing import Text, Generator, Callable
 
 import pytest
 
@@ -20,32 +21,37 @@ from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
+from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
-DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
-    "data/test_domains/default_with_slots_and_no_actions.yml"
-)
+DOMAIN_WITH_CATEGORICAL_SLOT = "data/test_domains/domain_with_categorical_slot.yml"
 
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
-DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
+DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
+
+DEFAULT_E2E_STORIES_FILE = "data/test_yaml_stories/stories_e2e.yml"
+
+SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
-INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
+INCORRECT_NLU_DATA = "data/test/incorrect_nlu_format.yml"
 
-END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
+END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.yml"
 
-E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
+END_TO_END_STORY_MD_FILE = "data/test_md/end_to_end_story.md"
+
+E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.yml"
 
 STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/stories_trip_circuit_breaker.md"
+    "data/test_evaluations/stories_trip_circuit_breaker.yml"
 )
 
 E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/end_to_end_trips_circuit_breaker.md"
+    "data/test_evaluations/end_to_end_trips_circuit_breaker.yml"
 )
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
@@ -58,7 +64,6 @@ TEST_DIALOGUES = [
 
 EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
@@ -72,8 +77,8 @@ class CustomSlot(Slot):
 
 # noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
-    def __init__(self, example_arg):
-        super(ExamplePolicy, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(ExamplePolicy, self).__init__(*args, **kwargs)
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
@@ -140,11 +145,13 @@ def default_channel() -> OutputChannel:
 @pytest.fixture
 async def default_processor(default_agent: Agent) -> MessageProcessor:
     tracker_store = InMemoryTrackerStore(default_agent.domain)
+    lock_store = InMemoryLockStore()
     return MessageProcessor(
         default_agent.interpreter,
         default_agent.policy_ensemble,
         default_agent.domain,
         tracker_store,
+        lock_store,
         TemplatedNaturalLanguageGenerator(default_agent.domain.templates),
     )
 
@@ -190,13 +197,6 @@ def tracker_with_six_scheduled_reminders(
     return tracker
 
 
-@pytest.fixture(scope="session")
-def moodbot_metadata(unpacked_trained_moodbot_path: Text) -> PolicyEnsemble:
-    return PolicyEnsemble.load_metadata(
-        os.path.join(unpacked_trained_moodbot_path, "core")
-    )
-
-
 @pytest.fixture
 def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
@@ -207,8 +207,10 @@ def default_tracker(default_domain: Domain) -> DialogueStateTracker:
     return DialogueStateTracker("my-sender", default_domain.slots)
 
 
-@pytest.fixture
-async def form_bot_agent(trained_async) -> Agent:
+@pytest.fixture(scope="session")
+async def form_bot_agent(trained_async: Callable) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
@@ -218,4 +220,4 @@ async def form_bot_agent(trained_async) -> Agent:
         ],
     )
 
-    return Agent.load_local_model(zipped_model)
+    return Agent.load_local_model(zipped_model, action_endpoint=endpoint)

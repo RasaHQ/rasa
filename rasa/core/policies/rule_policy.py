@@ -108,6 +108,7 @@ class RulePolicy(MemoizationPolicy):
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
         check_for_contradictions: bool = True,
+        **kwargs: Any,
     ) -> None:
         """Create a `RulePolicy` object.
 
@@ -124,8 +125,11 @@ class RulePolicy(MemoizationPolicy):
                 if no rule matched.
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
+            restrict_rules: If `True` rules are restricted to contain a maximum of 1
+                user message. This is used to avoid that users build a state machine
+                using the rules.
+            check_for_contradictions: Check for contradictions.
         """
-
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
@@ -137,7 +141,11 @@ class RulePolicy(MemoizationPolicy):
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
-            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
+            featurizer=featurizer,
+            priority=priority,
+            max_history=None,
+            lookup=lookup,
+            **kwargs,
         )
 
     @classmethod
@@ -155,7 +163,7 @@ class RulePolicy(MemoizationPolicy):
 
         if (
             domain is None
-            or rule_policy._fallback_action_name not in domain.action_names
+            or rule_policy._fallback_action_name not in domain.action_names_or_texts
         ):
             raise InvalidDomain(
                 f"The fallback action '{rule_policy._fallback_action_name}' which was "
@@ -225,7 +233,6 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             lookup dictionary
         """
-
         lookup = {}
         for states, actions in zip(trackers_as_states, trackers_as_actions):
             action = actions[0]
@@ -280,16 +287,13 @@ class RulePolicy(MemoizationPolicy):
             )
 
     @staticmethod
-    def _check_slots_fingerprint(
+    def _expected_but_missing_slots(
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
         expected_slots = set(fingerprint.get(SLOTS, {}))
         current_slots = set(state.get(SLOTS, {}).keys())
-        if expected_slots == current_slots:
-            # all expected slots are satisfied
-            return set()
-
-        return expected_slots
+        # report all slots that are expected but aren't set in current slots
+        return expected_slots.difference(current_slots)
 
     @staticmethod
     def _check_active_loops_fingerprint(
@@ -308,17 +312,17 @@ class RulePolicy(MemoizationPolicy):
     @staticmethod
     def _error_messages_from_fingerprints(
         action_name: Text,
-        fingerprint_slots: Set[Text],
+        missing_fingerprint_slots: Set[Text],
         fingerprint_active_loops: Set[Text],
         rule_name: Text,
     ) -> List[Text]:
         error_messages = []
-        if action_name and fingerprint_slots:
+        if action_name and missing_fingerprint_slots:
             error_messages.append(
-                f"- the action '{action_name}' in rule '{rule_name}' does not set all "
-                f"the slots, that it sets in other rules: "
-                f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
-                f"an appropriate slot or if it is the last action "
+                f"- the action '{action_name}' in rule '{rule_name}' does not set some "
+                f"of the slots that it sets in other rules. Slots not set in rule "
+                f"'{rule_name}': '{', '.join(missing_fingerprint_slots)}'. Please "
+                f"update the rule with an appropriate slot or if it is the last action "
                 f"add 'wait_for_user_input: false' after this action."
             )
         if action_name and fingerprint_active_loops:
@@ -374,14 +378,16 @@ class RulePolicy(MemoizationPolicy):
                     # for a previous action if current action is rule snippet action
                     continue
 
-                expected_slots = self._check_slots_fingerprint(fingerprint, state)
+                missing_expected_slots = self._expected_but_missing_slots(
+                    fingerprint, state
+                )
                 expected_active_loops = self._check_active_loops_fingerprint(
                     fingerprint, state
                 )
                 error_messages.extend(
                     self._error_messages_from_fingerprints(
                         previous_action_name,
-                        expected_slots,
+                        missing_expected_slots,
                         expected_active_loops,
                         tracker.sender_id,
                     )
@@ -414,7 +420,9 @@ class RulePolicy(MemoizationPolicy):
             probabilities != self._default_predictions(domain)
             or tracker.is_rule_tracker
         ):
-            predicted_action_name = domain.action_names[np.argmax(probabilities)]
+            predicted_action_name = domain.action_names_or_texts[
+                np.argmax(probabilities)
+            ]
 
         return predicted_action_name
 
@@ -428,10 +436,12 @@ class RulePolicy(MemoizationPolicy):
     ) -> Optional[Text]:
 
         predicted_action_name = self._predict_next_action(tracker, domain, interpreter)
+        # if there is an active_loop,
         # RulePolicy will always predict active_loop first,
         # but inside loop unhappy path there might be another action
         if (
-            predicted_action_name != gold_action_name
+            tracker.active_loop_name
+            and predicted_action_name != gold_action_name
             and predicted_action_name == tracker.active_loop_name
         ):
             rasa.core.test.emulate_loop_rejection(tracker)
@@ -655,24 +665,46 @@ class RulePolicy(MemoizationPolicy):
     def _is_rule_applicable(
         self, rule_key: Text, turn_index: int, conversation_state: State
     ) -> bool:
-        """Check if rule is satisfied with current state at turn."""
+        """Check if rule is satisfied with current state at turn.
 
+        Args:
+            rule_key: the textual representation of learned rule
+            turn_index: index of a current dialogue turn
+            conversation_state: the state that corresponds to turn_index
+
+        Returns:
+            a boolean that says whether the rule is applicable to current state
+        """
         # turn_index goes back in time
         reversed_rule_states = list(reversed(self._rule_key_to_state(rule_key)))
 
-        return bool(
-            # rule is shorter than current turn index
-            turn_index >= len(reversed_rule_states)
-            # current rule and state turns are empty
-            or (not reversed_rule_states[turn_index] and not conversation_state)
-            # check that current rule turn features are present in current state turn
-            or (
-                reversed_rule_states[turn_index]
-                and conversation_state
-                and self._does_rule_match_state(
-                    reversed_rule_states[turn_index], conversation_state
-                )
-            )
+        # the rule must be applicable because we got (without any applicability issues)
+        # further in the conversation history than the rule's length
+        if turn_index >= len(reversed_rule_states):
+            return True
+
+        # a state has previous action if and only if it is not a conversation start
+        # state
+        current_previous_action = conversation_state.get(PREVIOUS_ACTION)
+        rule_previous_action = reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
+
+        # current conversation state and rule state are conversation starters.
+        # any slots with initial_value set will necessarily be in both states and don't
+        # need to be checked.
+        if not rule_previous_action and not current_previous_action:
+            return True
+
+        # current rule state is a conversation starter (due to conversation_start: true)
+        # but current conversation state is not.
+        # or
+        # current conversation state is a starter
+        # but current rule state is not.
+        if not rule_previous_action or not current_previous_action:
+            return False
+
+        # check: current rule state features are present in current conversation state
+        return self._does_rule_match_state(
+            reversed_rule_states[turn_index], conversation_state
         )
 
     def _get_possible_keys(
@@ -739,23 +771,39 @@ class RulePolicy(MemoizationPolicy):
         return None
 
     def _find_action_from_rules(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        use_text_for_last_user_input: bool,
     ) -> Tuple[Optional[Text], Optional[Text], bool]:
         """Predicts the next action based on the memoized rules.
 
         Args:
             tracker: The current conversation tracker.
             domain: The domain of the current model.
+            use_text_for_last_user_input: `True` if text of last user message
+                should be used for the prediction. `False` if intent should be used.
 
         Returns:
-            A tuple of the predicted action name (or `None` if no matching rule was
-            found), a description of the matching rule, and `True` if a loop action
+            A tuple of the predicted action name or text (or `None` if no matching rule
+            was found), a description of the matching rule, and `True` if a loop action
             was predicted after the loop has been in an unhappy path before.
         """
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
-        states = tracker_as_states[0]
-        current_states = self.format_tracker_states(states)
+        if (
+            use_text_for_last_user_input
+            and not tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # make text prediction only directly after user utterance
+            # because we've otherwise already decided whether to use
+            # the text or the intent
+            return None, None, False
 
+        tracker_as_states = self.featurizer.prediction_states(
+            [tracker], domain, use_text_for_last_user_input
+        )
+        states = tracker_as_states[0]
+
+        current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
@@ -837,43 +885,86 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
-        result = self._default_predictions(domain)
+        (
+            rules_action_name_from_text,
+            self._prediction_source,
+            returning_from_unhappy_path_from_text,
+        ) = self._find_action_from_rules(
+            tracker, domain, use_text_for_last_user_input=True
+        )
 
         # Rasa Open Source default actions overrule anything. If users want to achieve
         # the same, they need to write a rule or make sure that their loop rejects
         # accordingly.
         default_action_name = self._find_action_from_default_actions(tracker)
-        if default_action_name:
+
+        # text has priority over intents including default,
+        # however loop happy path has priority over rules prediction
+        if default_action_name and not rules_action_name_from_text:
             self._prediction_source = DEFAULT_RULES
             return self._prediction(
                 self._prediction_result(default_action_name, tracker, domain)
             )
 
-        # A loop has priority over any other rule.
+        # A loop has priority over any other rule except defaults.
         # The rules or any other prediction will be applied only if a loop was rejected.
         # If we are in a loop, and the loop didn't run previously or rejected, we can
         # simply force predict the loop.
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
             self._prediction_source = LOOP_RULES
+            # this prediction doesn't use user input
+            # and happy user input anyhow should be ignored during featurization
             return self._prediction(
-                self._prediction_result(loop_happy_path_action_name, tracker, domain)
+                self._prediction_result(loop_happy_path_action_name, tracker, domain),
+                is_no_user_prediction=True,
+            )
+
+        # predict rules from text first
+        if rules_action_name_from_text:
+            return self._prediction_with_unhappy_path(
+                self._prediction_result(rules_action_name_from_text, tracker, domain),
+                returning_from_unhappy_path=returning_from_unhappy_path_from_text,
+                is_end_to_end_prediction=True,
             )
 
         (
-            rules_action_name,
-            source,
-            returning_from_unhappy_path,
-        ) = self._find_action_from_rules(tracker, domain)
-        # we want to remember the source even if rules didn't predict any action
-        self._prediction_source = source
+            rules_action_name_from_intent,
+            # we want to remember the source even if rules didn't predict any action
+            self._prediction_source,
+            returning_from_unhappy_path_from_intent,
+        ) = self._find_action_from_rules(
+            tracker, domain, use_text_for_last_user_input=False
+        )
+        if rules_action_name_from_intent:
+            probabilities = self._prediction_result(
+                rules_action_name_from_intent, tracker, domain
+            )
+        else:
+            probabilities = self._default_predictions(domain)
 
-        policy_events = [LoopInterrupted(True)] if returning_from_unhappy_path else []
+        return self._prediction_with_unhappy_path(
+            probabilities,
+            returning_from_unhappy_path=(
+                # returning_from_unhappy_path is a negative condition,
+                # so `or` should be applied
+                returning_from_unhappy_path_from_text
+                or returning_from_unhappy_path_from_intent
+            ),
+            is_end_to_end_prediction=False,
+        )
 
-        if rules_action_name:
-            result = self._prediction_result(rules_action_name, tracker, domain)
-
-        return self._prediction(result, events=policy_events)
+    def _prediction_with_unhappy_path(
+        self,
+        probabilities: List[float],
+        returning_from_unhappy_path: bool,
+        is_end_to_end_prediction: bool,
+    ) -> "PolicyPrediction":
+        return self._prediction(
+            probabilities,
+            events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
+            is_end_to_end_prediction=is_end_to_end_prediction,
+        )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)

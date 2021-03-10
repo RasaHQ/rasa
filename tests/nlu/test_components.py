@@ -5,7 +5,8 @@ import pytest
 
 from rasa.nlu import registry, train
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
-from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
@@ -92,6 +93,7 @@ def test_builder_load_unknown(component_builder: ComponentBuilder):
     assert "Cannot find class" in str(excinfo.value)
 
 
+@pytest.mark.trains_model
 async def test_example_component(component_builder: ComponentBuilder, tmp_path: Path):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
@@ -189,6 +191,7 @@ def test_can_handle_language_guard_clause(
     assert expected_exec_msg in str(excinfo.value)
 
 
+@pytest.mark.trains_model
 async def test_validate_requirements_raises_exception_on_component_without_name(
     tmp_path: Path,
 ):
@@ -197,12 +200,13 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
         {"pipeline": [{"parameter": 4}]}
     )
 
-    with pytest.raises(InvalidConfigError):
+    with pytest.raises(InvalidConfigException):
         await train(
             _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
         )
 
 
+@pytest.mark.trains_model
 async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: Path,):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `confidence_threshold ` property

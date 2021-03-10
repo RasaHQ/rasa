@@ -1,29 +1,39 @@
 import copy
 import logging
 import os
-import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
 
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import InvalidConfigException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import (
     DOCS_URL_PIPELINE,
-    DOCS_URL_MIGRATION_GUIDE,
     DEFAULT_CONFIG_PATH,
 )
 from rasa.shared.utils.io import json_to_string
+from rasa.nlu.constants import COMPONENT_INDEX
+import rasa.utils.train_utils
 
 logger = logging.getLogger(__name__)
 
 
-class InvalidConfigError(ValueError, RasaException):
-    """Raised if an invalid configuration is encountered."""
+# DEPRECATED: will be removed in Rasa Open Source 3.0
+InvalidConfigError = InvalidConfigException
 
 
 def load(
     config: Optional[Union[Text, Dict]] = None, **kwargs: Any
 ) -> "RasaNLUModelConfig":
+    """Create configuration from file or dict.
+
+    Args:
+        config: a file path, a dictionary with configuration keys. If set to
+            `None` the configuration will be loaded from the default file
+            path.
+
+    Returns:
+        Configuration object.
+    """
     if isinstance(config, Dict):
         return _load_from_dict(config, **kwargs)
 
@@ -32,7 +42,7 @@ def load(
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:
-        file_config = rasa.shared.utils.io.read_config_file(config)
+        file_config = rasa.shared.utils.io.read_model_configuration(config)
 
     return _load_from_dict(file_config, **kwargs)
 
@@ -43,32 +53,26 @@ def _load_from_dict(config: Dict, **kwargs: Any) -> "RasaNLUModelConfig":
     return RasaNLUModelConfig(config)
 
 
-def override_defaults(
-    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    if defaults:
-        cfg = copy.deepcopy(defaults)
-    else:
-        cfg = {}
-
-    if custom:
-        for key in custom.keys():
-            if isinstance(cfg.get(key), dict):
-                cfg[key].update(custom[key])
-            else:
-                cfg[key] = custom[key]
-
-    return cfg
-
-
 def component_config_from_pipeline(
     index: int,
     pipeline: List[Dict[Text, Any]],
     defaults: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
+    """Gets the configuration of the `index`th component.
+
+    Args:
+        index: Index of the component in the pipeline.
+        pipeline: Configurations of the components in the pipeline.
+        defaults: Default configuration.
+
+    Returns:
+        The `index`th component configuration, expanded
+        by the given defaults.
+    """
     try:
-        c = pipeline[index]
-        return override_defaults(defaults, c)
+        configuration = copy.deepcopy(pipeline[index])
+        configuration[COMPONENT_INDEX] = index
+        return rasa.utils.train_utils.override_defaults(defaults, configuration)
     except IndexError:
         rasa.shared.utils.io.raise_warning(
             f"Tried to get configuration value for component "
@@ -76,13 +80,19 @@ def component_config_from_pipeline(
             f"Returning `defaults`.",
             docs=DOCS_URL_PIPELINE,
         )
-        return override_defaults(defaults, {})
+        return rasa.utils.train_utils.override_defaults(
+            defaults, {COMPONENT_INDEX: index}
+        )
 
 
 class RasaNLUModelConfig:
+    """A class that stores NLU model configuration parameters."""
+
     def __init__(self, configuration_values: Optional[Dict[Text, Any]] = None) -> None:
-        """Create a model configuration, optionally overriding
-        defaults with a dictionary ``configuration_values``.
+        """Create a model configuration.
+
+        Args:
+            configuration_values: optional dictionary to override defaults.
         """
         if not configuration_values:
             configuration_values = {}
@@ -96,14 +106,6 @@ class RasaNLUModelConfig:
         if self.__dict__["pipeline"] is None:
             # replaces None with empty list
             self.__dict__["pipeline"] = []
-        elif isinstance(self.__dict__["pipeline"], str):
-            # DEPRECATION EXCEPTION - remove in 2.1
-            raise RasaException(
-                f"You are using a pipeline template. All pipelines templates "
-                f"have been removed in 2.0. Please add "
-                f"the components you want to use directly to your configuration "
-                f"file. {DOCS_URL_MIGRATION_GUIDE}"
-            )
 
         for key, value in self.items():
             setattr(self, key, value)
@@ -161,6 +163,11 @@ class RasaNLUModelConfig:
                 docs=DOCS_URL_PIPELINE,
             )
 
-    def override(self, config) -> None:
+    def override(self, config: Optional[Dict[Text, Any]] = None) -> None:
+        """Overrides default config with given values.
+
+        Args:
+            config: New values for the configuration.
+        """
         if config:
             self.__dict__.update(config)

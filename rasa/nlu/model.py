@@ -1,6 +1,7 @@
 import copy
 import datetime
 import logging
+from math import ceil
 import os
 from typing import Any, Dict, List, Optional, Text
 
@@ -26,6 +27,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
+from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +139,8 @@ class Trainer:
         cfg: RasaNLUModelConfig,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
-    ):
+        model_to_finetune: Optional["Interpreter"] = None,
+    ) -> None:
 
         self.config = cfg
         self.skip_validation = skip_validation
@@ -153,8 +156,10 @@ class Trainer:
         if not self.skip_validation:
             components.validate_requirements(cfg.component_names)
 
-        # build pipeline
-        self.pipeline = self._build_pipeline(cfg, component_builder)
+        if model_to_finetune:
+            self.pipeline = model_to_finetune.pipeline
+        else:
+            self.pipeline = self._build_pipeline(cfg, component_builder)
 
     def _build_pipeline(
         self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
@@ -281,12 +286,11 @@ class Interpreter:
         model_version = metadata.get("rasa_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
-                "The model version is too old to be "
-                "loaded by this Rasa NLU instance. "
-                "Either retrain the model, or run with "
-                "an older version. "
-                "Model version: {} Instance version: {}"
-                "".format(model_version, rasa.__version__)
+                f"The model version is trained using Rasa Open Source {model_version} "
+                f"and is not compatible with your current installation ({rasa.__version__}). "
+                f"This means that you either need to retrain your model "
+                f"or revert back to the Rasa version that trained the model "
+                f"to ensure that the versions match up again."
             )
 
     @staticmethod
@@ -294,6 +298,8 @@ class Interpreter:
         model_dir: Text,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Interpreter":
         """Create an interpreter based on a persisted model.
 
@@ -304,17 +310,54 @@ class Interpreter:
             model_dir: The path of the model to load
             component_builder: The
                 :class:`rasa.nlu.components.ComponentBuilder` to use.
+            new_config: Optional new config to use for the new epochs.
+            finetuning_epoch_fraction: Value to multiply all epochs by.
 
         Returns:
             An interpreter that uses the loaded model.
         """
-
         model_metadata = Metadata.load(model_dir)
+
+        if new_config:
+            Interpreter._update_metadata_epochs(
+                model_metadata, new_config, finetuning_epoch_fraction
+            )
 
         Interpreter.ensure_model_compatibility(model_metadata)
         return Interpreter.create(
-            model_dir, model_metadata, component_builder, skip_validation
+            model_dir,
+            model_metadata,
+            component_builder,
+            skip_validation,
+            should_finetune=new_config is not None,
         )
+
+    @staticmethod
+    def _get_default_value_for_component(name: Text, key: Text) -> Any:
+        from rasa.nlu.registry import get_component_class
+
+        return get_component_class(name).defaults[key]
+
+    @staticmethod
+    def _update_metadata_epochs(
+        model_metadata: Metadata,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
+    ) -> Metadata:
+        for old_component_config, new_component_config in zip(
+            model_metadata.metadata["pipeline"], new_config["pipeline"]
+        ):
+            if EPOCHS in old_component_config:
+                new_epochs = new_component_config.get(
+                    EPOCHS,
+                    Interpreter._get_default_value_for_component(
+                        old_component_config["class"], EPOCHS
+                    ),
+                )
+                old_component_config[EPOCHS] = ceil(
+                    new_epochs * finetuning_epoch_fraction
+                )
+        return model_metadata
 
     @staticmethod
     def create(
@@ -322,10 +365,24 @@ class Interpreter:
         model_metadata: Metadata,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        should_finetune: bool = False,
     ) -> "Interpreter":
-        """Load stored model and components defined by the provided metadata."""
+        """Create model and components defined by the provided metadata.
 
-        context: Dict[Text, Any] = {}
+        Args:
+            model_dir: The directory containing the model.
+            model_metadata: The metadata describing each component.
+            component_builder: The
+                :class:`rasa.nlu.components.ComponentBuilder` to use.
+            skip_validation: If set to `True`, does not check that all
+                required packages for the components are installed
+                before loading them.
+            should_finetune: Indicates if the model components will be fine-tuned.
+
+        Returns:
+            An interpreter that uses the created model.
+        """
+        context: Dict[Text, Any] = {"should_finetune": should_finetune}
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result

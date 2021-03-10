@@ -8,16 +8,8 @@ module.exports = {
       collapsed: false,
       items: [
           'installation',
+          'migrate-from',
           'command-line-interface',
-//        {
-//          type: 'category',
-//          label: 'Getting Started',
-//          collapsed: true,
-//          items: [
-//            'installation',
-//            'migrate-from',
-//          ],
-//        },
         {
           type: 'category',
           label: 'Best Practices',
@@ -123,6 +115,7 @@ module.exports = {
       collapsed: true,
       items: [
         'http-api',
+        'nlu-only-server'
         // 'jupyter-notebooks',
       ],
     },

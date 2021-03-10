@@ -16,16 +16,12 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY
-from rasa.utils.tensorflow.model_data_utils import surface_attributes
+from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
-)
-async def test_can_read_test_story(stories_file: Text, default_domain: Domain):
+async def test_can_read_test_story(default_domain: Domain):
     trackers = await training.load_data(
-        stories_file,
+        "data/test_yaml_stories/stories.yml",
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -106,10 +102,10 @@ async def test_generate_training_data_with_cycles(
 ):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = await training.load_data(
-        stories_file, default_domain, augmentation_factor=0
+        stories_file, default_domain, augmentation_factor=0,
     )
 
-    training_data, label_ids = featurizer.featurize_trackers(
+    _, label_ids, _ = featurizer.featurize_trackers(
         training_trackers, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -153,7 +149,7 @@ async def test_generate_training_data_original_and_augmented_trackers(
     stories_file: Text, default_domain: Domain
 ):
     training_trackers = await training.load_data(
-        stories_file, default_domain, augmentation_factor=3
+        stories_file, default_domain, augmentation_factor=3,
     )
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
@@ -163,8 +159,8 @@ async def test_generate_training_data_original_and_augmented_trackers(
         for t in training_trackers
         if not hasattr(t, "is_augmented") or not t.is_augmented
     ]
-    assert len(original_trackers) == 3
-    assert len(training_trackers) <= 33
+    assert len(original_trackers) == 4
+    assert len(training_trackers) <= 34
 
 
 @pytest.mark.parametrize(
@@ -200,10 +196,10 @@ async def test_visualize_training_data_graph(
 @pytest.mark.parametrize(
     "stories_resources",
     [
-        ["data/test_stories/stories.md", "data/test_multifile_stories"],
+        ["data/test_stories/stories.md", "data/test_multifile_md_stories"],
         ["data/test_yaml_stories/stories.yml", "data/test_multifile_yaml_stories"],
         ["data/test_stories/stories.md", "data/test_multifile_yaml_stories"],
-        ["data/test_yaml_stories/stories.yml", "data/test_multifile_stories"],
+        ["data/test_yaml_stories/stories.yml", "data/test_multifile_md_stories"],
         ["data/test_stories/stories.md", "data/test_mixed_yaml_md_stories"],
     ],
 )
@@ -226,7 +222,7 @@ async def test_load_multi_file_training_data(
         hashed.append(json.dumps(sts + acts, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
-    data, label_ids = featurizer.featurize_trackers(
+    data, label_ids, _ = featurizer.featurize_trackers(
         trackers, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -244,7 +240,7 @@ async def test_load_multi_file_training_data(
         hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
     hashed_mul = sorted(hashed_mul, reverse=True)
 
-    data_mul, label_ids_mul = featurizer_mul.featurize_trackers(
+    data_mul, label_ids_mul, _ = featurizer_mul.featurize_trackers(
         trackers_mul, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -252,8 +248,8 @@ async def test_load_multi_file_training_data(
     # we check for intents, action names and entities -- the features which
     # are included in the story files
 
-    data = surface_attributes(data)
-    data_mul = surface_attributes(data_mul)
+    data = _surface_attributes(data)
+    data_mul = _surface_attributes(data_mul)
 
     for attribute in [INTENT, ACTION_NAME, ENTITIES]:
         if attribute not in data or attribute not in data_mul:

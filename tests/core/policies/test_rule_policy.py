@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Text
+from typing import Text, Optional
 
 import pytest
 
@@ -92,6 +92,195 @@ def _form_activation_rule(
         ],
         is_rule_tracker=True,
     )
+
+
+def test_potential_contradiction_resolved_by_conversation_start():
+    # Two rules that contradict each other except that one of them applies only at
+    # conversation start -> ensure that this isn't flagged as a contradiction.
+
+    utter_anti_greet_action = "utter_anti_greet"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+    """
+    )
+    policy = RulePolicy()
+    greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
+        "greet rule at conversation start",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+        ],
+        is_rule_tracker=True,
+    )
+
+    anti_greet_rule = TrackerWithCachedStates.from_events(
+        "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+        ],
+        is_rule_tracker=True,
+    )
+
+    # Contradicting rules abort training, hence policy training here needs to succeed
+    # since there aren't contradicting rules in this case.
+    policy.train(
+        [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
+    )
+
+
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value():
+    # Two rules that contradict each other except that one of them applies only at
+    # conversation start -> ensure that this isn't flagged as a contradiction.
+    # Specifically, this checks that the conversation-start-checking logic doesn't
+    # depend on initial rule tracker states being empty as these can be non-empty due to
+    # initial slot values
+
+    utter_anti_greet_action = "utter_anti_greet"
+    some_slot = "slot1"
+    some_slot_initial_value = "slot1value"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+slots:
+  {some_slot}:
+    type: text
+    initial_value: {some_slot_initial_value}
+    """
+    )
+    policy = RulePolicy()
+    greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
+        "greet rule at conversation start",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+        ],
+        is_rule_tracker=True,
+    )
+
+    anti_greet_rule = TrackerWithCachedStates.from_events(
+        "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+        ],
+        is_rule_tracker=True,
+    )
+
+    # Policy training needs to succeed to confirm that no contradictions have been
+    # detected
+    policy.train(
+        [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
+    )
+
+    # Check that the correct rule is applied when predicting next action in a story.
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": GREET_INTENT_NAME}),
+    ]
+    action_probabilities_1 = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "test conversation", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(action_probabilities_1, domain, UTTER_GREET_ACTION)
+
+
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit():
+    # Two rules that contradict each other except that one of them applies only at
+    # conversation start -> ensure that this isn't flagged as a contradiction.
+    # Specifically, this checks that the conversation-start-checking logic doesn't
+    # depend on whether or not the initial slot value is made explicit in the initial
+    # state of the conversation tracker
+
+    utter_anti_greet_action = "utter_anti_greet"
+    some_slot = "slot1"
+    some_slot_initial_value = "slot1value"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+slots:
+  {some_slot}:
+    type: text
+    initial_value: {some_slot_initial_value}
+    """
+    )
+    policy = RulePolicy()
+    greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
+        "greet rule at conversation start",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+        ],
+        is_rule_tracker=True,
+    )
+
+    anti_greet_rule = TrackerWithCachedStates.from_events(
+        "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+        ],
+        is_rule_tracker=True,
+    )
+
+    # Policy training needs to succeed to confirm that no contradictions have been
+    # detected
+    policy.train(
+        [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
+    )
+
+    conversation_events_with_initial_slot_explicit = [
+        SlotSet(some_slot, some_slot_initial_value),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": GREET_INTENT_NAME}),
+    ]
+    action_probabilities_2 = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "test conversation with initial slot value explicitly set",
+            evts=conversation_events_with_initial_slot_explicit,
+            slots=domain.slots,
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(action_probabilities_2, domain, UTTER_GREET_ACTION)
 
 
 def test_restrict_multiple_user_inputs_in_rules():
@@ -240,6 +429,66 @@ slots:
     policy.train(
         [complete_rule, potentially_incomplete_rule], domain, RegexInterpreter()
     )
+
+
+def test_no_incomplete_rules_due_to_additional_slots_set():
+    # Check that rules aren't automatically flagged as incomplete just because an action
+    # doesn't set all the slots that are set in the same context in a different rule.
+    # There may be slots that were set by other preceding actions (or by using
+    # initial_value for a slot), and a rule shouldn't be marked as incomplete if some of
+    # those other slots aren't set by the action in the rule.
+
+    some_action = "some_action"
+    some_slot = "some_slot"
+    some_slot_value = "value1"
+    some_other_slot = "some_other_slot"
+    some_other_slot_value = "value2"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {some_action}
+slots:
+  {some_slot}:
+    type: text
+  {some_other_slot}:
+    type: text
+    """
+    )
+    policy = RulePolicy()
+    simple_rule = TrackerWithCachedStates.from_events(
+        "simple rule with an action that sets 1 slot",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_action),
+            SlotSet(some_slot, some_slot_value),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    simple_rule_with_slot_set = TrackerWithCachedStates.from_events(
+        "simple rule with an additional slot set before it starts",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            SlotSet(some_other_slot, some_other_slot_value),
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_action),
+            SlotSet(some_slot, some_slot_value),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    # this should finish without raising any errors about incomplete rules
+    policy.train([simple_rule, simple_rule_with_slot_set], domain, RegexInterpreter())
 
 
 def test_incomplete_rules_due_to_loops():
@@ -407,6 +656,85 @@ def test_all_policy_attributes_are_persisted(tmpdir: Path):
     assert persisted_policy._enable_fallback_prediction == enable_fallback_prediction
 
 
+async def test_rule_policy_finetune(
+    tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
+):
+
+    trained_rule_policy.persist(tmp_path)
+
+    loaded_policy = RulePolicy.load(tmp_path, should_finetune=True)
+
+    assert loaded_policy.finetune_mode
+
+    new_rule = TrackerWithCachedStates.from_events(
+        "stop story",
+        domain=trained_rule_policy_domain,
+        slots=trained_rule_policy_domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "stopp"}),
+            ActionExecuted("utter_stop"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    original_data = await training.load_data(
+        "examples/rules/data/rules.yml", trained_rule_policy_domain
+    )
+
+    loaded_policy.train(
+        original_data + [new_rule], trained_rule_policy_domain, RegexInterpreter()
+    )
+
+    assert (
+        len(loaded_policy.lookup["rules"])
+        == len(trained_rule_policy.lookup["rules"]) + 1
+    )
+    assert (
+        """[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "stopp"}}]"""
+        in loaded_policy.lookup["rules"]
+    )
+
+
+async def test_rule_policy_contradicting_rule_finetune(
+    tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
+):
+
+    trained_rule_policy.persist(tmp_path)
+
+    loaded_policy = RulePolicy.load(tmp_path, should_finetune=True)
+
+    assert loaded_policy.finetune_mode
+
+    new_rule = TrackerWithCachedStates.from_events(
+        "stop story",
+        domain=trained_rule_policy_domain,
+        slots=trained_rule_policy_domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "activate_q_form"}),
+            ActionExecuted("utter_stop"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    original_data = await training.load_data(
+        "examples/rules/data/rules.yml", trained_rule_policy_domain
+    )
+
+    with pytest.raises(InvalidRule) as execinfo:
+        loaded_policy.train(
+            original_data + [new_rule], trained_rule_policy_domain, RegexInterpreter()
+        )
+        assert all(
+            name in execinfo.value.message for name in {"utter_stop", "stop story"}
+        )
+
+
 def test_faq_rule():
     domain = Domain.from_yaml(
         f"""
@@ -439,11 +767,15 @@ def assert_predicted_action(
     domain: Domain,
     expected_action_name: Text,
     confidence: float = 1.0,
+    is_end_to_end_prediction: bool = False,
+    is_no_user_prediction: bool = False,
 ) -> None:
     assert prediction.max_confidence == confidence
     index_of_predicted_action = prediction.max_confidence_index
-    prediction_action_name = domain.action_names[index_of_predicted_action]
+    prediction_action_name = domain.action_names_or_texts[index_of_predicted_action]
     assert prediction_action_name == expected_action_name
+    assert prediction.is_end_to_end_prediction == is_end_to_end_prediction
+    assert prediction.is_no_user_prediction == is_no_user_prediction
 
 
 async def test_predict_form_action_if_in_form():
@@ -485,7 +817,60 @@ async def test_predict_form_action_if_in_form():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, form_name)
+    assert_predicted_action(prediction, domain, form_name, is_no_user_prediction=True)
+
+
+async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
+    loop_name = "some_loop"
+
+    domain = Domain.from_yaml(
+        f"""
+    intents:
+    - {GREET_INTENT_NAME}
+    actions:
+    - {UTTER_GREET_ACTION}
+    - some-action
+    slots:
+      {REQUESTED_SLOT}:
+        type: unfeaturized
+    forms:
+    - {loop_name}
+"""
+    )
+    e2e_rule = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(text="haha"),
+            ActionExecuted(UTTER_GREET_ACTION),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    policy.train([e2e_rule], domain, RegexInterpreter())
+
+    loop_conversation = DialogueStateTracker.from_events(
+        "in a loop",
+        evts=[
+            # We are in an activate form
+            ActionExecuted(loop_name),
+            ActiveLoop(loop_name),
+            SlotSet(REQUESTED_SLOT, "some value"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # User sends message as response to a requested slot
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ],
+        slots=domain.slots,
+    )
+
+    # RulePolicy triggers form again
+    prediction = policy.predict_action_probabilities(
+        loop_conversation, domain, RegexInterpreter()
+    )
+    assert_predicted_action(prediction, domain, loop_name, is_no_user_prediction=True)
 
 
 async def test_predict_form_action_if_multiple_turns():
@@ -534,7 +919,7 @@ async def test_predict_form_action_if_multiple_turns():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, form_name)
+    assert_predicted_action(prediction, domain, form_name, is_no_user_prediction=True)
 
 
 async def test_predict_action_listen_after_form():
@@ -578,7 +963,9 @@ async def test_predict_action_listen_after_form():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    assert_predicted_action(
+        prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
+    )
 
 
 async def test_dont_predict_form_if_already_finished():
@@ -672,7 +1059,6 @@ async def test_form_unhappy_path():
     prediction = policy.predict_action_probabilities(
         unhappy_form_conversation, domain, RegexInterpreter()
     )
-
     assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
@@ -1121,7 +1507,6 @@ async def test_form_activation_rule():
         domain,
         RegexInterpreter(),
     )
-
     assert_predicted_action(prediction, domain, form_name)
 
 
@@ -1431,6 +1816,52 @@ actions:
     )
 
     assert_predicted_action(prediction, domain, expected_action_name)
+
+
+@pytest.mark.parametrize(
+    "intent_name", [USER_INTENT_RESTART, USER_INTENT_BACK, USER_INTENT_SESSION_START]
+)
+def test_e2e_beats_default_actions(intent_name: Text):
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+    """
+    )
+
+    e2e_rule = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(text="haha"),
+            ActionExecuted(UTTER_GREET_ACTION),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    policy = RulePolicy()
+    policy.train([e2e_rule], domain, RegexInterpreter())
+
+    new_conversation = DialogueStateTracker.from_events(
+        "bla2",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": intent_name}),
+        ],
+    )
+    prediction = policy.predict_action_probabilities(
+        new_conversation, domain, RegexInterpreter()
+    )
+    assert_predicted_action(
+        prediction, domain, UTTER_GREET_ACTION, is_end_to_end_prediction=True
+    )
 
 
 @pytest.mark.parametrize(

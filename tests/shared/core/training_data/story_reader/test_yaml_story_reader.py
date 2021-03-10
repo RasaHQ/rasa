@@ -1,11 +1,12 @@
 from pathlib import Path
-from typing import Text, List
+from typing import Text, List, Dict, Optional
 
 import pytest
 
 from rasa.shared.exceptions import FileNotFoundException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core import training
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
@@ -13,6 +14,7 @@ from rasa.shared.core.training_data import loading
 from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
+    DEFAULT_VALUE_TEXT_SLOTS,
 )
 from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
@@ -36,6 +38,97 @@ async def test_can_read_test_story_with_slots(default_domain: Domain):
 
     assert trackers[0].events[-2] == SlotSet(key="name", value="peter")
     assert trackers[0].events[-1] == ActionExecuted("action_listen")
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "text"}}},
+        {"slots": {"my_slot": {"type": "list"}}},
+    ],
+)
+async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "categorical"}}},
+        {"slots": {"my_slot": {"type": "float"}}},
+    ],
+)
+async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
+    domain: Dict,
+):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    with pytest.warns(UserWarning):
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+
+
+async def test_default_slot_value_if_no_domain():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader()
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
+
+
+async def test_default_slot_value_if_unfeaturized_slot():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+    domain = Domain.from_dict(
+        {"intents": ["greet"], "slots": {"my_slot": {"type": "any"}}}
+    )
+    reader = YAMLStoryReader(domain)
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
 
 
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
@@ -103,12 +196,32 @@ async def test_can_read_test_story_with_entities_without_value(default_domain: D
     "file,is_yaml_file",
     [
         ("data/test_yaml_stories/stories.yml", True),
-        ("data/test_stories/stories.md", False),
+        ("data/test_md/end_to_end_story.md", False),
         ("data/test_yaml_stories/rules_without_stories.yml", True),
     ],
 )
 async def test_is_yaml_file(file: Text, is_yaml_file: bool):
     assert YAMLStoryReader.is_stories_file(file) == is_yaml_file
+
+
+@pytest.mark.parametrize(
+    "file,keys,expected_result",
+    [
+        ("data/test_yaml_stories/stories.yml", ["stories"], True),
+        ("data/test_yaml_stories/stories.yml", ["something_else"], False),
+        ("data/test_yaml_stories/stories.yml", ["stories", "something_else"], True),
+        (
+            "data/test_domains/default_retrieval_intents.yml",
+            ["intents", "responses"],
+            True,
+        ),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
+        ("data/test_stories/stories.md", ["something"], False),
+    ],
+)
+async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
+    assert YAMLStoryReader.is_key_in_yaml(file, *keys) == expected_result
 
 
 async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
@@ -140,7 +253,7 @@ async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
         remove_duplicates=False,
     )
 
-    assert tracker[0].events[-2] == SlotSet(key="name", value=None)
+    assert tracker[0].events[-2] == SlotSet(key="name", value=DEFAULT_VALUE_TEXT_SLOTS)
 
 
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
@@ -283,6 +396,43 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     assert not len(record)
 
 
+async def test_parsing_of_e2e_stories(default_domain: Domain):
+    yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
+    tracker = await training.load_data(
+        yaml_file,
+        default_domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert len(tracker) == 1
+
+    actual = list(tracker[0].events)
+
+    expected = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": "simple"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "I am looking for a Kenyan restaurant",
+            {"name": None},
+            entities=[{"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}],
+        ),
+        ActionExecuted("", action_text="good for you"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("One more thing", {"name": None}),
+        ActionExecuted("", action_text="What?"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+    assert actual == expected
+
+
 async def test_active_loop_is_parsed(default_domain: Domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
@@ -339,8 +489,7 @@ stories:
     """
 
     story_as_yaml = rasa.shared.utils.io.read_yaml(story)
-
-    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
+    steps = YAMLStoryReader(use_e2e=True).read_from_parsed_yaml(story_as_yaml)
     user_uttered = steps[0].events[0]
 
     assert user_uttered == UserUttered(
@@ -414,3 +563,48 @@ def test_or_statement_if_not_training_mode():
 
     assert or_statement[0].intent["name"] == "intent1"
     assert or_statement[1].intent["name"] == "intent2"
+
+
+@pytest.mark.parametrize(
+    "file,warning",
+    [
+        ("data/test_yaml_stories/test_base_retrieval_intent_story.yml", None),
+        (
+            "data/test_yaml_stories/non_test_full_retrieval_intent_story.yml",
+            UserWarning,
+        ),
+    ],
+)
+async def test_story_with_retrieval_intent_warns(
+    file: Text, warning: Optional["Warning"]
+):
+    reader = YAMLStoryReader(is_used_for_training=False)
+
+    with pytest.warns(warning) as record:
+        reader.read_from_file(file)
+
+    assert len(record) == (1 if warning else 0)
+
+
+@pytest.mark.parametrize("is_conversation_test", [True, False])
+def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
+    stories = """
+    stories:
+    - story: hello world
+      steps:
+      - user: Hi
+      - bot: Hello?
+      - user: Well...
+        intent: suspicion
+    """
+
+    reader = YAMLStoryReader(use_e2e=is_conversation_test)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    events = steps[0].events
+    assert len(events) == 3
+    assert events[0].text == "Hi"
+    assert events[1].action_text == "Hello?"
+    assert events[2].text == "Well..."

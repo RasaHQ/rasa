@@ -85,9 +85,10 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
     classifier = FallbackClassifier(component_config=component_config)
     classifier.process(message)
 
+    confidence = 1 - old_message_state.data[INTENT][PREDICTED_CONFIDENCE_KEY]
     expected_intent = {
         INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
-        PREDICTED_CONFIDENCE_KEY: 1.0,
+        PREDICTED_CONFIDENCE_KEY: confidence,
     }
     assert message.data[INTENT] == expected_intent
 

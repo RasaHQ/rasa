@@ -14,7 +14,11 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.core.domain import Domain
-from rasa.nlu.constants import ENTITY_ATTRIBUTE_TEXT
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_TEXT,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
+)
 from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
@@ -23,11 +27,17 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     EXTRACTOR,
     ENTITY_ATTRIBUTE_TYPE,
+    INTENT_RESPONSE_KEY,
+    INTENT_NAME_KEY,
+    RESPONSE,
+    RESPONSE_SELECTOR,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
@@ -230,14 +240,26 @@ class WronglyPredictedAction(ActionExecuted):
     def __init__(
         self,
         action_name_target: Text,
+        action_text_target: Text,
         action_name_prediction: Text,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ) -> None:
+        """Creates event for a successful event execution.
+
+        See the docstring of the parent class `ActionExecuted` for more information.
+        """
         self.action_name_prediction = action_name_prediction
-        super().__init__(action_name_target, policy, confidence, timestamp, metadata)
+        super().__init__(
+            action_name_target,
+            policy,
+            confidence,
+            timestamp,
+            metadata,
+            action_text=action_text_target,
+        )
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
@@ -267,13 +289,17 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def __init__(self, event: UserUttered, eval_store: EvaluationStore) -> None:
 
-        if not eval_store.intent_predictions:
-            self.predicted_intent = None
-        else:
+        try:
             self.predicted_intent = eval_store.intent_predictions[0]
+        except LookupError:
+            self.predicted_intent = None
+
         self.predicted_entities = eval_store.entity_predictions
 
-        intent = {"name": eval_store.intent_targets[0]}
+        try:
+            intent = {"name": eval_store.intent_targets[0]}
+        except LookupError:
+            intent = {"name": None}
 
         super().__init__(
             event.text,
@@ -286,17 +312,18 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
-        from rasa.shared.core.events import md_format_message
+        from rasa.shared.core.events import format_message
 
-        predicted_message = md_format_message(
+        predicted_message = format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
-        from rasa.shared.core.events import md_format_message
+        """Returns text representation of event."""
+        from rasa.shared.core.events import format_message
 
-        correct_message = md_format_message(
+        correct_message = format_message(
             self.text, self.intent.get("name"), self.entities
         )
         return (
@@ -313,11 +340,10 @@ async def _create_data_generator(
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
 
-    from rasa.core import training
-
-    story_graph = await training.extract_story_graph(
-        resource_name, agent.domain, use_e2e
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[resource_name]
     )
+    story_graph = await test_data_importer.get_stories(use_e2e=use_e2e)
     return TrainingDataGenerator(
         story_graph,
         agent.domain,
@@ -352,6 +378,44 @@ def _clean_entity_results(
     return cleaned_entities
 
 
+def _get_full_retrieval_intent(parsed: Dict[Text, Any]) -> Text:
+    """Return full retrieval intent, if it's present, or normal intent otherwise.
+
+    Args:
+        parsed: Predicted parsed data.
+
+    Returns:
+        The extracted intent.
+    """
+    base_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY)
+    response_selector = parsed.get(RESPONSE_SELECTOR, {})
+
+    # return normal intent if it's not a retrieval intent
+    if base_intent not in response_selector.get(
+        RESPONSE_SELECTOR_RETRIEVAL_INTENTS, {}
+    ):
+        return base_intent
+
+    # extract full retrieval intent
+    # if the response selector parameter was not specified in config,
+    # the response selector contains a "default" key
+    if RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector:
+        full_retrieval_intent = (
+            response_selector.get(RESPONSE_SELECTOR_DEFAULT_INTENT, {})
+            .get(RESPONSE, {})
+            .get(INTENT_RESPONSE_KEY)
+        )
+        return full_retrieval_intent if full_retrieval_intent else base_intent
+
+    # if specified, the response selector contains the base intent as key
+    full_retrieval_intent = (
+        response_selector.get(base_intent, {})
+        .get(RESPONSE, {})
+        .get(INTENT_RESPONSE_KEY)
+    )
+    return full_retrieval_intent if full_retrieval_intent else base_intent
+
+
 def _collect_user_uttered_predictions(
     event: UserUttered,
     predicted: Dict[Text, Any],
@@ -360,13 +424,24 @@ def _collect_user_uttered_predictions(
 ) -> EvaluationStore:
     user_uttered_eval_store = EvaluationStore()
 
-    intent_gold = event.intent.get("name")
-    predicted_intent = predicted.get(INTENT, {}).get("name")
+    # intent from the test story, may either be base intent or full retrieval intent
+    base_intent = event.intent.get(INTENT_NAME_KEY)
+    full_retrieval_intent = event.intent.get(FULL_RETRIEVAL_INTENT_NAME_KEY)
+    intent_gold = full_retrieval_intent if full_retrieval_intent else base_intent
+
+    # predicted intent: note that this is only the base intent at this point
+    predicted_base_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
+
+    # if the test story only provides the base intent AND the prediction was correct,
+    # we are not interested in full retrieval intents and skip this section.
+    # In any other case we are interested in the full retrieval intent (e.g. for report)
+    if intent_gold != predicted_base_intent:
+        predicted_base_intent = _get_full_retrieval_intent(predicted)
 
     if intent_gold:
         user_uttered_eval_store.add_to_store(intent_targets=[intent_gold])
     if predicted_intent:
-        user_uttered_eval_store.add_to_store(intent_predictions=[predicted_intent])
+        user_uttered_eval_store.add_to_store(intent_predictions=[predicted_base_intent])
 
     entity_gold = event.entities
     predicted_entities = predicted.get(ENTITIES)
@@ -422,8 +497,10 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
+    gold_action_name = event.action_name
+    gold_action_text = event.action_text
     # FIXME: mypy doesn't pick up typing guard in `ActionExecuted.__init__`
-    gold = cast(Text, event.action_name or event.action_text)
+    gold = cast(Text, gold_action_name or gold_action_text)
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
@@ -457,7 +534,8 @@ def _collect_action_executed_predictions(
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
-                gold,
+                gold_action_name,
+                gold_action_text,
                 predicted,
                 prediction.policy_name,
                 prediction.max_confidence,
@@ -555,7 +633,8 @@ async def _predict_tracker_actions(
             # Indirectly that means that the test story was in YAML format.
             if not event.text:
                 predicted = event.parse_data
-            # Indirectly that means that the test story was in Markdown format.
+            # Indirectly that means that the test story was either:
+            # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.
             else:
                 predicted = await processor.parse_message(UserMessage(event.text))
@@ -594,7 +673,7 @@ async def _collect_story_predictions(
     use_e2e: bool = False,
 ) -> Tuple[StoryEvaluation, int]:
     """Test the stories from a file, running them through the stored model."""
-    from rasa.test import get_evaluation_metrics
+    from sklearn.metrics import accuracy_score
     from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
@@ -629,25 +708,18 @@ async def _collect_story_predictions(
             success.append(predicted_tracker)
 
     logger.info("Finished collecting predictions.")
-    with warnings.catch_warnings():
-        from sklearn.exceptions import UndefinedMetricWarning
-
-        warnings.simplefilter("ignore", UndefinedMetricWarning)
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            [1] * len(completed_trackers), correct_dialogues
-        )
 
     in_training_data_fraction = _in_training_data_fraction(action_list)
+
+    if len(correct_dialogues):
+        accuracy = accuracy_score([1] * len(correct_dialogues), correct_dialogues)
+    else:
+        accuracy = 0
 
     _log_evaluation_table(
         [1] * len(completed_trackers),
         "END-TO-END" if use_e2e else "CONVERSATION",
-        report,
-        precision,
-        f1,
         accuracy,
-        in_training_data_fraction,
-        include_report=False,
     )
 
     return (
@@ -722,15 +794,26 @@ async def test(
         targets, predictions = evaluation_store.serialise()
 
         if out_directory:
-            report, precision, f1, accuracy = get_evaluation_metrics(
+            report, precision, f1, action_accuracy = get_evaluation_metrics(
                 targets, predictions, output_dict=True
             )
 
+            # Add conversation level accuracy to story report.
+            num_failed = len(story_evaluation.failed_stories)
+            num_correct = len(story_evaluation.successful_stories)
+            num_convs = num_failed + num_correct
+            if num_convs:
+                conv_accuracy = num_correct / num_convs
+                report["conversation_accuracy"] = {
+                    "accuracy": conv_accuracy,
+                    "correct": num_correct,
+                    "total": num_convs,
+                }
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
         else:
-            report, precision, f1, accuracy = get_evaluation_metrics(
+            report, precision, f1, action_accuracy = get_evaluation_metrics(
                 targets, predictions, output_dict=True
             )
 
@@ -739,12 +822,10 @@ async def test(
     _log_evaluation_table(
         evaluation_store.action_targets,
         "ACTION",
-        report,
-        precision,
-        f1,
-        accuracy,
-        story_evaluation.in_training_data_fraction,
-        include_report=False,
+        action_accuracy,
+        precision=precision,
+        f1=f1,
+        in_training_data_fraction=story_evaluation.in_training_data_fraction,
     )
 
     if not disable_plotting and out_directory:
@@ -769,7 +850,7 @@ async def test(
         "report": report,
         "precision": precision,
         "f1": f1,
-        "accuracy": accuracy,
+        "accuracy": action_accuracy,
         "actions": story_evaluation.action_list,
         "in_training_data_fraction": story_evaluation.in_training_data_fraction,
         "is_end_to_end_evaluation": e2e,
@@ -779,22 +860,25 @@ async def test(
 def _log_evaluation_table(
     golds: List[Any],
     name: Text,
-    report: Dict[Text, Any],
-    precision: float,
-    f1: float,
     accuracy: float,
-    in_training_data_fraction: float,
+    report: Optional[Dict[Text, Any]] = None,
+    precision: Optional[float] = None,
+    f1: Optional[float] = None,
+    in_training_data_fraction: Optional[float] = None,
     include_report: bool = True,
 ) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
     logger.info(f"Evaluation Results on {name} level:")
     logger.info(f"\tCorrect:          {int(len(golds) * accuracy)} / {len(golds)}")
-    logger.info(f"\tF1-Score:         {f1:.3f}")
-    logger.info(f"\tPrecision:        {precision:.3f}")
+    if f1 is not None:
+        logger.info(f"\tF1-Score:         {f1:.3f}")
+    if precision is not None:
+        logger.info(f"\tPrecision:        {precision:.3f}")
     logger.info(f"\tAccuracy:         {accuracy:.3f}")
-    logger.info(f"\tIn-data fraction: {in_training_data_fraction:.3g}")
+    if in_training_data_fraction is not None:
+        logger.info(f"\tIn-data fraction: {in_training_data_fraction:.3g}")
 
-    if include_report:
+    if include_report and report is not None:
         logger.info(f"\tClassification report: \n{report}")
 
 

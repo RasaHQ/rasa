@@ -15,3 +15,7 @@
     - utter_default
 * goodbye
     - utter_goodbye
+
+## simple_story_for_goodbye
+* goodbye
+    - utter_goodbye

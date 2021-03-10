@@ -194,10 +194,12 @@ def test_slack_channel():
     from rasa.core.channels.slack import SlackInput
 
     input_channel = SlackInput(
+        # this is the Slack Bot Token
         slack_token="YOUR_SLACK_TOKEN",
-        # this is the `bot_user_o_auth_access_token`
-        slack_channel="YOUR_SLACK_CHANNEL"
         # the name of your channel to which the bot posts (optional)
+        slack_channel="YOUR_SLACK_CHANNEL",
+        # signing secret from slack to verify incoming webhook messages
+        slack_signing_secret="YOUR_SIGNING_SECRET",
     )
 
     s = rasa.core.run.configure_app([input_channel], port=5004)
@@ -288,7 +290,7 @@ def test_rocketchat_channel():
 # USED FOR DOCS - don't rename without changing in the docs
 @pytest.mark.filterwarnings("ignore:unclosed file.*:ResourceWarning")
 # telegram channel will try to set a webhook, so we need to mock the api
-@patch.object(TelegramOutput, "setWebhook", noop)
+@patch.object(TelegramOutput, "set_webhook", noop)
 def test_telegram_channel():
     # START DOC INCLUDE
     from rasa.core.channels.telegram import TelegramInput

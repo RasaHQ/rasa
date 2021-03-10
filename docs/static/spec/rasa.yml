@@ -464,6 +464,7 @@ paths:
           type: boolean
           default: False
           description: Force a model training even if the data has not changed
+      - $ref: '#/components/parameters/callback_url'
       requestBody:
         required: true
         description: >-
@@ -489,6 +490,8 @@ paths:
             application/octet-stream:
               schema:
                 $ref: '#/components/schemas/TrainingResult'
+        204:
+          $ref: '#/components/responses/204Callback'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -546,22 +549,54 @@ paths:
       - Model
       summary: Perform an intent evaluation
       description: >-
-        Evaluates intents against the currently loaded Rasa model or the model specified in the query.
+        Evaluates NLU model against a model or using cross-validation.
       parameters:
       - $ref: '#/components/parameters/model'
+      - $ref: '#/components/parameters/callback_url'
+      - in: query
+        name: cross_validation_folds
+        schema:
+          type: integer
+          default: null
+          description: >-
+            Number of cross validation folds. If this parameter is specified
+            the given training data will be used for a cross-validation instead of
+            using it as test set for the specified model. Note that this is only
+            supported for YAML data.
       requestBody:
         required: true
         content:
-          text/yml:
+          application/json:
             schema:
-              $ref: '#/components/schemas/NLUTrainingData'
+              type: object
+              properties:
+                rasa_nlu_data:
+                  $ref: '#/components/schemas/RasaNLUData'
+          application/x-yaml:
+            schema:
+              type: string
+              description: >-
+                NLU training data and model configuration. The model configuration is
+                only required if cross-validation is used.
+              example: >-
+                nlu:
+                - intent: greet
+                  examples: |
+                    - hey
+                    - hello
+                    - hi
+
+                pipeline:
+                - name: KeywordIntentClassifier
       responses:
         200:
-          description: Intent evaluation result
+          description: NLU evaluation result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EvaluationIntentsResult'
+                $ref: '#/components/schemas/NLUEvaluationResult'
+        204:
+          $ref: '#/components/responses/204Callback'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -880,7 +915,18 @@ components:
           - twilio
           - webexteams
           - socketio
-
+    callback_url:
+      in: query
+      name: callback_url
+      description: >-
+        If specified the call will return immediately with an empty response and status
+        code 204. The actual result or any errors will be sent to the given callback
+        URL as the body of a post request.
+      example: "https://example.com/rasa_evaluations"
+      schema:
+        type: string
+        default: None
+      required: false
   responses:
 
     200Tracker:
@@ -905,6 +951,11 @@ components:
                 intent: inform
               - action: utter_on_it
               - action: utter_ask_location
+    204Callback:
+      description: >-
+        The incoming request specified a `callback_url` and hence the request will
+        return immediately with an empty response. The actual response will be sent to
+        the provided `callback_url` via POST request.
     400BadRequest:
       description: Bad Request
       content:
@@ -1501,84 +1552,143 @@ components:
       type: string
       format: binary
 
-    EvaluationIntentsResult:
+    NLUEvaluationResult:
       type: object
       properties:
         intent_evaluation:
-          type: object
           description: Rasa NLU intent evaluation
-          properties:
-            report:
-              type: string
-              example:  >-
-                # intent evaluation report
-                          precision    recall  f1-score   support
-
-                goodbye        1.00      1.00      1.00         4
-                greet          1.00      1.00      1.00         6
-                affirm         1.00      1.00      1.00         5
-                deny           1.00      1.00      1.00         6
-                mood_great     1.00      1.00      1.00         8
-                mood_unhappy   1.00      1.00      1.00        10
-
-                micro avg      1.00      1.00      1.00        39
-                macro avg      1.00      1.00      1.00        39
-                weighted avg   1.00      1.00      1.00        39
-            accuracy:
-              type: number
-              example: 0.19047619047619047
-            f1_score:
-              type: number
-              example: 0.06095238095238095
-            precision:
-              type: number
-              example: 0.036281179138321996
-            predictions:
-              type: array
-              items:
-                type: object
-                properties:
-                  intent:
-                    type: string
-                    example: greet
-                  predicted:
-                    type: string
-                    example: greet
-                  text:
-                    type: string
-                    example: "hey"
-                  confidence:
-                    type: number
-                    example: 0.9973567
+          $ref: '#/components/schemas/EvaluationItem'
+        response_selection_evaluation:
+          description: Evaluation for the retrieval intents
+          $ref: '#/components/schemas/EvaluationItem'
         entity_evaluation:
+          description: Rasa NLU entity evaluation.
           type: object
-          description: Rasa NLU entity evaluation
-          properties:
-            extractor_name:
-              type: object
-              description: Entity evaluation result for entity extractor
-              example: CRFEntityExtractor
-              properties:
-                report:
-                  type: string
-                  example: >-
-                    # entity evaluation report
-                               precision     recall  f1-score   support
+          additionalProperties:
+            type: object
+            description: Evaluation for a specific extractor
+            $ref: '#/components/schemas/EvaluationItem'
 
-                    no_entity       1.00      1.00      1.00        70
+    EvaluationItem:
+      type: object
+      description: Evaluation Result
+      properties:
+        report:
+          $ref: '#/components/schemas/EvaluationReport'
+        accuracy:
+          type: number
+          example: 0.19047619047619047
+        f1_score:
+          type: number
+          example: 0.06095238095238095
+        precision:
+          type: number
+          example: 0.036281179138321996
+        predictions:
+          type: array
+          description: The predictions for each item in the test set
+          items:
+            type: object
+            properties:
+              intent:
+                type: string
+                example: greet
+              predicted:
+                type: string
+                example: greet
+              text:
+                type: string
+                example: "hey"
+              confidence:
+                type: number
+                example: 0.9973567
+        errors:
+          description: The errors which were made during the testing.
+          type: array
+          items:
+            oneOf:
+            - $ref: '#/components/schemas/IntentTestError'
+            - $ref: '#/components/schemas/EntityTestError'
+            - $ref: '#/components/schemas/ResponseSelectorTestError'
 
-                    micro avg       1.00      1.00      1.00        70
-                    macro avg       1.00      1.00      1.00        70
-                    weighted avg    1.00      1.00      1.00        70
-                precision:
-                  type: number
-                  example: 0.9769792
-                f1_score:
-                  type: number
-                  example: 0.967869
-                accuracy:
-                  type: number
-                  example: 0.978567
+    IntentTestError:
+      description: Intent prediction errors which was made during testing
+      type: object
+      properties:
+        text:
+          type: string
+          description: Test message
+          example: are you alright?
+        intent_response_key_target:
+          description: Expected intent
+          type: string
+        intent_response_key_prediction:
+          description: Predicted intent
+          $ref: '#/components/schemas/Intent'
+
+    EntityTestError:
+      description: Entity prediction errors which was made during testing
+      type: object
+      properties:
+        text:
+          type: string
+          description: Test message
+          example: what is the weather in zurich?
+        entities:
+          description: Expected entities
+          type: array
+          items:
+            $ref: '#/components/schemas/Entity'
+        predicted_entities:
+          description: Predicted entities
+          type: array
+          items:
+            $ref: '#/components/schemas/Entity'
+
+    ResponseSelectorTestError:
+      description: Error during response prediction which was made during testing
+      type: object
+      properties:
+        text:
+          type: string
+          description: Test message
+          example: are you alright?
+        intent_response_key_target:
+          description: Expected retrieval intent
+          type: string
+        intent_response_key_prediction:
+          description: Predicted retrieval intent
+          $ref: '#/components/schemas/Intent'
+
+    EvaluationReport:
+      type: object
+      description: >-
+        Sklearn classification report, see
+        http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+      example:
+        greet:
+          precision: 0.123
+          recall: 0.456
+          f1-score: 0.12
+          support: 100
+          confused_with:
+            chitchat: 3
+            nlu_fallback: 5
+        micro avg:
+          precision: 0.123
+          recall: 0.456
+          f1-score: 0.12
+          support: 100
+        macro avg:
+          precision: 0.123
+          recall: 0.456
+          f1-score: 0.12
+          support: 100
+        weightedq avg:
+          precision: 0.123
+          recall: 0.456
+          f1-score: 0.12
+          support: 100
 
     EvaluationStoriesResult:
       type: object
@@ -1638,7 +1748,7 @@ components:
         report:
           type: string
           description: >-
-            Sklearn classifcation report, see
+            Sklearn classification report, see
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
           example:  >-
             # classification report
@@ -1698,3 +1808,29 @@ components:
         properties:
           use_entities:
             type: boolean
+
+    RasaNLUData:
+      type: object
+      properties:
+        common_examples:
+          type: object
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/CommonExample'
+
+    CommonExample:
+      type: object
+      properties:
+        entities:
+          description: Expected entities
+          type: array
+          items:
+            $ref: '#/components/schemas/Entity'
+        intent:
+          type: string
+          description: Intent name
+        text:
+          type: string
+          description: Text of the message
+          example: "Hello!"

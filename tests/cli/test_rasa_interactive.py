@@ -9,6 +9,7 @@ from _pytest.pytester import RunResult
 from rasa.core.train import do_interactive_learning
 from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
+from rasa.train import TrainingResult
 from tests.conftest import DEFAULT_NLU_DATA
 
 
@@ -20,7 +21,9 @@ def test_interactive_help(run: Callable[..., RunResult]):
                         [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
-                        [--debug-plots] [--force] [--persist-nlu-data]
+                        [--debug-plots] [--finetune [FINETUNE]]
+                        [--epoch-fraction EPOCH_FRACTION] [--force]
+                        [--persist-nlu-data]
                         {core} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
@@ -38,7 +41,8 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
                              [--conversation-id CONVERSATION_ID]
                              [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                              [--out OUT] [--augmentation AUGMENTATION]
-                             [--debug-plots] [-p PORT]
+                             [--debug-plots] [--finetune [FINETUNE]]
+                             [--epoch-fraction EPOCH_FRACTION] [-p PORT]
                              [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
@@ -61,7 +65,7 @@ def test_pass_arguments_to_rasa_train(
     interactive._set_not_required_args(args)
 
     # Mock actual training
-    mock = Mock()
+    mock = Mock(return_value=TrainingResult(code=0))
     monkeypatch.setattr(train, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw

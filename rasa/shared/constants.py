@@ -12,6 +12,7 @@ DOCS_URL_PIPELINE = DOCS_BASE_URL + "/tuning-your-model"
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/policies"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/actions"
+DOCS_URL_DEFAULT_ACTIONS = DOCS_BASE_URL + "/default-actions"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/connectors/"
 DOCS_URL_CONNECTORS_SLACK = DOCS_URL_CONNECTORS + "/slack"
 DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/event-brokers"
@@ -19,6 +20,9 @@ DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
 DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/tracker-stores"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/components"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
+DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
+    f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
+)
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 
@@ -27,12 +31,13 @@ INTENT_MESSAGE_PREFIX = "/"
 PACKAGE_NAME = "rasa"
 NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "3.0.0"
 
-CONFIG_SCHEMA_FILE = "shared/nlu/training_data/schemas/config.yml"
+MODEL_CONFIG_SCHEMA_FILE = "shared/utils/schemas/model_config.yml"
+CONFIG_SCHEMA_FILE = "shared/utils/schemas/config.yml"
 RESPONSES_SCHEMA_FILE = "shared/nlu/training_data/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "shared/utils/pykwalify_extensions.py"
 LATEST_TRAINING_DATA_FORMAT_VERSION = "2.0"
 
-DOMAIN_SCHEMA_FILE = "utils/schemas/domain.yml"
+DOMAIN_SCHEMA_FILE = "shared/utils/schemas/domain.yml"
 
 DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES = 60
 DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION = True
@@ -73,3 +78,5 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
 DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
+
+DIAGNOSTIC_DATA = "diagnostic_data"

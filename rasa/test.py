@@ -101,7 +101,9 @@ def test(
         additional_arguments = {}
 
     test_core(model, stories, output, additional_arguments)
-    test_nlu(model, nlu_data, output, additional_arguments)
+    rasa.utils.common.run_in_loop(
+        test_nlu(model, nlu_data, output, additional_arguments)
+    )
 
 
 def test_core(
@@ -110,6 +112,7 @@ def test_core(
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
+    """Tests a trained Core model against a set of test stories."""
     import rasa.model
     from rasa.shared.nlu.interpreter import RegexInterpreter
     from rasa.core.agent import Agent
@@ -156,12 +159,13 @@ def test_core(
     )
 
 
-def test_nlu(
+async def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ):
+    """Tests the NLU Model."""
     from rasa.nlu.test import run_evaluation
     from rasa.model import get_model
 
@@ -182,7 +186,9 @@ def test_nlu(
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
+        await run_evaluation(
+            nlu_data, nlu_model, output_directory=output_directory, **kwargs
+        )
     else:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
@@ -190,7 +196,7 @@ def test_nlu(
         )
 
 
-def compare_nlu_models(
+async def compare_nlu_models(
     configs: List[Text],
     nlu: Text,
     output: Text,
@@ -216,7 +222,7 @@ def compare_nlu_models(
         model_name: [[] for _ in range(runs)] for model_name in model_names
     }
 
-    training_examples_per_run = compare_nlu(
+    training_examples_per_run = await compare_nlu(
         configs,
         data,
         exclusion_percentages,
