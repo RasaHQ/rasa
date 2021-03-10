@@ -14,6 +14,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.shared.exceptions import InvalidParameterException
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -242,6 +243,9 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         # set fraction of the `kernel` weights to zero according to precomputed mask
         self.kernel.assign(self.kernel * self.kernel_mask)
+        # print(f"{self.name}: {self.kernel.shape}")
+        # trainable_count = np.sum([tf.keras.backend.count_params(w) for w in self.trainable_weights])
+        # print(f"{self.name}: {trainable_count}")
         return super().call(inputs)
 
 
@@ -285,7 +289,12 @@ class LocallyConnectedDense(tf.keras.layers.Layer):
             )
         super(LocallyConnectedDense, self).__init__(**kwargs)
         self._locally_connected_layer = tf.keras.layers.LocallyConnected1D(
-            filters=1, kernel_size=kernel_size, data_format="channels_last", **kwargs
+            filters=1,
+            kernel_size=kernel_size,
+            data_format="channels_last",
+            implementation=1,
+            use_bias=False,
+            **kwargs,
         )
 
     def build(self, input_shape: tf.TensorShape) -> None:
@@ -296,6 +305,8 @@ class LocallyConnectedDense(tf.keras.layers.Layer):
         )
 
     def call(self, inputs) -> tf.TensorShape:
+        # trainable_count = np.sum([tf.keras.backend.count_params(w) for w in self._locally_connected_layer.trainable_weights])
+        # print(f"{self.name}: {trainable_count}")
         x = tf.reshape(inputs, [-1, tf.shape(inputs)[-1]])
         x = periodic_padding(x, axis=-1, padding=((self.kernel_size - 1) // 2))
         x = tf.expand_dims(x, axis=-1)
