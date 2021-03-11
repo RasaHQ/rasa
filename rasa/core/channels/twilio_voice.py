@@ -13,14 +13,13 @@ from rasa.core.channels.channel import (
 
 
 class TwilioVoiceInput(InputChannel):
-
     @classmethod
     def name(cls) -> Text:
         """Name of your custom channel."""
         return "twilio_voice"
 
     def blueprint(
-            self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
 
         twilio_voice_webhook = Blueprint(
@@ -84,16 +83,14 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         return "twilio_voice"
 
 
-def build_twilio_voice_response(
-        messages: List[Text]
-) -> VoiceResponse:
+def build_twilio_voice_response(messages: List[Text]) -> VoiceResponse:
     """Builds the Twilio Voice Response object."""
     vr = VoiceResponse()
     gather = Gather(
         input="speech",
         action="/webhooks/twilio_voice/webhook",
         actionOnEmptyResult=True,
-        speechTimeout="auto"
+        speechTimeout="auto",
     )
 
     # Add pauses between messages.
@@ -107,4 +104,3 @@ def build_twilio_voice_response(
             vr.pause(length=1)
 
     return vr
-
