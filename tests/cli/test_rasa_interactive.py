@@ -66,10 +66,10 @@ def test_pass_arguments_to_rasa_train(
 
     # Mock actual training
     mock = Mock(return_value=TrainingResult(code=0))
-    monkeypatch.setattr(train, "train", mock.method)
+    monkeypatch.setattr(train, "train_all", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
-    train.train(args)
+    train.run_training(args)
 
     # Assert `train` was actually called
     mock.method.assert_called_once()

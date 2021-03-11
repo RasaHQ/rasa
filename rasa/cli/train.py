@@ -7,7 +7,6 @@ from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
-import rasa.train
 import rasa.utils.common
 from rasa.core.train import do_compare_training
 from rasa.shared.utils.cli import print_error
@@ -19,6 +18,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
+from rasa.train import train as train_all, train_core, train_nlu
 
 
 def add_subparser(
@@ -57,13 +57,13 @@ def add_subparser(
     )
     train_nlu_parser.set_defaults(func=run_nlu_training)
 
-    train_parser.set_defaults(func=lambda args: train(args, can_exit=True))
+    train_parser.set_defaults(func=lambda args: run_training(args, can_exit=True))
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
-def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
+def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
     """Trains a model.
 
     Args:
@@ -87,7 +87,7 @@ def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
         for f in args.data
     ]
 
-    training_result = rasa.train.train(
+    training_result = train_all(
         domain=domain,
         config=config,
         training_files=training_files,
@@ -148,7 +148,7 @@ def run_core_training(
 
         config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
 
-        return rasa.train.train_core(
+        return train_core(
             domain=args.domain,
             config=config,
             stories=story_file,
@@ -190,7 +190,7 @@ def run_nlu_training(
             args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
         )
 
-    return rasa.train.train_nlu(
+    return train_nlu(
         config=config,
         nlu_data=nlu_data,
         output=output,
