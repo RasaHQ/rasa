@@ -50,10 +50,7 @@ class TwilioVoiceInput(InputChannel):
             if text is not None:
                 await on_new_message(
                     UserMessage(
-                        text,
-                        collector,
-                        sender_id,
-                        input_channel=input_channel,
+                        text, collector, sender_id, input_channel=input_channel,
                     )
                 )
 
@@ -70,13 +67,16 @@ class TwilioVoiceInput(InputChannel):
             elif text is None:
                 # Get last user utterance from tracker.
                 tracker = request.app.agent.tracker_store.retrieve(sender_id)
-                last_response = next((e for e in reversed(tracker.events) if isinstance(e, BotUttered)), None)
+                last_response = next(
+                    (e for e in reversed(tracker.events) if isinstance(e, BotUttered)),
+                    None,
+                )
 
                 # If no previous utterance found say something generic.
                 if last_response is None:
                     last_response = "I didn't get that."
-		else:
-		    last_response = last_response.text
+                else:
+                    last_response = last_response.text
 
                 twilio_response = build_twilio_voice_response([last_response])
                 return response.text(str(twilio_response), content_type="text/xml")
