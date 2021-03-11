@@ -81,12 +81,7 @@ class Token:
     def __lt__(self, other):
         if not isinstance(other, Token):
             return NotImplemented
-        return (self.start, self.end, self.text, self.lemma) < (
-            other.start,
-            other.end,
-            other.text,
-            other.lemma,
-        )
+        return (self.start, self.end) < (other.start, other.end)
 
     def __str__(self) -> Text:
         """Return the string representation of this Token."""
