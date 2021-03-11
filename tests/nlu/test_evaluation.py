@@ -436,7 +436,7 @@ def test_run_cv_evaluation(
         report_as_dict=True,
     )
 
-    assert len(intent_results.train["Accuracy"]) == n_folds * 2
+    assert len(intent_results.train["Accuracy"]) == n_folds
     assert len(intent_results.train["Precision"]) == n_folds
     assert len(intent_results.train["F1-score"]) == n_folds
     assert len(intent_results.test["Accuracy"]) == n_folds
