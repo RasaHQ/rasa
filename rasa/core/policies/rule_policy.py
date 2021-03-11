@@ -1175,13 +1175,12 @@ class RulePolicy(MemoizationPolicy):
     def _metadata_filename(cls) -> Text:
         return "rule_policy.json"
 
-    def get_rule_only_slots_loops(self) -> Tuple[List[Text], List[Text]]:
-        """Gets the lists of slots and loops that are used only in rule data.
+    def get_rule_only_data(self) -> Dict[Text, Any]:
+        """Gets the slots and loops that are used only in rule data.
 
         Returns:
-            A tuple of lists of slots and loops that are used only in rule data.
+            Slots and loops that are used only in rule data.
         """
-        return (
-            self.lookup.get(RULE_ONLY_SLOTS, []),
-            self.lookup.get(RULE_ONLY_LOOPS, []),
-        )
+        return {
+            key: self.lookup.get(key, []) for key in [RULE_ONLY_SLOTS, RULE_ONLY_LOOPS]
+        }

@@ -577,8 +577,6 @@ class TEDPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-        rule_only_slots,
-        rule_only_loops,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -586,12 +584,7 @@ class TEDPolicy(Policy):
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self._featurize_for_prediction(
-            tracker,
-            domain,
-            interpreter,
-            use_text_for_last_user_input=self.only_e2e,
-            rule_only_slots=rule_only_slots,
-            rule_only_loops=rule_only_loops,
+            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -600,12 +593,7 @@ class TEDPolicy(Policy):
             and not self.only_e2e
         ):
             tracker_state_features += self._featurize_for_prediction(
-                tracker,
-                domain,
-                interpreter,
-                use_text_for_last_user_input=True,
-                rule_only_slots=rule_only_slots,
-                rule_only_loops=rule_only_loops,
+                tracker, domain, interpreter, use_text_for_last_user_input=True,
             )
         return tracker_state_features
 
@@ -656,8 +644,6 @@ class TEDPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-        rule_only_slots: Optional[List[Text]] = None,
-        rule_only_loops: Optional[List[Text]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -667,8 +653,6 @@ class TEDPolicy(Policy):
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -678,7 +662,7 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         tracker_state_features = self._featurize_tracker_for_e2e(
-            tracker, domain, interpreter, rule_only_slots, rule_only_loops
+            tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
         output = self.model.rasa_predict(model_data)

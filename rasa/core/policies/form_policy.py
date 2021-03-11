@@ -103,12 +103,7 @@ class FormPolicy(MemoizationPolicy):
         return lookup
 
     def recall(
-        self,
-        states: List[State],
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        rule_only_slots: Optional[List[Text]] = None,
-        rule_only_loops: Optional[List[Text]] = None,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -116,8 +111,6 @@ class FormPolicy(MemoizationPolicy):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             The name of the action.

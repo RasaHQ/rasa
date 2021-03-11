@@ -282,8 +282,6 @@ class SklearnPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-        rule_only_slots: Optional[List[Text]] = None,
-        rule_only_loops: Optional[List[Text]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -293,19 +291,11 @@ class SklearnPolicy(Policy):
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """
-        X = self._featurize_for_prediction(
-            tracker,
-            domain,
-            interpreter,
-            rule_only_slots=rule_only_slots,
-            rule_only_loops=rule_only_loops,
-        )
+        X = self._featurize_for_prediction(tracker, domain, interpreter)
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )

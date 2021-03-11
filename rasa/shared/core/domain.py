@@ -1117,10 +1117,18 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State,
-        rule_only_slots: Optional[List[Text]],
-        rule_only_loops: Optional[List[Text]],
+        state: State, rule_only_data: Optional[Dict[Text, Any]],
     ) -> None:
+        if not rule_only_data:
+            return
+
+        rule_only_slots = rule_only_data.get(
+            rasa.shared.core.constants.RULE_ONLY_SLOTS, []
+        )
+        rule_only_loops = rule_only_data.get(
+            rasa.shared.core.constants.RULE_ONLY_LOOPS, []
+        )
+
         # remove slots which only occur in rules but not in stories
         if rule_only_slots:
             for slot in rule_only_slots:
@@ -1151,8 +1159,7 @@ class Domain:
         self,
         tracker: "DialogueStateTracker",
         ignore_rule_only_turns: bool = False,
-        rule_only_slots: Optional[List[Text]] = None,
-        rule_only_loops: Optional[List[Text]] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """Array of states for each state of the trackers history.
 
@@ -1160,8 +1167,8 @@ class Domain:
             tracker: Instance of `DialogueStateTracker` to featurize.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Return:
             A list of states.
@@ -1191,7 +1198,7 @@ class Domain:
 
             if ignore_rule_only_turns:
                 # clean state from only rule features
-                self._remove_rule_only_features(state, rule_only_slots, rule_only_loops)
+                self._remove_rule_only_features(state, rule_only_data)
                 # make sure user input is the same as for previous state
                 # for non action_listen turns
                 if states:

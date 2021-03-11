@@ -111,8 +111,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self,
         domain: Domain,
         ignore_rule_only_turns: bool = False,
-        rule_only_slots: Optional[List[Text]] = None,
-        rule_only_loops: Optional[List[Text]] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """Generate the past states of this tracker based on the history.
 
@@ -120,8 +119,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
             domain: The Domain.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
             a list of states

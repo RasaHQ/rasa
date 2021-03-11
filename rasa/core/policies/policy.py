@@ -126,11 +126,15 @@ class Policy:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
         self.finetune_mode = should_finetune
+        self._rule_only_data = {}
 
     @property
     def featurizer(self):
         """Returns the policy's featurizer."""
         return self.__featurizer
+
+    def set_rule_only_data(self, rule_only_data: Dict[Text, Any]) -> None:
+        self._rule_only_data = rule_only_data
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
@@ -206,8 +210,6 @@ class Policy:
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
-        rule_only_slots: Optional[List[Text]] = None,
-        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[State]:
         """Transforms tracker to states for prediction.
 
@@ -216,8 +218,6 @@ class Policy:
             domain: The Domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             A list of states.
@@ -227,8 +227,7 @@ class Policy:
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_slots=rule_only_slots,
-            rule_only_loops=rule_only_loops,
+            rule_only_data=self._rule_only_data,
         )[0]
 
     def _featurize_for_prediction(
@@ -237,8 +236,6 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         use_text_for_last_user_input: bool = False,
-        rule_only_slots: Optional[List[Text]] = None,
-        rule_only_loops: Optional[List[Text]] = None,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Transforms training tracker into a vector representation.
 
@@ -251,8 +248,6 @@ class Policy:
             interpreter: The NLU interpreter.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
-            rule_only_slots: Slot names, which only occur in rules but not in stories.
-            rule_only_loops: Loop names, which only occur in rules but not in stories.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -267,8 +262,7 @@ class Policy:
             interpreter,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_slots=rule_only_slots,
-            rule_only_loops=rule_only_loops,
+            rule_only_data=self._rule_only_data,
         )
 
     def train(

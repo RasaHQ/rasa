@@ -2164,9 +2164,7 @@ def test_hide_rule_turn_with_slots():
         "casd", evts=conversation_events, slots=domain.slots
     )
     states = tracker.past_states(
-        domain,
-        ignore_rule_only_turns=True,
-        rule_only_slots=policy.lookup[RULE_ONLY_SLOTS],
+        domain, ignore_rule_only_turns=True, rule_only_data=policy.get_rule_only_data()
     )
     assert states == [
         {},
@@ -2221,7 +2219,7 @@ def test_hide_rule_turn_no_last_action_listen():
     )
     policy = RulePolicy()
     policy.train(
-        [simple_rule_no_last_action_listen, chitchat_story], domain, RegexInterpreter(),
+        [simple_rule_no_last_action_listen, chitchat_story], domain, RegexInterpreter()
     )
     assert policy.lookup[RULE_ONLY_SLOTS] == [followup_on_chitchat]
 
@@ -2242,15 +2240,13 @@ def test_hide_rule_turn_no_last_action_listen():
     assert prediction.hide_rule_turn
 
     conversation_events += [
-        ActionExecuted(action_after_chitchat, hide_rule_turn=prediction.hide_rule_turn),
+        ActionExecuted(action_after_chitchat, hide_rule_turn=prediction.hide_rule_turn)
     ]
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
     states = tracker.past_states(
-        domain,
-        ignore_rule_only_turns=True,
-        rule_only_slots=policy.lookup[RULE_ONLY_SLOTS],
+        domain, ignore_rule_only_turns=True, rule_only_data=policy.get_rule_only_data()
     )
     assert states == [
         {},
@@ -2356,9 +2352,7 @@ def test_hide_rule_turn_with_loops():
         "casd", evts=conversation_events, slots=domain.slots
     )
     states = tracker.past_states(
-        domain,
-        ignore_rule_only_turns=True,
-        rule_only_loops=policy.lookup[RULE_ONLY_LOOPS],
+        domain, ignore_rule_only_turns=True, rule_only_data=policy.get_rule_only_data()
     )
     assert states == [
         {},
