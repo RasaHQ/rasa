@@ -178,7 +178,9 @@ def ensure_conversation_exists() -> "SanicView":
     return decorator
 
 
-def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[["SanicView"], "SanicView"]:
+def requires_auth(
+    app: Sanic, token: Optional[Text] = None
+) -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler with token authentication."""
 
     def decorator(f: "SanicView") -> "SanicView":
@@ -1198,9 +1200,8 @@ def create_app(
 
         if nlu_model is None:
             raise ErrorResponse(
-                HTTPStatus.CONFLICT, "TestingError", "Missing NLU model directory.",
+                HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
             )
-
 
         return await run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
