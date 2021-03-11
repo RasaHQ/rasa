@@ -276,7 +276,7 @@ class DialogueStateTracker:
     def past_states(
         self, domain: Domain, omit_unset_slots: bool = False,
     ) -> List[State]:
-        """Generate the past states of this tracker based on the history.
+        """Generates the past states of this tracker based on the history.
 
         Args:
             domain: a :class:`rasa.shared.core.domain.Domain`

@@ -97,7 +97,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             A list of states
         """
         # we need to make sure this is the same domain, otherwise things will
-        # go south. but really, the same tracker shouldn't be used across
+        # go wrong. but really, the same tracker shouldn't be used across
         # domains
         assert domain == self.domain
 
