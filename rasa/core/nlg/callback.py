@@ -27,42 +27,19 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
     }
 
 
-def nlg_request_format_spec() -> Dict[Text, Any]:
-    """Expected request schema for requests sent to an NLG endpoint."""
-
-    return {
-        "type": "object",
-        "properties": {
-            "template": {"type": "string"},
-            "arguments": {"type": "object"},
-            "tracker": {
-                "type": "object",
-                "properties": {
-                    "sender_id": {"type": "string"},
-                    "slots": {"type": "object"},
-                    "latest_message": {"type": "object"},
-                    "latest_event_time": {"type": "number"},
-                    "paused": {"type": "boolean"},
-                    "events": {"type": "array"},
-                },
-            },
-            "channel": {"type": "object", "properties": {"name": {"type": "string"}}},
-        },
-    }
-
-
 def nlg_request_format(
-    template_name: Text,
+    utter_action: Text,
     tracker: DialogueStateTracker,
     output_channel: Text,
     **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
-
     tracker_state = tracker.current_state(EventVerbosity.ALL)
 
+    # TODO: Remove `template` by Rasa Open Source 3.0.
     return {
-        "template": template_name,
+        "response": utter_action,
+        "template": utter_action,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},
@@ -83,18 +60,17 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     async def generate(
         self,
-        template_name: Text,
+        utter_action: Text,
         tracker: DialogueStateTracker,
         output_channel: Text,
         **kwargs: Any,
     ) -> Dict[Text, Any]:
-        """Retrieve a named template from the domain using an endpoint."""
-
-        body = nlg_request_format(template_name, tracker, output_channel, **kwargs)
+        """Retrieve a named response from the domain using an endpoint."""
+        body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
 
         logger.debug(
             "Requesting NLG for {} from {}."
-            "".format(template_name, self.nlg_endpoint.url)
+            "".format(utter_action, self.nlg_endpoint.url)
         )
 
         response = await self.nlg_endpoint.request(

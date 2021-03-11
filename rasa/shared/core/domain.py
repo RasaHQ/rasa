@@ -165,7 +165,15 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = data.get(KEY_RESPONSES, {})
+        """Deserializes and creates domain.
+
+        Args:
+            data: The serialized domain.
+
+        Returns:
+            The instantiated `Domain` object.
+        """
+        responses = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -178,7 +186,7 @@ class Domain:
             intents,
             data.get(KEY_ENTITIES, {}),
             slots,
-            utter_templates,
+            responses,
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, {}),
             data.get(KEY_E2E_ACTIONS, []),
@@ -498,7 +506,7 @@ class Domain:
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
         entities: List[Union[Text, Dict[Text, Any]]],
         slots: List[Slot],
-        templates: Dict[Text, List[Dict[Text, Any]]],
+        responses: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: Union[Dict[Text, Any], List[Text]],
         action_texts: Optional[List[Text]] = None,
@@ -511,7 +519,7 @@ class Domain:
             intents: Intent labels.
             entities: The names of entities which might be present in user messages.
             slots: Slots to store information during the conversation.
-            templates: Bot responses. If an action with the same name is executed, it
+            responses: Bot responses. If an action with the same name is executed, it
                 will send the matching response to the user.
             action_names: Names of custom actions.
             forms: Form names and their slot mappings.
@@ -536,14 +544,14 @@ class Domain:
         )
         action_names += overridden_form_actions
 
-        self.templates = templates
+        self.responses = responses
         self.action_texts = action_texts or []
         self.session_config = session_config
 
         self._custom_actions = action_names
 
         # only includes custom actions and utterance actions
-        self.user_actions = self._combine_with_templates(action_names, templates)
+        self.user_actions = self._combine_with_responses(action_names, responses)
 
         # includes all action names (custom, utterance, default actions and forms)
         # and action texts from end-to-end bot utterances
@@ -699,24 +707,56 @@ class Domain:
 
     @rasa.shared.utils.common.lazy_property
     def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Return only the templates which are defined for retrieval intents"""
+        """Return only the responses which are defined for retrieval intents."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response', call `retrieval_intent_responses` instead of `retrieval_intent_templates`.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+        )
+        return self.retrieval_intent_responses
 
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intent_responses(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the responses which are defined for retrieval intents."""
         return dict(
             filter(
-                lambda x: self.is_retrieval_intent_template(x), self.templates.items()
+                lambda x: self.is_retrieval_intent_response(x), self.responses.items()
             )
         )
 
+    @rasa.shared.utils.common.lazy_property
+    def templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Temporary property before templates become completely deprecated."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response'. Instead of using the `templates` property, please use the `responses` property instead.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+        )
+        return self.responses
+
     @staticmethod
     def is_retrieval_intent_template(
-        template: Tuple[Text, List[Dict[Text, Any]]]
+        response: Tuple[Text, List[Dict[Text, Any]]]
     ) -> bool:
-        """Check if the response template is for a retrieval intent.
+        """Check if the response is for a retrieval intent.
 
         These templates have a `/` symbol in their name. Use that to filter them from
         the rest.
         """
-        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+        )
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
+
+    @staticmethod
+    def is_retrieval_intent_response(
+        response: Tuple[Text, List[Dict[Text, Any]]]
+    ) -> bool:
+        """Check if the response is for a retrieval intent.
+
+        These responses have a `/` symbol in their name. Use that to filter them from
+        the rest.
+        """
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
     def _add_default_slots(self) -> None:
         """Sets up the default slots and slot values for the domain."""
@@ -860,8 +900,8 @@ class Domain:
             f"is deprecated and will be removed version 3.0.0.",
             category=DeprecationWarning,
         )
-        if utter_action in self.templates:
-            return np.random.choice(self.templates[utter_action])
+        if utter_action in self.responses:
+            return np.random.choice(self.responses[utter_action])
         else:
             return None
 
@@ -1154,7 +1194,7 @@ class Domain:
             KEY_INTENTS: self._transform_intents_for_file(),
             KEY_ENTITIES: self._transform_entities_for_file(),
             KEY_SLOTS: self._slot_definitions(),
-            KEY_RESPONSES: self.templates,
+            KEY_RESPONSES: self.responses,
             KEY_ACTIONS: self._custom_actions,
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.action_texts,
@@ -1175,13 +1215,13 @@ class Domain:
         from ruamel.yaml.scalarstring import LiteralScalarString
 
         final_responses = responses.copy()
-        for response_name, examples in final_responses.items():
+        for utter_action, examples in final_responses.items():
             for i, example in enumerate(examples):
                 response_text = example.get(KEY_RESPONSES_TEXT, "")
                 if not response_text or "\n" not in response_text:
                     continue
                 # Has new lines, use `LiteralScalarString`
-                final_responses[response_name][i][
+                final_responses[utter_action][i][
                     KEY_RESPONSES_TEXT
                 ] = LiteralScalarString(response_text)
 
@@ -1392,14 +1432,14 @@ class Domain:
         return {"in_domain": in_domain_diff, "in_training_data": in_training_data_diff}
 
     @staticmethod
-    def _combine_with_templates(
-        actions: List[Text], templates: Dict[Text, Any]
+    def _combine_with_responses(
+        actions: List[Text], responses: Dict[Text, Any]
     ) -> List[Text]:
         """Combines actions with utter actions listed in responses section."""
-        unique_template_names = [
-            a for a in sorted(list(templates.keys())) if a not in actions
+        unique_utter_actions = [
+            a for a in sorted(list(responses.keys())) if a not in actions
         ]
-        return actions + unique_template_names
+        return actions + unique_utter_actions
 
     @staticmethod
     def _combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
@@ -1449,14 +1489,15 @@ class Domain:
 
     def _check_domain_sanity(self) -> None:
         """Make sure the domain is properly configured.
+
         If the domain contains any duplicate slots, intents, actions
         or entities, an InvalidDomain error is raised.  This error
         is also raised when intent-action mappings are incorrectly
-        named or an utterance template is missing."""
+        named or a response is missing.
+        """
 
         def get_duplicates(my_items):
             """Returns a list of duplicate items in my_items."""
-
             return [
                 item
                 for item, count in collections.Counter(my_items).items()
@@ -1543,20 +1584,27 @@ class Domain:
             )
 
     def check_missing_templates(self) -> None:
-        """Warn user of utterance names which have no specified template."""
+        """Warn user of utterance names which have no specified response."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated and replaced by 'response'. Please use `check_missing_responses` instead of `check_missing_templates`.",
+            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+        )
+        self.check_missing_responses()
 
+    def check_missing_responses(self) -> None:
+        """Warn user of utterance names which have no specified response."""
         utterances = [
             a
             for a in self.action_names_or_texts
             if a.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
-        missing_templates = [t for t in utterances if t not in self.templates.keys()]
+        missing_responses = [t for t in utterances if t not in self.responses.keys()]
 
-        if missing_templates:
-            for template in missing_templates:
+        if missing_responses:
+            for response in missing_responses:
                 rasa.shared.utils.io.raise_warning(
-                    f"Action '{template}' is listed as a "
+                    f"Action '{response}' is listed as a "
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "
                     f"check your domain.",
