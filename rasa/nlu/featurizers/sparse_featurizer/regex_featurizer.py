@@ -188,17 +188,17 @@ class RegexFeaturizer(SparseFeaturizer):
         else:
             self.known_patterns = new_patterns
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
-        for example in training_data_chunk.training_examples:
+        for example in training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
                 self._text_features_with_regex(example, attribute)
 

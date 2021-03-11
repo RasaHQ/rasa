@@ -740,13 +740,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         else:
             self._train_with_independent_vocab(attribute_texts)
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
@@ -754,7 +754,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         for attribute in self._attributes:
             all_tokens = [
                 self._get_processed_message_tokens_by_attribute(example, attribute)
-                for example in training_data_chunk.training_examples
+                for example in training_examples
             ]
             sequence_features, sentence_features = self._get_featurized_attribute(
                 attribute, all_tokens
@@ -762,10 +762,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             if sequence_features and sentence_features:
                 self._set_attribute_features(
-                    attribute,
-                    sequence_features,
-                    sentence_features,
-                    training_data_chunk.training_examples,
+                    attribute, sequence_features, sentence_features, training_examples
                 )
 
     def process(self, message: Message, **kwargs: Any) -> None:

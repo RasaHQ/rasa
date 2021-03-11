@@ -50,18 +50,18 @@ class MitieFeaturizer(DenseFeaturizer):
         """
         return ["mitie", "numpy"]
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        for example in training_data_chunk.training_examples:
+        for example in training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self.process_training_example(
                     example, attribute, mitie_feature_extractor

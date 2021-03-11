@@ -792,16 +792,16 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         return batch_docs
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Compute tokens and dense features for each message in training data.
 
         Args:
-            training_data_chunk: NLU training data to be tokenized and featurized
+            training_examples: The training examples.
             config: NLU pipeline config consisting of all components.
         """
         batch_size = 64
@@ -809,9 +809,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
-                filter(
-                    lambda x: x.get(attribute), training_data_chunk.training_examples
-                )
+                filter(lambda x: x.get(attribute), training_examples)
             )
 
             batch_start_index = 0

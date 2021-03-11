@@ -105,17 +105,17 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self.number_of_features = self._calculate_number_of_features()
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
-        for example in training_data_chunk.training_examples:
+        for example in training_examples:
             self._create_sparse_features(example)
 
     def process(self, message: Message, **kwargs: Any) -> None:
