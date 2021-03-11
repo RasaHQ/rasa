@@ -200,17 +200,17 @@ def test_avoid_action_repetition(default_domain: Domain):
     assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
-def test_utter_templates():
+def test_responses():
     domain_file = "examples/moodbot/domain.yml"
     domain = Domain.load(domain_file)
-    expected_template = {
+    expected_response = {
         "text": "Hey! How are you?",
         "buttons": [
             {"title": "great", "payload": "/mood_great"},
             {"title": "super sad", "payload": "/mood_unhappy"},
         ],
     }
-    assert domain.random_template_for("utter_greet") == expected_template
+    assert domain.random_template_for("utter_greet") == expected_response
 
 
 def test_custom_slot_type(tmpdir: Path):
@@ -379,7 +379,7 @@ responses:
     # single attribute should be taken from domain_1
     assert domain.store_entities_as_slots
     # conflicts should be taken from domain_1
-    assert domain.templates == {
+    assert domain.responses == {
         "utter_greet": [{"text": "hey there!"}],
         "utter_goodbye": [{"text": "bye!"}],
     }
@@ -395,7 +395,7 @@ responses:
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
-    assert domain.templates == {
+    assert domain.responses == {
         "utter_greet": [{"text": "hey you!"}],
         "utter_goodbye": [{"text": "bye!"}],
     }
@@ -762,7 +762,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[],
-            templates={},
+            responses={},
             action_names=["random_name", "random_name"],
             forms={},
         )
@@ -772,7 +772,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[TextSlot("random_name"), TextSlot("random_name")],
-            templates={},
+            responses={},
             action_names=[],
             forms={},
         )
@@ -782,7 +782,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=["random_name", "random_name", "other_name", "other_name"],
             slots=[],
-            templates={},
+            responses={},
             action_names=[],
             forms={},
         )
@@ -792,7 +792,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[],
-            templates={},
+            responses={},
             action_names=[],
             forms=["random_name", "random_name"],
         )
@@ -808,9 +808,9 @@ def test_load_on_invalid_domain_duplicate_actions():
         Domain.load("data/test_domains/duplicate_actions.yml")
 
 
-def test_load_on_invalid_domain_duplicate_templates():
+def test_load_on_invalid_domain_duplicate_responses():
     with pytest.raises(YamlSyntaxException):
-        Domain.load("data/test_domains/duplicate_templates.yml")
+        Domain.load("data/test_domains/duplicate_responses.yml")
 
 
 def test_load_on_invalid_domain_duplicate_entities():
@@ -1054,7 +1054,7 @@ def test_domain_deepcopy():
     assert new_domain.entities == domain.entities
     assert new_domain.forms == domain.forms
     assert new_domain.form_names == domain.form_names
-    assert new_domain.templates == domain.templates
+    assert new_domain.responses == domain.responses
     assert new_domain.action_texts == domain.action_texts
     assert new_domain.session_config == domain.session_config
     assert new_domain._custom_actions == domain._custom_actions
@@ -1072,7 +1072,7 @@ def test_domain_deepcopy():
     assert new_domain.forms is not domain.forms
     assert new_domain.form_names is not domain.form_names
     assert new_domain.slots is not domain.slots
-    assert new_domain.templates is not domain.templates
+    assert new_domain.responses is not domain.responses
     assert new_domain.action_texts is not domain.action_texts
     assert new_domain.session_config is not domain.session_config
     assert new_domain._custom_actions is not domain._custom_actions
@@ -1081,19 +1081,19 @@ def test_domain_deepcopy():
 
 
 @pytest.mark.parametrize(
-    "template_key, validation",
+    "response_key, validation",
     [("utter_chitchat/faq", True), ("utter_chitchat", False)],
 )
-def test_is_retrieval_intent_template(template_key, validation):
+def test_is_retrieval_intent_response(response_key, validation):
     domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-    assert domain.is_retrieval_intent_template((template_key, [{}])) == validation
+    assert domain.is_retrieval_intent_response((response_key, [{}])) == validation
 
 
-def test_retrieval_intent_template_seggregation():
+def test_retrieval_intent_response_seggregation():
     domain = Domain.load("data/test_domains/mixed_retrieval_intents.yml")
-    assert domain.templates != domain.retrieval_intent_templates
-    assert domain.templates and domain.retrieval_intent_templates
-    assert list(domain.retrieval_intent_templates.keys()) == [
+    assert domain.responses != domain.retrieval_intent_responses
+    assert domain.responses and domain.retrieval_intent_responses
+    assert list(domain.retrieval_intent_responses.keys()) == [
         "utter_chitchat/ask_weather",
         "utter_chitchat/ask_name",
     ]

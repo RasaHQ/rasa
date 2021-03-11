@@ -30,7 +30,7 @@ async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     assert agent.domain.action_names_or_texts == moodbot_domain.action_names_or_texts
     assert agent.domain.intents == moodbot_domain.intents
     assert agent.domain.entities == moodbot_domain.entities
-    assert agent.domain.templates == moodbot_domain.templates
+    assert agent.domain.responses == moodbot_domain.responses
     assert [s.name for s in agent.domain.slots] == [
         s.name for s in moodbot_domain.slots
     ]
@@ -49,10 +49,10 @@ async def test_formbot_example(form_bot_agent: Agent):
     def response_for_slot(slot: Text) -> Dict[Text, Any]:
         if slot:
             form = "restaurant_form"
-            template = f"utter_ask_{slot}"
+            response = f"utter_ask_{slot}"
         else:
             form = None
-            template = "utter_submit"
+            response = "utter_submit"
 
         return {
             "events": [
@@ -64,7 +64,7 @@ async def test_formbot_example(form_bot_agent: Agent):
                     "value": slot,
                 },
             ],
-            "responses": [{"template": template}],
+            "responses": [{"response": response}],
         }
 
     async def mock_form_happy_path(

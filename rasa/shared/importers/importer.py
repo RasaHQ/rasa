@@ -270,8 +270,8 @@ class CombinedDataImporter(TrainingDataImporter):
 class ResponsesSyncImporter(TrainingDataImporter):
     """Importer that syncs `responses` between Domain and NLU training data.
 
-    Synchronizes response templates between Domain and NLU
-    and adds retrieval intent properties from the NLU training data
+    Synchronizes responses between Domain and NLU and
+    adds retrieval intent properties from the NLU training data
     back to the Domain.
     """
 
@@ -299,7 +299,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
         )
 
         existing_domain = existing_domain.merge(domain_with_retrieval_intents)
-        existing_domain.check_missing_templates()
+        existing_domain.check_missing_responses()
 
         return existing_domain
 
@@ -321,7 +321,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
     @staticmethod
     def _get_domain_with_retrieval_intents(
         retrieval_intents: Set[Text],
-        response_templates: Dict[Text, List[Dict[Text, Any]]],
+        responses: Dict[Text, List[Dict[Text, Any]]],
         existing_domain: Domain,
     ) -> Domain:
         """Construct a domain consisting of retrieval intents.
@@ -331,7 +331,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
         Args:
             retrieval_intents: Set of retrieval intents defined in NLU training data.
-            response_templates: Response templates defined in NLU training data.
+            responses: Responses defined in NLU training data.
             existing_domain: Domain which is already loaded from the domain file.
 
         Returns: Domain with retrieval actions added to action names and properties
@@ -354,7 +354,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
             retrieval_intent_properties,
             [],
             [],
-            response_templates,
+            responses,
             ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
             {},
         )
@@ -378,29 +378,29 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
         return existing_nlu_data.merge(
             self._get_nlu_data_with_responses(
-                existing_domain.retrieval_intent_templates
+                existing_domain.retrieval_intent_responses
             )
         )
 
     @staticmethod
     def _get_nlu_data_with_responses(
-        response_templates: Dict[Text, List[Dict[Text, Any]]]
+        responses: Dict[Text, List[Dict[Text, Any]]]
     ) -> TrainingData:
-        """Construct training data object with only the response templates supplied.
+        """Construct training data object with only the responses supplied.
 
         Args:
-            response_templates: Response templates the NLU data should
+            responses: Responses the NLU data should
             be initialized with.
 
-        Returns: TrainingData object with response templates.
+        Returns: TrainingData object with responses.
 
         """
-
-        return TrainingData(responses=response_templates)
+        return TrainingData(responses=responses)
 
 
 class E2EImporter(TrainingDataImporter):
-    """Importer which
+    """Importer with the following functionality.
+
     - enhances the NLU training data with actions / user messages from the stories.
     - adds potential end-to-end bot messages from stories as actions to the domain
     """

@@ -77,7 +77,6 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 
     loaded = Interpreter.load(persisted_path, component_builder)
     parsed = loaded.parse("hello")
-
     assert loaded.pipeline
     assert parsed is not None
     assert (parsed.get("response_selector").get("all_retrieval_intents")) == [
@@ -93,13 +92,10 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         parsed.get("response_selector")
         .get("default")
         .get("response")
-        .get("template_name")
+        .get("utter_action")
     ) is not None
     assert (
-        parsed.get("response_selector")
-        .get("default")
-        .get("response")
-        .get("response_templates")
+        parsed.get("response_selector").get("default").get("response").get("responses")
     ) is not None
 
     ranking = parsed.get("response_selector").get("default").get("ranking")
