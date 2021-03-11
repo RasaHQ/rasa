@@ -523,7 +523,6 @@ class Agent:
         **kwargs,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
-
         if not self.is_ready():
             logger.info("Ignoring message as there is no agent to handle it.")
             return None

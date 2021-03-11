@@ -35,6 +35,7 @@ class RasaChatInput(RestInput):
         return cls(credentials.get("url"))
 
     def __init__(self, url: Optional[Text]) -> None:
+        """Initialise the channel with attributes."""
         self.base_url = url
         self.jwt_key: Optional[Text] = None
         self.jwt_algorithm = None
@@ -98,7 +99,6 @@ class RasaChatInput(RestInput):
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API."""
-
         jwt_payload = None
         if req.headers.get("Authorization"):
             jwt_payload = await self._decode_bearer_token(req.headers["Authorization"])

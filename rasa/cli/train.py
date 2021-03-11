@@ -129,7 +129,6 @@ def run_core_training(
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-
     output = train_path or args.out
 
     args.domain = rasa.cli.utils.get_validated_path(
@@ -177,7 +176,6 @@ def run_nlu_training(
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-
     output = train_path or args.out
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)

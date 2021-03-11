@@ -288,7 +288,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
     type_name = "wrong_utterance"
 
     def __init__(self, event: UserUttered, eval_store: EvaluationStore) -> None:
-
+        """Set `predicted_intent` and `predicted_entities` attributes."""
         try:
             self.predicted_intent = eval_store.intent_predictions[0]
         except LookupError:

@@ -881,7 +881,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self, predict_out: Optional[Dict[Text, tf.Tensor]]
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
-
         label: Dict[Text, Any] = {"name": None, "id": None, "confidence": 0.0}
         label_ranking = []
 

@@ -85,10 +85,11 @@ class Metadata:
             )
 
     def __init__(self, metadata: Dict[Text, Any]):
-
+        """Set `metadata` attribute."""
         self.metadata = metadata
 
     def get(self, property_name: Text, default: Any = None) -> Any:
+        """Proxy function to get property on `metadata` attribute."""
         return self.metadata.get(property_name, default)
 
     @property
