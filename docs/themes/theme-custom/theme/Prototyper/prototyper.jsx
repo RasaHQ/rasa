@@ -63,15 +63,15 @@ const Prototyper = ({
   const onLiveCodeChange = React.useCallback((name, value) => {
     setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
 
-    if (chatState === "ready") {
+    setChatState(cs => {
+      if (cs !== "ready") return cs;
       clearPollingInterval();
-      setChatState("needs_to_be_retrained");
       updateChatBlock();
-    }
+      return "needs_to_be_retrained";
+    });
 
-    if (!hasStarted) {
-      // track the start here
-      setHasStarted(true);
+    setHasStarted(hs => {
+      if (hs) return hs;
       fetch(startPrototyperApi, {
         method: 'POST',
         headers: jsonHeaders,
@@ -80,7 +80,8 @@ const Prototyper = ({
           editor: 'main',
         }),
       });
-    }
+      return true;
+    });
   }, [setTrainingData, chatState, setChatState]);
 
   const trainModel = (trainingData) => {
