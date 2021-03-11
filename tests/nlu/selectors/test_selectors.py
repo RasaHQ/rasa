@@ -56,7 +56,6 @@ from tests.nlu.classifiers.test_diet_classifier import as_pipeline
         ],
     ],
 )
-@pytest.mark.trains_model
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
@@ -78,7 +77,6 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 
     loaded = Interpreter.load(persisted_path, component_builder)
     parsed = loaded.parse("hello")
-
     assert loaded.pipeline
     assert parsed is not None
     assert (parsed.get("response_selector").get("all_retrieval_intents")) == [
@@ -94,13 +92,10 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         parsed.get("response_selector")
         .get("default")
         .get("response")
-        .get("template_name")
+        .get("utter_action")
     ) is not None
     assert (
-        parsed.get("response_selector")
-        .get("default")
-        .get("response")
-        .get("response_templates")
+        parsed.get("response_selector").get("default").get("response").get("responses")
     ) is not None
 
     ranking = parsed.get("response_selector").get("default").get("ranking")
@@ -207,7 +202,6 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
-@pytest.mark.trains_model
 async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path
 ):
@@ -245,7 +239,8 @@ async def test_train_model_checkpointing(
     assert best_model_file.exists()
 
     """
-    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+    Tricky to validate the *exact* number of files that should be there, however there
+    must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
@@ -284,7 +279,6 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
-@pytest.mark.trains_model
 async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -299,7 +293,6 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
-@pytest.mark.trains_model
 async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
     """Tests if processing a message returns attention weights as numpy array."""
 
@@ -333,7 +326,6 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
     "classifier_params, prediction_min, prediction_max, output_length",
     [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 0, 1, 9)],
 )
-@pytest.mark.trains_model
 async def test_cross_entropy_with_linear_norm(
     component_builder: ComponentBuilder,
     tmp_path: Path,
@@ -380,7 +372,6 @@ async def test_cross_entropy_with_linear_norm(
 @pytest.mark.parametrize(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
-@pytest.mark.trains_model
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch,
     component_builder: ComponentBuilder,
@@ -423,7 +414,6 @@ async def test_margin_loss_is_not_normalized(
         ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, "data/test_selectors", 2),
     ],
 )
-@pytest.mark.trains_model
 async def test_softmax_ranking(
     component_builder: ComponentBuilder,
     tmp_path: Path,
