@@ -7,6 +7,8 @@ pipeline:
   - name: "DIETClassifier"
     entity_recognition: False
     epochs: 50
+  - name: DucklingEntityExtractor
+    dimensions: ["time"]
 
 policies:
   - name: TEDPolicy
