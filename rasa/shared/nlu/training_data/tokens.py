@@ -63,7 +63,7 @@ class Token:
             token_dict["text"],
             token_dict["start"],
             token_dict.get("end"),
-            token_dict["data"] if "data" in token_dict else None,
+            token_dict.get("data"),
             token_dict["lemma"] if "lemma" in token_dict else None,
         )
 
