@@ -17,7 +17,7 @@ from rasa.shared.core.constants import (
     POLICY_NAME_FALLBACK,
     POLICY_NAME_MAPPING,
     POLICY_NAME_TWO_STAGE_FALLBACK,
-    POLICY_NAME_FORM,
+    CLASSIFIER_NAME_FALLBACK,
 )
 import rasa.utils.io
 from rasa.shared.constants import (
@@ -30,7 +30,6 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 
 if TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
@@ -133,11 +132,11 @@ def _update_rule_policy_config_for_fallback(
 
 def _update_fallback_config(config: Dict, fallback_config: Dict) -> None:
     fallback_classifier_config = _get_config_for_name(
-        FallbackClassifier.__name__, config.get("pipeline", [])
+        CLASSIFIER_NAME_FALLBACK, config.get("pipeline", [])
     )
 
     if not fallback_classifier_config:
-        fallback_classifier_config = {"name": FallbackClassifier.__name__}
+        fallback_classifier_config = {"name": CLASSIFIER_NAME_FALLBACK}
         config["pipeline"].append(fallback_classifier_config)
 
     nlu_threshold = fallback_config.get("nlu_threshold", DEFAULT_NLU_FALLBACK_THRESHOLD)

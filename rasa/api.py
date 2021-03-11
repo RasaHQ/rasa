@@ -10,7 +10,7 @@ import typing
 #   are getting imported.
 
 if typing.TYPE_CHECKING:
-    from typing import Any, Text, Dict, Union, List, Optional
+    from typing import Any, Text, Dict, Union, List, Optional, NoReturn
     from rasa.train import TrainingResult
     import asyncio
 
