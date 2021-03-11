@@ -21,7 +21,7 @@ def run(
     connector: "Text" = None,
     credentials: "Text" = None,
     **kwargs: "Dict[Text, Any]",
-):
+) -> NoReturn:
     """Runs a Rasa model.
 
     Args:
