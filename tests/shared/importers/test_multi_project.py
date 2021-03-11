@@ -223,7 +223,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path
     story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.yml"
     story_file.parent.mkdir(parents=True)
     rasa.shared.utils.io.write_text_file(
-        """  
+        """
         stories:
         - story: story
           steps:
