@@ -1,5 +1,4 @@
 from pathlib import Path
-import shutil
 from typing import Callable
 from _pytest.pytester import RunResult, Testdir
 import pytest
@@ -28,7 +27,7 @@ def test_cli_start_is_fast(testdir: Testdir):
     rasa_path = str(
         (Path(__file__).parent / ".." / ".." / "rasa" / "__main__.py").absolute()
     )
-    args = [shutil.which("python3"), "-X", "importtime", rasa_path, "--help"]
+    args = [sys.executable, "-X", "importtime", rasa_path, "--help"]
     result = testdir.run(*args)
 
     assert result.ret == 0
