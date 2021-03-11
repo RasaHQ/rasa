@@ -12,7 +12,7 @@ from rasa.core.channels.channel import (
 )
 
 
-class TwilioVoiceChannel(InputChannel):
+class TwilioVoiceInput(InputChannel):
 
     @classmethod
     def name(cls) -> Text:
