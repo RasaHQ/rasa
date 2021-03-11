@@ -238,5 +238,10 @@ def run(args: argparse.Namespace) -> None:
 
 
 def print_telemetry_info(args: argparse.Namespace) -> None:
+    """Print telemetry information to user.
+
+    Args:
+        args: namespace to print
+    """
     print("Just for you to know! 👇🏽")
     inform_about_telemetry(args)
