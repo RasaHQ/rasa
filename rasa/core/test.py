@@ -297,7 +297,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         self.predicted_entities = eval_store.entity_predictions
 
         try:
-            intent = {"name": eval_store.intent_targets[0]}
+            intent: Dict[Text, Optional[Text]] = {"name": eval_store.intent_targets[0]}
         except LookupError:
             intent = {"name": None}
 
@@ -440,7 +440,7 @@ def _collect_user_uttered_predictions(
 
     if intent_gold:
         user_uttered_eval_store.add_to_store(intent_targets=[intent_gold])
-    if predicted_intent:
+    if predicted_base_intent:
         user_uttered_eval_store.add_to_store(intent_predictions=[predicted_base_intent])
 
     entity_gold = event.entities
