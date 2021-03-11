@@ -1004,7 +1004,7 @@ class Domain:
     def _get_slots_sub_state(
         tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
-        """Set all set slots with the featurization of the stored value.
+        """Sets all set slots with the featurization of the stored value.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
@@ -1068,7 +1068,7 @@ class Domain:
     def get_active_states(
         self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> State:
-        """Return a bag of active states from the tracker state.
+        """Returns a bag of active states from the tracker state.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
@@ -1093,7 +1093,7 @@ class Domain:
     def states_for_tracker_history(
         self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> List[State]:
-        """Array of states for each state of the trackers history.
+        """List of states for each state of the trackers history.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
@@ -1107,7 +1107,7 @@ class Domain:
         ]
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
-        """Return a list of of SlotSet events from a list of entities."""
+        """Returns a list of `SlotSet` events from a list of entities."""
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:

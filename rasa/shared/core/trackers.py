@@ -787,7 +787,7 @@ class DialogueStateTracker:
             slot.reset()
 
     def _set_slot(self, key: Text, value: Any) -> None:
-        """Set the value of a slot if that slot exists."""
+        """Sets the value of a slot if that slot exists."""
         if key in self.slots:
             slot = self.slots[key]
             slot.value = value

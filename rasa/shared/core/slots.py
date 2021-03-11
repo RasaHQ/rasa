@@ -105,12 +105,12 @@ class Slot:
 
     @property
     def value(self) -> Any:
-        """Get the slot's value."""
+        """Gets the slot's value."""
         return self._value
 
     @value.setter
     def value(self, value: Any) -> None:
-        """Set the slot's value."""
+        """Sets the slot's value."""
         self._value = value
         self._has_been_set = True
 
