@@ -220,13 +220,15 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path
     config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
+    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.yml"
     story_file.parent.mkdir(parents=True)
     rasa.shared.utils.io.write_text_file(
-        """
-        ## story
-        * greet
-            - utter_greet
+        """  
+        stories:
+        - story: story
+          steps:
+          - intent: greet
+          - action: utter_greet
         """,
         story_file,
     )
