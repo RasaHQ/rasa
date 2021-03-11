@@ -170,36 +170,6 @@ tests = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)"
 tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six"]
 
 [[package]]
-name = "aws-sam-translator"
-version = "1.34.0"
-description = "AWS SAM Translator is a library that transform SAM templates into AWS CloudFormation templates"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-boto3 = ">=1.5,<2.0"
-jsonschema = ">=3.2,<4.0"
-six = ">=1.15,<2.0"
-
-[package.extras]
-dev = ["coverage (>=5.3,<6.0)", "flake8 (>=3.8.4,<3.9.0)", "tox (>=3.20.1,<3.21.0)", "pytest-cov (>=2.10.1,<2.11.0)", "pylint (>=1.7.2,<2.0)", "pyyaml (>=5.3.1,<5.4.0)", "mock (>=3.0.5,<4.0.0)", "parameterized (>=0.7.4,<0.8.0)", "requests (>=2.24.0,<2.25.0)", "docopt (>=0.6.2,<0.7.0)", "pytest (>=4.6.11,<4.7.0)", "pytest (>=6.1.1,<6.2.0)", "black (==20.8b1)"]
-
-[[package]]
-name = "aws-xray-sdk"
-version = "2.6.0"
-description = "The AWS X-Ray SDK for Python (the SDK) enables Python developers to record and emit information from within their applications to the AWS X-Ray service."
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-botocore = ">=1.11.3"
-future = "*"
-jsonpickle = "*"
-wrapt = "*"
-
-[[package]]
 name = "azure-core"
 version = "1.12.0"
 description = "Microsoft Azure Core Library for Python"
@@ -286,14 +256,6 @@ python-versions = "*"
 numpy = ">=1.15.0"
 
 [[package]]
-name = "boto"
-version = "2.49.0"
-description = "Amazon Web Services Library"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "boto3"
 version = "1.17.25"
 description = "The AWS SDK for Python"
@@ -356,24 +318,6 @@ python-versions = "*"
 
 [package.dependencies]
 pycparser = "*"
-
-[[package]]
-name = "cfn-lint"
-version = "0.47.0"
-description = "Checks CloudFormation templates for practices and behaviour that could potentially be improved"
-category = "dev"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-
-[package.dependencies]
-aws-sam-translator = ">=1.34.0"
-importlib-resources = {version = ">=1.4,<4", markers = "python_version < \"3.7\" and python_version != \"3.4\""}
-jsonpatch = {version = "*", markers = "python_version != \"3.4\""}
-jsonschema = ">=3.0,<4.0"
-junit-xml = ">=1.9,<2.0"
-networkx = {version = ">=2.4,<3.0", markers = "python_version >= \"3.5\""}
-pyyaml = {version = "*", markers = "python_version != \"3.4\""}
-six = ">=1.11"
 
 [[package]]
 name = "chardet"
@@ -553,24 +497,6 @@ DNSSEC = ["pycryptodome", "ecdsa (>=0.13)"]
 IDNA = ["idna (>=2.1)"]
 
 [[package]]
-name = "docker"
-version = "4.4.4"
-description = "A Python library for the Docker Engine API."
-category = "dev"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-
-[package.dependencies]
-pywin32 = {version = "227", markers = "sys_platform == \"win32\""}
-requests = ">=2.14.2,<2.18.0 || >2.18.0"
-six = ">=1.4.0"
-websocket-client = ">=0.32.0"
-
-[package.extras]
-ssh = ["paramiko (>=2.4.2)"]
-tls = ["pyOpenSSL (>=17.5.0)", "cryptography (>=1.3.4)", "idna (>=2.0.0)"]
-
-[[package]]
 name = "docopt"
 version = "0.6.2"
 description = "Pythonic argument parser, that will make you smile"
@@ -601,17 +527,6 @@ python-versions = ">=3.5.0,<4.0.0"
 [package.dependencies]
 docspec = ">=0.2.0,<0.3.0"
 "nr.sumtype" = ">=0.0.3,<0.1.0"
-
-[[package]]
-name = "ecdsa"
-version = "0.14.1"
-description = "ECDSA cryptographic signature library (pure python)"
-category = "dev"
-optional = false
-python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
-
-[package.dependencies]
-six = "*"
 
 [[package]]
 name = "execnet"
@@ -1065,20 +980,6 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "pytest-enabler", "packaging", "pep517", "pyfakefs", "flufl.flake8", "pytest-black (>=0.3.7)", "pytest-mypy", "importlib-resources (>=1.3)"]
 
 [[package]]
-name = "importlib-resources"
-version = "3.3.1"
-description = "Read resources from Python packages"
-category = "dev"
-optional = false
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
-
-[package.dependencies]
-zipp = {version = ">=0.4", markers = "python_version < \"3.8\""}
-
-[package.extras]
-docs = ["sphinx", "rst.linker", "jaraco.packaging"]
-
-[[package]]
 name = "incremental"
 version = "21.3.0"
 description = "A small library that versions your Python projects."
@@ -1147,25 +1048,6 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
-name = "jsondiff"
-version = "1.2.0"
-description = "Diff JSON and JSON-like structures in Python"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[[package]]
-name = "jsonpatch"
-version = "1.31"
-description = "Apply JSON-Patches (RFC 6902)"
-category = "dev"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-
-[package.dependencies]
-jsonpointer = ">=1.9"
-
-[[package]]
 name = "jsonpickle"
 version = "2.0.0"
 description = "Python library for serializing any arbitrary object graph into JSON"
@@ -1180,14 +1062,6 @@ importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["coverage (<5)", "pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-black-multipy", "pytest-cov", "ecdsa", "feedparser", "numpy", "pandas", "pymongo", "sklearn", "sqlalchemy", "enum34", "jsonlib"]
 "testing.libs" = ["demjson", "simplejson", "ujson", "yajl"]
-
-[[package]]
-name = "jsonpointer"
-version = "2.0"
-description = "Identify specific nodes in a JSON document (RFC 6901)"
-category = "dev"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "jsonschema"
@@ -1206,17 +1080,6 @@ six = ">=1.11.0"
 [package.extras]
 format = ["idna", "jsonpointer (>1.13)", "rfc3987", "strict-rfc3339", "webcolors"]
 format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator (>0.1.0)", "rfc3339-validator"]
-
-[[package]]
-name = "junit-xml"
-version = "1.9"
-description = "Creates JUnit XML test result documents that can be read by tools such as Jenkins"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-six = "*"
 
 [[package]]
 name = "jwcrypto"
@@ -1357,31 +1220,22 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "moto"
-version = "1.3.16"
+version = "2.0.1"
 description = "A library that allows your python tests to easily mock out the boto library"
 category = "dev"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-aws-xray-sdk = ">=0.93,<0.96 || >0.96"
-boto = ">=2.36.0"
 boto3 = ">=1.9.201"
 botocore = ">=1.12.201"
-cfn-lint = ">=0.4.0"
-cryptography = ">=2.3.0"
-docker = ">=2.5.1"
-ecdsa = "<0.15"
-idna = ">=2.5,<3"
+cryptography = ">=3.3.1"
 Jinja2 = ">=2.10.1"
-jsondiff = ">=1.1.2"
 MarkupSafe = "<2.0"
 mock = "*"
 more-itertools = "*"
 python-dateutil = ">=2.1,<3.0.0"
-python-jose = {version = ">=3.1.0,<4.0.0", extras = ["cryptography"]}
 pytz = "*"
-PyYAML = ">=5.1"
 requests = ">=2.5"
 responses = ">=0.9.0"
 six = ">1.9"
@@ -1390,17 +1244,22 @@ xmltodict = "*"
 zipp = "*"
 
 [package.extras]
-acm = ["cryptography (>=2.3.0)"]
-all = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
+all = ["PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "sshpubkeys (==3.1.0)", "sshpubkeys (>=3.1.0)"]
+apigateway = ["python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)"]
 awslambda = ["docker (>=2.5.1)"]
 batch = ["docker (>=2.5.1)"]
-cloudformation = ["PyYAML (>=5.1)", "cfn-lint (>=0.4.0)"]
+cloudformation = ["docker (>=2.5.1)", "PyYAML (>=5.1)", "cfn-lint (>=0.4.0)"]
 cognitoidp = ["python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)"]
-ec2 = ["cryptography (>=2.3.0)", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
-iam = ["cryptography (>=2.3.0)"]
+dynamodb2 = ["docker (>=2.5.1)"]
+dynamodbstreams = ["docker (>=2.5.1)"]
+ec2 = ["docker (>=2.5.1)", "sshpubkeys (==3.1.0)", "sshpubkeys (>=3.1.0)"]
 iotdata = ["jsondiff (>=1.1.2)"]
-s3 = ["cryptography (>=2.3.0)"]
-server = ["cryptography (>=2.3.0)", "PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "flask", "sshpubkeys (>=3.1.0,<4.0)", "sshpubkeys (>=3.1.0)"]
+s3 = ["PyYAML (>=5.1)"]
+server = ["PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "flask", "flask-cors", "sshpubkeys (==3.1.0)", "sshpubkeys (>=3.1.0)"]
+ses = ["docker (>=2.5.1)"]
+sns = ["docker (>=2.5.1)"]
+sqs = ["docker (>=2.5.1)"]
+ssm = ["docker (>=2.5.1)", "PyYAML (>=5.1)", "cfn-lint (>=0.4.0)"]
 xray = ["aws-xray-sdk (>=0.93,!=0.96)"]
 
 [[package]]
@@ -2125,26 +1984,6 @@ asyncio_client = ["aiohttp (>=3.4)"]
 client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
-name = "python-jose"
-version = "3.2.0"
-description = "JOSE implementation in Python"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-cryptography = {version = "*", optional = true, markers = "extra == \"cryptography\""}
-ecdsa = "<0.15"
-pyasn1 = "*"
-rsa = "*"
-six = "<2.0"
-
-[package.extras]
-cryptography = ["cryptography"]
-pycrypto = ["pycrypto (>=2.6.0,<2.7.0)", "pyasn1"]
-pycryptodome = ["pycryptodome (>=3.3.1,<4.0.0)", "pyasn1"]
-
-[[package]]
 name = "python-socketio"
 version = "5.0.0"
 description = "Socket.IO server"
@@ -2169,14 +2008,6 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "pywin32"
-version = "227"
-description = "Python for Window Extensions"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "pyyaml"
 version = "5.4.1"
 description = "YAML parser and emitter for Python"
@@ -2186,17 +2017,17 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
 [[package]]
 name = "questionary"
-version = "1.5.2"
+version = "1.9.0"
 description = "Python library to build pretty command line user prompts ⭐️"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6,<3.10"
 
 [package.dependencies]
-prompt-toolkit = ">=2.0,<4.0"
+prompt_toolkit = ">=2.0,<4.0"
 
 [package.extras]
-test = ["pytest", "pytest-pycodestyle", "pytest-cov", "coveralls"]
+docs = ["Sphinx (>=3.3,<4.0)", "sphinx-rtd-theme (>=0.5.0,<0.6.0)", "sphinx-autobuild (>=2020.9.1,<2021.0.0)", "sphinx-copybutton (>=0.3.1,<0.4.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)"]
 
 [[package]]
 name = "rasa-sdk"
@@ -3059,17 +2890,6 @@ requests = ">=2.4.2"
 requests-toolbelt = "*"
 
 [[package]]
-name = "websocket-client"
-version = "0.58.0"
-description = "WebSocket client for Python with low level API options"
-category = "dev"
-optional = false
-python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-
-[package.dependencies]
-six = "*"
-
-[[package]]
 name = "websockets"
 version = "8.0.2"
 description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
@@ -3140,7 +2960,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "96018eb7edff1e152b02bc446588e410db9dd7ac028e6ef5c46033c475d5402f"
+content-hash = "ba5cb4a772f8e883bd34bb863ec868b01778f36dc935d0b637214d415ea5401b"
 
 [metadata.files]
 absl-py = [
@@ -3210,15 +3030,6 @@ attrs = [
     {file = "attrs-20.3.0-py2.py3-none-any.whl", hash = "sha256:31b2eced602aa8423c2aea9c76a724617ed67cf9513173fd3a4f03e3a929c7e6"},
     {file = "attrs-20.3.0.tar.gz", hash = "sha256:832aa3cde19744e49938b91fea06d69ecb9e649c93ba974535d08ad92164f700"},
 ]
-aws-sam-translator = [
-    {file = "aws-sam-translator-1.34.0.tar.gz", hash = "sha256:857c62a03e3bb4a3f7074e867f52ced636dc06192c8216e00732122f21a206c2"},
-    {file = "aws_sam_translator-1.34.0-py2-none-any.whl", hash = "sha256:a22d505ddc0c48e3cf0ff0127096bdc1231d20c852509201ffba47dc8e683a1a"},
-    {file = "aws_sam_translator-1.34.0-py3-none-any.whl", hash = "sha256:1cfc8ba13c43e8c425fdcd6c246fdd90899a3ed89310d84a72ccdf082e4146d7"},
-]
-aws-xray-sdk = [
-    {file = "aws-xray-sdk-2.6.0.tar.gz", hash = "sha256:abf5b90f740e1f402e23414c9670e59cb9772e235e271fef2bce62b9100cbc77"},
-    {file = "aws_xray_sdk-2.6.0-py2.py3-none-any.whl", hash = "sha256:076f7c610cd3564bbba3507d43e328fb6ff4a2e841d3590f39b2c3ce99d41e1d"},
-]
 azure-core = [
     {file = "azure-core-1.12.0.zip", hash = "sha256:adf2b1c6ef150a92295b4b405f982a9d2c55c4846728cb14760ca592acbb09ec"},
     {file = "azure_core-1.12.0-py2.py3-none-any.whl", hash = "sha256:2d0ff1c446cc572f3e32a9a59809880d0d857754a06afe682bce8a6ea2201607"},
@@ -3256,10 +3067,6 @@ blis = [
     {file = "blis-0.4.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:00473602629ba69fe6565108e21957e918cb48b59f5bf2f6bfb6e04de42500cb"},
     {file = "blis-0.4.1-cp38-cp38-win_amd64.whl", hash = "sha256:856142a11e37fd2c47c5006a3197e157bb8469a491a73d2d442223dd3279df84"},
     {file = "blis-0.4.1.tar.gz", hash = "sha256:d69257d317e86f34a7f230a2fd1f021fd2a1b944137f40d8cdbb23bd334cd0c4"},
-]
-boto = [
-    {file = "boto-2.49.0-py2.py3-none-any.whl", hash = "sha256:147758d41ae7240dc989f0039f27da8ca0d53734be0eb869ef16e3adcfa462e8"},
-    {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
     {file = "boto3-1.17.25-py2.py3-none-any.whl", hash = "sha256:399ccbd31b7aa09d53c4e449fe575803b033fcc23ed3a1d7ae2fe7a04727a562"},
@@ -3319,10 +3126,6 @@ cffi = [
     {file = "cffi-1.14.5-cp39-cp39-win32.whl", hash = "sha256:afb29c1ba2e5a3736f1c301d9d0abe3ec8b86957d04ddfa9d7a6a42b9367e396"},
     {file = "cffi-1.14.5-cp39-cp39-win_amd64.whl", hash = "sha256:f2d45f97ab6bb54753eab54fffe75aaf3de4ff2341c9daee1987ee1837636f1d"},
     {file = "cffi-1.14.5.tar.gz", hash = "sha256:fd78e5fee591709f32ef6edb9a015b4aa1a5022598e36227500c8f4e02328d9c"},
-]
-cfn-lint = [
-    {file = "cfn-lint-0.47.0.tar.gz", hash = "sha256:92a8d6ec6bfbf5f258a5bad51d070fa8c84d8c65b94ea07cf6a3a79b326bcf07"},
-    {file = "cfn_lint-0.47.0-py3-none-any.whl", hash = "sha256:700143d01342038b4b203f5f6c79d22e1c6b9e812b7db33ae66e4bb38bfa0883"},
 ]
 chardet = [
     {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},
@@ -3475,10 +3278,6 @@ dnspython = [
     {file = "dnspython-1.16.0-py2.py3-none-any.whl", hash = "sha256:f69c21288a962f4da86e56c4905b49d11aba7938d3d740e80d9e366ee4f1632d"},
     {file = "dnspython-1.16.0.zip", hash = "sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01"},
 ]
-docker = [
-    {file = "docker-4.4.4-py2.py3-none-any.whl", hash = "sha256:f3607d5695be025fa405a12aca2e5df702a57db63790c73b927eb6a94aac60af"},
-    {file = "docker-4.4.4.tar.gz", hash = "sha256:d3393c878f575d3a9ca3b94471a3c89a6d960b35feb92f033c0de36cc9d934db"},
-]
 docopt = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
 ]
@@ -3489,10 +3288,6 @@ docspec = [
 docspec-python = [
     {file = "docspec-python-0.1.0.tar.gz", hash = "sha256:8858dc3318b6a67d8452a89ac5c14a15c73f1aa1dd72f9cf63eaa9687082d278"},
     {file = "docspec_python-0.1.0-py3-none-any.whl", hash = "sha256:86561c77dc9ebe4f7d9c224c0740cd66407db849a78580a7509963d4e2c02dfe"},
-]
-ecdsa = [
-    {file = "ecdsa-0.14.1-py2.py3-none-any.whl", hash = "sha256:e108a5fe92c67639abae3260e43561af914e7fd0d27bae6d2ec1312ae7934dfe"},
-    {file = "ecdsa-0.14.1.tar.gz", hash = "sha256:64c613005f13efec6541bb0a33290d0d03c27abab5f15fbab20fb0ee162bdd8e"},
 ]
 execnet = [
     {file = "execnet-1.8.0-py2.py3-none-any.whl", hash = "sha256:7a13113028b1e1cc4c6492b28098b3c6576c9dccc7973bfe47b342afadafb2ac"},
@@ -3758,10 +3553,6 @@ importlib-metadata = [
     {file = "importlib_metadata-3.7.2-py3-none-any.whl", hash = "sha256:407d13f55dc6f2a844e62325d18ad7019a436c4bfcaee34cda35f2be6e7c3e34"},
     {file = "importlib_metadata-3.7.2.tar.gz", hash = "sha256:18d5ff601069f98d5d605b6a4b50c18a34811d655c55548adc833e687289acde"},
 ]
-importlib-resources = [
-    {file = "importlib_resources-3.3.1-py2.py3-none-any.whl", hash = "sha256:42068585cc5e8c2bf0a17449817401102a5125cbfbb26bb0f43cde1568f6f2df"},
-    {file = "importlib_resources-3.3.1.tar.gz", hash = "sha256:0ed250dbd291947d1a298e89f39afcc477d5a6624770503034b72588601bcc05"},
-]
 incremental = [
     {file = "incremental-21.3.0-py2.py3-none-any.whl", hash = "sha256:92014aebc6a20b78a8084cdd5645eeaa7f74b8933f70fa3ada2cfbd1e3b54321"},
     {file = "incremental-21.3.0.tar.gz", hash = "sha256:02f5de5aff48f6b9f665d99d48bfc7ec03b6e3943210de7cfc88856d755d6f57"},
@@ -3789,27 +3580,13 @@ joblib = [
     {file = "joblib-0.15.1-py3-none-any.whl", hash = "sha256:6825784ffda353cc8a1be573118085789e5b5d29401856b35b756645ab5aecb5"},
     {file = "joblib-0.15.1.tar.gz", hash = "sha256:61e49189c84b3c5d99a969d314853f4d1d263316cc694bec17548ebaa9c47b6e"},
 ]
-jsondiff = [
-    {file = "jsondiff-1.2.0.tar.gz", hash = "sha256:34941bc431d10aa15828afe1cbb644977a114e75eef6cc74fb58951312326303"},
-]
-jsonpatch = [
-    {file = "jsonpatch-1.31-py2.py3-none-any.whl", hash = "sha256:586f40a162e341eb766f4358a1644e289621b5e65f9b3b6d4955a4c15e9ac8bd"},
-    {file = "jsonpatch-1.31.tar.gz", hash = "sha256:ae6f3686fc71b53a278a9fdeb91afdc0e523e2f8f8a82cb2f04af90413a8eacb"},
-]
 jsonpickle = [
     {file = "jsonpickle-2.0.0-py2.py3-none-any.whl", hash = "sha256:c1010994c1fbda87a48f8a56698605b598cb0fc6bb7e7927559fc1100e69aeac"},
     {file = "jsonpickle-2.0.0.tar.gz", hash = "sha256:0be49cba80ea6f87a168aa8168d717d00c6ca07ba83df3cec32d3b30bfe6fb9a"},
 ]
-jsonpointer = [
-    {file = "jsonpointer-2.0-py2.py3-none-any.whl", hash = "sha256:ff379fa021d1b81ab539f5ec467c7745beb1a5671463f9dcc2b2d458bd361c1e"},
-    {file = "jsonpointer-2.0.tar.gz", hash = "sha256:c192ba86648e05fdae4f08a17ec25180a9aef5008d973407b581798a83975362"},
-]
 jsonschema = [
     {file = "jsonschema-3.2.0-py2.py3-none-any.whl", hash = "sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163"},
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
-]
-junit-xml = [
-    {file = "junit_xml-1.9-py2.py3-none-any.whl", hash = "sha256:ec5ca1a55aefdd76d28fcc0b135251d156c7106fa979686a4b48d62b761b4732"},
 ]
 jwcrypto = [
     {file = "jwcrypto-0.8-py2.py3-none-any.whl", hash = "sha256:16e17faa4dce36551ade3a3ccb06236a61e5924ea1db163c9be9827acf935a82"},
@@ -3962,8 +3739,8 @@ more-itertools = [
     {file = "more_itertools-8.7.0-py3-none-any.whl", hash = "sha256:5652a9ac72209ed7df8d9c15daf4e1aa0e3d2ccd3c87f8265a0673cd9cbc9ced"},
 ]
 moto = [
-    {file = "moto-1.3.16-py2.py3-none-any.whl", hash = "sha256:f51903b6b532f6c887b111b3343f6925b77eef0505a914138d98290cf3526df9"},
-    {file = "moto-1.3.16.tar.gz", hash = "sha256:6c686b1f117563391957ce47c2106bc3868783d59d0e004d2446dce875bec07f"},
+    {file = "moto-2.0.1-py2.py3-none-any.whl", hash = "sha256:5c729d67bd879f3874d772cb486da7788e8c9820f49d676b9cb839333ff40bb9"},
+    {file = "moto-2.0.1.tar.gz", hash = "sha256:b0761ad0d73eaaf92324a190f780bb482dfed57c235c1cada1f5cfbf84ae6feb"},
 ]
 msrest = [
     {file = "msrest-0.6.21-py2.py3-none-any.whl", hash = "sha256:c840511c845330e96886011a236440fafc2c9aff7b2df9c0a92041ee2dee3782"},
@@ -4466,10 +4243,6 @@ python-engineio = [
     {file = "python-engineio-3.13.2.tar.gz", hash = "sha256:36b33c6aa702d9b6a7f527eec6387a2da1a9a24484ec2f086d76576413cef04b"},
     {file = "python_engineio-3.13.2-py2.py3-none-any.whl", hash = "sha256:cfded18156862f94544a9f8ef37f56727df731c8552d7023f5afee8369be2db6"},
 ]
-python-jose = [
-    {file = "python-jose-3.2.0.tar.gz", hash = "sha256:4e4192402e100b5fb09de5a8ea6bcc39c36ad4526341c123d401e2561720335b"},
-    {file = "python_jose-3.2.0-py2.py3-none-any.whl", hash = "sha256:67d7dfff599df676b04a996520d9be90d6cdb7e6dd10b4c7cacc0c3e2e92f2be"},
-]
 python-socketio = [
     {file = "python-socketio-5.0.0.tar.gz", hash = "sha256:d5a641dbbb9171743c92f00aebadf7a0cb7bfefd3f86e79ea44618d6913ac03d"},
     {file = "python_socketio-5.0.0-py2.py3-none-any.whl", hash = "sha256:d5dda689f154f18e689bf241d85e3f38167960f2d7bc0905ba2e8890eeb4c517"},
@@ -4477,20 +4250,6 @@ python-socketio = [
 pytz = [
     {file = "pytz-2020.5-py2.py3-none-any.whl", hash = "sha256:16962c5fb8db4a8f63a26646d8886e9d769b6c511543557bc84e9569fb9a9cb4"},
     {file = "pytz-2020.5.tar.gz", hash = "sha256:180befebb1927b16f6b57101720075a984c019ac16b1b7575673bea42c6c3da5"},
-]
-pywin32 = [
-    {file = "pywin32-227-cp27-cp27m-win32.whl", hash = "sha256:371fcc39416d736401f0274dd64c2302728c9e034808e37381b5e1b22be4a6b0"},
-    {file = "pywin32-227-cp27-cp27m-win_amd64.whl", hash = "sha256:4cdad3e84191194ea6d0dd1b1b9bdda574ff563177d2adf2b4efec2a244fa116"},
-    {file = "pywin32-227-cp35-cp35m-win32.whl", hash = "sha256:f4c5be1a293bae0076d93c88f37ee8da68136744588bc5e2be2f299a34ceb7aa"},
-    {file = "pywin32-227-cp35-cp35m-win_amd64.whl", hash = "sha256:a929a4af626e530383a579431b70e512e736e9588106715215bf685a3ea508d4"},
-    {file = "pywin32-227-cp36-cp36m-win32.whl", hash = "sha256:300a2db938e98c3e7e2093e4491439e62287d0d493fe07cce110db070b54c0be"},
-    {file = "pywin32-227-cp36-cp36m-win_amd64.whl", hash = "sha256:9b31e009564fb95db160f154e2aa195ed66bcc4c058ed72850d047141b36f3a2"},
-    {file = "pywin32-227-cp37-cp37m-win32.whl", hash = "sha256:47a3c7551376a865dd8d095a98deba954a98f326c6fe3c72d8726ca6e6b15507"},
-    {file = "pywin32-227-cp37-cp37m-win_amd64.whl", hash = "sha256:31f88a89139cb2adc40f8f0e65ee56a8c585f629974f9e07622ba80199057511"},
-    {file = "pywin32-227-cp38-cp38-win32.whl", hash = "sha256:7f18199fbf29ca99dff10e1f09451582ae9e372a892ff03a28528a24d55875bc"},
-    {file = "pywin32-227-cp38-cp38-win_amd64.whl", hash = "sha256:7c1ae32c489dc012930787f06244426f8356e129184a02c25aef163917ce158e"},
-    {file = "pywin32-227-cp39-cp39-win32.whl", hash = "sha256:c054c52ba46e7eb6b7d7dfae4dbd987a1bb48ee86debe3f245a2884ece46e295"},
-    {file = "pywin32-227-cp39-cp39-win_amd64.whl", hash = "sha256:f27cec5e7f588c3d1051651830ecc00294f90728d19c3bf6916e6dba93ea357c"},
 ]
 pyyaml = [
     {file = "PyYAML-5.4.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:3b2b1824fe7112845700f815ff6a489360226a5609b96ec2190a45e62a9fc922"},
@@ -4524,8 +4283,8 @@ pyyaml = [
     {file = "PyYAML-5.4.1.tar.gz", hash = "sha256:607774cbba28732bfa802b54baa7484215f530991055bb562efbed5b2f20a45e"},
 ]
 questionary = [
-    {file = "questionary-1.5.2-py3-none-any.whl", hash = "sha256:6998a1fe0639daec0da44e0a973f387e7c778bdc418d76ecfa45a7b3a0997049"},
-    {file = "questionary-1.5.2.tar.gz", hash = "sha256:f6e41e36b6c86fe0c3ff12a30c6c6a4e80129efba5ad0a115d71fd5df119c726"},
+    {file = "questionary-1.9.0-py3-none-any.whl", hash = "sha256:fa50c06af4e3826d986efbc90be16e42ff367a634e6a169e42a3f9fccd90648b"},
+    {file = "questionary-1.9.0.tar.gz", hash = "sha256:a050fdbb81406cddca679a6f492c6272da90cb09988963817828f697cf091c55"},
 ]
 rasa-sdk = [
     {file = "rasa-sdk-2.4.0.tar.gz", hash = "sha256:9a124ad5bf044065cf90bf85c237e84f96eee427b060ff7e7bf76d41c187bc30"},
@@ -5087,10 +4846,6 @@ wcwidth = [
 webexteamssdk = [
     {file = "webexteamssdk-1.6-py3-none-any.whl", hash = "sha256:e4958dca3903c659fe1e0f79e38740cb2ec1ae2589599807b179c3efb356c3a2"},
     {file = "webexteamssdk-1.6.tar.gz", hash = "sha256:980f268d89187d1a157dfbadcb626fce849080a31550e549cfe838f0203b3a3d"},
-]
-websocket-client = [
-    {file = "websocket_client-0.58.0-py2.py3-none-any.whl", hash = "sha256:44b5df8f08c74c3d82d28100fdc81f4536809ce98a17f0757557813275fbb663"},
-    {file = "websocket_client-0.58.0.tar.gz", hash = "sha256:63509b41d158ae5b7f67eb4ad20fecbb4eee99434e73e140354dc3ff8e09716f"},
 ]
 websockets = [
     {file = "websockets-8.0.2-cp36-cp36m-macosx_10_6_intel.whl", hash = "sha256:e906128532a14b9d264a43eb48f9b3080d53a9bda819ab45bf56b8039dc606ac"},
