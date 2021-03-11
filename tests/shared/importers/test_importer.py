@@ -319,8 +319,8 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default_retrieval_intents.yml"
     data_paths = [
-        "data/test_nlu/default_retrieval_intents.md",
-        "data/test_responses/default.md",
+        "data/test/stories_default_retrieval_intents.yml",
+        "data/test_responses/default.yml",
     ]
     importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, data_paths
@@ -331,15 +331,15 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
 
     assert domain.retrieval_intents == ["chitchat"]
     assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
-    assert domain.retrieval_intent_templates == nlu_data.responses
-    assert domain.templates != nlu_data.responses
+    assert domain.retrieval_intent_responses == nlu_data.responses
+    assert domain.responses != nlu_data.responses
     assert "utter_chitchat" in domain.action_names_or_texts
 
 
 async def test_nlu_data_domain_sync_responses(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default.yml"
-    data_paths = ["data/test_nlg/test_responses.yml"]
+    data_paths = ["data/test_responses/responses_utter_rasa.yml"]
 
     importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, data_paths
@@ -349,4 +349,4 @@ async def test_nlu_data_domain_sync_responses(project: Text):
         domain = await importer.get_domain()
 
     # Responses were sync between "test_responses.yml" and the "domain.yml"
-    assert "utter_rasa" in domain.templates.keys()
+    assert "utter_rasa" in domain.responses.keys()

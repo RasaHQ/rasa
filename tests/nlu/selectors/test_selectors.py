@@ -59,10 +59,10 @@ from tests.nlu.classifiers.test_diet_classifier import as_pipeline
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -77,7 +77,6 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 
     loaded = Interpreter.load(persisted_path, component_builder)
     parsed = loaded.parse("hello")
-
     assert loaded.pipeline
     assert parsed is not None
     assert (parsed.get("response_selector").get("all_retrieval_intents")) == [
@@ -93,13 +92,10 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         parsed.get("response_selector")
         .get("default")
         .get("response")
-        .get("template_name")
+        .get("utter_action")
     ) is not None
     assert (
-        parsed.get("response_selector")
-        .get("default")
-        .get("response")
-        .get("response_templates")
+        parsed.get("response_selector").get("default").get("response").get("responses")
     ) is not None
 
     ranking = parsed.get("response_selector").get("default").get("ranking")
@@ -114,10 +110,10 @@ def test_preprocess_selector_multiple_retrieval_intents():
 
     # use some available data
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_extra_intent = TrainingData(
         [
@@ -149,10 +145,10 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -180,10 +176,10 @@ def test_resolve_intent_response_key_from_label(
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -243,7 +239,8 @@ async def test_train_model_checkpointing(
     assert best_model_file.exists()
 
     """
-    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+    Tricky to validate the *exact* number of files that should be there, however there
+    must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
@@ -264,7 +261,7 @@ async def _train_persist_load_with_different_settings(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa.md",
+        data="data/examples/rasa/demo-rasa.yml",
         component_builder=component_builder,
     )
 
@@ -327,12 +324,9 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
 
 @pytest.mark.parametrize(
     "classifier_params, prediction_min, prediction_max, output_length",
-    [
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"}, -1, 1, 9),
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9),
-    ],
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 0, 1, 9)],
 )
-async def test_cross_entropy_without_normalization(
+async def test_cross_entropy_with_linear_norm(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
@@ -367,12 +361,9 @@ async def test_cross_entropy_without_normalization(
 
     response_confidences = [response.get("confidence") for response in response_ranking]
 
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in response_confidences
-    ]
-    assert all(confidence_in_range)
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
+    assert output_sums_to_1
 
     # normalize shouldn't have been called
     mock.normalize.assert_not_called()

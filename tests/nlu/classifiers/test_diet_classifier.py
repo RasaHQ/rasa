@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Text
 
 import numpy as np
 import pytest
@@ -33,6 +34,7 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
+    LINEAR_NORM,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -179,7 +181,7 @@ async def _train_persist_load_with_different_settings(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        data="data/examples/rasa/demo-rasa-multi-intent.yml",
         component_builder=component_builder,
     )
 
@@ -304,25 +306,25 @@ def as_pipeline(*components):
     [
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             10,
             True,
         ),  # default config
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
         ),  # no normalization
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             3,
             True,
         ),  # lower than default ranking_length
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
@@ -370,29 +372,24 @@ async def test_softmax_normalization(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, prediction_min, prediction_max, output_length",
+    "classifier_params, data_path",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"},
-            -1,
-            1,
-            LABEL_RANKING_LENGTH,
-        ),
-        (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"},
-            -1e9,
-            1e9,
-            LABEL_RANKING_LENGTH,
+            {
+                RANDOM_SEED: 42,
+                EPOCHS: 1,
+                MODEL_CONFIDENCE: LINEAR_NORM,
+                RANKING_LENGTH: -1,
+            },
+            DEFAULT_NLU_DATA,
         ),
     ],
 )
-async def test_cross_entropy_without_normalization(
+async def test_inner_linear_normalization(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    prediction_min: float,
-    prediction_max: float,
-    output_length: int,
+    data_path: Text,
     monkeypatch: MonkeyPatch,
 ):
     pipeline = as_pipeline(
@@ -403,10 +400,7 @@ async def test_cross_entropy_without_normalization(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
-        _config,
-        path=str(tmp_path),
-        data="data/test/many_intents.md",
-        component_builder=component_builder,
+        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
@@ -416,23 +410,17 @@ async def test_cross_entropy_without_normalization(
     parse_data = loaded.parse("hello")
     intent_ranking = parse_data.get("intent_ranking")
 
-    # check that the output was correctly truncated
-    assert len(intent_ranking) == output_length
-
-    intent_confidences = [intent.get("confidence") for intent in intent_ranking]
-
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in intent_confidences
-    ]
-    assert all(confidence_in_range)
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in intent_ranking]
+    ) == pytest.approx(1)
+    assert output_sums_to_1
 
     # check whether the normalization of rankings is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
+
+    # normalize shouldn't have been called
+    mock.normalize.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -455,7 +443,7 @@ async def test_margin_loss_is_not_normalized(
     (trained_model, _, persisted_path) = await train(
         _config,
         path=str(tmpdir),
-        data="data/test/many_intents.md",
+        data="data/test/many_intents.yml",
         component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -511,10 +499,11 @@ async def test_set_random_seed(component_builder, tmpdir):
     assert result_a == result_b
 
 
-async def test_train_tensorboard_logging(component_builder, tmpdir):
-    from pathlib import Path
-
-    tensorboard_log_dir = Path(tmpdir.strpath) / "tensorboard"
+@pytest.mark.parametrize("log_level", ["epoch", "batch", "minibatch"])
+async def test_train_tensorboard_logging(
+    log_level: Text, component_builder: ComponentBuilder, tmpdir: Path
+):
+    tensorboard_log_dir = Path(tmpdir / "tensorboard")
 
     assert not tensorboard_log_dir.exists()
 
@@ -525,8 +514,8 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
                 {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 3,
-                    TENSORBOARD_LOG_LEVEL: "epoch",
+                    EPOCHS: 1,
+                    TENSORBOARD_LOG_LEVEL: log_level,
                     TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
                     EVAL_NUM_EXAMPLES: 15,
                     EVAL_NUM_EPOCHS: 1,
@@ -538,15 +527,15 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
 
     await train(
         _config,
-        path=tmpdir.strpath,
-        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        path=str(tmpdir),
+        data="data/examples/rasa/demo-rasa-multi-intent.yml",
         component_builder=component_builder,
     )
 
     assert tensorboard_log_dir.exists()
 
     all_files = list(tensorboard_log_dir.rglob("*.*"))
-    assert len(all_files) == 3
+    assert len(all_files) == 2
 
 
 async def test_train_model_checkpointing(
@@ -576,7 +565,7 @@ async def test_train_model_checkpointing(
     await train(
         _config,
         path=str(tmpdir),
-        data="data/examples/rasa/demo-rasa.md",
+        data="data/examples/rasa/demo-rasa.yml",
         component_builder=component_builder,
         fixed_model_name=model_name,
     )
@@ -584,7 +573,8 @@ async def test_train_model_checkpointing(
     assert best_model_file.exists()
 
     """
-    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+    Tricky to validate the *exact* number of files that should be there, however there
+    must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
@@ -615,7 +605,7 @@ async def test_train_persist_load_with_composite_entities(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data="data/test/demo-rasa-composite-entities.md",
+        data="data/test/demo-rasa-composite-entities.yml",
         component_builder=component_builder,
     )
 
