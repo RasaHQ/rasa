@@ -855,14 +855,19 @@ def test_tf_record_key(
     "intent_frequencies, num_chunks", [([100, 82, 63, 43], 8), ([15, 12, 10, 7], 4)]
 )
 def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: int):
-
     # Create the initial training data
-    all_messages = []
+    num_actions = num_chunks + 2
+    all_messages = [
+        Message(data={ACTION_NAME: f"{index}"}) for index in range(num_actions)
+    ]
     for index, intent_count in enumerate(intent_frequencies):
         all_messages.extend(
             [
                 Message(
-                    text=f"intent_{index * intent_count + ex_index}", intent=f"{index}"
+                    data={
+                        TEXT: f"intent_{index * intent_count + ex_index}",
+                        INTENT: f"{index}",
+                    }
                 )
                 for ex_index in range(intent_count)
             ]
@@ -870,14 +875,13 @@ def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: 
     training_data = TrainingDataFull(all_messages)
     original_fingerprint = training_data.fingerprint()
     chunks = training_data.divide_into_chunks(num_chunks=num_chunks)
-    new_fingerprint = training_data.fingerprint()
 
     # Original training data shouldn't be modified
-    assert original_fingerprint == new_fingerprint
+    assert original_fingerprint == training_data.fingerprint()
 
     # First check that no example is lost
     chunk_sizes = [len(td.training_examples) for td in chunks]
-    assert sum(chunk_sizes) == sum(intent_frequencies)
+    assert sum(chunk_sizes) == sum(intent_frequencies) + num_actions
 
     # Check the equal distribution of examples across chunks
     for index, intent_count in enumerate(intent_frequencies):
@@ -886,7 +890,7 @@ def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: 
         num_examples_across_chunks = []
         for chunk in chunks:
             filtered_examples = chunk.filter_training_examples(
-                lambda x: x.get("intent") == intent_label
+                lambda x: x.get(INTENT) == intent_label
             )
             num_examples = len(filtered_examples.training_examples)
             num_examples_across_chunks.append(num_examples)
@@ -896,6 +900,25 @@ def test_divide_training_data_chunks(intent_frequencies: List[int], num_chunks: 
                 or num_examples == ideal_size - 1
             )
         assert sum(num_examples_across_chunks) == intent_count
+
+    # Check that chunks contain core messages
+    assert [e.get(ACTION_NAME) for chunk in chunks for e in chunk.core_examples] == [
+        f"{index}" for index in range(num_actions)
+    ]
+
+    # Check that changes to chunks don't lead to changes to original full training data
+    for chunk in chunks:
+        for e in chunk.training_examples:
+            for attribute in e.data.keys():
+                e.add_features(Features(np.zeros((1,)), "test", attribute, "test"))
+
+    # Original training data shouldn't be modified
+    assert original_fingerprint == training_data.fingerprint()
+
+    # However fingerprint doesn't include features,
+    # check that features were not added to original training data
+    for e in training_data.training_examples:
+        assert not e.features
 
 
 def test_fingerprint_is_different_when_lookup_table_has_changed(
