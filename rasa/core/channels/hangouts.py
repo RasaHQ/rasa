@@ -108,7 +108,8 @@ class HangoutsOutput(OutputChannel):
             msg_new = "cards"
         else:
             raise Exception(
-                "Your message to Hangouts channel must either contain 'text' or 'cards'!"
+                "Your message to Hangouts channel must either contain 'text' or "
+                "'cards'!"
             )
 
         # depending on above outcome, convert messages into same type and combine
@@ -248,7 +249,7 @@ class HangoutsInput(InputChannel):
         return self.name()
 
     def _check_token(self, bot_token: Text) -> None:
-        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity
+        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: W505
         try:
             token = client.verify_id_token(
                 bot_token, self.project_id, cert_uri=CERT_URI
@@ -301,7 +302,8 @@ class HangoutsInput(InputChannel):
                 )
             except Exception as e:
                 logger.exception(
-                    f"An exception occurred while handling user message: {e}, text: {text}"
+                    f"An exception occurred while handling user message: {e}, "
+                    f"text: {text}"
                 )
 
             return response.json(collector.messages)

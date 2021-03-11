@@ -226,7 +226,8 @@ def test_convert_training_examples(
         assert attribute in output[0]
     for attribute in {INTENT, TEXT, ENTITIES} - set(attributes):
         assert attribute not in output[0]
-    # we have sparse sentence, sparse sequence, dense sentence, and dense sequence features in the list
+    # we have sparse sentence, sparse sequence, dense sentence, and dense sequence
+    # features in the list
     assert len(output[0][TEXT]) == 4
     if INTENT in attributes:
         # we will just have space sentence features

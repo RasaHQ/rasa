@@ -508,8 +508,11 @@ class UserUttered(Event):
         return _dict
 
     def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
-        """Turns a UserUttered event into a substate containing information about entities,
-        intent and text of the UserUttered
+        """Turns a UserUttered event into features.
+
+        The substate contains information about entities, intent and text of the
+        `UserUttered` event.
+
         Returns:
             a dictionary with intent name, text and entities
         """
@@ -1142,12 +1145,15 @@ class ReminderCancelled(Event):
         """Creates a ReminderCancelled event.
 
         If all arguments are `None`, this will cancel all reminders.
-        are to be cancelled. If no arguments are supplied, this will cancel all reminders.
+        are to be cancelled. If no arguments are supplied, this will cancel all
+        reminders.
 
         Args:
             name: Name of the reminder to be cancelled.
-            intent: Intent name that is to be used to identify the reminders to be cancelled.
-            entities: Entities that are to be used to identify the reminders to be cancelled.
+            intent: Intent name that is to be used to identify the reminders to be
+                cancelled.
+            entities: Entities that are to be used to identify the reminders to be
+                cancelled.
             timestamp: Optional timestamp.
             metadata: Optional event metadata.
         """
@@ -1169,23 +1175,26 @@ class ReminderCancelled(Event):
 
     def __str__(self) -> Text:
         """Returns text representation of event."""
-        return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
+        return (
+            f"ReminderCancelled(name: {self.name}, intent: {self.intent}, "
+            f"entities: {self.entities})"
+        )
 
     def cancels_job_with_name(self, job_name: Text, sender_id: Text) -> bool:
-        """Determines if this `ReminderCancelled` event should cancel the job with the given name.
+        """Determines if this event should cancel the job with the given name.
 
         Args:
             job_name: Name of the job to be tested.
             sender_id: The `sender_id` of the tracker.
 
         Returns:
-            `True`, if this `ReminderCancelled` event should cancel the job with the given name,
-            and `False` otherwise.
+            `True`, if this `ReminderCancelled` event should cancel the job with the
+            given name, and `False` otherwise.
         """
-
         match = re.match(
             rf"^\[([\d\-]*),([\d\-]*),([\d\-]*)\]"
-            rf"({re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)}{re.escape(sender_id)})",
+            rf"({re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)}"
+            rf"{re.escape(sender_id)})",
             job_name,
         )
         if not match:
@@ -1605,7 +1614,7 @@ class AgentUttered(SkipEventInMDStoryMixin):
 
 
 class ActiveLoop(Event):
-    """If `name` is not None: activates a loop with `name` else deactivates active loop."""
+    """If `name` is given: activates a loop with `name` else deactivates active loop."""
 
     type_name = "active_loop"
 
