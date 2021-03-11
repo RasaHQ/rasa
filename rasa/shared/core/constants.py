@@ -83,3 +83,5 @@ ENTITY_LABEL_SEPARATOR = "#"
 
 RULE_ONLY_SLOTS = "rule_only_slots"
 RULE_ONLY_LOOPS = "rule_only_loops"
+
+POLICIES_THAT_EXTRACT_ENTITIES = {"TEDPolicy"}

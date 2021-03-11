@@ -427,10 +427,33 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
+async def e2e_bot(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="data/test_e2ebot/domain.yml",
+        config="data/test_e2ebot/config.yml",
+        training_files=[
+            "data/test_e2ebot/data/rules.yml",
+            "data/test_e2ebot/data/stories.yml",
+            "data/test_e2ebot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for e2ebot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="session")
 async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
     return Agent.load_local_model(trained_response_selector_bot)
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_agent(e2e_bot: Optional[Path],) -> Agent:
+    return Agent.load_local_model(e2e_bot)
 
 
 def write_endpoint_config_to_yaml(
