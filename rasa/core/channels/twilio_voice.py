@@ -5,6 +5,7 @@ from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from typing import Text, Callable, Awaitable, List
 
+from rasa.shared.core.events import BotUttered
 from rasa.core.channels.channel import (
     InputChannel,
     CollectingOutputChannel,
@@ -44,11 +45,6 @@ class TwilioVoiceInput(InputChannel):
             # Provide an initial greeting to answer the user's call.
             if (text is None) & (call_status == "ringing"):
                 text = "hello"
-            # If the user doesn't respond to the previous message resend the last message.
-            elif text is None:
-                # Get last user utterance from tracker.
-                tracker = request.app.agent.tracker_store.retrieve(sender_id)
-                text = tracker.current_state()["latest_message"]["text"]
 
             # determine the response.
             if text is not None:
@@ -69,6 +65,20 @@ class TwilioVoiceInput(InputChannel):
                         for button in message["buttons"]:
                             respond_segments.append(button["title"])
                 twilio_response = build_twilio_voice_response(respond_segments)
+                return response.text(str(twilio_response), content_type="text/xml")
+            # If the user doesn't respond to the previous message resend the last message.
+            elif text is None:
+                # Get last user utterance from tracker.
+                tracker = request.app.agent.tracker_store.retrieve(sender_id)
+                last_response = next((e for e in reversed(tracker.events) if isinstance(e, BotUttered)), None)
+
+                # If no previous utterance found say something generic.
+                if last_response is None:
+                    last_response = "I didn't get that."
+		else:
+		    last_response = last_response.text
+
+                twilio_response = build_twilio_voice_response([last_response])
                 return response.text(str(twilio_response), content_type="text/xml")
 
         return twilio_voice_webhook
