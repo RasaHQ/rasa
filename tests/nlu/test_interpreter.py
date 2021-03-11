@@ -60,7 +60,6 @@ def test_model_is_compatible(metadata):
         {"obj": "not-existing", "endpoint": None, "type": RegexInterpreter},
     ],
 )
-@pytest.mark.trains_model
 def test_create_interpreter(parameters, trained_nlu_model):
     obj = parameters["obj"]
     if obj == "trained_nlu_model":

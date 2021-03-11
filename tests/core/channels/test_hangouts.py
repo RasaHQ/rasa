@@ -34,8 +34,7 @@ def test_hangouts_channel():
 
 
 def test_hangouts_extract_functions():
-
-    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#added_to_space
+    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#added_to_space # noqa: W505
     ADDED_EVENT = {
         "type": "ADDED_TO_SPACE",
         "eventTime": "2017-03-02T19:02:59.910959Z",
@@ -52,7 +51,7 @@ def test_hangouts_extract_functions():
         },
     }
 
-    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#removed_from_space
+    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#removed_from_space # noqa: W505
     REMOVED_EVENT = {
         "type": "REMOVED_FROM_SPACE",
         "eventTime": "2017-03-02T19:02:59.910959Z",
@@ -65,7 +64,7 @@ def test_hangouts_extract_functions():
         },
     }
 
-    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#message
+    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#message # noqa: W505
     MESSAGE = {
         "type": "MESSAGE",
         "eventTime": "2017-03-02T19:02:59.910959Z",
@@ -127,8 +126,8 @@ def test_hangouts_extract_functions():
     app = rasa.core.run.configure_app([input_channel], port=5004)
 
     # This causes irritating error even though test passes...
-    # req, _ = app.test_client.post("/webhooks/hangouts/webhook", data=json.dumps(MESSAGE))
-
+    # req, _ = app.test_client.post("/webhooks/hangouts/webhook",
+    #                                   data=json.dumps(MESSAGE))
     # ..therefore create Request object directly
     from sanic.request import Request
 
