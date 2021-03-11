@@ -942,12 +942,16 @@ class TrainingDataFull(NLUPipelineTrainingData):
 
             # update the data to chunk in next iteration
             data_to_chunk = TrainingDataFull(leftover_nlu_examples)
-            all_chunks.append(TrainingDataChunk(current_nlu_chunk + current_core_chunk))
+            all_chunks.append(
+                TrainingDataChunk(copy.deepcopy(current_nlu_chunk + current_core_chunk))
+            )
 
         # The last chunk is composed of whatever is left
         last_core_chunk = self._split_core_examples(core_chunk_size, num_chunks - 1)
         all_chunks.append(
-            TrainingDataChunk(data_to_chunk.training_examples + last_core_chunk)
+            TrainingDataChunk(
+                copy.deepcopy(data_to_chunk.training_examples + last_core_chunk)
+            )
         )
         return all_chunks
 
