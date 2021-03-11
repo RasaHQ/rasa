@@ -64,7 +64,7 @@ class Token:
             token_dict["start"],
             token_dict.get("end"),
             token_dict.get("data"),
-            token_dict["lemma"] if "lemma" in token_dict else None,
+            token_dict.get("lemma")
         )
 
     def __eq__(self, other: Any) -> bool:
