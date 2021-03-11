@@ -128,7 +128,7 @@ class Message:
             Fingerprint of the message.
         """
         # ensure the same order of keys inside data
-        data = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[0])}
+        data = dict(sorted(data.items()))
         return rasa.shared.utils.io.deep_container_fingerprint(data)
 
     @classmethod
