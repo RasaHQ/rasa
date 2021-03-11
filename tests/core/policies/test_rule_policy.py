@@ -994,7 +994,6 @@ slots:
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             SlotSet("s_cat1", "v1"),
             UserUttered(intent={"name": "i1"}),
-            ActionExecuted(ACTION_LISTEN_NAME),
             ActionExecuted("action1"),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
