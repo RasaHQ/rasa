@@ -65,15 +65,6 @@ Pre-processes training data examples by removing not trainable entities.
 
 Generates text for a list item.
 
-#### generate\_string\_item
-
-```python
- | @staticmethod
- | generate_string_item(text: Text) -> Text
-```
-
-Generates text for a string item.
-
 #### generate\_message
 
 ```python

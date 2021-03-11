@@ -6,7 +6,7 @@ title: rasa.shared.core.training_data.loading
 #### load\_data\_from\_resource
 
 ```python
-async load_data_from_resource(resource: Union[Text, Path], domain: Domain, template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> List["StoryStep"]
+async load_data_from_resource(resource: Union[Text], domain: Domain, template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> List["StoryStep"]
 ```
 
 Loads core training data from the specified folder.

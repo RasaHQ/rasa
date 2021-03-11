@@ -76,6 +76,14 @@ Resolve the intent response key for the given response template.
   
 - `Returns` - The corresponding intent response key.
 
+#### has\_string\_escape\_chars
+
+```python
+has_string_escape_chars(s: Text) -> bool
+```
+
+Checks whether there are any of the escape characters in the string.
+
 #### encode\_string
 
 ```python
