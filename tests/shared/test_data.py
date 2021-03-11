@@ -80,16 +80,16 @@ def test_default_story_files_are_story_files():
         assert rasa.shared.data.is_story_file(fn)
 
 
-def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
-    e2e_path = tmpdir / "test_stories.yml"
+def test_default_conversation_tests_are_conversation_tests_yml(tmp_path: Path):
+    e2e_path = tmp_path / "test_stories.yml"
     e2e_story = """stories:"""
     write_text_file(e2e_story, e2e_path)
 
     assert rasa.shared.data.is_test_stories_file(str(e2e_path))
 
 
-def test_conversation_tests_in_a_directory(tmpdir: Path):
-    parent = tmpdir / "tests"
+def test_conversation_tests_in_a_directory(tmp_path: Path):
+    parent = tmp_path / "tests"
     Path(parent).mkdir(parents=True)
 
     e2e_path = parent / "test_stories.yml"
@@ -101,8 +101,11 @@ def test_conversation_tests_in_a_directory(tmpdir: Path):
 
 def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
     # can be removed once conversation tests MD support is removed
-    e2e_path = tmpdir / "conversation_tests.md"
-    e2e_story = """## my story test"""
+    parent = tmpdir / "tests"
+    Path(parent).mkdir(parents=True)
+
+    e2e_path = parent / "test_stories.yml"
+    e2e_story = """stories:"""
     write_text_file(e2e_story, e2e_path)
 
     assert rasa.shared.data.is_test_stories_file(str(e2e_path))

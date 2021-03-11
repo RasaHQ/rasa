@@ -212,33 +212,7 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
-@pytest.mark.parametrize(
-    "test_stories_filename,test_story",
-    [
-        (
-            "test_stories.yml",
-            """
-        stories:
-        - story: story test
-          steps:
-          - user: hello
-            intent: greet
-          - action: utter_greet
-        """,
-        ),
-        (
-            "conversation_tests.md",
-            """
-        ## story test
-        * greet : "hello"
-            - utter_greet
-        """,
-        ),
-    ],
-)
-async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
-    tmp_path: Path, test_stories_filename: Text, test_story: Text
-):
+async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path):
     from rasa.shared.core.training_data.structures import StoryGraph
     import rasa.shared.core.training_data.loading as core_loading
 
@@ -257,7 +231,15 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
         story_file,
     )
 
-    story_test_file = tmp_path / "bots" / "Bot A" / test_stories_filename
+    test_story = """
+        stories:
+        - story: story test
+          steps:
+          - user: hello
+            intent: greet
+          - action: utter_greet
+    """
+    story_test_file = tmp_path / "bots" / "Bot A" / "test_stories.yml"
     rasa.shared.utils.io.write_text_file(test_story, story_test_file)
 
     selector = MultiProjectImporter(config_path)
