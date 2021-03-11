@@ -37,7 +37,7 @@ Python Logging Options:
 Core Test Arguments:
   -s STORIES, --stories STORIES
                         File or folder containing your test stories. (default:
-                        tests)
+                        .)
   --max-stories MAX_STORIES
                         Maximum number of stories to test on. (default: None)
   --endpoints ENDPOINTS
