@@ -295,6 +295,7 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
+@pytest.mark.timeout(240)
 async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
 
