@@ -1140,7 +1140,7 @@ class Domain:
             tracker: dialog state tracker containing the dialog so far
             omit_unset_slots: If `True` do not include the initial values of slots.
 
-        Returns A `State` for each prior tracker.
+        Returns: A `State` for each prior tracker.
         """
         return [
             self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
@@ -1148,7 +1148,7 @@ class Domain:
         ]
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
-        """Returns a list of `SlotSet` events from a list of entities."""
+        """Returns `SlotSet` events for extracted entities."""
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
