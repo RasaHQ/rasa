@@ -10,7 +10,6 @@ from tests.train import pipelines_for_tests, pipelines_for_non_windows_tests
 
 @pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-@pytest.mark.trains_model
 async def test_train_persist_load_parse(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
@@ -32,7 +31,6 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
 @pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
-@pytest.mark.trains_model
 async def test_train_persist_load_parse_non_windows(
     language, pipeline, component_builder, tmpdir
 ):
@@ -40,7 +38,6 @@ async def test_train_persist_load_parse_non_windows(
 
 
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-@pytest.mark.trains_model
 def test_train_model_without_data(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
@@ -57,7 +54,6 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
 @pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
-@pytest.mark.trains_model
 def test_train_model_without_data_non_windows(
     language, pipeline, component_builder, tmpdir
 ):
