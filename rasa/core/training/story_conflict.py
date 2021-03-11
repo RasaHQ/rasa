@@ -237,7 +237,8 @@ def _find_conflicting_states(
         tokenizer: A tokenizer to tokenize the user messages.
 
     Returns:
-        A dictionary mapping state-hashes to a list of actions that follow from each state.
+        A dictionary mapping state-hashes to a list of actions that follow from each
+        state.
     """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
@@ -269,8 +270,8 @@ def _build_conflicts_from_states(
         trackers: Trackers that contain the states.
         domain: The domain object.
         max_history: Number of turns to take into account for the state descriptions.
-        conflicting_state_action_mapping: A dictionary mapping state-hashes to a list of actions
-                                          that follow from each state.
+        conflicting_state_action_mapping: A dictionary mapping state-hashes to a list
+            of actions that follow from each state.
         tokenizer: A tokenizer to tokenize the user messages.
 
     Returns:
@@ -331,7 +332,8 @@ def _sliced_states_iterator(
                 )
                 if tokenizer:
                     _apply_tokenizer_to_states(tokenizer, sliced_states)
-                # ToDo: deal with oov (different tokens can lead to identical features if some of those tokens are out of vocabulary for all featurizers)
+                # TODO: deal with oov (different tokens can lead to identical features
+                # if some of those tokens are out of vocabulary for all featurizers)
                 yield TrackerEventStateTuple(tracker, event, sliced_states)
                 idx += 1
 
@@ -395,9 +397,11 @@ def _get_previous_event(
             previous_event_name = state[USER]["text"]
 
     if not isinstance(previous_event_name, (str, type(None))):
-        # While the Substate type doesn't restrict the value of `action_text` / `intent`, etc. to be a string, it always should be
+        # While the Substate type doesn't restrict the value of `action_text` /
+        # `intent`, etc. to be a string, it always should be
         raise TypeError(
-            f"The value '{previous_event_name}' in the substate should be a string or None, not {type(previous_event_name)}. Did you modify Rasa source code?"
+            f"The value '{previous_event_name}' in the substate should be a string or "
+            f"None, not {type(previous_event_name)}. Did you modify Rasa source code?"
         )
 
     return previous_event_type, previous_event_name
