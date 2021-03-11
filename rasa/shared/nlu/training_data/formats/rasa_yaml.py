@@ -536,7 +536,9 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @staticmethod
     def _render_training_examples_as_objects(examples: List[Dict]) -> List[Dict]:
-        """Renders training examples as objects with its `text` item as a literal scalar string.
+        """Renders training examples as objects.
+
+        The `text` item is rendered as a literal scalar string.
 
         Given the input of a single example:
             {'text': 'how much CO2 will that use?'}

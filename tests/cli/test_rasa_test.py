@@ -1,6 +1,8 @@
 import os
 from shutil import copyfile
 
+import pytest
+
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH

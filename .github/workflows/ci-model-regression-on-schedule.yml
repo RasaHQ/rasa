@@ -221,6 +221,42 @@ jobs:
           name: report.json
           path: ./report.json
 
+      - name: Notify Slack of Failure 😱
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,commit,repo,ref,author,took
+          custom_payload: |
+            {
+              text: "Model regression tests CI",
+              attachments: [{
+                fallback: 'fallback',
+                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+                title: `${process.env.AS_WORKFLOW}`,
+                text: 'Scheduled model regression test failed',
+                fields: [{
+                  title: 'Configuration',
+                  value: '${{ matrix.config }}',
+                  short: false
+                },
+                {
+                  title: 'Dataset',
+                  value: '${{ matrix.dataset }}',
+                  short: false
+                },
+                {
+                  title: 'GitHub Action',
+                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+                  short: true
+                }],
+                actions: [{
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+
   remove_runner_gpu:
     name: Delete Github Runner - GPU
     if: always()

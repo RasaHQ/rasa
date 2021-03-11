@@ -19,6 +19,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
 )
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.train import train_core
@@ -82,7 +83,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
         train_core(
             domain="data/test_domains/default.yml",
-            stories="data/test_stories/stories_defaultdomain.md",
+            stories="data/test_yaml_stories/stories_defaultdomain.yaml",
             output=str(tmp_path),
             fixed_model_name=model_name,
             config="data/test_config/config_ted_policy_model_checkpointing.yml",
@@ -145,28 +146,34 @@ class TestTEDPolicy(PolicyTestCollection):
             training_data, label_ids, entity_tags, all_labels
         )
         batch_size = 2
-
+        data_generator = RasaBatchDataGenerator(
+            model_data, batch_size=batch_size, shuffle=False, batch_strategy="sequence"
+        )
+        iterator = iter(data_generator)
         # model data keys were sorted, so the order is alphabetical
         (
-            batch_action_name_mask,
-            batch_action_name_sentence_indices,
-            batch_action_name_sentence_data,
-            batch_action_name_sentence_shape,
-            batch_dialogue_length,
-            batch_entities_mask,
-            batch_entities_sentence_indices,
-            batch_entities_sentence_data,
-            batch_entities_sentence_shape,
-            batch_intent_mask,
-            batch_intent_sentence_indices,
-            batch_intent_sentence_data,
-            batch_intent_sentence_shape,
-            batch_label_ids,
-            batch_slots_mask,
-            batch_slots_sentence_indices,
-            batch_slots_sentence_data,
-            batch_slots_sentence_shape,
-        ) = next(model_data._gen_batch(batch_size=batch_size))
+            (
+                batch_action_name_mask,
+                batch_action_name_sentence_indices,
+                batch_action_name_sentence_data,
+                batch_action_name_sentence_shape,
+                batch_dialogue_length,
+                batch_entities_mask,
+                batch_entities_sentence_indices,
+                batch_entities_sentence_data,
+                batch_entities_sentence_shape,
+                batch_intent_mask,
+                batch_intent_sentence_indices,
+                batch_intent_sentence_data,
+                batch_intent_sentence_shape,
+                batch_label_ids,
+                batch_slots_mask,
+                batch_slots_sentence_indices,
+                batch_slots_sentence_data,
+                batch_slots_sentence_shape,
+            ),
+            _,
+        ) = next(iterator)
 
         assert (
             batch_label_ids.shape[0] == batch_size
@@ -205,30 +212,34 @@ class TestTEDPolicy(PolicyTestCollection):
             or batch_slots_sentence_shape[1] == 0
         )
 
-        (
-            batch_action_name_mask,
-            batch_action_name_sentence_indices,
-            batch_action_name_sentence_data,
-            batch_action_name_sentence_shape,
-            batch_dialogue_length,
-            batch_entities_mask,
-            batch_entities_sentence_indices,
-            batch_entities_sentence_data,
-            batch_entities_sentence_shape,
-            batch_intent_mask,
-            batch_intent_sentence_indices,
-            batch_intent_sentence_data,
-            batch_intent_sentence_shape,
-            batch_label_ids,
-            batch_slots_mask,
-            batch_slots_sentence_indices,
-            batch_slots_sentence_data,
-            batch_slots_sentence_shape,
-        ) = next(
-            model_data._gen_batch(
-                batch_size=batch_size, batch_strategy="balanced", shuffle=True
-            )
+        data_generator = RasaBatchDataGenerator(
+            model_data, batch_size=batch_size, shuffle=True, batch_strategy="balanced"
         )
+        iterator = iter(data_generator)
+
+        (
+            (
+                batch_action_name_mask,
+                batch_action_name_sentence_indices,
+                batch_action_name_sentence_data,
+                batch_action_name_sentence_shape,
+                batch_dialogue_length,
+                batch_entities_mask,
+                batch_entities_sentence_indices,
+                batch_entities_sentence_data,
+                batch_entities_sentence_shape,
+                batch_intent_mask,
+                batch_intent_sentence_indices,
+                batch_intent_sentence_data,
+                batch_intent_sentence_shape,
+                batch_label_ids,
+                batch_slots_mask,
+                batch_slots_sentence_indices,
+                batch_slots_sentence_data,
+                batch_slots_sentence_shape,
+            ),
+            _,
+        ) = next(iterator)
 
         assert (
             batch_label_ids.shape[0] == batch_size

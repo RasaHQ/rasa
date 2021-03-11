@@ -13,8 +13,8 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 @pytest.mark.parametrize(
     "training_data_file, should_filter",
     [
-        ("data/test_nlg/responses.md", True),
-        ("data/test_nlu/default_retrieval_intents.md", False),
+        ("data/test_md/responses.md", True),
+        ("data/test_md/default_retrieval_intents.md", False),
         ("data/test_stories/stories.md", False),
         ("data/test_yaml_stories/rules_without_stories.yml", False),
     ],

@@ -16,7 +16,7 @@ from rasa.utils.converter import TrainingDataConverter
 OBSOLETE_RESPOND_PREFIX = "respond_"
 
 
-def normalize_response_name(action_name: Text) -> Text:
+def normalize_utter_action(action_name: Text) -> Text:
     """Ensure that response names start with `utter_`.
 
     Args:
@@ -67,7 +67,7 @@ class StoryResponsePrefixConverter(TrainingDataConverter):
         for story_step in story_steps:
             for event in story_step.events:
                 if isinstance(event, ActionExecuted):
-                    event.action_name = normalize_response_name(event.action_name)
+                    event.action_name = normalize_utter_action(event.action_name)
 
         output_file = cls.generate_path_for_converted_training_data_file(
             source_path, output_path
@@ -111,7 +111,7 @@ class DomainResponsePrefixConverter(TrainingDataConverter):
         domain = Domain.from_path(source_path)
         domain_dict = domain.cleaned_domain()
         domain_dict["actions"] = [
-            normalize_response_name(action) for action in domain_dict["actions"]
+            normalize_utter_action(action) for action in domain_dict["actions"]
         ]
 
         new_domain = Domain.from_dict(domain_dict)

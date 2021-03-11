@@ -11,7 +11,6 @@ from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils import io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
-
 if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
