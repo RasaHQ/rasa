@@ -944,7 +944,6 @@ slots:
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(intent={"name": "i1"}),
             ActionExecuted("action1"),
-            SlotSet("s_cat1", "v2"),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
         domain=domain,
@@ -958,9 +957,6 @@ slots:
     form_conversation = DialogueStateTracker.from_events(
         "slot rule test",
         evts=[
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": "i1"}),
-            ActionExecuted("action1"),
             SlotSet("s_cat1", "v2"),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(intent={"name": "i1"}),
@@ -1013,7 +1009,6 @@ slots:
     form_conversation = DialogueStateTracker.from_events(
         "slot rule test",
         evts=[
-            # We are in an active form
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(intent={"name": "i1"}),
         ],
