@@ -155,7 +155,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         return outputs
 
 
-class DenseWithSparseWeights(tf.keras.layers.Dense):
+class RandomlyConnectedDense(tf.keras.layers.Dense):
     """Just your regular densely-connected NN layer but with sparse weights.
 
     `Dense` implements the operation:
@@ -199,35 +199,40 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         the output would have shape `(batch_size, units)`.
     """
 
-    def __init__(self, sparsity: float = 0.8, **kwargs: Any) -> None:
+    def __init__(self, density: float = 0.2, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-        if sparsity < 0.0 or sparsity > 1.0:
-            raise TFLayerConfigException("Layer sparsity must be in [0, 1].")
+        if density < 0.0 or density > 1.0:
+            raise TFLayerConfigException("Layer density must be in [0, 1].")
 
-        self.density = 1.0 - sparsity
+        self.density = density
 
     def build(self, input_shape: tf.TensorShape) -> None:
         super().build(input_shape)
 
-        # Create random mask to set fraction of the `kernel` weights to zero
-        # Each column of the mask must contain at least one 1
+        # Create random mask to set fraction of the `kernel` weights to zero.
+        # Each column of the mask must contain at a minimum number of 1s, so each
+        # output is connected to at least `self.min_number_of_connections` inputs.
         kernel_shape = tf.shape(self.kernel)
         num_rows = kernel_shape[0].numpy()
         num_cols = kernel_shape[1].numpy()
-        num_connected_per_row = max(
+
+        num_connected_per_output = max(
             1, tf.cast(tf.math.ceil(self.density * num_rows), tf.int32)
         )
-        num_disconnected_per_row = num_rows - num_connected_per_row
+        num_disconnected_per_output = num_rows - num_connected_per_output
+
         # To ensure each column has at least one 1, we create each column separately
         # as [1 1 1 ... 1 0 0 0 ... 0] and then shuffle it randomly
         kernel_mask_cols = [
             tf.random.shuffle(
                 tf.concat(
                     [
-                        tf.ones(shape=num_connected_per_row, dtype=self.kernel.dtype),
+                        tf.ones(
+                            shape=num_connected_per_output, dtype=self.kernel.dtype
+                        ),
                         tf.zeros(
-                            shape=num_disconnected_per_row, dtype=self.kernel.dtype
+                            shape=num_disconnected_per_output, dtype=self.kernel.dtype
                         ),
                     ],
                     axis=0,
@@ -241,79 +246,12 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         )
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        # set fraction of the `kernel` weights to zero according to precomputed mask
+        # Set fraction of the `kernel` weights to zero according to precomputed mask
         self.kernel.assign(self.kernel * self.kernel_mask)
         # print(f"{self.name}: {self.kernel.shape}")
         # trainable_count = np.sum([tf.keras.backend.count_params(w) for w in self.trainable_weights])
         # print(f"{self.name}: {trainable_count}")
         return super().call(inputs)
-
-
-def periodic_padding(tensor, axis, padding=1):
-    """
-        Add periodic padding to a tensor for specified axis
-        tensor: input tensor
-        axis: one or multiple axis to pad along, int or tuple
-        padding: number of cells to pad, int or tuple
-
-        return: padded tensor
-
-        Based on https://stackoverflow.com/a/54674149/6760298
-    """
-    if isinstance(axis, int):
-        axis = (axis,)
-    if isinstance(padding, int):
-        padding = (padding,)
-
-    ndim = len(tensor.shape)
-    for ax, p in zip(axis, padding):
-        # create a slice object that selects everything from all axes,
-        # except only 0:p for the specified for right, and -p: for left
-
-        ind_right = [slice(-p, None) if i == ax else slice(None) for i in range(ndim)]
-        ind_left = [slice(0, p) if i == ax else slice(None) for i in range(ndim)]
-        right = tensor[ind_right]
-        left = tensor[ind_left]
-        middle = tensor
-        tensor = tf.concat([right, middle, left], axis=ax)
-
-    return tensor
-
-
-class LocallyConnectedDense(tf.keras.layers.Layer):
-    def __init__(self, kernel_size: int, **kwargs):
-        self.kernel_size = kernel_size
-        if kernel_size % 2 == 0:
-            raise InvalidParameterException(
-                f"`kernel_size = {kernel_size}` must be an odd integer."
-            )
-        super(LocallyConnectedDense, self).__init__(**kwargs)
-        self._locally_connected_layer = tf.keras.layers.LocallyConnected1D(
-            filters=1,
-            kernel_size=kernel_size,
-            data_format="channels_last",
-            implementation=1,
-            use_bias=False,
-            **kwargs,
-        )
-
-    def build(self, input_shape: tf.TensorShape) -> None:
-        super(LocallyConnectedDense, self).build(input_shape=input_shape)
-        self.input_size = input_shape[-1]
-        self._locally_connected_layer.build(
-            input_shape=[None, self.input_size + self.kernel_size - 1, 1]
-        )
-
-    def call(self, inputs) -> tf.TensorShape:
-        # trainable_count = np.sum([tf.keras.backend.count_params(w) for w in self._locally_connected_layer.trainable_weights])
-        # print(f"{self.name}: {trainable_count}")
-        x = tf.reshape(inputs, [-1, tf.shape(inputs)[-1]])
-        x = periodic_padding(x, axis=-1, padding=((self.kernel_size - 1) // 2))
-        x = tf.expand_dims(x, axis=-1)
-        x = self._locally_connected_layer(x)
-        x = tf.squeeze(x, axis=-1)
-        x = tf.reshape(x, tf.shape(inputs))
-        return x
 
 
 class Ffnn(tf.keras.layers.Layer):
