@@ -193,21 +193,6 @@ JOBS=[n] make test
 
 Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
 
-#### Tests that train
-A test that trains a model is defined as any test that explicitly or inadvertently calls any method annotated with `@rasa.shared.utils.common.raise_on_unexpected_train`.
-Currently, this is: `nlu.train`, `core.train`, `Agent.train`, and `Trainer.train`.
-
-We specify tests that train a model using the pytest mark `trains_model`.
-e.g:
-
-    @pytest.mark.trains_model
-    def test_some_training()
-        ...
-
-These test are then run separately in the CI using the make commands `make test-non-training` and `make test-training` respectively.
-
-The command `make test-non-training` will fail if training occurs.
-
 
 ### Running the Integration Tests
 
@@ -381,7 +366,7 @@ steps + get the PR merged.
 
 ## License
 Licensed under the Apache License, Version 2.0.
-Copyright 2020 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2021 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the
