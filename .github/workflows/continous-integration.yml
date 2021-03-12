@@ -191,6 +191,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
+      fail-fast: false
       matrix:
         test:
         - test-cli
