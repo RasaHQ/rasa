@@ -3,7 +3,7 @@ import os
 import warnings
 import typing
 from collections import defaultdict, namedtuple
-from typing import Any, Dict, List, Optional, Text, Tuple, cast
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa import telemetry
 from rasa.core.policies.policy import PolicyPrediction
@@ -74,6 +74,9 @@ StoryEvaluation = namedtuple(
     ],
 )
 
+PredictionList = List[Optional[Text]]
+EntityPredictionList = List[Dict[Text, Any]]
+
 
 class WrongPredictionException(RasaException, ValueError):
     """Raised if a wrong prediction is encountered."""
@@ -84,12 +87,12 @@ class EvaluationStore:
 
     def __init__(
         self,
-        action_predictions: Optional[List[Text]] = None,
-        action_targets: Optional[List[Text]] = None,
-        intent_predictions: Optional[List[Text]] = None,
-        intent_targets: Optional[List[Text]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None,
+        action_predictions: Optional[PredictionList] = None,
+        action_targets: Optional[PredictionList] = None,
+        intent_predictions: Optional[PredictionList] = None,
+        intent_targets: Optional[PredictionList] = None,
+        entity_predictions: Optional[EntityPredictionList] = None,
+        entity_targets: Optional[EntityPredictionList] = None,
     ) -> None:
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
@@ -100,12 +103,12 @@ class EvaluationStore:
 
     def add_to_store(
         self,
-        action_predictions: Optional[List[Text]] = None,
-        action_targets: Optional[List[Text]] = None,
-        intent_predictions: Optional[List[Text]] = None,
-        intent_targets: Optional[List[Text]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None,
+        action_predictions: Optional[PredictionList] = None,
+        action_targets: Optional[PredictionList] = None,
+        intent_predictions: Optional[PredictionList] = None,
+        intent_targets: Optional[PredictionList] = None,
+        entity_predictions: Optional[EntityPredictionList] = None,
+        entity_targets: Optional[EntityPredictionList] = None,
     ) -> None:
         """Add items or lists of items to the store"""
 
@@ -136,8 +139,8 @@ class EvaluationStore:
 
     @staticmethod
     def _compare_entities(
-        entity_predictions: List[Dict[Text, Any]],
-        entity_targets: List[Dict[Text, Any]],
+        entity_predictions: EntityPredictionList,
+        entity_targets: EntityPredictionList,
         i_pred: int,
         i_target: int,
     ) -> int:
@@ -175,7 +178,7 @@ class EvaluationStore:
     def _generate_entity_training_data(entity: Dict[Text, Any]) -> Text:
         return TrainingDataWriter.generate_entity(entity.get("text"), entity)
 
-    def serialise(self) -> Tuple[List[Text], List[Text]]:
+    def serialise(self) -> Tuple[PredictionList, PredictionList]:
         """Turn targets and predictions to lists of equal size for sklearn."""
         texts = sorted(
             list(
@@ -305,10 +308,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
         self.predicted_entities = eval_store.entity_predictions
 
-        try:
-            intent: Dict[Text, Optional[Text]] = {"name": eval_store.intent_targets[0]}
-        except LookupError:
-            intent = {"name": None}
+        intent = {"name": eval_store.intent_targets[0]}
 
         super().__init__(
             event.text,
@@ -364,7 +364,7 @@ async def _create_data_generator(
 
 def _clean_entity_results(
     text: Text, entity_results: List[Dict[Text, Any]]
-) -> List[Dict[Text, Any]]:
+) -> EntityPredictionList:
     """Extract only the token variables from an entity dict."""
     cleaned_entities = []
 
@@ -447,10 +447,9 @@ def _collect_user_uttered_predictions(
     if intent_gold != predicted_base_intent:
         predicted_base_intent = _get_full_retrieval_intent(predicted)
 
-    if intent_gold:
-        user_uttered_eval_store.add_to_store(intent_targets=[intent_gold])
-    if predicted_base_intent:
-        user_uttered_eval_store.add_to_store(intent_predictions=[predicted_base_intent])
+    user_uttered_eval_store.add_to_store(
+        intent_targets=[intent_gold], intent_predictions=[predicted_base_intent]
+    )
 
     entity_gold = event.entities
     predicted_entities = predicted.get(ENTITIES)
@@ -533,8 +532,7 @@ def _collect_action_executed_predictions(
 
     gold_action_name = event.action_name
     gold_action_text = event.action_text
-    # FIXME: mypy doesn't pick up typing guard in `ActionExecuted.__init__`
-    gold = cast(Text, gold_action_name or gold_action_text)
+    gold = gold_action_name or gold_action_text
 
     policy_entity_result = None
 
@@ -952,7 +950,9 @@ def _log_evaluation_table(
 
 
 def _plot_story_evaluation(
-    targets: List[Text], predictions: List[Text], output_directory: Optional[Text]
+    targets: PredictionList,
+    predictions: PredictionList,
+    output_directory: Optional[Text],
 ) -> None:
     """Plot a confusion matrix of story evaluation."""
     from sklearn.metrics import confusion_matrix
