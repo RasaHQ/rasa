@@ -93,7 +93,7 @@ def print_version() -> None:
 
 
 def main() -> None:
-    """Running as standalone python application"""
+    """Running as standalone python application."""
 
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
