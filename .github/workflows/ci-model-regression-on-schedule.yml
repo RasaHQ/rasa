@@ -350,7 +350,7 @@ jobs:
           LABEL: "type:bug :bug:"
         run: |
           # Get issue number
-          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq '.number')
+          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
           echo "::set-output name=issue_number::$ISSUE_NUMBER"
 
           # Add label to the issue
@@ -363,7 +363,7 @@ jobs:
 
       - name: Assign Issue to Project Column
         run: |
-          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq '.id')
+          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
 
           # Add this issue to a project column
           curl \
