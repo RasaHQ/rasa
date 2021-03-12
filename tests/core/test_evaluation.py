@@ -22,7 +22,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
-from rasa.nlu.test import run_evaluation
+from rasa.nlu.test import evaluate_entities, run_evaluation
 from rasa.core.agent import Agent
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
@@ -61,7 +61,7 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
     )
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -99,7 +99,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     )
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -117,7 +117,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         test_stories, form_bot_agent, use_e2e=True
     )
 
@@ -156,7 +156,7 @@ async def test_end_to_evaluation_trips_circuit_breaker():
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         test_stories, agent, use_e2e=True
     )
 
@@ -262,7 +262,7 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         test_stories, response_selector_agent, use_e2e=True
     )
     # check that test story can either specify base intent or full retrieval intent
@@ -293,6 +293,38 @@ async def test_retrieval_intent_wrong_prediction(
 
     # check if the predicted entry contains full retrieval intent
     assert "# predicted: chitchat/ask_name" in failed_stories
+
+
+@pytest.mark.timeout(240)
+async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
+    test_file = "data/test_e2ebot/tests/test_stories.yml"
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=e2e_bot_agent,
+        out_directory=str(tmp_path),
+        max_stories=None,
+        e2e=True,
+    )
+
+    report = rasa.shared.utils.io.read_json_file(tmp_path / "TEDPolicy_report.json")
+    assert report["name"] == {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1,
+        "confused_with": {},
+    }
+    assert report["mood"] == {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1-score": 0.6666666666666666,
+        "support": 2,
+        "confused_with": {},
+    }
+    errors = rasa.shared.utils.io.read_json_file(tmp_path / "TEDPolicy_errors.json")
+    assert len(errors) == 1
+    assert errors[0]["text"] == "today I was very cranky"
 
 
 @pytest.mark.parametrize(

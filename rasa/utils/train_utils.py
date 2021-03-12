@@ -474,6 +474,7 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
 
     Option `auto` is reserved for margin loss type. It will be removed once margin loss
     is deprecated.
+
     Args:
         component_config: model configuration
 
