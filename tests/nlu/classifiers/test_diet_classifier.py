@@ -44,9 +44,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from tests.conftest import DEFAULT_NLU_DATA
-from tests.nlu.conftest import DEFAULT_DATA_PATH
-from rasa.core.agent import Agent
 
 
 def test_compute_default_label_features():
@@ -275,7 +272,9 @@ async def test_train_persist_load_with_only_intent_classification(
     )
 
 
-async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Path):
+async def test_raise_error_on_incorrect_pipeline(
+    component_builder, tmp_path: Path, data_path
+):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -290,7 +289,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Pa
         await train(
             _config,
             path=str(tmp_path),
-            data=DEFAULT_DATA_PATH,
+            data=data_path,
             component_builder=component_builder,
         )
 
@@ -330,7 +329,7 @@ def as_pipeline(*components):
         ),  # higher than default ranking_length
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            DEFAULT_NLU_DATA,
+            "examples/moodbot/data/nlu.yml",
             7,
             True,
         ),  # less intents than default ranking_length
@@ -381,7 +380,7 @@ async def test_softmax_normalization(
                 MODEL_CONFIDENCE: LINEAR_NORM,
                 RANKING_LENGTH: -1,
             },
-            DEFAULT_NLU_DATA,
+            "examples/moodbot/data/nlu.yml",
         ),
     ],
 )
@@ -461,7 +460,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_set_random_seed(component_builder, tmpdir):
+async def test_set_random_seed(component_builder, tmpdir, data_path):
     """test if train result is the same for two runs of tf embedding"""
 
     # set fixed random seed
@@ -480,14 +479,14 @@ async def test_set_random_seed(component_builder, tmpdir):
     (trained_a, _, persisted_path_a) = await train(
         _config,
         path=tmpdir.strpath + "_a",
-        data=DEFAULT_DATA_PATH,
+        data=data_path,
         component_builder=component_builder,
     )
     # second run
     (trained_b, _, persisted_path_b) = await train(
         _config,
         path=tmpdir.strpath + "_b",
-        data=DEFAULT_DATA_PATH,
+        data=data_path,
         component_builder=component_builder,
     )
 

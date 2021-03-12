@@ -67,7 +67,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.test import compare_nlu_models
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
-from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -358,9 +357,9 @@ def test_drop_intents_below_freq():
 
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
-async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
+async def test_run_evaluation(unpacked_trained_moodbot_path: Text, data_path: Path):
     result = await run_evaluation(
-        DEFAULT_DATA_PATH,
+        data_path,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
         errors=False,
         successes=False,
@@ -936,7 +935,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-async def test_nlu_comparison(tmp_path: Path):
+async def test_nlu_comparison(tmp_path: Path, data_path: Path):
     config = {
         "language": "en",
         "pipeline": [
@@ -951,7 +950,7 @@ async def test_nlu_comparison(tmp_path: Path):
 
     output = str(tmp_path)
     await compare_nlu_models(
-        configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
+        configs, data_path, output, runs=2, exclusion_percentages=[50, 80]
     )
 
     assert set(os.listdir(output)) == {

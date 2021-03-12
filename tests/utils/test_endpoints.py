@@ -5,7 +5,6 @@ import pytest
 from aioresponses import aioresponses
 
 from tests.utilities import latest_request, json_of_latest_request
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 import rasa.utils.endpoints as endpoint_utils
 
 
@@ -125,7 +124,8 @@ async def test_request_non_json_response():
 
 
 @pytest.mark.parametrize(
-    "filename, endpoint_type", [(DEFAULT_ENDPOINTS_FILE, "tracker_store"),],
+    "filename, endpoint_type",
+    [("data/test_endpoints/example_endpoints.yml", "tracker_store"),],
 )
 def test_read_endpoint_config(filename: Text, endpoint_type: Text):
     conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
@@ -136,8 +136,8 @@ def test_read_endpoint_config(filename: Text, endpoint_type: Text):
     "filename, endpoint_type",
     [
         ("", "tracker_store"),
-        (DEFAULT_ENDPOINTS_FILE, "stuff"),
-        (DEFAULT_ENDPOINTS_FILE, "empty"),
+        ("data/test_endpoints/example_endpoints.yml", "stuff"),
+        ("data/test_endpoints/example_endpoints.yml", "empty"),
         ("/unknown/path.yml", "tracker_store"),
     ],
 )

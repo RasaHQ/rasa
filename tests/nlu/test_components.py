@@ -8,7 +8,6 @@ from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_pa
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata
-from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -93,14 +92,16 @@ def test_builder_load_unknown(component_builder: ComponentBuilder):
     assert "Cannot find class" in str(excinfo.value)
 
 
-async def test_example_component(component_builder: ComponentBuilder, tmp_path: Path):
+async def test_example_component(
+    component_builder: ComponentBuilder, tmp_path: Path, data_path: Path
+):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        data=DEFAULT_DATA_PATH,
+        data=data_path,
         path=str(tmp_path),
         component_builder=component_builder,
     )
@@ -191,7 +192,7 @@ def test_can_handle_language_guard_clause(
 
 
 async def test_validate_requirements_raises_exception_on_component_without_name(
-    tmp_path: Path,
+    tmp_path: Path, data_path: Path
 ):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `name` property
@@ -200,11 +201,13 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
 
     with pytest.raises(InvalidConfigException):
         await train(
-            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
+            _config, data=data_path, path=str(tmp_path),
         )
 
 
-async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: Path,):
+async def test_validate_component_keys_raises_warning_on_invalid_key(
+    tmp_path: Path, data_path: Path
+):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `confidence_threshold ` property
         {"pipeline": [{"name": "WhitespaceTokenizer", "confidence_threshold": 0.7}]}
@@ -212,7 +215,7 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: P
 
     with pytest.warns(UserWarning) as record:
         await train(
-            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
+            _config, data=data_path, path=str(tmp_path),
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]

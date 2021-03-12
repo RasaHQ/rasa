@@ -17,8 +17,6 @@ POSTGRES_DEFAULT_DB = os.getenv("POSTGRES_DEFAULT_DB", "postgres")
 POSTGRES_TRACKER_STORE_DB = "tracker_store_db"
 POSTGRES_LOGIN_DB = "login_db"
 
-DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
-
 
 @pytest.fixture
 def redis_lock_store() -> Iterator[RedisLockStore]:

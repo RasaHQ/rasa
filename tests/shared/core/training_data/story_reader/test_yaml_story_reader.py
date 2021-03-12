@@ -20,16 +20,16 @@ from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
 
 @pytest.fixture()
-async def rule_steps_without_stories(default_domain: Domain) -> List[StoryStep]:
+async def rule_steps_without_stories(domain) -> List[StoryStep]:
     yaml_file = "data/test_yaml_stories/rules_without_stories.yml"
 
-    return await loading.load_data_from_files([yaml_file], default_domain)
+    return await loading.load_data_from_files([yaml_file], domain)
 
 
-async def test_can_read_test_story_with_slots(default_domain: Domain):
+async def test_can_read_test_story_with_slots(domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/simple_story_with_only_end.yml",
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
@@ -131,10 +131,10 @@ async def test_default_slot_value_if_unfeaturized_slot():
     assert not warnings
 
 
-async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
+async def test_can_read_test_story_with_entities_slot_autofill(domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
@@ -168,10 +168,10 @@ async def test_can_read_test_story_with_entities_slot_autofill(default_domain: D
     assert trackers[1].events[-1] == ActionExecuted("action_listen")
 
 
-async def test_can_read_test_story_with_entities_without_value(default_domain: Domain):
+async def test_can_read_test_story_with_entities_without_value(domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities_with_no_value.yml",
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
@@ -224,13 +224,13 @@ async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: boo
     assert YAMLStoryReader.is_key_in_yaml(file, *keys) == expected_result
 
 
-async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
+async def test_yaml_intent_with_leading_slash_warning(domain):
     yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 
     with pytest.warns(UserWarning) as record:
         tracker = await training.load_data(
             yaml_file,
-            default_domain,
+            domain,
             use_story_concatenation=False,
             tracker_limit=1000,
             remove_duplicates=False,
@@ -242,12 +242,12 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
     assert tracker[0].latest_message == UserUttered(intent={"name": "simple"})
 
 
-async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
+async def test_yaml_slot_without_value_is_parsed(domain):
     yaml_file = "data/test_yaml_stories/story_with_slot_was_set.yml"
 
     tracker = await training.load_data(
         yaml_file,
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
@@ -256,24 +256,24 @@ async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
     assert tracker[0].events[-2] == SlotSet(key="name", value=DEFAULT_VALUE_TEXT_SLOTS)
 
 
-async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
+async def test_yaml_wrong_yaml_format_warning(domain):
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
 
     with pytest.raises(YamlSyntaxException):
         _ = await training.load_data(
             yaml_file,
-            default_domain,
+            domain,
             use_story_concatenation=False,
             tracker_limit=1000,
             remove_duplicates=False,
         )
 
 
-async def test_read_rules_with_stories(default_domain: Domain):
+async def test_read_rules_with_stories(domain):
 
     yaml_file = "data/test_yaml_stories/stories_and_rules.yml"
 
-    steps = await loading.load_data_from_files([yaml_file], default_domain)
+    steps = await loading.load_data_from_files([yaml_file], domain)
 
     ml_steps = [s for s in steps if not isinstance(s, RuleStep)]
     rule_steps = [s for s in steps if isinstance(s, RuleStep)]
@@ -359,7 +359,7 @@ def test_conversation_start_rule(rule_steps_without_stories: List[StoryStep]):
     ]
 
 
-async def test_warning_if_intent_not_in_domain(default_domain: Domain):
+async def test_warning_if_intent_not_in_domain(domain):
     stories = """
     stories:
     - story: I am gonna make you explode 💥
@@ -368,7 +368,7 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
       - intent: definitely not in domain
     """
 
-    reader = YAMLStoryReader(default_domain)
+    reader = YAMLStoryReader(domain)
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(UserWarning) as record:
@@ -378,7 +378,7 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
     assert len(record) == 1
 
 
-async def test_no_warning_if_intent_in_domain(default_domain: Domain):
+async def test_no_warning_if_intent_in_domain(domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
         f"stories:\n"
@@ -387,7 +387,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
         f"  - intent: greet"
     )
 
-    reader = YAMLStoryReader(default_domain)
+    reader = YAMLStoryReader(domain)
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
@@ -396,11 +396,11 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     assert not len(record)
 
 
-async def test_parsing_of_e2e_stories(default_domain: Domain):
+async def test_parsing_of_e2e_stories(domain):
     yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
     tracker = await training.load_data(
         yaml_file,
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
@@ -433,7 +433,7 @@ async def test_parsing_of_e2e_stories(default_domain: Domain):
     assert actual == expected
 
 
-async def test_active_loop_is_parsed(default_domain: Domain):
+async def test_active_loop_is_parsed(domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
         f"stories:\n"
@@ -443,7 +443,7 @@ async def test_active_loop_is_parsed(default_domain: Domain):
         f"  - active_loop: null"
     )
 
-    reader = YAMLStoryReader(default_domain)
+    reader = YAMLStoryReader(domain)
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
@@ -522,10 +522,10 @@ stories:
     )
 
 
-def test_read_mixed_training_data_file(default_domain: Domain):
+def test_read_mixed_training_data_file(domain):
     training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
 
-    reader = YAMLStoryReader(default_domain)
+    reader = YAMLStoryReader(domain)
     yaml_content = rasa.shared.utils.io.read_yaml_file(training_data_file)
 
     with pytest.warns(None) as record:

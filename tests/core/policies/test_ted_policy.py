@@ -131,9 +131,11 @@ class TestTEDPolicy(PolicyTestCollection):
 
         mock.normalize.assert_called_once()
 
-    async def test_gen_batch(self, trained_policy: TEDPolicy, default_domain: Domain):
+    async def test_gen_batch(
+        self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
+    ):
         training_trackers = await tests.core.test_policies.train_trackers(
-            default_domain, augmentation_factor=0
+            default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
         training_data, label_ids, entity_tags = trained_policy.featurize_for_training(

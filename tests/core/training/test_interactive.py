@@ -11,7 +11,6 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from mock import Mock
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -44,11 +43,11 @@ def mock_endpoint() -> EndpointConfig:
 
 @pytest.fixture
 def mock_file_importer(
-    default_stack_config: Text, default_nlu_data: Text, default_stories_file: Text
+    stack_config_path, nlu_data_path: Text, stories_path, domain_path
 ):
-    domain_path = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain_path = domain_path
     return TrainingDataImporter.load_from_config(
-        default_stack_config, domain_path, [default_nlu_data, default_stories_file]
+        stack_config_path, domain_path, [nlu_data_path, stories_path]
     )
 
 
@@ -602,7 +601,7 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     )
 
 
-async def test_filter_intents_before_save_nlu_file():
+async def test_filter_intents_before_save_nlu_file(domain_path):
     # Test method interactive._filter_messages
     from random import choice
 
@@ -610,7 +609,7 @@ async def test_filter_intents_before_save_nlu_file():
     goodbye = {"text": "I am inevitable", "intent": "goodbye", "text_features": [0.5]}
     test_msgs = [Message(data=greet), Message(data=goodbye)]
 
-    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain_file = domain_path
     domain = Domain.load(domain_file)
     intents = domain.intents
 

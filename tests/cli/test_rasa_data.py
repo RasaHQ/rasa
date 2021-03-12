@@ -467,9 +467,7 @@ def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
     assert len(os.listdir(converted_data_folder)) == 1
 
 
-def test_convert_config(
-    run: Callable[..., RunResult], tmp_path: Path, default_domain_path: Text
-):
+def test_convert_config(run: Callable[..., RunResult], tmp_path: Path, domain_path):
     deprecated_config = {
         "policies": [{"name": "MappingPolicy"}, {"name": "FallbackPolicy"}],
         "pipeline": [{"name": "WhitespaceTokenizer"}],

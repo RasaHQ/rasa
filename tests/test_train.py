@@ -25,8 +25,7 @@ from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train, dry_run_result
 from rasa.utils.tensorflow.constants import EPOCHS
-from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA, AsyncMock
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
+from tests.conftest import AsyncMock
 from tests.test_model import _fingerprint
 
 
@@ -83,10 +82,10 @@ def count_temp_rasa_files(directory: Text) -> int:
 def test_train_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
-    default_nlu_data: Text,
+    domain_path,
+    stories_path,
+    stack_config_path: Text,
+    nlu_data_path: Text,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
@@ -95,9 +94,9 @@ def test_train_temp_files(
     output = str(tmp_path / "models")
 
     train(
-        default_domain_path,
-        default_stack_config,
-        [default_stories_file, default_nlu_data],
+        domain_path,
+        stack_config_path,
+        [stories_path, nlu_data_path],
         output=output,
         force_training=True,
     )
@@ -108,10 +107,7 @@ def test_train_temp_files(
     # a new model because nothing has been changed. It also shouldn't create
     # any temp files.
     train(
-        default_domain_path,
-        default_stack_config,
-        [default_stories_file, default_nlu_data],
-        output=output,
+        domain_path, stack_config_path, [stories_path, nlu_data_path], output=output,
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
@@ -120,9 +116,9 @@ def test_train_temp_files(
 def test_train_core_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
+    domain_path,
+    stories_path,
+    stack_config_path,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
@@ -130,27 +126,21 @@ def test_train_core_temp_files(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
     train_core(
-        default_domain_path,
-        default_stack_config,
-        default_stories_file,
-        output=str(tmp_path / "models"),
+        domain_path, stack_config_path, stories_path, output=str(tmp_path / "models"),
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
 
 def test_train_nlu_temp_files(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-    default_stack_config: Text,
-    default_nlu_data: Text,
+    tmp_path: Path, monkeypatch: MonkeyPatch, stack_config_path, nlu_data_path: Text,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(default_stack_config, default_nlu_data, output=str(tmp_path / "models"))
+    train_nlu(stack_config_path, nlu_data_path, output=str(tmp_path / "models"))
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
@@ -159,15 +149,17 @@ def test_train_nlu_wrong_format_error_message(
     capsys: CaptureFixture,
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_stack_config: Text,
-    incorrect_nlu_data: Text,
+    stack_config_path,
+    incorrect_nlu_data_path: Text,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models"))
+    train_nlu(
+        stack_config_path, incorrect_nlu_data_path, output=str(tmp_path / "models")
+    )
 
     captured = capsys.readouterr()
     assert "Please verify the data format" in captured.out
@@ -210,24 +202,27 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
 
 
 def test_train_nlu_no_nlu_file_error_message(
-    capsys: CaptureFixture,
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-    default_stack_config: Text,
+    capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch, stack_config_path,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(default_stack_config, "", output=str(tmp_path / "models"))
+    train_nlu(stack_config_path, "", output=str(tmp_path / "models"))
 
     captured = capsys.readouterr()
     assert "No NLU data given" in captured.out
 
 
 def test_trained_interpreter_passed_to_core_training(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_rasa_model: Text
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    unpacked_trained_rasa_model: Text,
+    nlu_data_path,
+    stories_path,
+    config_path,
+    domain_path,
 ):
     # Skip actual NLU training and return trained interpreter path from fixture
     # Patching is bit more complicated as we have a module `train` and function
@@ -243,10 +238,7 @@ def test_trained_interpreter_passed_to_core_training(
     monkeypatch.setattr(rasa.core, "train", _train_core)
 
     train(
-        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-        DEFAULT_CONFIG_PATH,
-        [DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA],
-        str(tmp_path),
+        domain_path, config_path, [stories_path, nlu_data_path], str(tmp_path),
     )
 
     _train_core.assert_called_once()
@@ -255,7 +247,13 @@ def test_trained_interpreter_passed_to_core_training(
 
 
 def test_interpreter_of_old_model_passed_to_core_training(
-    monkeypatch: MonkeyPatch, tmp_path: Path, trained_rasa_model: Text
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    trained_rasa_model: Text,
+    domain_path,
+    config_path,
+    stories_path,
+    nlu_data_path,
 ):
     # NLU isn't retrained
     monkeypatch.setattr(
@@ -274,10 +272,7 @@ def test_interpreter_of_old_model_passed_to_core_training(
     monkeypatch.setattr(rasa.core, "train", _train_core)
 
     train(
-        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-        DEFAULT_CONFIG_PATH,
-        [DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA],
-        str(tmp_path),
+        domain_path, config_path, [stories_path, nlu_data_path], str(tmp_path),
     )
 
     _train_core.assert_called_once()
@@ -300,9 +295,9 @@ def test_interpreter_from_previous_model_returns_none_for_none():
 def test_train_core_autoconfig(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
+    domain_path,
+    stories_path,
+    stack_config_path,
 ):
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
@@ -317,9 +312,9 @@ def test_train_core_autoconfig(
 
     # do training
     train_core(
-        default_domain_path,
-        default_stack_config,
-        default_stories_file,
+        domain_path,
+        stack_config_path,
+        stories_path,
         output="test_train_core_temp_files_models",
     )
 
@@ -329,10 +324,7 @@ def test_train_core_autoconfig(
 
 
 def test_train_nlu_autoconfig(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-    default_stack_config: Text,
-    default_nlu_data: Text,
+    tmp_path: Path, monkeypatch: MonkeyPatch, stack_config_path, nlu_data_path: Text,
 ):
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
@@ -346,9 +338,7 @@ def test_train_nlu_autoconfig(
 
     # do training
     train_nlu(
-        default_stack_config,
-        default_nlu_data,
-        output="test_train_nlu_temp_files_models",
+        stack_config_path, nlu_data_path, output="test_train_nlu_temp_files_models",
     )
 
     mocked_get_configuration.assert_called_once()
@@ -383,10 +373,10 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        default_e2e_stories_file: Text,
-        default_nlu_data: Text,
+        domain_path,
+        stack_config_path,
+        e2e_stories_path,
+        nlu_data_path: Text,
         caplog: LogCaptureFixture,
     ):
         mock_nlu_training(monkeypatch)
@@ -394,9 +384,9 @@ class TestE2e:
 
         with caplog.at_level(logging.WARNING):
             train(
-                default_domain_path,
-                default_stack_config,
-                [default_e2e_stories_file, default_nlu_data],
+                domain_path,
+                stack_config_path,
+                [e2e_stories_path, nlu_data_path],
                 output=new_model_path_in_same_dir(trained_e2e_model),
             )
 
@@ -411,18 +401,18 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        default_e2e_stories_file: Text,
-        default_nlu_data: Text,
+        domain_path,
+        stack_config_path,
+        e2e_stories_path,
+        nlu_data_path: Text,
     ):
         mocked_nlu_training = mock_nlu_training(monkeypatch)
         mocked_core_training = mock_core_training(monkeypatch)
 
         train(
-            default_domain_path,
-            default_stack_config,
-            [default_e2e_stories_file, default_nlu_data],
+            domain_path,
+            stack_config_path,
+            [e2e_stories_path, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
         )
 
@@ -433,13 +423,13 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        default_e2e_stories_file: Text,
-        default_nlu_data: Text,
+        domain_path,
+        stack_config_path,
+        e2e_stories_path,
+        nlu_data_path: Text,
         tmp_path: Path,
     ):
-        stories_yaml = rasa.shared.utils.io.read_yaml_file(default_e2e_stories_file)
+        stories_yaml = rasa.shared.utils.io.read_yaml_file(e2e_stories_path)
         stories_yaml["stories"][1]["steps"].append({"user": "new message!"})
 
         new_stories_file = tmp_path / "new_stories.yml"
@@ -449,9 +439,9 @@ class TestE2e:
         mocked_core_training = mock_core_training(monkeypatch)
 
         new_model_path = train(
-            default_domain_path,
-            default_stack_config,
-            [new_stories_file, default_nlu_data],
+            domain_path,
+            stack_config_path,
+            [new_stories_file, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
         ).model
         os.remove(new_model_path)
@@ -463,13 +453,13 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        default_e2e_stories_file: Text,
-        default_nlu_data: Text,
+        domain_path,
+        stack_config_path,
+        e2e_stories_path,
+        nlu_data_path: Text,
         tmp_path: Path,
     ):
-        stories_yaml = rasa.shared.utils.io.read_yaml_file(default_e2e_stories_file)
+        stories_yaml = rasa.shared.utils.io.read_yaml_file(e2e_stories_path)
         stories_yaml["stories"][1]["steps"].append({"user": "Yes"})
 
         new_stories_file = new_stories_file = tmp_path / "new_stories.yml"
@@ -479,9 +469,9 @@ class TestE2e:
         mocked_core_training = mock_core_training(monkeypatch)
 
         new_model_path = train(
-            default_domain_path,
-            default_stack_config,
-            [new_stories_file, default_nlu_data],
+            domain_path,
+            stack_config_path,
+            [new_stories_file, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
         ).model
         os.remove(new_model_path)
@@ -492,9 +482,9 @@ class TestE2e:
     def test_nlu_and_core_trained_if_no_nlu_data_but_e2e_stories(
         self,
         monkeypatch: MonkeyPatch,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        default_e2e_stories_file: Text,
+        domain_path,
+        stack_config_path,
+        e2e_stories_path,
         tmp_path: Path,
     ):
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -502,10 +492,7 @@ class TestE2e:
 
         output = self.make_tmp_model_dir(tmp_path)
         train(
-            default_domain_path,
-            default_stack_config,
-            [default_e2e_stories_file],
-            output=output,
+            domain_path, stack_config_path, [e2e_stories_path], output=output,
         )
 
         mocked_core_training.assert_called_once()
@@ -521,13 +508,13 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        default_e2e_stories_file: Text,
-        default_nlu_data: Text,
+        domain_path,
+        stack_config_path,
+        e2e_stories_path,
+        nlu_data_path: Text,
         tmp_path: Path,
     ):
-        nlu_yaml = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
+        nlu_yaml = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
 
         new_nlu_file = tmp_path / "new_nlu.yml"
@@ -537,9 +524,9 @@ class TestE2e:
         mocked_core_training = mock_core_training(monkeypatch)
 
         new_model_path = train(
-            default_domain_path,
-            default_stack_config,
-            [default_e2e_stories_file, new_nlu_file],
+            domain_path,
+            stack_config_path,
+            [e2e_stories_path, new_nlu_file],
             output=new_model_path_in_same_dir(trained_e2e_model),
         ).model
         os.remove(new_model_path)
@@ -551,13 +538,13 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_simple_rasa_model: Text,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        simple_stories_file: Text,
-        default_nlu_data: Text,
+        domain_path,
+        stack_config_path,
+        simple_stories_path: Text,
+        nlu_data_path: Text,
         tmp_path: Path,
     ):
-        nlu_yaml = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
+        nlu_yaml = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
 
         new_nlu_file = tmp_path / "new_nlu.yml"
@@ -567,9 +554,9 @@ class TestE2e:
         mocked_core_training = mock_core_training(monkeypatch)
 
         new_model_path = train(
-            default_domain_path,
-            default_stack_config,
-            [simple_stories_file, new_nlu_file],
+            domain_path,
+            stack_config_path,
+            [simple_stories_path, new_nlu_file],
             output=new_model_path_in_same_dir(trained_simple_rasa_model),
         ).model
         os.remove(new_model_path)
@@ -582,9 +569,9 @@ class TestE2e:
         capsys: CaptureFixture,
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
-        default_domain_path: Text,
-        default_stack_config: Text,
-        default_e2e_stories_file: Text,
+        domain_path,
+        stack_config_path,
+        e2e_stories_path,
     ):
 
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -592,10 +579,7 @@ class TestE2e:
 
         output = self.make_tmp_model_dir(tmp_path)
         train_core(
-            default_domain_path,
-            default_stack_config,
-            default_e2e_stories_file,
-            output=output,
+            domain_path, stack_config_path, e2e_stories_path, output=output,
         )
 
         mocked_core_training.assert_not_called()
@@ -613,10 +597,10 @@ class TestE2e:
 def test_model_finetuning(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
-    default_nlu_data: Text,
+    domain_path,
+    stories_path,
+    stack_config_path,
+    nlu_data_path: Text,
     trained_rasa_model: Text,
     use_latest_model: bool,
 ):
@@ -633,9 +617,9 @@ def test_model_finetuning(
         trained_rasa_model = str(Path(trained_rasa_model).parent)
 
     train(
-        default_domain_path,
-        default_stack_config,
-        [default_stories_file, default_nlu_data],
+        domain_path,
+        stack_config_path,
+        [stories_path, nlu_data_path],
         output=output,
         force_training=True,
         model_to_finetune=trained_rasa_model,
@@ -915,9 +899,9 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     trained_rasa_model: Text,
-    default_nlu_data: Text,
-    default_config_path: Text,
-    default_domain_path: Text,
+    nlu_data_path: Text,
+    config_path,
+    domain_path,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
@@ -925,17 +909,17 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
-    # This intent exists in `default_domain_path` but not yet in the nlu data
+    old_nlu = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
+    # This intent exists in `domain_path` but not yet in the nlu data
     old_nlu["nlu"].append({"intent": "why", "examples": "whyy??"})
     new_nlu_path = tmp_path / "new_nlu.yml"
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
         train_nlu(
-            default_config_path,
+            config_path,
             str(new_nlu_path),
-            domain=default_domain_path,
+            domain=domain_path,
             output=output,
             model_to_finetune=trained_rasa_model,
         )
@@ -1005,10 +989,10 @@ def test_model_finetuning_nlu_with_default_epochs(
 def test_model_finetuning_with_invalid_model(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
-    default_nlu_data: Text,
+    domain_path,
+    stories_path,
+    stack_config_path,
+    nlu_data_path: Text,
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
@@ -1023,9 +1007,9 @@ def test_model_finetuning_with_invalid_model(
 
     with pytest.raises(SystemExit):
         train(
-            default_domain_path,
-            default_stack_config,
-            [default_stories_file, default_nlu_data],
+            domain_path,
+            stack_config_path,
+            [stories_path, nlu_data_path],
             output=output,
             force_training=True,
             model_to_finetune=model_to_fine_tune,
@@ -1042,9 +1026,9 @@ def test_model_finetuning_with_invalid_model(
 def test_model_finetuning_with_invalid_model_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
-    default_stack_config: Text,
+    domain_path,
+    stories_path,
+    stack_config_path,
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
@@ -1056,9 +1040,9 @@ def test_model_finetuning_with_invalid_model_core(
 
     with pytest.raises(SystemExit):
         train_core(
-            default_domain_path,
-            default_stack_config,
-            default_stories_file,
+            domain_path,
+            stack_config_path,
+            stories_path,
             output=output,
             model_to_finetune=model_to_fine_tune,
             finetuning_epoch_fraction=1,
@@ -1073,9 +1057,9 @@ def test_model_finetuning_with_invalid_model_core(
 def test_model_finetuning_with_invalid_model_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stack_config: Text,
-    default_nlu_data: Text,
+    domain_path,
+    stack_config_path,
+    nlu_data_path: Text,
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
@@ -1087,9 +1071,9 @@ def test_model_finetuning_with_invalid_model_nlu(
 
     with pytest.raises(SystemExit):
         train_nlu(
-            default_stack_config,
-            default_nlu_data,
-            domain=default_domain_path,
+            stack_config_path,
+            nlu_data_path,
+            domain=domain_path,
             output=output,
             model_to_finetune=model_to_fine_tune,
             finetuning_epoch_fraction=1,
