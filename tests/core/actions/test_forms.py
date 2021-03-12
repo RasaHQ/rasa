@@ -859,7 +859,7 @@ async def test_trigger_slot_mapping_applies(
         ],
     )
 
-    slot_values = form.extract_other_slots(tracker, domain, "some_slot")
+    slot_values = form.extract_other_slots(tracker, domain)
     assert slot_values == {slot_filled_by_trigger_mapping: expected_value}
 
 
@@ -906,7 +906,7 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
         ],
     )
 
-    slot_values = form.extract_other_slots(tracker, domain, "some_slot")
+    slot_values = form.extract_other_slots(tracker, domain)
     assert slot_values == {}
 
 
@@ -1246,7 +1246,7 @@ def test_extract_other_slots_with_entity(
         ],
     )
 
-    slot_values = form.extract_other_slots(tracker, domain, "some_slot")
+    slot_values = form.extract_other_slots(tracker, domain)
     # check that the value was extracted for non requested slot
     assert slot_values == expected_slot_values
 
