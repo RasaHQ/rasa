@@ -534,9 +534,9 @@ async def test_train_with_retrieval_events_success(
         core_file = stack.enter_context(
             open("data/test_stories/stories_retrieval_intents.md")
         )
-        responses_file = stack.enter_context(open("data/test_responses/default.md"))
+        responses_file = stack.enter_context(open("data/test_responses/default.yml"))
         nlu_file = stack.enter_context(
-            open("data/test_nlu/default_retrieval_intents.md")
+            open("data/test/stories_default_retrieval_intents.yml")
         )
 
         payload = dict(
@@ -750,9 +750,9 @@ async def test_evaluate_stories_not_ready_agent(
 
 
 async def test_evaluate_stories_end_to_end(
-    rasa_app: SanicASGITestClient, end_to_end_test_story_file: Text
+    rasa_app: SanicASGITestClient, end_to_end_test_story_md_file: Text
 ):
-    stories = rasa.shared.utils.io.read_file(end_to_end_test_story_file)
+    stories = rasa.shared.utils.io.read_file(end_to_end_test_story_md_file)
 
     _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories,)
 

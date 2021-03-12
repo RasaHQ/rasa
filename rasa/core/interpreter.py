@@ -151,7 +151,8 @@ class RasaNLUInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter)
         Args:
             message: storing text to process
         Returns:
-            message containing tokens and features which are the output of the NLU pipeline
+            message containing tokens and features which are the output of the NLU
+            pipeline
         """
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()

@@ -10,6 +10,7 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     COSINE,
     INNER,
+    LINEAR_NORM,
     CROSS_ENTROPY,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
@@ -558,7 +559,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         Args:
             num_neg: Positive integer, the number of incorrect labels;
                 the algorithm will minimize their similarity to the input.
-            loss_type: The type of the loss function, either 'cross_entropy' or 'margin'.
+            loss_type: The type of the loss function, either 'cross_entropy' or
+                'margin'.
             mu_pos: Float, indicates how similar the algorithm should
                 try to make embedding vectors for correct labels;
                 should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -581,10 +583,11 @@ class DotProductLoss(tf.keras.layers.Layer):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Model confidence to be returned during inference.
-                Possible values - 'softmax', 'cosine' and 'inner'.
+                Possible values - 'softmax' and 'linear_norm'.
 
         Raises:
-            LayerConfigException: When `similarity_type` is not one of 'cosine' or 'inner'.
+            LayerConfigException: When `similarity_type` is not one of 'cosine' or
+                'inner'.
         """
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -716,7 +719,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         label_embeddings: tf.Tensor,
         mask: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Computes similarity between input and label embeddings and model's confidence.
+        """Computes similarity.
+
+        Calculates similary between input and label embeddings and model's confidence.
 
         First compute the similarity from embeddings and then apply an activation
         function if needed to get the confidence.
@@ -727,18 +732,20 @@ class DotProductLoss(tf.keras.layers.Layer):
             mask: Mask over input and output sequence.
 
         Returns:
-            similarity between input and label embeddings and model's prediction confidence for each label.
+            similarity between input and label embeddings and model's prediction
+            confidence for each label.
         """
-        # If model's prediction confidence is configured to be cosine similarity,
-        # then normalize embeddings to unit vectors.
-        if self.model_confidence == COSINE:
-            input_embeddings = tf.nn.l2_normalize(input_embeddings, axis=-1)
-            label_embeddings = tf.nn.l2_normalize(label_embeddings, axis=-1)
-
         similarities = self.sim(input_embeddings, label_embeddings, mask)
         confidences = similarities
         if self.model_confidence == SOFTMAX:
             confidences = tf.nn.softmax(similarities)
+        if self.model_confidence == LINEAR_NORM:
+            # Clip negative values to 0 and linearly normalize to bring the predictions
+            # in the range [0,1].
+            clipped_similarities = tf.nn.relu(similarities)
+            confidences = clipped_similarities / tf.reduce_sum(
+                clipped_similarities, axis=-1
+            )
         return similarities, confidences
 
     def _train_sim(

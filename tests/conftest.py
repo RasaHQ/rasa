@@ -1,11 +1,13 @@
 import asyncio
 import copy
+import functools
 import os
 import random
 import pytest
 import sys
 import uuid
 
+from _pytest.python import Function
 from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
@@ -41,7 +43,7 @@ from tests.core.conftest import (
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
     DOMAIN_WITH_CATEGORICAL_SLOT,
-    END_TO_END_STORY_FILE,
+    END_TO_END_STORY_MD_FILE,
     INCORRECT_NLU_DATA,
     SIMPLE_STORIES_FILE,
 )
@@ -59,11 +61,36 @@ pytest_plugins = ["pytester"]
 # these tests are run separately
 collect_ignore_glob = ["docs/*.py"]
 
+# Defines how tests are parallelized in the CI
+PATH_PYTEST_MARKER_MAPPINGS = {
+    "category_cli": [Path("tests", "cli").absolute()],
+    "category_core_featurizers": [Path("tests", "core", "featurizers").absolute()],
+    "category_policies": [
+        Path("tests", "core", "test_policies.py").absolute(),
+        Path("tests", "core", "policies").absolute(),
+    ],
+    "category_nlu_featurizers": [
+        Path("tests", "nlu", "featurizers").absolute(),
+        Path("tests", "nlu", "utils").absolute(),
+    ],
+    "category_nlu_predictors": [
+        Path("tests", "nlu", "classifiers").absolute(),
+        Path("tests", "nlu", "extractors").absolute(),
+        Path("tests", "nlu", "selectors").absolute(),
+    ],
+    "category_full_model_training": [
+        Path("tests", "test_train.py").absolute(),
+        Path("tests", "nlu", "test_train.py").absolute(),
+        Path("tests", "core", "test_training.py").absolute(),
+        Path("tests", "core", "test_examples.py").absolute(),
+    ],
+}
+
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
-@pytest.yield_fixture(scope="session")
+@pytest.fixture(scope="session")
 def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -188,8 +215,8 @@ def incorrect_nlu_data() -> Text:
 
 
 @pytest.fixture(scope="session")
-def end_to_end_test_story_file() -> Text:
-    return END_TO_END_STORY_FILE
+def end_to_end_test_story_md_file() -> Text:
+    return END_TO_END_STORY_MD_FILE
 
 
 @pytest.fixture(scope="session")
@@ -400,10 +427,33 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
+async def e2e_bot(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="data/test_e2ebot/domain.yml",
+        config="data/test_e2ebot/config.yml",
+        training_files=[
+            "data/test_e2ebot/data/rules.yml",
+            "data/test_e2ebot/data/stories.yml",
+            "data/test_e2ebot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for e2ebot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="session")
 async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
     return Agent.load_local_model(trained_response_selector_bot)
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_agent(e2e_bot: Optional[Path],) -> Agent:
+    return Agent.load_local_model(e2e_bot)
 
 
 def write_endpoint_config_to_yaml(
@@ -423,7 +473,7 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
     )
 
 
-def pytest_runtest_setup(item) -> None:
+def pytest_runtest_setup(item: Function) -> None:
     if (
         "skip_on_windows" in [mark.name for mark in item.iter_markers()]
         and sys.platform == "win32"
@@ -448,3 +498,47 @@ class AsyncMock(Mock):
 
     async def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return super().__call__(*args, **kwargs)
+
+
+def _get_marker_for_ci_matrix(item: Function) -> Text:
+    """Returns pytest marker which is used to parallelize the tests in GitHub actions.
+
+    Args:
+        item: The test case.
+
+    Returns:
+        A marker for this test based on which directory / python module the test is in.
+    """
+    test_path = Path(item.fspath).absolute()
+
+    matching_markers = [
+        marker
+        for marker, paths_for_marker in PATH_PYTEST_MARKER_MAPPINGS.items()
+        if any(
+            path == test_path or path in test_path.parents for path in paths_for_marker
+        )
+    ]
+
+    if not matching_markers:
+        return "category_other_unit_tests"
+    if len(matching_markers) > 1:
+        raise ValueError(
+            f"Each test should only be in one category. Test '{item.name}' is assigned "
+            f"to these categories: {matching_markers}. Please fix the "
+            "mapping in `PATH_PYTEST_MARKER_MAPPINGS`."
+        )
+
+    return matching_markers[0]
+
+
+def pytest_collection_modifyitems(items: List[Function]) -> None:
+    """Adds pytest markers dynamically when the tests are run.
+
+    This is automatically called by pytest during its execution.
+
+    Args:
+        items: Tests to be run.
+    """
+    for item in items:
+        marker = _get_marker_for_ci_matrix(item)
+        item.add_marker(marker)
