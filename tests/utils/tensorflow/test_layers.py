@@ -36,3 +36,15 @@ def test_randomly_connected_dense_output_always_dense(
     y = layer(inputs)
     num_non_zero_outputs = tf.math.count_nonzero(y).numpy()
     assert num_non_zero_outputs == expected_num_non_zero_outputs
+
+
+def test_randomly_connected_dense_all_inputs_connected():
+    layer = RandomlyConnectedDense(density=0.0, units=2, use_bias=False)
+    # Create a unit vector [1, 0, 0, 0, ...]
+    x = np.zeros(10)
+    x[0] = 1.0
+    # For every standard basis vector
+    for _ in range(10):
+        x = np.roll(x, 1)
+        y = layer(np.expand_dims(x, 0))
+        assert tf.reduce_sum(y).numpy() != 0.0
