@@ -399,9 +399,9 @@ class TEDPolicy(Policy):
     ) -> bool:
         for turns_tags in entity_tags:
             for turn_tags in turns_tags:
+                # if turn_tags are empty or all entity tag indices are `0`
+                # it means that all the inputs only contain NO_ENTITY_TAG
                 if turn_tags and np.any(turn_tags[ENTITY_TAGS][0].features):
-                    # if all indices are `0`
-                    # it means that all the inputs only contain NO_ENTITY_TAG
                     return True
         return False
 
