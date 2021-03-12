@@ -157,9 +157,9 @@ class DenseForSparse(tf.keras.layers.Dense):
 
 
 class RandomlyConnectedDense(tf.keras.layers.Dense):
-    """Just your regular densely-connected NN layer but with sparse weights.
+    """Layer with dense ouputs that are connected to a given fraction of randomly chosen inputs
 
-    `Dense` implements the operation:
+    `RandomlyConnectedDense` implements the operation:
     `output = activation(dot(input, kernel) + bias)`
     where `activation` is the element-wise activation function
     passed as the `activation` argument, `kernel` is a weights matrix
@@ -170,8 +170,14 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
     Note: If the input to the layer has a rank greater than 2, then
     it is flattened prior to the initial dot product with `kernel`.
 
+    The output is guaranteed to be dense (each output is connected to at least one input), and
+    no input is disconnected (each input is connected to at least one output).
+
+    At `density = 0.0` the number of trainable weights is `max(input_size, units)`. At 
+    `density = 1.0` this layer is equivalent to `tf.keras.layers.Dense`.
+
     Arguments:
-        density: Float between 0 and 1. Fraction of the inputs that each
+        density: Float between 0 and 1. Approximate fraction of the inputs that each
             output is connected to.
         units: Positive integer, dimensionality of the output space.
         activation: Activation function to use.
@@ -316,8 +322,8 @@ class Ffnn(tf.keras.layers.Layer):
         layer_sizes: List of integers with dimensionality of the layers.
         dropout_rate: Float between 0 and 1; fraction of the input units to drop.
         reg_lambda: Float, regularization factor.
-        sparsity: Float between 0 and 1. Fraction of the `kernel`
-            weights to set to zero.
+        density: Float between 0 and 1. Approximate fraction of the inputs that each
+            output is connected to.
         layer_name_suffix: Text added to the name of the layers.
 
     Input shape:
@@ -336,7 +342,7 @@ class Ffnn(tf.keras.layers.Layer):
         layer_sizes: List[int],
         dropout_rate: float,
         reg_lambda: float,
-        sparsity: float,
+        density: float,
         layer_name_suffix: Text,
     ) -> None:
         super().__init__(name=f"ffnn_{layer_name_suffix}")
@@ -345,9 +351,9 @@ class Ffnn(tf.keras.layers.Layer):
         self._ffn_layers = []
         for i, layer_size in enumerate(layer_sizes):
             self._ffn_layers.append(
-                DenseWithSparseWeights(
+                RandomlyConnectedDense(
                     units=layer_size,
-                    sparsity=sparsity,
+                    density=density,
                     activation=tfa.activations.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
