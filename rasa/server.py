@@ -69,7 +69,7 @@ from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation, CVEvaluationResult
-from rasa.utils.endpoints import EndpointConfig, bool_arg, float_arg, int_arg
+from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from ssl import SSLContext
@@ -700,7 +700,7 @@ def create_app(
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
-        until_time = float_arg(request, "until")
+        until_time = rasa.utils.endpoints.float_arg(request, "until")
 
         tracker = await app.agent.create_processor().fetch_tracker_with_initial_session(
             conversation_id
@@ -744,7 +744,9 @@ def create_app(
 
                 output_channel = _get_output_channel(request, tracker)
 
-                if bool_arg(request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False):
+                if rasa.utils.endpoints.bool_arg(
+                    request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
+                ):
                     await processor.execute_side_effects(
                         events, tracker, output_channel
                     )
@@ -820,8 +822,10 @@ def create_app(
     @ensure_conversation_exists()
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-        until_time = float_arg(request, "until")
-        fetch_all_sessions = bool_arg(request, "all_sessions", default=False)
+        until_time = rasa.utils.endpoints.float_arg(request, "until")
+        fetch_all_sessions = rasa.utils.endpoints.bool_arg(
+            request, "all_sessions", default=False
+        )
 
         try:
             stories = get_test_stories(
@@ -1086,7 +1090,7 @@ def create_app(
 
         test_data = _test_data_file_from_payload(request, temporary_directory, ".md")
 
-        use_e2e = bool_arg(request, "e2e", default=False)
+        use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
             evaluation = await test(
@@ -1464,7 +1468,7 @@ def _training_payload_from_json(
     model_output_directory = str(temp_dir)
     if request_payload.get(
         "save_to_default_model_directory",
-        bool_arg(request, "save_to_default_model_directory", True),
+        rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True),
     ):
         model_output_directory = DEFAULT_MODELS_PATH
 
@@ -1474,7 +1478,7 @@ def _training_payload_from_json(
         training_files=str(temp_dir),
         output=model_output_directory,
         force_training=request_payload.get(
-            "force", bool_arg(request, "force_training", False)
+            "force", rasa.utils.endpoints.bool_arg(request, "force_training", False)
         ),
         core_additional_arguments=_extract_core_additional_arguments(request),
         nlu_additional_arguments=_extract_nlu_additional_arguments(request),
@@ -1529,7 +1533,7 @@ def _training_payload_from_yaml(
     rasa.shared.utils.io.write_text_file(decoded, training_data)
 
     model_output_directory = str(temp_dir)
-    if bool_arg(request, "save_to_default_model_directory", True):
+    if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
         model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
@@ -1537,7 +1541,7 @@ def _training_payload_from_yaml(
         config=str(training_data),
         training_files=str(temp_dir),
         output=model_output_directory,
-        force_training=bool_arg(request, "force_training", False),
+        force_training=rasa.utils.endpoints.bool_arg(request, "force_training", False),
         core_additional_arguments=_extract_core_additional_arguments(request),
         nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
@@ -1557,11 +1561,13 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
 
 def _extract_core_additional_arguments(request: Request) -> Dict:
     return {
-        "augmentation_factor": int_arg(request, "augmentation", 50),
+        "augmentation_factor": rasa.utils.endpoints.int_arg(
+            request, "augmentation", 50
+        ),
     }
 
 
 def _extract_nlu_additional_arguments(request: Request) -> Dict:
     return {
-        "num_threads": int_arg(request, "num_threads", 1),
+        "num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1),
     }

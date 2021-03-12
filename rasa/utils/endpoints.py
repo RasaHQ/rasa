@@ -204,6 +204,14 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
 
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned.
+
+    Args:
+        request: Sanic request.
+        name: Name of argument.
+        default: Default value for `name` argument.
+
+    Returns:
+        A bool value if `name` is a valid boolean, `default` otherwise.
     """
     return str(request.args.get(name, default)).lower() == "true"
 
@@ -215,6 +223,14 @@ def float_arg(
 
     Checks the `key` parameter of the request if it contains a valid
     float value. If not, `default` is returned.
+
+    Args:
+        request: Sanic request.
+        key: Name of argument.
+        default: Default value for `key` argument.
+
+    Returns:
+        A float value if `key` is a valid float, `default` otherwise.
     """
     arg = request.args.get(key, default)
 
@@ -235,6 +251,14 @@ def int_arg(
 
     Checks the `key` parameter of the request if it contains a valid
     int value. If not, `default` is returned.
+
+    Args:
+        request: Sanic request.
+        key: Name of argument.
+        default: Default value for `key` argument.
+
+    Returns:
+        An int value if `key` is a valid integer, `default` otherwise.
     """
     arg = request.args.get(key, default)
 
