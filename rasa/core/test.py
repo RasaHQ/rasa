@@ -94,6 +94,7 @@ class EvaluationStore:
         entity_predictions: Optional[EntityPredictionList] = None,
         entity_targets: Optional[EntityPredictionList] = None,
     ) -> None:
+        """Initialize store attributes."""
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
         self.intent_predictions = intent_predictions or []
@@ -110,8 +111,7 @@ class EvaluationStore:
         entity_predictions: Optional[EntityPredictionList] = None,
         entity_targets: Optional[EntityPredictionList] = None,
     ) -> None:
-        """Add items or lists of items to the store"""
-
+        """Add items or lists of items to the store."""
         self.action_predictions.extend(action_predictions or [])
         self.action_targets.extend(action_targets or [])
         self.intent_targets.extend(intent_targets or [])
@@ -120,7 +120,7 @@ class EvaluationStore:
         self.entity_targets.extend(entity_targets or [])
 
     def merge_store(self, other: "EvaluationStore") -> None:
-        """Add the contents of other to self"""
+        """Add the contents of other to self."""
         self.add_to_store(
             action_predictions=other.action_predictions,
             action_targets=other.action_targets,
