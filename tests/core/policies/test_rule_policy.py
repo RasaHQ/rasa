@@ -1007,10 +1007,7 @@ slots:
 
     form_conversation = DialogueStateTracker.from_events(
         "slot rule test",
-        evts=[
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": "i1"}),
-        ],
+        evts=[ActionExecuted(ACTION_LISTEN_NAME), UserUttered(intent={"name": "i1"}),],
         domain=domain,
         slots=domain.slots,
     )
