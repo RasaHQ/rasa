@@ -138,7 +138,7 @@ def test_single_state_featurizer_prepare_for_training():
         intents=["greet"],
         entities=["name"],
         slots=[Slot("name")],
-        templates={},
+        responses={},
         forms=[],
         action_names=["utter_greet", "action_check_weather"],
     )
@@ -163,7 +163,7 @@ def test_single_state_featurizer_creates_encoded_all_actions():
         intents=[],
         entities=[],
         slots=[],
-        templates={},
+        responses={},
         forms={},
         action_names=["a", "b", "c", "d"],
     )
@@ -193,7 +193,7 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
         intents=[],
         entities=["city", f"city{ENTITY_LABEL_SEPARATOR}to"],
         slots=[],
-        templates={},
+        responses={},
         forms={},
         action_names=[],
     )
@@ -223,6 +223,70 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
     assert np.all(
         encoded[ENTITY_TAGS][0].features == [[0], [0], [0], [0], [1], [0], [2]]
     )
+
+
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
+def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
+    unpacked_trained_moodbot_path: Text,
+):
+    from rasa.core.agent import Agent
+
+    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    # TODO roles and groups are not supported in e2e yet
+    domain = Domain(
+        intents=[],
+        entities=["city", f"city{ENTITY_LABEL_SEPARATOR}to"],
+        slots=[],
+        responses={},
+        forms={},
+        action_names=[],
+    )
+    f = SingleStateFeaturizer()
+    f.prepare_for_training(domain, RegexInterpreter(), bilou_tagging=True)
+
+    encoded = f.encode_entities(
+        {
+            TEXT: "I am flying from London to Paris",
+            ENTITIES: [
+                {
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "London",
+                    ENTITY_ATTRIBUTE_START: 17,
+                    ENTITY_ATTRIBUTE_END: 23,
+                },
+                {
+                    ENTITY_ATTRIBUTE_TYPE: f"city{ENTITY_LABEL_SEPARATOR}to",
+                    ENTITY_ATTRIBUTE_VALUE: "Paris",
+                    ENTITY_ATTRIBUTE_START: 27,
+                    ENTITY_ATTRIBUTE_END: 32,
+                },
+            ],
+        },
+        interpreter=interpreter,
+        bilou_tagging=True,
+    )
+    assert sorted(list(encoded.keys())) == sorted([ENTITY_TAGS])
+    assert np.all(
+        encoded[ENTITY_TAGS][0].features == [[0], [0], [0], [0], [4], [0], [8]]
+    )
+
+    encoded = f.encode_entities(
+        {
+            TEXT: "I am flying to Saint Petersburg",
+            ENTITIES: [
+                {
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "Saint Petersburg",
+                    ENTITY_ATTRIBUTE_START: 15,
+                    ENTITY_ATTRIBUTE_END: 31,
+                },
+            ],
+        },
+        interpreter=interpreter,
+        bilou_tagging=True,
+    )
+    assert sorted(list(encoded.keys())) == sorted([ENTITY_TAGS])
+    assert np.all(encoded[ENTITY_TAGS][0].features == [[0], [0], [0], [0], [1], [3]])
 
 
 def test_single_state_featurizer_uses_dtype_float():
@@ -413,7 +477,7 @@ def test_single_state_featurizer_uses_regex_interpreter(
     from rasa.core.agent import Agent
 
     domain = Domain(
-        intents=[], entities=[], slots=[], templates={}, forms=[], action_names=[],
+        intents=[], entities=[], slots=[], responses={}, forms=[], action_names=[],
     )
     f = SingleStateFeaturizer()
     # simulate that core was trained separately by passing

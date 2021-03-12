@@ -15,6 +15,7 @@ from rasa.shared.core.slots import (
     CategoricalSlot,
     bool_from_any,
     AnySlot,
+    InvalidSlotConfigError,
 )
 
 
@@ -94,6 +95,18 @@ class SlotTestCollection:
 
         assert isinstance(slot, slot_type)
         assert recreated.persistence_info() == persistence_info
+
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_has_been_set(
+        self, influence_conversation: bool, value_feature_pair: Tuple[Any, List[float]]
+    ):
+        slot = self.create_slot(influence_conversation)
+        assert not slot.has_been_set
+        value, _ = value_feature_pair
+        slot.value = value
+        assert slot.has_been_set
+        slot.reset()
+        assert not slot.has_been_set
 
 
 class TestTextSlot(SlotTestCollection):
@@ -202,7 +215,7 @@ class TestUnfeaturizedSlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
     def test_deprecation_warning(self):
@@ -291,7 +304,7 @@ class TestAnySlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
 

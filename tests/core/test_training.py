@@ -18,17 +18,11 @@ from rasa.shared.core.training_data.visualization import visualize_stories
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
-)
-async def test_story_visualization(
-    stories_file: Text, default_domain: Domain, tmp_path: Path
-):
+async def test_story_visualization(default_domain: Domain, tmp_path: Path):
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        "data/test_stories/stories.md", default_domain
+        "data/test_yaml_stories/stories.yml", default_domain
     )
     out_file = str(tmp_path / "graph.html")
     generated_graph = await visualize_stories(
@@ -44,17 +38,11 @@ async def test_story_visualization(
     assert len(generated_graph.edges()) == 56
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
-)
-async def test_story_visualization_with_merging(
-    stories_file: Text, default_domain: Domain
-):
+async def test_story_visualization_with_merging(default_domain: Domain):
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        stories_file, default_domain
+        "data/test_yaml_stories/stories.yml", default_domain
     )
     generated_graph = await visualize_stories(
         story_steps,
@@ -122,17 +110,10 @@ async def test_training_script_with_max_history_set(tmp_path: Path):
             assert policy.featurizer.max_history == expected_history
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/stories_restart.md",
-        "data/test_yaml_stories/stories_restart.yml",
-    ],
-)
-async def test_training_script_with_restart_stories(stories_file: Text, tmp_path: Path):
+async def test_training_script_with_restart_stories(tmp_path: Path):
     await train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-        stories_file,
+        "data/test_yaml_stories/stories_restart.yml",
         str(tmp_path),
         interpreter=RegexInterpreter(),
         policy_config="data/test_config/max_hist_config.yml",

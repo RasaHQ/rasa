@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text, Tuple, Optional
+from typing import Any, Dict, List, Text, Tuple, Optional, NamedTuple
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -29,6 +29,15 @@ from rasa.shared.nlu.constants import (
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
 import rasa.utils.train_utils
+
+
+class EntityTagSpec(NamedTuple):
+    """Specification of an entity tag present in the training data."""
+
+    tag_name: Text
+    ids_to_tags: Dict[int, Text]
+    tags_to_ids: Dict[Text, int]
+    num_tags: int
 
 
 class EntityExtractor(Component):
@@ -326,10 +335,14 @@ class EntityExtractor(Component):
             return True
 
         # Tokens need to be no further than 3 positions apart
-        # The magic number 3 is chosen such that the following two cases can be extracted
-        #   - Schönhauser Allee 175, 10119 Berlin (address compounds separated by 2 tokens (", "))
-        #   - 22 Powderhall Rd., EH7 4GB (abbreviated "Rd." results in a separation of 3 tokens ("., "))
-        # More than 3 might already introduce cases that shouldn't be considered by this logic
+        # The magic number 3 is chosen such that the following two cases can be
+        # extracted
+        #   - Schönhauser Allee 175, 10119 Berlin
+        #     (address compounds separated by 2 tokens (", "))
+        #   - 22 Powderhall Rd., EH7 4GB
+        #     (abbreviated "Rd." results in a separation of 3 tokens ("., "))
+        # More than 3 might already introduce cases that shouldn't be considered by
+        # this logic
         tokens_within_range = token.start - last_token_end <= 3
 
         # The interleaving tokens *must* be a full stop, a comma, or a whitespace
@@ -460,9 +473,11 @@ class EntityExtractor(Component):
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
                         f"end values of entities ({entities_repr}) in the training "
                         f"data match the token boundaries ({tokens_repr}). "
-                        "Common causes: \n  1) entities include trailing whitespaces or punctuation"
+                        "Common causes: \n  1) entities include trailing whitespaces "
+                        "or punctuation"
                         "\n  2) the tokenizer gives an unexpected result, due to "
-                        "languages such as Chinese that don't use whitespace for word separation",
+                        "languages such as Chinese that don't use whitespace for word "
+                        "separation",
                         docs=DOCS_URL_TRAINING_DATA_NLU,
                     )
                     break

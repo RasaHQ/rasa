@@ -1,6 +1,8 @@
-from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
+from pathlib import Path
+import tensorflow as tf
 import copy
 import numpy as np
+from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -18,11 +20,19 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     AUTO,
     INNER,
+    LINEAR_NORM,
     COSINE,
+    SEQUENCE,
+    CROSS_ENTROPY,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     DENSE_DIMENSION,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
 )
+from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     INTENT,
@@ -31,9 +41,10 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.core.constants import DIALOGUE
+from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
-    from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+    from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
 
 
@@ -63,10 +74,32 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
     if config.get(SIMILARITY_TYPE) == AUTO:
-        if config[LOSS_TYPE] == SOFTMAX:
+        if config[LOSS_TYPE] == CROSS_ENTROPY:
             config[SIMILARITY_TYPE] = INNER
         elif config[LOSS_TYPE] == MARGIN:
             config[SIMILARITY_TYPE] = COSINE
+
+    return config
+
+
+def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Updates LOSS_TYPE to 'cross_entropy' if it is set to 'softmax'.
+
+    Args:
+        config: model configuration
+
+    Returns:
+        updated model configuration
+    """
+    # TODO: Completely deprecate this with 3.0
+    if config.get(LOSS_TYPE) == SOFTMAX:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"`{LOSS_TYPE}={SOFTMAX}` is deprecated. "
+            f"Please update your configuration file to use"
+            f"`{LOSS_TYPE}={CROSS_ENTROPY}` instead.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        )
+        config[LOSS_TYPE] = CROSS_ENTROPY
 
     return config
 
@@ -290,8 +323,8 @@ def entity_label_to_tags(
     confidence_values = {}
 
     for tag_spec in entity_tag_specs:
-        predictions = model_predictions[f"e_{tag_spec.tag_name}_ids"].numpy()
-        confidences = model_predictions[f"e_{tag_spec.tag_name}_scores"].numpy()
+        predictions = model_predictions[f"e_{tag_spec.tag_name}_ids"]
+        confidences = model_predictions[f"e_{tag_spec.tag_name}_scores"]
 
         if not np.any(predictions):
             continue
@@ -340,6 +373,213 @@ def override_defaults(
                 config[key] = custom[key]
 
     return config
+
+
+def create_data_generators(
+    model_data: RasaModelData,
+    batch_sizes: Union[int, List[int]],
+    epochs: int,
+    batch_strategy: Text = SEQUENCE,
+    eval_num_examples: int = 0,
+    random_seed: Optional[int] = None,
+) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]:
+    """Create data generators for train and optional validation data.
+
+    Args:
+        model_data: The model data to use.
+        batch_sizes: The batch size(s).
+        epochs: The number of epochs to train.
+        batch_strategy: The batch strategy to use.
+        eval_num_examples: Number of examples to use for validation data.
+        random_seed: The random seed.
+
+    Returns:
+        The training data generator and optional validation data generator.
+    """
+    validation_data_generator = None
+    if eval_num_examples > 0:
+        model_data, evaluation_model_data = model_data.split(
+            eval_num_examples, random_seed,
+        )
+        validation_data_generator = RasaBatchDataGenerator(
+            evaluation_model_data,
+            batch_size=batch_sizes,
+            epochs=epochs,
+            batch_strategy=batch_strategy,
+            shuffle=True,
+        )
+
+    data_generator = RasaBatchDataGenerator(
+        model_data,
+        batch_size=batch_sizes,
+        epochs=epochs,
+        batch_strategy=batch_strategy,
+        shuffle=True,
+    )
+
+    return data_generator, validation_data_generator
+
+
+def create_common_callbacks(
+    epochs: int,
+    tensorboard_log_dir: Optional[Text] = None,
+    tensorboard_log_level: Optional[Text] = None,
+    checkpoint_dir: Optional[Path] = None,
+) -> List[tf.keras.callbacks.Callback]:
+    """Create common callbacks.
+
+    The following callbacks are created:
+    - RasaTrainingLogger callback
+    - Optional TensorBoard callback
+    - Optional RasaModelCheckpoint callback
+
+    Args:
+        epochs: the number of epochs to train
+        tensorboard_log_dir: optional directory that should be used for tensorboard
+        tensorboard_log_level: defines when training metrics for tensorboard should be
+                               logged. Valid values: 'epoch' and 'batch'.
+        checkpoint_dir: optional directory that should be used for model checkpointing
+
+    Returns:
+        A list of callbacks.
+    """
+    callbacks = [RasaTrainingLogger(epochs, silent=False)]
+
+    if tensorboard_log_dir:
+        if tensorboard_log_level == "minibatch":
+            tensorboard_log_level = "batch"
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "You set 'tensorboard_log_level' to 'minibatch'. This value should not "
+                "be used anymore. Please use 'batch' instead."
+            )
+
+        callbacks.append(
+            tf.keras.callbacks.TensorBoard(
+                log_dir=tensorboard_log_dir,
+                update_freq=tensorboard_log_level,
+                write_graph=True,
+                write_images=True,
+                histogram_freq=10,
+            )
+        )
+
+    if checkpoint_dir:
+        callbacks.append(RasaModelCheckpoint(checkpoint_dir))
+
+    return callbacks
+
+
+def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Set model confidence to auto if margin loss is used.
+
+    Option `auto` is reserved for margin loss type. It will be removed once margin loss
+    is deprecated.
+
+    Args:
+        component_config: model configuration
+
+    Returns:
+        updated model configuration
+    """
+    if component_config[LOSS_TYPE] == MARGIN:
+        rasa.shared.utils.io.raise_warning(
+            f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
+            f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. This means that "
+            f"model's confidences will be computed as cosine similarities. "
+            f"Users are encouraged to shift to cross entropy loss by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
+        )
+        component_config[MODEL_CONFIDENCE] = AUTO
+    return component_config
+
+
+def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
+    """Validates that combination of parameters in the configuration are correctly set.
+
+    Args:
+        component_config: Configuration to validate.
+    """
+    _check_loss_setting(component_config)
+    _check_confidence_setting(component_config)
+    _check_similarity_loss_setting(component_config)
+
+
+def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
+    if component_config[MODEL_CONFIDENCE] == COSINE:
+        raise InvalidConfigException(
+            f"{MODEL_CONFIDENCE}={COSINE} was introduced in Rasa Open Source 2.3.0 "
+            f"but post-release experiments revealed that using cosine similarity can "
+            f"change the order of predicted labels. "
+            f"Since this is not ideal, using `{MODEL_CONFIDENCE}={COSINE}` has been "
+            f"removed in versions post `2.3.3`. "
+            f"Please use either `{SOFTMAX}` or `{LINEAR_NORM}` as possible values."
+        )
+    if component_config[MODEL_CONFIDENCE] == INNER:
+        raise InvalidConfigException(
+            f"{MODEL_CONFIDENCE}={INNER} is deprecated as it produces an unbounded "
+            f"range of confidences which can break the logic of assistants in various "
+            f"other places. "
+            f"Please use `{MODEL_CONFIDENCE}={LINEAR_NORM}` which will produce a "
+            f"linearly normalized version of dot product similarities with each value "
+            f"in the range `[0,1]`."
+        )
+    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM, AUTO]:
+        raise InvalidConfigException(
+            f"{MODEL_CONFIDENCE}={component_config[MODEL_CONFIDENCE]} is not a valid "
+            f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM}`."
+        )
+    if component_config[MODEL_CONFIDENCE] == SOFTMAX:
+        rasa.shared.utils.io.raise_warning(
+            f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
+            f"to try using `{MODEL_CONFIDENCE}={LINEAR_NORM}` to make it easier to "
+            f"tune fallback thresholds.",
+            category=UserWarning,
+        )
+        if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
+            raise InvalidConfigException(
+                f"{LOSS_TYPE}={component_config[LOSS_TYPE]} and "
+                f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
+                f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"only with {LOSS_TYPE}={CROSS_ENTROPY}."
+            )
+        if component_config[SIMILARITY_TYPE] not in [INNER, AUTO]:
+            raise InvalidConfigException(
+                f"{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]} and "
+                f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
+                f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"only with {SIMILARITY_TYPE}={INNER}."
+            )
+
+
+def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
+    if not component_config[CONSTRAIN_SIMILARITIES] and component_config[LOSS_TYPE] in [
+        SOFTMAX,
+        CROSS_ENTROPY,
+    ]:
+        rasa.shared.utils.io.raise_warning(
+            f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
+            f"to set it to `True` when using cross-entropy loss. It will be set to "
+            f"`True` by default, "
+            f"Rasa Open Source 3.0.0 onwards.",
+            category=UserWarning,
+        )
+
+
+def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
+    if (
+        component_config[SIMILARITY_TYPE] == COSINE
+        and component_config[LOSS_TYPE] == CROSS_ENTROPY
+        or component_config[SIMILARITY_TYPE] == INNER
+        and component_config[LOSS_TYPE] == MARGIN
+    ):
+        rasa.shared.utils.io.raise_warning(
+            f"`{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]}`"
+            f" and `{LOSS_TYPE}={component_config[LOSS_TYPE]}` "
+            f"is not a recommended setting as it may not lead to best results."
+            f"Ideally use `{SIMILARITY_TYPE}={INNER}`"
+            f" and `{LOSS_TYPE}={CROSS_ENTROPY}` or"
+            f"`{SIMILARITY_TYPE}={COSINE}` and `{LOSS_TYPE}={MARGIN}`.",
+            category=UserWarning,
+        )
 
 
 def init_split_entities(

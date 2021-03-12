@@ -1,8 +1,9 @@
 # The default Docker image
 ARG IMAGE_BASE_NAME
 ARG BASE_IMAGE_HASH
-ARG POETRY_VERSION
-FROM ${IMAGE_BASE_NAME}:base-poetry-${POETRY_VERSION} as builder
+ARG BASE_BUILDER_IMAGE_HASH
+
+FROM ${IMAGE_BASE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH} as builder
 # copy files
 COPY . /build/
 

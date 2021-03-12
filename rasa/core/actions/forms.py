@@ -264,7 +264,7 @@ class FormAction(LoopAction):
         if they are set by corresponding entities from the user input
         else return `None`.
         """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
 
         entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
             slot_to_fill, domain
@@ -317,13 +317,26 @@ class FormAction(LoopAction):
 
         return slot_values
 
+    def get_slot_to_fill(self, tracker: "DialogueStateTracker") -> Optional[str]:
+        """Gets the name of the slot which should be filled next.
+
+        When switching to another form, the requested slot setting is still from the
+        previous form and must be ignored.
+
+        Returns:
+            The slot name or `None`
+        """
+        return (
+            tracker.get_slot(REQUESTED_SLOT)
+            if tracker.active_loop_name == self.name()
+            else None
+        )
+
     def extract_requested_slot(
         self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
-        """Extract the value of requested slot from a user input
-        else return `None`.
-        """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        """Extracts the value of requested slot from a user input else return `None`."""
+        slot_to_fill = self.get_slot_to_fill(tracker)
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
         # get mapping for requested slot
@@ -376,8 +389,8 @@ class FormAction(LoopAction):
         them. Otherwise there is no validation.
 
         Args:
-            slot_candidates: Extracted slots which are candidates to fill the slots required
-                by the form.
+            slot_candidates: Extracted slots which are candidates to fill the slots
+                required by the form.
             tracker: The current conversation tracker.
             domain: The current model domain.
             output_channel: The output channel which can be used to send messages
@@ -422,10 +435,26 @@ class FormAction(LoopAction):
         return DialogueStateTracker.from_events(
             current_tracker.sender_id,
             current_tracker.events_after_latest_restart()
+            # Insert SlotSet event to make sure REQUESTED_SLOT belongs to active form.
+            + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
             # Insert form execution event so that it's clearly distinguishable which
             # events were newly added.
             + [ActionExecuted(self.name())] + additional_events,
             slots=domain.slots,
+        )
+
+    def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
+        """Checks if user rejected the form execution during a slot_validation.
+
+        Args:
+            validation_events: Events returned by the custom slot_validation action
+
+        Returns:
+            True if the validation_events include an ActionExecutionRejected event,
+            else False.
+        """
+        return any(
+            isinstance(event, ActionExecutionRejected) for event in validation_events
         )
 
     async def validate(
@@ -446,7 +475,7 @@ class FormAction(LoopAction):
         slot_values = self.extract_other_slots(tracker, domain)
 
         # extract requested slot
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
         if slot_to_fill:
             slot_values.update(self.extract_requested_slot(tracker, domain))
 
@@ -461,17 +490,19 @@ class FormAction(LoopAction):
             # to be filled by the user.
             if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
-        user_rejected_manually = any(
-            isinstance(event, ActionExecutionRejected) for event in validation_events
-        )
+
         if (
             slot_to_fill
             and not some_slots_were_validated
-            and not user_rejected_manually
+            and not self._user_rejected_manually(validation_events)
         ):
             # reject to execute the form action
             # if some slot was requested but nothing was extracted
             # it will allow other policies to predict another action
+            #
+            # don't raise it here if the user rejected manually, to allow slots other
+            # than the requested slot to be filled.
+            #
             raise ActionExecutionRejection(
                 self.name(),
                 f"Failed to extract slot {slot_to_fill} with action {self.name()}",
@@ -486,7 +517,7 @@ class FormAction(LoopAction):
         nlg: NaturalLanguageGenerator,
         events_so_far: List[Event],
     ) -> List[Event]:
-        """Request the next slot and utter template if needed, else return `None`."""
+        """Request the next slot and response if needed, else return `None`."""
         request_slot_events = []
 
         if await self.is_done(output_channel, nlg, tracker, domain, events_so_far):
@@ -574,7 +605,7 @@ class FormAction(LoopAction):
     # helpers
     @staticmethod
     def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it is not a list, `None` converted to empty list."""
+        """Convert object to a list if it isn't."""
         if x is None:
             x = []
         elif not isinstance(x, list):
@@ -615,12 +646,15 @@ class FormAction(LoopAction):
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
+
         if needs_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
-
-        logger.debug("Skipping validation.")
-        return []
+        else:
+            # Needed to determine which slots to request although there are no slots
+            # to actually validate, which happens when coming back to the form after
+            # an unhappy path
+            return await self.validate_slots({}, tracker, domain, output_channel, nlg)
 
     @staticmethod
     def _should_request_slot(tracker: "DialogueStateTracker", slot_name: Text) -> bool:
@@ -679,9 +713,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-        events += await self.request_next_slot(
-            tracker, domain, output_channel, nlg, events_so_far + events
-        )
+        if not self._user_rejected_manually(events):
+            events += await self.request_next_slot(
+                tracker, domain, output_channel, nlg, events_so_far + events
+            )
 
         return events
 
