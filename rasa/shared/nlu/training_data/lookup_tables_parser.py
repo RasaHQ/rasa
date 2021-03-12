@@ -15,6 +15,10 @@ def add_item_to_lookup_tables(
         title: Name of the lookup item.
         item: The lookup item.
         existing_lookup_tables: Existing lookup items that will be extended.
+
+    Raises:
+        TypeError: in case we're trying to add a lookup table element to a file.
+                   This is an internal error that is indicative of a parsing error.
     """
     matches = [table for table in existing_lookup_tables if table["name"] == title]
     if not matches:
@@ -22,5 +26,5 @@ def add_item_to_lookup_tables(
     else:
         elements = matches[0]["elements"]
         if not isinstance(elements, list):
-            elements = matches[0]["elements"] = [elements]
+            raise TypeError("Cannot add a lookup table element to an unloaded file.")
         elements.append(item)
