@@ -174,7 +174,7 @@ class SocketIOInput(InputChannel):
             authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm
         )
 
-    async def _decode_bearer_token(self, bearer_token: Text) -> Optional[Dict]:
+    def _decode_bearer_token(self, bearer_token: Text) -> Optional[Dict]:
         # noinspection PyBroadException
         try:
             return self._decode_jwt(bearer_token)
@@ -204,7 +204,7 @@ class SocketIOInput(InputChannel):
         async def connect(sid: Text, environ: Dict) -> None:
             jwt_payload = None
             if environ.get("HTTP_AUTHORIZATION"):
-                jwt_payload = await self._decode_bearer_token(
+                jwt_payload = self._decode_bearer_token(
                     environ.get("HTTP_AUTHORIZATION")
                 )
 

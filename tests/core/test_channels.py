@@ -389,6 +389,37 @@ def test_socketio_channel():
     assert routes_list["handle_request"].startswith("/socket.io")
 
 
+async def test_socketio_channel_jwt_authentication():
+    import jwt
+    import socketio
+    from rasa.core.channels.socketio import SocketIOInput
+
+    public_key = "random_key123"
+    jwt_algorithm = "HS256"
+    bearer_token = "Bearer {}".format(
+        jwt.encode({"payload": "value"}, public_key, algorithm=jwt_algorithm)
+    )
+
+    input_channel = SocketIOInput(
+        # event name for messages sent from the user
+        user_message_evt="user_uttered",
+        # event name for messages sent from the bot
+        bot_message_evt="bot_uttered",
+        # socket.io namespace to use for the messages
+        namespace=None,
+        # public key for JWT methods
+        jwt_key=public_key,
+        # method used for the signature of the JWT authentication payload
+        jwt_method=jwt_algorithm,
+    )
+
+    s = rasa.core.run.configure_app([input_channel], port=5004)
+    routes_list = utils.list_routes(s)
+    assert input_channel.jwt_key == public_key
+    assert input_channel.jwt_algorithm == jwt_algorithm
+    assert input_channel._decode_bearer_token(bearer_token)
+
+
 async def test_callback_calls_endpoint():
     from rasa.core.channels.callback import CallbackOutput
 
