@@ -40,7 +40,7 @@ DROP_RATE_DIALOGUE = "drop_rate_dialogue"
 DROP_RATE_LABEL = "drop_rate_label"
 CONSTRAIN_SIMILARITIES = "constrain_similarities"
 
-WEIGHT_DENSITY = "weight_density"
+CONNECTION_DENSITY = "connection_density"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"

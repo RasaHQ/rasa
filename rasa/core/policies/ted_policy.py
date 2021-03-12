@@ -80,7 +80,7 @@ from rasa.utils.tensorflow.constants import (
     DROP_RATE_LABEL,
     DROP_RATE,
     DROP_RATE_ATTENTION,
-    WEIGHT_DENSITY,
+    CONNECTION_DENSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -253,8 +253,8 @@ class TEDPolicy(Policy):
         DROP_RATE_LABEL: 0.0,
         # Dropout rate for attention.
         DROP_RATE_ATTENTION: 0.0,
-        # Approximate density of the weights in RandomlyConnectedDense layers
-        WEIGHT_DENSITY: 0.2,
+        # Fraction of the inputs that each output is connected to (in some internal layers).
+        CONNECTION_DENSITY: 0.2,
         # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: True,
         # If 'True' apply dropout to dense input tensors
