@@ -14,7 +14,7 @@ import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.nlu.train
+import rasa.model
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.components import ComponentBuilder, Component
@@ -374,7 +374,7 @@ async def test_run_evaluation(
 
 
 async def test_eval_data(
-    component_builder: ComponentBuilder, tmp_path: Path, project: Text
+    component_builder: ComponentBuilder, tmp_path: Path, project: Text, trained_simple_rasa_model: Text
 ):
     _config = RasaNLUModelConfig(
         {
@@ -397,15 +397,11 @@ async def test_eval_data(
         ],
     )
 
-    (_, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmp_path),
-        data=data_importer,
-        component_builder=component_builder,
-        persist_nlu_training_data=True,
-    )
-
-    interpreter = Interpreter.load(persisted_path, component_builder)
+    with rasa.model.unpack_model(trained_simple_rasa_model) as unpacked_model_directory:
+        _, nlu_model_directory = rasa.model.get_model_subdirectories(
+            unpacked_model_directory
+        )
+        interpreter = Interpreter.load(nlu_model_directory, component_builder)
 
     data = await data_importer.get_nlu_data()
     (intent_results, response_selection_results, entity_results) = get_eval_data(
@@ -413,7 +409,7 @@ async def test_eval_data(
     )
 
     assert len(intent_results) == 46
-    assert len(response_selection_results) == 46
+    assert len(response_selection_results) == 0
     assert len(entity_results) == 46
 
 
