@@ -253,7 +253,7 @@ class TEDPolicy(Policy):
         DROP_RATE_LABEL: 0.0,
         # Dropout rate for attention.
         DROP_RATE_ATTENTION: 0.0,
-        # Fraction of the inputs that each output is connected to (in some internal layers).
+        # Fraction of the inputs that each output is connected to in internal layers.
         CONNECTION_DENSITY: 0.2,
         # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: True,

@@ -196,7 +196,7 @@ class ResponseSelector(DIETClassifier):
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
-        # Fraction of the inputs that each output is connected to (in some internal layers).
+        # Fraction of the inputs that each output is connected to in internal layers.
         CONNECTION_DENSITY: 1.0,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.

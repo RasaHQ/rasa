@@ -157,7 +157,7 @@ class DenseForSparse(tf.keras.layers.Dense):
 
 
 class RandomlyConnectedDense(tf.keras.layers.Dense):
-    """Layer with dense ouputs that are connected to a given fraction of randomly chosen inputs
+    """Layer with dense ouputs that are connected to a given fraction of inputs
 
     `RandomlyConnectedDense` implements the operation:
     `output = activation(dot(input, kernel) + bias)`
@@ -170,10 +170,11 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
     Note: If the input to the layer has a rank greater than 2, then
     it is flattened prior to the initial dot product with `kernel`.
 
-    The output is guaranteed to be dense (each output is connected to at least one input), and
-    no input is disconnected (each input is connected to at least one output).
+    The output is guaranteed to be dense (each output is connected to at least one
+    input), and no input is disconnected (each input is connected to at least one
+    output).
 
-    At `density = 0.0` the number of trainable weights is `max(input_size, units)`. At 
+    At `density = 0.0` the number of trainable weights is `max(input_size, units)`. At
     `density = 1.0` this layer is equivalent to `tf.keras.layers.Dense`.
 
     Arguments:
@@ -225,7 +226,8 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         num_rows = kernel_shape[0].numpy()
         num_cols = kernel_shape[1].numpy()
 
-        # Construct mask with given density and guarantee that every output is connected to at least one input
+        # Construct mask with given density and guarantee that every output is
+        # connected to at least one input
         num_connected_per_output = max(
             1, tf.cast(tf.math.ceil(self.density * num_rows), tf.int32)
         )
@@ -244,7 +246,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         self, num_rows: int, num_cols: int, num_connected_per_output: int
     ) -> tf.Tensor:
         """Creates a random mask with given number of connections per output.
-        
+
         Args:
             num_rows: Number of rows in the mask
             num_cols: Number of columns in the mask
@@ -279,17 +281,19 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         self, num_rows: int, num_cols: int, kernel_mask: tf.Tensor
     ) -> tf.Tensor:
         """Creates a mask with random connections that are missing.
-        
-        The given `kernel_mask` is guaranteed to have at least one input connected to each output,
-        but not vice versa. Some inputs may not be connected to any output, i.e. there may be empty
-        columns in the mask. This function returns another mask (to be added to the original) that
-        contains exactly one 1 in each of the columns that is empty in `kernel_mask`. The row in 
-        which each 1 appears is chosen randomly.
+
+        The given `kernel_mask` is guaranteed to have at least one input connected to
+        each output, but not vice versa. Some inputs may not be connected to any
+        output, i.e. there may be empty columns in the mask. This function returns
+        another mask (to be added to the original) that contains exactly one 1 in each
+        of the columns that is empty in `kernel_mask`. The row in which each 1 appears
+        is chosen randomly.
 
         Args:
             num_rows: Number of rows in the mask
             num_cols: Number of columns in the mask
-            kernel_mask: The kernel mask matrix of size (num_rows, num_cols) that may contain empty columns
+            kernel_mask: The kernel mask matrix of size (num_rows, num_cols) that may
+                contain empty columns
 
         Returns:
             A mask with the missing connections.

@@ -17,7 +17,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         num_heads: Positive integer, number of heads
             to repeat the same attention structure.
         attention_dropout_rate: Float, dropout rate inside attention for training.
-        density: Fraction of the inputs that each output is connected to (in 
+        density: Fraction of the inputs that each output is connected to (in
             `RandomlyConnectedDense` layers).
         unidirectional: Boolean, use a unidirectional or bidirectional encoder.
         use_key_relative_position: Boolean, if 'True' use key
@@ -392,7 +392,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         filter_units: Positive integer, output dim of the first ffn hidden layer.
         dropout_rate: Float between 0 and 1; fraction of the input units to drop.
         attention_dropout_rate: Float, dropout rate inside attention for training.
-        density: Fraction of the inputs that each output is connected to (in 
+        density: Fraction of the inputs that each output is connected to (in
             `RandomlyConnectedDense` layers).
         unidirectional: Boolean, use a unidirectional or bidirectional encoder.
         use_key_relative_position: Boolean, if 'True' use key
@@ -496,7 +496,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         reg_lambda: Float, regularization factor.
         dropout_rate: Float between 0 and 1; fraction of the input units to drop.
         attention_dropout_rate: Float, dropout rate inside attention for training.
-        density: Fraction of the inputs that each output is connected to (in 
+        density: Fraction of the inputs that each output is connected to (in
             `RandomlyConnectedDense` layers).
         unidirectional: Boolean, use a unidirectional or bidirectional encoder.
         use_key_relative_position: Boolean, if 'True' use key

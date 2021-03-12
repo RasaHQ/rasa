@@ -208,7 +208,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         DROP_RATE: 0.2,
         # Dropout rate for attention
         DROP_RATE_ATTENTION: 0,
-        # Fraction of the inputs that each output is connected to (in some internal layers).
+        # Fraction of the inputs that each output is connected to in internal layers.
         CONNECTION_DENSITY: 0.2,
         # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: True,
