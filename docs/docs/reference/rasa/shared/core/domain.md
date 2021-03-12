@@ -399,18 +399,40 @@ Returns all available states.
 #### get\_active\_states
 
 ```python
- | get_active_states(tracker: "DialogueStateTracker") -> State
+ | get_active_states(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
 ```
 
-Return a bag of active states from the tracker state.
+Returns a bag of active states from the tracker state.
+
+**Arguments**:
+
+- `tracker` - dialog state tracker containing the dialog so far
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+  
+  Returns `State` containing all active states.
 
 #### states\_for\_tracker\_history
 
 ```python
- | states_for_tracker_history(tracker: "DialogueStateTracker") -> List[State]
+ | states_for_tracker_history(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> List[State]
 ```
 
-Array of states for each state of the trackers history.
+List of states for each state of the trackers history.
+
+**Arguments**:
+
+- `tracker` - dialog state tracker containing the dialog so far
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+  
+- `Returns` - A `State` for each prior tracker.
+
+#### slots\_for\_entities
+
+```python
+ | slots_for_entities(entities: List[Dict[Text, Any]]) -> List[SlotSet]
+```
+
+Returns `SlotSet` events for extracted entities.
 
 #### persist\_specification
 

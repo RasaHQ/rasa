@@ -34,7 +34,7 @@ Initialize the tracker featurizer.
 #### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms list of trackers to lists of states, actions and entity data.
@@ -43,6 +43,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
@@ -52,7 +53,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 #### training\_states\_and\_actions
 
 ```python
- | training_states_and_actions(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]]]
+ | training_states_and_actions(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]]]
 ```
 
 Transforms list of trackers to lists of states and actions.
@@ -61,6 +62,7 @@ Transforms list of trackers to lists of states and actions.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
@@ -185,7 +187,7 @@ Training data is padded up to the length of the longest dialogue with -1.
 #### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms list of trackers to lists of states, actions and entity data.
@@ -194,6 +196,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
@@ -256,7 +259,7 @@ the slice length.
 #### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms list of trackers to lists of states, actions and entity data.
@@ -265,6 +268,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:

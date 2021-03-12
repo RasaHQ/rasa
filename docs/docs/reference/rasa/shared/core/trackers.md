@@ -110,19 +110,20 @@ Convert State dict into a hashable format FrozenState.
 #### past\_states
 
 ```python
- | past_states(domain: Domain) -> List[State]
+ | past_states(domain: Domain, omit_unset_slots: bool = False) -> List[State]
 ```
 
-Generate the past states of this tracker based on the history.
+Generates the past states of this tracker based on the history.
 
 **Arguments**:
 
 - `domain` - a :class:`rasa.shared.core.domain.Domain`
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
 
-  a list of states
+  A list of states
 
 #### change\_loop\_to
 

@@ -11,6 +11,42 @@ class TrackerWithCachedStates(DialogueStateTracker)
 
 A tracker wrapper that caches the state creation of the tracker.
 
+#### past\_states\_for\_hashing
+
+```python
+ | past_states_for_hashing(domain: Domain, omit_unset_slots: bool = False) -> Deque[FrozenState]
+```
+
+Generates and caches the past states of this tracker based on the history.
+
+**Arguments**:
+
+- `domain` - a :class:`rasa.shared.core.domain.Domain`
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+  
+
+**Returns**:
+
+  A list of states
+
+#### past\_states
+
+```python
+ | past_states(domain: Domain, omit_unset_slots: bool = False) -> List[State]
+```
+
+Generates the past states of this tracker based on the history.
+
+**Arguments**:
+
+- `domain` - a :class:`rasa.shared.core.domain.Domain`
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+  
+
+**Returns**:
+
+  A list of states
+
 #### clear\_states
 
 ```python
