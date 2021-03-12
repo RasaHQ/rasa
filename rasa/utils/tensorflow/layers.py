@@ -219,7 +219,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
 
     def build(self, input_shape: tf.TensorShape) -> None:
         """Prepares the kernel mask.
-        
+
         Args:
             input_shape: Shape of the inputs to this layer
         """
@@ -321,7 +321,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         """Processes the given inputs.
-        
+
         Args:
             inputs: What goes into this layer
 
