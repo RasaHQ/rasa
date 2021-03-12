@@ -993,6 +993,7 @@ slots:
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             SlotSet("s_cat1", "v1"),
+            ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(intent={"name": "i1"}),
             ActionExecuted("action1"),
             ActionExecuted(ACTION_LISTEN_NAME),
