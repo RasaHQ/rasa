@@ -368,7 +368,7 @@ jobs:
           # Add this issue to a project column
           curl \
             -X POST \
-            -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
             -H 'Accept: application/vnd.github.inertia-preview+json' \
             -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
             "https://api.github.com/projects/columns/${{ secrets.INFRA_BOARD_INBOX_COLUMN_ID }}/cards"
