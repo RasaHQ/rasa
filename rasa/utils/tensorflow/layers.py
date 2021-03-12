@@ -157,7 +157,7 @@ class DenseForSparse(tf.keras.layers.Dense):
 
 
 class RandomlyConnectedDense(tf.keras.layers.Dense):
-    """Layer with dense ouputs that are connected to a given fraction of inputs
+    """Layer with dense ouputs that are connected to a given fraction of inputs.
 
     `RandomlyConnectedDense` implements the operation:
     `output = activation(dot(input, kernel) + bias)`
@@ -177,25 +177,6 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
     At `density = 0.0` the number of trainable weights is `max(input_size, units)`. At
     `density = 1.0` this layer is equivalent to `tf.keras.layers.Dense`.
 
-    Arguments:
-        density: Float between 0 and 1. Approximate fraction of the inputs that each
-            output is connected to.
-        units: Positive integer, dimensionality of the output space.
-        activation: Activation function to use.
-            If you don't specify anything, no activation is applied
-            (ie. "linear" activation: `a(x) = x`).
-        use_bias: Boolean, whether the layer uses a bias vector.
-        kernel_initializer: Initializer for the `kernel` weights matrix.
-        bias_initializer: Initializer for the bias vector.
-        kernel_regularizer: Regularizer function applied to
-            the `kernel` weights matrix.
-        bias_regularizer: Regularizer function applied to the bias vector.
-        activity_regularizer: Regularizer function applied to
-            the output of the layer (its "activation")..
-        kernel_constraint: Constraint function applied to
-            the `kernel` weights matrix.
-        bias_constraint: Constraint function applied to the bias vector.
-
     Input shape:
         N-D tensor with shape: `(batch_size, ..., input_dim)`.
         The most common situation would be
@@ -208,6 +189,27 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
     """
 
     def __init__(self, density: float = 0.2, **kwargs: Any) -> None:
+        """Declares instance variables with default values.
+
+        Args:
+            density: Float between 0 and 1. Approximate fraction of the inputs that
+                each output is connected to.
+            units: Positive integer, dimensionality of the output space.
+            activation: Activation function to use.
+                If you don't specify anything, no activation is applied
+                (ie. "linear" activation: `a(x) = x`).
+            use_bias: Boolean, whether the layer uses a bias vector.
+            kernel_initializer: Initializer for the `kernel` weights matrix.
+            bias_initializer: Initializer for the bias vector.
+            kernel_regularizer: Regularizer function applied to
+                the `kernel` weights matrix.
+            bias_regularizer: Regularizer function applied to the bias vector.
+            activity_regularizer: Regularizer function applied to
+                the output of the layer (its "activation")..
+            kernel_constraint: Constraint function applied to
+                the `kernel` weights matrix.
+            bias_constraint: Constraint function applied to the bias vector.
+        """
         super().__init__(**kwargs)
 
         if density < 0.0 or density > 1.0:
@@ -216,6 +218,11 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         self.density = density
 
     def build(self, input_shape: tf.TensorShape) -> None:
+        """Prepares the kernel mask.
+        
+        Args:
+            input_shape: Shape of the inputs to this layer
+        """
         super().build(input_shape)
 
         if self.density == 1.0:
@@ -313,6 +320,14 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         return tf.cast(extra_entries, dtype=kernel_mask.dtype)
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        """Processes the given inputs.
+        
+        Args:
+            inputs: What goes into this layer
+
+        Returns:
+            The processed inputs.
+        """
         if self.density < 1.0:
             # Set fraction of the `kernel` weights to zero according to precomputed mask
             self.kernel.assign(self.kernel * self.kernel_mask)
