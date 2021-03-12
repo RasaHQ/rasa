@@ -80,3 +80,5 @@ SLOTS = "slots"
 
 USE_TEXT_FOR_FEATURIZATION = "use_text_for_featurization"
 ENTITY_LABEL_SEPARATOR = "#"
+
+POLICIES_THAT_EXTRACT_ENTITIES = {"TEDPolicy"}

@@ -1,0 +1,25 @@
+stories:
+- story: story_with_two_equal_or_statements
+  steps:
+  - intent: simple
+  - action: utter_default
+  - or:
+    - intent: affirm
+    - intent: thank_you
+  - action: utter_greet
+  - action: utter_default
+  - or:
+    - intent: affirm
+    - intent: thank_you
+  - action: utter_goodbye
+# same name again, same events, same intents, but with entities
+- story: story_with_two_equal_or_statements
+  steps:
+  - intent: simple
+  - action: utter_default
+  - or:
+    - intent: affirm
+      entities:
+        - name: peter
+    - intent: thank_you
+  - action: utter_greet

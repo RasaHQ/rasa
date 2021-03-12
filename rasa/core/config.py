@@ -216,7 +216,7 @@ def migrate_mapping_policy_to_rules(
     # finally update the policies
     policies = _drop_policy(MappingPolicy.__name__, policies)
 
-    if new_rules and not has_rule_policy:
+    if not has_rule_policy:
         policies.append({"name": RulePolicy.__name__})
     new_config["policies"] = policies
 

@@ -9,6 +9,7 @@ from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
@@ -50,7 +51,7 @@ responses:
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -84,7 +85,7 @@ async def test_activate_with_prefilled_slot():
     domain = Domain.from_yaml(domain)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -144,7 +145,8 @@ responses:
         default_agent.policy_ensemble,
         domain,
         InMemoryTrackerStore(domain),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        InMemoryLockStore(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
     )
 
     # activate the first form
@@ -164,7 +166,7 @@ responses:
         action_1,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
 
@@ -177,7 +179,7 @@ responses:
         SlotSet(REQUESTED_SLOT, slot_a),
         BotUttered(
             text=utter_ask_form_1,
-            metadata={"template_name": f"utter_ask_{form_1}_{slot_a}"},
+            metadata={"utter_action": f"utter_ask_{form_1}_{slot_a}"},
         ),
     ]
     assert tracker.applied_events() == events_expected
@@ -198,7 +200,7 @@ responses:
         action_1,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
     events_expected.extend([ActionExecutionRejected(action_name=form_1)])
@@ -210,7 +212,7 @@ responses:
         action_2,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
     events_expected.extend(
@@ -220,7 +222,7 @@ responses:
             SlotSet(REQUESTED_SLOT, slot_a),
             BotUttered(
                 text=utter_ask_form_2,
-                metadata={"template_name": f"utter_ask_{form_2}_{slot_a}"},
+                metadata={"utter_action": f"utter_ask_{form_2}_{slot_a}"},
             ),
         ]
     )
@@ -257,7 +259,7 @@ async def test_activate_and_immediate_deactivate():
     domain = Domain.from_yaml(domain)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -296,7 +298,7 @@ async def test_set_slot_and_deactivate():
     action = FormAction(form_name, None)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -336,7 +338,7 @@ async def test_action_rejection():
     with pytest.raises(ActionExecutionRejection):
         await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -481,7 +483,7 @@ async def test_validate_slots(
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -544,7 +546,7 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -596,7 +598,7 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
         with pytest.raises(ActionExecutionRejection):
             await action.run(
                 CollectingOutputChannel(),
-                TemplatedNaturalLanguageGenerator(domain.templates),
+                TemplatedNaturalLanguageGenerator(domain.responses),
                 tracker,
                 domain,
             )
@@ -643,7 +645,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
