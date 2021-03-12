@@ -83,13 +83,13 @@ def print_version() -> None:
     except ModuleNotFoundError:
         rasa_x_info = None
 
-    print(f"Rasa Version     :          {version.__version__}")
+    print(f"Rasa Version      :         {version.__version__}")
     print(f"Minimum Compatible Version: {MINIMUM_COMPATIBLE_VERSION}")
-    print(f"Rasa SDK Version :          {rasa_sdk_version}")
-    print(f"Rasa X Version   :          {rasa_x_info}")
-    print(f"Python Version   :          {platform.python_version()}")
-    print(f"Operating System :          {platform.platform()}")
-    print(f"Python Path      :          {sys.executable}")
+    print(f"Rasa SDK Version  :         {rasa_sdk_version}")
+    print(f"Rasa X Version    :         {rasa_x_info}")
+    print(f"Python Version    :         {platform.python_version()}")
+    print(f"Operating System  :         {platform.platform()}")
+    print(f"Python Path       :         {sys.executable}")
 
 
 def main() -> None:
