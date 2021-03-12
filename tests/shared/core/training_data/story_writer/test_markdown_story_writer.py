@@ -6,7 +6,6 @@ from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
 )
 
 
-@pytest.mark.trains_model
 async def test_tracker_dump_e2e_story(default_agent: Agent):
     sender_id = "test_tracker_dump_e2e_story"
 
