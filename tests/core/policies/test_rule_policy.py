@@ -659,7 +659,6 @@ def test_all_policy_attributes_are_persisted(tmpdir: Path):
 async def test_rule_policy_finetune(
     tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
 ):
-
     trained_rule_policy.persist(tmp_path)
 
     loaded_policy = RulePolicy.load(tmp_path, should_finetune=True)
@@ -701,7 +700,6 @@ async def test_rule_policy_finetune(
 async def test_rule_policy_contradicting_rule_finetune(
     tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
 ):
-
     trained_rule_policy.persist(tmp_path)
 
     loaded_policy = RulePolicy.load(tmp_path, should_finetune=True)
@@ -920,6 +918,105 @@ async def test_predict_form_action_if_multiple_turns():
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(prediction, domain, form_name, is_no_user_prediction=True)
+
+
+async def test_predict_slot_initial_value_not_required_in_rule():
+    domain = Domain.from_yaml(
+        """
+intents:
+- i1
+actions:
+- action1
+slots:
+  s_cat1:
+    type: categorical
+    values:
+      - v1
+      - v2
+    initial_value: v1
+"""
+    )
+
+    rule = DialogueStateTracker.from_events(
+        "slot rule",
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "i1"}),
+            ActionExecuted("action1"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        domain=domain,
+        slots=domain.slots,
+    )
+    rule.is_rule_tracker = True
+
+    policy = RulePolicy()
+    policy.train([rule], domain, RegexInterpreter())
+
+    form_conversation = DialogueStateTracker.from_events(
+        "slot rule test",
+        evts=[
+            SlotSet("s_cat1", "v2"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "i1"}),
+        ],
+        domain=domain,
+        slots=domain.slots,
+    )
+
+    prediction = policy.predict_action_probabilities(
+        form_conversation, domain, RegexInterpreter()
+    )
+    assert_predicted_action(prediction, domain, "action1")
+
+
+async def test_predict_slot_with_initial_slot_matches_rule():
+    domain = Domain.from_yaml(
+        """
+intents:
+- i1
+actions:
+- action1
+slots:
+  s_cat1:
+    type: categorical
+    values:
+      - v1
+      - v2
+    initial_value: v1
+"""
+    )
+
+    rule = DialogueStateTracker.from_events(
+        "slot rule",
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            SlotSet("s_cat1", "v1"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "i1"}),
+            ActionExecuted("action1"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        domain=domain,
+        slots=domain.slots,
+    )
+    rule.is_rule_tracker = True
+
+    policy = RulePolicy()
+    policy.train([rule], domain, RegexInterpreter())
+
+    form_conversation = DialogueStateTracker.from_events(
+        "slot rule test",
+        evts=[ActionExecuted(ACTION_LISTEN_NAME), UserUttered(intent={"name": "i1"}),],
+        domain=domain,
+        slots=domain.slots,
+    )
+
+    prediction = policy.predict_action_probabilities(
+        form_conversation, domain, RegexInterpreter()
+    )
+    assert_predicted_action(prediction, domain, "action1")
 
 
 async def test_predict_action_listen_after_form():
@@ -1763,7 +1860,7 @@ async def test_one_stage_fallback_rule():
     # Fallback action reverts fallback events, next action is `ACTION_LISTEN`
     conversation_events += await ActionDefaultFallback().run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )

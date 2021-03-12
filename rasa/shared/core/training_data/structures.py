@@ -411,8 +411,8 @@ class StoryGraph:
             YAMLStoryWriter,
         )
 
-        self_as_string = YAMLStoryWriter().dumps(self.story_steps)
-        return rasa.shared.utils.io.get_text_hash(self_as_string)
+        stories_as_yaml = YAMLStoryWriter().stories_to_yaml(self.story_steps)
+        return rasa.shared.utils.io.deep_container_fingerprint(stories_as_yaml)
 
     def ordered_steps(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""
