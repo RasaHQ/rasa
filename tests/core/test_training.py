@@ -63,9 +63,13 @@ async def test_training_script(tmp_path: Path, domain_path: Text, stories_path: 
 
 
 async def test_training_script_without_max_history_set(
-    tmp_path: Path, domain_path: Text, stories_path: Text
+    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
+
+    policy_train = Mock()
+    monkeypatch.setattr(TEDPolicy, "train", policy_train)
+
     await train(
         domain_path,
         stories_path,
@@ -87,9 +91,12 @@ async def test_training_script_without_max_history_set(
 
 
 async def test_training_script_with_max_history_set(
-    tmp_path: Path, domain_path: Text, stories_path: Text
+    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
+
+    policy_train = Mock()
+    monkeypatch.setattr(TEDPolicy, "train", policy_train)
 
     await train(
         domain_path,
