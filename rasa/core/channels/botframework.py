@@ -231,8 +231,18 @@ class BotFrameworkInput(InputChannel):
                         postdata["serviceUrl"],
                     )
 
+                    text = ""
+                    if postdata.get("text"):
+                        text = postdata.get("text")
+                    else:
+                        if postdata.get("value"):
+                            raw_value = postdata.get("value")
+                            if "value" in raw_value:
+                                raw_value = raw_value["value"]
+                            text = json.dumps(raw_value)
+
                     user_msg = UserMessage(
-                        text=postdata.get("text", ""),
+                        text=text,
                         output_channel=out_channel,
                         sender_id=postdata["from"]["id"],
                         input_channel=self.name(),
