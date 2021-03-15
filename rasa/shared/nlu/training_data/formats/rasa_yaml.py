@@ -351,9 +351,7 @@ class RasaYAMLReader(TrainingDataReader):
         if not rasa.shared.data.is_likely_yaml_file(filename):
             return False
 
-        content = rasa.shared.utils.io.read_yaml_file(filename)
-
-        return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
+        return rasa.shared.utils.io.is_key_in_yaml(filename, KEY_NLU, KEY_RESPONSES)
 
 
 class RasaYAMLWriter(TrainingDataWriter):
