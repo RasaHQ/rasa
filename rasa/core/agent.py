@@ -11,6 +11,7 @@ import aiohttp
 from aiohttp import ClientError
 
 import rasa
+import rasa.utils
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -266,6 +267,33 @@ async def schedule_model_pulling(
         args=[model_server, agent],
         id="pull-model-from-server",
         replace_existing=True,
+    )
+
+
+def create_agent(model: Text, endpoints: Text = None) -> "Agent":
+    """Create an agent instance based on a stored model.
+
+    Args:
+        model: file path to the stored model
+        endpoints: file path to the used endpoint configuration
+    """
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.brokers.broker import EventBroker
+    import rasa.utils.common
+
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
+
+    _broker = rasa.utils.common.run_in_loop(EventBroker.create(_endpoints.event_broker))
+    _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
+    _lock_store = LockStore.create(_endpoints.lock_store)
+
+    return Agent.load(
+        model,
+        generator=_endpoints.nlg,
+        tracker_store=_tracker_store,
+        lock_store=_lock_store,
+        action_endpoint=_endpoints.action,
     )
 
 
