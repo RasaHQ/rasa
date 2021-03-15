@@ -418,7 +418,7 @@ async def test_softmax_ranking(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, int],
-    nlu_as_json_path: Text,
+    data_path: Text,
     output_length: int,
 ):
     pipeline = as_pipeline(

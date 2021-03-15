@@ -339,7 +339,7 @@ async def test_softmax_normalization(
     component_builder,
     tmp_path,
     classifier_params,
-    nlu_as_json_path: Text,
+    data_path: Text,
     output_length,
     output_should_sum_to_1,
 ):

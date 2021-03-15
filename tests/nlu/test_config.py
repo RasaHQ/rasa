@@ -220,7 +220,7 @@ async def test_train_docker_and_docs_configs(
     ],
 )
 def test_validate_required_components_from_data(
-    config_path: Text, nlu_as_json_path: Text, expected_warning_excerpts: List[Text]
+    config_path: Text, data_path: Text, expected_warning_excerpts: List[Text]
 ):
     loaded_config = config.load(config_path)
     trainer = Trainer(loaded_config)
