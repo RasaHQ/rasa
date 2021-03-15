@@ -8,7 +8,7 @@ from _pytest.pytester import RunResult
 
 import rasa
 from rasa.cli import interactive, train
-from rasa.train import TrainingResult
+from rasa.model_training import TrainingResult
 from tests.conftest import DEFAULT_NLU_DATA
 
 

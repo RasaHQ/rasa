@@ -23,7 +23,7 @@ from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 
-from rasa.train import train_core, train_nlu, train, dry_run_result
+from rasa.model_training import train_core, train_nlu, train, dry_run_result
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA, AsyncMock
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
@@ -286,13 +286,13 @@ def test_interpreter_of_old_model_passed_to_core_training(
 
 
 def test_load_interpreter_returns_none_for_none():
-    from rasa.train import _load_interpreter
+    from rasa.model_training import _load_interpreter
 
     assert _load_interpreter(None) is None
 
 
 def test_interpreter_from_previous_model_returns_none_for_none():
-    from rasa.train import _interpreter_from_previous_model
+    from rasa.model_training import _interpreter_from_previous_model
 
     assert _interpreter_from_previous_model(None) is None
 

@@ -11,7 +11,7 @@ import typing
 
 if typing.TYPE_CHECKING:
     from typing import Any, Text, Dict, Union, List, Optional, NoReturn
-    from rasa.train import TrainingResult
+    from rasa.model_training import TrainingResult
     import asyncio
 
 
@@ -103,7 +103,7 @@ def train(
     Returns:
         An instance of `TrainingResult`.
     """
-    from rasa.train import train_async
+    from rasa.model_training import train_async
     import rasa.utils.common
 
     return rasa.utils.common.run_in_loop(

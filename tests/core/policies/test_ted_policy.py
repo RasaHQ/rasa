@@ -22,7 +22,7 @@ from rasa.shared.core.events import (
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.train import train_core
+from rasa.model_training import train_core
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,

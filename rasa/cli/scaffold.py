@@ -49,7 +49,7 @@ def add_subparser(
 def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
     """Train a model if the user wants to."""
     import questionary
-    import rasa.train
+    import rasa
 
     print_success("Finished creating project structure.")
 

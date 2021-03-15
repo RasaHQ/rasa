@@ -1843,7 +1843,7 @@ async def compare_nlu(
     Returns: training examples per run
     """
 
-    from rasa.train import train_nlu_async
+    from rasa.model_training import train_nlu_async
 
     training_examples_per_run = []
 

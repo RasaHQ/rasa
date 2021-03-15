@@ -129,7 +129,7 @@ def train_core(
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-    from rasa.train import train_core
+    from rasa.model_training import train_core
 
     output = train_path or args.out
 
@@ -180,7 +180,7 @@ def train_nlu(
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-    from rasa.train import train_nlu
+    from rasa.model_training import train_nlu
 
     output = train_path or args.out
 

@@ -62,7 +62,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.train import TrainingResult
+from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_STACK_CONFIG
 from tests.nlu.utilities import ResponseTest

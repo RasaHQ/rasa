@@ -1037,7 +1037,7 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            from rasa.train import train_async
+            from rasa.model_training import train_async
 
             # pass `None` to run in default executor
             training_result = await train_async(**training_payload)
