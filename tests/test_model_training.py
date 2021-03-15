@@ -233,7 +233,7 @@ def test_trained_interpreter_passed_to_core_training(
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     monkeypatch.setattr(
-        sys.modules["rasa.train"],
+        rasa.model_training,
         "_train_nlu_with_validated_data",
         AsyncMock(return_value=unpacked_trained_rasa_model),
     )
