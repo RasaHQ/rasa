@@ -287,16 +287,21 @@ class DialogueStateTracker:
             }.items()
         )
 
-    def past_states(self, domain: Domain) -> List[State]:
-        """Generate the past states of this tracker based on the history.
+    def past_states(
+        self, domain: Domain, omit_unset_slots: bool = False,
+    ) -> List[State]:
+        """Generates the past states of this tracker based on the history.
 
         Args:
             domain: a :class:`rasa.shared.core.domain.Domain`
+            omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
-            a list of states
+            A list of states
         """
-        return domain.states_for_tracker_history(self)
+        return domain.states_for_tracker_history(
+            self, omit_unset_slots=omit_unset_slots
+        )
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.
@@ -796,10 +801,10 @@ class DialogueStateTracker:
             slot.reset()
 
     def _set_slot(self, key: Text, value: Any) -> None:
-        """Set the value of a slot if that slot exists."""
-
+        """Sets the value of a slot if that slot exists."""
         if key in self.slots:
-            self.slots[key].value = value
+            slot = self.slots[key]
+            slot.value = value
         else:
             logger.error(
                 f"Tried to set non existent slot '{key}'. Make sure you "
