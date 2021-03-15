@@ -900,7 +900,14 @@ def test_login_db_with_no_postgresql(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "config", [{"type": "mongod", "url": "mongodb://0.0.0.0:42",}, {"type": "dynamo",}],
+    "config",
+    [
+        {
+            "type": "mongod",
+            "url": "mongodb://0.0.0.0:42/?serverSelectionTimeoutMS=5000",
+        },
+        {"type": "dynamo",},
+    ],
 )
 def test_tracker_store_connection_error(config: Dict, default_domain: Domain):
     store = EndpointConfig.from_dict(config)

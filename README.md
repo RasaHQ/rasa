@@ -1,4 +1,6 @@
-# Rasa Open Source
+<h1 align="center">Rasa Open Source</h1>
+
+<div align="center">
 
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
@@ -10,7 +12,13 @@
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/orgs/RasaHQ/projects/23)
 
-<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png">
+</div>
+
+<a href="https://grnh.se/05a908c02us" target="_blank"><img align="center" src="https://www.rasa.com/assets/img/github/hiring_banner.png" alt="An image with Sara, the Rasa mascot, standing next to a roadmap with future Rasa milestones: identifying unsuccessful conversations at scale, continuous model evaluation, controllable NLG and breaking free from intents. Are you excited about these milestones? Help us make these ideas become reality - we're hiring!" title="We're hiring! Learn more"></a>
+
+<hr />
+
+<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
 - Facebook Messenger
@@ -185,6 +193,30 @@ JOBS=[n] make test
 
 Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
 
+
+### Running the Integration Tests
+
+In order to run the integration tests, make sure that you have the development requirements installed:
+
+```bash
+make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
+make prepare-tests-macos  # Only on macOS
+```
+
+Then, you'll need to start services with the following command which uses
+[Docker Compose](https://docs.docker.com/compose/install/):
+
+```bash
+make run-integration-containers
+```
+
+Finally, you can run the integration tests like this:
+
+```bash
+make test-integration
+```
+
+
 ### Resolving merge conflicts
 
 Poetry doesn't include any solution that can help to resolve merge conflicts in
@@ -334,7 +366,7 @@ steps + get the PR merged.
 
 ## License
 Licensed under the Apache License, Version 2.0.
-Copyright 2020 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2021 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the
