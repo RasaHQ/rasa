@@ -351,15 +351,9 @@ class RasaYAMLReader(TrainingDataReader):
         if not rasa.shared.data.is_likely_yaml_file(filename):
             return False
 
-        return RasaYAMLReader.is_key_in_yaml2(filename, KEY_NLU, KEY_RESPONSES)
-        # content = rasa.shared.utils.io.read_yaml_file(filename)
+        content = rasa.shared.utils.io.read_yaml_file(filename)
 
-        # return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
-
-    @classmethod
-    def is_key_in_yaml2(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        with open(file_path) as f:
-            return any(any(line.startswith(key) for key in keys) for line in f)
+        return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
 
 
 class RasaYAMLWriter(TrainingDataWriter):
