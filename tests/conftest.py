@@ -79,7 +79,7 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "nlu", "selectors").absolute(),
     ],
     "category_full_model_training": [
-        Path("tests", "test_train.py").absolute(),
+        Path("tests", "test_model_training.py").absolute(),
         Path("tests", "nlu", "test_train.py").absolute(),
         Path("tests", "core", "test_training.py").absolute(),
         Path("tests", "core", "test_examples.py").absolute(),
