@@ -14,8 +14,8 @@ from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.fixture(scope="module")
-def training_data(data_path: Text):
-    return rasa.shared.nlu.training_data.loading.load_data(data_path)
+def training_data(nlu_as_json_path: Text):
+    return rasa.shared.nlu.training_data.loading.load_data(nlu_as_json_path)
 
 
 class ClassifierTestCollection:

@@ -93,7 +93,7 @@ def test_builder_load_unknown(component_builder: ComponentBuilder):
 
 
 async def test_example_component(
-    component_builder: ComponentBuilder, tmp_path: Path, data_path: Path
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
@@ -101,7 +101,7 @@ async def test_example_component(
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        data=data_path,
+        data=nlu_as_json_path,
         path=str(tmp_path),
         component_builder=component_builder,
     )
@@ -192,7 +192,7 @@ def test_can_handle_language_guard_clause(
 
 
 async def test_validate_requirements_raises_exception_on_component_without_name(
-    tmp_path: Path, data_path: Path
+    tmp_path: Path, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `name` property
@@ -201,12 +201,12 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
 
     with pytest.raises(InvalidConfigException):
         await train(
-            _config, data=data_path, path=str(tmp_path),
+            _config, data=nlu_as_json_path, path=str(tmp_path),
         )
 
 
 async def test_validate_component_keys_raises_warning_on_invalid_key(
-    tmp_path: Path, data_path: Path
+    tmp_path: Path, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `confidence_threshold ` property
@@ -215,7 +215,7 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(
 
     with pytest.warns(UserWarning) as record:
         await train(
-            _config, data=data_path, path=str(tmp_path),
+            _config, data=nlu_as_json_path, path=str(tmp_path),
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]

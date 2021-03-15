@@ -135,14 +135,14 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 @pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_persist_load_parse(
-    language, pipeline, component_builder, tmpdir, data_path: Text
+    language, pipeline, component_builder, tmpdir, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
     (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data=data_path,
+        data=nlu_as_json_path,
         component_builder=component_builder,
     )
 
@@ -158,10 +158,10 @@ async def test_train_persist_load_parse(
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 async def test_train_persist_load_parse_non_windows(
-    language, pipeline, component_builder, tmpdir, data_path: Text
+    language, pipeline, component_builder, tmpdir, nlu_as_json_path: Text
 ):
     await test_train_persist_load_parse(
-        language, pipeline, component_builder, tmpdir, data_path
+        language, pipeline, component_builder, tmpdir, nlu_as_json_path
     )
 
 
@@ -211,14 +211,14 @@ def test_load_and_persist_without_train_non_windows(
     test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir)
 
 
-async def test_train_model_empty_pipeline(component_builder, data_path: Text):
+async def test_train_model_empty_pipeline(component_builder, nlu_as_json_path: Text):
     _config = RasaNLUModelConfig({"pipeline": None, "language": "en"})
 
     with pytest.raises(ValueError):
-        await train(_config, data=data_path, component_builder=component_builder)
+        await train(_config, data=nlu_as_json_path, component_builder=component_builder)
 
 
-async def test_train_named_model(component_builder, tmpdir, data_path: Text):
+async def test_train_named_model(component_builder, tmpdir, nlu_as_json_path: Text):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
     )
@@ -226,7 +226,7 @@ async def test_train_named_model(component_builder, tmpdir, data_path: Text):
     (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data=data_path,
+        data=nlu_as_json_path,
         component_builder=component_builder,
     )
 
@@ -238,21 +238,21 @@ async def test_train_named_model(component_builder, tmpdir, data_path: Text):
 
 
 async def test_handles_pipeline_with_non_existing_component(
-    component_builder, pretrained_embeddings_spacy_config, data_path: Text
+    component_builder, pretrained_embeddings_spacy_config, nlu_as_json_path: Text
 ):
     pretrained_embeddings_spacy_config.pipeline.append({"name": "my_made_up_component"})
 
     with pytest.raises(Exception) as execinfo:
         await train(
             pretrained_embeddings_spacy_config,
-            data=data_path,
+            data=nlu_as_json_path,
             component_builder=component_builder,
         )
     assert "Cannot find class" in str(execinfo.value)
 
 
 async def test_train_model_training_data_persisted(
-    component_builder, tmpdir, data_path: Text
+    component_builder, tmpdir, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
@@ -261,7 +261,7 @@ async def test_train_model_training_data_persisted(
     (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data=data_path,
+        data=nlu_as_json_path,
         component_builder=component_builder,
         persist_nlu_training_data=True,
     )
@@ -275,7 +275,7 @@ async def test_train_model_training_data_persisted(
 
 
 async def test_train_model_no_training_data_persisted(
-    component_builder, tmpdir, data_path: Text
+    component_builder, tmpdir, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
@@ -284,7 +284,7 @@ async def test_train_model_no_training_data_persisted(
     (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data=data_path,
+        data=nlu_as_json_path,
         component_builder=component_builder,
         persist_nlu_training_data=False,
     )

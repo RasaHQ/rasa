@@ -357,9 +357,11 @@ def test_drop_intents_below_freq():
 
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
-async def test_run_evaluation(unpacked_trained_moodbot_path: Text, data_path: Path):
+async def test_run_evaluation(
+    unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text
+):
     result = await run_evaluation(
-        data_path,
+        nlu_as_json_path,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
         errors=False,
         successes=False,
@@ -935,7 +937,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-async def test_nlu_comparison(tmp_path: Path, data_path: Path):
+async def test_nlu_comparison(tmp_path: Path, nlu_as_json_path: Text):
     config = {
         "language": "en",
         "pipeline": [
@@ -950,7 +952,7 @@ async def test_nlu_comparison(tmp_path: Path, data_path: Path):
 
     output = str(tmp_path)
     await compare_nlu_models(
-        configs, data_path, output, runs=2, exclusion_percentages=[50, 80]
+        configs, nlu_as_json_path, output, runs=2, exclusion_percentages=[50, 80]
     )
 
     assert set(os.listdir(output)) == {

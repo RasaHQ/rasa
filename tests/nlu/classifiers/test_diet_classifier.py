@@ -273,7 +273,7 @@ async def test_train_persist_load_with_only_intent_classification(
 
 
 async def test_raise_error_on_incorrect_pipeline(
-    component_builder, tmp_path: Path, data_path: Text
+    component_builder, tmp_path: Path, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig(
         {
@@ -289,7 +289,7 @@ async def test_raise_error_on_incorrect_pipeline(
         await train(
             _config,
             path=str(tmp_path),
-            data=data_path,
+            data=nlu_as_json_path,
             component_builder=component_builder,
         )
 
@@ -339,7 +339,7 @@ async def test_softmax_normalization(
     component_builder,
     tmp_path,
     classifier_params,
-    data_path,
+    nlu_as_json_path: Text,
     output_length,
     output_should_sum_to_1,
 ):
@@ -351,7 +351,10 @@ async def test_softmax_normalization(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
-        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+        _config,
+        path=str(tmp_path),
+        data=nlu_as_json_path,
+        component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
@@ -388,7 +391,7 @@ async def test_inner_linear_normalization(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    data_path: Text,
+    nlu_as_json_path: Text,
     monkeypatch: MonkeyPatch,
 ):
     pipeline = as_pipeline(
@@ -399,7 +402,10 @@ async def test_inner_linear_normalization(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
-        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+        _config,
+        path=str(tmp_path),
+        data=nlu_as_json_path,
+        component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
@@ -460,7 +466,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_set_random_seed(component_builder, tmpdir, data_path: Text):
+async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text):
     """test if train result is the same for two runs of tf embedding"""
 
     # set fixed random seed
@@ -479,14 +485,14 @@ async def test_set_random_seed(component_builder, tmpdir, data_path: Text):
     (trained_a, _, persisted_path_a) = await train(
         _config,
         path=tmpdir.strpath + "_a",
-        data=data_path,
+        data=nlu_as_json_path,
         component_builder=component_builder,
     )
     # second run
     (trained_b, _, persisted_path_b) = await train(
         _config,
         path=tmpdir.strpath + "_b",
-        data=data_path,
+        data=nlu_as_json_path,
         component_builder=component_builder,
     )
 

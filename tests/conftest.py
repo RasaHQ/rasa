@@ -87,7 +87,7 @@ EXAMPLE_DOMAINS = [
 
 
 @pytest.fixture(scope="session")
-def data_path() -> Text:
+def nlu_as_json_path() -> Text:
     return "data/examples/rasa/demo-rasa.json"
 
 
