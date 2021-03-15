@@ -391,7 +391,7 @@ async def test_inner_linear_normalization(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    nlu_as_json_path: Text,
+    data_path: Text,
     monkeypatch: MonkeyPatch,
 ):
     pipeline = as_pipeline(
@@ -404,7 +404,7 @@ async def test_inner_linear_normalization(
     (trained_model, _, persisted_path) = await train(
         _config,
         path=str(tmp_path),
-        data=nlu_as_json_path,
+        data=data_path,
         component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
