@@ -1,7 +1,7 @@
 import typing
 import logging
 import warnings
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -67,8 +67,8 @@ class SpacyNLP(Component):
             cls.defaults, component_config
         )
 
-        spacy_model_name = cls.check_model_fallback(
-            component_config.get("model"), config.language
+        spacy_model_name = cls._check_model_fallback(
+            component_config.get("model"), config.language, warn=True
         )
 
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
@@ -83,17 +83,21 @@ class SpacyNLP(Component):
         cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
 
-        spacy_model_name = cls.check_model_fallback(
-            component_meta.get("model"), model_metadata.language, warn=True
+        spacy_model_name = cls._check_model_fallback(
+            component_meta.get("model"), model_metadata.language, warn=False
         )
 
         return cls.name + "-" + spacy_model_name
 
     @classmethod
-    def _check_model_fallback(cls, spacy_model_name, language_name, warn=False):
-        """This method checks if the `spacy_model_name` is missing and attempts to do a fallback.
+    def _check_model_fallback(
+        cls, spacy_model_name: Union[str, None], language_name: str, warn: bool = False
+    ):
+        """
+        This method checks if the `spacy_model_name` is missing.
 
-        This feature is a measure to support spaCy 3.0 without breaking on users. In the future
+        If it is missing, we will attempt a fallback. This feature is a measure
+        to support spaCy 3.0 without breaking on users. In the future
         spaCy will no longer support `spacy link`.
         """
         if not spacy_model_name:
@@ -311,8 +315,8 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        model_name = cls.check_model_fallback(
-            meta.get("model"), model_metadata.language
+        model_name = cls._check_model_fallback(
+            meta.get("model"), model_metadata.language, warn=True
         )
 
         nlp = cls.load_model(model_name)
