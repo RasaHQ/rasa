@@ -224,7 +224,7 @@ def test_validate_required_components_from_data(
 ):
     loaded_config = config.load(config_path)
     trainer = Trainer(loaded_config)
-    training_data = rasa.shared.nlu.training_data.loading.load_data(nlu_as_json_path)
+    training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
     with pytest.warns(UserWarning) as record:
         components.validate_required_components_from_data(
             trainer.pipeline, training_data
