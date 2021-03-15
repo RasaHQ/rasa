@@ -108,7 +108,7 @@ class PolicyTestCollection:
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
-        stories_path,
+        stories_path: Text,
         default_domain: Domain,
     ) -> Policy:
         policy = self.create_policy(featurizer, priority)
@@ -206,7 +206,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="class")
     async def trackers(
-        self, default_domain: Domain, stories_path
+        self, default_domain: Domain, stories_path: Text
     ) -> List[TrackerWithCachedStates]:
         return await train_trackers(
             default_domain, stories_path, augmentation_factor=20
@@ -384,7 +384,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert loaded.featurizer.state_featurizer is None
 
     async def test_memorise(
-        self, trained_policy: MemoizationPolicy, default_domain: Domain, stories_path
+        self,
+        trained_policy: MemoizationPolicy,
+        default_domain: Domain,
+        stories_path: Text,
     ):
         trackers = await train_trackers(
             default_domain, stories_path, augmentation_factor=20
@@ -442,7 +445,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trained_policy: MemoizationPolicy,
         default_domain: Domain,
         tmp_path: Path,
-        stories_path,
+        stories_path: Text,
     ):
 
         trained_policy.persist(tmp_path)
@@ -586,7 +589,7 @@ class TestMappingPolicy(PolicyTestCollection):
         assert loaded.featurizer is None
 
     @pytest.fixture(scope="class")
-    def domain_with_mapping(self, domain_with_mapping_path) -> Domain:
+    def domain_with_mapping(self, domain_with_mapping_path: Text) -> Domain:
         return Domain.load(domain_with_mapping_path)
 
     @pytest.fixture

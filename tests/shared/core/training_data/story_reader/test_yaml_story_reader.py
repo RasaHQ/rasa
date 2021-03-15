@@ -20,13 +20,13 @@ from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
 
 @pytest.fixture()
-async def rule_steps_without_stories(domain) -> List[StoryStep]:
+async def rule_steps_without_stories(domain: Domain) -> List[StoryStep]:
     yaml_file = "data/test_yaml_stories/rules_without_stories.yml"
 
     return await loading.load_data_from_files([yaml_file], domain)
 
 
-async def test_can_read_test_story_with_slots(domain):
+async def test_can_read_test_story_with_slots(domain: Domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/simple_story_with_only_end.yml",
         domain,
@@ -41,13 +41,13 @@ async def test_can_read_test_story_with_slots(domain):
 
 
 @pytest.mark.parametrize(
-    "domain",
+    "domain_dict",
     [
         {"slots": {"my_slot": {"type": "text"}}},
         {"slots": {"my_slot": {"type": "list"}}},
     ],
 )
-async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict):
+async def test_default_slot_value_if_slots_referenced_by_name_only(domain_dict: Dict):
     story = """
     stories:
     - story: my story
@@ -57,7 +57,7 @@ async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict)
         - my_slot
     """
 
-    reader = YAMLStoryReader(Domain.from_dict(domain))
+    reader = YAMLStoryReader(Domain.from_dict(domain_dict))
     events = reader.read_from_string(story)[0].events
 
     assert isinstance(events[-1], SlotSet)
@@ -65,14 +65,14 @@ async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict)
 
 
 @pytest.mark.parametrize(
-    "domain",
+    "domain_dict",
     [
         {"slots": {"my_slot": {"type": "categorical"}}},
         {"slots": {"my_slot": {"type": "float"}}},
     ],
 )
 async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
-    domain: Dict,
+    domain_dict: Dict,
 ):
     story = """
     stories:
@@ -83,7 +83,7 @@ async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
         - my_slot
     """
 
-    reader = YAMLStoryReader(Domain.from_dict(domain))
+    reader = YAMLStoryReader(Domain.from_dict(domain_dict))
     with pytest.warns(UserWarning):
         events = reader.read_from_string(story)[0].events
 
@@ -131,7 +131,7 @@ async def test_default_slot_value_if_unfeaturized_slot():
     assert not warnings
 
 
-async def test_can_read_test_story_with_entities_slot_autofill(domain):
+async def test_can_read_test_story_with_entities_slot_autofill(domain: Domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
         domain,
@@ -168,7 +168,7 @@ async def test_can_read_test_story_with_entities_slot_autofill(domain):
     assert trackers[1].events[-1] == ActionExecuted("action_listen")
 
 
-async def test_can_read_test_story_with_entities_without_value(domain):
+async def test_can_read_test_story_with_entities_without_value(domain: Domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities_with_no_value.yml",
         domain,
@@ -224,7 +224,7 @@ async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: boo
     assert YAMLStoryReader.is_key_in_yaml(file, *keys) == expected_result
 
 
-async def test_yaml_intent_with_leading_slash_warning(domain):
+async def test_yaml_intent_with_leading_slash_warning(domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 
     with pytest.warns(UserWarning) as record:
@@ -242,7 +242,7 @@ async def test_yaml_intent_with_leading_slash_warning(domain):
     assert tracker[0].latest_message == UserUttered(intent={"name": "simple"})
 
 
-async def test_yaml_slot_without_value_is_parsed(domain):
+async def test_yaml_slot_without_value_is_parsed(domain: Domain):
     yaml_file = "data/test_yaml_stories/story_with_slot_was_set.yml"
 
     tracker = await training.load_data(
@@ -256,7 +256,7 @@ async def test_yaml_slot_without_value_is_parsed(domain):
     assert tracker[0].events[-2] == SlotSet(key="name", value=DEFAULT_VALUE_TEXT_SLOTS)
 
 
-async def test_yaml_wrong_yaml_format_warning(domain):
+async def test_yaml_wrong_yaml_format_warning(domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
 
     with pytest.raises(YamlSyntaxException):
@@ -269,7 +269,7 @@ async def test_yaml_wrong_yaml_format_warning(domain):
         )
 
 
-async def test_read_rules_with_stories(domain):
+async def test_read_rules_with_stories(domain: Domain):
 
     yaml_file = "data/test_yaml_stories/stories_and_rules.yml"
 
@@ -359,7 +359,7 @@ def test_conversation_start_rule(rule_steps_without_stories: List[StoryStep]):
     ]
 
 
-async def test_warning_if_intent_not_in_domain(domain):
+async def test_warning_if_intent_not_in_domain(domain: Domain):
     stories = """
     stories:
     - story: I am gonna make you explode 💥
@@ -378,7 +378,7 @@ async def test_warning_if_intent_not_in_domain(domain):
     assert len(record) == 1
 
 
-async def test_no_warning_if_intent_in_domain(domain):
+async def test_no_warning_if_intent_in_domain(domain: Domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
         f"stories:\n"
@@ -396,7 +396,7 @@ async def test_no_warning_if_intent_in_domain(domain):
     assert not len(record)
 
 
-async def test_parsing_of_e2e_stories(domain):
+async def test_parsing_of_e2e_stories(domain: Domain):
     yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
     tracker = await training.load_data(
         yaml_file,
@@ -433,7 +433,7 @@ async def test_parsing_of_e2e_stories(domain):
     assert actual == expected
 
 
-async def test_active_loop_is_parsed(domain):
+async def test_active_loop_is_parsed(domain: Domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
         f"stories:\n"
@@ -522,7 +522,7 @@ stories:
     )
 
 
-def test_read_mixed_training_data_file(domain):
+def test_read_mixed_training_data_file(domain: Domain):
     training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
 
     reader = YAMLStoryReader(domain)

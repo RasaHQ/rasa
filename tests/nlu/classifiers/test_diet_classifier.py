@@ -273,7 +273,7 @@ async def test_train_persist_load_with_only_intent_classification(
 
 
 async def test_raise_error_on_incorrect_pipeline(
-    component_builder, tmp_path: Path, data_path
+    component_builder, tmp_path: Path, data_path: Text
 ):
     _config = RasaNLUModelConfig(
         {
@@ -460,7 +460,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_set_random_seed(component_builder, tmpdir, data_path):
+async def test_set_random_seed(component_builder, tmpdir, data_path: Text):
     """test if train result is the same for two runs of tf embedding"""
 
     # set fixed random seed

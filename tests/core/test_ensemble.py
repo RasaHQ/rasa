@@ -512,7 +512,7 @@ def test_mutual_exclusion_of_rule_policy_and_old_rule_like_policies(
         PolicyEnsemble.from_dict({"policies": policy_config})
 
 
-def test_end_to_end_prediction_supersedes_others(domain):
+def test_end_to_end_prediction_supersedes_others(domain: Domain):
     expected_action_index = 2
     expected_confidence = 0.5
     ensemble = SimplePolicyEnsemble(
@@ -537,7 +537,7 @@ def test_end_to_end_prediction_supersedes_others(domain):
     assert prediction.policy_name == f"policy_1_{ConstantPolicy.__name__}"
 
 
-def test_no_user_prediction_supersedes_others(domain):
+def test_no_user_prediction_supersedes_others(domain: Domain):
     expected_action_index = 2
     expected_confidence = 0.5
     ensemble = SimplePolicyEnsemble(
@@ -565,7 +565,7 @@ def test_no_user_prediction_supersedes_others(domain):
     assert not prediction.is_end_to_end_prediction
 
 
-def test_prediction_applies_must_have_policy_events(domain):
+def test_prediction_applies_must_have_policy_events(domain: Domain):
     must_have_events = [ActionExecuted("my action")]
 
     ensemble = SimplePolicyEnsemble(
@@ -587,7 +587,7 @@ def test_prediction_applies_must_have_policy_events(domain):
     assert prediction.events == must_have_events
 
 
-def test_prediction_applies_optional_policy_events(domain):
+def test_prediction_applies_optional_policy_events(domain: Domain):
     optional_events = [ActionExecuted("my action")]
     must_have_events = [SlotSet("some slot", "some value")]
 
@@ -617,7 +617,7 @@ def test_prediction_applies_optional_policy_events(domain):
     assert all(event in prediction.events for event in must_have_events)
 
 
-def test_end_to_end_prediction_applies_define_featurization_events(domain,):
+def test_end_to_end_prediction_applies_define_featurization_events(domain: Domain):
     ensemble = SimplePolicyEnsemble(
         [
             ConstantPolicy(priority=100, predict_index=0),
@@ -642,7 +642,7 @@ def test_end_to_end_prediction_applies_define_featurization_events(domain,):
     assert prediction.events == [DefinePrevUserUtteredFeaturization(True)]
 
 
-def test_intent_prediction_does_not_apply_define_featurization_events(domain,):
+def test_intent_prediction_does_not_apply_define_featurization_events(domain: Domain):
     ensemble = SimplePolicyEnsemble(
         [
             ConstantPolicy(priority=100, predict_index=0),
@@ -667,7 +667,7 @@ def test_intent_prediction_does_not_apply_define_featurization_events(domain,):
     assert prediction.events == [DefinePrevUserUtteredFeaturization(False)]
 
 
-def test_with_float_returning_policy(domain):
+def test_with_float_returning_policy(domain: Domain):
     expected_index = 3
 
     class OldPolicy(Policy):

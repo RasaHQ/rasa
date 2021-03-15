@@ -8,7 +8,7 @@ from rasa.shared.importers.autoconfig import TrainingType
 from pathlib import Path
 
 
-async def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path):
+async def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
     importer = RasaFileImporter(
         domain_path="examples/moodbot/domain.yml", training_data_paths=[nlu_data_path],
     )
@@ -16,7 +16,7 @@ async def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path):
     assert validator.verify_intents()
 
 
-async def test_verify_intents_does_fail_on_invalid_data(nlu_data_path):
+async def test_verify_intents_does_fail_on_invalid_data(nlu_data_path: Text):
     # domain and nlu data are from different domain and should produce warnings
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
@@ -38,7 +38,7 @@ async def test_verify_valid_responses():
     assert validator.verify_utterances_in_stories()
 
 
-async def test_verify_valid_responses_in_rules(nlu_data_path):
+async def test_verify_valid_responses_in_rules(nlu_data_path: Text):
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
         training_data_paths=[
@@ -50,7 +50,7 @@ async def test_verify_valid_responses_in_rules(nlu_data_path):
     assert not validator.verify_utterances_in_stories()
 
 
-async def test_verify_story_structure(stories_path):
+async def test_verify_story_structure(stories_path: Text):
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml", training_data_paths=[stories_path],
     )
@@ -205,7 +205,7 @@ async def test_verify_bad_story_structure_ignore_warnings():
     assert validator.verify_story_structure(ignore_warnings=True)
 
 
-async def test_verify_there_is_example_repetition_in_intents(nlu_data_path):
+async def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
@@ -215,7 +215,9 @@ async def test_verify_there_is_example_repetition_in_intents(nlu_data_path):
     assert not validator.verify_example_repetition_in_intents(False)
 
 
-async def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path):
+async def test_verify_logging_message_for_repetition_in_intents(
+    caplog, nlu_data_path: Text
+):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(

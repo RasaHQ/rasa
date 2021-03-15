@@ -35,7 +35,7 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
 
 
 async def test_events_schema(
-    monkeypatch: MonkeyPatch, default_agent: Agent, config_path
+    monkeypatch: MonkeyPatch, default_agent: Agent, config_path: Text
 ):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events

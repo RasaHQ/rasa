@@ -43,7 +43,7 @@ def mock_endpoint() -> EndpointConfig:
 
 @pytest.fixture
 def mock_file_importer(
-    stack_config_path, nlu_data_path: Text, stories_path, domain_path
+    stack_config_path: Text, nlu_data_path: Text, stories_path: Text, domain_path: Text
 ):
     domain_path = domain_path
     return TrainingDataImporter.load_from_config(
@@ -51,7 +51,7 @@ def mock_file_importer(
     )
 
 
-async def test_send_message(mock_endpoint):
+async def test_send_message(mock_endpoint: EndpointConfig):
     sender_id = uuid.uuid4().hex
 
     url = f"{mock_endpoint.url}/conversations/{sender_id}/messages"
@@ -69,7 +69,7 @@ async def test_send_message(mock_endpoint):
         assert utilities.json_of_latest_request(r) == expected
 
 
-async def test_request_prediction(mock_endpoint):
+async def test_request_prediction(mock_endpoint: EndpointConfig):
     sender_id = uuid.uuid4().hex
 
     url = f"{mock_endpoint.url}/conversations/{sender_id}/predict"
@@ -601,7 +601,7 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     )
 
 
-async def test_filter_intents_before_save_nlu_file(domain_path):
+async def test_filter_intents_before_save_nlu_file(domain_path: Text):
     # Test method interactive._filter_messages
     from random import choice
 

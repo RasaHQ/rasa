@@ -429,8 +429,8 @@ async def test_parse_on_invalid_emulation_mode(rasa_app_nlu: SanicASGITestClient
 
 async def test_train_stack_success_with_md(
     rasa_app: SanicASGITestClient,
-    domain_path,
-    stack_config_path,
+    domain_path: Text,
+    stack_config_path: Text,
     nlu_data_path: Text,
     tmp_path: Path,
 ):
@@ -458,9 +458,9 @@ async def test_train_stack_success_with_md(
 
 async def test_train_nlu_success(
     rasa_app: SanicASGITestClient,
-    stack_config_path,
+    stack_config_path: Text,
     nlu_data_path: Text,
-    domain_path,
+    domain_path: Text,
     tmp_path: Path,
 ):
     domain_data = rasa.shared.utils.io.read_yaml_file(domain_path)
@@ -494,9 +494,9 @@ async def test_train_nlu_success(
 
 async def test_train_core_success_with(
     rasa_app: SanicASGITestClient,
-    stack_config_path,
-    stories_path,
-    domain_path,
+    stack_config_path: Text,
+    stories_path: Text,
+    domain_path: Text,
     tmp_path: Path,
 ):
     payload = f"""
@@ -523,7 +523,7 @@ async def test_train_core_success_with(
 
 
 async def test_train_with_retrieval_events_success(
-    rasa_app: SanicASGITestClient, stack_config_path, tmp_path: Path
+    rasa_app: SanicASGITestClient, stack_config_path: Text, tmp_path: Path
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(
@@ -706,7 +706,7 @@ async def test_train_internal_error(rasa_app: SanicASGITestClient):
     assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path):
+async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
     _, response = await rasa_app.post(
@@ -737,7 +737,7 @@ async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path):
 
 
 async def test_evaluate_stories_not_ready_agent(
-    rasa_app_nlu: SanicASGITestClient, stories_path
+    rasa_app_nlu: SanicASGITestClient, stories_path: Text
 ):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
@@ -924,7 +924,7 @@ async def test_evaluate_intent_with_model_server(
 
 
 async def test_cross_validation(
-    rasa_app_nlu: SanicASGITestClient, nlu_data_path: Text, stack_config_path
+    rasa_app_nlu: SanicASGITestClient, nlu_data_path: Text, stack_config_path: Text
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
@@ -972,7 +972,7 @@ async def test_cross_validation_with_callback_success(
     rasa_app_nlu: SanicASGITestClient,
     nlu_data_path: Text,
     monkeypatch: MonkeyPatch,
-    stack_config_path,
+    stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
@@ -1029,7 +1029,7 @@ async def test_cross_validation_with_callback_error(
     rasa_app_nlu: SanicASGITestClient,
     nlu_data_path: Text,
     monkeypatch: MonkeyPatch,
-    stack_config_path,
+    stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
@@ -1065,7 +1065,7 @@ async def test_callback_unexpected_error(
     rasa_app_nlu: SanicASGITestClient,
     nlu_data_path: Text,
     monkeypatch: MonkeyPatch,
-    stack_config_path,
+    stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()

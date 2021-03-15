@@ -30,7 +30,7 @@ async def _setup_trackers_for_testing(
     return trackers, validator.domain
 
 
-async def test_find_no_conflicts(domain_path, stories_path):
+async def test_find_no_conflicts(domain_path: Text, stories_path: Text):
     trackers, domain = await _setup_trackers_for_testing(domain_path, stories_path)
 
     # Create a list of `StoryConflict` objects

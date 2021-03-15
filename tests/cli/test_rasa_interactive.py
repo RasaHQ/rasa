@@ -51,7 +51,7 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
 
 
 def test_pass_arguments_to_rasa_train(
-    stack_config_path, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     # Create parser
     parser = argparse.ArgumentParser()
@@ -74,7 +74,7 @@ def test_pass_arguments_to_rasa_train(
 
 
 def test_train_called_when_no_model_passed(
-    stack_config_path, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -103,7 +103,7 @@ def test_train_called_when_no_model_passed(
 
 
 def test_train_core_called_when_no_model_passed_and_core(
-    stack_config_path, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -135,7 +135,7 @@ def test_train_core_called_when_no_model_passed_and_core(
 
 
 def test_no_interactive_without_core_data(
-    stack_config_path, monkeypatch: MonkeyPatch, nlu_data_path
+    stack_config_path: Text, monkeypatch: MonkeyPatch, nlu_data_path
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()

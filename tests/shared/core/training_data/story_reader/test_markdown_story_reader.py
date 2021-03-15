@@ -27,7 +27,7 @@ from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
 from rasa.shared.core.training_data.structures import Story, RuleStep
 
 
-async def test_persist_and_read_test_story_graph(tmp_path: Path, domain):
+async def test_persist_and_read_test_story_graph(tmp_path: Path, domain: Domain):
     graph = await training.extract_story_graph("data/test_stories/stories.md", domain)
     out_path = tmp_path / "persisted_story.md"
     rasa.shared.utils.io.write_text_file(graph.as_story_string(), str(out_path))
@@ -56,7 +56,7 @@ async def test_persist_and_read_test_story_graph(tmp_path: Path, domain):
         existing_stories.discard(story_str)
 
 
-async def test_persist_and_read_test_story(tmp_path: Path, domain):
+async def test_persist_and_read_test_story(tmp_path: Path, domain: Domain):
     graph = await training.extract_story_graph("data/test_stories/stories.md", domain)
     out_path = tmp_path / "persisted_story.md"
     Story(graph.story_steps).dump_to_file(str(out_path))
@@ -234,7 +234,7 @@ async def test_persist_form_story():
     assert story in tracker.export_stories(MarkdownStoryWriter())
 
 
-async def test_read_stories_with_multiline_comments(tmpdir, domain):
+async def test_read_stories_with_multiline_comments(tmpdir, domain: Domain):
     reader = MarkdownStoryReader(domain)
 
     story_steps = reader.read_from_file(
@@ -252,7 +252,7 @@ async def test_read_stories_with_multiline_comments(tmpdir, domain):
     assert len(story_steps[3].events) == 2
 
 
-async def test_read_stories_with_rules(domain):
+async def test_read_stories_with_rules(domain: Domain):
     story_steps = await loading.load_data_from_files(
         ["data/test_stories/stories_with_rules.md"], domain
     )
@@ -273,7 +273,7 @@ async def test_read_stories_with_rules(domain):
     assert story_steps[4].block_name == "ML story 2"
 
 
-async def test_read_rules_without_stories(domain):
+async def test_read_rules_without_stories(domain: Domain):
     story_steps = await loading.load_data_from_files(
         ["data/test_stories/rules_without_stories.md"], domain
     )

@@ -39,7 +39,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 
 
-def test_slots_states_before_user_utterance(domain):
+def test_slots_states_before_user_utterance(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer()
     tracker = DialogueStateTracker.from_events(
         "bla",
@@ -54,7 +54,7 @@ def test_slots_states_before_user_utterance(domain):
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(domain, stories_path):
+async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
         stories_path, domain, augmentation_factor=0
@@ -84,7 +84,7 @@ async def test_create_train_data_no_history(domain, stories_path):
     ]
 
 
-async def test_create_train_data_with_history(domain, stories_path):
+async def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
         stories_path, domain, augmentation_factor=0
@@ -169,13 +169,13 @@ async def test_create_train_data_unfeaturized_entities():
     ]
 
 
-def test_domain_from_template(domain):
+def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
     assert len(domain.action_names_or_texts) == 16
 
 
-def test_avoid_action_repetition(domain):
+def test_avoid_action_repetition(domain: Domain):
     domain = Domain.from_yaml(
         """
 actions:
@@ -672,7 +672,7 @@ def test_load_domain_from_directory_tree(tmp_path: Path):
     assert set(actual.user_actions) == set(expected)
 
 
-def test_domain_warnings(domain):
+def test_domain_warnings(domain: Domain):
     warning_types = [
         "action_warnings",
         "intent_warnings",
@@ -1015,15 +1015,15 @@ def test_domain_from_dict_does_not_change_input():
 
 
 @pytest.mark.parametrize(
-    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+    "domain_dict", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
 )
-def test_add_default_intents(domain: Dict):
-    domain = Domain.from_dict(domain)
+def test_add_default_intents(domain_dict: Dict):
+    domain = Domain.from_dict(domain_dict)
 
     assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
 
 
-def test_domain_deepcopy(domain):
+def test_domain_deepcopy(domain: Domain):
     new_domain = copy.deepcopy(domain)
 
     assert isinstance(new_domain, Domain)
@@ -1064,7 +1064,7 @@ def test_domain_deepcopy(domain):
     "response_key, validation",
     [("utter_chitchat/faq", True), ("utter_chitchat", False)],
 )
-def test_is_retrieval_intent_response(response_key, validation, domain):
+def test_is_retrieval_intent_response(response_key, validation, domain: Domain):
     assert domain.is_retrieval_intent_response((response_key, [{}])) == validation
 
 

@@ -80,7 +80,7 @@ def test_common_action_prefix_unequal():
     assert num_common == 0
 
 
-async def test_graph_persistence(domain, tmp_path: Path):
+async def test_graph_persistence(domain: Domain, tmp_path: Path):
     from os.path import isfile
     from networkx.drawing import nx_pydot
     import rasa.shared.core.training_data.loading as core_loading
@@ -107,7 +107,7 @@ async def test_graph_persistence(domain, tmp_path: Path):
     assert "graph = `{}`".format(generated_graph.to_string()) in content
 
 
-async def test_merge_nodes(domain, tmp_path: Path):
+async def test_merge_nodes(domain: Domain, tmp_path: Path):
     from os.path import isfile
     import rasa.shared.core.training_data.loading as core_loading
 

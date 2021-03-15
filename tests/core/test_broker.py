@@ -95,7 +95,7 @@ def test_pika_queues_from_args(
     assert pika_processor.queues == expected
 
 
-async def test_no_broker_in_config(endpoints_path):
+async def test_no_broker_in_config(endpoints_path: Text):
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
     actual = await EventBroker.create(cfg)

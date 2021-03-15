@@ -478,7 +478,9 @@ def test_should_retrain(
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
-async def test_should_not_retrain_core(domain_path, tmp_path: Path, stack_config_path):
+async def test_should_not_retrain_core(
+    domain_path: Text, tmp_path: Path, stack_config_path: Text
+):
     # Don't use `stories_path` as checkpoints currently break fingerprinting
     story_file = tmp_path / "simple_story.yml"
     story_file.write_text(

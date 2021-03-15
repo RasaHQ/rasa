@@ -82,8 +82,8 @@ def count_temp_rasa_files(directory: Text) -> int:
 def test_train_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    domain_path,
-    stories_path,
+    domain_path: Text,
+    stories_path: Text,
     stack_config_path: Text,
     nlu_data_path: Text,
 ):
@@ -116,9 +116,9 @@ def test_train_temp_files(
 def test_train_core_temp_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    domain_path,
-    stories_path,
-    stack_config_path,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
@@ -133,7 +133,10 @@ def test_train_core_temp_files(
 
 
 def test_train_nlu_temp_files(
-    tmp_path: Path, monkeypatch: MonkeyPatch, stack_config_path, nlu_data_path: Text,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    stack_config_path: Text,
+    nlu_data_path: Text,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
@@ -149,7 +152,7 @@ def test_train_nlu_wrong_format_error_message(
     capsys: CaptureFixture,
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    stack_config_path,
+    stack_config_path: Text,
     incorrect_nlu_data_path: Text,
 ):
     (tmp_path / "training").mkdir()
@@ -202,7 +205,10 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
 
 
 def test_train_nlu_no_nlu_file_error_message(
-    capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch, stack_config_path,
+    capsys: CaptureFixture,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    stack_config_path: Text,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
@@ -219,10 +225,10 @@ def test_trained_interpreter_passed_to_core_training(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
     unpacked_trained_rasa_model: Text,
-    nlu_data_path,
-    stories_path,
-    config_path,
-    domain_path,
+    nlu_data_path: Text,
+    stories_path: Text,
+    config_path: Text,
+    domain_path: Text,
 ):
     # Skip actual NLU training and return trained interpreter path from fixture
     # Patching is bit more complicated as we have a module `train` and function
@@ -250,10 +256,10 @@ def test_interpreter_of_old_model_passed_to_core_training(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
     trained_rasa_model: Text,
-    domain_path,
-    config_path,
-    stories_path,
-    nlu_data_path,
+    domain_path: Text,
+    config_path: Text,
+    stories_path: Text,
+    nlu_data_path: Text,
 ):
     # NLU isn't retrained
     monkeypatch.setattr(
@@ -295,9 +301,9 @@ def test_interpreter_from_previous_model_returns_none_for_none():
 def test_train_core_autoconfig(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    domain_path,
-    stories_path,
-    stack_config_path,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
 ):
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
@@ -324,7 +330,10 @@ def test_train_core_autoconfig(
 
 
 def test_train_nlu_autoconfig(
-    tmp_path: Path, monkeypatch: MonkeyPatch, stack_config_path, nlu_data_path: Text,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    stack_config_path: Text,
+    nlu_data_path: Text,
 ):
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
@@ -373,9 +382,9 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path,
-        stack_config_path,
-        e2e_stories_path,
+        domain_path: Text,
+        stack_config_path: Text,
+        e2e_stories_path: Text,
         nlu_data_path: Text,
         caplog: LogCaptureFixture,
     ):
@@ -401,9 +410,9 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path,
-        stack_config_path,
-        e2e_stories_path,
+        domain_path: Text,
+        stack_config_path: Text,
+        e2e_stories_path: Text,
         nlu_data_path: Text,
     ):
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -423,9 +432,9 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path,
-        stack_config_path,
-        e2e_stories_path,
+        domain_path: Text,
+        stack_config_path: Text,
+        e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
     ):
@@ -453,9 +462,9 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path,
-        stack_config_path,
-        e2e_stories_path,
+        domain_path: Text,
+        stack_config_path: Text,
+        e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
     ):
@@ -482,9 +491,9 @@ class TestE2e:
     def test_nlu_and_core_trained_if_no_nlu_data_but_e2e_stories(
         self,
         monkeypatch: MonkeyPatch,
-        domain_path,
-        stack_config_path,
-        e2e_stories_path,
+        domain_path: Text,
+        stack_config_path: Text,
+        e2e_stories_path: Text,
         tmp_path: Path,
     ):
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -508,9 +517,9 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path,
-        stack_config_path,
-        e2e_stories_path,
+        domain_path: Text,
+        stack_config_path: Text,
+        e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
     ):
@@ -538,8 +547,8 @@ class TestE2e:
         self,
         monkeypatch: MonkeyPatch,
         trained_simple_rasa_model: Text,
-        domain_path,
-        stack_config_path,
+        domain_path: Text,
+        stack_config_path: Text,
         simple_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
@@ -569,9 +578,9 @@ class TestE2e:
         capsys: CaptureFixture,
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
-        domain_path,
-        stack_config_path,
-        e2e_stories_path,
+        domain_path: Text,
+        stack_config_path: Text,
+        e2e_stories_path: Text,
     ):
 
         mocked_nlu_training = mock_nlu_training(monkeypatch)
@@ -597,9 +606,9 @@ class TestE2e:
 def test_model_finetuning(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    domain_path,
-    stories_path,
-    stack_config_path,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
     nlu_data_path: Text,
     trained_rasa_model: Text,
     use_latest_model: bool,
@@ -900,8 +909,8 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     monkeypatch: MonkeyPatch,
     trained_rasa_model: Text,
     nlu_data_path: Text,
-    config_path,
-    domain_path,
+    config_path: Text,
+    domain_path: Text,
 ):
     mocked_nlu_training = AsyncMock(return_value="")
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
@@ -989,9 +998,9 @@ def test_model_finetuning_nlu_with_default_epochs(
 def test_model_finetuning_with_invalid_model(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    domain_path,
-    stories_path,
-    stack_config_path,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
     nlu_data_path: Text,
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
@@ -1026,9 +1035,9 @@ def test_model_finetuning_with_invalid_model(
 def test_model_finetuning_with_invalid_model_core(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    domain_path,
-    stories_path,
-    stack_config_path,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
@@ -1057,8 +1066,8 @@ def test_model_finetuning_with_invalid_model_core(
 def test_model_finetuning_with_invalid_model_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    domain_path,
-    stack_config_path,
+    domain_path: Text,
+    stack_config_path: Text,
     nlu_data_path: Text,
     model_to_fine_tune: Text,
     capsys: CaptureFixture,

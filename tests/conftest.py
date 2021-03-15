@@ -182,7 +182,9 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent(tmpdir_factory: TempdirFactory, stories_path) -> Agent:
+async def _trained_default_agent(
+    tmpdir_factory: TempdirFactory, stories_path: Text
+) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
@@ -249,17 +251,17 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
-def _domain(domain_path) -> Domain:
+def _domain(domain_path: Text) -> Domain:
     return Domain.load(domain_path)
 
 
 @pytest.fixture()
-def domain(_domain) -> Domain:
+def domain(_domain: Domain) -> Domain:
     return copy.deepcopy(_domain)
 
 
 @pytest.fixture(scope="session")
-def config(config_path) -> List[Policy]:
+def config(config_path: Text) -> List[Policy]:
     return config.load(config_path)
 
 
@@ -296,7 +298,7 @@ async def trained_rasa_model(
     domain_path: Text,
     nlu_data_path: Text,
     stories_path: Text,
-    stack_config_path,
+    stack_config_path: Text,
 ) -> Text:
     trained_stack_model_path = await trained_async(
         domain=domain_path,

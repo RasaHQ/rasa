@@ -84,7 +84,7 @@ def template_nlg() -> TemplatedNaturalLanguageGenerator:
 
 
 @pytest.fixture(scope="module")
-def template_sender_tracker(domain_path):
+def template_sender_tracker(domain_path: Text):
     domain = Domain.load(domain_path)
     return DialogueStateTracker("template-sender", domain.slots)
 
@@ -122,7 +122,7 @@ def test_domain_action_instantiation():
 
 
 async def test_remote_action_runs(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
 
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
@@ -172,7 +172,7 @@ async def test_remote_action_runs(
 
 
 async def test_remote_action_logs_events(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -239,7 +239,7 @@ async def test_remote_action_logs_events(
 
 
 async def test_remote_action_utterances_with_none_values(
-    default_channel, default_tracker, domain
+    default_channel, default_tracker, domain: Domain
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -285,7 +285,7 @@ async def test_remote_action_utterances_with_none_values(
 
 
 async def test_remote_action_without_endpoint(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     remote_action = action.RemoteAction("my_action", None)
 
@@ -295,7 +295,7 @@ async def test_remote_action_without_endpoint(
 
 
 async def test_remote_action_endpoint_not_running(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -306,7 +306,7 @@ async def test_remote_action_endpoint_not_running(
 
 
 async def test_remote_action_endpoint_responds_500(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -322,7 +322,7 @@ async def test_remote_action_endpoint_responds_500(
 
 
 async def test_remote_action_endpoint_responds_400(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -344,7 +344,7 @@ async def test_remote_action_endpoint_responds_400(
 
 
 async def test_action_utter_retrieved_response(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     from rasa.core.channels.channel import UserMessage
 
@@ -380,7 +380,7 @@ async def test_action_utter_retrieved_response(
 
 
 async def test_action_utter_default_retrieved_response(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     from rasa.core.channels.channel import UserMessage
 
@@ -417,7 +417,7 @@ async def test_action_utter_default_retrieved_response(
 
 
 async def test_action_utter_retrieved_empty_response(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     from rasa.core.channels.channel import UserMessage
 
@@ -446,7 +446,7 @@ async def test_action_utter_retrieved_empty_response(
     assert events == []
 
 
-async def test_response(default_channel, default_nlg, default_tracker, domain):
+async def test_response(default_channel, default_nlg, default_tracker, domain: Domain):
     events = await ActionBotResponse("utter_channel").run(
         default_channel, default_nlg, default_tracker, domain
     )
@@ -459,7 +459,7 @@ async def test_response(default_channel, default_nlg, default_tracker, domain):
 
 
 async def test_response_unknown_response(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     events = await ActionBotResponse("utter_unknown").run(
         default_channel, default_nlg, default_tracker, domain
@@ -469,7 +469,7 @@ async def test_response_unknown_response(
 
 
 async def test_response_with_buttons(
-    default_channel, template_nlg, template_sender_tracker, domain
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
 ):
     events = await ActionBotResponse("utter_buttons").run(
         default_channel, template_nlg, template_sender_tracker, domain
@@ -490,7 +490,7 @@ async def test_response_with_buttons(
 
 
 async def test_response_invalid_response(
-    default_channel, template_nlg, template_sender_tracker, domain
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
 ):
     events = await ActionBotResponse("utter_invalid").run(
         default_channel, template_nlg, template_sender_tracker, domain
@@ -501,7 +501,7 @@ async def test_response_invalid_response(
     assert events[0].text.startswith("a response referencing an invalid {variable}.")
 
 
-async def test_response_channel_specific(default_nlg, default_tracker, domain):
+async def test_response_channel_specific(default_nlg, default_tracker, domain: Domain):
     from rasa.core.channels.slack import SlackBot
 
     output_channel = SlackBot("DummyToken", "General")
@@ -519,7 +519,7 @@ async def test_response_channel_specific(default_nlg, default_tracker, domain):
 
 
 async def test_action_back(
-    default_channel, template_nlg, template_sender_tracker, domain
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
 ):
     events = await ActionBack().run(
         default_channel, template_nlg, template_sender_tracker, domain
@@ -533,7 +533,7 @@ async def test_action_back(
 
 
 async def test_action_restart(
-    default_channel, template_nlg, template_sender_tracker, domain
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
 ):
     events = await ActionRestart().run(
         default_channel, template_nlg, template_sender_tracker, domain
@@ -552,7 +552,7 @@ async def test_action_session_start_without_slots(
     default_channel: CollectingOutputChannel,
     template_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
-    domain,
+    domain: Domain,
 ):
     events = await ActionSessionStart().run(
         default_channel, template_nlg, template_sender_tracker, domain
@@ -582,7 +582,7 @@ async def test_action_session_start_with_slots(
     default_channel: CollectingOutputChannel,
     template_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
-    domain,
+    domain: Domain,
     session_config: SessionConfig,
     expected_events: List[Event],
 ):
@@ -631,7 +631,7 @@ async def test_applied_events_after_action_session_start(
 
 
 async def test_action_default_fallback(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     events = await ActionDefaultFallback().run(
         default_channel, default_nlg, default_tracker, domain
@@ -646,7 +646,9 @@ async def test_action_default_fallback(
     ]
 
 
-async def test_action_default_ask_affirmation(default_channel, default_nlg, domain):
+async def test_action_default_ask_affirmation(
+    default_channel, default_nlg, domain: Domain
+):
     initial_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         # User triggers a restart manually by triggering the intent
@@ -682,7 +684,7 @@ async def test_action_default_ask_affirmation(default_channel, default_nlg, doma
 
 
 async def test_action_default_ask_affirmation_on_empty_conversation(
-    default_channel, default_nlg, default_tracker, domain
+    default_channel, default_nlg, default_tracker, domain: Domain
 ):
     events = await ActionDefaultAskAffirmation().run(
         default_channel, default_nlg, default_tracker, domain
@@ -703,7 +705,7 @@ async def test_action_default_ask_affirmation_on_empty_conversation(
 
 
 async def test_action_default_ask_rephrase(
-    default_channel, template_nlg, template_sender_tracker, domain
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
 ):
     events = await ActionDefaultAskRephrase().run(
         default_channel, template_nlg, template_sender_tracker, domain

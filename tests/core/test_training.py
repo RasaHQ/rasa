@@ -17,7 +17,7 @@ from rasa.core.policies.form_policy import FormPolicy
 from rasa.shared.core.training_data.visualization import visualize_stories
 
 
-async def test_story_visualization(domain, tmp_path: Path):
+async def test_story_visualization(domain: Domain, tmp_path: Path):
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
@@ -37,7 +37,7 @@ async def test_story_visualization(domain, tmp_path: Path):
     assert len(generated_graph.edges()) == 56
 
 
-async def test_story_visualization_with_merging(domain):
+async def test_story_visualization_with_merging(domain: Domain):
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
@@ -51,7 +51,7 @@ async def test_story_visualization_with_merging(domain):
     assert 20 < len(generated_graph.edges()) < 33
 
 
-async def test_training_script(tmp_path: Path, domain_path, stories_path):
+async def test_training_script(tmp_path: Path, domain_path: Text, stories_path: Text):
     await train(
         domain_path,
         stories_path,
@@ -64,7 +64,7 @@ async def test_training_script(tmp_path: Path, domain_path, stories_path):
 
 
 async def test_training_script_without_max_history_set(
-    tmp_path: Path, domain_path, stories_path
+    tmp_path: Path, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
     await train(
@@ -88,7 +88,7 @@ async def test_training_script_without_max_history_set(
 
 
 async def test_training_script_with_max_history_set(
-    tmp_path: Path, domain_path, stories_path
+    tmp_path: Path, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
 
@@ -109,7 +109,7 @@ async def test_training_script_with_max_history_set(
             assert policy.featurizer.max_history == expected_history
 
 
-async def test_training_script_with_restart_stories(tmp_path: Path, domain_path):
+async def test_training_script_with_restart_stories(tmp_path: Path, domain_path: Text):
     await train(
         domain_path,
         "data/test_yaml_stories/stories_restart.yml",
@@ -128,7 +128,7 @@ def configs_for_random_seed_test() -> List[Text]:
 
 @pytest.mark.parametrize("config_file", configs_for_random_seed_test())
 async def test_random_seed(
-    tmp_path: Path, config_file: Text, domain_path, stories_path
+    tmp_path: Path, config_file: Text, domain_path: Text, stories_path: Text
 ):
     # set random seed in config file to
     # generate a reproducible training result
@@ -160,7 +160,7 @@ async def test_random_seed(
 
 
 async def test_trained_interpreter_passed_to_policies(
-    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path, stories_path
+    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     from rasa.core.policies.ted_policy import TEDPolicy
 

@@ -27,7 +27,7 @@ from rasa.core.agent import Agent
 
 
 async def test_evaluation_file_creation(
-    tmpdir: Path, default_agent: Agent, stories_path
+    tmpdir: Path, default_agent: Agent, stories_path: Text
 ):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)

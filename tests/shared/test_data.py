@@ -212,7 +212,9 @@ def test_get_core_nlu_directories_with_none():
     assert all(not os.listdir(directory) for directory in directories)
 
 
-def test_same_file_names_get_resolved(tmp_path: Path, stories_path, nlu_data_path):
+def test_same_file_names_get_resolved(
+    tmp_path: Path, stories_path: Text, nlu_data_path: Text
+):
     # makes sure the resolution properly handles if there are two files with
     # with the same name in different directories
 

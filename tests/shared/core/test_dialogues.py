@@ -16,7 +16,7 @@ from tests.core.utilities import tracker_from_dialogue_file
 
 
 @pytest.mark.parametrize("filename", TEST_DIALOGUES)
-def test_dialogue_serialisation(filename, domain):
+def test_dialogue_serialisation(filename, domain: Domain):
     dialogue_json = rasa.shared.utils.io.read_file(filename)
     restored = json.loads(dialogue_json)
     tracker = tracker_from_dialogue_file(filename, domain)
