@@ -11,6 +11,7 @@ from rasa.core import constants
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.exceptions import ChannelConfigError
 from sanic.request import Request
 
 logger = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ class RasaChatInput(RestInput):
 
     def _decode_jwt(self, bearer_token: Text) -> Dict:
         if self.jwt_key is None:
-            raise TypeError(
+            raise ChannelConfigError(
                 "JWT public key is `None`. This is likely caused "
                 "by an error when retrieving the public key from Rasa X."
             )

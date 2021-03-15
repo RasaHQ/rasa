@@ -29,3 +29,7 @@ class AgentNotReady(RasaCoreException):
     def __init__(self, message: Text) -> None:
         self.message = message
         super(AgentNotReady, self).__init__()
+
+
+class ChannelConfigError(RasaCoreException):
+    """Raised if a channel is not configured correctly."""
