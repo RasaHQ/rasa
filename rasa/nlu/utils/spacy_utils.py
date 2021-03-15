@@ -90,7 +90,7 @@ class SpacyNLP(Component):
         return cls.name + "-" + spacy_model_name
 
     @classmethod
-    def check_model_fallback(cls, spacy_model_name, language_name, warn=False):
+    def _check_model_fallback(cls, spacy_model_name, language_name, warn=False):
         """This method checks if the `spacy_model_name` is missing and attempts to do a fallback.
 
         This feature is a measure to support spaCy 3.0 without breaking on users. In the future
