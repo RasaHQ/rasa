@@ -73,7 +73,7 @@ if TYPE_CHECKING:
     TrackerActiveLoop = TypedDict(
         "TrackerActiveLoop",
         {
-            LOOP_NAME: Text,
+            LOOP_NAME: Optional[Text],
             LOOP_INTERRUPTED: bool,
             LOOP_REJECTED: bool,
             TRIGGER_MESSAGE: Dict,
