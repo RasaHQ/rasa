@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Text
 
 import numpy as np
 import pytest
@@ -9,7 +8,7 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import (
@@ -163,7 +162,7 @@ def test_model_data_signature_with_entities(
 
     # create tokens for entity parsing inside DIET
     tokenizer = WhitespaceTokenizer()
-    tokenizer.train(training_data)
+    tokenizer.rasa.nlu.train.train(training_data)
 
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
@@ -178,7 +177,7 @@ async def _train_persist_load_with_different_settings(
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/examples/rasa/demo-rasa-multi-intent.yml",
@@ -287,7 +286,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Pa
     )
 
     with pytest.raises(Exception) as e:
-        await train(
+        await rasa.nlu.train.train(
             _config,
             path=str(tmp_path),
             data=DEFAULT_DATA_PATH,
@@ -351,7 +350,7 @@ async def test_softmax_normalization(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config, path=str(tmp_path), data=data_path, component_builder=component_builder
     )
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -399,7 +398,7 @@ async def test_inner_linear_normalization(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config, path=str(tmp_path), data=data_path, component_builder=component_builder
     )
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -440,7 +439,7 @@ async def test_margin_loss_is_not_normalized(
     monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
         data="data/test/many_intents.yml",
@@ -477,14 +476,14 @@ async def test_set_random_seed(component_builder, tmpdir):
     )
 
     # first run
-    (trained_a, _, persisted_path_a) = await train(
+    (trained_a, _, persisted_path_a) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath + "_a",
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
     # second run
-    (trained_b, _, persisted_path_b) = await train(
+    (trained_b, _, persisted_path_b) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath + "_b",
         data=DEFAULT_DATA_PATH,
@@ -525,7 +524,7 @@ async def test_train_tensorboard_logging(
         }
     )
 
-    await train(
+    await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
         data="data/examples/rasa/demo-rasa-multi-intent.yml",
@@ -562,7 +561,7 @@ async def test_train_model_checkpointing(
         }
     )
 
-    await train(
+    await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
         data="data/examples/rasa/demo-rasa.yml",
@@ -602,7 +601,7 @@ async def test_train_persist_load_with_composite_entities(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath,
         data="data/test/demo-rasa-composite-entities.yml",

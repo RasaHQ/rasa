@@ -12,7 +12,7 @@ import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.components import ComponentBuilder, Component
@@ -394,7 +394,7 @@ async def test_eval_data(
         ],
     )
 
-    (_, _, persisted_path) = await train(
+    (_, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data=data_importer,

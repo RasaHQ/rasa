@@ -43,6 +43,7 @@ from rasa.core.channels import (
 from rasa.core.channels.slack import SlackBot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.model import unpack_model
+import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -990,7 +991,9 @@ async def test_cross_validation_with_callback_success(
             )
         )
         monkeypatch.setattr(
-            rasa.nlu, rasa.nlu.cross_validate.__name__, mocked_cross_validation
+            rasa.nlu.test,
+            rasa.nlu.test.cross_validate.__name__,
+            mocked_cross_validation,
         )
 
         _, response = await rasa_app_nlu.post(
@@ -1033,7 +1036,9 @@ async def test_cross_validation_with_callback_error(
     payload = f"{nlu_data}\n{config}"
 
     monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.cross_validate.__name__, Mock(side_effect=ValueError())
+        rasa.nlu.test,
+        rasa.nlu.test.cross_validate.__name__,
+        Mock(side_effect=ValueError()),
     )
 
     callback_url = "https://example.com/webhooks/actions"

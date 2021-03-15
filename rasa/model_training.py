@@ -754,7 +754,7 @@ async def _train_nlu_with_validated_data(
             model_type="nlu",
             is_finetuning=model_to_finetune is not None,
         ):
-            await rasa.nlu.train(
+            await rasa.nlu.train.train(
                 config,
                 file_importer,
                 _train_path,

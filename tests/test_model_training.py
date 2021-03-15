@@ -370,7 +370,7 @@ def mock_core_training(monkeypatch: MonkeyPatch) -> Mock:
 
 
 def mock_nlu_training(monkeypatch: MonkeyPatch) -> Mock:
-    return mock_async(monkeypatch, rasa.nlu, rasa.nlu.train.__name__)
+    return mock_async(monkeypatch, rasa.nlu.train, rasa.nlu.train.train.__name__)
 
 
 def new_model_path_in_same_dir(old_model_path: Text) -> Text:
@@ -619,9 +619,7 @@ def test_model_finetuning(
     trained_rasa_model: Text,
     use_latest_model: bool,
 ):
-    mocked_nlu_training = Mock(wraps=rasa.nlu.train)
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
-
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
     mocked_core_training = mock_core_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
@@ -798,8 +796,7 @@ def test_model_finetuning_nlu(
     trained_nlu_moodbot_path: Text,
     use_latest_model: bool,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     mock_interpreter_create = Mock(wraps=Interpreter.create)
     monkeypatch.setattr(Interpreter, "create", mock_interpreter_create)
@@ -853,8 +850,7 @@ def test_model_finetuning_nlu(
 def test_model_finetuning_nlu_new_label(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -879,8 +875,7 @@ def test_model_finetuning_nlu_new_label(
 def test_model_finetuning_nlu_new_entity(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -910,8 +905,7 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     default_config_path: Text,
     default_domain_path: Text,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -937,8 +931,7 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
 def test_model_finetuning_nlu_new_label_to_domain_only(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -963,8 +956,7 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
 def test_model_finetuning_nlu_with_default_epochs(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_nlu_moodbot_path: Text,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -1003,8 +995,7 @@ def test_model_finetuning_with_invalid_model(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     mocked_core_training = mock_core_training(monkeypatch)
     (tmp_path / "models").mkdir()
@@ -1066,8 +1057,7 @@ def test_model_finetuning_with_invalid_model_nlu(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_nlu_training = AsyncMock(return_value="")
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")

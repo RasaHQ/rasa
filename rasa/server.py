@@ -7,7 +7,6 @@ import tempfile
 import traceback
 from collections import defaultdict
 from functools import reduce, wraps
-from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
 from http import HTTPStatus
@@ -68,7 +67,8 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
-from rasa.nlu.test import run_evaluation, CVEvaluationResult
+import rasa.nlu.test
+from rasa.nlu.test import CVEvaluationResult
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
@@ -1190,7 +1190,7 @@ def create_app(
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
-        return await run_evaluation(
+        return await rasa.nlu.test.run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
@@ -1202,7 +1202,7 @@ def create_app(
         config = await importer.get_config()
         nlu_data = await importer.get_nlu_data()
 
-        evaluations = rasa.nlu.cross_validate(
+        evaluations = rasa.nlu.test.cross_validate(
             data=nlu_data,
             n_folds=folds,
             nlu_config=config,

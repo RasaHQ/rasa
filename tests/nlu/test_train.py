@@ -1,7 +1,8 @@
 import os
 import pytest
 
-from rasa.nlu import registry, train
+from rasa.nlu import registry
+import rasa.nlu.train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -138,7 +139,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 async def test_train_persist_load_parse(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
-    (trained, _, persisted_path) = await train(
+    (trained, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
@@ -167,7 +168,7 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
     trainer = Trainer(_config, component_builder)
-    trainer.train(TrainingData())
+    trainer.rasa.nlu.train.train(TrainingData())
     persisted_path = trainer.persist(tmpdir.strpath)
 
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -205,14 +206,16 @@ def test_load_and_persist_without_train(language, pipeline, component_builder, t
 def test_load_and_persist_without_train_non_windows(
     language, pipeline, component_builder, tmpdir
 ):
-    test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir)
+    test_load_and_persist_without_rasa.nlu.train.train(
+        language, pipeline, component_builder, tmpdir
+    )
 
 
 async def test_train_model_empty_pipeline(component_builder):
     _config = RasaNLUModelConfig({"pipeline": None, "language": "en"})
 
     with pytest.raises(ValueError):
-        await train(
+        await rasa.nlu.train.train(
             _config, data=DEFAULT_DATA_PATH, component_builder=component_builder
         )
 
@@ -222,7 +225,7 @@ async def test_train_named_model(component_builder, tmpdir):
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
     )
 
-    (trained, _, persisted_path) = await train(
+    (trained, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
@@ -242,7 +245,7 @@ async def test_handles_pipeline_with_non_existing_component(
     pretrained_embeddings_spacy_config.pipeline.append({"name": "my_made_up_component"})
 
     with pytest.raises(Exception) as execinfo:
-        await train(
+        await rasa.nlu.train.train(
             pretrained_embeddings_spacy_config,
             data=DEFAULT_DATA_PATH,
             component_builder=component_builder,
@@ -255,7 +258,7 @@ async def test_train_model_training_data_persisted(component_builder, tmpdir):
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
     )
 
-    (trained, _, persisted_path) = await train(
+    (trained, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
@@ -276,7 +279,7 @@ async def test_train_model_no_training_data_persisted(component_builder, tmpdir)
         {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
     )
 
-    (trained, _, persisted_path) = await train(
+    (trained, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
