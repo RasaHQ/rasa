@@ -12,10 +12,14 @@ how you can migrate from one version to another.
 
 ## Rasa 2.4 to 2.5
 
+### Machine Learning Components
+
+#### SpaCy 3.0
+
 Rasa now supports spaCy 3.0. This means that we can support more features for more
-languages but there are also a few changes. SpaCy 3.0 deprecated the `spacy link <language model>`
-command so that means that from now on [the full model name](https://spacy.io/models) needs to
-be used in the `config.yml` file.
+languages but this also introduced a breaking change. SpaCy 3.0 deprecated the
+`spacy link <language model>` command so that means that from now on
+[the full model name](https://spacy.io/models) needs to be used in the `config.yml` file.
 
 **Before**
 
