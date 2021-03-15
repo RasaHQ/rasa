@@ -306,7 +306,23 @@ async def load_agent(
     tracker_store: Optional[TrackerStore] = None,
     lock_store: Optional[LockStore] = None,
     action_endpoint: Optional[EndpointConfig] = None,
-):
+) -> Optional["Agent"]:
+    """Loads agent from server, remote storage or disk.
+
+    Args:
+        model_path: Path to the model if it's on disk.
+        model_server: Configuration for a potential server which serves the model.
+        remote_storage: URL of remote storage for model.
+        interpreter: NLU interpreter to parse incoming messages.
+        generator: Optional response generator.
+        tracker_store: TrackerStore for persisting the conversation history.
+        lock_store: LockStore to avoid that a conversation is modified by concurrent
+            actors.
+        action_endpoint: Action server configuration for executing custom actions.
+
+    Returns:
+        The instantiated `Agent` or `None`.
+    """
     try:
         if model_server is not None:
             return await load_from_server(

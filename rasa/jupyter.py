@@ -11,7 +11,8 @@ if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent, create_agent
 
 
-def pprint(obj: Any):
+def pprint(obj: Any) -> None:
+    """Prints JSONs with indent."""
     pretty_print.pprint(obj, indent=2)
 
 
