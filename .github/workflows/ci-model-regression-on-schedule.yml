@@ -5,7 +5,7 @@ on:
   schedule:
     # Run once a week
     - cron:  '1 23 * * */7'
-  pull_request:
+  pull_request: # TODO remove
 
 env:
   GKE_ZONE: us-central1
@@ -174,6 +174,7 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
+          exit 1
           poetry run rasa --version
 
           # Run GPUs in a deterministic mode
@@ -284,12 +285,11 @@ jobs:
           fields: workflow,job,commit,repo,ref,author,took
           custom_payload: |
             {
-              text: "Model regression tests CI",
               attachments: [{
                 fallback: 'fallback',
                 color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
                 title: `${process.env.AS_WORKFLOW}`,
-                text: 'Scheduled model regression test failed',
+                text: 'Scheduled model regression test failed :no_entry:️',
                 fields: [{
                   title: 'Configuration',
                   value: '${{ matrix.config }}',
@@ -315,7 +315,7 @@ jobs:
               }]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }} # TODO change to real webhook
 
   analyse_performance:
     name: Analyse Performance
@@ -362,9 +362,6 @@ jobs:
         id: performance
         run: |
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
-
-          # Fake string for testing, will delete later
-          OUTPUT="${OUTPUT}\n test: \`2m46s\`, train: \`5m5s\`, total: \`7m51s\`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.01)| | \`Sparse + DIET(bow) + ResponseSelector(bow)\`"
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
@@ -461,7 +458,7 @@ jobs:
               }]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }} # TODO change to real webhook
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
