@@ -85,6 +85,8 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
             name=f"concatenate_sparse_dense_features_{attribute}_{feature_type}"
         )
 
+        self._check_sparse_input_units(feature_type_signature)
+
         self.output_units = self._calculate_output_units(
             attribute, feature_type_signature, config
         )
@@ -93,6 +95,21 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         self._tf_layers = {}
         if any([signature.is_sparse for signature in feature_type_signature]):
             self._prepare_layers_for_sparse_tensors(attribute, feature_type, config)
+
+    def _check_sparse_input_units(
+        self, feature_type_signature: List[FeatureSignature]
+    ) -> None:
+        """Checks that all sparse features have the same last dimension size."""
+        sparse_units = [
+            feature_sig.units
+            for feature_sig in feature_type_signature
+            if feature_sig.is_sparse
+        ]
+        if len(set(sparse_units)) > 1:
+            raise TFLayerConfigException(
+                f"All sparse features must have the same last dimension size but found "
+                f"different sizes: {set(sparse_units)}."
+            )
 
     def _prepare_layers_for_sparse_tensors(
         self, attribute: Text, feature_type: Text, config: Dict[Text, Any],
@@ -812,7 +829,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # hence using masked language modeling (if enabled) becomes just input dropout.
         if self._enables_mlm and training:
             mask_sequence = compute_mask(sequence_feature_lengths)
-            seq_sent_features, token_ids, mlm_boolean_mask = self._create_mlm_tensors(
+            (
+                seq_sent_features_masked,
+                token_ids,
+                mlm_boolean_mask,
+            ) = self._create_mlm_tensors(
                 sequence_features,
                 seq_sent_features,
                 mask_sequence,
@@ -823,18 +844,19 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             # tf.zeros((0,)) is an alternative to None
             token_ids = tf.zeros((0,))
             mlm_boolean_mask = tf.zeros((0,))
+            seq_sent_features_masked = seq_sent_features
 
         # Apply the transformer (if present), hence reducing a sequences of features per
         # input example into a simple fixed-size embedding.
         if self._has_transformer:
             mask_padding = 1 - mask_combined_sequence_sentence
             outputs, attention_weights = self._tf_layers["transformer"](
-                seq_sent_features, mask_padding, training
+                seq_sent_features_masked, mask_padding, training
             )
             outputs = tfa.activations.gelu(outputs)
         else:
             # tf.zeros((0,)) is an alternative to None
-            outputs, attention_weights = seq_sent_features, tf.zeros((0,))
+            outputs, attention_weights = seq_sent_features_masked, tf.zeros((0,))
 
         return (
             outputs,
