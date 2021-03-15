@@ -225,6 +225,57 @@ jobs:
           name: report.json
           path: ./report.json
 
+      - name: Pick an assignee randomly
+        if: failure()
+        id: pick_assignee
+        run: |
+          # ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
+          ASSIGNEES_LIST=("hotthoughts")
+          # Randomly select an item from assignees list
+          ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
+          echo "::set-output name=assignee::$ASSIGNEE"
+
+      - name: Open GitHub Issue 📬
+        if: failure()
+        uses: rishabhgupta/git-action-issue@v2
+        id: open_issue
+        with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            title: "Scheduled Model Regression Test Failed"
+            body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: ${{ matrix.config }} <br> **Dataset**: ${{ matrix.dataset}}"
+            assignees: ${{ steps.pick_assignee.outputs.assignee }}
+
+      - name: Add Label to the Issue
+        if: failure()
+        id: add_label
+        env:
+          LABEL: "type:bug :bug:"
+        run: |
+          # Get issue number
+          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
+          echo "::set-output name=issue_number::$ISSUE_NUMBER"
+
+          # Add label to the issue
+          curl \
+            -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
+            -d '{"labels":["${{ env.LABEL }}"]}'
+
+      - name: Assign Issue to Project Column
+        if: failure()
+        run: |
+          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
+
+          # Add this issue to a project column
+          curl \
+            -X POST \
+            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
+            -H 'Accept: application/vnd.github.inertia-preview+json' \
+            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
+            "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
+
       - name: Notify Slack of Failure 😱
         if: failure()
         uses: 8398a7/action-slack@v3
@@ -247,6 +298,11 @@ jobs:
                 {
                   title: 'Dataset',
                   value: '${{ matrix.dataset }}',
+                  short: false
+                },
+                {
+                  title: 'GitHub Issue',
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.add_label.outputs.issue_number }}`,
                   short: false
                 },
                 {
