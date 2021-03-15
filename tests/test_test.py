@@ -35,7 +35,7 @@ def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> No
 def test_get_sanitized_model_directory_when_not_passing_model(
     capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch
 ):
-    from rasa.test import _get_sanitized_model_directory
+    from rasa.model_testing import _get_sanitized_model_directory
 
     monkeypatch_get_latest_model(tmp_path, monkeypatch)
 
@@ -54,7 +54,7 @@ def test_get_sanitized_model_directory_when_not_passing_model(
 def test_get_sanitized_model_directory_when_passing_model_file_explicitly(
     capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch
 ):
-    from rasa.test import _get_sanitized_model_directory
+    from rasa.model_testing import _get_sanitized_model_directory
 
     monkeypatch_get_latest_model(tmp_path, monkeypatch)
 
@@ -73,7 +73,7 @@ def test_get_sanitized_model_directory_when_passing_model_file_explicitly(
 def test_get_sanitized_model_directory_when_passing_other_input(
     capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch
 ):
-    from rasa.test import _get_sanitized_model_directory
+    from rasa.model_testing import _get_sanitized_model_directory
 
     monkeypatch_get_latest_model(tmp_path, monkeypatch)
 
@@ -109,7 +109,7 @@ def test_get_sanitized_model_directory_when_passing_other_input(
 def test_get_evaluation_metrics(
     targets, predictions, expected_precision, expected_fscore, expected_accuracy
 ):
-    from rasa.test import get_evaluation_metrics
+    from rasa.model_testing import get_evaluation_metrics
 
     report, precision, f1, accuracy = get_evaluation_metrics(
         targets, predictions, True, exclude_label=NO_ENTITY
@@ -140,7 +140,7 @@ def test_get_evaluation_metrics(
     ],
 )
 def test_get_label_set(targets, exclude_label, expected):
-    from rasa.test import get_unique_labels
+    from rasa.model_testing import get_unique_labels
 
     actual = get_unique_labels(targets, exclude_label)
     assert set(expected) == set(actual)
@@ -158,7 +158,7 @@ async def test_interpreter_passed_to_agent(
 def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
-    from rasa.test import test_core
+    from rasa.model_testing import test_core
 
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬

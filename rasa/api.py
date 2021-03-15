@@ -141,9 +141,9 @@ def test(
         output: path to folder where all output will be stored
         additional_arguments: additional arguments for the test call
     """
-    from rasa.test import test_core
+    from rasa.model_testing import test_core
     import rasa.utils.common
-    from rasa.test import test_nlu
+    from rasa.model_testing import test_nlu
 
     if additional_arguments is None:
         additional_arguments = {}

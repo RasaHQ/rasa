@@ -68,7 +68,11 @@ def add_subparser(
 
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
-    from rasa.test import test_core_models_in_directory, test_core, test_core_models
+    from rasa.model_testing import (
+        test_core_models_in_directory,
+        test_core,
+        test_core_models,
+    )
     from rasa.core.test import FAILED_STORIES_FILE
 
     stories = rasa.cli.utils.get_validated_path(
@@ -144,7 +148,11 @@ async def run_nlu_test_async(
         no_errors: indicates if incorrect predictions should be written to a file
                    or not.
     """
-    from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
+    from rasa.model_testing import (
+        compare_nlu_models,
+        perform_nlu_cross_validation,
+        test_nlu,
+    )
 
     nlu_data = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     nlu_data = rasa.shared.data.get_nlu_directory(nlu_data)

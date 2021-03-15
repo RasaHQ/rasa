@@ -65,7 +65,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.test import compare_nlu_models
+from rasa.model_testing import compare_nlu_models
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
