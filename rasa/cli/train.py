@@ -18,7 +18,6 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
-from rasa.train import train as train_all, train_core, train_nlu
 
 
 def add_subparser(
@@ -74,6 +73,8 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
+    from rasa import train as train_all
+
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
@@ -129,6 +130,8 @@ def run_core_training(
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
+    from rasa.train import train_core
+
     output = train_path or args.out
 
     args.domain = rasa.cli.utils.get_validated_path(
@@ -176,6 +179,8 @@ def run_nlu_training(
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
+    from rasa.train import train_nlu
+
     output = train_path or args.out
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)

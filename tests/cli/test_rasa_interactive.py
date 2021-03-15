@@ -6,6 +6,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
+import rasa
 from rasa.core.train import do_interactive_learning
 from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
@@ -66,7 +67,7 @@ def test_pass_arguments_to_rasa_train(
 
     # Mock actual training
     mock = Mock(return_value=TrainingResult(code=0))
-    monkeypatch.setattr(train, "train_all", mock.method)
+    monkeypatch.setattr(rasa, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
     train.run_training(args)
