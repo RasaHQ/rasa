@@ -1,11 +1,7 @@
-# import copy
-# from typing import Union, List
-
 import pytest
 import tensorflow as tf
 
-# import scipy.sparse
-# import numpy as np
+import numpy as np
 
 from rasa.shared.nlu.constants import TEXT
 from rasa.utils.tensorflow.rasa_layers import (
@@ -37,10 +33,6 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.model_data import FeatureSignature
 
-# data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
-# {'label':
-# DictWrapper({'ids': ListWrapper([FeatureSignature(is_sparse=False, units=1, number_of_dimensions=2)]), 'mask': ListWrapper([FeatureSignature(is_sparse=False, units=1, number_of_dimensions=3)]), 'sentence': ListWrapper([FeatureSignature(is_sparse=True, units=2033, number_of_dimensions=3)]), 'sequence': ListWrapper([FeatureSignature(is_sparse=True, units=2033, number_of_dimensions=3)]), 'sequence_lengths': ListWrapper([FeatureSignature(is_sparse=False, units=4, number_of_dimensions=1)])}),
-# 'text': DictWrapper({'mask': ListWrapper([FeatureSignature(is_sparse=False, units=1, number_of_dimensions=3)]), 'sentence': ListWrapper([FeatureSignature(is_sparse=True, units=2109, number_of_dimensions=3)]), 'sequence': ListWrapper([FeatureSignature(is_sparse=True, units=2109, number_of_dimensions=3)]), 'sequence_lengths': ListWrapper([FeatureSignature(is_sparse=False, units=4, number_of_dimensions=1)])})}
 
 attribute_name = TEXT
 units_small = 2
@@ -61,6 +53,16 @@ feature_sparse_seq_3d = tf.sparse.from_dense(
     tf.ones((batch_size, max_seq_length, units_small))
 )
 feature_sparse_sent_3d = tf.sparse.from_dense(tf.ones((batch_size, 1, units_small)))
+
+feature_signature_sparse_bigger = FeatureSignature(
+    is_sparse=True, units=units_bigger, number_of_dimensions=3
+)
+feature_sparse_seq_3d_bigger = tf.sparse.from_dense(
+    tf.ones((batch_size, max_seq_length, units_bigger))
+)
+feature_sparse_sent_3d_bigger = tf.sparse.from_dense(
+    tf.ones((batch_size, 1, units_bigger))
+)
 
 feature_signature_dense = FeatureSignature(
     is_sparse=False, units=units_small, number_of_dimensions=3
@@ -345,15 +347,31 @@ def test_raises_exception_when_missing_features(layer_class, layer_args):
         layer_class(**layer_args, attribute=attribute_name, config=model_config_basic)
 
 
+def test_concat_sparse_dense_raises_exception_when_inconsistent_sparse_features():
+    with pytest.raises(TFLayerConfigException):
+        ConcatenateSparseDenseFeatures(
+            attribute=attribute_name,
+            feature_type=SEQUENCE,
+            feature_type_signature=[
+                FeatureSignature(is_sparse=True, units=2, number_of_dimensions=3),
+                FeatureSignature(is_sparse=True, units=1, number_of_dimensions=3),
+            ],
+            config=model_config_basic,
+        )
+
+
 def test_concat_sparse_dense_correct_output_for_dense_input():
     layer = ConcatenateSparseDenseFeatures(
         attribute=attribute_name,
         feature_type=SEQUENCE,
         feature_type_signature=[
             FeatureSignature(is_sparse=False, units=2, number_of_dimensions=3),
-            FeatureSignature(is_sparse=False, units=1, number_of_dimensions=3)
+            FeatureSignature(is_sparse=False, units=1, number_of_dimensions=3),
         ],
-        config=model_config_basic,
+        config=dict(
+            model_config_basic,
+            **{SPARSE_INPUT_DROPOUT: True, DENSE_INPUT_DROPOUT: True},
+        ),  # also set all dropout to check that it has no effect on dense features
     )
     inputs_raw_1 = [
         [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
@@ -367,6 +385,148 @@ def test_concat_sparse_dense_correct_output_for_dense_input():
         [[1.0, 2.0, 10.0], [3.0, 4.0, 20.0], [5.0, 6.0, 30.0]],
         [[1.5, 2.5, 40.0], [3.5, 4.5, 50.0], [0.0, 0.0, 0.0]],
     ]
-    inputs = ([tf.convert_to_tensor(inputs_raw_1, dtype=tf.float32), tf.convert_to_tensor(inputs_raw_2, dtype=tf.float32)],)
+    inputs = (
+        [
+            tf.convert_to_tensor(inputs_raw_1, dtype=tf.float32),
+            tf.convert_to_tensor(inputs_raw_2, dtype=tf.float32),
+        ],
+    )
     outputs = layer(inputs)
     assert (outputs.numpy() == outputs_expected).all()
+
+
+def test_concat_sparse_dense_applies_dropout_to_sparse_input():
+    layer_dropout_for_sparse = ConcatenateSparseDenseFeatures(
+        attribute=attribute_name,
+        feature_type=SEQUENCE,
+        feature_type_signature=[feature_signature_sparse, feature_signature_sparse],
+        config=dict(model_config_basic, **{SPARSE_INPUT_DROPOUT: True, DROP_RATE: 1.0}),
+    )
+
+    inputs = ([feature_sparse_seq_3d, feature_sparse_seq_3d],)
+    outputs = layer_dropout_for_sparse(inputs, training=True)
+    expected_outputs = tf.zeros((batch_size, max_seq_length, units_sparse_to_dense * 2))
+
+    assert np.allclose(outputs.numpy(), expected_outputs.numpy())
+
+
+def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
+    layer_dropout_for_sparse_densified = ConcatenateSparseDenseFeatures(
+        attribute=attribute_name,
+        feature_type=SEQUENCE,
+        feature_type_signature=[feature_signature_sparse, feature_signature_sparse],
+        config=dict(
+            model_config_basic, **{DENSE_INPUT_DROPOUT: True, DROP_RATE: 0.99999999}
+        ),  # keras dropout doesn't accept velues >= 1.0
+    )
+
+    inputs = ([feature_sparse_seq_3d, feature_sparse_seq_3d],)
+    outputs = layer_dropout_for_sparse_densified(inputs, training=True)
+    expected_outputs = tf.zeros((batch_size, max_seq_length, units_sparse_to_dense * 2))
+
+    assert np.allclose(outputs.numpy(), expected_outputs.numpy())
+
+
+def test_feature_combining_correct_output_without_dim_unification():
+    layer = RasaFeatureCombiningLayer(
+        attribute=attribute_name,
+        config=model_config_basic,
+        attribute_signature={
+            SEQUENCE: [
+                FeatureSignature(is_sparse=False, units=2, number_of_dimensions=3),
+                FeatureSignature(is_sparse=False, units=1, number_of_dimensions=3),
+            ],
+            SENTENCE: [
+                FeatureSignature(is_sparse=False, units=3, number_of_dimensions=3),
+            ],
+        },
+    )
+    inputs_seq_1 = [
+        [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+        [[1.5, 2.5], [3.5, 4.5], [0.0, 0.0]],
+    ]
+    inputs_seq_2 = [
+        [[10.0], [20.0], [30.0]],
+        [[40.0], [50.0], [0.0]],
+    ]
+    sequence_feature_lengths = [3, 2]
+
+    inputs_sent = [[[-1.0, -2.0, -3.0]], [[-4.0, -5.0, -6.0]]]
+    inputs = (
+        [
+            tf.convert_to_tensor(inputs_seq_1, dtype=tf.float32),
+            tf.convert_to_tensor(inputs_seq_2, dtype=tf.float32),
+        ],
+        [tf.convert_to_tensor(inputs_sent, dtype=tf.float32)],
+        tf.convert_to_tensor(sequence_feature_lengths, dtype=tf.float32),
+    )
+
+    outputs_expected = [
+        [[1.0, 2.0, 10.0], [3.0, 4.0, 20.0], [5.0, 6.0, 30.0], [-1.0, -2.0, -3.0]],
+        [[1.5, 2.5, 40.0], [3.5, 4.5, 50.0], [-4.0, -5.0, -6.0], [0.0, 0.0, 0.0]],
+    ]
+    mask_seq_sent_expected = [
+        [[1.0], [1.0], [1.0], [1.0]],
+        [[1.0], [1.0], [1.0], [0.0]],
+    ]
+
+    outputs, mask_seq_sent = layer(inputs)
+    assert (outputs.numpy() == outputs_expected).all()
+    assert (mask_seq_sent.numpy() == mask_seq_sent_expected).all()
+
+
+def test_sequence_layer_correct_output_without_dim_unification():
+    layer = RasaSequenceLayer(
+        attribute=attribute_name,
+        config=dict(
+            model_config_transformer_mlm, **{HIDDEN_LAYERS_SIZES: {attribute_name: []}}
+        ),
+        attribute_signature={
+            SEQUENCE: [
+                FeatureSignature(is_sparse=False, units=2, number_of_dimensions=3),
+                FeatureSignature(is_sparse=False, units=1, number_of_dimensions=3),
+            ],
+            SENTENCE: [
+                FeatureSignature(is_sparse=False, units=3, number_of_dimensions=3),
+            ],
+        },
+    )
+    inputs_seq_1 = [
+        [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+        [[1.5, 2.5], [3.5, 4.5], [0.0, 0.0]],
+    ]
+    token_ids_expected = [
+        [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [0.0, 0.0]],
+        [[1.5, 2.5], [3.5, 4.5], [0.0, 0.0], [0.0, 0.0]],
+    ]
+    inputs_seq_2 = [
+        [[10.0], [20.0], [30.0]],
+        [[40.0], [50.0], [0.0]],
+    ]
+    sequence_feature_lengths = [3, 2]
+
+    inputs_sent = [[[-1.0, -2.0, -3.0]], [[-4.0, -5.0, -6.0]]]
+    inputs = (
+        [
+            tf.convert_to_tensor(inputs_seq_1, dtype=tf.float32),
+            tf.convert_to_tensor(inputs_seq_2, dtype=tf.float32),
+        ],
+        [tf.convert_to_tensor(inputs_sent, dtype=tf.float32)],
+        tf.convert_to_tensor(sequence_feature_lengths, dtype=tf.float32),
+    )
+
+    seq_sent_features_expected = [
+        [[1.0, 2.0, 10.0], [3.0, 4.0, 20.0], [5.0, 6.0, 30.0], [-1.0, -2.0, -3.0]],
+        [[1.5, 2.5, 40.0], [3.5, 4.5, 50.0], [-4.0, -5.0, -6.0], [0.0, 0.0, 0.0]],
+    ]
+    mask_seq_sent_expected = [
+        [[1.0], [1.0], [1.0], [1.0]],
+        [[1.0], [1.0], [1.0], [0.0]],
+    ]
+
+    _, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _ = layer(
+        inputs, training=True
+    )
+    assert (seq_sent_features.numpy() == seq_sent_features_expected).all()
+    assert (mask_seq_sent.numpy() == mask_seq_sent_expected).all()
+    assert (token_ids.numpy() == token_ids_expected).all()
