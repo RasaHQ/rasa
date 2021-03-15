@@ -24,6 +24,7 @@ from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.validation import YamlValidationException
 
 
 @pytest.fixture()
@@ -350,3 +351,12 @@ async def test_nlu_data_domain_sync_responses(project: Text):
 
     # Responses were sync between "test_responses.yml" and the "domain.yml"
     assert "utter_rasa" in domain.responses.keys()
+
+
+def test_importer_with_invalid_model_config(tmp_path: Path):
+    invalid = {"version": "2.0", "policies": ["name"]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(invalid, config_file)
+
+    with pytest.raises(YamlValidationException):
+        TrainingDataImporter.load_from_config(str(config_file))
