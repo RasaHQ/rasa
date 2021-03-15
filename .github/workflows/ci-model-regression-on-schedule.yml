@@ -383,6 +383,7 @@ jobs:
           fi
 
       - name: Pick an assignee randomly
+        if: steps.performance.outputs.is_dropped == 'true'
         id: pick_assignee
         run: |
           # ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
@@ -392,6 +393,7 @@ jobs:
           echo "::set-output name=assignee::$ASSIGNEE"
 
       - name: Open GitHub Issue 📬
+        if: steps.performance.outputs.is_dropped == 'true'
         uses: rishabhgupta/git-action-issue@v2
         id: open_issue
         with:
@@ -401,6 +403,7 @@ jobs:
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
 
       - name: Add Label to the Issue
+        if: steps.performance.outputs.is_dropped == 'true'
         id: add_label
         env:
           LABEL: "type:bug :bug:"
@@ -418,6 +421,7 @@ jobs:
             -d '{"labels":["${{ env.LABEL }}"]}'
 
       - name: Assign Issue to Project Column
+        if: steps.performance.outputs.is_dropped == 'true'
         run: |
           ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
 
