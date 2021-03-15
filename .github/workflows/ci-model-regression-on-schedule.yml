@@ -174,7 +174,6 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
-          exit 1
           poetry run rasa --version
 
           # Run GPUs in a deterministic mode
@@ -230,8 +229,7 @@ jobs:
         if: failure()
         id: pick_assignee
         run: |
-          # ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
-          ASSIGNEES_LIST=("hotthoughts")
+          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
           # Randomly select an item from assignees list
           ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
           echo "::set-output name=assignee::$ASSIGNEE"
@@ -308,14 +306,14 @@ jobs:
                 {
                   title: 'GitHub Action',
                   value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-                  short: true
+                  short: false
                 }],
                 actions: [{
                 }]
               }]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }} # TODO change to real webhook
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   analyse_performance:
     name: Analyse Performance
@@ -367,7 +365,8 @@ jobs:
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=report_description::${OUTPUT}"
 
-          # Remove all (-0.00) from OUTPUT. We don't want to count (-0.00) as a performance drop
+          # Remove all (-0.00) from OUTPUT.
+          # We don't want to count (-0.00) as a performance drop
           OUTPUT=${OUTPUT//(-0.00)/}
 
           # Any (negatives) found means there is a performance drops.
@@ -383,8 +382,7 @@ jobs:
         if: steps.performance.outputs.is_dropped == 'true'
         id: pick_assignee
         run: |
-          # ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
-          ASSIGNEES_LIST=("hotthoughts")
+          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
           # Randomly select an item from assignees list
           ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
           echo "::set-output name=assignee::$ASSIGNEE"
@@ -458,7 +456,7 @@ jobs:
               }]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }} # TODO change to real webhook
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
