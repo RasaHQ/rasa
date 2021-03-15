@@ -15,6 +15,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.model
 import rasa.core
+import rasa.core.train
 import rasa.nlu
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.shared.importers.autoconfig as autoconfig
@@ -239,8 +240,7 @@ def test_trained_interpreter_passed_to_core_training(
     )
 
     # Mock the actual Core training
-    _train_core = AsyncMock()
-    monkeypatch.setattr(rasa.core, "train", _train_core)
+    _train_core = mock_core_training(monkeypatch)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -270,8 +270,7 @@ def test_interpreter_of_old_model_passed_to_core_training(
     )
 
     # Mock the actual Core training
-    _train_core = AsyncMock()
-    monkeypatch.setattr(rasa.core, "train", _train_core)
+    _train_core = mock_core_training(monkeypatch)
 
     train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -312,7 +311,7 @@ def test_train_core_autoconfig(
 
     # skip actual core training
     monkeypatch.setattr(
-        sys.modules["rasa.train"], "_train_core_with_validated_data", AsyncMock()
+        rasa.model_training, "_train_core_with_validated_data", AsyncMock()
     )
 
     # do training
@@ -341,7 +340,7 @@ def test_train_nlu_autoconfig(
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     monkeypatch.setattr(
-        sys.modules["rasa.train"], "_train_nlu_with_validated_data", AsyncMock()
+        rasa.model_training, "_train_nlu_with_validated_data", AsyncMock()
     )
 
     # do training
@@ -367,7 +366,7 @@ def mock_async(monkeypatch: MonkeyPatch, target: Any, name: Text) -> Mock:
 
 
 def mock_core_training(monkeypatch: MonkeyPatch) -> Mock:
-    return mock_async(monkeypatch, rasa.core, rasa.core.train.__name__)
+    return mock_async(monkeypatch, rasa.core.train, rasa.core.train.train.__name__)
 
 
 def mock_nlu_training(monkeypatch: MonkeyPatch) -> Mock:
@@ -623,8 +622,7 @@ def test_model_finetuning(
     mocked_nlu_training = Mock(wraps=rasa.nlu.train)
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
 
-    mocked_core_training = Mock(wraps=rasa.core.train)
-    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+    mocked_core_training = mock_core_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -659,9 +657,7 @@ def test_model_finetuning_core(
     trained_moodbot_path: Text,
     use_latest_model: bool,
 ):
-    mocked_core_training = AsyncMock()
-    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
-
+    mocked_core_training = mock_core_training(monkeypatch)
     mock_agent_load = Mock(wraps=Agent.load)
     monkeypatch.setattr(Agent, "load", mock_agent_load)
 
@@ -710,9 +706,7 @@ def test_model_finetuning_core(
 def test_model_finetuning_core_with_default_epochs(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
-    mocked_core_training = AsyncMock()
-    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
-
+    mocked_core_training = mock_core_training(monkeypatch)
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -743,8 +737,7 @@ def test_model_finetuning_core_with_default_epochs(
 def test_model_finetuning_core_new_domain_label(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
-    mocked_core_training = AsyncMock()
-    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
+    mocked_core_training = mock_core_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -770,10 +763,8 @@ def test_model_finetuning_core_new_domain_label(
 def test_model_finetuning_new_domain_label_stops_all_training(
     tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text,
 ):
-    mocked_core_training = AsyncMock()
-    mocked_nlu_training = AsyncMock()
-    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
-    monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
+    mocked_core_training = mock_core_training(monkeypatch)
+    mocked_nlu_training = mock_nlu_training(monkeypatch)
 
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -1015,9 +1006,7 @@ def test_model_finetuning_with_invalid_model(
     mocked_nlu_training = AsyncMock(return_value="")
     monkeypatch.setattr(rasa.nlu, rasa.nlu.train.__name__, mocked_nlu_training)
 
-    mocked_core_training = AsyncMock()
-    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
-
+    mocked_core_training = mock_core_training(monkeypatch)
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -1048,9 +1037,7 @@ def test_model_finetuning_with_invalid_model_core(
     model_to_fine_tune: Text,
     capsys: CaptureFixture,
 ):
-    mocked_core_training = AsyncMock()
-    monkeypatch.setattr(rasa.core, rasa.core.train.__name__, mocked_core_training)
-
+    mocked_core_training = mock_core_training(monkeypatch)
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 

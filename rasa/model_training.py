@@ -545,7 +545,7 @@ async def _train_core_with_validated_data(
             model_type="core",
             is_finetuning=model_to_finetune is not None,
         ):
-            await rasa.core.train(
+            await rasa.core.train.train(
                 domain_file=domain,
                 training_resource=file_importer,
                 output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
