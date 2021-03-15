@@ -2,8 +2,11 @@ import asyncio
 import datetime
 import json
 import os
+import sys
+
 from pathlib import Path
 from typing import Text, Iterator, List, Dict, Any, Set, Optional
+from tests.conftest import AsyncMock
 
 import pytest
 from sanic.request import Request
@@ -24,6 +27,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer
+from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import (
     is_token_within_entity,
@@ -946,7 +950,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-async def test_nlu_comparison(tmp_path: Path, nlu_as_json_path: Text):
+async def test_nlu_comparison(tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text):
     config = {
         "language": "en",
         "pipeline": [
@@ -958,6 +962,25 @@ async def test_nlu_comparison(tmp_path: Path, nlu_as_json_path: Text):
     # the configs need to be at a different path, otherwise the results are
     # combined on the same dictionary key and cannot be plotted properly
     configs = [write_file_config(config).name, write_file_config(config).name]
+
+    # mock training
+    monkeypatch.setattr(Interpreter, "load", Mock(spec=RasaNLUInterpreter))
+    monkeypatch.setattr(sys.modules["rasa.nlu"], "train", AsyncMock())
+    monkeypatch.setattr(
+        sys.modules["rasa.nlu.test"],
+        "remove_pretrained_extractors",
+        Mock(return_value=None),
+    )
+    monkeypatch.setattr(
+        sys.modules["rasa.nlu.test"],
+        "get_eval_data",
+        Mock(return_value=(1, None, (None,),)),
+    )
+    monkeypatch.setattr(
+        sys.modules["rasa.nlu.test"],
+        "evaluate_intents",
+        Mock(return_value={"f1_score": 1}),
+    )
 
     output = str(tmp_path)
     await compare_nlu_models(

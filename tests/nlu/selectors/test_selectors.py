@@ -286,7 +286,9 @@ async def _train_persist_load_with_different_settings(
 
 @pytest.mark.skip_on_windows
 @pytest.mark.parametrize("should_finetune", [True, False])
-async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path, should_finetune: bool):
+async def test_train_persist_load(
+    component_builder: ComponentBuilder, tmpdir: Path, should_finetune: bool
+):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
         {"name": "CountVectorsFeaturizer"},
