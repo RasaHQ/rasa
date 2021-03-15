@@ -99,7 +99,7 @@ class MockedMongoTrackerStore(MongoTrackerStore):
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
-@pytest.yield_fixture(scope="session")
+@pytest.fixture(scope="session")
 def event_loop(request: Request) -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -152,7 +152,7 @@ async def default_processor(default_agent: Agent) -> MessageProcessor:
         default_agent.domain,
         tracker_store,
         lock_store,
-        TemplatedNaturalLanguageGenerator(default_agent.domain.templates),
+        TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
     )
 
 
@@ -199,7 +199,7 @@ def tracker_with_six_scheduled_reminders(
 
 @pytest.fixture
 def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
-    return TemplatedNaturalLanguageGenerator(default_domain.templates)
+    return TemplatedNaturalLanguageGenerator(default_domain.responses)
 
 
 @pytest.fixture

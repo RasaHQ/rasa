@@ -93,7 +93,6 @@ def test_builder_load_unknown(component_builder: ComponentBuilder):
     assert "Cannot find class" in str(excinfo.value)
 
 
-@pytest.mark.trains_model
 async def test_example_component(component_builder: ComponentBuilder, tmp_path: Path):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
@@ -191,7 +190,6 @@ def test_can_handle_language_guard_clause(
     assert expected_exec_msg in str(excinfo.value)
 
 
-@pytest.mark.trains_model
 async def test_validate_requirements_raises_exception_on_component_without_name(
     tmp_path: Path,
 ):
@@ -206,7 +204,6 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
         )
 
 
-@pytest.mark.trains_model
 async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: Path,):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `confidence_threshold ` property

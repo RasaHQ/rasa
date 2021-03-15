@@ -715,7 +715,7 @@ async def track_model_training(
             "num_actions": len(domain.action_names_or_texts),
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
-            "num_templates": len(domain.templates),
+            "num_templates": len(domain.responses),
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),

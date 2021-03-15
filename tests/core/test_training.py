@@ -56,7 +56,6 @@ async def test_story_visualization_with_merging(default_domain: Domain):
     assert 20 < len(generated_graph.edges()) < 33
 
 
-@pytest.mark.trains_model
 async def test_training_script(tmp_path: Path):
     await train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -69,7 +68,6 @@ async def test_training_script(tmp_path: Path):
     assert True
 
 
-@pytest.mark.trains_model
 async def test_training_script_without_max_history_set(tmp_path: Path):
     tmpdir = str(tmp_path)
     await train(
@@ -92,7 +90,6 @@ async def test_training_script_without_max_history_set(tmp_path: Path):
                 assert policy.featurizer.max_history is None
 
 
-@pytest.mark.trains_model
 async def test_training_script_with_max_history_set(tmp_path: Path):
     tmpdir = str(tmp_path)
 
@@ -113,7 +110,6 @@ async def test_training_script_with_max_history_set(tmp_path: Path):
             assert policy.featurizer.max_history == expected_history
 
 
-@pytest.mark.trains_model
 async def test_training_script_with_restart_stories(tmp_path: Path):
     await train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -132,7 +128,6 @@ def configs_for_random_seed_test() -> List[Text]:
 
 
 @pytest.mark.parametrize("config_file", configs_for_random_seed_test())
-@pytest.mark.trains_model
 async def test_random_seed(tmp_path: Path, config_file: Text):
     # set random seed in config file to
     # generate a reproducible training result
@@ -163,7 +158,6 @@ async def test_random_seed(tmp_path: Path, config_file: Text):
     assert probs_1["confidence"] == probs_2["confidence"]
 
 
-@pytest.mark.trains_model
 async def test_trained_interpreter_passed_to_policies(
     tmp_path: Path, monkeypatch: MonkeyPatch
 ):

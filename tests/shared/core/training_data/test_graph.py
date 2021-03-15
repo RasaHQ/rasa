@@ -1,4 +1,6 @@
 from rasa.shared.core.training_data.structures import StoryGraph
+import rasa.shared.core.training_data.loading
+from rasa.shared.core.domain import Domain
 
 
 def check_graph_is_sorted(g, sorted_nodes, removed_edges):
@@ -45,3 +47,43 @@ def test_node_ordering_with_cycle():
 
 def test_is_empty():
     assert StoryGraph([]).is_empty()
+
+
+async def test_consistent_fingerprints():
+    stories_path = "data/test_yaml_stories/stories.yml"
+    domain_path = "data/test_domains/default_with_slots.yml"
+    domain = Domain.load(domain_path)
+    story_steps = await rasa.shared.core.training_data.loading.load_data_from_resource(
+        stories_path, domain
+    )
+    story_graph = StoryGraph(story_steps)
+
+    # read again
+    story_steps_2 = await rasa.shared.core.training_data.loading.load_data_from_resource(
+        stories_path, domain
+    )
+    story_graph_2 = StoryGraph(story_steps_2)
+
+    fingerprint = story_graph.fingerprint()
+    fingerprint_2 = story_graph_2.fingerprint()
+
+    assert fingerprint == fingerprint_2
+
+
+async def test_unique_checkpoint_names():
+    stories_path = "data/test_yaml_stories/story_with_two_equal_or_statements.yml"
+    domain_path = "data/test_domains/default_with_slots.yml"
+    domain = Domain.load(domain_path)
+    story_steps = await rasa.shared.core.training_data.loading.load_data_from_resource(
+        stories_path, domain
+    )
+    start_checkpoint_names = {
+        chk.name for s in story_steps for chk in s.start_checkpoints
+    }
+
+    # first story:
+    # START_CHECKPOINT, GENR_OR_XXXXX for first OR, GENR_OR_YYYYY for second OR
+
+    # additional in second story:
+    # GENR_OR_ZZZZZ as entities are different from first OR in first story
+    assert len(start_checkpoint_names) == 4

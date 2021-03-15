@@ -60,6 +60,36 @@ class TrainingData:
 
         self._fill_response_phrases()
 
+    @staticmethod
+    def _load_lookup_table(lookup_table: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Loads the actual lookup table from file if there is a file specified.
+
+        Checks if the specified lookup table contains a filename in
+        `elements` and replaces it with actual elements from the file.
+        Returns the unchanged lookup table otherwise.
+        It works with Markdown and JSON training data.
+
+        Params:
+            lookup_table: A lookup table.
+
+        Returns:
+            Updated lookup table where filenames are replaced with the contents of
+            these files.
+        """
+        elements = lookup_table["elements"]
+        potential_file = elements if isinstance(elements, str) else elements[0]
+
+        if Path(potential_file).is_file():
+            try:
+                lookup_table["elements"] = rasa.shared.utils.io.read_file(
+                    potential_file
+                )
+                return lookup_table
+            except (FileNotFoundError, UnicodeDecodeError):
+                return lookup_table
+
+        return lookup_table
+
     def fingerprint(self) -> Text:
         """Fingerprint the training data.
 
@@ -72,10 +102,11 @@ class TrainingData:
             ),
             "entity_synonyms": self.entity_synonyms,
             "regex_features": self.regex_features,
-            "lookup_tables": self.lookup_tables,
+            "lookup_tables": [
+                self._load_lookup_table(table) for table in self.lookup_tables
+            ],
             "responses": self.responses,
         }
-
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
     def label_fingerprint(self) -> Text:
@@ -263,7 +294,7 @@ class TrainingData:
         return entity_types - {NO_ENTITY_TAG}
 
     def entity_roles_groups_used(self) -> bool:
-        """Returns if any entity roles or groups are used anywhere in the training data."""
+        """Checks if any entity roles or groups are used in the training data."""
         entity_groups_used = (
             self.entity_groups is not None and len(self.entity_groups) > 0
         )
@@ -297,10 +328,10 @@ class TrainingData:
         )
 
     def _fill_response_phrases(self) -> None:
-        """Set response phrase for all examples by looking up NLG stories"""
+        """Set response phrase for all examples by looking up NLG stories."""
         for example in self.training_examples:
-            # if intent_response_key is None, that means the corresponding intent is not a
-            # retrieval intent and hence no response text needs to be fetched.
+            # if intent_response_key is None, that means the corresponding intent is
+            # not a retrieval intent and hence no response text needs to be fetched.
             # If intent_response_key is set, fetch the corresponding response text
             if example.get(INTENT_RESPONSE_KEY) is None:
                 continue

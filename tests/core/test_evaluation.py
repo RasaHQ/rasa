@@ -22,7 +22,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
-from rasa.nlu.test import run_evaluation
+from rasa.nlu.test import evaluate_entities, run_evaluation
 from rasa.core.agent import Agent
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
@@ -33,7 +33,6 @@ from tests.core.conftest import (
 )
 
 
-@pytest.mark.trains_model
 async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
@@ -56,14 +55,13 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     assert os.path.isfile(confusion_matrix_path)
 
 
-@pytest.mark.trains_model
 async def test_end_to_end_evaluation_script(default_agent: Agent):
     generator = await _create_data_generator(
         END_TO_END_STORY_FILE, default_agent, use_e2e=True
     )
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -95,14 +93,13 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
     assert num_stories == 3
 
 
-@pytest.mark.trains_model
 async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent):
     generator = await _create_data_generator(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True
     )
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -112,7 +109,6 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
 
 
 @pytest.mark.timeout(300)
-@pytest.mark.trains_model
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
         "data/test_evaluations/form_end_to_end_stories.yml",
@@ -121,14 +117,13 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         test_stories, form_bot_agent, use_e2e=True
     )
 
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
 
 
-@pytest.mark.trains_model
 async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
@@ -148,7 +143,6 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     )
 
 
-@pytest.mark.trains_model
 async def test_end_to_evaluation_trips_circuit_breaker():
     agent = Agent(
         domain="data/test_domains/default.yml",
@@ -162,7 +156,7 @@ async def test_end_to_evaluation_trips_circuit_breaker():
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         test_stories, agent, use_e2e=True
     )
 
@@ -262,14 +256,13 @@ def test_event_has_proper_implementation(
         ("data/test_yaml_stories/test_base_retrieval_intent_story.yml"),
     ],
 )
-@pytest.mark.trains_model
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = await _create_data_generator(
         test_file, response_selector_agent, use_e2e=True,
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = await _collect_story_predictions(
         test_stories, response_selector_agent, use_e2e=True
     )
     # check that test story can either specify base intent or full retrieval intent
@@ -283,7 +276,6 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
         ("data/test_yaml_stories/test_base_retrieval_intent_wrong_prediction.yml"),
     ],
 )
-@pytest.mark.trains_model
 async def test_retrieval_intent_wrong_prediction(
     tmpdir: Path, response_selector_agent: Agent, test_file: Text
 ):
@@ -303,7 +295,38 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
-@pytest.mark.trains_model
+@pytest.mark.timeout(240)
+async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
+    test_file = "data/test_e2ebot/tests/test_stories.yml"
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=e2e_bot_agent,
+        out_directory=str(tmp_path),
+        max_stories=None,
+        e2e=True,
+    )
+
+    report = rasa.shared.utils.io.read_json_file(tmp_path / "TEDPolicy_report.json")
+    assert report["name"] == {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1,
+        "confused_with": {},
+    }
+    assert report["mood"] == {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1-score": 0.6666666666666666,
+        "support": 2,
+        "confused_with": {},
+    }
+    errors = rasa.shared.utils.io.read_json_file(tmp_path / "TEDPolicy_errors.json")
+    assert len(errors) == 1
+    assert errors[0]["text"] == "today I was very cranky"
+
+
 @pytest.mark.parametrize(
     "stories_yaml,expected_results",
     [
@@ -398,12 +421,9 @@ async def test_story_report(
     assert actual_results == expected_results
 
 
-@pytest.mark.trains_model
 async def test_story_report_with_empty_stories(
     tmpdir: Path, core_agent: Agent,
 ) -> None:
-    """Check that story_report.json contains empty dictionary when stories.yml is empty."""
-
     stories_path = tmpdir / "stories.yml"
     stories_path.write_text("", "utf8")
     out_directory = tmpdir / "results"

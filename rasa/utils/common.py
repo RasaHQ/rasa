@@ -98,10 +98,9 @@ def update_socketio_log_level() -> None:
 
 
 def update_tensorflow_log_level() -> None:
-    """Set the log level of Tensorflow to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
-
-    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support). This variable needs to be set before the
+    """Sets Tensorflow log level based on env variable 'LOG_LEVEL_LIBRARIES'."""
+    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support).
+    # This variable needs to be set before the
     # first import since some warnings are raised on the first import.
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
