@@ -475,7 +475,10 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         """
         trackers_as_states = [
             self._create_states(
-                tracker, domain, ignore_rule_only_turns, rule_only_data,
+                tracker,
+                domain,
+                ignore_rule_only_turns=ignore_rule_only_turns,
+                rule_only_data=rule_only_data,
             )
             for tracker in trackers
         ]
@@ -645,7 +648,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """
         trackers_as_states = [
             self._create_states(
-                tracker, domain, ignore_rule_only_turns, rule_only_data,
+                tracker,
+                domain,
+                ignore_rule_only_turns=ignore_rule_only_turns,
+                rule_only_data=rule_only_data,
             )
             for tracker in trackers
         ]
