@@ -75,7 +75,7 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text):
 
 
 def run(args: argparse.Namespace):
-    import rasa.run
+    import rasa
 
     args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
