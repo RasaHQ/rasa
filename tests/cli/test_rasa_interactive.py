@@ -1,12 +1,14 @@
 import argparse
-import pytest
 from typing import Callable, Text
 from unittest.mock import Mock, ANY
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
 import rasa
+from rasa.core.train import do_interactive_learning
+from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
 from rasa.train import TrainingResult
 from tests.conftest import DEFAULT_NLU_DATA
@@ -68,7 +70,7 @@ def test_pass_arguments_to_rasa_train(
     monkeypatch.setattr(rasa, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
-    train.train(args)
+    train.run_training(args)
 
     # Assert `train` was actually called
     mock.method.assert_called_once()
@@ -94,7 +96,7 @@ def test_train_called_when_no_model_passed(
 
     # Mock actual training and interactive learning methods
     mock = Mock()
-    monkeypatch.setattr(train, "train", mock.train_model)
+    monkeypatch.setattr(train, "run_training", mock.train_model)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
@@ -126,13 +128,13 @@ def test_train_core_called_when_no_model_passed_and_core(
 
     # Mock actual training and interactive learning methods
     mock = Mock()
-    monkeypatch.setattr(train, "train_core", mock.train_core)
+    monkeypatch.setattr(train, "run_core_training", mock.run_core_training)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
 
     interactive.interactive(args)
-    mock.train_core.assert_called_once()
+    mock.run_core_training.assert_called_once()
 
 
 def test_no_interactive_without_core_data(
@@ -148,7 +150,7 @@ def test_no_interactive_without_core_data(
     interactive._set_not_required_args(args)
 
     mock = Mock()
-    monkeypatch.setattr(train, "train", mock.train_model)
+    monkeypatch.setattr(train, "run_training", mock.train_model)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
@@ -161,9 +163,6 @@ def test_no_interactive_without_core_data(
 
 
 def test_pass_conversation_id_to_interactive_learning(monkeypatch: MonkeyPatch):
-    from rasa.core.train import do_interactive_learning
-    from rasa.core.training import interactive as interactive_learning
-
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
     interactive.add_subparser(sub_parser, [])

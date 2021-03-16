@@ -147,8 +147,9 @@ toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
 pydoc-markdown = "^3.5.0"
 pytest-timeout = "^1.4.2"
-mypy = "^0.790"
+mypy = "^0.812"
 bandit = "^1.6.3"
+typing-extensions = "^3.7.4"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
