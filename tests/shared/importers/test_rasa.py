@@ -26,7 +26,7 @@ async def test_rasa_file_importer(project: Text):
     assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT)]
     assert domain.entities == []
     assert len(domain.action_names_or_texts) == 17
-    assert len(domain.templates) == 6
+    assert len(domain.responses) == 6
 
     stories = await importer.get_stories()
     assert len(stories.story_steps) == 5

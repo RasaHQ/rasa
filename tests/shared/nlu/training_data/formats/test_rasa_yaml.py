@@ -2,6 +2,8 @@ import textwrap
 from typing import Text
 
 import pytest
+import tempfile
+import pathlib
 
 from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
@@ -519,3 +521,19 @@ def test_responses_text_multiline_is_preserved():
 
     # dumping again should also not change the format
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
+
+
+def test_intent_examples_multiline_consistency(tmp_path: pathlib.Path):
+    """Test that multiline examples are written back as multiline examples."""
+
+    training_data_file = (
+        pathlib.Path("data") / "test_multiline_intent_examples_yaml" / "nlu.yml"
+    )
+    training_data_from_disc = RasaYAMLReader().read(filename=training_data_file)
+
+    tmp_file = tmp_path / "nlu.yml"
+    RasaYAMLWriter().dump(tmp_file, training_data_from_disc)
+    rewritten_file_content = tmp_file.read_text(encoding="utf-8")
+    original_file_content = training_data_file.read_text(encoding="utf-8")
+
+    assert original_file_content == rewritten_file_content

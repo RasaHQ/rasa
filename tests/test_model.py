@@ -55,7 +55,6 @@ from rasa.train import train_core, train_core_async
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 
-@pytest.mark.trains_model
 def test_get_latest_model(trained_rasa_model: str):
     path_of_latest = os.path.join(os.path.dirname(trained_rasa_model), "latest.tar.gz")
     shutil.copy(trained_rasa_model, path_of_latest)
@@ -65,7 +64,6 @@ def test_get_latest_model(trained_rasa_model: str):
     assert get_latest_model(model_directory) == path_of_latest
 
 
-@pytest.mark.trains_model
 def test_get_model_from_directory(trained_rasa_model: str):
     unpacked = get_model(trained_rasa_model)
 
@@ -73,7 +71,6 @@ def test_get_model_from_directory(trained_rasa_model: str):
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
 
-@pytest.mark.trains_model
 def test_get_model_context_manager(trained_rasa_model: str):
     with get_model(trained_rasa_model) as unpacked:
         assert os.path.exists(unpacked)
@@ -87,7 +84,6 @@ def test_get_model_exception(model_path: Optional[Text]):
         get_model(model_path)
 
 
-@pytest.mark.trains_model
 def test_get_model_from_directory_with_subdirectories(
     trained_rasa_model: Text, tmp_path: Path
 ):
@@ -101,7 +97,6 @@ def test_get_model_from_directory_with_subdirectories(
         get_model_subdirectories(str(tmp_path))  # temp path should be empty
 
 
-@pytest.mark.trains_model
 def test_get_model_from_directory_nlu_only(trained_rasa_model: Text):
     unpacked = get_model(trained_rasa_model)
     shutil.rmtree(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
@@ -392,7 +387,6 @@ async def test_fingerprinting_additional_action(project: Text):
 
 
 @pytest.mark.parametrize("use_fingerprint", [True, False])
-@pytest.mark.trains_model
 async def test_rasa_packaging(
     trained_rasa_model: Text, project: Text, use_fingerprint: bool, tmp_path: Path
 ):
@@ -473,7 +467,6 @@ async def test_rasa_packaging(
         },
     ],
 )
-@pytest.mark.trains_model
 def test_should_retrain(
     trained_rasa_model: Text, fingerprint: Fingerprint, tmp_path: Path
 ):
@@ -486,7 +479,6 @@ def test_should_retrain(
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
-@pytest.mark.trains_model
 async def test_should_not_retrain_core(default_domain_path: Text, tmp_path: Path):
     # Don't use `default_stories_file` as checkpoints currently break fingerprinting
     story_file = tmp_path / "simple_story.yml"
@@ -568,7 +560,6 @@ def test_fingerprint_comparison_result(
     assert comparison_result.should_retrain_nlu() == retrain_nlu
 
 
-@pytest.mark.trains_model
 async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     _ = model.unpack_model(trained_rasa_model, tmpdir)
 

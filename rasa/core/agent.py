@@ -21,6 +21,7 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DOCS_URL_MIGRATION_GUIDE,
 )
 from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -389,8 +390,15 @@ class Agent:
 
         # update domain on all instances
         self.tracker_store.domain = domain
+        if hasattr(self.nlg, "responses"):
+            self.nlg.responses = domain.responses if domain else {}
+
         if hasattr(self.nlg, "templates"):
-            self.nlg.templates = domain.templates if domain else {}
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "Please use the `responses` attribute instead of the `templates` attribute to manage responses.",
+                docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+            )
+            self.nlg.templates = domain.responses if domain else {}
 
         self.model_directory = model_directory
 
@@ -835,7 +843,7 @@ class Agent:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
-            domain.check_missing_templates()
+            domain.check_missing_responses()
             return domain
         elif isinstance(domain, Domain):
             return domain

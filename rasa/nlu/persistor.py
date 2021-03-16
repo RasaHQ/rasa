@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 def get_persistor(name: Text) -> Optional["Persistor"]:
     """Returns an instance of the requested persistor.
 
-    Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote storages."""
-
+    Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote
+    storages.
+    """
     if name == "aws":
         return AWSPersistor(
             os.environ.get("BUCKET_NAME"), os.environ.get("AWS_ENDPOINT_URL")

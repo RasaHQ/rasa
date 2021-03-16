@@ -12,7 +12,6 @@ class Object:
     pass
 
 
-@pytest.mark.trains_model
 async def test_list_method_method_in_AWS_persistor(  # noinspection PyPep8Naming
     component_builder, tmp_path
 ):

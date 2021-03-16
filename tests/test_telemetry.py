@@ -35,7 +35,6 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
-@pytest.mark.trains_model
 async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events

@@ -193,7 +193,7 @@ class TestSklearnPolicy(PolicyTestCollection):
     ) -> SklearnPolicy:
         return SklearnPolicy(featurizer, priority, **kwargs)
 
-    @pytest.yield_fixture
+    @pytest.fixture()
     def mock_search(self):
         with patch("rasa.core.policies.sklearn_policy.GridSearchCV") as gs:
             gs.best_estimator_ = "mockmodel"

@@ -182,13 +182,30 @@ else
 	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
 endif
 
-test-non-training: clean
-	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	RAISE_ON_TRAIN=True OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "not trains_model" --ignore $(INTEGRATION_TEST_FOLDER)
+test-cli: PYTEST_MARKER=category_cli
+test-cli: test-marker
 
-test-training: clean
-	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "trains_model" --ignore $(INTEGRATION_TEST_FOLDER)
+test-core-featurizers: PYTEST_MARKER=category_core_featurizers
+test-core-featurizers: test-marker
+
+test-policies: PYTEST_MARKER=category_policies
+test-policies: test-marker
+
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers
+test-nlu-featurizers: test-marker
+
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors
+test-nlu-predictors: test-marker
+
+test-full-model-training: PYTEST_MARKER=category_full_model_training
+test-full-model-training: test-marker
+
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
+test-other-unit-tests: test-marker
+
+test-marker: clean
+    # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
