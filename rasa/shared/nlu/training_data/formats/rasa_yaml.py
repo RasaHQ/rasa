@@ -334,7 +334,7 @@ class RasaYAMLReader(TrainingDataReader):
             yield example[1:].strip(STRIP_SYMBOLS)
 
     @staticmethod
-    def is_yaml_nlu_file(filename: Text) -> bool:
+    def is_yaml_nlu_file(filename: Union[Text, Path]) -> bool:
         """Checks if the specified file possibly contains NLU training data in YAML.
 
         Args:

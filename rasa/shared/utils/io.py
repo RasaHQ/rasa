@@ -415,7 +415,7 @@ YAML_LINE_MAX_WIDTH = 4096
 
 
 def is_key_in_yaml(file_path: Union[Text, Path], *keys: Text) -> bool:
-    """Checksif any of the keys is contained in the root object of the yaml file.
+    """Checks if any of the keys is contained in the root object of the yaml file.
 
     Arguments:
         file_path: path to the yaml file
