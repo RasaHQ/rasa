@@ -1,5 +1,5 @@
 import logging
-from typing import Text
+from typing import Text, Optional, Union
 from unittest.mock import Mock
 
 import pytest
@@ -156,7 +156,9 @@ def test_read_endpoint_config_not_found(filename: Text, endpoint_type: Text):
         ("true", False, True),
     ],
 )
-def test_bool_arg(value, default, expected_result):
+def test_bool_arg(
+    value: Optional[Union[bool, str]], default: bool, expected_result: bool
+):
     request = Mock()
     request.args = {}
     if value is not None:
@@ -168,7 +170,9 @@ def test_bool_arg(value, default, expected_result):
     "value, default, expected_result",
     [(None, 0.5, 0.5), (0.5, None, 0.5), ("0.5", 0, 0.5), ("a", 0.5, 0.5)],
 )
-def test_float_arg(value, default, expected_result):
+def test_float_arg(
+    value: Optional[Union[float, str]], default: float, expected_result: float
+):
     request = Mock()
     request.args = {}
     if value is not None:
@@ -180,7 +184,7 @@ def test_float_arg(value, default, expected_result):
     "value, default, expected_result",
     [(None, 0, 0), (1, 0, 1), ("1", 0, 1), ("a", 0, 0)],
 )
-def test_int_arg(value, default, expected_result):
+def test_int_arg(value: Optional[Union[int, str]], default: int, expected_result: int):
     request = Mock()
     request.args = {}
     if value is not None:
