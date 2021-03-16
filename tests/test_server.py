@@ -43,6 +43,7 @@ from rasa.core.channels import (
 from rasa.core.channels.slack import SlackBot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.model import unpack_model
+import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -62,7 +63,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.train import TrainingResult
+from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
@@ -216,7 +217,7 @@ def background_server(
         import sys
 
         monkeypatch.setattr(
-            sys.modules["rasa.train"], "train_async", mocked_training_function,
+            sys.modules["rasa.model_training"], "train_async", mocked_training_function,
         )
 
         from rasa import __main__
@@ -990,7 +991,9 @@ async def test_cross_validation_with_callback_success(
             )
         )
         monkeypatch.setattr(
-            rasa.nlu, rasa.nlu.cross_validate.__name__, mocked_cross_validation
+            rasa.nlu.test,
+            rasa.nlu.test.cross_validate.__name__,
+            mocked_cross_validation,
         )
 
         _, response = await rasa_app_nlu.post(
@@ -1036,7 +1039,9 @@ async def test_cross_validation_with_callback_error(
     payload = f"{nlu_data}\n{config}"
 
     monkeypatch.setattr(
-        rasa.nlu, rasa.nlu.cross_validate.__name__, Mock(side_effect=ValueError())
+        rasa.nlu.test,
+        rasa.nlu.test.cross_validate.__name__,
+        Mock(side_effect=ValueError()),
     )
 
     callback_url = "https://example.com/webhooks/actions"

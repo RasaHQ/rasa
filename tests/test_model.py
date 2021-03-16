@@ -51,7 +51,7 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
-from rasa.train import train_core_async
+from rasa.model_training import train_core_async
 
 
 def test_get_latest_model(trained_rasa_model: str):

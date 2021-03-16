@@ -162,7 +162,7 @@ class DucklingEntityExtractor(EntityExtractor):
     def _reference_time_from_message(message: Message) -> int:
         if message.time is not None:
             try:
-                return int(message.time) * 1000
+                return message.time * 1000
             except ValueError as e:
                 logging.warning(
                     "Could not parse timestamp {}. Instead "

@@ -3,7 +3,8 @@ from typing import List, Optional, Text, Type
 
 import pytest
 
-from rasa.nlu import registry, train
+from rasa.nlu import registry
+import rasa.nlu.train
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
@@ -88,7 +89,7 @@ def test_create_component_exception_messages(
 def test_builder_load_unknown(component_builder: ComponentBuilder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
-        component_builder.load_component(component_meta, "", Metadata({}, None))
+        component_builder.load_component(component_meta, "", Metadata({}))
     assert "Cannot find class" in str(excinfo.value)
 
 
@@ -99,7 +100,7 @@ async def test_example_component(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         data=nlu_as_json_path,
         path=str(tmp_path),
@@ -200,7 +201,7 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
     )
 
     with pytest.raises(InvalidConfigException):
-        await train(
+        await rasa.nlu.train.train(
             _config, data=nlu_as_json_path, path=str(tmp_path),
         )
 
@@ -214,7 +215,7 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(
     )
 
     with pytest.warns(UserWarning) as record:
-        await train(
+        await rasa.nlu.train.train(
             _config, data=nlu_as_json_path, path=str(tmp_path),
         )
 
