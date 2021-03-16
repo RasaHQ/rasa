@@ -11,6 +11,7 @@ class UnsupportedDialogueModelError(RasaCoreException):
     """
 
     def __init__(self, message: Text, model_version: Optional[Text] = None) -> None:
+        """Initialize message and model_version attributes."""
         self.message = message
         self.model_version = model_version
         super(UnsupportedDialogueModelError, self).__init__()
@@ -27,6 +28,7 @@ class AgentNotReady(RasaCoreException):
     will be thrown."""
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
         super(AgentNotReady, self).__init__()
 
