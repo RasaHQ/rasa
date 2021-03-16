@@ -1,3 +1,5 @@
+from typing import Text
+
 import pytest
 import copy
 
@@ -9,12 +11,11 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.rasa import RasaReader
 import rasa.shared.nlu.training_data.loading
 from rasa.shared.nlu.training_data.message import Message
-from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 @pytest.fixture(scope="module")
-def training_data():
-    return rasa.shared.nlu.training_data.loading.load_data(DEFAULT_DATA_PATH)
+def training_data(nlu_as_json_path: Text):
+    return rasa.shared.nlu.training_data.loading.load_data(nlu_as_json_path)
 
 
 class ClassifierTestCollection:

@@ -26,7 +26,6 @@ from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
@@ -136,7 +135,7 @@ def test_agent_wrong_use_of_load():
 
 
 async def test_agent_with_model_server_in_thread(
-    model_server: TestClient, default_domain: Domain, unpacked_trained_rasa_model: Text
+    model_server: TestClient, domain: Domain, unpacked_trained_rasa_model: Text
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}
@@ -150,7 +149,7 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
-    assert agent.domain.as_dict() == default_domain.as_dict()
+    assert agent.domain.as_dict() == domain.as_dict()
 
     expected_policies = PolicyEnsemble.load_metadata(
         str(Path(unpacked_trained_rasa_model, "core"))
@@ -373,7 +372,7 @@ async def test_load_agent_on_not_existing_path():
     "model_path",
     [
         "non-existing-path",
-        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        "data/test_domains/default_with_slots.yml",
         "not-existing-model.tar.gz",
         None,
     ],
