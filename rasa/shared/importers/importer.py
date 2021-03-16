@@ -48,10 +48,10 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        # TODO: deprecate `use_e2e`?
+        # TODO: Drop `use_e2e` in Rasa Open Source when removing Markdown support
         raise NotImplementedError()
 
-    async def get_conversation_tests(self, use_e2e: bool = False,) -> StoryGraph:
+    async def get_conversation_tests(self, use_e2e: bool = False) -> StoryGraph:
         """Retrieves the stories that should be used for testing.
 
         Args:
@@ -60,6 +60,7 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
+        # TODO: Drop `use_e2e` in Rasa Open Source when removing Markdown support
         raise NotImplementedError()
 
     async def get_config(self) -> Dict:
