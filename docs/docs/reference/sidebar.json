@@ -2,16 +2,16 @@
   "items": [
     {
       "items": [
-        "reference/rasa/run",
         "reference/rasa/validator",
         "reference/rasa/model",
         "reference/rasa/exceptions",
+        "reference/rasa/model_training",
+        "reference/rasa/api",
         "reference/rasa/__main__",
         "reference/rasa/jupyter",
         "reference/rasa/telemetry",
-        "reference/rasa/test",
+        "reference/rasa/model_testing",
         "reference/rasa/server",
-        "reference/rasa/train",
         {
           "items": [
             "reference/rasa/shared/data",

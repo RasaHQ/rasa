@@ -190,7 +190,7 @@ Create data generators for train and optional validation data.
 #### create\_common\_callbacks
 
 ```python
-create_common_callbacks(epochs: int, tensorboard_log_dir: Optional[Text] = None, tensorboard_log_level: Optional[Text] = None, checkpoint_dir: Optional[Path] = None) -> List[tf.keras.callbacks.Callback]
+create_common_callbacks(epochs: int, tensorboard_log_dir: Optional[Text] = None, tensorboard_log_level: Optional[Text] = None, checkpoint_dir: Optional[Path] = None) -> List["Callback"]
 ```
 
 Create common callbacks.

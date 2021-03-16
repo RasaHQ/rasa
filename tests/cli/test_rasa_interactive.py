@@ -10,7 +10,7 @@ import rasa
 from rasa.core.train import do_interactive_learning
 from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
-from rasa.train import TrainingResult
+from rasa.model_training import TrainingResult
 from tests.conftest import DEFAULT_NLU_DATA
 
 

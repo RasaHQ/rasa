@@ -34,7 +34,8 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.core import run, train, utils
+from rasa.core import run, utils
+import rasa.core.train
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
 from rasa.shared.core.domain import Domain
 import rasa.shared.core.events
@@ -1628,7 +1629,7 @@ async def train_agent_on_start(
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
-    _agent = await train(
+    _agent = await rasa.core.train.train(
         args.get("domain"),
         args.get("stories"),
         model_directory,

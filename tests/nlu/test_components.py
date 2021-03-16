@@ -3,7 +3,8 @@ from typing import List, Optional, Text, Type
 
 import pytest
 
-from rasa.nlu import registry, train
+from rasa.nlu import registry
+import rasa.nlu.train
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
@@ -98,7 +99,7 @@ async def test_example_component(component_builder: ComponentBuilder, tmp_path: 
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         data=DEFAULT_DATA_PATH,
         path=str(tmp_path),
@@ -199,7 +200,7 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
     )
 
     with pytest.raises(InvalidConfigException):
-        await train(
+        await rasa.nlu.train.train(
             _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
         )
 
@@ -211,7 +212,7 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: P
     )
 
     with pytest.warns(UserWarning) as record:
-        await train(
+        await rasa.nlu.train.train(
             _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
         )
 

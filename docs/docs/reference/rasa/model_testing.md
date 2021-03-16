@@ -1,6 +1,6 @@
 ---
-sidebar_label: test
-title: rasa.test
+sidebar_label: model_testing
+title: rasa.model_testing
 ---
 
 #### plot\_core\_results
