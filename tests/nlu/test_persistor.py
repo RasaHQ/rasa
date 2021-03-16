@@ -25,7 +25,7 @@ async def test_list_method_method_in_AWS_persistor(  # noinspection PyPep8Naming
         os.environ["BUCKET_NAME"] = "rasa-test"
         os.environ["AWS_DEFAULT_REGION"] = "us-west-1"
 
-        (trained, _, persisted_path) = await rasa.nlu.train(
+        (trained, _, persisted_path) = await rasa.nlu.train.train(
             _config,
             data="data/test/demo-rasa-small.json",
             path=str(tmp_path),

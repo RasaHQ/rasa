@@ -162,7 +162,7 @@ def test_model_data_signature_with_entities(
 
     # create tokens for entity parsing inside DIET
     tokenizer = WhitespaceTokenizer()
-    tokenizer.rasa.nlu.train.train(training_data)
+    tokenizer.train(training_data)
 
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()

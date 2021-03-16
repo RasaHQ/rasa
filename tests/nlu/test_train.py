@@ -168,7 +168,7 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
     trainer = Trainer(_config, component_builder)
-    trainer.rasa.nlu.train.train(TrainingData())
+    trainer.train(TrainingData())
     persisted_path = trainer.persist(tmpdir.strpath)
 
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -206,9 +206,7 @@ def test_load_and_persist_without_train(language, pipeline, component_builder, t
 def test_load_and_persist_without_train_non_windows(
     language, pipeline, component_builder, tmpdir
 ):
-    test_load_and_persist_without_rasa.nlu.train.train(
-        language, pipeline, component_builder, tmpdir
-    )
+    test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir)
 
 
 async def test_train_model_empty_pipeline(component_builder):

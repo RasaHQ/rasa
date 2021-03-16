@@ -218,7 +218,7 @@ def background_server(
         import sys
 
         monkeypatch.setattr(
-            sys.modules["rasa.train"], "train_async", mocked_training_function,
+            sys.modules["rasa.model_training"], "train_async", mocked_training_function,
         )
 
         from rasa import __main__
