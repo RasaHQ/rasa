@@ -1,11 +1,12 @@
 import functools
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
 from rasa.shared.core.slots import TextSlot, ListSlot
-from rasa.shared.exceptions import YamlException
+from rasa.shared.exceptions import YamlException, FileNotFoundException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (
@@ -56,7 +57,7 @@ KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
 KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
-CORE_SCHEMA_FILE = "utils/schemas/stories.yml"
+CORE_SCHEMA_FILE = "shared/utils/schemas/stories.yml"
 DEFAULT_VALUE_TEXT_SLOTS = "filled"
 DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
@@ -165,21 +166,29 @@ class YAMLStoryReader(StoryReader):
 
     @classmethod
     def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        """Check if all keys are contained in the parsed dictionary from a yaml file.
+        """Check if any of the keys is contained in the root object of the yaml file.
 
         Arguments:
             file_path: path to the yaml file
             keys: keys to look for
 
         Returns:
-              `True` if all the keys are contained in the file, `False` otherwise.
+              `True` if at least one of the keys is found, `False` otherwise.
 
         Raises:
-            YamlException: if the file seems to be a YAML file (extension) but
-                can not be read / parsed.
+            FileNotFoundException: if the file cannot be found.
         """
-        content = rasa.shared.utils.io.read_yaml_file(file_path)
-        return any(key in content for key in keys)
+        try:
+            with open(file_path) as file:
+                return any(
+                    any(line.lstrip().startswith(f"{key}:") for key in keys)
+                    for line in file
+                )
+        except FileNotFoundError:
+            raise FileNotFoundException(
+                f"Failed to read file, "
+                f"'{os.path.abspath(file_path)}' does not exist."
+            )
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:

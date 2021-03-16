@@ -42,7 +42,7 @@ def load(
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:
-        file_config = rasa.shared.utils.io.read_config_file(config)
+        file_config = rasa.shared.utils.io.read_model_configuration(config)
 
     return _load_from_dict(file_config, **kwargs)
 

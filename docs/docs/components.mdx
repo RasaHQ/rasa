@@ -1474,6 +1474,19 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
+  * `constrain_similarities`:
+    This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
+    This helps in keeping similarities between input and negative labels to smaller values.
+    This should help in better generalization of the model to real world test sets.
+
+  * `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
+
+    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
+
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -1594,7 +1607,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
 |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-|                                 |                  | training step ('minibatch').                                 |
+|                                 |                  | training step ('batch').                                 |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | featurizers                     | []               | List of featurizer names (alias names). Only features        |
 |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -1623,16 +1636,13 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"        | Affects how model's confidence for each intent               |
-|                                 |                  | is computed. It can take three values                        |
+|                                 |                  | is computed. It can take two values:                         |
 |                                 |                  | 1. `softmax` - Similarities between input and intent         |
 |                                 |                  | embeddings are post-processed with a softmax function,       |
 |                                 |                  | as a result of which confidence for all intents sum up to 1. |
-|                                 |                  | 2. `cosine` - Cosine similarity between input and intent     |
-|                                 |                  | embeddings. Confidence for each intent is in the             |
-|                                 |                  | range `[-1,1]`.                                              |
-|                                 |                  | 3. `inner` - Dot product similarity between input and intent |
-|                                 |                  | embeddings. Confidence for each intent is in an unbounded    |
-|                                 |                  | range.                                                       |
+|                                 |                  | 2. `linear_norm` - Linearly normalized dot product similarity|
+|                                 |                  | between input and intent embeddings. Confidence for each     |
+|                                 |                  | intent will be in the range `[0,1]`                          |
 |                                 |                  | This parameter does not affect the confidence for entity     |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
@@ -2478,7 +2488,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   +---------------------------------+------------------+--------------------------------------------------------------+
   | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
   |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-  |                                 |                  | training step ('minibatch').                                 |
+  |                                 |                  | training step ('batch').                                 |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | featurizers                     | []               | List of featurizer names (alias names). Only features        |
   |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -2519,7 +2529,7 @@ Selectors predict a bot response from a set of candidate responses.
 * **Outputs**
 
   A dictionary with the key as the retrieval intent of the response selector
-   and value containing predicted response templates, confidence and the response key under the retrieval intent
+   and value containing predicted responses, confidence and the response key under the retrieval intent
 
 
 
@@ -2537,7 +2547,7 @@ Selectors predict a bot response from a set of candidate responses.
     and stores two properties:
 
     * `response`: The predicted response key under the corresponding retrieval intent,
-    prediction's confidence and the associated response templates.
+    prediction's confidence and the associated responses.
 
     * `ranking`: Ranking with confidences of top 10 candidate response keys.
 
@@ -2551,7 +2561,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2560,7 +2570,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2590,7 +2600,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2599,7 +2609,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2688,14 +2698,25 @@ Selectors predict a bot response from a set of candidate responses.
     set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
+  * `constrain_similarities`:
+    This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
+    This helps in keeping similarities between input and negative labels to smaller values.
+    This should help in better generalization of the model to real world test sets.
+
+  * `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
+
+    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
+
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
   Default is `None`, i.e. the model is trained for all retrieval intents.
 
   In its default configuration, the component uses the retrieval intent with the response key(e.g. `faq/ask_name`) as the label for training.
-  Alternatively, it can also be configured to use the text of the response templates as the training label
-  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response
-  template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
+  Alternatively, it can also be configured to use the text of the responses as the training label
+  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.
 
   :::note examples and tutorials
@@ -2824,7 +2845,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("minibatch").                                 |
+|                                 |                   | training step ("batch").                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |
@@ -2841,16 +2862,13 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"         | Affects how model's confidence for each response label       |
-|                                 |                   | is computed. It can take three values                        |
+|                                 |                   | is computed. It can take two values:                         |
 |                                 |                   | 1. `softmax` - Similarities between input and response label |
 |                                 |                   | embeddings are post-processed with a softmax function,       |
 |                                 |                   | as a result of which confidence for all labels sum up to 1.  |
-|                                 |                   | 2. `cosine` - Cosine similarity between input and response   |
-|                                 |                   | label embeddings. Confidence for each label is in the        |
-|                                 |                   | range `[-1,1]`.                                              |
-|                                 |                   | 3. `inner` - Dot product similarity between input and        |
-|                                 |                   | response label embeddings. Confidence for each label is in an|
-|                                 |                   | unbounded range.                                             |
+|                                 |                   | 2. `linear_norm` - Linearly normalized dot product similarity|
+|                                 |                   | between input and response label embeddings. Confidence for  |
+|                                 |                   | each label is in the range `[0, 1]`.                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 ```
 

@@ -20,9 +20,10 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 import rasa.shared.utils.io
-
+import rasa.shared.nlu.training_data.util
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+
 
 logger = logging.getLogger(__name__)
 
@@ -484,8 +485,15 @@ class RasaYAMLWriter(TrainingDataWriter):
             if intent_metadata:
                 intent[KEY_METADATA] = intent_metadata
 
-            render_as_objects = any(KEY_METADATA in ex for ex in converted)
-            if render_as_objects:
+            examples_have_metadata = any(KEY_METADATA in ex for ex in converted)
+            example_texts_have_escape_chars = any(
+                rasa.shared.nlu.training_data.util.has_string_escape_chars(
+                    ex.get(KEY_INTENT_TEXT, "")
+                )
+                for ex in converted
+            )
+
+            if examples_have_metadata or example_texts_have_escape_chars:
                 rendered = RasaYAMLWriter._render_training_examples_as_objects(
                     converted
                 )
@@ -528,7 +536,9 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @staticmethod
     def _render_training_examples_as_objects(examples: List[Dict]) -> List[Dict]:
-        """Renders training examples as objects with its `text` item as a literal scalar string.
+        """Renders training examples as objects.
+
+        The `text` item is rendered as a literal scalar string.
 
         Given the input of a single example:
             {'text': 'how much CO2 will that use?'}
@@ -541,9 +551,7 @@ class RasaYAMLWriter(TrainingDataWriter):
 
         def render(example: Dict) -> Dict:
             text = example[KEY_INTENT_TEXT]
-            example[KEY_INTENT_TEXT] = LiteralScalarString(
-                TrainingDataWriter.generate_string_item(text)
-            )
+            example[KEY_INTENT_TEXT] = LiteralScalarString(text + "\n")
             return example
 
         return [render(ex) for ex in examples]

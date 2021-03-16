@@ -21,7 +21,8 @@
     "autodoc": "echo 'Generating autodoc' && pydoc-markdown",
     "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}",
     "ci": "yarn install --frozen-lockfile",
-    "mdx-lint": "remark --frail docs/*.mdx docs/*/*.mdx"
+    "mdx-lint": "remark --frail docs/*.mdx docs/*/*.mdx",
+    "update-versioned-sources": "node scripts/update_versioned_sources.js"
   },
   "dependencies": {
     "@docusaurus/core": "2.0.0-alpha.63",

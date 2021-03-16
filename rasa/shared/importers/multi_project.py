@@ -23,7 +23,7 @@ class MultiProjectImporter(TrainingDataImporter):
         training_data_paths: Optional[Union[List[Text], Text]] = None,
         project_directory: Optional[Text] = None,
     ):
-        self.config = rasa.shared.utils.io.read_config_file(config_file)
+        self.config = rasa.shared.utils.io.read_model_configuration(config_file)
         if domain_path:
             self._domain_paths = [domain_path]
         else:

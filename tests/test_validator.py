@@ -28,15 +28,6 @@ async def test_verify_intents_does_fail_on_invalid_data():
     assert not validator.verify_intents()
 
 
-async def test_verify_valid_utterances():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=[DEFAULT_NLU_DATA, DEFAULT_STORIES_FILE],
-    )
-    validator = await Validator.from_importer(importer)
-    assert validator.verify_utterances()
-
-
 async def test_verify_valid_responses():
     importer = RasaFileImporter(
         domain_path="data/test_domains/selectors.yml",
@@ -54,7 +45,7 @@ async def test_verify_valid_responses_in_rules():
         domain_path="data/test_domains/default.yml",
         training_data_paths=[
             DEFAULT_NLU_DATA,
-            "data/test_stories/rules_without_stories_and_wrong_names.md",
+            "data/test_yaml_stories/rules_without_stories_and_wrong_names.yml",
         ],
     )
     validator = await Validator.from_importer(importer)
@@ -73,7 +64,7 @@ async def test_verify_story_structure():
 async def test_verify_bad_story_structure():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_2.md"],
+        training_data_paths=["data/test_yaml_stories/stories_conflicting_2.yml"],
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
@@ -200,7 +191,9 @@ async def test_verify_correct_e2e_story_structure_with_intents(tmp_path: Path):
 async def test_verify_story_structure_ignores_rules():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_with_rules_conflicting.md"],
+        training_data_paths=[
+            "data/test_yaml_stories/stories_with_rules_conflicting.yml"
+        ],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
@@ -209,28 +202,10 @@ async def test_verify_story_structure_ignores_rules():
 async def test_verify_bad_story_structure_ignore_warnings():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_2.md"],
+        training_data_paths=["data/test_yaml_stories/stories_conflicting_2.yml"],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=True)
-
-
-async def test_fail_on_invalid_utterances(tmpdir):
-    # domain and stories are from different domain and should produce warnings
-    invalid_domain = str(tmpdir / "invalid_domain.yml")
-    rasa.shared.utils.io.write_yaml(
-        {
-            "responses": {"utter_greet": [{"text": "hello"}]},
-            "actions": [
-                "utter_greet",
-                "utter_non_existent",  # error: utter template odes not exist
-            ],
-        },
-        invalid_domain,
-    )
-    importer = RasaFileImporter(domain_path=invalid_domain)
-    validator = await Validator.from_importer(importer)
-    assert not validator.verify_utterances()
 
 
 async def test_verify_there_is_example_repetition_in_intents():

@@ -74,28 +74,6 @@ async def test_training_data_is_reproducible():
         assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
 
 
-async def test_agent_train(trained_moodbot_path: Text):
-    moodbot_domain = Domain.load("examples/moodbot/domain.yml")
-    loaded = Agent.load(trained_moodbot_path)
-
-    # test domain
-    assert loaded.domain.action_names_or_texts == moodbot_domain.action_names_or_texts
-    assert loaded.domain.intents == moodbot_domain.intents
-    assert loaded.domain.entities == moodbot_domain.entities
-    assert loaded.domain.templates == moodbot_domain.templates
-    assert [s.name for s in loaded.domain.slots] == [
-        s.name for s in moodbot_domain.slots
-    ]
-
-    # test policies
-    assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)
-    assert [type(p) for p in loaded.policy_ensemble.policies] == [
-        TEDPolicy,
-        MemoizationPolicy,
-        RulePolicy,
-    ]
-
-
 @pytest.mark.parametrize(
     "text_message_data, expected",
     [

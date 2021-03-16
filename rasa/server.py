@@ -10,6 +10,7 @@ from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
+from http import HTTPStatus
 from typing import (
     Any,
     Callable,
@@ -148,6 +149,25 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
                 )
 
             return f(*args, **kwargs)
+
+        return decorated
+
+    return decorator
+
+
+def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
+    """Wraps a request handler ensuring the conversation exists."""
+
+    def decorator(f: Callable[..., HTTPResponse]) -> HTTPResponse:
+        @wraps(f)
+        def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
+            conversation_id = kwargs["conversation_id"]
+            if request.app.agent.tracker_store.exists(conversation_id):
+                return f(request, *args, **kwargs)
+            else:
+                raise ErrorResponse(
+                    HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
+                )
 
         return decorated
 
@@ -800,6 +820,7 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists()
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
@@ -826,6 +847,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists()
     async def execute_action(request: Request, conversation_id: Text):
         request_params = request.json
 
@@ -934,6 +956,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists()
     async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
@@ -1066,7 +1089,7 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request, temporary_directory)
+        test_data = _test_data_file_from_payload(request, temporary_directory, ".md")
 
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
@@ -1397,14 +1420,16 @@ def _get_output_channel(
     )
 
 
-def _test_data_file_from_payload(request: Request, temporary_directory: Path) -> Text:
+def _test_data_file_from_payload(
+    request: Request, temporary_directory: Path, suffix: Text = ".tmp"
+) -> Text:
     if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
         return str(
             _training_payload_from_yaml(request, temporary_directory)["training_files"]
         )
     else:
         return rasa.utils.io.create_temporary_file(
-            request.body, mode="w+b", suffix=".md"
+            request.body, mode="w+b", suffix=suffix
         )
 
 

@@ -31,7 +31,7 @@ def as_pipeline(*components):
 
 
 def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
-    # these templates really are just for testing
+    # these pipelines really are just for testing
     # every component should be in here so train-persist-load-use cycle can be
     # tested they still need to be in a useful order - hence we can not simply
     # generate this automatically.
@@ -124,7 +124,8 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     for cls in registry.component_classes:
         if "convert" in cls.name.lower():
             # TODO
-            #   skip ConveRTTokenizer and ConveRTFeaturizer as the ConveRT model is not publicly available anymore
+            #   skip ConveRTTokenizer and ConveRTFeaturizer as the ConveRT model is not
+            #   publicly available anymore
             #   (see https://github.com/RasaHQ/rasa/issues/6806)
             continue
         assert (

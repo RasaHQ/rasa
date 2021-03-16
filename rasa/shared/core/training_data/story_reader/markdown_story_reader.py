@@ -13,7 +13,6 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DOCS_URL_DOMAINS,
     LEGACY_DOCS_BASE_URL,
-    DEFAULT_E2E_TESTS_PATH,
     DOCS_URL_STORIES,
     DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
 )
@@ -356,7 +355,7 @@ class MarkdownStoryReader(StoryReader):
 
         dirname = os.path.dirname(file_path)
         return (
-            DEFAULT_E2E_TESTS_PATH in dirname
+            "tests" in dirname
             and rasa.shared.data.is_story_file(file_path)
             and not rasa.shared.data.is_nlu_file(file_path)
         )

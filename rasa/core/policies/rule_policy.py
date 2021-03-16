@@ -597,7 +597,9 @@ class RulePolicy(MemoizationPolicy):
         (
             rule_trackers_as_states,
             rule_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(rule_trackers, domain)
+        ) = self.featurizer.training_states_and_actions(
+            rule_trackers, domain, omit_unset_slots=True
+        )
 
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions

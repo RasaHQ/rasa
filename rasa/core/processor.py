@@ -22,6 +22,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     SLOTS,
     FOLLOWUP_ACTION,
+    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -43,6 +44,7 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.lock_store import LockStore
 from rasa.core.policies.ensemble import PolicyEnsemble
 import rasa.core.tracker_store
 import rasa.shared.core.trackers
@@ -62,6 +64,7 @@ class MessageProcessor:
         policy_ensemble: PolicyEnsemble,
         domain: Domain,
         tracker_store: rasa.core.tracker_store.TrackerStore,
+        lock_store: LockStore,
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
@@ -73,6 +76,7 @@ class MessageProcessor:
         self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
+        self.lock_store = lock_store
         self.max_number_of_predictions = max_number_of_predictions
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
@@ -184,12 +188,26 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
+            action_session_start = self._get_action(ACTION_SESSION_START_NAME)
+            # TODO: Remove in 3.0.0 and describe migration to `session_start_metadata`
+            # slot in migration guide.
+            if isinstance(
+                action_session_start, rasa.core.actions.action.ActionSessionStart
+            ):
+                # Here we set optional metadata to the ActionSessionStart, which will
+                # then be passed to the SessionStart event.
+                action_session_start.metadata = metadata
+
+            if metadata:
+                tracker.update(
+                    SlotSet(SESSION_START_METADATA_SLOT, metadata), self.domain
+                )
+
             await self._run_action(
-                action=self._get_action(ACTION_SESSION_START_NAME),
+                action=action_session_start,
                 tracker=tracker,
                 output_channel=output_channel,
                 nlg=self.nlg,
-                metadata=metadata,
                 prediction=PolicyPrediction.for_action_name(
                     self.domain, ACTION_SESSION_START_NAME
                 ),
@@ -403,23 +421,25 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
-
-        tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
-
-        if (
-            reminder_event.kill_on_user_message
-            and self._has_message_after_reminder(tracker, reminder_event)
-            or not self._is_reminder_still_valid(tracker, reminder_event)
-        ):
-            logger.debug(
-                f"Canceled reminder because it is outdated ({reminder_event})."
+        async with self.lock_store.lock(sender_id):
+            tracker = await self.fetch_tracker_and_update_session(
+                sender_id, output_channel
             )
-        else:
-            intent = reminder_event.intent
-            entities = reminder_event.entities or {}
-            await self.trigger_external_user_uttered(
-                intent, entities, tracker, output_channel
-            )
+
+            if (
+                reminder_event.kill_on_user_message
+                and self._has_message_after_reminder(tracker, reminder_event)
+                or not self._is_reminder_still_valid(tracker, reminder_event)
+            ):
+                logger.debug(
+                    f"Canceled reminder because it is outdated ({reminder_event})."
+                )
+            else:
+                intent = reminder_event.intent
+                entities = reminder_event.entities or {}
+                await self.trigger_external_user_uttered(
+                    intent, entities, tracker, output_channel
+                )
 
     async def trigger_external_user_uttered(
         self,
@@ -461,7 +481,8 @@ class MessageProcessor:
         input_channel = tracker.get_latest_input_channel()
 
         tracker.update(
-            UserUttered.create_external(intent_name, entity_list, input_channel)
+            UserUttered.create_external(intent_name, entity_list, input_channel),
+            self.domain,
         )
         await self._predict_and_execute_next_action(output_channel, tracker)
         # save tracker state to continue conversation from this state
@@ -733,16 +754,10 @@ class MessageProcessor:
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
         prediction: PolicyPrediction,
-        metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
-            # Here we set optional metadata to the ActionSessionStart, which will then
-            # be passed to the SessionStart event. Otherwise the metadata will be lost.
-            if action.name() == ACTION_SESSION_START_NAME:
-                action.metadata = metadata
-
             # Use temporary tracker as we might need to discard the policy events in
             # case of a rejection.
             temporary_tracker = tracker.copy()

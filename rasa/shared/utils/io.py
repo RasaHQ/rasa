@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Union
+from typing import Any, Dict, List, Optional, Text, Type, Union, FrozenSet
 import warnings
 
 from ruamel import yaml as yaml
@@ -18,12 +18,15 @@ from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    CONFIG_SCHEMA_FILE,
+    MODEL_CONFIG_SCHEMA_FILE,
 )
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     YamlSyntaxException,
 )
+import rasa.shared.utils.validation
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -294,20 +297,23 @@ def fix_yaml_loader() -> None:
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
+    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:
     """Enable yaml loader to process the environment variables in the yaml."""
     # eg. ${USER_NAME}, ${PASSWORD}
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
-    yaml.add_implicit_resolver("!env_var", env_var_pattern)
+    yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
     def env_var_constructor(loader, node):
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
         expanded_vars = os.path.expandvars(value)
-        if "$" in expanded_vars:
-            not_expanded = [w for w in expanded_vars.split() if "$" in w]
+        not_expanded = [
+            w for w in expanded_vars.split() if w.startswith("$") and w in value
+        ]
+        if not_expanded:
             raise ValueError(
                 "Error when trying to expand the environment variables"
                 " in '{}'. Please make sure to also set these environment"
@@ -318,25 +324,21 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
+fix_yaml_loader()
+replace_environment_variables()
+
+
 def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
         reader_type: Reader type to use. By default "safe" will be used
+        replace_env_vars: Specifies if environment variables need to be replaced
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
-    fix_yaml_loader()
-
-    replace_environment_variables()
-
-    yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
-    yaml.allow_duplicate_keys = False
-
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
         content = (
@@ -345,6 +347,10 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
             .encode("utf-16", "surrogatepass")
             .decode("utf-16")
         )
+
+    yaml_parser = yaml.YAML(typ=reader_type)
+    yaml_parser.version = YAML_VERSION
+    yaml_parser.preserve_quotes = True
 
     return yaml_parser.load(content) or {}
 
@@ -518,29 +524,68 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
-    """Parses a yaml configuration file. Content needs to be a dictionary
+def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
+    """Validates YAML file content and returns parsed content.
 
     Args:
         filename: The path to the file which should be read.
-    """
-    content = read_yaml_file(filename)
+        schema: The path to the schema file which should be used for validating the
+            file content.
 
-    if content is None:
-        return {}
-    elif isinstance(content, dict):
-        return content
-    else:
-        raise YamlSyntaxException(
-            filename,
-            ValueError(
-                f"Tried to load configuration file '{filename}'. "
-                f"Expected a key value mapping but found a {type(content).__name__}"
-            ),
-        )
+    Returns:
+        The parsed file content.
+
+    Raises:
+        YamlValidationException: In case the model configuration doesn't match the
+            expected schema.
+    """
+    content = read_file(filename)
+
+    rasa.shared.utils.validation.validate_yaml_schema(content, schema)
+    return read_yaml(content)
+
+
+def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary.
+
+    Args:
+        filename: The path to the file which should be read.
+
+    Raises:
+        YamlValidationException: In case file content is not a `Dict`.
+
+    Returns:
+        Parsed config file.
+    """
+    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE)
+
+
+def read_model_configuration(filename: Union[Path, Text]) -> Dict[Text, Any]:
+    """Parses a model configuration file.
+
+    Args:
+        filename: The path to the file which should be read.
+
+    Raises:
+        YamlValidationException: In case the model configuration doesn't match the
+            expected schema.
+
+    Returns:
+        Parsed config file.
+    """
+    return read_validated_yaml(filename, MODEL_CONFIG_SCHEMA_FILE)
 
 
 def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    """Checks if `path` is a subdirectory of `potential_parent_directory`.
+
+    Args:
+        path: Path to a file or directory.
+        potential_parent_directory: Potential parent directory.
+
+    Returns:
+        `True` if `path` is a subdirectory of `potential_parent_directory`.
+    """
     if path is None or potential_parent_directory is None:
         return False
 
