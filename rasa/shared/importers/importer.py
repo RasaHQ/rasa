@@ -51,21 +51,13 @@ class TrainingDataImporter:
         # TODO: Drop `use_e2e` in Rasa Open Source when removing Markdown support
         raise NotImplementedError()
 
-    async def get_conversation_tests(
-        self, parse_md_as_end_to_end_tests: bool = False
-    ) -> StoryGraph:
-        """Retrieves the stories that should be used for testing.
-
-        Args:
-            parse_md_as_end_to_end_tests: `True` if markdown story files should parsed
-                as end-to-end conversation tests.
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves end-to-end conversation stories for testing.
 
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        # TODO: Drop `parse_md_as_end_to_end_tests` in Rasa Open Source when removing
-        # Markdown support
-        raise NotImplementedError()
+        return await self.get_stories(use_e2e=True)
 
     async def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
@@ -73,7 +65,6 @@ class TrainingDataImporter:
         Returns:
             The configuration as dictionary.
         """
-
         raise NotImplementedError()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
@@ -225,9 +216,7 @@ class NluDataImporter(TrainingDataImporter):
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return StoryGraph([])
 
-    async def get_conversation_tests(
-        self, parse_md_as_end_to_end_tests: bool = False,
-    ) -> StoryGraph:
+    async def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         return StoryGraph([])
 
@@ -287,14 +276,9 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
-    async def get_conversation_tests(
-        self, parse_md_as_end_to_end_tests: bool = False,
-    ) -> StoryGraph:
+    async def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        stories = [
-            importer.get_conversation_tests(parse_md_as_end_to_end_tests)
-            for importer in self._importers
-        ]
+        stories = [importer.get_conversation_tests() for importer in self._importers]
         stories = await asyncio.gather(*stories)
 
         return reduce(
@@ -416,11 +400,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
             template_variables, use_e2e, exclusion_percentage
         )
 
-    async def get_conversation_tests(
-        self, parse_md_as_end_to_end_tests: bool = False,
-    ) -> StoryGraph:
+    async def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        return await self._importer.get_conversation_tests(parse_md_as_end_to_end_tests)
+        return await self._importer.get_conversation_tests()
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
@@ -509,11 +491,9 @@ class E2EImporter(TrainingDataImporter):
             template_variables, use_e2e, exclusion_percentage
         )
 
-    async def get_conversation_tests(
-        self, parse_md_as_end_to_end_tests: bool = False,
-    ) -> StoryGraph:
+    async def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        return await self.importer.get_conversation_tests(parse_md_as_end_to_end_tests)
+        return await self.importer.get_conversation_tests()
 
     async def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
