@@ -51,8 +51,7 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
-from rasa.model_training import train_core, train_core_async
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
+from rasa.model_training import train_core_async
 
 
 def test_get_latest_model(trained_rasa_model: str):
@@ -216,7 +215,7 @@ def _project_files(
     "domain_path",
     [
         DEFAULT_DOMAIN_PATH,
-        str((Path(".") / DEFAULT_DOMAIN_PATH_WITH_MAPPING).absolute()),
+        str((Path(".") / "data/test_domains/default_with_mapping.yml").absolute()),
     ],
 )
 async def test_create_fingerprint_from_paths(project: Text, domain_path: Text):
@@ -479,8 +478,10 @@ def test_should_retrain(
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
-async def test_should_not_retrain_core(default_domain_path: Text, tmp_path: Path):
-    # Don't use `default_stories_file` as checkpoints currently break fingerprinting
+async def test_should_not_retrain_core(
+    domain_path: Text, tmp_path: Path, stack_config_path: Text
+):
+    # Don't use `stories_path` as checkpoints currently break fingerprinting
     story_file = tmp_path / "simple_story.yml"
     story_file.write_text(
         """
@@ -492,11 +493,11 @@ stories:
     """
     )
     trained_model = await train_core_async(
-        default_domain_path, DEFAULT_STACK_CONFIG, str(story_file), str(tmp_path)
+        domain_path, stack_config_path, str(story_file), str(tmp_path)
     )
 
     importer = TrainingDataImporter.load_from_config(
-        DEFAULT_STACK_CONFIG, default_domain_path, training_data_paths=[str(story_file)]
+        stack_config_path, domain_path, training_data_paths=[str(story_file)]
     )
 
     new_fingerprint = await model.model_fingerprint(importer)

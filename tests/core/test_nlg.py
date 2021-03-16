@@ -9,7 +9,6 @@ from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from rasa.core.agent import Agent
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 
 def nlg_app(base_url="/"):
@@ -74,8 +73,8 @@ async def test_nlg(http_nlg, trained_rasa_model):
     assert response[0] == {"text": "Hey there!", "recipient_id": sender}
 
 
-def test_nlg_endpoint_config_loading():
-    cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "nlg")
+def test_nlg_endpoint_config_loading(endpoints_path: Text):
+    cfg = read_endpoint_config(endpoints_path, "nlg")
 
     assert cfg == EndpointConfig.from_dict({"url": "http://localhost:5055/nlg"})
 

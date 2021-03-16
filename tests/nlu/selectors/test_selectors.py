@@ -429,7 +429,10 @@ async def test_softmax_ranking(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await rasa.nlu.train.train(
-        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+        _config,
+        path=str(tmp_path),
+        data=data_path,
+        component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
