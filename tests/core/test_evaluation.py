@@ -54,7 +54,7 @@ async def test_end_to_end_evaluation_script(
     default_agent: Agent, end_to_end_story_path: Text
 ):
     generator = await _create_data_generator(
-        end_to_end_story_path, default_agent, use_e2e=True
+        end_to_end_story_path, default_agent, parse_md_as_end_to_end_tests=True
     )
     completed_trackers = generator.generate_story_trackers()
 
@@ -94,7 +94,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
     default_agent: Agent, e2e_story_file_unknown_entity_path: Text
 ):
     generator = await _create_data_generator(
-        e2e_story_file_unknown_entity_path, default_agent, use_e2e=True
+        e2e_story_file_unknown_entity_path, default_agent, parse_md_as_end_to_end_tests=True
     )
     completed_trackers = generator.generate_story_trackers()
 
@@ -112,7 +112,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
         "data/test_evaluations/form_end_to_end_stories.yml",
         form_bot_agent,
-        use_e2e=True,
+        parse_md_as_end_to_end_tests=True,
     )
     test_stories = generator.generate_story_trackers()
 
@@ -155,7 +155,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
     agent.train(training_data)
 
     generator = await _create_data_generator(
-        e2e_story_file_trips_circuit_breaker_path, agent, use_e2e=True
+        e2e_story_file_trips_circuit_breaker_path, agent, parse_md_as_end_to_end_tests=True
     )
     test_stories = generator.generate_story_trackers()
 
@@ -261,7 +261,7 @@ def test_event_has_proper_implementation(
 )
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = await _create_data_generator(
-        test_file, response_selector_agent, use_e2e=True,
+        test_file, response_selector_agent, parse_md_as_end_to_end_tests=True,
     )
     test_stories = generator.generate_story_trackers()
 

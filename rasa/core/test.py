@@ -345,14 +345,16 @@ async def _create_data_generator(
     resource_name: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
-    use_e2e: bool = False,
+    parse_md_as_end_to_end_tests: bool = False,
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
 
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name]
     )
-    story_graph = await test_data_importer.get_conversation_tests(use_e2e=use_e2e)
+    story_graph = await test_data_importer.get_conversation_tests(
+        parse_md_as_end_to_end_tests=parse_md_as_end_to_end_tests
+    )
     return TrainingDataGenerator(
         story_graph,
         agent.domain,
@@ -1045,7 +1047,9 @@ async def _evaluate_core_model(
     logger.info(f"Evaluating model '{model}'")
 
     agent = Agent.load(model)
-    generator = await _create_data_generator(stories_file, agent, use_e2e=use_e2e)
+    generator = await _create_data_generator(
+        stories_file, agent, parse_md_as_end_to_end_tests=use_e2e
+    )
     completed_trackers = generator.generate_story_trackers()
 
     # Entities are ignored here as we only compare number of correct stories.
