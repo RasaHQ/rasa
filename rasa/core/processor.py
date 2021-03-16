@@ -792,7 +792,9 @@ class MessageProcessor:
 
         return self.should_predict_another_action(action.name())
 
-    def _warn_about_new_slots(self, tracker, action_name, events) -> None:
+    def _warn_about_new_slots(
+        self, tracker: DialogueStateTracker, action_name: Text, events: List[Event]
+    ) -> None:
         # these are the events from that action we have seen during training
 
         if (
@@ -801,8 +803,8 @@ class MessageProcessor:
         ):
             return
 
-        fp = self.policy_ensemble.action_fingerprints[action_name]
-        slots_seen_during_train = fp.get(SLOTS, set())
+        fingerprint = self.policy_ensemble.action_fingerprints[action_name]
+        slots_seen_during_train = fingerprint.get(SLOTS, set())
         for e in events:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
