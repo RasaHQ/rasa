@@ -480,7 +480,7 @@ class Agent:
         self,
         message_data: Text,
         tracker: DialogueStateTracker = None,
-        time_zone: Text = None
+        metadata: Optional[Dict] = None,
     ) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
@@ -491,6 +491,7 @@ class Agent:
             intent payload format.
             tracker (DialogueStateTracker): Contains the tracker to be\
             used by the interpreter.
+            metadata: additional metadata for this message.
 
         Returns:
             The parsed message.
@@ -508,7 +509,7 @@ class Agent:
         """
 
         processor = self.create_processor()
-        message = UserMessage(message_data, metadata={"time_zone": time_zone})
+        message = UserMessage(message_data, metadata=metadata)
         return await processor.parse_message(message, tracker)
 
     async def handle_message(

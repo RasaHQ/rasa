@@ -1294,7 +1294,7 @@ def create_app(
                 parsed_data = await app.agent.parse_message_using_nlu_interpreter(
                     data.get("text"),
                     None,
-                    data.get("time_zone")
+                    data.get("metadata")
                 )
             except Exception as e:
                 logger.debug(traceback.format_exc())
