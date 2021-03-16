@@ -90,20 +90,8 @@ def test_core_models(models: List[Text], stories: Text, output: Text):
     rasa.utils.common.run_in_loop(compare_models(models, stories, output))
 
 
-def test(
-    model: Text,
-    stories: Text,
-    nlu_data: Text,
-    output: Text = DEFAULT_RESULTS_PATH,
-    additional_arguments: Optional[Dict] = None,
-):
-    if additional_arguments is None:
-        additional_arguments = {}
-
-    test_core(model, stories, output, additional_arguments)
-    rasa.utils.common.run_in_loop(
-        test_nlu(model, nlu_data, output, additional_arguments)
-    )
+# backwards compatibility
+test = rasa.test
 
 
 def test_core(

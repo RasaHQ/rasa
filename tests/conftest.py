@@ -35,7 +35,7 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import train_async, train_nlu_async
+from rasa.model_training import train_async, train_nlu_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -79,7 +79,7 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "nlu", "selectors").absolute(),
     ],
     "category_full_model_training": [
-        Path("tests", "test_train.py").absolute(),
+        Path("tests", "test_model_training.py").absolute(),
         Path("tests", "nlu", "test_train.py").absolute(),
         Path("tests", "core", "test_training.py").absolute(),
         Path("tests", "core", "test_examples.py").absolute(),

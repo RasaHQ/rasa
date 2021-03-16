@@ -51,7 +51,7 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
-from rasa.train import train_core, train_core_async
+from rasa.model_training import train_core, train_core_async
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 

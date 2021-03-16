@@ -832,7 +832,7 @@ async def test(
     Returns:
         Evaluation summary.
     """
-    from rasa.test import get_evaluation_metrics
+    from rasa.model_testing import get_evaluation_metrics
 
     generator = await _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
