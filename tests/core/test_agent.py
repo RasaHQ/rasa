@@ -16,15 +16,14 @@ from rasa.exceptions import ModelNotFound
 import rasa.shared.utils.common
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.utils.io
 from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
+from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
