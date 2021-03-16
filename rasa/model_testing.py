@@ -12,6 +12,7 @@ from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -186,7 +187,7 @@ async def test_nlu(
 
 async def compare_nlu_models(
     configs: List[Text],
-    nlu: Text,
+    test_data: TrainingData,
     output: Text,
     runs: int,
     exclusion_percentages: List[int],
@@ -198,8 +199,7 @@ async def compare_nlu_models(
     from rasa.utils.io import create_path
     from rasa.nlu.test import compare_nlu
 
-    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
-    data = drop_intents_below_freq(data, cutoff=5)
+    test_data = drop_intents_below_freq(test_data, cutoff=5)
 
     create_path(output)
 
@@ -212,7 +212,7 @@ async def compare_nlu_models(
 
     training_examples_per_run = await compare_nlu(
         configs,
-        data,
+        test_data,
         exclusion_percentages,
         f1_score_results,
         model_names,
@@ -248,10 +248,19 @@ def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> N
 
 def perform_nlu_cross_validation(
     config: Text,
-    nlu: Text,
+    data: TrainingData,
     output: Text,
     additional_arguments: Optional[Dict[Text, Any]],
-):
+) -> None:
+    """Runs cross-validation on test data.
+
+    Args:
+        config: The model configuration.
+        data: The data which is used for the cross-validation.
+        output: Output directory for the cross-validation results.
+        additional_arguments: Additional arguments which are passed to the
+            cross-validation, like.
+    """
     import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
@@ -263,7 +272,6 @@ def perform_nlu_cross_validation(
     additional_arguments = additional_arguments or {}
     folds = int(additional_arguments.get("folds", 3))
     nlu_config = rasa.nlu.config.load(config)
-    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = rasa.shared.utils.common.minimal_kwargs(
         additional_arguments, cross_validate

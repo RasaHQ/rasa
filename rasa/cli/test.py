@@ -20,6 +20,7 @@ from rasa.shared.constants import (
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
 import rasa.utils.common
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -154,8 +155,12 @@ async def run_nlu_test_async(
         test_nlu,
     )
 
-    nlu_data = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
-    nlu_data = rasa.shared.data.get_nlu_directory(nlu_data)
+    data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[data_path]
+    )
+    nlu_data = await test_data_importer.get_nlu_data()
+
     output = output_dir or DEFAULT_RESULTS_PATH
     all_args["errors"] = not no_errors
     rasa.shared.utils.io.create_directory(output)
@@ -184,7 +189,7 @@ async def run_nlu_test_async(
                 continue
         await compare_nlu_models(
             configs=config_files,
-            nlu=nlu_data,
+            test_data=nlu_data,
             output=output,
             runs=runs,
             exclusion_percentages=percentages,
@@ -200,7 +205,7 @@ async def run_nlu_test_async(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, nlu_data, output, all_args)
+        await test_nlu(model_path, data_path, output, all_args)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
