@@ -135,7 +135,7 @@ def test_train_core_called_when_no_model_passed_and_core(
 
 
 def test_no_interactive_without_core_data(
-    stack_config_path: Text, monkeypatch: MonkeyPatch, nlu_data_path
+    stack_config_path: Text, monkeypatch: MonkeyPatch, nlu_data_path: Text
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()

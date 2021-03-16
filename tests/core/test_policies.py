@@ -96,7 +96,7 @@ class PolicyTestCollection:
         return 1
 
     @pytest.fixture(scope="class")
-    def default_domain(self, domain_path) -> Domain:
+    def default_domain(self, domain_path: Text) -> Domain:
         return Domain.load(domain_path)
 
     @pytest.fixture(scope="class")

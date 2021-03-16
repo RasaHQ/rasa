@@ -73,7 +73,7 @@ async def test_nlg(http_nlg, trained_rasa_model):
     assert response[0] == {"text": "Hey there!", "recipient_id": sender}
 
 
-def test_nlg_endpoint_config_loading(endpoints_path):
+def test_nlg_endpoint_config_loading(endpoints_path: Text):
     cfg = read_endpoint_config(endpoints_path, "nlg")
 
     assert cfg == EndpointConfig.from_dict({"url": "http://localhost:5055/nlg"})

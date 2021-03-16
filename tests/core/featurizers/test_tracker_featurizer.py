@@ -49,7 +49,7 @@ def test_convert_labels_to_ids(domain: Domain):
         assert np.all(expected_array == actual_array)
 
 
-def test_featurize_trackers_raises_on_missing_state_featurizer(domain):
+def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
     tracker_featurizer = TrackerFeaturizer()
 
     with pytest.raises(ValueError):

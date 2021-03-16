@@ -135,7 +135,7 @@ def test_agent_wrong_use_of_load():
 
 
 async def test_agent_with_model_server_in_thread(
-    model_server: TestClient, domain, unpacked_trained_rasa_model: Text
+    model_server: TestClient, domain: Domain, unpacked_trained_rasa_model: Text
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}
