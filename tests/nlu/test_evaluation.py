@@ -383,18 +383,6 @@ async def test_eval_data(
     project: Text,
     trained_simple_rasa_model: Text,
 ):
-    _config = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", "epochs": 2},
-                {"name": "ResponseSelector", "epochs": 2},
-            ],
-            "language": "en",
-        }
-    )
-
     config_path = os.path.join(project, "config.yml")
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config_path,
