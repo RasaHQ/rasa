@@ -43,7 +43,7 @@ Reads TrainingData in YAML format from a string.
 
 ```python
  | @staticmethod
- | is_yaml_nlu_file(filename: Text) -> bool
+ | is_yaml_nlu_file(filename: Union[Text, Path]) -> bool
 ```
 
 Checks if the specified file possibly contains NLU training data in YAML.
