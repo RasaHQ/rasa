@@ -897,7 +897,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         # Constrain similarity values in a range by applying sigmoid
         # on them individually so that they saturate at extreme values.
         sigmoid_logits = tf.concat(
-            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_li], axis=-1
         )
         sigmoid_labels = tf.concat(
             [
@@ -927,9 +927,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             # Concatenate other similarity terms as well. Due to this,
             # similarity values between input and label may not be
             # approximately bounded in a defined range.
-            softmax_logits = tf.concat(
-                [softmax_logits, sim_neg_ii, sim_neg_ll], axis=-1
-            )
+            softmax_logits = tf.concat([softmax_logits, sim_neg_ll], axis=-1)
         # create label_ids for softmax
         softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
         softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
