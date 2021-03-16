@@ -148,13 +148,15 @@ def test_core(
             "to train a NLU model first, e.g. using `rasa train`."
         )
 
-    from rasa.core.test import test
+    from rasa.core.test import test as core_test
 
     kwargs = rasa.shared.utils.common.minimal_kwargs(
-        additional_arguments, test, ["stories", "agent"]
+        additional_arguments, core_test, ["stories", "agent"]
     )
 
-    rasa.utils.common.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
+    rasa.utils.common.run_in_loop(
+        core_test(stories, _agent, out_directory=output, **kwargs)
+    )
 
 
 async def test_nlu(

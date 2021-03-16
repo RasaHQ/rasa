@@ -142,10 +142,23 @@ previous form and must be ignored.
 #### extract\_requested\_slot
 
 ```python
- | extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain) -> Dict[Text, Any]
+ | extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text) -> Dict[Text, Any]
 ```
 
-Extracts the value of requested slot from a user input else return `None`.
+Extract the value of requested slot from a user input else return `None`.
+
+**Arguments**:
+
+- `tracker` - a DialogueStateTracker instance
+- `domain` - the current domain
+- `slot_to_fill` - the name of the slot to fill
+  
+
+**Returns**:
+
+  a dictionary with one key being the name of the slot to fill
+  and its value being the slot value, or an empty dictionary
+  if no slot value was found.
 
 #### validate\_slots
 

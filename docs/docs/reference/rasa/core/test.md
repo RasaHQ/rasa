@@ -19,13 +19,21 @@ class EvaluationStore()
 
 Class storing action, intent and entity predictions and targets.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[EntityPredictionList] = None, entity_targets: Optional[EntityPredictionList] = None) -> None
+```
+
+Initialize store attributes.
+
 #### add\_to\_store
 
 ```python
- | add_to_store(action_predictions: Optional[List[Text]] = None, action_targets: Optional[List[Text]] = None, intent_predictions: Optional[List[Text]] = None, intent_targets: Optional[List[Text]] = None, entity_predictions: Optional[List[Dict[Text, Any]]] = None, entity_targets: Optional[List[Dict[Text, Any]]] = None) -> None
+ | add_to_store(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[EntityPredictionList] = None, entity_targets: Optional[EntityPredictionList] = None) -> None
 ```
 
-Add items or lists of items to the store
+Add items or lists of items to the store.
 
 #### merge\_store
 
@@ -33,12 +41,12 @@ Add items or lists of items to the store
  | merge_store(other: "EvaluationStore") -> None
 ```
 
-Add the contents of other to self
+Add the contents of other to self.
 
 #### serialise
 
 ```python
- | serialise() -> Tuple[List[Text], List[Text]]
+ | serialise() -> Tuple[PredictionList, PredictionList]
 ```
 
 Turn targets and predictions to lists of equal size for sklearn.
@@ -93,6 +101,14 @@ The NLU model predicted the wrong user utterance.
 
 Mostly used to mark wrong predictions and be able to
 dump them as stories.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(event: UserUttered, eval_store: EvaluationStore) -> None
+```
+
+Set `predicted_intent` and `predicted_entities` attributes.
 
 #### inline\_comment
 

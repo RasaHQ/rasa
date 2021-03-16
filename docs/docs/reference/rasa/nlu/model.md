@@ -52,6 +52,22 @@ Loads the metadata from a models directory.
 
 - `Metadata` - A metadata object describing the model
 
+#### \_\_init\_\_
+
+```python
+ | __init__(metadata: Dict[Text, Any])
+```
+
+Set `metadata` attribute.
+
+#### get
+
+```python
+ | get(property_name: Text, default: Any = None) -> Any
+```
+
+Proxy function to get property on `metadata` attribute.
+
 #### language
 
 ```python
@@ -135,13 +151,14 @@ Create an interpreter based on a persisted model.
 
 ```python
  | @staticmethod
- | create(model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, should_finetune: bool = False) -> "Interpreter"
+ | create(model_dir: Text, model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, should_finetune: bool = False) -> "Interpreter"
 ```
 
 Create model and components defined by the provided metadata.
 
 **Arguments**:
 
+- `model_dir` - The directory containing the model.
 - `model_metadata` - The metadata describing each component.
 - `component_builder` - The
   :class:`rasa.nlu.components.ComponentBuilder` to use.

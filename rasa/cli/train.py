@@ -7,6 +7,8 @@ from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
+import rasa.utils.common
+from rasa.core.train import do_compare_training
 from rasa.shared.utils.cli import print_error
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -16,7 +18,6 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
-import rasa.utils.common
 
 
 def add_subparser(
@@ -45,7 +46,7 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Trains a Rasa Core model using your stories.",
     )
-    train_core_parser.set_defaults(func=train_core)
+    train_core_parser.set_defaults(func=run_core_training)
 
     train_nlu_parser = train_subparsers.add_parser(
         "nlu",
@@ -53,15 +54,15 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Trains a Rasa NLU model using your NLU data.",
     )
-    train_nlu_parser.set_defaults(func=train_nlu)
+    train_nlu_parser.set_defaults(func=run_nlu_training)
 
-    train_parser.set_defaults(func=lambda args: train(args, can_exit=True))
+    train_parser.set_defaults(func=lambda args: run_training(args, can_exit=True))
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
-def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
+def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
     """Trains a model.
 
     Args:
@@ -72,7 +73,7 @@ def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-    import rasa
+    from rasa import train as train_all
 
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
@@ -87,7 +88,7 @@ def train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
         for f in args.data
     ]
 
-    training_result = rasa.train(
+    training_result = train_all(
         domain=domain,
         config=config,
         training_files=training_files,
@@ -117,7 +118,7 @@ def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
         return args.finetune
 
 
-def train_core(
+def run_core_training(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
     """Trains a Rasa Core model only.
@@ -161,14 +162,12 @@ def train_core(
             finetuning_epoch_fraction=args.epoch_fraction,
         )
     else:
-        from rasa.core.train import do_compare_training
-
         rasa.utils.common.run_in_loop(
             do_compare_training(args, story_file, additional_arguments)
         )
 
 
-def train_nlu(
+def run_nlu_training(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
     """Trains an NLU model.

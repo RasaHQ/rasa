@@ -41,7 +41,7 @@ Require the agent to have a loaded Core model if `require_core_is_ready` is
 #### ensure\_conversation\_exists
 
 ```python
-ensure_conversation_exists() -> Callable[..., HTTPResponse]
+ensure_conversation_exists() -> "SanicView"
 ```
 
 Wraps a request handler ensuring the conversation exists.
@@ -49,7 +49,7 @@ Wraps a request handler ensuring the conversation exists.
 #### requires\_auth
 
 ```python
-requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]
+requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[["SanicView"], "SanicView"]
 ```
 
 Wraps a request handler with token authentication.
