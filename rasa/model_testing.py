@@ -21,14 +21,23 @@ logger = logging.getLogger(__name__)
 
 
 def test_core_models_in_directory(
-    model_directory: Text, stories: Text, output: Text
+    model_directory: Text, stories: Text, output: Text, use_e2e: bool = False
 ) -> None:
+    """Evaluates a directory with multiple Core models using test data.
+
+    Args:
+        model_directory: Directory containing multiple model files.
+        stories: Path to a conversation test file.
+        output: Output directory to store results to.
+        use_e2e: `True` if markdown story files should be parsed as end-to-end
+            conversation tests.
+    """
     from rasa.core.test import compare_models_in_dir
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
     rasa.utils.common.run_in_loop(
-        compare_models_in_dir(model_directory, stories, output)
+        compare_models_in_dir(model_directory, stories, output, use_e2e=use_e2e)
     )
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
@@ -85,10 +94,23 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     return model_directory
 
 
-def test_core_models(models: List[Text], stories: Text, output: Text):
+def test_core_models(
+    models: List[Text], stories: Text, output: Text, use_e2e: bool = False
+) -> None:
+    """Compares multiple Core models based on test data.
+
+    Args:
+        models: A list of models files.
+        stories: Path to test data.
+        output: Path to output directory for test results.
+        use_e2e: `True` if markdown story files should be parsed as end-to-end
+            conversation tests.:
+    """
     from rasa.core.test import compare_models
 
-    rasa.utils.common.run_in_loop(compare_models(models, stories, output))
+    rasa.utils.common.run_in_loop(
+        compare_models(models, stories, output, use_e2e=use_e2e)
+    )
 
 
 # backwards compatibility
@@ -100,6 +122,7 @@ def test_core(
     stories: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
+    use_e2e: bool = False,
 ) -> None:
     """Tests a trained Core model against a set of test stories."""
     import rasa.model
@@ -140,11 +163,11 @@ def test_core(
     from rasa.core.test import test as core_test
 
     kwargs = rasa.shared.utils.common.minimal_kwargs(
-        additional_arguments, core_test, ["stories", "agent"]
+        additional_arguments, core_test, ["stories", "agent", "e2e"]
     )
 
     rasa.utils.common.run_in_loop(
-        core_test(stories, _agent, out_directory=output, **kwargs)
+        core_test(stories, _agent, e2e=use_e2e, out_directory=output, **kwargs)
     )
 
 
