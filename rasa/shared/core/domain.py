@@ -1043,17 +1043,22 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker",
+        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
-        """Set all set slots with the featurization of the stored value
+        """Sets all set slots with the featurization of the stored value.
+
         Args:
             tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
         Returns:
             a dictionary mapping slot names to their featurization
         """
         slots = {}
         for slot_name, slot in tracker.slots.items():
             if slot is not None and slot.as_feature():
+                if omit_unset_slots and not slot.has_been_set:
+                    continue
                 if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
                     slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
                 elif any(slot.as_feature()):
@@ -1101,11 +1106,22 @@ class Domain:
             if sub_state
         }
 
-    def get_active_states(self, tracker: "DialogueStateTracker") -> State:
-        """Return a bag of active states from the tracker state."""
+    def get_active_states(
+        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+    ) -> State:
+        """Returns a bag of active states from the tracker state.
+
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns `State` containing all active states.
+        """
         state = {
             rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
-            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(tracker),
+            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(
+                tracker, omit_unset_slots=omit_unset_slots
+            ),
             rasa.shared.core.constants.PREVIOUS_ACTION: self._get_prev_action_sub_state(
                 tracker
             ),
@@ -1116,14 +1132,23 @@ class Domain:
         return self._clean_state(state)
 
     def states_for_tracker_history(
-        self, tracker: "DialogueStateTracker"
+        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> List[State]:
-        """Array of states for each state of the trackers history."""
+        """List of states for each state of the trackers history.
+
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns: A `State` for each prior tracker.
+        """
         return [
-            self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
+            self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+            for tr in tracker.generate_all_prior_trackers()
         ]
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
+        """Returns `SlotSet` events for extracted entities."""
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
