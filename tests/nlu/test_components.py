@@ -90,7 +90,7 @@ def test_create_component_exception_messages(
 def test_builder_load_unknown(component_builder: ComponentBuilder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
-        component_builder.load_component(component_meta, "", Metadata({}, None))
+        component_builder.load_component(component_meta, "", Metadata({}))
     assert "Cannot find class" in str(excinfo.value)
 
 

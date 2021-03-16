@@ -74,6 +74,10 @@ from rasa.utils.endpoints import EndpointConfig
 if TYPE_CHECKING:
     from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
+    from mypy_extensions import VarArg, KwArg
+
+    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
+
 
 logger = logging.getLogger(__name__)
 
@@ -155,10 +159,10 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
     return decorator
 
 
-def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
+def ensure_conversation_exists() -> "SanicView":
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: Callable[..., HTTPResponse]) -> HTTPResponse:
+    def decorator(f: "SanicView") -> HTTPResponse:
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
@@ -174,10 +178,12 @@ def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
     return decorator
 
 
-def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
+def requires_auth(
+    app: Sanic, token: Optional[Text] = None
+) -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def decorator(f: "SanicView") -> "SanicView":
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = rasa.shared.utils.common.arguments_of(f)
 
@@ -213,7 +219,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 return False
 
         @wraps(f)
-        async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
+        async def decorated(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> response.BaseHTTPResponse:
 
             provided = request.args.get("token", None)
 
@@ -890,7 +898,7 @@ def create_app(
 
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -946,7 +954,7 @@ def create_app(
 
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -1189,6 +1197,11 @@ def create_app(
 
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
+
+        if nlu_model is None:
+            raise ErrorResponse(
+                HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
+            )
 
         return await rasa.nlu.test.run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True

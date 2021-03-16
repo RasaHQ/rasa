@@ -105,7 +105,7 @@ types:
 	# FIXME: working our way towards removing these
 	# see https://github.com/RasaHQ/rasa/pull/6470
 	# the list below is sorted by the number of errors for each error code, in decreasing order
-	poetry run mypy rasa --disable-error-code arg-type \
+	MYPYPATH=./stubs poetry run mypy rasa --disable-error-code arg-type \
 	--disable-error-code assignment \
 	--disable-error-code var-annotated \
 	--disable-error-code return-value \
@@ -116,12 +116,9 @@ types:
 	--disable-error-code index \
 	--disable-error-code misc \
 	--disable-error-code return \
-	--disable-error-code call-arg \
 	--disable-error-code type-var \
-	--disable-error-code list-item \
 	--disable-error-code has-type \
 	--disable-error-code valid-type \
-	--disable-error-code dict-item \
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 

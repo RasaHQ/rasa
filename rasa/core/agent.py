@@ -567,12 +567,9 @@ class Agent:
         **kwargs,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
-
-        def noop(_: Any) -> None:
-            logger.info("Ignoring message as there is no agent to handle it.")
-
         if not self.is_ready():
-            return noop(message)
+            logger.info("Ignoring message as there is no agent to handle it.")
+            return None
 
         processor = self.create_processor(message_preprocessor)
 
