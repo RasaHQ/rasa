@@ -372,7 +372,7 @@ def test_single_state_featurizer_with_interpreter_state_with_action_listen(
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
-        unpacked_trained_spacybot_path: Text,
+    unpacked_trained_spacybot_path: Text,
 ):
     # check that user features are ignored when action_name is not action_listen
     from rasa.core.agent import Agent
