@@ -216,7 +216,9 @@ async def test_train_model_empty_pipeline(component_builder, nlu_as_json_path: T
     _config = RasaNLUModelConfig({"pipeline": None, "language": "en"})
 
     with pytest.raises(ValueError):
-        await rasa.nlu.train.train(_config, data=nlu_as_json_path, component_builder=component_builder)
+        await rasa.nlu.train.train(
+            _config, data=nlu_as_json_path, component_builder=component_builder
+        )
 
 
 async def test_train_named_model(component_builder, tmpdir, nlu_as_json_path: Text):
