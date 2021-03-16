@@ -82,7 +82,7 @@ EXAMPLE_DOMAINS = [
     "data/test_domains/default_with_mapping.yml",
     "data/test_domains/default_with_slots.yml",
     "examples/formbot/domain.yml",
-    "examples/moodbot/domain.yml",
+    "data/test_moodbot/domain.yml",
 ]
 
 
@@ -93,7 +93,7 @@ def nlu_as_json_path() -> Text:
 
 @pytest.fixture(scope="session")
 def nlu_data_path() -> Text:
-    return "examples/moodbot/data/nlu.yml"
+    return "data/test_moodbot/data/nlu.yml"
 
 
 @pytest.fixture(scope="session")
@@ -213,18 +213,18 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 @pytest.fixture(scope="session")
 async def trained_moodbot_path(trained_async: Callable) -> Text:
     return await trained_async(
-        domain="examples/moodbot/domain.yml",
-        config="examples/moodbot/config.yml",
-        training_files="examples/moodbot/data/",
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/config.yml",
+        training_files="data/test_moodbot/data/",
     )
 
 
 @pytest.fixture(scope="session")
 async def trained_nlu_moodbot_path(trained_nlu_async: Callable) -> Text:
     return await trained_nlu_async(
-        domain="examples/moodbot/domain.yml",
-        config="examples/moodbot/config.yml",
-        nlu_data="examples/moodbot/data/nlu.yml",
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/config.yml",
+        nlu_data="data/test_moodbot/data/nlu.yml",
     )
 
 
@@ -233,6 +233,31 @@ async def unpacked_trained_moodbot_path(
     trained_moodbot_path: Text,
 ) -> TempDirectoryPath:
     return get_model(trained_moodbot_path)
+
+
+@pytest.fixture(scope="session")
+async def trained_spacybot_path(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_spacybot/domain.yml",
+        config="data/test_spacybot/config.yml",
+        training_files="data/test_spacybot/data/",
+    )
+
+
+@pytest.fixture(scope="session")
+async def trained_nlu_spacybot_path(trained_nlu_async: Callable) -> Text:
+    return await trained_nlu_async(
+        domain="data/test_spacybot/domain.yml",
+        config="data/test_spacybot/config.yml",
+        nlu_data="data/test_spacybot/data/nlu.yml",
+    )
+
+
+@pytest.fixture(scope="session")
+async def unpacked_trained_spacybot_path(
+    trained_spacybot_path: Text,
+) -> TempDirectoryPath:
+    return get_model(trained_spacybot_path)
 
 
 @pytest.fixture(scope="session")
@@ -379,7 +404,7 @@ async def trained_e2e_model(
 
 @pytest.fixture(scope="session")
 def moodbot_domain() -> Domain:
-    domain_path = os.path.join("examples", "moodbot", "domain.yml")
+    domain_path = os.path.join("data", "test_moodbot", "domain.yml")
     return Domain.load(domain_path)
 
 

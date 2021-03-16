@@ -12,7 +12,7 @@ from rasa.core import run, interpreter, policies
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.utils import AvailableEndpoints
 
-CREDENTIALS_FILE = "examples/moodbot/credentials.yml"
+CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 
 
 def test_create_http_input_channels():

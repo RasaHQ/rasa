@@ -26,7 +26,7 @@ async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     # (there is a 'I am on it' message in the middle we are not checking)
     assert len(responses) == 4
 
-    moodbot_domain = Domain.load("examples/moodbot/domain.yml")
+    moodbot_domain = Domain.load("data/test_moodbot/domain.yml")
     assert agent.domain.action_names_or_texts == moodbot_domain.action_names_or_texts
     assert agent.domain.intents == moodbot_domain.intents
     assert agent.domain.entities == moodbot_domain.entities
