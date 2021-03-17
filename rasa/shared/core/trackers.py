@@ -64,8 +64,22 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
+    from typing_extension import TypedDict
+
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
+    # precise type definition for `DialogueStateTracker.active_loop`
+    TrackerActiveLoop = TypedDict(
+        "TrackerActiveLoop",
+        {
+            LOOP_NAME: Optional[Text],
+            LOOP_INTERRUPTED: bool,
+            LOOP_REJECTED: bool,
+            TRIGGER_MESSAGE: Dict,
+        },
+        total=False,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -201,10 +215,10 @@ class DialogueStateTracker:
         self.followup_action = ACTION_LISTEN_NAME
         self.latest_action = None
         # Stores the most recent message sent by the user
-        self.latest_message = None
+        self.latest_message: Optional[UserUttered] = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
+        self.active_loop: "TrackerActiveLoop" = {}
 
     ###
     # Public tracker interface

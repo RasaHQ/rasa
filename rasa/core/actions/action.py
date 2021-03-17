@@ -778,16 +778,19 @@ def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
 def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
     revert_events = _revert_single_affirmation_events()
 
-    last_user_event = tracker.get_last_event_for(UserUttered)
-    last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0
-
     # User affirms the rephrased intent
     rephrased_intent = tracker.last_executed_action_has(
         name=ACTION_DEFAULT_ASK_REPHRASE_NAME, skip=1
     )
     if rephrased_intent:
         revert_events += _revert_rephrasing_events()
+
+    last_user_event = tracker.get_last_event_for(UserUttered)
+    if not last_user_event:
+        raise TypeError("Cannot find last event to revert to.")
+
+    last_user_event = copy.deepcopy(last_user_event)
+    last_user_event.parse_data["intent"]["confidence"] = 1.0
 
     return revert_events + [last_user_event]
 
@@ -804,6 +807,9 @@ def _revert_single_affirmation_events() -> List[Event]:
 
 def _revert_successful_rephrasing(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
+    if not last_user_event:
+        raise TypeError("Cannot find last event to revert to.")
+
     last_user_event = copy.deepcopy(last_user_event)
     return _revert_rephrasing_events() + [last_user_event]
 

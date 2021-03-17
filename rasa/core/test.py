@@ -74,6 +74,9 @@ StoryEvaluation = namedtuple(
     ],
 )
 
+PredictionList = List[Optional[Text]]
+EntityPredictionList = List[Dict[Text, Any]]
+
 
 class WrongPredictionException(RasaException, ValueError):
     """Raised if a wrong prediction is encountered."""
@@ -84,13 +87,14 @@ class EvaluationStore:
 
     def __init__(
         self,
-        action_predictions: Optional[List[Text]] = None,
-        action_targets: Optional[List[Text]] = None,
-        intent_predictions: Optional[List[Text]] = None,
-        intent_targets: Optional[List[Text]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None,
+        action_predictions: Optional[PredictionList] = None,
+        action_targets: Optional[PredictionList] = None,
+        intent_predictions: Optional[PredictionList] = None,
+        intent_targets: Optional[PredictionList] = None,
+        entity_predictions: Optional[EntityPredictionList] = None,
+        entity_targets: Optional[EntityPredictionList] = None,
     ) -> None:
+        """Initialize store attributes."""
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
         self.intent_predictions = intent_predictions or []
@@ -100,15 +104,14 @@ class EvaluationStore:
 
     def add_to_store(
         self,
-        action_predictions: Optional[List[Text]] = None,
-        action_targets: Optional[List[Text]] = None,
-        intent_predictions: Optional[List[Text]] = None,
-        intent_targets: Optional[List[Text]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None,
+        action_predictions: Optional[PredictionList] = None,
+        action_targets: Optional[PredictionList] = None,
+        intent_predictions: Optional[PredictionList] = None,
+        intent_targets: Optional[PredictionList] = None,
+        entity_predictions: Optional[EntityPredictionList] = None,
+        entity_targets: Optional[EntityPredictionList] = None,
     ) -> None:
-        """Add items or lists of items to the store"""
-
+        """Add items or lists of items to the store."""
         self.action_predictions.extend(action_predictions or [])
         self.action_targets.extend(action_targets or [])
         self.intent_targets.extend(intent_targets or [])
@@ -117,7 +120,7 @@ class EvaluationStore:
         self.entity_targets.extend(entity_targets or [])
 
     def merge_store(self, other: "EvaluationStore") -> None:
-        """Add the contents of other to self"""
+        """Add the contents of other to self."""
         self.add_to_store(
             action_predictions=other.action_predictions,
             action_targets=other.action_targets,
@@ -136,8 +139,8 @@ class EvaluationStore:
 
     @staticmethod
     def _compare_entities(
-        entity_predictions: List[Dict[Text, Any]],
-        entity_targets: List[Dict[Text, Any]],
+        entity_predictions: EntityPredictionList,
+        entity_targets: EntityPredictionList,
         i_pred: int,
         i_target: int,
     ) -> int:
@@ -175,7 +178,7 @@ class EvaluationStore:
     def _generate_entity_training_data(entity: Dict[Text, Any]) -> Text:
         return TrainingDataWriter.generate_entity(entity.get("text"), entity)
 
-    def serialise(self) -> Tuple[List[Text], List[Text]]:
+    def serialise(self) -> Tuple[PredictionList, PredictionList]:
         """Turn targets and predictions to lists of equal size for sklearn."""
         texts = sorted(
             list(
@@ -297,11 +300,12 @@ class WronglyClassifiedUserUtterance(UserUttered):
     type_name = "wrong_utterance"
 
     def __init__(self, event: UserUttered, eval_store: EvaluationStore) -> None:
-
-        if not eval_store.intent_predictions:
-            self.predicted_intent = None
-        else:
+        """Set `predicted_intent` and `predicted_entities` attributes."""
+        try:
             self.predicted_intent = eval_store.intent_predictions[0]
+        except LookupError:
+            self.predicted_intent = None
+
         self.predicted_entities = eval_store.entity_predictions
 
         intent = {"name": eval_store.intent_targets[0]}
@@ -360,7 +364,7 @@ async def _create_data_generator(
 
 def _clean_entity_results(
     text: Text, entity_results: List[Dict[Text, Any]]
-) -> List[Dict[Text, Any]]:
+) -> EntityPredictionList:
     """Extract only the token variables from an entity dict."""
     cleaned_entities = []
 
@@ -444,7 +448,7 @@ def _collect_user_uttered_predictions(
         predicted_base_intent = _get_full_retrieval_intent(predicted)
 
     user_uttered_eval_store.add_to_store(
-        intent_predictions=[predicted_base_intent], intent_targets=[intent_gold]
+        intent_targets=[intent_gold], intent_predictions=[predicted_base_intent]
     )
 
     entity_gold = event.entities
@@ -828,7 +832,7 @@ async def test(
     Returns:
         Evaluation summary.
     """
-    from rasa.test import get_evaluation_metrics
+    from rasa.model_testing import get_evaluation_metrics
 
     generator = await _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
@@ -946,7 +950,9 @@ def _log_evaluation_table(
 
 
 def _plot_story_evaluation(
-    targets: List[Text], predictions: List[Text], output_directory: Optional[Text]
+    targets: PredictionList,
+    predictions: PredictionList,
+    output_directory: Optional[Text],
 ) -> None:
     """Plot a confusion matrix of story evaluation."""
     from sklearn.metrics import confusion_matrix

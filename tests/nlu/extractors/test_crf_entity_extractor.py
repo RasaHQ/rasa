@@ -5,7 +5,7 @@ from typing import Dict, Text, List, Any
 import pytest
 
 from rasa.nlu.components import ComponentBuilder
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
@@ -27,7 +27,7 @@ async def test_train_persist_load_with_composite_entities(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/test/demo-rasa-composite-entities.yml",
@@ -98,7 +98,7 @@ async def test_train_persist_with_different_configurations(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/examples/rasa",
