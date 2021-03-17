@@ -1306,3 +1306,13 @@ def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
         potential_domain_path,
     )
     assert not Domain.is_domain_file(potential_domain_path)
+
+
+def test_domain_with_empty_intent_mapping():
+    # domain.yml with intent (intent_name) that has a `:` character
+    # and nothing after it.
+    test_yaml = """intents:
+    - intent_name:"""
+
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(test_yaml).as_dict()

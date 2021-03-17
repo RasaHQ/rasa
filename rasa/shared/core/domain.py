@@ -327,14 +327,14 @@ class Domain:
         """
         name, properties = list(intent.items())[0]
 
-        try:
+        if properties:
             properties.setdefault(USE_ENTITIES_KEY, True)
-        except:
+        else:
             raise InvalidDomain(
                 f"In the `domain.yml` file, the intent `{name}` cannot have value of"
                 f" `{type(properties)}`. This can happen if you add an intent with the"
-                f"`:`(colon character) after it and do not add any further information"
-                f"to this specific intent."
+                f" `:` (colon character) after it and do not add any"
+                f" further information to this specific intent."
                 f" If you remove the `:` character it should work. Please see "
                 f"{rasa.shared.constants.DOCS_URL_DOMAINS} for more information on how"
                 f" to correctly add `intents` in the `domain` and"
