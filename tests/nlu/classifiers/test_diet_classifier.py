@@ -495,7 +495,6 @@ async def test_set_random_seed(component_builder, tmpdir):
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
-    print("----")
     # second run
     (trained_b, _, persisted_path_b) = await train(
         _config,
