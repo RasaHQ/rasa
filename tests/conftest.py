@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import functools
 import os
 import random
 import pytest
@@ -35,23 +34,9 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.train import train_async, train_nlu_async
+from rasa.model_training import train_async, train_nlu_async
 from rasa.utils.common import TempDirectoryPath
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_E2E_STORIES_FILE,
-    DEFAULT_STACK_CONFIG,
-    DEFAULT_STORIES_FILE,
-    DOMAIN_WITH_CATEGORICAL_SLOT,
-    END_TO_END_STORY_MD_FILE,
-    INCORRECT_NLU_DATA,
-    SIMPLE_STORIES_FILE,
-)
 from rasa.shared.exceptions import RasaException
-
-DEFAULT_CONFIG_PATH = "rasa/shared/importers/default_config.yml"
-
-DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.yml"
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
@@ -79,12 +64,111 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "nlu", "selectors").absolute(),
     ],
     "category_full_model_training": [
-        Path("tests", "test_train.py").absolute(),
+        Path("tests", "test_model_training.py").absolute(),
         Path("tests", "nlu", "test_train.py").absolute(),
         Path("tests", "core", "test_training.py").absolute(),
         Path("tests", "core", "test_examples.py").absolute(),
     ],
 }
+
+
+TEST_DIALOGUES = [
+    "data/test_dialogues/default.json",
+    "data/test_dialogues/formbot.json",
+    "data/test_dialogues/moodbot.json",
+]
+
+EXAMPLE_DOMAINS = [
+    "data/test_domains/default_with_mapping.yml",
+    "data/test_domains/default_with_slots.yml",
+    "examples/formbot/domain.yml",
+    "examples/moodbot/domain.yml",
+]
+
+
+@pytest.fixture(scope="session")
+def nlu_as_json_path() -> Text:
+    return "data/examples/rasa/demo-rasa.json"
+
+
+@pytest.fixture(scope="session")
+def nlu_data_path() -> Text:
+    return "examples/moodbot/data/nlu.yml"
+
+
+@pytest.fixture(scope="session")
+def config_path() -> Text:
+    return "rasa/shared/importers/default_config.yml"
+
+
+@pytest.fixture(scope="session")
+def domain_with_categorical_slot_path() -> Text:
+    return "data/test_domains/domain_with_categorical_slot.yml"
+
+
+@pytest.fixture(scope="session")
+def domain_with_mapping_path() -> Text:
+    return "data/test_domains/default_with_mapping.yml"
+
+
+@pytest.fixture(scope="session")
+def stories_path() -> Text:
+    return "data/test_yaml_stories/stories_defaultdomain.yml"
+
+
+@pytest.fixture(scope="session")
+def e2e_stories_path() -> Text:
+    return "data/test_yaml_stories/stories_e2e.yml"
+
+
+@pytest.fixture(scope="session")
+def simple_stories_path() -> Text:
+    return "data/test_yaml_stories/stories_simple.yml"
+
+
+@pytest.fixture(scope="session")
+def stack_config_path() -> Text:
+    return "data/test_config/stack_config.yml"
+
+
+@pytest.fixture(scope="session")
+def incorrect_nlu_data_path() -> Text:
+    return "data/test/incorrect_nlu_format.yml"
+
+
+@pytest.fixture(scope="session")
+def end_to_end_story_path() -> Text:
+    return "data/test_evaluations/end_to_end_story.yml"
+
+
+@pytest.fixture(scope="session")
+def end_to_end_story_md_path() -> Text:
+    return "data/test_md/end_to_end_story.md"
+
+
+@pytest.fixture(scope="session")
+def e2e_story_file_unknown_entity_path() -> Text:
+    return "data/test_evaluations/story_unknown_entity.yml"
+
+
+@pytest.fixture(scope="session")
+def domain_path() -> Text:
+    return "data/test_domains/default_with_slots.yml"
+
+
+@pytest.fixture(scope="session")
+def story_file_trips_circuit_breaker_path() -> Text:
+    return "data/test_evaluations/stories_trip_circuit_breaker.yml"
+
+
+@pytest.fixture(scope="session")
+def e2e_story_file_trips_circuit_breaker_path() -> Text:
+    return "data/test_evaluations/end_to_end_trips_circuit_breaker.yml"
+
+
+@pytest.fixture(scope="session")
+def endpoints_path() -> Text:
+    return "data/test_endpoints/example_endpoints.yml"
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
@@ -98,7 +182,9 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
+async def _trained_default_agent(
+    tmpdir_factory: TempdirFactory, stories_path: Text
+) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
@@ -106,7 +192,7 @@ async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
         policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
     )
 
-    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
+    training_data = await agent.load_data(stories_path)
     agent.train(training_data)
     agent.persist(model_path)
     return agent
@@ -165,68 +251,18 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
-def default_domain_path() -> Text:
-    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
-
-
-@pytest.fixture(scope="session")
-def domain_with_categorical_slot_path() -> Text:
-    return DOMAIN_WITH_CATEGORICAL_SLOT
-
-
-@pytest.fixture(scope="session")
-def _default_domain() -> Domain:
-    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+def _domain(domain_path: Text) -> Domain:
+    return Domain.load(domain_path)
 
 
 @pytest.fixture()
-def default_domain(_default_domain: Domain) -> Domain:
-    return copy.deepcopy(_default_domain)
+def domain(_domain: Domain) -> Domain:
+    return copy.deepcopy(_domain)
 
 
 @pytest.fixture(scope="session")
-def default_stories_file() -> Text:
-    return DEFAULT_STORIES_FILE
-
-
-@pytest.fixture(scope="session")
-def default_e2e_stories_file() -> Text:
-    return DEFAULT_E2E_STORIES_FILE
-
-
-@pytest.fixture(scope="session")
-def simple_stories_file() -> Text:
-    return SIMPLE_STORIES_FILE
-
-
-@pytest.fixture(scope="session")
-def default_stack_config() -> Text:
-    return DEFAULT_STACK_CONFIG
-
-
-@pytest.fixture(scope="session")
-def default_nlu_data() -> Text:
-    return DEFAULT_NLU_DATA
-
-
-@pytest.fixture(scope="session")
-def incorrect_nlu_data() -> Text:
-    return INCORRECT_NLU_DATA
-
-
-@pytest.fixture(scope="session")
-def end_to_end_test_story_md_file() -> Text:
-    return END_TO_END_STORY_MD_FILE
-
-
-@pytest.fixture(scope="session")
-def default_config_path() -> Text:
-    return DEFAULT_CONFIG_PATH
-
-
-@pytest.fixture(scope="session")
-def default_config(default_config_path) -> List[Policy]:
-    return config.load(default_config_path)
+def config(config_path: Text) -> List[Policy]:
+    return config.load(config_path)
 
 
 @pytest.fixture(scope="session")
@@ -259,14 +295,15 @@ def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
 @pytest.fixture(scope="session")
 async def trained_rasa_model(
     trained_async: Callable,
-    default_domain_path: Text,
-    default_nlu_data: Text,
-    default_stories_file: Text,
+    domain_path: Text,
+    nlu_data_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
 ) -> Text:
     trained_stack_model_path = await trained_async(
-        domain=default_domain_path,
-        config=DEFAULT_STACK_CONFIG,
-        training_files=[default_nlu_data, default_stories_file],
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[nlu_data_path, stories_path],
     )
 
     return trained_stack_model_path
@@ -275,14 +312,15 @@ async def trained_rasa_model(
 @pytest.fixture(scope="session")
 async def trained_simple_rasa_model(
     trained_async: Callable,
-    default_domain_path: Text,
-    default_nlu_data: Text,
-    simple_stories_file: Text,
+    domain_path: Text,
+    nlu_data_path: Text,
+    simple_stories_path: Text,
+    stack_config_path: Text,
 ) -> Text:
     trained_stack_model_path = await trained_async(
-        domain=default_domain_path,
-        config=DEFAULT_STACK_CONFIG,
-        training_files=[default_nlu_data, simple_stories_file],
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[nlu_data_path, simple_stories_path],
     )
 
     return trained_stack_model_path
@@ -299,14 +337,12 @@ async def unpacked_trained_rasa_model(
 @pytest.fixture(scope="session")
 async def trained_core_model(
     trained_async: Callable,
-    default_domain_path: Text,
-    default_nlu_data: Text,
-    default_stories_file: Text,
+    domain_path: Text,
+    stack_config_path: Text,
+    stories_path: Text,
 ) -> Text:
     trained_core_model_path = await trained_async(
-        domain=default_domain_path,
-        config=DEFAULT_STACK_CONFIG,
-        training_files=[default_stories_file],
+        domain=domain_path, config=stack_config_path, training_files=[stories_path],
     )
 
     return trained_core_model_path
@@ -314,12 +350,13 @@ async def trained_core_model(
 
 @pytest.fixture(scope="session")
 async def trained_nlu_model(
-    trained_async: Callable, default_domain_path: Text, default_nlu_data: Text,
+    trained_async: Callable,
+    domain_path: Text,
+    nlu_data_path: Text,
+    stack_config_path: Text,
 ) -> Text:
     trained_nlu_model_path = await trained_async(
-        domain=default_domain_path,
-        config=DEFAULT_STACK_CONFIG,
-        training_files=[default_nlu_data],
+        domain=domain_path, config=stack_config_path, training_files=[nlu_data_path],
     )
 
     return trained_nlu_model_path
@@ -327,16 +364,16 @@ async def trained_nlu_model(
 
 @pytest.fixture(scope="session")
 async def trained_e2e_model(
-    trained_async,
-    default_domain_path,
-    default_stack_config,
-    default_nlu_data,
-    default_e2e_stories_file,
+    trained_async: Callable,
+    domain_path: Text,
+    stack_config_path: Text,
+    nlu_data_path: Text,
+    e2e_stories_path: Text,
 ) -> Text:
     return await trained_async(
-        domain=default_domain_path,
-        config=default_stack_config,
-        training_files=[default_nlu_data, default_e2e_stories_file],
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[nlu_data_path, e2e_stories_path],
     )
 
 

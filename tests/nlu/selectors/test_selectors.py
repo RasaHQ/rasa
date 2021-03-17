@@ -7,7 +7,7 @@ from mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.components import ComponentBuilder
 from rasa.shared.nlu.training_data import util
 from rasa.nlu.config import RasaNLUModelConfig
@@ -228,7 +228,7 @@ async def test_train_model_checkpointing(
         }
     )
 
-    await train(
+    await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
         data="data/test_selectors",
@@ -258,7 +258,7 @@ async def _train_persist_load_with_different_settings(
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/examples/rasa/demo-rasa.yml",
@@ -344,7 +344,7 @@ async def test_cross_entropy_with_linear_norm(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/test_selectors",
@@ -390,7 +390,7 @@ async def test_margin_loss_is_not_normalized(
     monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/test_selectors",
@@ -430,8 +430,11 @@ async def test_softmax_ranking(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
-        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
+        _config,
+        path=str(tmp_path),
+        data=data_path,
+        component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 

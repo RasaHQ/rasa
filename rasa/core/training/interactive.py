@@ -6,7 +6,7 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
+from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set
 
 
 from sanic import Sanic, response
@@ -34,7 +34,8 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.core import run, train, utils
+from rasa.core import run, utils
+import rasa.core.train
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
 from rasa.shared.core.domain import Domain
 import rasa.shared.core.events
@@ -1523,7 +1524,7 @@ async def record_messages(
 
 async def _get_tracker_events_to_plot(
     domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
-) -> List[Union[Text, List[Event]]]:
+) -> List[Union[Text, Deque[Event]]]:
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
@@ -1536,10 +1537,10 @@ async def _get_tracker_events_to_plot(
         )
         training_trackers = []
 
-    training_data_events = [t.events for t in training_trackers]
-    events_including_current_user_id = training_data_events + [conversation_id]
-
-    return events_including_current_user_id
+    training_data_events: List[Union[Text, Deque[Event]]] = [
+        t.events for t in training_trackers
+    ]
+    return training_data_events + [conversation_id]
 
 
 async def _get_training_trackers(
@@ -1628,7 +1629,7 @@ async def train_agent_on_start(
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
-    _agent = await train(
+    _agent = await rasa.core.train.train(
         args.get("domain"),
         args.get("stories"),
         model_directory,

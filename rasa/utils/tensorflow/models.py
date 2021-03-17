@@ -388,7 +388,8 @@ class RasaModel(TmpKerasModel):
             if number_of_dimensions > 1 and (
                 batch[idx].shape is None or batch[idx].shape[-1] is None
             ):
-                shape = [None] * (number_of_dimensions - 1) + [feature_dimension]
+                shape: List[Optional[int]] = [None] * (number_of_dimensions - 1)
+                shape.append(feature_dimension)
                 batch[idx].set_shape(shape)
 
             return batch[idx], idx + 1

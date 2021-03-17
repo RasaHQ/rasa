@@ -1,15 +1,16 @@
 import argparse
-import pytest
 from typing import Callable, Text
 from unittest.mock import Mock, ANY
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
 import rasa
+from rasa.core.train import do_interactive_learning
+from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
-from rasa.train import TrainingResult
-from tests.conftest import DEFAULT_NLU_DATA
+from rasa.model_training import TrainingResult
 
 
 def test_interactive_help(run: Callable[..., RunResult]):
@@ -52,7 +53,7 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
 
 
 def test_pass_arguments_to_rasa_train(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     # Create parser
     parser = argparse.ArgumentParser()
@@ -60,7 +61,7 @@ def test_pass_arguments_to_rasa_train(
     interactive.add_subparser(sub_parser, [])
 
     # Parse interactive command
-    args = parser.parse_args(["interactive", "--config", default_stack_config])
+    args = parser.parse_args(["interactive", "--config", stack_config_path])
     interactive._set_not_required_args(args)
 
     # Mock actual training
@@ -68,14 +69,14 @@ def test_pass_arguments_to_rasa_train(
     monkeypatch.setattr(rasa, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
-    train.train(args)
+    train.run_training(args)
 
     # Assert `train` was actually called
     mock.method.assert_called_once()
 
 
 def test_train_called_when_no_model_passed(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -85,7 +86,7 @@ def test_train_called_when_no_model_passed(
         [
             "interactive",
             "--config",
-            default_stack_config,
+            stack_config_path,
             "--data",
             "examples/moodbot/data",
         ]
@@ -94,7 +95,7 @@ def test_train_called_when_no_model_passed(
 
     # Mock actual training and interactive learning methods
     mock = Mock()
-    monkeypatch.setattr(train, "train", mock.train_model)
+    monkeypatch.setattr(train, "run_training", mock.train_model)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
@@ -104,7 +105,7 @@ def test_train_called_when_no_model_passed(
 
 
 def test_train_core_called_when_no_model_passed_and_core(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -115,7 +116,7 @@ def test_train_core_called_when_no_model_passed_and_core(
             "interactive",
             "core",
             "--config",
-            default_stack_config,
+            stack_config_path,
             "--stories",
             "examples/moodbot/data/stories.yml",
             "--domain",
@@ -126,29 +127,29 @@ def test_train_core_called_when_no_model_passed_and_core(
 
     # Mock actual training and interactive learning methods
     mock = Mock()
-    monkeypatch.setattr(train, "train_core", mock.train_core)
+    monkeypatch.setattr(train, "run_core_training", mock.run_core_training)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
 
     interactive.interactive(args)
-    mock.train_core.assert_called_once()
+    mock.run_core_training.assert_called_once()
 
 
 def test_no_interactive_without_core_data(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch, nlu_data_path: Text
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
     interactive.add_subparser(sub_parser, [])
 
     args = parser.parse_args(
-        ["interactive", "--config", default_stack_config, "--data", DEFAULT_NLU_DATA]
+        ["interactive", "--config", stack_config_path, "--data", nlu_data_path]
     )
     interactive._set_not_required_args(args)
 
     mock = Mock()
-    monkeypatch.setattr(train, "train", mock.train_model)
+    monkeypatch.setattr(train, "run_training", mock.train_model)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
@@ -161,9 +162,6 @@ def test_no_interactive_without_core_data(
 
 
 def test_pass_conversation_id_to_interactive_learning(monkeypatch: MonkeyPatch):
-    from rasa.core.train import do_interactive_learning
-    from rasa.core.training import interactive as interactive_learning
-
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
     interactive.add_subparser(sub_parser, [])
