@@ -10,8 +10,7 @@ import rasa
 from rasa.core.train import do_interactive_learning
 from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
-from rasa.train import TrainingResult
-from tests.conftest import DEFAULT_NLU_DATA
+from rasa.model_training import TrainingResult
 
 
 def test_interactive_help(run: Callable[..., RunResult]):
@@ -54,7 +53,7 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
 
 
 def test_pass_arguments_to_rasa_train(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     # Create parser
     parser = argparse.ArgumentParser()
@@ -62,7 +61,7 @@ def test_pass_arguments_to_rasa_train(
     interactive.add_subparser(sub_parser, [])
 
     # Parse interactive command
-    args = parser.parse_args(["interactive", "--config", default_stack_config])
+    args = parser.parse_args(["interactive", "--config", stack_config_path])
     interactive._set_not_required_args(args)
 
     # Mock actual training
@@ -77,7 +76,7 @@ def test_pass_arguments_to_rasa_train(
 
 
 def test_train_called_when_no_model_passed(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -87,7 +86,7 @@ def test_train_called_when_no_model_passed(
         [
             "interactive",
             "--config",
-            default_stack_config,
+            stack_config_path,
             "--data",
             "examples/moodbot/data",
         ]
@@ -106,7 +105,7 @@ def test_train_called_when_no_model_passed(
 
 
 def test_train_core_called_when_no_model_passed_and_core(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -117,7 +116,7 @@ def test_train_core_called_when_no_model_passed_and_core(
             "interactive",
             "core",
             "--config",
-            default_stack_config,
+            stack_config_path,
             "--stories",
             "examples/moodbot/data/stories.yml",
             "--domain",
@@ -138,14 +137,14 @@ def test_train_core_called_when_no_model_passed_and_core(
 
 
 def test_no_interactive_without_core_data(
-    default_stack_config: Text, monkeypatch: MonkeyPatch
+    stack_config_path: Text, monkeypatch: MonkeyPatch, nlu_data_path: Text
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
     interactive.add_subparser(sub_parser, [])
 
     args = parser.parse_args(
-        ["interactive", "--config", default_stack_config, "--data", DEFAULT_NLU_DATA]
+        ["interactive", "--config", stack_config_path, "--data", nlu_data_path]
     )
     interactive._set_not_required_args(args)
 

@@ -1252,7 +1252,7 @@ def test_extract_other_slots_with_entity(
 
 
 @pytest.mark.parametrize(
-    "domain, expected_action",
+    "domain_dict, expected_action",
     [
         (
             {
@@ -1285,7 +1285,7 @@ def test_extract_other_slots_with_entity(
     ],
 )
 async def test_ask_for_slot(
-    domain: Dict,
+    domain_dict: Dict,
     expected_action: Text,
     monkeypatch: MonkeyPatch,
     default_nlg: TemplatedNaturalLanguageGenerator,
@@ -1299,7 +1299,7 @@ async def test_ask_for_slot(
     )
 
     form = FormAction("my_form", endpoint_config)
-    domain = Domain.from_dict(domain)
+    domain = Domain.from_dict(domain_dict)
     await form._ask_for_slot(
         domain,
         default_nlg,

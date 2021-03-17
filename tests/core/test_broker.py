@@ -12,7 +12,6 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.brokers import pika
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -96,8 +95,8 @@ def test_pika_queues_from_args(
     assert pika_processor.queues == expected
 
 
-async def test_no_broker_in_config():
-    cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "event_broker")
+async def test_no_broker_in_config(endpoints_path: Text):
+    cfg = read_endpoint_config(endpoints_path, "event_broker")
 
     actual = await EventBroker.create(cfg)
 
