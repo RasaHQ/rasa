@@ -13,7 +13,7 @@ import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import (
     TrainingDataFull,
-    NLUPipelineTrainingData,
+    TrainingDataChunk,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
@@ -329,7 +329,7 @@ class ResponseSelector(DIETClassifier):
         )
 
     def _preprocess_train_data(
-        self, training_data: NLUPipelineTrainingData
+        self, training_data: Union[TrainingDataFull, TrainingDataChunk]
     ) -> RasaModelData:
         """Prepares data for training.
 

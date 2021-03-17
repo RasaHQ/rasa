@@ -816,7 +816,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _train_model(
         self,
         model_data: RasaModelData,
-        data_generator: RasaDataGenerator,
+        train_data_generator: RasaDataGenerator,
         validation_data_generator: Optional[RasaDataGenerator] = None,
     ) -> None:
         if not self.finetune_mode:
@@ -836,7 +836,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         self.model.fit(
-            data_generator,
+            train_data_generator,
             epochs=self.component_config[EPOCHS],
             validation_data=validation_data_generator,
             validation_freq=self.component_config[EVAL_NUM_EPOCHS],

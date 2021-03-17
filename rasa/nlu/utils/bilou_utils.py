@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict, Counter
-from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING, Union
 
 from rasa.nlu.constants import (
     BILOU_ENTITIES,
@@ -21,7 +21,10 @@ from rasa.shared.nlu.constants import (
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.tokens import Token
-    from rasa.shared.nlu.training_data.training_data import NLUPipelineTrainingData
+    from rasa.shared.nlu.training_data.training_data import (
+        TrainingDataFull,
+        TrainingDataChunk,
+    )
     from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -117,7 +120,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
 
 
 def build_tag_id_dict(
-    training_data: "NLUPipelineTrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+    training_data: TrainingDataFull, tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
@@ -144,7 +147,9 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: "NLUPipelineTrainingData") -> None:
+def apply_bilou_schema(
+    training_data: Union[TrainingDataFull, TrainingDataChunk]
+) -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:

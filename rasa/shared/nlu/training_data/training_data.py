@@ -100,12 +100,10 @@ class NLUPipelineTrainingData:
 
     @lazy_property
     def core_examples(self) -> List[Message]:
-        """Return examples which have come from NLU training data.
-
-        E.g. If the example came from a story or domain it is not included.
+        """Return examples which have come from stories or rules or domain.
 
         Returns:
-            List of NLU training examples.
+            List of core training examples.
         """
         return [ex for ex in self.training_examples if ex.is_core_or_domain_message()]
 
@@ -446,19 +444,6 @@ class NLUPipelineTrainingData:
     def has_e2e_examples(self):
         """Checks if there are any training examples from e2e stories."""
         return any(message.is_e2e_message() for message in self.training_examples)
-
-    def filter_training_examples(
-        self, condition: Callable[[Message], bool]
-    ) -> "NLUPipelineTrainingData":
-        """Filter training examples.
-
-        Args:
-            condition: A function that will be applied to filter training examples.
-
-        Returns:
-            NLUPipelineTrainingData: A TrainingData with filtered training examples.
-        """
-        return TrainingDataFull(list(filter(condition, self.training_examples)),)
 
 
 class TrainingDataFull(NLUPipelineTrainingData):
@@ -970,18 +955,6 @@ class TrainingData(TrainingDataFull):
         )
 
 
-RELEVANT_MESSAGE_KEYS = [
-    TEXT,
-    INTENT,
-    RESPONSE,
-    INTENT_RESPONSE_KEY,
-    ENTITIES,
-    TOKENS_NAMES[TEXT],
-    ACTION_TEXT,
-    ACTION_NAME,
-]
-
-
 class TrainingDataChunk(NLUPipelineTrainingData):
     """Holds a portion of the complete TrainingData.
 
@@ -989,6 +962,17 @@ class TrainingDataChunk(NLUPipelineTrainingData):
     Setting entity synonyms, regex features and lookup
     tables will result in an exception being raised.
     """
+
+    RELEVANT_MESSAGE_KEYS = [
+        TEXT,
+        INTENT,
+        RESPONSE,
+        INTENT_RESPONSE_KEY,
+        ENTITIES,
+        TOKENS_NAMES[TEXT],
+        ACTION_TEXT,
+        ACTION_NAME,
+    ]
 
     @staticmethod
     def _bytes_feature(array: Union[np.ndarray, Text]) -> tf.train.Feature:
@@ -1078,7 +1062,7 @@ class TrainingDataChunk(NLUPipelineTrainingData):
     ) -> Dict[Text, tf.train.Feature]:
         tf_message_data = {}
 
-        for data_key in RELEVANT_MESSAGE_KEYS:
+        for data_key in self.RELEVANT_MESSAGE_KEYS:
             if data_key not in data or not data[data_key]:
                 continue
 
@@ -1153,7 +1137,7 @@ class TrainingDataChunk(NLUPipelineTrainingData):
 
             for key in example.features.feature.keys():
                 if (
-                    key in RELEVANT_MESSAGE_KEYS
+                    key in cls.RELEVANT_MESSAGE_KEYS
                     or key.startswith(ENTITIES)
                     or key.startswith(TOKENS_NAMES[TEXT])
                 ):
@@ -1252,6 +1236,19 @@ class TrainingDataChunk(NLUPipelineTrainingData):
             attribute,
             origin,
         )
+
+    def filter_training_examples(
+        self, condition: Callable[[Message], bool]
+    ) -> "TrainingDataChunk":
+        """Filter training examples.
+
+        Args:
+            condition: A function that will be applied to filter training examples.
+
+        Returns:
+            TrainingDataChunk: A training data chunk with filtered training examples.
+        """
+        return TrainingDataChunk(list(filter(condition, self.training_examples)))
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

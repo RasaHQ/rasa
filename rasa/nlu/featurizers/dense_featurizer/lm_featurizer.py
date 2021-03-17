@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from typing import Any, Optional, Text, List, Type, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
 import rasa.core.utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -30,9 +30,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.utils import train_utils
 from rasa.shared.core.domain import Domain
-
-if TYPE_CHECKING:
-    from rasa.nlu.model import Metadata
+from rasa.nlu.model import Metadata
 
 
 MAX_SEQUENCE_LENGTHS = {
@@ -120,10 +118,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional["Component"] = None,
+        model_metadata: Optional[Metadata] = None,
+        cached_component: Optional[Component] = None,
         **kwargs: Any,
-    ) -> "Component":
+    ) -> Component:
         """Load this component from file.
 
         After a component has been trained, it will be persisted by
@@ -220,7 +218,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
     @classmethod
     def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
+        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
         """Cache the component for future use.
 
