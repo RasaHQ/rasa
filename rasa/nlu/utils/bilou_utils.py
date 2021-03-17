@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict, Counter
-from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING, Union
+from typing import List, Tuple, Text, Optional, Dict, Any, Union
 
 from rasa.nlu.constants import (
     BILOU_ENTITIES,
@@ -18,14 +18,12 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     TOKENS_NAMES,
 )
-
-if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.tokens import Token
-    from rasa.shared.nlu.training_data.training_data import (
-        TrainingDataFull,
-        TrainingDataChunk,
-    )
-    from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.tokens import Token
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +61,7 @@ def tag_without_prefix(tag: Text) -> Text:
 
 
 def bilou_tags_to_ids(
-    message: "Message",
+    message: Message,
     tag_id_dict: Dict[Text, int],
     tag_name: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> List[int]:
@@ -159,7 +157,7 @@ def apply_bilou_schema(
         apply_bilou_schema_to_message(message)
 
 
-def apply_bilou_schema_to_message(message: "Message") -> None:
+def apply_bilou_schema_to_message(message: Message) -> None:
     """Get a list of BILOU entity tags and set them on the given message.
 
     Args:
@@ -183,7 +181,7 @@ def apply_bilou_schema_to_message(message: "Message") -> None:
 
 
 def map_message_entities(
-    message: "Message", attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
+    message: Message, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values.
 
@@ -210,7 +208,7 @@ def map_message_entities(
 
 
 def bilou_tags_from_offsets(
-    tokens: List["Token"], entities: List[Tuple[int, int, Text]]
+    tokens: List[Token], entities: List[Tuple[int, int, Text]]
 ) -> List[Text]:
     """Creates BILOU tags for the given tokens and entities.
 
