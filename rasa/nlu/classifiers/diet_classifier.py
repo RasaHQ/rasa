@@ -305,6 +305,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config
         )
 
+        self.component_config = train_utils.update_deprecated_sparsity_to_density(
+            self.component_config
+        )
+
         self.component_config = train_utils.update_similarity_type(
             self.component_config
         )

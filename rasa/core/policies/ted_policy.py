@@ -363,6 +363,9 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
+        self.config = rasa.utils.train_utils.update_deprecated_sparsity_to_density(
+            self.config
+        )
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter

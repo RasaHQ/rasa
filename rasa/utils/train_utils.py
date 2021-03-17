@@ -29,6 +29,8 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
+    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
@@ -100,6 +102,28 @@ def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
             warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
         )
         config[LOSS_TYPE] = CROSS_ENTROPY
+
+    return config
+
+
+def update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Updates `WEIGHT_SPARSITY` to `CONNECTION_DENSITY = 1 - WEIGHT_SPARSITY`.
+
+    Args:
+        config: model configuration
+
+    Returns:
+        Updated model configuration
+    """
+    # TODO: Completely deprecate this with 3.0
+    if WEIGHT_SPARSITY in config:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"`{WEIGHT_SPARSITY}` is deprecated."
+            f"Please update your configuration file to use"
+            f"`{CONNECTION_DENSITY}` instead.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        )
+        config[CONNECTION_DENSITY] = 1.0 - config[WEIGHT_SPARSITY]
 
     return config
 
