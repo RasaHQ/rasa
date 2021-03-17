@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.core.utils
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
@@ -63,6 +62,11 @@ class HFTransformersNLP(Component):
         skip_model_load: bool = False,
     ) -> None:
         """Initializes HFTransformsNLP with the models specified."""
+        # TODO remove in rasa 3.0.0
+        from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (
+            LanguageModelFeaturizer,
+        )
+
         super(HFTransformersNLP, self).__init__(component_config)
 
         self._load_model_metadata()

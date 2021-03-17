@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-import rasa.nlu
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
