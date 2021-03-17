@@ -109,7 +109,7 @@ def test_data_validate_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [-c CONFIG]
-                          [--fail-on-warnings] [-d DOMAIN] [--data DATA]"""
+                          [--fail-on-warnings] [-d DOMAIN] [--data DATA [DATA ...]]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
