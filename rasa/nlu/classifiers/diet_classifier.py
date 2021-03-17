@@ -592,13 +592,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if label_example is not None:
                 return label_example
 
-    def _get_index_label_examples(
+    def _get_indexed_examples_for_labels(
         self,
         training_data: Union[TrainingDataFull, TrainingDataChunk],
         data_chunk_files: Optional[List[DataChunkFile]] = None,
     ) -> List[Tuple[int, Message]]:
         # Collect one example for each label
-        index_label_examples = []
+        indexed_examples_for_labels = []
         for label_name, idx in self._label_index_mapping.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, self._label_attribute
@@ -608,25 +608,26 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     label_name, data_chunk_files
                 )
 
-            index_label_examples.append((idx, label_example))
+            indexed_examples_for_labels.append((idx, label_example))
 
         # Sort the list of tuples based on label_idx
-        return sorted(index_label_examples, key=lambda x: x[0])
+        return sorted(indexed_examples_for_labels, key=lambda x: x[0])
 
     def _create_label_data(
-        self, index_label_examples: List[Tuple[int, Message]]
+        self, indexed_examples_for_labels: List[Tuple[int, Message]]
     ) -> RasaModelData:
-        """Create matrix with label_ids encoded in rows as bag of words.
+        """Creates matrix with label_ids encoded in rows as bag of words.
 
-        Find a training example for each label and get the encoded features
-        from the corresponding Message object.
+        Gets the encoded features from the corresponding Message object of
+        the training example.
         If the features are already computed, fetch them from the message object
         else compute a one hot encoding for the label as the feature vector.
         """
+        # when DIET performs only entity classification there is no label data
         if not self._label_attribute:
             return RasaModelData()
 
-        label_examples = [example for (_, example) in index_label_examples]
+        label_examples = [example for (_, example) in indexed_examples_for_labels]
 
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(label_examples):
@@ -649,7 +650,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 "No label features are present. Please check your configuration file."
             )
 
-        label_ids = np.array([idx for (idx, _) in index_label_examples])
+        label_ids = np.array([idx for (idx, _) in indexed_examples_for_labels])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(
@@ -875,7 +876,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return
 
         self._label_data = self._create_label_data(
-            self._get_index_label_examples(sample_data_chunk, data_chunk_files)
+            self._get_indexed_examples_for_labels(sample_data_chunk, data_chunk_files)
         )
 
         sample_model_data = self._preprocess_train_data(sample_data_chunk)
@@ -904,7 +905,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self.prepare_partial_training(training_data, config, **kwargs)
         self._label_data = self._create_label_data(
-            self._get_index_label_examples(training_data)
+            self._get_indexed_examples_for_labels(training_data)
         )
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
@@ -1155,6 +1156,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         label_data = RasaModelData(data=label_data)
+        # TODO remove in the 3.0.0 version
         try:
             index_label_mapping = io_utils.json_unpickle(
                 model_dir / f"{file_name}.index_label_mapping.json"

@@ -135,7 +135,7 @@ def test_preprocess_selector_multiple_retrieval_intents():
     response_selector = ResponseSelector()
     response_selector.prepare_partial_training(training_data)
     response_selector._label_data = response_selector._create_label_data(
-        response_selector._get_index_label_examples(training_data)
+        response_selector._get_indexed_examples_for_labels(training_data)
     )
     response_selector._preprocess_train_data(training_data)
 
@@ -165,7 +165,7 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
     )
     response_selector.prepare_partial_training(training_data)
     response_selector._label_data = response_selector._create_label_data(
-        response_selector._get_index_label_examples(training_data)
+        response_selector._get_indexed_examples_for_labels(training_data)
     )
     response_selector._preprocess_train_data(training_data)
 
@@ -198,7 +198,7 @@ def test_resolve_intent_response_key_from_label(
     )
     response_selector.prepare_partial_training(training_data)
     response_selector._label_data = response_selector._create_label_data(
-        response_selector._get_index_label_examples(training_data)
+        response_selector._get_indexed_examples_for_labels(training_data)
     )
     response_selector._preprocess_train_data(training_data)
 

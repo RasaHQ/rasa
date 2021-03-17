@@ -165,7 +165,7 @@ def test_model_data_signature_with_entities(
 
     classifier.prepare_partial_training(training_data)
     classifier._label_data = classifier._create_label_data(
-        classifier._get_index_label_examples(training_data)
+        classifier._get_indexed_examples_for_labels(training_data)
     )
     model_data = classifier._preprocess_train_data(training_data)
 
