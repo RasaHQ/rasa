@@ -26,7 +26,6 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
-    ActionExecuted,
     ActionExecutionRejected,
     BotUttered,
     Event,
@@ -35,6 +34,11 @@ from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
 )
+from rasa.shared.core.slots import Slot
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    KEY_SLOT_NAME,
+    KEY_ACTION,
+)
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
@@ -42,6 +46,7 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DOCS_URL_POLICIES,
     UTTER_PREFIX,
+    DOCS_URL_SLOTS,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
@@ -792,7 +797,9 @@ class MessageProcessor:
 
         return self.should_predict_another_action(action.name())
 
-    def _warn_about_new_slots(self, tracker, action_name, events) -> None:
+    def _warn_about_new_slots(
+        self, tracker: DialogueStateTracker, action_name: Text, events: List[Event]
+    ) -> None:
         # these are the events from that action we have seen during training
 
         if (
@@ -801,25 +808,28 @@ class MessageProcessor:
         ):
             return
 
-        fp = self.policy_ensemble.action_fingerprints[action_name]
-        slots_seen_during_train = fp.get(SLOTS, set())
+        fingerprint = self.policy_ensemble.action_fingerprints[action_name]
+        slots_seen_during_train = fingerprint.get(SLOTS, set())
         for e in events:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
-                s = tracker.slots.get(e.key)
+                s: Optional[Slot] = tracker.slots.get(e.key)
                 if s and s.has_features():
                     if e.key == REQUESTED_SLOT and tracker.active_loop:
                         pass
                     else:
                         rasa.shared.utils.io.raise_warning(
-                            f"Action '{action_name}' set a slot type '{e.key}' which "
-                            f"it never set during the training. This "
+                            f"Action '{action_name}' set slot type '{s.type_name}' "
+                            f"which it never set during the training. This "
                             f"can throw off the prediction. Make sure to "
                             f"include training examples in your stories "
                             f"for the different types of slots this "
                             f"action can return. Remember: you need to "
                             f"set the slots manually in the stories by "
-                            f"adding '- slot{{\"{e.key}\": {e.value}}}' "
-                            f"after the action."
+                            f"adding the following lines after the action:\n\n"
+                            f"- {KEY_ACTION}: {action_name}\n"
+                            f"- {KEY_SLOT_NAME}:\n"
+                            f"  - {e.key}: {e.value}\n",
+                            docs=DOCS_URL_SLOTS,
                         )
 
     def _log_action_on_tracker(
