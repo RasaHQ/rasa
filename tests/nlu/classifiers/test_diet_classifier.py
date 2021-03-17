@@ -502,7 +502,6 @@ async def test_set_random_seed(component_builder, tmpdir):
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
-    print("----")
 
     loaded_a = Interpreter.load(persisted_path_a, component_builder)
     loaded_b = Interpreter.load(persisted_path_b, component_builder)
