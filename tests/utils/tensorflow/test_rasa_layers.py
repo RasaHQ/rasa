@@ -400,6 +400,32 @@ def test_layer_gives_correct_output_units(
                 (0,),
             ],
         ),
+        # Sequence layer with only sequence-level sparse features & MLM (to check token_ids shape)
+        (
+            RasaSequenceLayer,
+            model_config_transformer_mlm,
+            {
+                "attribute_signature": {
+                    SEQUENCE: [feature_signature_sparse],
+                    SENTENCE: [],
+                }
+            },
+            ([feature_sparse_seq_3d], [], sequence_lengths,),
+            [
+                (batch_size, max_seq_length, units_transformer),
+                (batch_size, max_seq_length, units_hidden_layer),
+                (batch_size, max_seq_length, 1),
+                (batch_size, max_seq_length, 2),
+                (batch_size, max_seq_length, 1),
+                (
+                    num_transformer_layers,
+                    batch_size,
+                    num_transformer_heads,
+                    max_seq_length,
+                    max_seq_length,
+                ),
+            ],
+        ),
     ],
 )
 def test_correct_output_shape(
