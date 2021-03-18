@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from typing import List, Text
+from typing import List, Text, NoReturn
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
@@ -74,8 +74,13 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text):
     return model_path
 
 
-def run(args: argparse.Namespace):
-    import rasa.run
+def run(args: argparse.Namespace) -> NoReturn:
+    """Entrypoint for `rasa run`.
+
+    Args:
+        args: The CLI arguments.
+    """
+    import rasa
 
     args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True

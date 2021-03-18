@@ -1604,7 +1604,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
 |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-|                                 |                  | training step ('minibatch').                                 |
+|                                 |                  | training step ('batch').                                 |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | featurizers                     | []               | List of featurizer names (alias names). Only features        |
 |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -2485,7 +2485,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   +---------------------------------+------------------+--------------------------------------------------------------+
   | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
   |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-  |                                 |                  | training step ('minibatch').                                 |
+  |                                 |                  | training step ('batch').                                 |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | featurizers                     | []               | List of featurizer names (alias names). Only features        |
   |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -2526,7 +2526,7 @@ Selectors predict a bot response from a set of candidate responses.
 * **Outputs**
 
   A dictionary with the key as the retrieval intent of the response selector
-   and value containing predicted response templates, confidence and the response key under the retrieval intent
+   and value containing predicted responses, confidence and the response key under the retrieval intent
 
 
 
@@ -2544,7 +2544,7 @@ Selectors predict a bot response from a set of candidate responses.
     and stores two properties:
 
     * `response`: The predicted response key under the corresponding retrieval intent,
-    prediction's confidence and the associated response templates.
+    prediction's confidence and the associated responses.
 
     * `ranking`: Ranking with confidences of top 10 candidate response keys.
 
@@ -2558,7 +2558,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2567,7 +2567,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2597,7 +2597,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2606,7 +2606,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2712,9 +2712,8 @@ Selectors predict a bot response from a set of candidate responses.
   Default is `None`, i.e. the model is trained for all retrieval intents.
 
   In its default configuration, the component uses the retrieval intent with the response key(e.g. `faq/ask_name`) as the label for training.
-  Alternatively, it can also be configured to use the text of the response templates as the training label
-  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response
-  template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
+  Alternatively, it can also be configured to use the text of the responses as the training label
+  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.
 
   :::note examples and tutorials
@@ -2843,7 +2842,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("minibatch").                                 |
+|                                 |                   | training step ("batch").                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |

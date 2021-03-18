@@ -65,7 +65,8 @@ class RegexFeaturizer(SparseFeaturizer):
         Args:
             component_config: Configuration for the component
             known_patterns: Regex Patterns the component should pre-load itself with.
-            pattern_vocabulary_stats: Statistics about number of pattern slots filled and total number available.
+            pattern_vocabulary_stats: Statistics about number of pattern slots filled
+                and total number available.
             finetune_mode: Load component in finetune mode.
         """
         super().__init__(component_config)
@@ -113,7 +114,8 @@ class RegexFeaturizer(SparseFeaturizer):
         """Updates already known patterns with new patterns extracted from data.
 
         Args:
-            new_patterns: Patterns extracted from training data and to be merged with known patterns.
+            new_patterns: Patterns extracted from training data and to be merged with
+                known patterns.
         """
         max_number_patterns = self.pattern_vocabulary_stats["max_number_patterns"]
         pattern_name_index_map = {
@@ -147,7 +149,7 @@ class RegexFeaturizer(SparseFeaturizer):
             )
 
     def _get_num_additional_slots(self) -> int:
-        """Computes number of additional pattern slots available in vocabulary on top of known patterns."""
+        """Computes number of additional pattern slots available."""
         if self.number_additional_patterns is None:
             # We take twice the number of currently defined
             # regex patterns as the number of additional
@@ -170,7 +172,8 @@ class RegexFeaturizer(SparseFeaturizer):
         """Trains the component with all patterns extracted from training data.
 
         Args:
-            training_data: Training data consisting of training examples and patterns available.
+            training_data: Training data consisting of training examples and patterns
+                available.
             config: NLU Pipeline config
             **kwargs: Any other arguments
         """
@@ -194,7 +197,7 @@ class RegexFeaturizer(SparseFeaturizer):
         self._text_features_with_regex(message, TEXT)
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
-        """Helper method to extract features and set them appropriately in the message object.
+        """Helper method to extract features and set them appropriately in the message.
 
         Args:
             message: Message to be featurized.
@@ -303,7 +306,8 @@ class RegexFeaturizer(SparseFeaturizer):
             model_dir: Path where trained pipeline is stored.
             model_metadata: Metadata for the trained pipeline.
             cached_component: Previously cached component(if any).
-            should_finetune: Indicates whether to load the component for further finetuning.
+            should_finetune: Indicates whether to load the component for further
+                finetuning.
             **kwargs: Any other arguments.
         """
         file_name = meta.get("file")

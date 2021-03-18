@@ -333,10 +333,20 @@ class FormAction(LoopAction):
         )
 
     def extract_requested_slot(
-        self, tracker: "DialogueStateTracker", domain: Domain
+        self, tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text,
     ) -> Dict[Text, Any]:
-        """Extracts the value of requested slot from a user input else return `None`."""
-        slot_to_fill = self.get_slot_to_fill(tracker)
+        """Extract the value of requested slot from a user input else return `None`.
+
+        Args:
+            tracker: a DialogueStateTracker instance
+            domain: the current domain
+            slot_to_fill: the name of the slot to fill
+
+        Returns:
+            a dictionary with one key being the name of the slot to fill
+            and its value being the slot value, or an empty dictionary
+            if no slot value was found.
+        """
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
         # get mapping for requested slot
@@ -389,8 +399,8 @@ class FormAction(LoopAction):
         them. Otherwise there is no validation.
 
         Args:
-            slot_candidates: Extracted slots which are candidates to fill the slots required
-                by the form.
+            slot_candidates: Extracted slots which are candidates to fill the slots
+                required by the form.
             tracker: The current conversation tracker.
             domain: The current model domain.
             output_channel: The output channel which can be used to send messages
@@ -477,7 +487,9 @@ class FormAction(LoopAction):
         # extract requested slot
         slot_to_fill = self.get_slot_to_fill(tracker)
         if slot_to_fill:
-            slot_values.update(self.extract_requested_slot(tracker, domain))
+            slot_values.update(
+                self.extract_requested_slot(tracker, domain, slot_to_fill)
+            )
 
         validation_events = await self.validate_slots(
             slot_values, tracker, domain, output_channel, nlg
@@ -517,7 +529,7 @@ class FormAction(LoopAction):
         nlg: NaturalLanguageGenerator,
         events_so_far: List[Event],
     ) -> List[Event]:
-        """Request the next slot and utter template if needed, else return `None`."""
+        """Request the next slot and response if needed, else return `None`."""
         request_slot_events = []
 
         if await self.is_done(output_channel, nlg, tracker, domain, events_so_far):
@@ -605,7 +617,7 @@ class FormAction(LoopAction):
     # helpers
     @staticmethod
     def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it is not a list, `None` converted to empty list."""
+        """Convert object to a list if it isn't."""
         if x is None:
             x = []
         elif not isinstance(x, list):

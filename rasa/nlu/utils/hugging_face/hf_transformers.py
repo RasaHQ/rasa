@@ -175,7 +175,9 @@ class HFTransformersNLP(Component):
     def _add_lm_specific_special_tokens(
         self, token_ids: List[List[int]]
     ) -> List[List[int]]:
-        """Add language model specific special tokens which were used during their training.
+        """Adds language model specific special tokens.
+
+         These tokens were used during their training.
 
         Args:
             token_ids: List of token ids for each example in the batch.
@@ -329,9 +331,12 @@ class HFTransformersNLP(Component):
 
         Args:
             actual_sequence_lengths: List of length of each example without any padding.
-            max_input_sequence_length: Maximum length of a sequence that will be present in the input batch. This is
-            after taking into consideration the maximum input sequence the model can handle. Hence it can never be
-            greater than self.max_model_sequence_length in case the model applies length restriction.
+            max_input_sequence_length: Maximum length of a sequence that will be
+                present in the input batch. This is
+            after taking into consideration the maximum input sequence the model can
+                handle. Hence it can never be
+            greater than self.max_model_sequence_length in case the model applies
+                length restriction.
 
         Returns:
             Computed attention mask, 0 for padding and 1 for non-padding tokens.
@@ -470,10 +475,11 @@ class HFTransformersNLP(Component):
         attribute: Text,
         inference_mode: bool = False,
     ) -> None:
-        """Validate if sequence lengths of all inputs are less the max sequence length the model can handle
+        """Validate if sequence lengths of all inputs are less the max sequence length.
 
-        This method should throw an error during training, whereas log a debug message during inference if
-        any of the input examples have a length greater than maximum sequence length allowed.
+        This method should throw an error during training, whereas log a debug message
+        during inference if any of the input examples have a length greater than
+        maximum sequence length allowed.
 
         Args:
             actual_sequence_lengths: original sequence length of all inputs
@@ -492,8 +498,8 @@ class HFTransformersNLP(Component):
                         f"The sequence length of '{example.get(attribute)[:20]}...' "
                         f"is too long({sequence_length} tokens) for the "
                         f"model chosen {self.model_name} which has a maximum "
-                        f"sequence length of {self.max_model_sequence_length} tokens. Either "
-                        f"shorten the message or use a model which has no "
+                        f"sequence length of {self.max_model_sequence_length} tokens. "
+                        f"Either shorten the message or use a model which has no "
                         f"restriction on input sequence length like XLNet."
                     )
                 else:
@@ -508,10 +514,11 @@ class HFTransformersNLP(Component):
     def _add_extra_padding(
         self, sequence_embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
-        """
-        Add extra zero padding to match the original sequence length.
+        """Adds extra zero padding to match the original sequence length.
 
-        This is only done if the input was truncated during the batch preparation of input for the model.
+        This is only done if the input was truncated during the batch preparation of
+        input for the model.
+
         Args:
             sequence_embeddings: Embeddings returned from the model
             actual_sequence_lengths: original sequence length of all inputs
@@ -520,7 +527,8 @@ class HFTransformersNLP(Component):
             Modified sequence embeddings with padding if necessary
         """
         if self.max_model_sequence_length == NO_LENGTH_RESTRICTION:
-            # No extra padding needed because there wouldn't have been any truncation in the first place
+            # No extra padding needed because there wouldn't have been any truncation
+            # in the first place
             return sequence_embeddings
 
         reshaped_sequence_embeddings = []
@@ -582,8 +590,8 @@ class HFTransformersNLP(Component):
             max_input_sequence_length,
         ) = self._extract_sequence_lengths(batch_token_ids_augmented)
 
-        # Validate that all sequences can be processed based on their sequence lengths and
-        # the maximum sequence length the model can handle
+        # Validate that all sequences can be processed based on their sequence lengths
+        # and the maximum sequence length the model can handle
         self._validate_sequence_lengths(
             actual_sequence_lengths, batch_examples, attribute, inference_mode
         )
@@ -615,7 +623,8 @@ class HFTransformersNLP(Component):
         ) = self._post_process_sequence_embeddings(sequence_nonpadded_embeddings)
 
         # Pad zeros for examples which were truncated in inference mode.
-        # This is intentionally done after sentence embeddings have been extracted so that they are not affected
+        # This is intentionally done after sentence embeddings have been extracted so
+        # that they are not affected
         sequence_embeddings = self._add_extra_padding(
             sequence_embeddings, actual_sequence_lengths
         )

@@ -5,11 +5,13 @@ import aiohttp
 import logging
 from sanic.exceptions import abort
 import jwt
+import jwt.exceptions
 
 from rasa.core import constants
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.exceptions import ChannelConfigError
 from sanic.request import Request
 
 logger = logging.getLogger(__name__)
@@ -34,8 +36,9 @@ class RasaChatInput(RestInput):
         return cls(credentials.get("url"))
 
     def __init__(self, url: Optional[Text]) -> None:
+        """Initialise the channel with attributes."""
         self.base_url = url
-        self.jwt_key = None
+        self.jwt_key: Optional[Text] = None
         self.jwt_algorithm = None
 
     async def _fetch_public_key(self) -> None:
@@ -71,6 +74,12 @@ class RasaChatInput(RestInput):
                     )
 
     def _decode_jwt(self, bearer_token: Text) -> Dict:
+        if self.jwt_key is None:
+            raise ChannelConfigError(
+                "JWT public key is `None`. This is likely caused "
+                "by an error when retrieving the public key from Rasa X."
+            )
+
         authorization_header_value = bearer_token.replace(
             constants.BEARER_TOKEN_PREFIX, ""
         )
@@ -82,19 +91,15 @@ class RasaChatInput(RestInput):
         if self.jwt_key is None:
             await self._fetch_public_key()
 
-        # noinspection PyBroadException
         try:
             return self._decode_jwt(bearer_token)
-        except jwt.exceptions.InvalidSignatureError:
+        except jwt.InvalidSignatureError:
             logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
             return self._decode_jwt(bearer_token)
-        except Exception:
-            logger.exception("Failed to decode bearer token.")
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API."""
-
         jwt_payload = None
         if req.headers.get("Authorization"):
             jwt_payload = await self._decode_bearer_token(req.headers["Authorization"])

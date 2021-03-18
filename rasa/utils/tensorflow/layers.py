@@ -559,7 +559,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         Args:
             num_neg: Positive integer, the number of incorrect labels;
                 the algorithm will minimize their similarity to the input.
-            loss_type: The type of the loss function, either 'cross_entropy' or 'margin'.
+            loss_type: The type of the loss function, either 'cross_entropy' or
+                'margin'.
             mu_pos: Float, indicates how similar the algorithm should
                 try to make embedding vectors for correct labels;
                 should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -585,7 +586,8 @@ class DotProductLoss(tf.keras.layers.Layer):
                 Possible values - 'softmax' and 'linear_norm'.
 
         Raises:
-            LayerConfigException: When `similarity_type` is not one of 'cosine' or 'inner'.
+            LayerConfigException: When `similarity_type` is not one of 'cosine' or
+                'inner'.
         """
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -717,7 +719,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         label_embeddings: tf.Tensor,
         mask: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Computes similarity between input and label embeddings and model's confidence.
+        """Computes similarity.
+
+        Calculates similary between input and label embeddings and model's confidence.
 
         First compute the similarity from embeddings and then apply an activation
         function if needed to get the confidence.
@@ -728,14 +732,16 @@ class DotProductLoss(tf.keras.layers.Layer):
             mask: Mask over input and output sequence.
 
         Returns:
-            similarity between input and label embeddings and model's prediction confidence for each label.
+            similarity between input and label embeddings and model's prediction
+            confidence for each label.
         """
         similarities = self.sim(input_embeddings, label_embeddings, mask)
         confidences = similarities
         if self.model_confidence == SOFTMAX:
             confidences = tf.nn.softmax(similarities)
         if self.model_confidence == LINEAR_NORM:
-            # Clip negative values to 0 and linearly normalize to bring the predictions in the range [0,1].
+            # Clip negative values to 0 and linearly normalize to bring the predictions
+            # in the range [0,1].
             clipped_similarities = tf.nn.relu(similarities)
             confidences = clipped_similarities / tf.reduce_sum(
                 clipped_similarities, axis=-1
