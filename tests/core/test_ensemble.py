@@ -1,9 +1,7 @@
 from pathlib import Path
 from typing import List, Any, Text, Optional, Union
-from unittest.mock import Mock
 
 from _pytest.capture import CaptureFixture
-from _pytest.monkeypatch import MonkeyPatch
 import pytest
 from _pytest.logging import LogCaptureFixture
 import logging
