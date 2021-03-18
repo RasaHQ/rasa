@@ -355,9 +355,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
-        self._label_attribute = (
-            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
-        )
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
 
@@ -375,13 +372,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
 
     @property
+    def _label_attribute(self) -> Optional[Text]:
+        """Returns label attribute."""
+        return INTENT if self.component_config[INTENT_CLASSIFICATION] else None
+
+    @property
     def label_key(self) -> Optional[Text]:
-        """Return key if intent classification is activated."""
+        """Returns key if intent classification is activated."""
         return LABEL_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @property
     def label_sub_key(self) -> Optional[Text]:
-        """Return sub key if intent classification is activated."""
+        """Returns sub key if intent classification is activated."""
         return LABEL_SUB_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod

@@ -290,16 +290,19 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent = self.component_config[RETRIEVAL_INTENT]
         self.use_text_as_label = self.component_config[USE_TEXT_AS_LABEL]
 
-        self._label_attribute = (
-            RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
-        )
+    @property
+    def _label_attribute(self) -> Text:
+        """Returns label attribute."""
+        return RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
 
     @property
     def label_key(self) -> Text:
+        """Returns key if intent classification is activated."""
         return LABEL_KEY
 
     @property
     def label_sub_key(self) -> Text:
+        """Returns sub key if intent classification is activated."""
         return LABEL_SUB_KEY
 
     @staticmethod
