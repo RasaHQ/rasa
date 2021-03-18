@@ -860,7 +860,7 @@ class Domain:
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
-    def raise_action_not_found_exception(self, action_name_or_text: Text) -> "NoReturn":
+    def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:
         """Raises exception if action name or text not part of the domain or stories.
 
         Args:

@@ -117,7 +117,7 @@ class InputChannel:
         raise NotImplementedError("Component listener needs to provide blueprint.")
 
     @classmethod
-    def raise_missing_credentials_exception(cls) -> "NoReturn":
+    def raise_missing_credentials_exception(cls) -> NoReturn:
         raise RasaException(
             f"To use the {cls.name()} input channel, you need to "
             f"pass a credentials file using '--credentials'. "
