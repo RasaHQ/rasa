@@ -1,5 +1,7 @@
 from typing import Text
 import numpy as np
+
+from rasa.core.agent import Agent
 from rasa.shared.core.constants import ENTITY_LABEL_SEPARATOR
 import scipy.sparse
 
@@ -183,11 +185,11 @@ def test_single_state_featurizer_creates_encoded_all_actions():
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_entity_roles_and_groups(
-    unpacked_trained_moodbot_path: Text,
+    unpacked_trained_spacybot_path: Text,
 ):
     from rasa.core.agent import Agent
 
-    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
     # TODO roles and groups are not supported in e2e yet
     domain = Domain(
         intents=[],
@@ -227,11 +229,11 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
-    unpacked_trained_moodbot_path: Text,
+    unpacked_trained_spacybot_path: Text,
 ):
     from rasa.core.agent import Agent
 
-    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
     # TODO roles and groups are not supported in e2e yet
     domain = Domain(
         intents=[],
@@ -308,11 +310,9 @@ def test_single_state_featurizer_uses_dtype_float():
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_interpreter_state_with_action_listen(
-    unpacked_trained_moodbot_path: Text,
+    unpacked_trained_spacybot_path: Text,
 ):
-    from rasa.core.agent import Agent
-
-    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
 
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"greet": 0, "inform": 1}
@@ -372,12 +372,12 @@ def test_single_state_featurizer_with_interpreter_state_with_action_listen(
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
-    unpacked_trained_moodbot_path: Text,
+    unpacked_trained_spacybot_path: Text,
 ):
     # check that user features are ignored when action_name is not action_listen
     from rasa.core.agent import Agent
 
-    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ENTITIES] = {"c": 0}
@@ -409,7 +409,7 @@ def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
-    unpacked_trained_moodbot_path: Text,
+    unpacked_trained_spacybot_path: Text,
 ):
     # check that action name features are not added by the featurizer when not
     # present in the state and
@@ -417,7 +417,7 @@ def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
     # and action_name is features are not added
     from rasa.core.agent import Agent
 
-    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
 
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
@@ -472,7 +472,7 @@ def test_to_sparse_sentence_features():
 
 @pytest.mark.timeout(300)  # these can take a longer time than the default timeout
 def test_single_state_featurizer_uses_regex_interpreter(
-    unpacked_trained_moodbot_path: Text,
+    unpacked_trained_spacybot_path: Text,
 ):
     from rasa.core.agent import Agent
 
@@ -485,7 +485,7 @@ def test_single_state_featurizer_uses_regex_interpreter(
     f.prepare_for_training(domain, RegexInterpreter())
     # simulate that nlu and core models were manually combined for prediction
     # by passing trained interpreter to encode_all_actions
-    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
     features = f._extract_state_features({TEXT: "some text"}, interpreter)
     # RegexInterpreter cannot create features for text, therefore since featurizer
     # was trained without nlu, features for text should be empty

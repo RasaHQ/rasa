@@ -70,7 +70,7 @@ from tests.core.utilities import (
 
 from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
 
-test_domain = Domain.load("examples/moodbot/domain.yml")
+test_domain = Domain.load("data/test_moodbot/domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
