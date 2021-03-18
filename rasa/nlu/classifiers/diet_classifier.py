@@ -861,7 +861,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_chunk_files: List of data chunk files.
             config: The model configuration parameters.
         """
-        if not data_chunk_files:
+        if not data_chunk_files or (
+            self._label_attribute and not self._label_index_mapping
+        ):
             self._no_data_debug_log()
             return
 
@@ -902,6 +904,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return
 
         self.prepare_partial_training(training_data, config, **kwargs)
+
+        if self._label_attribute and not self._label_index_mapping:
+            self._no_data_debug_log()
+            return
+
         self._label_data = self._create_label_data(
             self._get_indexed_examples_for_labels(training_data)
         )

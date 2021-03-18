@@ -307,6 +307,14 @@ class ResponseSelector(DIETClassifier):
 
     @staticmethod
     def model_class(use_text_as_label: bool = False) -> Type[RasaModel]:
+        """Returns the class of the model to use.
+
+        Args:
+            use_text_as_label: If `True`, use response text as labels.
+
+        Returns:
+            The class of the model to use.
+        """
         if use_text_as_label:
             return DIET2DIET
         else:
