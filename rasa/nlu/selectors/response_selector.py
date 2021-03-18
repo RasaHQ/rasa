@@ -277,18 +277,21 @@ class ResponseSelector(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = False
         component_config[BILOU_FLAG] = None
 
-        # Initialize defaults
-        self.responses = responses or {}
-        self.all_retrieval_intents = all_retrieval_intents or []
-        self.retrieval_intent = None
-        self.use_text_as_label = False
-
         super().__init__(
             component_config,
             index_label_mapping,
             entity_tag_specs,
             model,
             finetune_mode=finetune_mode,
+        )
+
+        self.responses = responses or {}
+        self.all_retrieval_intents = all_retrieval_intents or []
+        self.retrieval_intent = self.component_config[RETRIEVAL_INTENT]
+        self.use_text_as_label = self.component_config[USE_TEXT_AS_LABEL]
+
+        self._label_attribute = (
+            RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
         )
 
     @property
@@ -300,19 +303,11 @@ class ResponseSelector(DIETClassifier):
         return LABEL_SUB_KEY
 
     @staticmethod
-    def model_class(use_text_as_label: bool) -> Type[RasaModel]:
+    def model_class(use_text_as_label: bool = False) -> Type[RasaModel]:
         if use_text_as_label:
             return DIET2DIET
         else:
             return DIET2BOW
-
-    def _load_selector_params(self, config: Dict[Text, Any]) -> None:
-        self.retrieval_intent = config[RETRIEVAL_INTENT]
-        self.use_text_as_label = config[USE_TEXT_AS_LABEL]
-
-    def _check_config_parameters(self) -> None:
-        super()._check_config_parameters()
-        self._load_selector_params(self.component_config)
 
     def _set_message_property(
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
@@ -386,9 +381,6 @@ class ResponseSelector(DIETClassifier):
 
         See parent class for more information.
         """
-        self._label_attribute = (
-            RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
-        )
         self._create_label_index_mappings(training_data)
 
         # Collect all retrieval intents present in the data before filtering
@@ -514,7 +506,6 @@ class ResponseSelector(DIETClassifier):
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
-
         return self.model_class(self.use_text_as_label)(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,

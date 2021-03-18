@@ -355,7 +355,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
-        self._label_attribute = None
+        self._label_attribute = (
+            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
+        )
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
 
@@ -796,9 +798,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         See parent class for more information.
         """
-        self._label_attribute = (
-            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
-        )
         self._create_label_index_mappings(training_data)
 
         self._create_entity_tag_specs(training_data)
