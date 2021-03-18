@@ -630,7 +630,10 @@ class RemoteAction(Action):
             if not generated_response:
                 generated_response = response.pop("template", None)
                 rasa.shared.utils.io.raise_deprecation_warning(
-                    "The terminology 'template' is deprecated and replaced by 'response', use the `response` parameter instead of `template` in the dispatcher.",
+                    "The terminology 'template' is deprecated and replaced by "
+                    "'response', use the `response` parameter instead of "
+                    "`template` in the dispatcher. You can do that by upgrading "
+                    "to Rasa SDK 2.4.1 or adapting your custom SDK.",
                     docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}/sdk-dispatcher",
                 )
             if generated_response:
