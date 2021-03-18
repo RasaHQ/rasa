@@ -853,14 +853,14 @@ class Domain:
             AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
         )
 
-    def index_for_action(self, action_name: Text) -> Union[int, NoReturn]:
+    def index_for_action(self, action_name: Text) -> Union[int, "NoReturn"]:
         """Looks up which action index corresponds to this action name."""
         try:
             return self.action_names_or_texts.index(action_name)
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
-    def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:
+    def raise_action_not_found_exception(self, action_name_or_text: Text) -> "NoReturn":
         """Raises exception if action name or text not part of the domain or stories.
 
         Args:

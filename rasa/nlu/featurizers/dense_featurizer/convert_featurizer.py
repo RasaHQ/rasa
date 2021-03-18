@@ -183,7 +183,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         )
 
     @staticmethod
-    def _get_signature(signature: Text, module: Any) -> NoReturn:
+    def _get_signature(signature: Text, module: Any) -> "NoReturn":
         """Retrieve a signature from a (hopefully loaded) TF model."""
         if not module:
             raise Exception(
