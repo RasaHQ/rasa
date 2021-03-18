@@ -213,7 +213,7 @@ def background_server(
 
         return TrainingResult(model=fake_model_path)
 
-    def run_server(monkeypatch: MonkeyPatch) -> NoReturn:
+    def run_server(monkeypatch: MonkeyPatch) -> "NoReturn":
         import sys
 
         monkeypatch.setattr(
@@ -1076,7 +1076,7 @@ async def test_callback_unexpected_error(
     config = Path(stack_config_path).read_text()
     payload = f"{nlu_data}\n{config}"
 
-    async def raiseUnexpectedError() -> NoReturn:
+    async def raiseUnexpectedError() -> "NoReturn":
         raise ValueError()
 
     monkeypatch.setattr(

@@ -373,7 +373,7 @@ def validate_request_body(request: Request, error_message: Text) -> None:
         raise ErrorResponse(HTTPStatus.BAD_REQUEST, "BadRequest", error_message)
 
 
-async def authenticate(_: Request) -> NoReturn:
+async def authenticate(_: Request) -> "NoReturn":
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "

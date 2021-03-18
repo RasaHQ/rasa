@@ -74,7 +74,7 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text):
     return model_path
 
 
-def run(args: argparse.Namespace) -> NoReturn:
+def run(args: argparse.Namespace) -> "NoReturn":
     """Entrypoint for `rasa run`.
 
     Args:
