@@ -298,7 +298,7 @@ def run_in_loop(
     result = loop.run_until_complete(f)
 
     # Let's also finish all running tasks:
-    pending = asyncio.Task.all_tasks()
+    pending = asyncio.all_tasks(loop)
     loop.run_until_complete(asyncio.gather(*pending))
 
     return result

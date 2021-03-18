@@ -48,7 +48,7 @@ async def test_events_schema(
     with open(TELEMETRY_EVENTS_JSON) as f:
         schemas = json.load(f)["events"]
 
-    initial = asyncio.Task.all_tasks()
+    initial = asyncio.all_tasks()
     # Generate all known backend telemetry events, and then use events.json to
     # validate their schema.
     training_data = TrainingDataImporter.load_from_config(config_path)
@@ -81,7 +81,7 @@ async def test_events_schema(
 
     telemetry.track_nlu_model_test(TrainingData())
 
-    pending = asyncio.Task.all_tasks() - initial
+    pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
     assert mock.call_count == 15
