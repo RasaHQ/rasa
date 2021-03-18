@@ -44,7 +44,6 @@ from rasa.shared.exceptions import InvalidConfigException, FileNotFoundException
 from rasa.shared.nlu.training_data.training_data import (
     TrainingDataFull,
     TrainingDataChunk,
-    NLUPipelineTrainingData,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
@@ -392,9 +391,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _invert_mapping(mapping: Dict) -> Dict:
         return {value: key for key, value in mapping.items()}
 
-    def _create_label_index_mappings(
-        self, training_data: NLUPipelineTrainingData
-    ) -> None:
+    def _create_label_index_mappings(self, training_data: TrainingDataFull) -> None:
         distinct_label_ids = {
             example.get(self._label_attribute)
             for example in training_data.intent_examples
@@ -432,7 +429,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def _tag_id_index_mapping_for(
-        tag_name: Text, training_data: NLUPipelineTrainingData
+        tag_name: Text, training_data: TrainingDataFull
     ) -> Optional[Dict[Text, int]]:
         """Create mapping from tag name to id."""
         distinct_tags = training_data.distinct_entity_tags(tag_name)
