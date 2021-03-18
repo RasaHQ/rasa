@@ -78,7 +78,7 @@ class PolicyEnsemble:
                 break
 
         for policy in self.policies:
-            policy.set_rule_only_data(rule_only_data)
+            policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy

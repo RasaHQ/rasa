@@ -133,9 +133,9 @@ class Policy:
         """Returns the policy's featurizer."""
         return self.__featurizer
 
-    def set_rule_only_data(self, rule_only_data: Dict[Text, Any]) -> None:
-        """Sets policy's shared rule only data needed for correct featurization."""
-        self._rule_only_data = rule_only_data
+    def set_shared_policy_states(self, **kwargs: Any) -> None:
+        """Sets policy's shared states for correct featurization."""
+        self._rule_only_data = kwargs.get("rule_only_data", {})
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
