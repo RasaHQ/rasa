@@ -18,8 +18,8 @@ how you can migrate from one version to another.
 
 Rasa now supports spaCy 3.0. This means that we can support more features for more
 languages but this also introduced a breaking change. SpaCy 3.0 deprecated the
-`spacy link <language model>` command so that means that from now on
-[the full model name](https://spacy.io/models) needs to be used in the `config.yml` file.
+`spacy link <language model>` command. So from now on you need to use the
+[the full model name](https://spacy.io/models) in the `config.yml` file.
 
 **Before**
 
@@ -47,8 +47,8 @@ pipeline:
 
 **Fallback**
 
-To make the transition easier, Rasa will try to fall back to a medium spaCy model when-ever
-a compatible language is configured for the entire pipeline in `config.yml` even if you don't
+To make the transition easier, Rasa will try to fall back to a medium spaCy model whenever
+a compatible language is configured for the entire pipeline in `config.yml`, even if you don't
 specify a `model`. This fallback behavior is temporary and will be deprecated in spaCy 3.0.
 
 We've updated our docs to reflect these changes. All examples now show a direct link to the
