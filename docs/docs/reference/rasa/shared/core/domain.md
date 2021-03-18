@@ -297,7 +297,7 @@ See `_add_categorical_slot_default_value` for docstring.
 #### index\_for\_action
 
 ```python
- | index_for_action(action_name: Text) -> Union[int, NoReturn]
+ | index_for_action(action_name: Text) -> int
 ```
 
 Looks up which action index corresponds to this action name.
