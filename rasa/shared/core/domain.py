@@ -1734,10 +1734,10 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                 slots = forms[form_name].get("required_slots")
             elif "global_not_intent" in form_data and "required_slots" not in form_data:
                 raise InvalidDomain(
-                    f"When you have a `global_not_intent` parameter, you need to add "
-                    f"the keyword `required_slots` after it to define where your slot"
-                    f" mappings begin. Please see {rasa.shared.constants.DOCS_URL_FORMS}"
-                    f" for more information."
+                    f"If you use the `global_not_intent` parameter in your form, then"
+                    f" the keyword `required_slots` should precede the definition"
+                    f" of your slot mappings. Please see"
+                    f" {rasa.shared.constants.DOCS_URL_FORMS} for more information."
                 )
             else:
                 slots = form_data
@@ -1747,6 +1747,15 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                 f"as '{type(form_data)}'. They need to be specified "
                 f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
                 f"for more information."
+            )
+
+        if "required_slots" not in form_data:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The definition of slot mappings in your form"
+                f" should always be preceded by the keyword `required_slots`."
+                f" The lack of this keyword will be deprecated in"
+                f" Rasa Open Source 3.0.0. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information.",
             )
 
         if not isinstance(slots, Dict):
