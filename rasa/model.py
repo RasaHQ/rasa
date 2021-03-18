@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 # Type alias for the fingerprint
-Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
+Fingerprint = Dict[Text, Union[Optional[Text], List[Text], int, float]]
 
 FINGERPRINT_FILE_PATH = "fingerprint.json"
 
@@ -81,7 +81,7 @@ SECTION_NLU = Section(
         FINGERPRINT_RASA_VERSION_KEY,
     ],
 )
-SECTION_NLG = Section(name="NLG templates", relevant_keys=[FINGERPRINT_NLG_KEY])
+SECTION_NLG = Section(name="NLG responses", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 class FingerprintComparisonResult:
@@ -314,13 +314,13 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
 
-    responses = domain.templates
+    responses = domain.responses
 
     # Do a copy of the domain to not change the actual domain (shallow is enough)
     domain = copy.copy(domain)
     # don't include the response texts in the fingerprint.
     # Their fingerprint is separate.
-    domain.templates = {}
+    domain.responses = {}
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_fingerprint_of_config(
@@ -455,12 +455,12 @@ def should_retrain(
         old_model: Path to the old zipped model file.
         train_path: Path to the directory in which the new model will be trained.
         has_e2e_examples: Whether the new training data contains e2e examples.
-        force_training: Indicates if the model needs to be retrained even if the data has not changed.
+        force_training: Indicates if the model needs to be retrained even if the data
+            has not changed.
 
     Returns:
-        A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa NLU needs
-        to be retrained or not.
-
+        A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa
+        NLU needs to be retrained or not.
     """
     fingerprint_comparison = FingerprintComparisonResult()
 

@@ -16,6 +16,134 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.4.0] - 2021-03-11
+                       
+
+### Deprecations and Removals
+- [#6484](https://github.com/rasahq/rasa/issues/6484): NLG Server
+  - Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa Open Source 3.0.0.
+
+  `rasa.core.agent`
+  - The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa Open Source 3.0.0. Please see [here](nlg.mdx) for more details.
+
+  `rasa.core.nlg.generator`
+  - `generate()` now takes in  `utter_action` as a parameter.
+  - The terminology `template` is deprecated and replaced by `response`. Support for `template` in the `NaturalLanguageGenerator` will be removed in Rasa Open Source 3.0.0.
+
+  `rasa.shared.core.domain`
+  - The property `templates` is deprecated. Use `responses` instead. It will be removed in Rasa Open Source 3.0.0.
+  - `retrieval_intent_templates` will be removed in Rasa Open Source 3.0.0. Please use `retrieval_intent_responses` instead.
+  - `is_retrieval_intent_template` will be removed in Rasa Open Source 3.0.0. Please use `is_retrieval_intent_response` instead.
+  - `check_missing_templates` will be removed in Rasa Open Source 3.0.0. Please use `check_missing_responses` instead.
+
+  Response Selector
+  - The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](components.mdx#selectors) for more details.
+  - The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](components.mdx#selectors) for more details.
+
+### Improvements
+- [#7022](https://github.com/rasahq/rasa/issues/7022): The following endpoints now require the existence of the conversation for the specified conversation ID, raising an exception and returning a 404 status code.
+
+  * `GET /conversations/<conversation_id:path>/story`
+
+  * `POST /conversations/<conversation_id:path>/execute`
+
+  * `POST /conversations/<conversation_id:path>/predict`
+- [#7438](https://github.com/rasahq/rasa/issues/7438): Simplify our training by overwriting `train_step` instead of `fit` for our custom models.
+
+  This allows us to use the build-in callbacks from Keras, such as the 
+  [Tensorboard Callback](https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/TensorBoard), 
+  which offers more functionality compared to what we had before. 
+
+    :::warning
+    If you want to use Tensorboard for `DIETClassifier`, `ResponseSelector`, or `TEDPolicy` and log metrics after 
+    every (mini)batch, please use 'batch' instead of 'minibatch' as 'tensorboard_log_level'.
+- [#7578](https://github.com/rasahq/rasa/issues/7578): When `TED` is configured to extract entities `rasa test` now evaluates them against the labels in the test stories. Results are saved in `/results` along with the results for the NLU components that extract entities.
+- [#7680](https://github.com/rasahq/rasa/issues/7680): We're now running integration tests for Rasa Open Source, with initial coverage for `SQLTrackerStore` (with PostgreSQL),
+  `RedisLockStore` (with Redis) and `PikaEventBroker` (with RabbitMQ). The integration tests are now part of our
+  CI, and can also be ran locally using `make test-integration`
+  (see [Rasa Open Source README](https://github.com/RasaHQ/rasa#running-the-integration-tests) for more information).
+- [#7763](https://github.com/rasahq/rasa/issues/7763): Allow tests to be located anywhere, not just in `tests` directory.
+- [#7893](https://github.com/rasahq/rasa/issues/7893): Model configuration files are now validated whether they match the expected schema.
+- [#7952](https://github.com/rasahq/rasa/issues/7952): Speed up `YAMLStoryReader.is_key_in_yaml` function by making it to check if key is in YAML without 
+  actually parsing the text file.
+- [#7953](https://github.com/rasahq/rasa/issues/7953): Speed up YAML parsing by reusing parsers, making the process of environment variable interpolation optional,
+  and by not adding duplicating implicit resolvers and YAML constructors to `ruamel.yaml`
+- [#7955](https://github.com/rasahq/rasa/issues/7955): Drastically improved finger printing time for large story graphs
+- [#8000](https://github.com/rasahq/rasa/issues/8000): Remove console logging of conversation level F1-score and precision since these calculations were not meaningful.
+
+  Add conversation level accuracy to core policy results logged to file in `story_report.json` after running `rasa test core` or `rasa test`.
+- [#8100](https://github.com/rasahq/rasa/issues/8100): Improved the [lock store](lock-stores.mdx) debug log message when the process has to
+  queue because other messages have to be processed before this item.
+
+### Bugfixes
+- [#4612](https://github.com/rasahq/rasa/issues/4612): Fixed the bug that OR statements in stories would break the check whether a model needs to be retrained
+- [#7063](https://github.com/rasahq/rasa/issues/7063): Update the spec of `POST /model/test/intents` and add tests for cases when JSON is provided.
+
+  Fix the incorrect temporary file extension for the data that gets extracted from the payload provided
+  in the body of `POST /model/test/intents` request.
+- [#7113](https://github.com/rasahq/rasa/issues/7113): Fix for the cli command `rasa data convert config` when migrating Mapping Policy and no rules.
+
+  Making `rasa data convert config` migrate correctly the Mapping Policy when no rules are available. It updates the `config.yml` file by removing the `MappingPolicy` and adding the `RulePolicy` instead. Also, it creates the `data/rules.yml` file even if empty in the case of no available rules.
+- [#7470](https://github.com/rasahq/rasa/issues/7470): Allow to have slots with values that result to a dictionary under the key `slot_was_set` (in `stories.yml` file).
+
+  An example would be to have the following story step in `stories.yml`:
+  ```yaml
+  - slot_was_set:
+      - some_slot:
+          some_key: 'some_value'
+          other_key: 'other_value'
+  ```
+  This would be allowed if the `some_slot` is also set accordingly in the `domain.yml` with type `any`.
+- [#7662](https://github.com/rasahq/rasa/issues/7662): Update the fingerprinting function to recognize changes in lookup files.
+- [#7932](https://github.com/rasahq/rasa/issues/7932): Fixed a bug when interpolating environment variables in YAML files which included `$` in their value. 
+  This led to the following stack trace:
+
+  ```
+  ValueError: Error when trying to expand the environment variables in '${PASSWORD}'. Please make sure to also set these environment variables: '['$qwerty']'.
+  (13 additional frame(s) were not displayed)
+  ...
+    File "rasa/utils/endpoints.py", line 26, in read_endpoint_config
+      content = rasa.shared.utils.io.read_config_file(filename)
+    File "rasa/shared/utils/io.py", line 527, in read_config_file
+      content = read_yaml_file(filename)
+    File "rasa/shared/utils/io.py", line 368, in read_yaml_file
+      return read_yaml(read_file(filename, DEFAULT_ENCODING))
+    File "rasa/shared/utils/io.py", line 349, in read_yaml
+      return yaml_parser.load(content) or {}
+    File "rasa/shared/utils/io.py", line 314, in env_var_constructor
+      " variables: '{}'.".format(value, not_expanded)
+  ```
+- [#7949](https://github.com/rasahq/rasa/issues/7949): The REQUESTED_SLOT always belongs to the currently active form.
+
+  Previously it was possible that after form switching, the REQUESTED_SLOT was for the previous form.
+- [#96](https://github.com/rasahq/rasa/issues/96): Update the `LanguageModelFeaturizer` tests to reflect new default model weights for `bert`, and skip all `bert` tests 
+  with default model weights on CI, run `bert` tests with `bert-base-uncased` on CI instead.
+
+### Miscellaneous internal changes
+- [#6484](https://github.com/rasahq/rasa/issues/6484), [#7737](https://github.com/rasahq/rasa/issues/7737), [#7879](https://github.com/rasahq/rasa/issues/7879)
+
+
+## [2.3.4] - 2021-02-26
+                       
+
+### Bugfixes
+- [#8014](https://github.com/rasahq/rasa/issues/8014): Setting `model_confidence=cosine` in `DIETClassifier`, `ResponseSelector` and `TEDPolicy` is deprecated and will no longer be available. This was introduced in Rasa Open Source version `2.3.0` but post-release experiments suggest that using cosine similarity as model's confidences can change the ranking of predicted labels which is wrong.
+
+  `model_confidence=inner` is deprecated and is replaced by `model_confidence=linear_norm` as the former produced an unbounded range of confidences which broke the logic of assistants in various other places.
+
+  We encourage you to try `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. This can be done with the following config:
+  ```yaml
+  - name: DIETClassifier
+    model_confidence: linear_norm
+    constrain_similarities: True
+  ```
+  This should ease up [tuning fallback thresholds](./fallback-handoff.mdx#fallbacks) as confidences for wrong predictions are better distributed across the range `[0, 1]`.
+
+  If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Open Source, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
+
+  `model_confidence=cosine` is removed from the configuration generated by [auto-configuration](model-configuration.mdx#suggested-config).
+
+
 ## [2.3.3] - 2021-02-25
                        
 
@@ -118,6 +246,9 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0 . Use `loss_type=cross_entropy` instead.
 
   The default [auto-configuration](model-configuration.mdx#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
+
+  **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.3`. `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break the logic of assistants in various other places. Please use `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. Please read more about this change under the notes for release `2.3.4`.
+
 - [#7817](https://github.com/rasahq/rasa/issues/7817): Use simple random uniform distribution of integers in negative sampling, because
   negative sampling with `tf.while_loop` and random shuffle inside creates a memory leak.
 - [#7848](https://github.com/rasahq/rasa/issues/7848): Added support to configure `exchange_name` for [pika event broker](event-brokers.mdx#pika-event-broker).
@@ -1314,6 +1445,12 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
+
+
+## [1.10.23] - 2021-02-22
+
+### Bugfixes
+- [#7895](https://github.com/rasahq/rasa/issues/7895): Fixed bug where the conversation does not lock before handling a reminder event.
 
 
 ## [1.10.22] - 2021-02-05

@@ -7,7 +7,6 @@ import tensorflow as tf
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
-import rasa.utils.tensorflow.numpy
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
@@ -83,8 +82,10 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     RESPONSE_SELECTOR_RESPONSES_KEY,
+    RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
+    RESPONSE_SELECTOR_UTTER_ACTION_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
 )
@@ -229,7 +230,7 @@ class ResponseSelector(DIETClassifier):
         TENSORBOARD_LOG_DIR: None,
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'minibatch'
+        # Valid values: 'epoch' and 'batch'
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
@@ -241,7 +242,7 @@ class ResponseSelector(DIETClassifier):
         # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values -
-        # 'softmax', 'cosine', 'inner'.
+        # 'softmax' and 'linear_norm'.
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
@@ -386,8 +387,8 @@ class ResponseSelector(DIETClassifier):
 
         Returns:
             The match for the label that was found in the known responses.
-            It is always guaranteed to have a match, otherwise that case should have been caught
-            earlier and a warning should have been raised.
+            It is always guaranteed to have a match, otherwise that case should have
+            been caught earlier and a warning should have been raised.
         """
 
         for key, responses in self.responses.items():
@@ -404,29 +405,38 @@ class ResponseSelector(DIETClassifier):
         return None
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely response, the associated intent_response_key and its similarity to the input."""
+        """Selects most like response for message.
+
+        Args:
+            message: Latest user message.
+            kwargs: Additional key word arguments.
+
+        Returns:
+            the most likely response, the associated intent_response_key and its
+            similarity to the input.
+        """
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
         # Get the exact intent_response_key and the associated
-        # response templates for the top predicted label
+        # responses for the top predicted label
         label_intent_response_key = (
             self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
         )
-        label_response_templates = self.responses.get(
+        label_responses = self.responses.get(
             util.intent_response_key_to_template_key(label_intent_response_key)
         )
 
-        if label_intent_response_key and not label_response_templates:
-            # response templates seem to be unavailable,
+        if label_intent_response_key and not label_responses:
+            # responses seem to be unavailable,
             # likely an issue with the training data
             # we'll use a fallback instead
             rasa.shared.utils.io.raise_warning(
-                f"Unable to fetch response templates for {label_intent_response_key} "
+                f"Unable to fetch responses for {label_intent_response_key} "
                 f"This means that there is likely an issue with the training data."
-                f"Please make sure you have added response templates for this intent."
+                f"Please make sure you have added responses for this intent."
             )
-            label_response_templates = [{TEXT: label_intent_response_key}]
+            label_responses = [{TEXT: label_intent_response_key}]
 
         for label in label_ranking:
             label[INTENT_RESPONSE_KEY] = (
@@ -447,15 +457,20 @@ class ResponseSelector(DIETClassifier):
             f"Adding following selector key to message property: {selector_key}"
         )
 
+        # TODO: remove `RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY` and
+        # `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
+        utter_action_key = util.intent_response_key_to_template_key(
+            label_intent_response_key
+        )
         prediction_dict = {
             RESPONSE_SELECTOR_PREDICTION_KEY: {
                 "id": top_label["id"],
-                RESPONSE_SELECTOR_RESPONSES_KEY: label_response_templates,
+                RESPONSE_SELECTOR_RESPONSES_KEY: label_responses,
+                RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY: label_responses,
                 PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                 INTENT_RESPONSE_KEY: label_intent_response_key,
-                RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: util.intent_response_key_to_template_key(
-                    label_intent_response_key
-                ),
+                RESPONSE_SELECTOR_UTTER_ACTION_KEY: utter_action_key,
+                RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: utter_action_key,
             },
             RESPONSE_SELECTOR_RANKING_KEY: label_ranking,
         }
@@ -463,10 +478,7 @@ class ResponseSelector(DIETClassifier):
         self._set_message_property(message, prediction_dict, selector_key)
 
         if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(
-                self.unique_name,
-                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
-            )
+            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -495,9 +507,18 @@ class ResponseSelector(DIETClassifier):
         finetune_mode: bool = False,
     ) -> "RasaModel":
 
+        predict_data_example = RasaModelData(
+            label_key=model_data_example.label_key,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if TEXT in feature_name
+            },
+        )
         return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
             tf_model_file,
             model_data_example,
+            predict_data_example,
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
@@ -668,6 +689,14 @@ class DIET2DIET(DIET):
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        """Calculates the loss for the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The loss of the given batch.
+        """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
@@ -744,7 +773,15 @@ class DIET2DIET(DIET):
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
+        """Predicts the output of the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The output to predict.
+        """
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
@@ -763,11 +800,11 @@ class DIET2DIET(DIET):
             self.text_name,
         )
 
-        out = {}
-
-        out[DIAGNOSTIC_DATA] = {
-            "attention_weights": attention_weights,
-            "text_transformed": text_transformed,
+        predictions = {
+            DIAGNOSTIC_DATA: {
+                "attention_weights": attention_weights,
+                "text_transformed": text_transformed,
+            }
         }
 
         if self.all_labels_embed is None:
@@ -783,6 +820,6 @@ class DIET2DIET(DIET):
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
         )
-        out["i_scores"] = scores
+        predictions["i_scores"] = scores
 
-        return out
+        return predictions
