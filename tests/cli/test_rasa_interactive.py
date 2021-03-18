@@ -88,7 +88,7 @@ def test_train_called_when_no_model_passed(
             "--config",
             stack_config_path,
             "--data",
-            "examples/moodbot/data",
+            "data/test_moodbot/data",
         ]
     )
     interactive._set_not_required_args(args)
@@ -118,9 +118,9 @@ def test_train_core_called_when_no_model_passed_and_core(
             "--config",
             stack_config_path,
             "--stories",
-            "examples/moodbot/data/stories.yml",
+            "data/test_moodbot/data/stories.yml",
             "--domain",
-            "examples/moodbot/domain.yml",
+            "data/test_moodbot/domain.yml",
         ]
     )
     interactive._set_not_required_args(args)

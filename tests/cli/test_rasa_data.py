@@ -137,7 +137,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "validate",
             "stories",
             "--data",
-            "examples/moodbot/data",
+            "data/test_moodbot/data",
             "--max-history",
             0,
         ]
