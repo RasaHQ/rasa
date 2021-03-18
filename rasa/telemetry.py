@@ -470,11 +470,12 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
-    import tensorflow as tf
 
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
+        # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+        # if you change / add context
         TELEMETRY_CONTEXT = {
             "os": {"name": platform.system(), "version": platform.release()},
             "ci": in_continuous_integration(),
@@ -482,7 +483,6 @@ def _default_context_fields() -> Dict[Text, Any]:
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
-            "gpu": len(tf.config.list_physical_devices("GPU")),
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
         }
@@ -702,6 +702,8 @@ async def track_model_training(
 
     training_id = uuid.uuid4().hex
 
+    # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+    # if you change / add any properties
     _track(
         TRAINING_STARTED_EVENT,
         {

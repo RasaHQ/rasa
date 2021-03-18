@@ -8,10 +8,11 @@ from rasa.shared.utils.cli import print_error, print_success
 import rasa.utils.common
 
 if typing.TYPE_CHECKING:
-    from rasa.core.agent import Agent
+    from rasa.core.agent import Agent, create_agent
 
 
-def pprint(obj: Any):
+def pprint(obj: Any) -> None:
+    """Prints JSONs with indent."""
     pretty_print.pprint(obj, indent=2)
 
 
@@ -32,7 +33,6 @@ def chat(
     """
 
     if model_path:
-        from rasa.run import create_agent
 
         agent = create_agent(model_path, endpoints)
 
