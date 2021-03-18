@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 import scipy.sparse
-import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
 from typing import (
@@ -13,7 +12,6 @@ from typing import (
     Tuple,
     Any,
     Union,
-    Generator,
     NamedTuple,
     ItemsView,
 )
@@ -26,11 +24,12 @@ logger = logging.getLogger(__name__)
 class FeatureArray(np.ndarray):
     """Stores any kind of features ready to be used by a RasaModel.
 
-    Next to the input numpy array of features, it also received the number of dimensions of the features.
-    As our features can have 1 to 4 dimensions we might have different number of numpy arrays stacked.
-    The number of dimensions helps us to figure out how to handle this particular feature array.
-    Also, it is automatically determined whether the feature array is sparse or not and the number of units
-    is determined as well.
+    Next to the input numpy array of features, it also received the number of
+    dimensions of the features.
+    As our features can have 1 to 4 dimensions we might have different number of numpy
+    arrays stacked. The number of dimensions helps us to figure out how to handle this
+    particular feature array. Also, it is automatically determined whether the feature
+    array is sparse or not and the number of units is determined as well.
 
     Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
     """
@@ -56,7 +55,8 @@ class FeatureArray(np.ndarray):
             )
         else:
             raise ValueError(
-                f"Number of dimensions '{number_of_dimensions}' currently not supported."
+                f"Number of dimensions '{number_of_dimensions}' currently not "
+                f"supported."
             )
 
         feature_array.number_of_dimensions = number_of_dimensions
@@ -76,7 +76,7 @@ class FeatureArray(np.ndarray):
         self.number_of_dimensions = number_of_dimensions
 
     def __array_finalize__(self, obj: Any) -> None:
-        """This method is called whenever the system internally allocates a new array from obj.
+        """This method is called when the system allocates a new array from obj.
 
         Args:
             obj: A subclass (subtype) of ndarray.
@@ -206,52 +206,6 @@ class FeatureArray(np.ndarray):
                 f"Given number of dimensions '{number_of_dimensions}' does not match "
                 f"dimensions of given input array: {input_array}."
             )
-
-    def get_shape_type_info(
-        self,
-    ) -> Tuple[
-        List[
-            Union[
-                int,
-                Tuple[None],
-                Tuple[None, int],
-                Tuple[None, None, int],
-                Tuple[None, None, None, int],
-            ]
-        ],
-        List[int],
-    ]:
-        """Returns shapes and types needed to convert this feature array into tensors.
-
-        Returns:
-            A list of shape tuples.
-            A list of type tuples.
-        """
-        if self.is_sparse:
-            # 4D tensors were converted into 3D tensors during padding
-            number_of_dimensions = (
-                self.number_of_dimensions if self.number_of_dimensions != 4 else 3
-            )
-            # scipy matrix is converted into indices, data, shape
-            return (
-                [(None, number_of_dimensions), (None,), (number_of_dimensions)],
-                [tf.int64, tf.float32, tf.int64],
-            )
-
-        if self.number_of_dimensions == 1:
-            return [(None,)], [tf.float32]
-
-        if self.number_of_dimensions == 2:
-            return [(None, self.units)], [tf.float32]
-
-        if self.number_of_dimensions == 3:
-            return [(None, None, self.units)], [tf.float32]
-
-        if self.number_of_dimensions == 4:
-            # 4D tensors were converted into 3D tensors during padding
-            return [(None, None, self.units)], [tf.float32]
-
-        return [], []
 
 
 class FeatureSignature(NamedTuple):
@@ -490,7 +444,7 @@ class RasaModelData:
     def update_key(
         self, from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text
     ) -> None:
-        """Copies the features under the given keys to the new keys and deletes the old keys.
+        """Copies the features under the given keys to the new keys and deletes the old.
 
         Args:
             from_key: current feature key
@@ -668,100 +622,7 @@ class RasaModelData:
             for key, attribute_data in data.items()
         }
 
-    def as_tf_dataset(
-        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
-    ) -> tf.data.Dataset:
-        """Create tf dataset.
-
-        Args:
-            batch_size: The batch size to use.
-            batch_strategy: The batch strategy to use.
-            shuffle: Boolean indicating whether the data should be shuffled or not.
-
-        Returns:
-            The tf.data.Dataset.
-        """
-        shapes, types = self._get_shapes_types()
-
-        return tf.data.Dataset.from_generator(
-            lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
-            output_types=types,
-            output_shapes=shapes,
-            args=([batch_size]),
-        )
-
-    def prepare_batch(
-        self,
-        data: Optional[Data] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Optional[np.ndarray]]:
-        """Slices model data into batch using given start and end value.
-
-        Args:
-            data: The data to prepare.
-            start: The start index of the batch
-            end: The end index of the batch
-            tuple_sizes: In case the feature is not present we propagate the batch with
-              None. Tuple sizes contains the number of how many None values to add for
-              what kind of feature.
-
-        Returns:
-            The features of the batch.
-        """
-        if not data:
-            data = self.data
-
-        batch_data = []
-
-        for key, attribute_data in data.items():
-            for sub_key, f_data in attribute_data.items():
-                # add None for not present values during processing
-                if not f_data:
-                    if tuple_sizes:
-                        batch_data += [None] * tuple_sizes[key]
-                    else:
-                        batch_data.append(None)
-                    continue
-
-                for v in f_data:
-                    if start is not None and end is not None:
-                        _data = v[start:end]
-                    elif start is not None:
-                        _data = v[start:]
-                    elif end is not None:
-                        _data = v[:end]
-                    else:
-                        _data = v[:]
-
-                    if _data.is_sparse:
-                        batch_data.extend(self._scipy_matrix_to_values(_data))
-                    else:
-                        batch_data.append(self._pad_dense_data(_data))
-
-        # len of batch_data is equal to the number of keys in model data
-        return tuple(batch_data)
-
-    def _get_shapes_types(self) -> Tuple:
-        """Extract shapes and types from model data.
-
-        Returns:
-            A tuple of shapes and a tuple of types.
-        """
-        types = []
-        shapes = []
-
-        for attribute_data in self.data.values():
-            for features in attribute_data.values():
-                for f in features:
-                    _shapes, _types = f.get_shape_type_info()
-                    shapes.extend(_shapes)
-                    types.extend(_types)
-
-        return tuple(shapes), tuple(types)
-
-    def _shuffled_data(self, data: Data) -> Data:
+    def shuffled_data(self, data: Data) -> Data:
         """Shuffle model data.
 
         Args:
@@ -773,7 +634,7 @@ class RasaModelData:
         ids = np.random.permutation(self.num_examples)
         return self._data_for_ids(data, ids)
 
-    def _balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
+    def balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
         """Mix model data to account for class imbalance.
 
         This batching strategy puts rare classes approximately in every other batch,
@@ -864,38 +725,6 @@ class RasaModelData:
                     )
 
         return final_data
-
-    def _gen_batch(
-        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
-    ) -> Generator[Tuple[Optional[np.ndarray]], None, None]:
-        """Generate batches.
-
-        Args:
-            batch_size: The batch size
-            batch_strategy: The batch strategy.
-            shuffle: Boolean indicating whether to shuffle the data or not.
-
-        Returns:
-            A generator over the batches.
-        """
-        data = self.data
-        num_examples = self.num_examples
-
-        if shuffle:
-            data = self._shuffled_data(data)
-
-        if batch_strategy == BALANCED:
-            data = self._balanced_data(data, batch_size, shuffle)
-            # after balancing, number of examples increased
-            num_examples = self.number_of_examples(data)
-
-        num_batches = num_examples // batch_size + int(num_examples % batch_size > 0)
-
-        for batch_num in range(num_batches):
-            start = batch_num * batch_size
-            end = start + batch_size
-
-            yield self.prepare_batch(data, start, end)
 
     def _check_train_test_sizes(
         self, number_of_test_examples: int, label_counts: Dict[Any, int]
@@ -1092,212 +921,3 @@ class RasaModelData:
             return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
 
         raise ValueError("Unsupported label_ids dimensions")
-
-    @staticmethod
-    def _filter_out_fake_inputs(
-        array_of_array_of_features: FeatureArray,
-    ) -> Union[List[List[np.ndarray]], List[List[scipy.sparse.spmatrix]]]:
-        return list(
-            filter(
-                # filter empty lists created by another filter
-                lambda x: len(x) > 0,
-                [
-                    # filter all the "fake" inputs, we know the input is "fake",
-                    # when sequence dimension is `0`
-                    list(filter(lambda x: x.shape[0] > 0, array_of_features))
-                    for array_of_features in array_of_array_of_features
-                ],
-            )
-        )
-
-    @staticmethod
-    def _pad_dense_data(array_of_dense: FeatureArray) -> np.ndarray:
-        """Pad data of different lengths.
-
-        Sequential data is padded with zeros. Zeros are added to the end of data.
-
-        Args:
-            array_of_dense: The array to pad.
-
-        Returns:
-            The padded array.
-        """
-        if array_of_dense.number_of_dimensions == 4:
-            return RasaModelData._pad_4d_dense_data(array_of_dense)
-
-        if array_of_dense[0].ndim < 2:
-            # data doesn't contain a sequence
-            return array_of_dense.astype(np.float32)
-
-        data_size = len(array_of_dense)
-        max_seq_len = max([x.shape[0] for x in array_of_dense])
-
-        data_padded = np.zeros(
-            [data_size, max_seq_len, array_of_dense[0].shape[-1]],
-            dtype=array_of_dense[0].dtype,
-        )
-        for i in range(data_size):
-            data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
-
-        return data_padded.astype(np.float32)
-
-    @staticmethod
-    def _pad_4d_dense_data(array_of_array_of_dense: FeatureArray) -> np.ndarray:
-        # in case of dialogue data we may have 4 dimensions
-        # batch size x dialogue history length x sequence length x number of features
-
-        # as transformers cannot handle 4D tensors pad and reshape the data
-        # so that the resulting tensor is 3D
-        # the shape is (sum of dialogue history length for all tensors in the
-        # batch x max sequence length x number of features)
-        # the original shape and the original dialogue length is passed on to the model
-        # it can be used to transform the 3D tensor back into 4D
-
-        # in order to create 4d tensor inputs, we created "fake" zero features
-        # for nonexistent inputs. To save calculation we filter this features before
-        # input to tf methods.
-        number_of_features = array_of_array_of_dense[0][0].shape[-1]
-        array_of_array_of_dense = RasaModelData._filter_out_fake_inputs(
-            array_of_array_of_dense
-        )
-        if not array_of_array_of_dense:
-            # return empty 3d array with appropriate last dims
-            return np.zeros((0, 0, number_of_features), dtype=np.float32)
-
-        combined_dialogue_len = sum(
-            len(array_of_dense) for array_of_dense in array_of_array_of_dense
-        )
-        max_seq_len = max(
-            [
-                x.shape[0]
-                for array_of_dense in array_of_array_of_dense
-                for x in array_of_dense
-            ]
-        )
-
-        data_padded = np.zeros(
-            [combined_dialogue_len, max_seq_len, number_of_features],
-            dtype=array_of_array_of_dense[0][0].dtype,
-        )
-
-        current_sum_dialogue_len = 0
-        for i, array_of_dense in enumerate(array_of_array_of_dense):
-            for j, dense in enumerate(array_of_dense):
-                data_padded[current_sum_dialogue_len + j, : dense.shape[0], :] = dense
-            current_sum_dialogue_len += len(array_of_dense)
-
-        return data_padded.astype(np.float32)
-
-    @staticmethod
-    def _scipy_matrix_to_values(array_of_sparse: FeatureArray) -> List[np.ndarray]:
-        """Convert a scipy matrix into indices, data, and shape.
-
-        Args:
-            array_of_sparse: The sparse data array.
-
-        Returns:
-            A list of dense numpy arrays representing the sparse data.
-        """
-        if array_of_sparse.number_of_dimensions == 4:
-            return RasaModelData._4d_scipy_matrix_to_values(array_of_sparse)
-
-        # we need to make sure that the matrices are coo_matrices otherwise the
-        # transformation does not work (e.g. you cannot access x.row, x.col)
-        if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
-            array_of_sparse = [x.tocoo() for x in array_of_sparse]
-
-        max_seq_len = max([x.shape[0] for x in array_of_sparse])
-
-        # get the indices of values
-        indices = np.hstack(
-            [
-                np.vstack([i * np.ones_like(x.row), x.row, x.col])
-                for i, x in enumerate(array_of_sparse)
-            ]
-        ).T
-
-        data = np.hstack([x.data for x in array_of_sparse])
-
-        number_of_features = array_of_sparse[0].shape[-1]
-        shape = np.array((len(array_of_sparse), max_seq_len, number_of_features))
-
-        return [
-            indices.astype(np.int64),
-            data.astype(np.float32),
-            shape.astype(np.int64),
-        ]
-
-    @staticmethod
-    def _4d_scipy_matrix_to_values(
-        array_of_array_of_sparse: FeatureArray,
-    ) -> List[np.ndarray]:
-        # in case of dialogue data we may have 4 dimensions
-        # batch size x dialogue history length x sequence length x number of features
-
-        # transformers cannot handle 4D tensors, therefore pad and reshape the data
-        # so that the resulting tensor is 3D
-        # the shape is (sum of dialogue history length for all tensors in the
-        # batch x max sequence length x number of features)
-        # the original shape and the original dialogue length is passed on to the model
-        # it can be used to transform the 3D tensor back into 4D
-
-        # in order to create 4d tensor inputs, we created "fake" zero features
-        # for nonexistent inputs. To save calculation we filter this features before
-        # input to tf methods.
-        number_of_features = array_of_array_of_sparse[0][0].shape[-1]
-        array_of_array_of_sparse = RasaModelData._filter_out_fake_inputs(
-            array_of_array_of_sparse
-        )
-        if not array_of_array_of_sparse:
-            # create empty array with appropriate last dims
-            return [
-                np.empty((0, 3), dtype=np.int64),
-                np.array([], dtype=np.float32),
-                np.array([0, 0, number_of_features], dtype=np.int64),
-            ]
-
-        # we need to make sure that the matrices are coo_matrices otherwise the
-        # transformation does not work (e.g. you cannot access x.row, x.col)
-        if not isinstance(array_of_array_of_sparse[0][0], scipy.sparse.coo_matrix):
-            array_of_array_of_sparse = [
-                [x.tocoo() for x in array_of_sparse]
-                for array_of_sparse in array_of_array_of_sparse
-            ]
-
-        dialogue_len = [
-            len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse
-        ]
-        combined_dialogue_len = sum(dialogue_len)
-        max_seq_len = max(
-            [
-                x.shape[0]
-                for array_of_sparse in array_of_array_of_sparse
-                for x in array_of_sparse
-            ]
-        )
-        # get the indices of values
-        indices = np.hstack(
-            [
-                np.vstack(
-                    [sum(dialogue_len[:i]) + j * np.ones_like(x.row), x.row, x.col]
-                )
-                for i, array_of_sparse in enumerate(array_of_array_of_sparse)
-                for j, x in enumerate(array_of_sparse)
-            ]
-        ).T
-
-        data = np.hstack(
-            [
-                x.data
-                for array_of_sparse in array_of_array_of_sparse
-                for x in array_of_sparse
-            ]
-        )
-
-        shape = np.array((combined_dialogue_len, max_seq_len, number_of_features))
-
-        return [
-            indices.astype(np.int64),
-            data.astype(np.float32),
-            shape.astype(np.int64),
-        ]

@@ -35,24 +35,24 @@ from rasa.shared.core.training_data.structures import STORY_START
     ],
 )
 async def test_simple_story(
-    tmpdir: Path, default_domain: Domain, input_md_file: Text, input_yaml_file: Text
+    tmpdir: Path, domain: Domain, input_md_file: Text, input_yaml_file: Text
 ):
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_training=False
+        domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
     assert not YAMLStoryWriter.stories_contain_loops(original_md_story_steps)
 
-    original_yaml_reader = YAMLStoryReader(default_domain, None, False)
+    original_yaml_reader = YAMLStoryReader(domain, None, False)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     target_story_filename = tmpdir / "test.yml"
     writer = YAMLStoryWriter()
     writer.dump(target_story_filename, original_md_story_steps)
 
-    processed_yaml_reader = YAMLStoryReader(default_domain, None, False)
+    processed_yaml_reader = YAMLStoryReader(domain, None, False)
     processed_yaml_story_steps = processed_yaml_reader.read_from_file(
         target_story_filename
     )
@@ -64,11 +64,11 @@ async def test_simple_story(
         assert len(processed_step.events) == len(original_step.events)
 
 
-async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
+async def test_story_start_checkpoint_is_skipped(domain: Domain):
     input_md_file = "data/test_stories/stories.md"
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_training=False
+        domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
@@ -77,9 +77,9 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
     assert STORY_START not in yaml_text
 
 
-async def test_forms_are_converted(default_domain: Domain):
+async def test_forms_are_converted(domain: Domain):
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, is_used_for_training=False
+        domain, None, False, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(
         "data/test_stories/stories_form.md"
@@ -142,10 +142,8 @@ def test_yaml_writer_avoids_dumping_not_existing_user_messages():
 @pytest.mark.parametrize(
     "input_yaml_file", ["data/test_yaml_stories/rules_with_stories_sorted.yaml"]
 )
-def test_yaml_writer_dumps_rules(
-    input_yaml_file: Text, tmpdir: Path, default_domain: Domain
-):
-    original_yaml_reader = YAMLStoryReader(default_domain, None, False)
+def test_yaml_writer_dumps_rules(input_yaml_file: Text, tmpdir: Path, domain: Domain):
+    original_yaml_reader = YAMLStoryReader(domain, None, False)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     dump = YAMLStoryWriter().dumps(original_yaml_story_steps)
@@ -170,10 +168,10 @@ async def test_action_start_action_listen_are_not_dumped():
     assert ACTION_LISTEN_NAME not in dump
 
 
-def test_yaml_writer_stories_to_yaml(default_domain: Domain):
+def test_yaml_writer_stories_to_yaml(domain: Domain):
     from collections import OrderedDict
 
-    reader = YAMLStoryReader(default_domain, None, False)
+    reader = YAMLStoryReader(domain, None, False)
     writer = YAMLStoryWriter()
     steps = reader.read_from_file(
         "data/test_yaml_stories/simple_story_with_only_end.yml"
@@ -185,7 +183,7 @@ def test_yaml_writer_stories_to_yaml(default_domain: Domain):
     assert len(result["stories"]) == 1
 
 
-def test_writing_end_to_end_stories(default_domain: Domain):
+def test_writing_end_to_end_stories(domain: Domain):
     story_name = "test_writing_end_to_end_stories"
     events = [
         # Training story story with intent and action labels
@@ -236,7 +234,7 @@ def test_writing_end_to_end_stories(default_domain: Domain):
     )
 
 
-def test_reading_and_writing_end_to_end_stories_in_test_mode(default_domain: Domain):
+def test_reading_and_writing_end_to_end_stories_in_test_mode(domain: Domain):
     story_name = "test_writing_end_to_end_stories_in_test_mode"
 
     conversation_tests = f"""

@@ -24,51 +24,6 @@ from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
 from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 
-DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
-
-DOMAIN_WITH_CATEGORICAL_SLOT = "data/test_domains/domain_with_categorical_slot.yml"
-
-DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
-
-DEFAULT_STORIES_FILE = "data/test_yaml_stories/stories_defaultdomain.yml"
-
-DEFAULT_E2E_STORIES_FILE = "data/test_yaml_stories/stories_e2e.yml"
-
-SIMPLE_STORIES_FILE = "data/test_yaml_stories/stories_simple.yml"
-
-DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
-
-INCORRECT_NLU_DATA = "data/test/incorrect_nlu_format.yml"
-
-END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.yml"
-
-END_TO_END_STORY_MD_FILE = "data/test_md/end_to_end_story.md"
-
-E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.yml"
-
-STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/stories_trip_circuit_breaker.yml"
-)
-
-E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
-    "data/test_evaluations/end_to_end_trips_circuit_breaker.yml"
-)
-
-DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
-
-TEST_DIALOGUES = [
-    "data/test_dialogues/default.json",
-    "data/test_dialogues/formbot.json",
-    "data/test_dialogues/moodbot.json",
-]
-
-EXAMPLE_DOMAINS = [
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_DOMAIN_PATH_WITH_MAPPING,
-    "examples/formbot/domain.yml",
-    "examples/moodbot/domain.yml",
-]
-
 
 class CustomSlot(Slot):
     def as_feature(self):
@@ -99,7 +54,7 @@ class MockedMongoTrackerStore(MongoTrackerStore):
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
-@pytest.yield_fixture(scope="session")
+@pytest.fixture(scope="session")
 def event_loop(request: Request) -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -113,28 +68,6 @@ def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = rasa.utils.io.enable_async_loop_debugging(loop)
     yield loop
     loop.close()
-
-
-@pytest.fixture(scope="session")
-def default_domain_path() -> Text:
-    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
-
-
-@pytest.fixture(scope="session")
-def default_stories_file() -> Text:
-    return DEFAULT_STORIES_FILE
-
-
-@pytest.fixture(scope="session")
-def default_stack_config() -> Text:
-    return DEFAULT_STACK_CONFIG
-
-
-@pytest.fixture(scope="session")
-def default_nlu_data():
-    from tests.conftest import DEFAULT_NLU_DATA
-
-    return DEFAULT_NLU_DATA
 
 
 @pytest.fixture
@@ -152,7 +85,7 @@ async def default_processor(default_agent: Agent) -> MessageProcessor:
         default_agent.domain,
         tracker_store,
         lock_store,
-        TemplatedNaturalLanguageGenerator(default_agent.domain.templates),
+        TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
     )
 
 
@@ -198,13 +131,13 @@ def tracker_with_six_scheduled_reminders(
 
 
 @pytest.fixture
-def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
-    return TemplatedNaturalLanguageGenerator(default_domain.templates)
+def default_nlg(domain: Domain) -> NaturalLanguageGenerator:
+    return TemplatedNaturalLanguageGenerator(domain.responses)
 
 
 @pytest.fixture
-def default_tracker(default_domain: Domain) -> DialogueStateTracker:
-    return DialogueStateTracker("my-sender", default_domain.slots)
+def default_tracker(domain: Domain) -> DialogueStateTracker:
+    return DialogueStateTracker("my-sender", domain.slots)
 
 
 @pytest.fixture(scope="session")

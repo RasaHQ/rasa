@@ -6,7 +6,6 @@ import warnings
 from types import TracebackType
 from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar, Union
 
-import rasa.core.utils
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
@@ -98,27 +97,18 @@ def update_socketio_log_level() -> None:
 
 
 def update_tensorflow_log_level() -> None:
-    """Set the log level of Tensorflow to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
-
-    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support). This variable needs to be set before the
+    """Sets Tensorflow log level based on env variable 'LOG_LEVEL_LIBRARIES'."""
+    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support).
+    # This variable needs to be set before the
     # first import since some warnings are raised on the first import.
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-    import tensorflow as tf
-
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    if log_level == "DEBUG":
-        tf_log_level = tf.compat.v1.logging.DEBUG
-    elif log_level == "INFO":
-        tf_log_level = tf.compat.v1.logging.INFO
-    elif log_level == "WARNING":
-        tf_log_level = tf.compat.v1.logging.WARN
-    else:
-        tf_log_level = tf.compat.v1.logging.ERROR
+    if not log_level:
+        log_level = "ERROR"
 
-    tf.compat.v1.logging.set_verbosity(tf_log_level)
+    logging.getLogger("tensorflow").setLevel(log_level)
     logging.getLogger("tensorflow").propagate = False
 
 
