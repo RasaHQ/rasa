@@ -289,7 +289,7 @@ async def test_remote_action_utterances_with_none_values(
 
 
 async def test_remote_action_with_template_param(
-    default_channel, default_tracker, domain: Domain
+    default_channel, default_tracker, default_domain
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -325,7 +325,7 @@ async def test_remote_action_with_template_param(
 
         with pytest.warns(FutureWarning):
             events = await remote_action.run(
-                default_channel, nlg, default_tracker, domain
+                default_channel, nlg, default_tracker, default_domain
             )
 
     assert events == [
