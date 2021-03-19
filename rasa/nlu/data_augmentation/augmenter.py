@@ -288,9 +288,7 @@ def _create_augmented_training_data_max_vocab_expansion(
             ]
         )
 
-    augmented_training_data = TrainingData(
-        training_examples=new_training_data + nlu_training_data.intent_examples
-    )
+    augmented_training_data = TrainingData(new_training_data).merge(nlu_training_data)
 
     return augmented_training_data
 
@@ -328,9 +326,7 @@ def _create_augmented_training_data_random_sampling(
             ]
         )
 
-    augmented_training_data = TrainingData(
-        training_examples=new_training_data + nlu_training_data.intent_examples
-    )
+    augmented_training_data = TrainingData(new_training_data).merge(nlu_training_data)
 
     return augmented_training_data
 
