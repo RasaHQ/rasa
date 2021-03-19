@@ -7,6 +7,10 @@ import pytest
 import rasa
 import memory_profiler
 
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+
 
 def _config_for_epochs(
     tmp_path: Path, epochs: int, max_history: Optional[int] = -1
@@ -31,19 +35,25 @@ def _config_for_epochs(
 class MemoryLeakTest(abc.ABC):
     """Generic template for memory leak tests."""
 
-    def __init__(
-        self,
-        ramp_up_time_seconds: float = 15,
-        cooldown_time_seconds: float = 15,
-        profiling_interval: float = 0.1,
-        trend_threshold: float = 0.3,
-        max_memory_threshold_mb: float = 9000,
-    ) -> None:
-        self.ramp_up_time_in_seconds = ramp_up_time_seconds
-        self.cooldown_time_seconds = cooldown_time_seconds
-        self.profiling_interval = profiling_interval
-        self.trend_threshold = trend_threshold
-        self.max_memory_threshold_mb = max_memory_threshold_mb
+    @property
+    def ramp_up_time_seconds(self) -> float:
+        return 15
+
+    @property
+    def cooldown_time_seconds(self) -> float:
+        return 15
+
+    @property
+    def profiling_interval(self) -> float:
+        return 0.1
+
+    @property
+    def trend_threshold(self) -> float:
+        return 0.3
+
+    @property
+    def max_memory_threshold_mb(self) -> float:
+        return 900
 
     @pytest.fixture
     @abc.abstractmethod
@@ -56,7 +66,7 @@ class MemoryLeakTest(abc.ABC):
         raise NotImplementedError
 
     def test_for_memory_leak(
-        self, function_to_profile: Callable[[], Any], name_for_dumped_files
+        self, function_to_profile: Callable[[], Any], name_for_dumped_files: Text
     ) -> None:
         results = memory_profiler.memory_usage(
             function_to_profile,
@@ -91,7 +101,7 @@ class MemoryLeakTest(abc.ABC):
 
         # ignore the ramp up in the beginning and packaging at the end
         results = results[
-            int(self.ramp_up_time_in_seconds / self.profiling_interval) : len(results)
+            int(self.ramp_up_time_seconds / self.profiling_interval) : len(results)
             - int(self.cooldown_time_seconds / self.profiling_interval)
         ]
 
@@ -128,21 +138,28 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
         return 1000
 
     @pytest.fixture()
-    def function_to_profile(
-        self,
-        # default_nlu_data: Text,  # 2.2.0
-        nlu_data_path: Text,
-        tmp_path: Path,
-    ) -> Callable[[], Any]:
+    def function_to_profile(self, tmp_path: Path,) -> Callable[[], Any]:
         # from rasa.train import train_nlu  # 2.2.0
 
         from rasa.model_training import train_nlu
 
+        training_examples = []
+        for intent in range(100):
+            for example_per_intent in range(1000):
+                intent_name = f"intent {intent}"
+                new_example = Message.build(
+                    text=f"{intent_name} example {example_per_intent}",
+                    intent=intent_name,
+                )
+                training_examples.append(new_example)
+
+        training_data_path = tmp_path / "large_nlu_dataset.yml"
+        RasaYAMLWriter().dump(training_data_path, TrainingData(training_examples))
+
         def profiled_train() -> None:
             train_nlu(
                 _config_for_epochs(tmp_path, epochs=self.epochs),
-                # default_nlu_data,  # 2.2.0
-                nlu_data_path,
+                str(training_data_path),
                 output=str(tmp_path),
             )
 
@@ -156,9 +173,6 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
         )
 
 
-# TODO: Run this a separarte part of the matrix
-# TODO: Have more data and then a max threshold
-# TODO: Keep trend
 class TestNLULeakManyRuns(MemoryLeakTest):
     """Tests for memory leaks in NLU components when training with many epochs.
 
@@ -250,9 +264,13 @@ class TestCoreLeakManyRuns(MemoryLeakTest):
     there is a leak in the data loading pipeline.
     """
 
-    def __init__(self) -> None:
-        super().__init__(trend_threshold=0.35)
-        self.training_runs = 20
+    @property
+    def training_runs(self) -> int:
+        return 20
+
+    @property
+    def trend_threshold(self) -> float:
+        return 0.35
 
     @pytest.fixture()
     def function_to_profile(
