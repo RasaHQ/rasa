@@ -191,7 +191,7 @@ responses:
 
 
 def test_responses():
-    domain_file = "examples/moodbot/domain.yml"
+    domain_file = "data/test_moodbot/domain.yml"
     domain = Domain.load(domain_file)
     expected_response = {
         "text": "Hey! How are you?",

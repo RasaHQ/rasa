@@ -661,13 +661,13 @@ def test_model_finetuning_core(
     # Typically models will be fine-tuned with a smaller number of epochs than training
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
-    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
     old_config["policies"][0]["epochs"] = 10
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
     old_stories = rasa.shared.utils.io.read_yaml_file(
-        "examples/moodbot/data/stories.yml"
+        "data/test_moodbot/data/stories.yml"
     )
     old_stories["stories"].append(
         {"story": "new story", "steps": [{"intent": "greet"}]}
@@ -676,7 +676,7 @@ def test_model_finetuning_core(
     rasa.shared.utils.io.write_yaml(old_stories, new_stories_path)
 
     train_core(
-        "examples/moodbot/domain.yml",
+        "data/test_moodbot/domain.yml",
         str(new_config_path),
         str(new_stories_path),
         output=output,
@@ -703,15 +703,15 @@ def test_model_finetuning_core_with_default_epochs(
 
     # Providing a new config with no epochs will mean the default amount are used
     # and then scaled by `finetuning_epoch_fraction`.
-    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
     del old_config["policies"][0]["epochs"]
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
     train_core(
-        "examples/moodbot/domain.yml",
+        "data/test_moodbot/domain.yml",
         str(new_config_path),
-        "examples/moodbot/data/stories.yml",
+        "data/test_moodbot/data/stories.yml",
         output=output,
         model_to_finetune=trained_moodbot_path,
         finetuning_epoch_fraction=2,
@@ -734,7 +734,7 @@ def test_model_finetuning_core_new_domain_label(
     output = str(tmp_path / "models")
 
     # Simulate addition to training data
-    old_domain = rasa.shared.utils.io.read_yaml_file("examples/moodbot/domain.yml")
+    old_domain = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/domain.yml")
     old_domain["intents"].append("a_new_one")
     new_domain_path = tmp_path / "new_domain.yml"
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
@@ -742,8 +742,8 @@ def test_model_finetuning_core_new_domain_label(
     with pytest.raises(SystemExit):
         train_core(
             domain=str(new_domain_path),
-            config="examples/moodbot/config.yml",
-            stories="examples/moodbot/data/stories.yml",
+            config="data/test_moodbot/config.yml",
+            stories="data/test_moodbot/data/stories.yml",
             output=output,
             model_to_finetune=trained_moodbot_path,
         )
@@ -760,7 +760,7 @@ def test_model_finetuning_new_domain_label_stops_all_training(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_domain = rasa.shared.utils.io.read_yaml_file("examples/moodbot/domain.yml")
+    old_domain = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/domain.yml")
     old_domain["intents"].append("a_new_one")
     new_domain_path = tmp_path / "new_domain.yml"
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
@@ -768,10 +768,10 @@ def test_model_finetuning_new_domain_label_stops_all_training(
     with pytest.raises(SystemExit):
         train(
             domain=str(new_domain_path),
-            config="examples/moodbot/config.yml",
+            config="data/test_moodbot/config.yml",
             training_files=[
-                "examples/moodbot/data/stories.yml",
-                "examples/moodbot/data/nlu.yml",
+                "data/test_moodbot/data/stories.yml",
+                "data/test_moodbot/data/nlu.yml",
             ],
             output=output,
             model_to_finetune=trained_moodbot_path,
@@ -806,12 +806,12 @@ def test_model_finetuning_nlu(
     # Typically models will be fine-tuned with a smaller number of epochs than training
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
-    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
     old_config["pipeline"][-1][EPOCHS] = 10
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file("examples/moodbot/data/nlu.yml")
+    old_nlu = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/data/nlu.yml")
     old_nlu["nlu"][-1]["examples"] = "-something else"
     new_nlu_path = tmp_path / "new_nlu.yml"
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
@@ -819,7 +819,7 @@ def test_model_finetuning_nlu(
     train_nlu(
         str(new_config_path),
         str(new_nlu_path),
-        domain="examples/moodbot/domain.yml",
+        domain="data/test_moodbot/domain.yml",
         output=output,
         model_to_finetune=trained_nlu_moodbot_path,
         finetuning_epoch_fraction=0.2,
@@ -848,16 +848,16 @@ def test_model_finetuning_nlu_new_label(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file("examples/moodbot/data/nlu.yml")
+    old_nlu = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/data/nlu.yml")
     old_nlu["nlu"].append({"intent": "a_new_one", "examples": "-blah"})
     new_nlu_path = tmp_path / "new_nlu.yml"
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
         train_nlu(
-            "examples/moodbot/config.yml",
+            "data/test_moodbot/config.yml",
             str(new_nlu_path),
-            domain="examples/moodbot/domain.yml",
+            domain="data/test_moodbot/domain.yml",
             output=output,
             model_to_finetune=trained_nlu_moodbot_path,
         )
@@ -873,16 +873,16 @@ def test_model_finetuning_nlu_new_entity(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file("examples/moodbot/data/nlu.yml")
+    old_nlu = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/data/nlu.yml")
     old_nlu["nlu"][-1]["examples"] = "-[blah](something)"
     new_nlu_path = tmp_path / "new_nlu.yml"
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
         train_nlu(
-            "examples/moodbot/config.yml",
+            "data/test_moodbot/config.yml",
             str(new_nlu_path),
-            domain="examples/moodbot/domain.yml",
+            domain="data/test_moodbot/domain.yml",
             output=output,
             model_to_finetune=trained_nlu_moodbot_path,
         )
@@ -929,14 +929,14 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_domain = rasa.shared.utils.io.read_yaml_file("examples/moodbot/domain.yml")
+    old_domain = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/domain.yml")
     old_domain["intents"].append("a_new_one")
     new_domain_path = tmp_path / "new_domain.yml"
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
 
     train_nlu(
-        "examples/moodbot/config.yml",
-        "examples/moodbot/data/nlu.yml",
+        "data/test_moodbot/config.yml",
+        "data/test_moodbot/data/nlu.yml",
         domain=str(new_domain_path),
         output=output,
         model_to_finetune=trained_nlu_moodbot_path,
@@ -956,14 +956,14 @@ def test_model_finetuning_nlu_with_default_epochs(
 
     # Providing a new config with no epochs will mean the default amount are used
     # and then scaled by `finetuning_epoch_fraction`.
-    old_config = rasa.shared.utils.io.read_yaml_file("examples/moodbot/config.yml")
+    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
     del old_config["pipeline"][-1][EPOCHS]
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
     train_nlu(
         str(new_config_path),
-        "examples/moodbot/data/nlu.yml",
+        "data/test_moodbot/data/nlu.yml",
         output=output,
         model_to_finetune=trained_nlu_moodbot_path,
         finetuning_epoch_fraction=0.1,
