@@ -379,8 +379,8 @@ def _train_test_nlu_model(
 def _create_augmentation_summary(
     intents_to_augment: Set[Text],
     changed_intents: Set[Text],
-    classification_report: Dict[Text, Dict[Text, float]],
-    intent_report: Dict[Text, float],
+    classification_report_no_augmentation: Dict[Text, Dict[Text, float]],
+    intent_report_with_augmentation: Dict[Text, float],
 ) -> Tuple[
     Dict[Text, Dict[Text, float]], Dict[Text, float],
 ]:
@@ -390,8 +390,8 @@ def _create_augmentation_summary(
     Args:
         intents_to_augment: The intents that have been selected for data augmentation.
         changed_intents: The intents that have been affected by data augmentation.
-        classification_report: Classification report of the model run *without* data augmentation.
-        intent_report: Report of the model run *with* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
+        intent_report_with_augmentation: Report of the model run *with* data augmentation.
 
     Returns:
         A tuple representing a summary of the changed intents as well as a modified version of the original
@@ -401,14 +401,14 @@ def _create_augmentation_summary(
     intent_summary = collections.defaultdict(dict)
 
     # accuracy is the only non-dict like thing in the classification report, so it receives extra treatment
-    if "accuracy" in classification_report:
-        accuracy_change = intent_report["accuracy"] - classification_report["accuracy"]
+    if "accuracy" in classification_report_no_augmentation:
+        accuracy_change = intent_report_with_augmentation["accuracy"] - classification_report_no_augmentation["accuracy"]
         acc_dict = {
             "accuracy_change": accuracy_change,
-            "accuracy": intent_report["accuracy"],
+            "accuracy": intent_report_with_augmentation["accuracy"],
         }
 
-        intent_report["accuracy"] = acc_dict
+        intent_report_with_augmentation["accuracy"] = acc_dict
         intent_summary["accuracy"] = {"accuracy_change": accuracy_change}
 
     intents_affected_by_augmentation = (
@@ -417,11 +417,11 @@ def _create_augmentation_summary(
         | {"micro avg", "macro avg", "weighted avg"}
     )
     for intent in intents_affected_by_augmentation:
-        if intent not in classification_report:
+        if intent not in classification_report_no_augmentation:
             continue
 
-        intent_results_original = classification_report[intent]
-        intent_results = intent_report[intent]
+        intent_results_original = classification_report_no_augmentation[intent]
+        intent_results = intent_report_with_augmentation[intent]
 
         # Record performance changes for augmentation based on the diversity criterion
         precision_change = (
@@ -439,14 +439,14 @@ def _create_augmentation_summary(
         intent_results["f1-score_change"] = intent_summary[intent][
             "f1-score_change"
         ] = f1_change
-        intent_report[intent] = intent_results
+        intent_report_with_augmentation[intent] = intent_results
 
-    return (intent_summary, intent_report)
+    return intent_summary, intent_report_with_augmentation
 
 
 def _create_summary_report(
-    intent_report: Dict[Text, float],
-    classification_report: Dict[Text, Dict[Text, Any]],
+    intent_report_with_augmentation: Dict[Text, float],
+    classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
     training_intents: List[Text],
     pooled_intents: Set[Text],
     output_directory: Text,
@@ -454,8 +454,8 @@ def _create_summary_report(
     """Creates a summary of the effect of data augmentation.
 
     Args:
-        intent_report: Report of the model run *with* data augmentation.
-        classification_report: Classification report of the model run *without* data augmentation.
+        intent_report_with_augmentation: Report of the model run *with* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
         training_intents: All intents in the training data (non-augmented).
         pooled_intents: The intents that have been selected for data augmentation.
         output_directory: Directory to store the output reports in.
@@ -467,22 +467,22 @@ def _create_summary_report(
     # Retrieve intents for which performance has changed
     changed_intents = (
         _get_intents_with_performance_changes(
-            classification_report, intent_report, training_intents,
+            classification_report_no_augmentation, intent_report_with_augmentation, training_intents,
         )
         - pooled_intents
     )
 
     # Create and update result reports
     report_tuple = _create_augmentation_summary(
-        pooled_intents, changed_intents, classification_report, intent_report,
+        pooled_intents, changed_intents, classification_report_no_augmentation, intent_report_with_augmentation,
     )
 
     intent_summary = report_tuple[0]
-    intent_report.update(report_tuple[1])
+    intent_report_with_augmentation.update(report_tuple[1])
 
     # Store report to file
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory, "intent_report.json"), intent_report,
+        os.path.join(output_directory, "intent_report.json"), intent_report_with_augmentation,
     )
 
     return intent_summary
@@ -505,8 +505,8 @@ def _plot_summary_report(
 
 
 def _get_intents_with_performance_changes(
-    classification_report: Dict[Text, Dict[Text, Any]],
-    intent_report: Dict[Text, float],
+    classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
+    intent_report_with_augmentation: Dict[Text, float],
     all_intents: List[Text],
     significant_figures: int = 2,
 ) -> Set[Text]:
@@ -514,8 +514,8 @@ def _get_intents_with_performance_changes(
     Extracts the intents whose performance has changed.
 
     Args:
-        classification_report: Classification report of the model run *without* data augmentation.
-        intent_report: Report of the model run *with* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
+        intent_report_with_augmentation: Report of the model run *with* data augmentation.
         all_intents: List of all intents.
         significant_figures: Significant figures to be taken into account when assessing whether the performance of an
             intent has changed.
@@ -527,10 +527,10 @@ def _get_intents_with_performance_changes(
     for intent_key in all_intents:
         for metric in ["precision", "recall", "f1-score"]:
             rounded_original = round(
-                classification_report[intent_key][metric], significant_figures
+                classification_report_no_augmentation[intent_key][metric], significant_figures
             )
             rounded_augmented = round(
-                intent_report[intent_key][metric], significant_figures
+                intent_report_with_augmentation[intent_key][metric], significant_figures
             )
             if rounded_original != rounded_augmented:
                 changed_intents.add(intent_key)
@@ -575,8 +575,8 @@ def _run_data_augmentation(
 
     # Create data augmentation summary
     intent_summary = _create_summary_report(
-        intent_report=intent_report,
-        classification_report=classification_report,
+        intent_report_with_augmentation=intent_report,
+        classification_report_no_augmentation=classification_report,
         training_intents=nlu_training_data.intents,
         pooled_intents=intents_to_augment,
         output_directory=output_directory,
