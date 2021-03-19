@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 def _collect_intents_for_data_augmentation(
     nlu_training_data: TrainingData,
     intent_proportion: float,
-    classification_report: Dict[Text, Dict[Text, Any]],
+    classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
 ) -> Set[Text]:
     """Collects intents for which to perform data augmentation.
 
@@ -57,7 +57,7 @@ def _collect_intents_for_data_augmentation(
             considered for data augmentation is determined on the basis of several
             factors, such as their current performance statistics or the number of
             available training examples.
-        classification_report: An existing classification report (without data augmentation).
+        classification_report_no_augmentation: An existing classification report (without data augmentation).
 
     Returns:
         The set of intent names for which data augmentation will be performed.
@@ -72,28 +72,28 @@ def _collect_intents_for_data_augmentation(
     )[:num_intents_to_augment]
     low_precision_intents = sorted(
         [
-            (intent, classification_report[intent]["precision"])
+            (intent, classification_report_no_augmentation.get(intent, {}).get("precision", 0.))
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
     )[:num_intents_to_augment]
     low_recall_intents = sorted(
         [
-            (intent, classification_report[intent]["recall"])
+            (intent, classification_report_no_augmentation.get(intent, {}).get("recall", 0.))
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
     )[:num_intents_to_augment]
     low_f1_intents = sorted(
         [
-            (intent, classification_report[intent]["f1-score"])
+            (intent, classification_report_no_augmentation.get(intent, {}).get("f1-score", 0.))
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
     )[:num_intents_to_augment]
     freq_confused_intents = sorted(
         [
-            (intent, sum(classification_report[intent]["confused_with"].values()))
+            (intent, sum(classification_report_no_augmentation.get(intent, {}).get("confused_with", {}).values()))
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
@@ -379,7 +379,7 @@ def _train_test_nlu_model(
 def _create_augmentation_summary(
     intents_to_augment: Set[Text],
     changed_intents: Set[Text],
-    classification_report_no_augmentation: Dict[Text, Dict[Text, float]],
+    classification_report_no_augmentation: Dict[Text, Any],
     intent_report_with_augmentation: Dict[Text, float],
 ) -> Tuple[
     Dict[Text, Dict[Text, float]], Dict[Text, float],
@@ -402,10 +402,13 @@ def _create_augmentation_summary(
 
     # accuracy is the only non-dict like thing in the classification report, so it receives extra treatment
     if "accuracy" in classification_report_no_augmentation:
-        accuracy_change = intent_report_with_augmentation["accuracy"] - classification_report_no_augmentation["accuracy"]
+        accuracy_change = (
+            intent_report_with_augmentation.get("accuracy", 0.)
+            - classification_report_no_augmentation.get("accuracy", 0.)
+        )
         acc_dict = {
             "accuracy_change": accuracy_change,
-            "accuracy": intent_report_with_augmentation["accuracy"],
+            "accuracy": intent_report_with_augmentation.get("accuracy", 0.),
         }
 
         intent_report_with_augmentation["accuracy"] = acc_dict
@@ -420,15 +423,15 @@ def _create_augmentation_summary(
         if intent not in classification_report_no_augmentation:
             continue
 
-        intent_results_original = classification_report_no_augmentation[intent]
-        intent_results = intent_report_with_augmentation[intent]
+        intent_results_original = classification_report_no_augmentation.get(intent, {})
+        intent_results = intent_report_with_augmentation.get(intent, {})
 
         # Record performance changes for augmentation based on the diversity criterion
         precision_change = (
-            intent_results["precision"] - intent_results_original["precision"]
+            intent_results.get("precision", 0.) - intent_results_original.get("precision", 0.)
         )
-        recall_change = intent_results["recall"] - intent_results_original["recall"]
-        f1_change = intent_results["f1-score"] - intent_results_original["f1-score"]
+        recall_change = intent_results.get("recall", 0.) - intent_results_original.get("recall", 0.)
+        f1_change = intent_results.get("f1-score", 0.) - intent_results_original.get("f1-score", 0.)
 
         intent_results["precision_change"] = intent_summary[intent][
             "precision_change"
@@ -467,14 +470,19 @@ def _create_summary_report(
     # Retrieve intents for which performance has changed
     changed_intents = (
         _get_intents_with_performance_changes(
-            classification_report_no_augmentation, intent_report_with_augmentation, training_intents,
+            classification_report_no_augmentation,
+            intent_report_with_augmentation,
+            training_intents,
         )
         - pooled_intents
     )
 
     # Create and update result reports
     report_tuple = _create_augmentation_summary(
-        pooled_intents, changed_intents, classification_report_no_augmentation, intent_report_with_augmentation,
+        pooled_intents,
+        changed_intents,
+        classification_report_no_augmentation,
+        intent_report_with_augmentation,
     )
 
     intent_summary = report_tuple[0]
@@ -482,7 +490,8 @@ def _create_summary_report(
 
     # Store report to file
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory, "intent_report.json"), intent_report_with_augmentation,
+        os.path.join(output_directory, "intent_report.json"),
+        intent_report_with_augmentation,
     )
 
     return intent_summary
@@ -506,7 +515,7 @@ def _plot_summary_report(
 
 def _get_intents_with_performance_changes(
     classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
-    intent_report_with_augmentation: Dict[Text, float],
+    intent_report_with_augmentation: Dict[Text, Dict[Text, Any]],
     all_intents: List[Text],
     significant_figures: int = 2,
 ) -> Set[Text]:
@@ -527,10 +536,11 @@ def _get_intents_with_performance_changes(
     for intent_key in all_intents:
         for metric in ["precision", "recall", "f1-score"]:
             rounded_original = round(
-                classification_report_no_augmentation[intent_key][metric], significant_figures
+                classification_report_no_augmentation.get(intent_key, {}).get(metric, 0.),
+                significant_figures,
             )
             rounded_augmented = round(
-                intent_report_with_augmentation[intent_key][metric], significant_figures
+                intent_report_with_augmentation.get(intent_key, {}).get(metric, 0.), significant_figures
             )
             if rounded_original != rounded_augmented:
                 changed_intents.add(intent_key)
@@ -545,7 +555,7 @@ def _run_data_augmentation(
     output_directory: Text,
     config: Text,
     nlu_evaluation_data: TrainingData,
-    classification_report: Dict[Text, Dict[Text, float]],
+    classification_report_no_augmentation: Dict[Text, Dict[Text, float]],
 ) -> None:
     """
     Runs the NLU train/test cycle with data augmentation.
@@ -559,7 +569,7 @@ def _run_data_augmentation(
         output_directory: Directory to store the output files in.
         config: NLU model config.
         nlu_evaluation_data: NLU evaluation data.
-        classification_report: Classification report of the model run *without* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
     """
 
     # Store augmented training data to file
@@ -576,7 +586,7 @@ def _run_data_augmentation(
     # Create data augmentation summary
     intent_summary = _create_summary_report(
         intent_report_with_augmentation=intent_report,
-        classification_report_no_augmentation=classification_report,
+        classification_report_no_augmentation=classification_report_no_augmentation,
         training_intents=nlu_training_data.intents,
         pooled_intents=intents_to_augment,
         output_directory=output_directory,
@@ -592,7 +602,7 @@ def augment_nlu_data(
     nlu_training_data: TrainingData,
     nlu_evaluation_data: TrainingData,
     paraphrases: TrainingData,
-    classification_report: Dict[Text, Dict[Text, float]],
+    classification_report_no_augmentation: Dict[Text, Dict[Text, float]],
     config: Text,
     intent_proportion: float,
     random_seed: int,
@@ -608,7 +618,7 @@ def augment_nlu_data(
         nlu_evaluation_data: NLU evaluation data.
         paraphrases: The generated paraphrases with similarity scores obtained
             from https://github.com/RasaHQ/paraphraser.
-        classification_report: Classification report of the model run *without* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
         config: NLU model config.
         intent_proportion: The proportion of intents (out of all intents) considered for data augmentation.
             The actual number of intents considered for data augmentation is determined on the basis of several factors,
@@ -625,7 +635,7 @@ def augment_nlu_data(
     intents_to_augment = _collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
         intent_proportion=intent_proportion,
-        classification_report=classification_report,
+        classification_report_no_augmentation=classification_report_no_augmentation,
     )
 
     logger.info(
@@ -669,7 +679,7 @@ def augment_nlu_data(
         nlu_evaluation_data=nlu_evaluation_data,
         nlu_training_file=nlu_training_file_diverse,
         output_directory=max_vocab_expansion_training_file_path,
-        classification_report=classification_report,
+        classification_report_no_augmentation=classification_report_no_augmentation,
         intents_to_augment=intents_to_augment,
         config=config,
     )
@@ -695,7 +705,7 @@ def augment_nlu_data(
         nlu_evaluation_data=nlu_evaluation_data,
         nlu_training_file=nlu_training_file_random,
         output_directory=random_training_file_path,
-        classification_report=classification_report,
+        classification_report_no_augmentation=classification_report_no_augmentation,
         intents_to_augment=intents_to_augment,
         config=config,
     )

@@ -80,7 +80,7 @@ def test_augmenter_intent_collection(run: Callable[..., RunResult],):
     intents_to_augment = _collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
         intent_proportion=intent_proportion,
-        classification_report=classification_report,
+        classification_report_no_augmentation=classification_report,
     )
 
     num_intents = len(nlu_training_data.number_of_examples_per_intent)

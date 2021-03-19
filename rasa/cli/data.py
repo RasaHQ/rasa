@@ -299,7 +299,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
         nlu_training_data=nlu_training_data,
         nlu_evaluation_data=nlu_evaluation_data,
         paraphrases=paraphrases,
-        classification_report=classification_report,
+        classification_report_no_augmentation=classification_report,
         config=args.config,
         intent_proportion=args.intent_proportion,
         random_seed=args.random_seed,
