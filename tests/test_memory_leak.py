@@ -1,3 +1,4 @@
+import abc
 from pathlib import Path
 from typing import Text, List, Tuple, Callable, Any
 
@@ -10,7 +11,7 @@ import memory_profiler
 def _config_for_epochs(tmp_path: Path, epochs: int) -> Text:
     import rasa.shared.utils.io
 
-    # Override default config to use many epochs
+    # Override default config to use custom amount of epochs
     default_config = Path("rasa", "shared", "importers", "default_config.yml")
     config = rasa.shared.utils.io.read_yaml_file(default_config)
     for model_part, items in config.items():
@@ -23,12 +24,14 @@ def _config_for_epochs(tmp_path: Path, epochs: int) -> Text:
     return str(config_for_test)
 
 
-class MemoryLeakTest:
+class MemoryLeakTest(abc.ABC):
     @pytest.fixture
+    @abc.abstractmethod
     def function_to_profile(self) -> Callable[[], Any]:
         raise NotImplementedError
 
     @pytest.fixture
+    @abc.abstractmethod
     def name_for_dumped_files(self) -> Text:
         raise NotImplementedError
 
@@ -56,7 +59,7 @@ class MemoryLeakTest:
         self._write_results(name_for_dumped_files, results)
 
         coefficient = self._get_coefficient_for_results(results)
-
+        print(coefficient)
         # if this fails it's likely due to a memory leak
         # Suggested Next steps:
         #   1. Run this test locally
@@ -78,7 +81,6 @@ class MemoryLeakTest:
         y = np.array([memory for (memory, _) in results])
 
         trend = polynomial.polyfit(x, y, deg=1)
-        print(trend)
         return float(trend[1])
 
     @staticmethod
@@ -97,7 +99,7 @@ class MemoryLeakTest:
             f.write(json.dumps(results))
 
 
-class TestNLULeak(MemoryLeakTest):
+class TestNLULeakManyEpochs(MemoryLeakTest):
     # [-0.00159855] for 2.4.0
     # [0.21319729] [0.18872215] for 2.2.0
     def epochs(self) -> int:
@@ -129,7 +131,7 @@ class TestNLULeak(MemoryLeakTest):
         return f"memory_usage_rasa_nlu_{rasa.__version__}_epochs{self.epochs()}_training_runs1"
 
 
-class TestCoreLeak(MemoryLeakTest):
+class TestCoreLeakManyEpochs(MemoryLeakTest):
     # 2.4.0: [0.06253618]
     # 2.2.0: [0.35051641]
     def epochs(self) -> int:
