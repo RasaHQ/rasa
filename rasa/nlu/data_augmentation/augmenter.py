@@ -72,28 +72,50 @@ def _collect_intents_for_data_augmentation(
     )[:num_intents_to_augment]
     low_precision_intents = sorted(
         [
-            (intent, classification_report_no_augmentation.get(intent, {}).get("precision", 0.))
+            (
+                intent,
+                classification_report_no_augmentation.get(intent, {}).get(
+                    "precision", 0.0
+                ),
+            )
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
     )[:num_intents_to_augment]
     low_recall_intents = sorted(
         [
-            (intent, classification_report_no_augmentation.get(intent, {}).get("recall", 0.))
+            (
+                intent,
+                classification_report_no_augmentation.get(intent, {}).get(
+                    "recall", 0.0
+                ),
+            )
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
     )[:num_intents_to_augment]
     low_f1_intents = sorted(
         [
-            (intent, classification_report_no_augmentation.get(intent, {}).get("f1-score", 0.))
+            (
+                intent,
+                classification_report_no_augmentation.get(intent, {}).get(
+                    "f1-score", 0.0
+                ),
+            )
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
     )[:num_intents_to_augment]
     freq_confused_intents = sorted(
         [
-            (intent, sum(classification_report_no_augmentation.get(intent, {}).get("confused_with", {}).values()))
+            (
+                intent,
+                sum(
+                    classification_report_no_augmentation.get(intent, {})
+                    .get("confused_with", {})
+                    .values()
+                ),
+            )
             for intent in nlu_training_data.intents
         ],
         key=operator.itemgetter(1),
@@ -336,7 +358,7 @@ def _train_test_nlu_model(
     nlu_training_file: Text,
     config: Text,
     nlu_evaluation_data: TrainingData,
-) -> Dict[Text, float]:
+) -> Dict[Text, Dict[Text, Any]]:
     """Runs the NLU train/test loop using the given augmented training data.
 
     Performs training a new NLU model with the augmented training set and subsequently evaluates the model
@@ -380,9 +402,9 @@ def _create_augmentation_summary(
     intents_to_augment: Set[Text],
     changed_intents: Set[Text],
     classification_report_no_augmentation: Dict[Text, Any],
-    intent_report_with_augmentation: Dict[Text, float],
+    intent_report_with_augmentation: Dict[Text, Dict[Text, Any]],
 ) -> Tuple[
-    Dict[Text, Dict[Text, float]], Dict[Text, float],
+    Dict[Text, Dict[Text, float]], Dict[Text, Dict[Text, Any]],
 ]:
     """Creates a summary report of the effect of data augmentation and modifies the original classification report
     with that information.
@@ -402,13 +424,12 @@ def _create_augmentation_summary(
 
     # accuracy is the only non-dict like thing in the classification report, so it receives extra treatment
     if "accuracy" in classification_report_no_augmentation:
-        accuracy_change = (
-            intent_report_with_augmentation.get("accuracy", 0.)
-            - classification_report_no_augmentation.get("accuracy", 0.)
-        )
+        accuracy_change = intent_report_with_augmentation.get(
+            "accuracy", 0.0
+        ) - classification_report_no_augmentation.get("accuracy", 0.0)
         acc_dict = {
             "accuracy_change": accuracy_change,
-            "accuracy": intent_report_with_augmentation.get("accuracy", 0.),
+            "accuracy": intent_report_with_augmentation.get("accuracy", 0.0),
         }
 
         intent_report_with_augmentation["accuracy"] = acc_dict
@@ -427,11 +448,15 @@ def _create_augmentation_summary(
         intent_results = intent_report_with_augmentation.get(intent, {})
 
         # Record performance changes for augmentation based on the diversity criterion
-        precision_change = (
-            intent_results.get("precision", 0.) - intent_results_original.get("precision", 0.)
+        precision_change = intent_results.get(
+            "precision", 0.0
+        ) - intent_results_original.get("precision", 0.0)
+        recall_change = intent_results.get("recall", 0.0) - intent_results_original.get(
+            "recall", 0.0
         )
-        recall_change = intent_results.get("recall", 0.) - intent_results_original.get("recall", 0.)
-        f1_change = intent_results.get("f1-score", 0.) - intent_results_original.get("f1-score", 0.)
+        f1_change = intent_results.get("f1-score", 0.0) - intent_results_original.get(
+            "f1-score", 0.0
+        )
 
         intent_results["precision_change"] = intent_summary[intent][
             "precision_change"
@@ -448,7 +473,7 @@ def _create_augmentation_summary(
 
 
 def _create_summary_report(
-    intent_report_with_augmentation: Dict[Text, float],
+    intent_report_with_augmentation: Dict[Text, Dict[Text, Any]],
     classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
     training_intents: List[Text],
     pooled_intents: Set[Text],
@@ -536,11 +561,14 @@ def _get_intents_with_performance_changes(
     for intent_key in all_intents:
         for metric in ["precision", "recall", "f1-score"]:
             rounded_original = round(
-                classification_report_no_augmentation.get(intent_key, {}).get(metric, 0.),
+                classification_report_no_augmentation.get(intent_key, {}).get(
+                    metric, 0.0
+                ),
                 significant_figures,
             )
             rounded_augmented = round(
-                intent_report_with_augmentation.get(intent_key, {}).get(metric, 0.), significant_figures
+                intent_report_with_augmentation.get(intent_key, {}).get(metric, 0.0),
+                significant_figures,
             )
             if rounded_original != rounded_augmented:
                 changed_intents.add(intent_key)
