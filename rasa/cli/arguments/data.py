@@ -76,13 +76,15 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--nlu-training-data",
         type=str,
-        help="File containing your NLU training data, i.e. the train set generated with the `rasa data split nlu` command.",
+        help="File containing your NLU training data, i.e. the train set generated with the `rasa data split nlu` "
+        "command.",
     )
 
     parser.add_argument(
         "--nlu-evaluation-data",
         type=str,
-        help="File containing your NLU evaluation data, i.e. the test set generated with the `rasa data split nlu` command.",
+        help="File containing your NLU evaluation data, i.e. the test set generated with the `rasa data split nlu` "
+        "command.",
     )
 
     parser.add_argument(
@@ -95,21 +97,25 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--paraphrases",
         type=str,
-        help="File containing your paraphrases generated from the paraphraser repository: https://github.com/RasaHQ/rasa/pull/7584.",
+        help="File containing your paraphrases generated from the paraphraser repository: "
+        "https://github.com/RasaHQ/rasa/pull/7584.",
     )
 
     parser.add_argument(
         "--intent-proportion",
         type=float,
         default=0.5,
-        help="The proportion of intents (out of all intents) considered for data augmentation. The actual number of intents considered for data augmentation is determined on the basis of several factors, such as their current performance statistics or the number of available training examples.",
+        help="The proportion of intents (out of all intents) considered for data augmentation. The actual number of "
+        "intents considered for data augmentation is determined on the basis of several factors, such as their "
+        "current performance statistics or the number of available training examples.",
     )
 
     parser.add_argument(
         "--min-paraphrase-sim-score",
         type=float,
         default=0.8,
-        help="Minimum similarity score threshold for paraphrases, i.e. any paraphrase with a score < min-paraphrase-sim-score "
+        help="Minimum similarity score threshold for paraphrases, i.e. any paraphrase with a "
+        "score < min-paraphrase-sim-score "
         "will be discarded.",
     )
 
@@ -117,15 +123,18 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
         "--max-paraphrase-sim-score",
         type=float,
         default=0.98,
-        help="Maximum similarity threshold for paraphrases, i.e. any paraphrases with a score > max-paraphrase-sim-score "
-        "will be discarded.",
+        help="Maximum similarity threshold for paraphrases, i.e. any paraphrases with a "
+        "score > max-paraphrase-sim-score will be discarded.",
     )
 
     parser.add_argument(
         "--augmentation-factor",
         type=float,
         default=5.0,
-        help="Specifies by how much any intents should be augmented. It is specified as a multiple of the original number of training examples of a given intent. For example if intent A has 10 original training examples, passing --augmentation-factor 5, results in 50 paraphrases to be added to the training data. Pass -1 to use all available paraphrases for data augmentation.",
+        help="Specifies by how much any intents should be augmented. It is specified as a multiple of the "
+        "original number of training examples of a given intent. For example if intent A has 10 original "
+        "training examples, passing --augmentation-factor 5, results in 50 paraphrases to be added to the "
+        "training data. Pass -1 to use all available paraphrases for data augmentation.",
     )
 
     add_out_param(
