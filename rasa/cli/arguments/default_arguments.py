@@ -93,7 +93,7 @@ def add_endpoint_param(
     help_text: Text,
     default: Optional[Text] = DEFAULT_ENDPOINTS_PATH,
 ) -> None:
-    """Add an option to an argument parser to configure endpoints path."""
+    """Adds an option to an argument parser to configure endpoints path."""
     parser.add_argument("--endpoints", type=str, default=default, help=help_text)
 
 
