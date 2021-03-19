@@ -291,15 +291,15 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             0 0 1 0
             0 0 0 1
             1 0 0 0
-            1 0 0 0
-            1 0 0 0
+            0 1 0 0
+            0 0 1 0
             . . . .
             . . . .
             . . . .
         If num_rows < num_cols, this creates
-            1 0 0 1 1 1 1 ...
-            0 1 0 0 0 0 0 ...
-            0 0 1 0 0 0 0 ...
+            1 0 0 1 0 0 1 ...
+            0 1 0 0 1 0 0 ...
+            0 0 1 0 0 1 0 ...
 
         Args:
             num_rows: Number of rows in the mask
@@ -310,29 +310,15 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         Returns:
             A mask with the missing connections.
         """
-        mask = tf.eye(num_rows=num_rows, num_columns=num_cols, dtype=dtype)
-        if num_rows > num_cols:
-            # Adds the X (= 1) in
-            # 1 0 0 0
-            # 0 1 0 0
-            # 0 0 1 0
-            # 0 0 0 1
-            # X 0 0 0
-            # X 0 0 0
-            # X 0 0 0
-            mask += tf.pad(
-                tf.ones([num_rows - num_cols, 1], dtype=dtype),
-                [[num_cols, 0], [0, num_cols - 1]],
-            )
-        elif num_rows < num_cols:
-            # Adds the X (= 1) in
-            # 1 0 0 X X X X
-            # 0 1 0 0 0 0 0
-            # 0 0 1 0 0 0 0
-            mask += tf.pad(
-                tf.ones([1, num_cols - num_rows], dtype=dtype),
-                [[0, num_rows - 1], [num_rows, 0]],
-            )
+        short_dimension = min(num_rows, num_cols)
+        mask = tf.tile(
+            tf.eye(short_dimension, dtype=dtype),
+            [
+                tf.math.ceil(num_rows / short_dimension),
+                tf.math.ceil(num_cols / short_dimension),
+            ],
+        )[:num_rows, :num_cols]
+
         return mask
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
