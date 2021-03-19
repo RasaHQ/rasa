@@ -267,14 +267,17 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             num_rows: Number of rows in the mask
             num_cols: Number of columns in the mask
             num_ones: Number of ones in the matrix
+            dtype: Type of the values
 
         Returns:
             A random mask matrix
         """
+        # Create [1 1 1 ... 0 0 ...]
         mask = tf.pad(
             tf.ones([num_ones, 1], dtype=dtype),
             [[0, num_rows * num_cols - num_ones], [0, 0]],
         )
+        # Shuffle randomly and turn it into a matrix
         mask = tf.random.shuffle(mask)
         mask = tf.reshape(mask, [num_rows, num_cols])
         return mask
@@ -304,11 +307,10 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         Args:
             num_rows: Number of rows in the mask
             num_cols: Number of columns in the mask
-            kernel_mask: The kernel mask matrix of size (num_rows, num_cols) that may
-                contain empty columns
+            dtype: Type of the values
 
         Returns:
-            A mask with the missing connections.
+            A tiled and croped identity matrix.
         """
         short_dimension = min(num_rows, num_cols)
         mask = tf.tile(
