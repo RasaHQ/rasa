@@ -145,6 +145,9 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
         )
 
 
+# TODO: Run this a separarte part of the matrix
+# TODO: Have more data and then a max threshold
+# TODO: Keep trend
 class TestNLULeakManyRuns(MemoryLeakTest):
     """Tests for memory leaks in NLU components when training with many epochs.
 
