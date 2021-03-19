@@ -30,9 +30,6 @@ from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 
-# TODO: use this? it's in layers.py
-tfa.options.TF_ADDONS_PY_OPS = True
-
 
 class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
     """Combines multiple sparse and dense feature tensors into one dense tensor.
