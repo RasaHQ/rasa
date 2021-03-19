@@ -1,6 +1,6 @@
 import abc
 from pathlib import Path
-from typing import Text, List, Tuple, Callable, Any
+from typing import Text, List, Tuple, Callable, Any, Optional
 
 import pytest
 
@@ -8,7 +8,9 @@ import rasa
 import memory_profiler
 
 
-def _config_for_epochs(tmp_path: Path, epochs: int) -> Text:
+def _config_for_epochs(
+    tmp_path: Path, epochs: int, max_history: Optional[int] = -1
+) -> Text:
     import rasa.shared.utils.io
 
     # Override default config to use custom amount of epochs
@@ -18,6 +20,8 @@ def _config_for_epochs(tmp_path: Path, epochs: int) -> Text:
         for item in items:
             if "epochs" in item:
                 item["epochs"] = epochs
+            if "max_history" in item and max_history != -1:
+                item["max_history"] = None
     config_for_test = tmp_path / "test_config.yml"
     rasa.shared.utils.io.write_yaml(config, config_for_test)
 
@@ -26,6 +30,20 @@ def _config_for_epochs(tmp_path: Path, epochs: int) -> Text:
 
 class MemoryLeakTest(abc.ABC):
     """Generic template for memory leak tests."""
+
+    def __init__(
+        self,
+        ramp_up_time_seconds: float = 15,
+        cooldown_time_seconds: float = 15,
+        profiling_interval: float = 0.1,
+        trend_threshold: float = 0.3,
+        max_memory_threshold_mb: float = 9000,
+    ) -> None:
+        self.ramp_up_time_in_seconds = ramp_up_time_seconds
+        self.cooldown_time_seconds = cooldown_time_seconds
+        self.profiling_interval = profiling_interval
+        self.trend_threshold = trend_threshold
+        self.max_memory_threshold_mb = max_memory_threshold_mb
 
     @pytest.fixture
     @abc.abstractmethod
@@ -37,24 +55,12 @@ class MemoryLeakTest(abc.ABC):
     def name_for_dumped_files(self) -> Text:
         raise NotImplementedError
 
-    def wramp_up_time_seconds(self) -> int:
-        return 15
-
-    def cooldown_time_seconds(self) -> int:
-        return 15
-
-    def interval(self) -> float:
-        return 0.1
-
-    def trend_threshold(self) -> float:
-        return 0.3
-
     def test_for_memory_leak(
         self, function_to_profile: Callable[[], Any], name_for_dumped_files
     ) -> None:
         results = memory_profiler.memory_usage(
             function_to_profile,
-            interval=self.interval(),
+            interval=self.profiling_interval,
             timeout=3600,
             include_children=True,
             multiprocess=True,
@@ -73,7 +79,11 @@ class MemoryLeakTest(abc.ABC):
         #      mprof plot \
         #        memory_usage_rasa_nlu_2.4.10_epochs1000_training_runs1_plot.txt
         #      ```
-        assert coefficient < self.trend_threshold()
+        assert coefficient < self.trend_threshold
+
+        max_memory_usage = max(results, key=lambda memory_time: memory_time[0])[0]
+
+        assert max_memory_usage < self.max_memory_threshold_mb
 
     def _get_coefficient_for_results(self, results: List[Tuple[float]]) -> float:
         import numpy as np
@@ -81,8 +91,8 @@ class MemoryLeakTest(abc.ABC):
 
         # ignore the ramp up in the beginning and packaging at the end
         results = results[
-            int(self.wramp_up_time_seconds() / self.interval()) : len(results)
-            - int(self.cooldown_time_seconds() / self.interval())
+            int(self.ramp_up_time_in_seconds / self.profiling_interval) : len(results)
+            - int(self.cooldown_time_seconds / self.profiling_interval)
         ]
 
         x = np.array([timestamp for (_, timestamp) in results])
@@ -113,6 +123,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
 
     # [-0.00159855] for 2.4.0
     # [0.21319729] [0.18872215] for 2.2.0
+    @property
     def epochs(self) -> int:
         return 1000
 
@@ -129,7 +140,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
 
         def profiled_train() -> None:
             train_nlu(
-                _config_for_epochs(tmp_path, epochs=self.epochs()),
+                _config_for_epochs(tmp_path, epochs=self.epochs),
                 # default_nlu_data,  # 2.2.0
                 nlu_data_path,
                 output=str(tmp_path),
@@ -141,7 +152,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
     def name_for_dumped_files(self) -> Text:
         return (
             f"memory_usage_rasa_nlu_{rasa.__version__}_"
-            f"epochs{self.epochs()}_training_runs1"
+            f"epochs{self.epochs}_training_runs1"
         )
 
 
@@ -157,8 +168,9 @@ class TestNLULeakManyRuns(MemoryLeakTest):
 
     # [-0.00159855] for 2.4.0
     # [0.21319729] [0.18872215] for 2.2.0
+    @property
     def training_runs(self) -> int:
-        return 30
+        return 20
 
     @pytest.fixture()
     def function_to_profile(
@@ -171,7 +183,7 @@ class TestNLULeakManyRuns(MemoryLeakTest):
         from rasa.model_training import train_nlu
 
         def profiled_train() -> None:
-            for _ in range(self.training_runs()):
+            for _ in range(self.training_runs):
                 train_nlu(
                     _config_for_epochs(tmp_path, epochs=1),
                     # default_nlu_data,  # 2.2.0
@@ -185,7 +197,7 @@ class TestNLULeakManyRuns(MemoryLeakTest):
     def name_for_dumped_files(self) -> Text:
         return (
             f"memory_usage_rasa_nlu_{rasa.__version__}_"
-            f"epochs1_training_runs{self.training_runs()}"
+            f"epochs1_training_runs{self.training_runs}"
         )
 
 
@@ -194,6 +206,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
 
     # 2.4.0: [0.06253618]
     # 2.2.0: [0.35051641]
+    @property
     def epochs(self) -> int:
         return 1000
 
@@ -213,10 +226,11 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
             train_core(
                 domain_path,
                 # default_domain_path,  # 2.2.0
-                _config_for_epochs(tmp_path, epochs=self.epochs()),
+                _config_for_epochs(tmp_path, epochs=self.epochs, max_history=None),
                 stories_path,
                 # default_stories_file,  # 2.2.0
                 output=str(tmp_path),
+                additional_arguments={"augmentation_factor": 20},
             )
 
         return profiled_train
@@ -225,7 +239,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
     def name_for_dumped_files(self) -> Text:
         return (
             f"memory_usage_rasa_core_{rasa.__version__}_"
-            f"epochs{self.epochs()}_training_runs1"
+            f"epochs{self.epochs}_training_runs1"
         )
 
 
@@ -236,11 +250,9 @@ class TestCoreLeakManyRuns(MemoryLeakTest):
     there is a leak in the data loading pipeline.
     """
 
-    def training_runs(self) -> int:
-        return 30
-
-    def trend_threshold(self) -> float:
-        return 0.35
+    def __init__(self) -> None:
+        super().__init__(trend_threshold=0.35)
+        self.training_runs = 20
 
     @pytest.fixture()
     def function_to_profile(
@@ -255,7 +267,7 @@ class TestCoreLeakManyRuns(MemoryLeakTest):
         from rasa.model_training import train_core
 
         def profiled_train() -> None:
-            for _ in range(self.training_runs()):
+            for _ in range(self.training_runs):
                 train_core(
                     domain_path,
                     # default_domain_path,  # 2.2.0
@@ -271,5 +283,5 @@ class TestCoreLeakManyRuns(MemoryLeakTest):
     def name_for_dumped_files(self) -> Text:
         return (
             f"memory_usage_rasa_core_{rasa.__version__}_"
-            f"epochs1_training_runs{self.training_runs()}"
+            f"epochs1_training_runs{self.training_runs}"
         )
