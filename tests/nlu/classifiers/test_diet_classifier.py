@@ -328,7 +328,7 @@ def as_pipeline(*components):
         ),  # higher than default ranking_length
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            "examples/moodbot/data/nlu.yml",
+            "data/test_moodbot/data/nlu.yml",
             7,
             True,
         ),  # less intents than default ranking_length
@@ -382,7 +382,7 @@ async def test_softmax_normalization(
                 MODEL_CONFIDENCE: LINEAR_NORM,
                 RANKING_LENGTH: -1,
             },
-            "examples/moodbot/data/nlu.yml",
+            "data/test_moodbot/data/nlu.yml",
         ),
     ],
 )
