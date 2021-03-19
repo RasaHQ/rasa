@@ -236,10 +236,13 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         # Construct mask with given density and guarantee that every output is
         # connected to at least one input
 
-        num_connected_min = max(num_rows, num_cols)
-        num_connected_extra = max(
+        min_num_connected = max(num_rows, num_cols)
+        num_extra_connections = max(
             tf.cast(
-                tf.math.ceil(self.density * num_rows * num_cols) - num_connected_min,
+                tf.math.ceil(
+                    self.density * num_rows * num_cols
+                    - (1.0 - self.density) * min_num_connected
+                ),
                 tf.int32,
             ),
             0,
@@ -248,7 +251,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         kernel_mask = self._minimal_mask(
             num_rows, num_cols, dtype=self.kernel.dtype
         ) + self._random_mask(
-            num_rows, num_cols, num_connected_extra, dtype=self.kernel.dtype
+            num_rows, num_cols, num_extra_connections, dtype=self.kernel.dtype
         )
 
         # We might accidently have added a random connection on top of a fixed connection
