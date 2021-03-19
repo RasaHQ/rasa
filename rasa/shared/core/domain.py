@@ -853,7 +853,7 @@ class Domain:
             AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
         )
 
-    def index_for_action(self, action_name: Text) -> Union[int, NoReturn]:
+    def index_for_action(self, action_name: Text) -> int:
         """Looks up which action index corresponds to this action name."""
         try:
             return self.action_names_or_texts.index(action_name)
