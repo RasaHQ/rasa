@@ -9,6 +9,7 @@ from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 
 import rasa.telemetry
 import rasa.utils.io
+import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
 from rasa.cli import (
     data,
@@ -101,7 +102,6 @@ def main() -> None:
         cmdline_arguments.loglevel if hasattr(cmdline_arguments, "loglevel") else None
     )
     set_log_level(log_level)
-    import rasa.utils.tensorflow.environment as tf_env
     tf_env.setup_tf_environment()
 
     # insert current path in syspath so custom modules are found

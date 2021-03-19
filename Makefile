@@ -66,6 +66,7 @@ clean:
 install:
 	poetry run python -m pip install -U pip
 	poetry install
+	export TF_CPP_MIN_LOG_LEVEL = 2
 
 install-mitie:
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
