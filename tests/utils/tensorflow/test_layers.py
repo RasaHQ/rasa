@@ -9,6 +9,7 @@ from rasa.utils.tensorflow.layers import RandomlyConnectedDense
     "inputs, units, expected_output_shape",
     [
         (np.array([[1, 2], [4, 5], [7, 8]]), 4, (3, 4)),
+        (np.array([[1, 2], [4, 5], [7, 8]]), 2, (3, 2)),
         (np.array([[1, 2], [4, 5], [7, 8]]), 5, (3, 5)),
         (np.array([[1, 2], [4, 5], [7, 8], [7, 8]]), 5, (4, 5)),
         (np.array([[[1, 2], [4, 5], [7, 8]]]), 4, (1, 3, 4)),
