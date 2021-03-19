@@ -71,17 +71,17 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    data={TEXT: "test a"},
+                    data={INTENT: "test a"},
                     features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
                     ],
                 ),
                 Message(
-                    data={TEXT: "test b"},
+                    data={INTENT: "test b"},
                     features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
                     ],
                 ),
             ],
@@ -90,10 +90,10 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    data={TEXT: "test a"},
+                    data={INTENT: "test a"},
                     features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
                     ],
                 )
             ],
@@ -102,9 +102,9 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    data={TEXT: "test a"},
+                    data={INTENT: "test a"},
                     features=[
-                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
+                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, TEXT, "test")
                     ],
                 )
             ],
@@ -114,7 +114,6 @@ def test_compute_default_label_features():
 )
 def test_check_labels_features_exist(messages, expected):
     classifier = DIETClassifier()
-    classifier._label_attribute = TEXT
     assert classifier._check_labels_features_exist(messages) == expected
 
 
