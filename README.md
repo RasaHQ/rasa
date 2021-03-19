@@ -307,14 +307,17 @@ release, as well as:
 
 1. **Go over the milestone and evaluate the status of any PR merging that's happening. Follow up with people on their
 bugs and fixes.** If the release introduces new bugs or regressions that can't be fixed in time, we should discuss on
-Slack about this and take a decision to go forward or postpone the release. The PR / issue owners are responsible for
-communicating any issues which might be release relevant.
+Slack about this and take a decision on how to move forward. If the issue is not ready to be merged in time, we remove issue / PR from milestone and notify the PR owner and the product manager on Slack about it. The PR / issue owners are responsible for
+communicating any issues which might be release relevant. Postponing the release should be considered as an edge case scenario based on the latest decision about [Time based releases](https://www.notion.so/rasa/Time-based-Releases-4861e429c73f402fa83dc06c0aba0435) and try to avoid it.
 
 #### Release day! 🚀
 
-1. **At the start of the day, post a small message on slack announcing release day!**. Communicate you'll be handling
+1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling
 the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and
-cause delays)
+cause delays). This message should be posted early in the morning and before moving forward with any of the steps of the release, 
+   in order to give enough time to people to check their PRs and Issues. That way they still have time in case they would like 
+   to add something in the Milestone before the announced release time. Template of the slack message can be found [here](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M).
+   The release time should be communicated transparently so that others can plan potentially necessary steps accordingly. If there are bigger changes this should be communicated.
 2. Make sure the milestone is empty (everything has been either merged or moved to the next milestone)
 3. Once everything in the milestone is taken care of, post a small message on Slack communicating you are about to
 start the release process (in case anything is missing).
@@ -333,7 +336,11 @@ Releasing a new version is quite simple, as the packages are build and distribut
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. Switch to the branch you want to cut the release from (`main` in case of a major / minor, the current feature branch for micro releases)
+2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
+   ```bash
+    git checkout -b 2.4.0
+    ```
+3. Switch to the branch you want to cut the release from (`main` in case of a major, the branch you just created in case of a minor, the current feature branch for micro releases)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 3. Run `make release`
@@ -349,7 +356,13 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git checkout -b 1.2.x
     git push origin 1.2.x
     ```
-
+7. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+8. If no message appears in the channel then you can do the following checks:
+    - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: 2.x.x` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
+    - If the workflow is not completed, then maybe try to re run the workflow in case that solves the problem
+    - If the problem persists then contact the infrastructure team
+9.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
+    
 ### Cutting a Micro release
 
 Micro releases are simpler to cut, since they are meant to contain only bugfixes.
