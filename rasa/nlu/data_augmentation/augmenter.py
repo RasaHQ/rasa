@@ -237,7 +237,6 @@ def _create_augmented_training_data_max_vocab_expansion(
     Returns:
         Augmented training data based on the maximum vocabulary expansion strategy
     """
-
     tokenizer = _create_tokenizer_from_config(config_path=config)
     for intent in intents_to_augment:
         for message in paraphrase_pool[intent]:
