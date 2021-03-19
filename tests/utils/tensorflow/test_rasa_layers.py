@@ -791,9 +791,8 @@ def test_sequence_layer_correct_output(
 ):
     layer = RasaSequenceLayer(
         attribute=attribute_name,
-        config=dict(
-            model_config_transformer_mlm, **{HIDDEN_LAYERS_SIZES: {attribute_name: []}}
-        ),
+        # Use MLM but no transformer and no hidden layers.
+        config=dict(model_config_basic_no_hidden_layers, **{MASKED_LM: True}),
         attribute_signature=attribute_signature,
     )
 
@@ -803,7 +802,7 @@ def test_sequence_layer_correct_output(
         mask_seq_sent_expected,
         token_ids_expected,
     ) = expected_outputs_train
-    _, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _ = layer(
+    (_, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _,) = layer(
         inputs, training=True
     )
     assert (seq_sent_features.numpy() == seq_sent_features_expected).all()
@@ -819,9 +818,17 @@ def test_sequence_layer_correct_output(
 
     # Test-time check
     (seq_sent_features_expected, mask_seq_sent_expected, _,) = expected_outputs_train
-    _, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _ = layer(
-        inputs, training=False
-    )
+    (
+        transformer_outputs,
+        seq_sent_features,
+        mask_seq_sent,
+        token_ids,
+        mlm_boolean_mask,
+        _,
+    ) = layer(inputs, training=False)
+    # Check that transformer outputs match the combined features, i.e. that MLM wasn't
+    # applied
+    assert (transformer_outputs.numpy() == seq_sent_features_expected).all()
     assert (seq_sent_features.numpy() == seq_sent_features_expected).all()
     assert (mask_seq_sent.numpy() == mask_seq_sent_expected).all()
     assert token_ids.numpy().size == 0
