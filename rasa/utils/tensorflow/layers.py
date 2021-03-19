@@ -157,7 +157,7 @@ class DenseForSparse(tf.keras.layers.Dense):
 
 
 class RandomlyConnectedDense(tf.keras.layers.Dense):
-    """Layer with dense ouputs that are connected to a given fraction of inputs.
+    """Layer with dense ouputs that are connected to a random subset of inputs.
 
     `RandomlyConnectedDense` implements the operation:
     `output = activation(dot(input, kernel) + bias)`
@@ -165,7 +165,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
     passed as the `activation` argument, `kernel` is a weights matrix
     created by the layer, and `bias` is a bias vector created by the layer
     (only applicable if `use_bias` is `True`).
-    It creates `kernel_mask` to set fraction of the `kernel` weights to zero.
+    It creates `kernel_mask` to set a fraction of the `kernel` weights to zero.
 
     Note: If the input to the layer has a rank greater than 2, then
     it is flattened prior to the initial dot product with `kernel`.
@@ -192,8 +192,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         """Declares instance variables with default values.
 
         Args:
-            density: Float between 0 and 1. Approximate fraction of the inputs that
-                each output is connected to.
+            density: Float between 0 and 1. Approximate fraction of trainable weights.
             units: Positive integer, dimensionality of the output space.
             activation: Activation function to use.
                 If you don't specify anything, no activation is applied
@@ -349,8 +348,7 @@ class Ffnn(tf.keras.layers.Layer):
         layer_sizes: List of integers with dimensionality of the layers.
         dropout_rate: Float between 0 and 1; fraction of the input units to drop.
         reg_lambda: Float, regularization factor.
-        density: Float between 0 and 1. Approximate fraction of the inputs that each
-            output is connected to.
+        density: Float between 0 and 1. Approximate fraction of trainable weights.
         layer_name_suffix: Text added to the name of the layers.
 
     Input shape:
