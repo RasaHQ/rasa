@@ -311,19 +311,27 @@ class Domain:
         roles: Dict[Text, List[Text]],
         groups: Dict[Text, List[Text]],
     ) -> Dict[Text, Any]:
-        """Transform intent properties coming from a domain file for internal use.
+        """Transforms the intent's parameters in a format suitable for internal use.
 
-        In domain files, `use_entities` or `ignore_entities` is used. Internally, there
-        is a property `used_entities` instead that lists all entities to be used.
+        When an intent is retrieved from the `domain.yml` file, it contains two
+        parameters, the `use_entities` and the `ignore_entities` parameter. With the
+        the values of these two parameters the Domain class is updated, a new
+        parameter is added to the intent called `used_entities` and the two
+        previous parameters are deleted. This happens because internally only the
+        parameter `used_entities` is needed to list all the entities that should be
+        used for this intent.
 
         Args:
-            intent: The intents as provided by a domain file.
+            intent: The intent as retrieved from the `domain.yml` file thus having two
+                parameters, the `use_entities` and the `ignore_entities` parameter.
             entities: All entities as provided by a domain file.
             roles: All roles for entities as provided by a domain file.
             groups: All groups for entities as provided by a domain file.
 
         Returns:
-            The intents as they should be used internally.
+            The intent with new format thus having only one parameter called
+            `used_entities` since this is the expected format of the intent
+            when used internally.
         """
         name, properties = list(intent.items())[0]
 
@@ -331,15 +339,14 @@ class Domain:
             properties.setdefault(USE_ENTITIES_KEY, True)
         else:
             raise InvalidDomain(
-                f"In the `domain.yml` file, the intent `{name}` cannot have value of"
-                f" `{type(properties)}`. This can happen if you add an intent with the"
-                f" `:` (colon character) after it and do not add any"
-                f" further information to this specific intent."
-                f" If you remove the `:` character it should work. Please see "
+                f"In the `domain.yml` file, the intent '{name}' cannot have value of"
+                f" `{type(properties)}`. If you have placed a ':' character after the"
+                f" the intent's name without adding any additional parameters to this"
+                f" intent then you would need to remove the ':' character. Please see "
                 f"{rasa.shared.constants.DOCS_URL_DOMAINS} for more information on how"
                 f" to correctly add `intents` in the `domain` and"
                 f" {rasa.shared.constants.DOCS_URL_INTENTS} for examples on"
-                f" when to use the `:` character after an intent's name."
+                f" when to use the ':' character after an intent's name."
             )
 
         properties.setdefault(IGNORE_ENTITIES_KEY, [])
