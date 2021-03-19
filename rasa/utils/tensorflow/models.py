@@ -14,6 +14,7 @@ from typing import (
     Any,
 )
 
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -263,14 +264,20 @@ class RasaModel(TmpKerasModel):
         batch_in = RasaBatchDataGenerator.prepare_batch(model_data.data)
 
         if self._run_eagerly:
-            return tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
+            outputs = tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
+            if np.size(outputs[DIAGNOSTIC_DATA]["attention_weights"]) == 0:
+                outputs[DIAGNOSTIC_DATA]["attention_weights"] = None
+            return outputs
 
         if self._tf_predict_step is None:
             self._tf_predict_step = tf.function(
                 self.predict_step, input_signature=self._dynamic_signature(batch_in)
             )
 
-        return tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
+        outputs = tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
+        if np.size(outputs[DIAGNOSTIC_DATA]["attention_weights"]) == 0:
+            outputs[DIAGNOSTIC_DATA]["attention_weights"] = None
+        return outputs
 
     def _get_metric_results(self, prefix: Optional[Text] = "") -> Dict[Text, float]:
         return {
