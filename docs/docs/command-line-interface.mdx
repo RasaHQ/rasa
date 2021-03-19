@@ -440,6 +440,25 @@ The paraphrases should be pre-processed and supplied with similarity scores in o
 
 :::note
 Usage of `rasa data augment nlu` requires a set of generated paraphrases from [https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser).
+
+Alternatively, you can use paraphrases from any other resource for data augmentation as long as you make sure they are in the required format as in the example below:
+
+```yaml
+nlu:
+- intent: ask_query
+  examples:
+   - text: How can I apply for a new passport?
+     metadata:
+       paraphrases: |
+       - How to apply for passport
+       - Apply for a new passport.
+       scores: |
+       - 0.82
+       - 0.93
+```
+
+The scores should represent the similarity between the paraphrase and the original sentence. You can calculate similarity scores by e.g. taking the cosine similarity of the encoded sentence vector of the original phrase and the vector respresentations of your paraphrases.
+
 :::
 
 :::caution check results
