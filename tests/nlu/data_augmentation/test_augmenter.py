@@ -1,9 +1,9 @@
 import operator
-from typing import Callable, Text
+from typing import Callable, Set, Text
 
 import pytest
-from rasa.nlu.components import Component
 from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
@@ -23,7 +23,7 @@ def test_augmenter_create_tokenizer():
 
     tokenizer = _create_tokenizer_from_config(config_path=config_path)
 
-    assert isinstance(tokenizer, Component)
+    assert isinstance(tokenizer, Tokenizer)
 
     # Test Config has a simple WhitespaceTokenizer
     expected_tokens = ["xxx", "yyy", "zzz"]
@@ -117,6 +117,33 @@ def test_augmenter_paraphrase_pool_creation(
         max_paraphrase_sim_score=max_paraphrase_sim_score,
     )
     assert len(pool.get(intent_to_augment, [])) == expected_len
+
+@pytest.mark.parametrize(
+    "intents_to_augment",
+    [
+        set(),
+        {"check_recipients", "check_earnings"},
+        {"ask_transfer_charge", "greet", "help", "deny", "check_recipients", "thankyou", "search_transactions",
+         "check_balance", "pay_cc", "goodbye", "affirm", "inform", "check_earnings", "human_handoff",
+         "transfer_money"}
+    ]
+)
+def test_augmenter_paraphrase_pool_structure(intents_to_augment: Set[Text]):
+    from rasa.nlu.data_augmentation.augmenter import _create_paraphrase_pool
+
+    paraphrases = rasa.shared.nlu.training_data.loading.load_data(
+        "data/test_nlu_paraphrasing/paraphrases.yml"
+    )
+
+    pool = _create_paraphrase_pool(
+        paraphrases=paraphrases,
+        intents_to_augment=intents_to_augment,
+        min_paraphrase_sim_score=0.,
+        max_paraphrase_sim_score=1.
+    )
+
+    assert len(pool) == len(intents_to_augment)
+    assert all([intent in pool for intent in intents_to_augment])
 
 
 @pytest.mark.parametrize(
