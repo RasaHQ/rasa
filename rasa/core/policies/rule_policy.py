@@ -634,7 +634,7 @@ class RulePolicy(MemoizationPolicy):
         all_trackers: List[TrackerWithCachedStates],
         domain: Domain,
     ) -> List[Text]:
-        """Analyze learned rules by running prediction on training trackers.
+        """Analyzes learned rules by running prediction on training trackers.
 
         This method collects error messages for contradicting rules
         and creates the lookup for rules that are not present in the stories.
