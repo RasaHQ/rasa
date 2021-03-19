@@ -125,7 +125,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
-        """Generate the past states of this tracker based on the history.
+        """Generates the past states of this tracker based on the history.
 
         Args:
             domain: The Domain.
