@@ -167,7 +167,7 @@ def drop_intents_below_freq(
         "Raw data intent examples: {}".format(len(training_data.intent_examples))
     )
 
-    examples_per_intent = training_data.number_of_examples_per_intent.items()
+    examples_per_intent = training_data.number_of_examples_per_intent
     return training_data.filter_training_examples(
         lambda ex: examples_per_intent[ex.get(INTENT)] >= cutoff
     )
