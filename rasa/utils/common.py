@@ -110,9 +110,6 @@ def update_tensorflow_log_level() -> None:
 
     logging.getLogger("tensorflow").setLevel(log_level)
     logging.getLogger("tensorflow").propagate = False
-    logging.warning(
-        f"Updating tensorflow log level. {os.environ['TF_CPP_MIN_LOG_LEVEL']}, {tf.get_logger().level}, {logging.getLogger('tensorflow')}"
-    )
 
 
 def update_sanic_log_level(log_file: Optional[Text] = None):
