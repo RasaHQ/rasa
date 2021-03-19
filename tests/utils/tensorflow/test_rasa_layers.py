@@ -35,8 +35,8 @@ from rasa.utils.tensorflow.model_data import FeatureSignature
 
 
 attribute_name = TEXT
-units_small = 2
-units_bigger = 3
+units_1 = 2
+units_2 = 3
 units_sparse_to_dense = 10
 units_concat = 7
 units_hidden_layer = 11
@@ -86,46 +86,36 @@ model_config_transformer_mlm = dict(model_config_transformer, **{MASKED_LM: True
 # Dummy feature signatures and features (full of 1s) for tests that don't check exact
 # numerical outputs, only shapes
 
-feature_signature_sparse = FeatureSignature(
-    is_sparse=True, units=units_small, number_of_dimensions=3
+feature_signature_sparse_1 = FeatureSignature(
+    is_sparse=True, units=units_1, number_of_dimensions=3
 )
-feature_sparse_seq_3d = tf.sparse.from_dense(
-    tf.ones((batch_size, max_seq_length, units_small))
+feature_sparse_seq_1 = tf.sparse.from_dense(
+    tf.ones((batch_size, max_seq_length, units_1))
 )
-feature_sparse_sent_3d = tf.sparse.from_dense(tf.ones((batch_size, 1, units_small)))
+feature_sparse_sent_1 = tf.sparse.from_dense(tf.ones((batch_size, 1, units_1)))
 
-feature_signature_sparse_bigger = FeatureSignature(
-    is_sparse=True, units=units_bigger, number_of_dimensions=3
+feature_signature_dense_1 = FeatureSignature(
+    is_sparse=False, units=units_1, number_of_dimensions=3
 )
-feature_sparse_seq_3d_bigger = tf.sparse.from_dense(
-    tf.ones((batch_size, max_seq_length, units_bigger))
-)
-feature_sparse_sent_3d_bigger = tf.sparse.from_dense(
-    tf.ones((batch_size, 1, units_bigger))
-)
+feature_dense_seq_1 = tf.ones((batch_size, max_seq_length, units_1))
+feature_dense_sent_1 = tf.ones((batch_size, 1, units_1))
 
-feature_signature_dense = FeatureSignature(
-    is_sparse=False, units=units_small, number_of_dimensions=3
+feature_signature_dense_2 = FeatureSignature(
+    is_sparse=False, units=units_2, number_of_dimensions=3
 )
-feature_dense_seq_3d = tf.ones((batch_size, max_seq_length, units_small))
-feature_dense_sent_3d = tf.ones((batch_size, 1, units_small))
-
-feature_signature_dense_bigger = FeatureSignature(
-    is_sparse=False, units=units_bigger, number_of_dimensions=3
-)
-feature_dense_seq_3d_bigger = tf.ones((batch_size, max_seq_length, units_bigger))
-feature_dense_sent_3d_bigger = tf.ones((batch_size, 1, units_bigger))
+feature_dense_seq_2 = tf.ones((batch_size, max_seq_length, units_2))
+feature_dense_sent_2 = tf.ones((batch_size, 1, units_2))
 
 sequence_lengths = tf.ones((batch_size,)) * max_seq_length
 sequence_lengths_empty = tf.ones((batch_size,)) * 0
 
 attribute_signature_basic = {
-    SEQUENCE: [feature_signature_dense, feature_signature_sparse],
-    SENTENCE: [feature_signature_dense],
+    SEQUENCE: [feature_signature_dense_1, feature_signature_sparse_1],
+    SENTENCE: [feature_signature_dense_1],
 }
 attribute_features_basic = (
-    [feature_dense_seq_3d, feature_sparse_seq_3d],
-    [feature_dense_sent_3d],
+    [feature_dense_seq_1, feature_sparse_seq_1],
+    [feature_dense_sent_1],
     sequence_lengths,
 )
 
@@ -140,13 +130,13 @@ attribute_features_basic = (
             {
                 "feature_type": "arbitrary",
                 "feature_type_signature": [
-                    feature_signature_sparse,
-                    feature_signature_sparse,
-                    feature_signature_dense,
-                    feature_signature_dense_bigger,
+                    feature_signature_sparse_1,
+                    feature_signature_sparse_1,
+                    feature_signature_dense_1,
+                    feature_signature_dense_2,
                 ],
             },
-            2 * units_sparse_to_dense + units_small + units_bigger,
+            2 * units_sparse_to_dense + units_1 + units_2,
         ),
         # ConcatenateSparseDense layer with only sparse features
         (
@@ -154,7 +144,7 @@ attribute_features_basic = (
             model_config_basic,
             {
                 "feature_type": "arbitrary",
-                "feature_type_signature": [feature_signature_sparse],
+                "feature_type_signature": [feature_signature_sparse_1],
             },
             units_sparse_to_dense,
         ),
@@ -164,9 +154,9 @@ attribute_features_basic = (
             model_config_basic,
             {
                 "feature_type": "arbitrary",
-                "feature_type_signature": [feature_signature_dense],
+                "feature_type_signature": [feature_signature_dense_1],
             },
-            units_small,
+            units_1,
         ),
         # FeatureCombining layer with sequence- and sentence-level features, dimension unifying
         (
@@ -181,11 +171,11 @@ attribute_features_basic = (
             model_config_basic,
             {
                 "attribute_signature": {
-                    SEQUENCE: [feature_signature_dense],
-                    SENTENCE: [feature_signature_dense],
+                    SEQUENCE: [feature_signature_dense_1],
+                    SENTENCE: [feature_signature_dense_1],
                 }
             },
-            units_small,
+            units_1,
         ),
         # FeatureCombining layer with sentence-level features only
         (
@@ -194,10 +184,10 @@ attribute_features_basic = (
             {
                 "attribute_signature": {
                     "sequence": [],
-                    "sentence": [feature_signature_dense],
+                    "sentence": [feature_signature_dense_1],
                 },
             },
-            units_small,
+            units_1,
         ),
         # FeatureCombining layer with sequence-level features only
         (
@@ -205,11 +195,11 @@ attribute_features_basic = (
             model_config_basic,
             {
                 "attribute_signature": {
-                    "sequence": [feature_signature_dense],
+                    "sequence": [feature_signature_dense_1],
                     "sentence": [],
                 },
             },
-            units_small,
+            units_1,
         ),
         # Sequence layer with mixed features, hidden layers and transformer
         (
@@ -242,7 +232,7 @@ def test_layer_gives_correct_output_units(
 
 
 @pytest.mark.parametrize(
-    "layer_class, model_config, layer_args, layer_inputs, expected_output_shapes",
+    "layer_class, model_config, layer_args, layer_inputs, expected_output_shapes_train, expected_output_shapes_test",
     [
         # ConcatenateSparseDense layer with mixed features
         (
@@ -251,25 +241,26 @@ def test_layer_gives_correct_output_units(
             {
                 "feature_type": "arbitrary",
                 "feature_type_signature": [
-                    feature_signature_sparse,
-                    feature_signature_sparse,
-                    feature_signature_dense,
-                    feature_signature_dense_bigger,
+                    feature_signature_sparse_1,
+                    feature_signature_sparse_1,
+                    feature_signature_dense_1,
+                    feature_signature_dense_2,
                 ],
             },
             (
                 [
-                    feature_sparse_seq_3d,
-                    feature_sparse_seq_3d,
-                    feature_dense_seq_3d,
-                    feature_dense_seq_3d_bigger,
+                    feature_sparse_seq_1,
+                    feature_sparse_seq_1,
+                    feature_dense_seq_1,
+                    feature_dense_seq_2,
                 ],
             ),
             (
                 batch_size,
                 max_seq_length,
-                2 * units_sparse_to_dense + units_small + units_bigger,
+                2 * units_sparse_to_dense + units_1 + units_2,
             ),
+            "same_as_train",  # means that test-time shapes are same as train-time ones
         ),
         # ConcatenateSparseDense layer with only sparse features
         (
@@ -277,10 +268,11 @@ def test_layer_gives_correct_output_units(
             model_config_basic,
             {
                 "feature_type": "arbitrary",
-                "feature_type_signature": [feature_signature_sparse],
+                "feature_type_signature": [feature_signature_sparse_1],
             },
-            ([feature_sparse_sent_3d],),
+            ([feature_sparse_sent_1],),
             (batch_size, 1, units_sparse_to_dense),
+            "same_as_train",
         ),
         # ConcatenateSparseDense layer with only dense features
         (
@@ -288,10 +280,11 @@ def test_layer_gives_correct_output_units(
             model_config_basic,
             {
                 "feature_type": "arbitrary",
-                "feature_type_signature": [feature_signature_dense],
+                "feature_type_signature": [feature_signature_dense_1],
             },
-            ([feature_dense_sent_3d],),
-            (batch_size, 1, units_small),
+            ([feature_dense_sent_1],),
+            (batch_size, 1, units_1),
+            "same_as_train",
         ),
         # FeatureCombining layer with sequence- and sentence-level features, dimension unifying
         (
@@ -303,6 +296,7 @@ def test_layer_gives_correct_output_units(
                 (batch_size, max_seq_length + 1, units_concat),
                 (batch_size, max_seq_length + 1, 1),
             ],
+            "same_as_train",
         ),
         # FeatureCombining layer with sequence- and sentence-level features, no dimension unifying
         (
@@ -310,15 +304,16 @@ def test_layer_gives_correct_output_units(
             model_config_basic,
             {
                 "attribute_signature": {
-                    SEQUENCE: [feature_signature_dense],
-                    SENTENCE: [feature_signature_dense],
+                    SEQUENCE: [feature_signature_dense_1],
+                    SENTENCE: [feature_signature_dense_1],
                 }
             },
-            ([feature_dense_seq_3d], [feature_dense_sent_3d], sequence_lengths,),
+            ([feature_dense_seq_1], [feature_dense_sent_1], sequence_lengths,),
             [
-                (batch_size, max_seq_length + 1, units_small),
+                (batch_size, max_seq_length + 1, units_1),
                 (batch_size, max_seq_length + 1, 1),
             ],
+            "same_as_train",
         ),
         # FeatureCombining layer with sentence-level features only
         (
@@ -327,11 +322,12 @@ def test_layer_gives_correct_output_units(
             {
                 "attribute_signature": {
                     "sequence": [],
-                    "sentence": [feature_signature_dense],
+                    "sentence": [feature_signature_dense_1],
                 },
             },
-            ([], [feature_dense_sent_3d], sequence_lengths_empty),
-            [(batch_size, 1, units_small), (batch_size, 1, 1)],
+            ([], [feature_dense_sent_1], sequence_lengths_empty),
+            [(batch_size, 1, units_1), (batch_size, 1, 1)],
+            "same_as_train",
         ),
         # FeatureCombining layer with sequence-level features only
         (
@@ -339,15 +335,13 @@ def test_layer_gives_correct_output_units(
             model_config_basic,
             {
                 "attribute_signature": {
-                    "sequence": [feature_signature_dense],
+                    "sequence": [feature_signature_dense_1],
                     "sentence": [],
                 },
             },
-            ([feature_dense_seq_3d], [], sequence_lengths),
-            [
-                (batch_size, max_seq_length, units_small),
-                (batch_size, max_seq_length, 1),
-            ],
+            ([feature_dense_seq_1], [], sequence_lengths),
+            [(batch_size, max_seq_length, units_1), (batch_size, max_seq_length, 1),],
+            "same_as_train",
         ),
         # Sequence layer with mixed features, hidden layers and transformer, doing MLM
         (
@@ -359,8 +353,22 @@ def test_layer_gives_correct_output_units(
                 (batch_size, max_seq_length + 1, units_transformer),
                 (batch_size, max_seq_length + 1, units_hidden_layer),
                 (batch_size, max_seq_length + 1, 1),
-                (batch_size, max_seq_length + 1, units_small),
+                (batch_size, max_seq_length + 1, units_1),
                 (batch_size, max_seq_length + 1, 1),
+                (
+                    num_transformer_layers,
+                    batch_size,
+                    num_transformer_heads,
+                    max_seq_length + 1,
+                    max_seq_length + 1,
+                ),
+            ],
+            [
+                (batch_size, max_seq_length + 1, units_transformer),
+                (batch_size, max_seq_length + 1, units_hidden_layer),
+                (batch_size, max_seq_length + 1, 1),
+                (0,),
+                (0,),
                 (
                     num_transformer_layers,
                     batch_size,
@@ -384,6 +392,7 @@ def test_layer_gives_correct_output_units(
                 (0,),
                 (0,),
             ],
+            "same_as_train",
         ),
         # Sequence layer with mixed features, no hidden layers, no transformer, no MLM
         (
@@ -399,6 +408,7 @@ def test_layer_gives_correct_output_units(
                 (0,),
                 (0,),
             ],
+            "same_as_train",
         ),
         # Sequence layer with only sequence-level sparse features & MLM (to check token_ids shape)
         (
@@ -406,11 +416,11 @@ def test_layer_gives_correct_output_units(
             model_config_transformer_mlm,
             {
                 "attribute_signature": {
-                    SEQUENCE: [feature_signature_sparse],
+                    SEQUENCE: [feature_signature_sparse_1],
                     SENTENCE: [],
                 }
             },
-            ([feature_sparse_seq_3d], [], sequence_lengths,),
+            ([feature_sparse_seq_1], [], sequence_lengths,),
             [
                 (batch_size, max_seq_length, units_transformer),
                 (batch_size, max_seq_length, units_hidden_layer),
@@ -425,20 +435,48 @@ def test_layer_gives_correct_output_units(
                     max_seq_length,
                 ),
             ],
+            [
+                (batch_size, max_seq_length, units_transformer),
+                (batch_size, max_seq_length, units_hidden_layer),
+                (batch_size, max_seq_length, 1),
+                (0,),
+                (0,),
+                (
+                    num_transformer_layers,
+                    batch_size,
+                    num_transformer_heads,
+                    max_seq_length,
+                    max_seq_length,
+                ),
+            ],
         ),
     ],
 )
 def test_correct_output_shape(
-    layer_class, model_config, layer_args, layer_inputs, expected_output_shapes
+    layer_class,
+    model_config,
+    layer_args,
+    layer_inputs,
+    expected_output_shapes_train,
+    expected_output_shapes_test,
 ):
     layer = layer_class(**layer_args, attribute=attribute_name, config=model_config,)
-    outputs = layer(layer_inputs, training=True)  # training mode needed to test MLM
 
-    if isinstance(expected_output_shapes, list):
-        for i, expected_shape in enumerate(expected_output_shapes):
-            assert outputs[i].shape == expected_shape
+    train_outputs = layer(layer_inputs, training=True)
+    if isinstance(expected_output_shapes_train, list):
+        for i, expected_shape in enumerate(expected_output_shapes_train):
+            assert train_outputs[i].shape == expected_shape
     else:
-        assert outputs.shape == expected_output_shapes
+        assert train_outputs.shape == expected_output_shapes_train
+
+    if expected_output_shapes_test == "same_as_train":
+        expected_output_shapes_test = expected_output_shapes_train
+    test_outputs = layer(layer_inputs, training=False)
+    if isinstance(expected_output_shapes_test, list):
+        for i, expected_shape in enumerate(expected_output_shapes_test):
+            assert test_outputs[i].shape == expected_shape
+    else:
+        assert test_outputs.shape == expected_output_shapes_test
 
 
 @pytest.mark.parametrize(
@@ -449,7 +487,7 @@ def test_correct_output_shape(
             ConcatenateSparseDenseFeatures,
             {"feature_type": "arbitrary", "feature_type_signature": []},
         ),
-        # FeatureCOmbining layer breaks on empty attribute signature
+        # FeatureCombining layer breaks on empty attribute signature
         (
             RasaFeatureCombiningLayer,
             {"attribute_signature": {"sequence": [], "sentence": []}},
@@ -460,7 +498,7 @@ def test_correct_output_shape(
             {
                 "attribute_signature": {
                     "sequence": [],
-                    "sentence": [feature_dense_sent_3d],
+                    "sentence": [feature_dense_sent_1],
                 }
             },
         ),
@@ -522,52 +560,71 @@ def test_concat_sparse_dense_correct_output_for_dense_input():
         ],
         config=dict(
             model_config_basic,
+            # also activate all dropout to check that it has no effect on dense features
             **{SPARSE_INPUT_DROPOUT: True, DENSE_INPUT_DROPOUT: True},
-        ),  # also set all dropout to check that it has no effect on dense features
+        ),
     )
     outputs_expected = [
         [[10.0, 1.0, 2.0], [20.0, 3.0, 4.0], [30.0, 5.0, 6.0]],
         [[40.0, 1.5, 2.5], [50.0, 3.5, 4.5], [0.0, 0.0, 0.0]],
     ]
     inputs = ([realistic_feature_dense_seq_1, realistic_feature_dense_seq_2],)
-    outputs = layer(inputs)
-    assert (outputs.numpy() == outputs_expected).all()
+    train_outputs = layer(inputs, training=True)
+    assert (train_outputs.numpy() == outputs_expected).all()
+    test_outputs = layer(inputs, training=False)
+    assert (test_outputs.numpy() == outputs_expected).all()
 
 
 def test_concat_sparse_dense_applies_dropout_to_sparse_input():
     layer_dropout_for_sparse = ConcatenateSparseDenseFeatures(
         attribute=attribute_name,
         feature_type=SEQUENCE,
-        feature_type_signature=[feature_signature_sparse, feature_signature_sparse],
+        feature_type_signature=[feature_signature_sparse_1, feature_signature_sparse_1],
         config=dict(model_config_basic, **{SPARSE_INPUT_DROPOUT: True, DROP_RATE: 1.0}),
     )
 
-    inputs = ([feature_sparse_seq_3d, feature_sparse_seq_3d],)
-    outputs = layer_dropout_for_sparse(inputs, training=True)
-    expected_outputs = tf.zeros((batch_size, max_seq_length, units_sparse_to_dense * 2))
+    inputs = ([feature_sparse_seq_1, feature_sparse_seq_1],)
+    expected_outputs_train = tf.zeros(
+        (batch_size, max_seq_length, units_sparse_to_dense * 2)
+    )
 
-    assert np.allclose(outputs.numpy(), expected_outputs.numpy())
+    train_outputs = layer_dropout_for_sparse(inputs, training=True)
+    assert np.allclose(train_outputs.numpy(), expected_outputs_train.numpy())
+
+    # We can't check exact output contents for sparse inputs but during test-time no
+    # dropout should be applied, hence the outputs should not be all zeros in this case
+    # (unlike at training time).
+    test_outputs = layer_dropout_for_sparse(inputs, training=False)
+    assert not np.allclose(test_outputs.numpy(), expected_outputs_train.numpy())
 
 
 def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
     layer_dropout_for_sparse_densified = ConcatenateSparseDenseFeatures(
         attribute=attribute_name,
         feature_type=SEQUENCE,
-        feature_type_signature=[feature_signature_sparse, feature_signature_sparse],
+        feature_type_signature=[feature_signature_sparse_1, feature_signature_sparse_1],
         config=dict(
             model_config_basic, **{DENSE_INPUT_DROPOUT: True, DROP_RATE: 0.99999999}
         ),  # keras dropout doesn't accept velues >= 1.0
     )
 
-    inputs = ([feature_sparse_seq_3d, feature_sparse_seq_3d],)
-    outputs = layer_dropout_for_sparse_densified(inputs, training=True)
-    expected_outputs = tf.zeros((batch_size, max_seq_length, units_sparse_to_dense * 2))
+    inputs = ([feature_sparse_seq_1, feature_sparse_seq_1],)
+    expected_outputs_train = tf.zeros(
+        (batch_size, max_seq_length, units_sparse_to_dense * 2)
+    )
 
-    assert np.allclose(outputs.numpy(), expected_outputs.numpy())
+    train_outputs = layer_dropout_for_sparse_densified(inputs, training=True)
+    assert np.allclose(train_outputs.numpy(), expected_outputs_train.numpy())
+
+    # We can't check exact output contents for sparse inputs but during test-time no
+    # dropout should be applied, hence the outputs should not be all zeros in this case
+    # (unlike at training time).
+    test_outputs = layer_dropout_for_sparse_densified(inputs, training=False)
+    assert not np.allclose(test_outputs.numpy(), expected_outputs_train.numpy())
 
 
 @pytest.mark.parametrize(
-    "attribute_signature, inputs, expected_outputs, expected_mask",
+    "attribute_signature, inputs, expected_outputs_train, expected_outputs_test",
     [
         # Both sequence- and sentence-level features, not unifying dimensions before concat
         (
@@ -583,24 +640,27 @@ def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
                 [realistic_feature_dense_sent_3],
                 realistic_sequence_lengths,
             ),
-            np.array(
-                [
+            (
+                np.array(
                     [
-                        [10.0, 1.0, 2.0],
-                        [20.0, 3.0, 4.0],
-                        [30.0, 5.0, 6.0],
-                        [0.1, 0.2, 0.3],
+                        [
+                            [10.0, 1.0, 2.0],
+                            [20.0, 3.0, 4.0],
+                            [30.0, 5.0, 6.0],
+                            [0.1, 0.2, 0.3],
+                        ],
+                        [
+                            [40.0, 1.5, 2.5],
+                            [50.0, 3.5, 4.5],
+                            [0.4, 0.5, 0.6],
+                            [0.0, 0.0, 0.0],
+                        ],
                     ],
-                    [
-                        [40.0, 1.5, 2.5],
-                        [50.0, 3.5, 4.5],
-                        [0.4, 0.5, 0.6],
-                        [0.0, 0.0, 0.0],
-                    ],
-                ],
-                dtype=np.float32,
+                    dtype=np.float32,
+                ),
+                [[[1.0], [1.0], [1.0], [1.0]], [[1.0], [1.0], [1.0], [0.0]]],
             ),
-            [[[1.0], [1.0], [1.0], [1.0]], [[1.0], [1.0], [1.0], [0.0]],],
+            "same_as_train",
         ),
         # Sequence-level features only
         (
@@ -616,39 +676,49 @@ def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
                 [],
                 realistic_sequence_lengths,
             ),
-            np.array(
-                [
-                    [[10.0, 1.0, 2.0], [20.0, 3.0, 4.0], [30.0, 5.0, 6.0]],
-                    [[40.0, 1.5, 2.5], [50.0, 3.5, 4.5], [0.0, 0.0, 0.0]],
-                ],
-                dtype=np.float32,
+            (
+                np.array(
+                    [
+                        [[10.0, 1.0, 2.0], [20.0, 3.0, 4.0], [30.0, 5.0, 6.0]],
+                        [[40.0, 1.5, 2.5], [50.0, 3.5, 4.5], [0.0, 0.0, 0.0]],
+                    ],
+                    dtype=np.float32,
+                ),
+                [[[1.0], [1.0], [1.0]], [[1.0], [1.0], [0.0]]],
             ),
-            [[[1.0], [1.0], [1.0]], [[1.0], [1.0], [0.0]],],
+            "same_as_train",
         ),
         # Sentence-level features only
         (
-            {SEQUENCE: [], SENTENCE: [realistic_feature_signature_dense_3],},
+            {SEQUENCE: [], SENTENCE: [realistic_feature_signature_dense_3]},
             ([], [realistic_feature_dense_sent_3], realistic_sequence_lengths_empty),
-            realistic_feature_dense_sent_3.numpy(),
-            [[[1.0]], [[1.0]],],
+            (realistic_feature_dense_sent_3.numpy(), [[[1.0]], [[1.0]]]),
+            "same_as_train",
         ),
     ],
 )
 def test_feature_combining_correct_output(
-    attribute_signature, inputs, expected_outputs, expected_mask
+    attribute_signature, inputs, expected_outputs_train, expected_outputs_test
 ):
     layer = RasaFeatureCombiningLayer(
         attribute=attribute_name,
         config=model_config_basic,
         attribute_signature=attribute_signature,
     )
-    outputs, mask_seq_sent = layer(inputs)
-    assert (outputs.numpy() == expected_outputs).all()
-    assert (mask_seq_sent.numpy() == expected_mask).all()
+    if expected_outputs_test == "same_as_train":
+        expected_outputs_test = expected_outputs_train
+
+    train_outputs, train_mask_seq_sent = layer(inputs, training=True)
+    assert (train_outputs.numpy() == expected_outputs_train[0]).all()
+    assert (train_mask_seq_sent.numpy() == expected_outputs_train[1]).all()
+
+    test_outputs, test_mask_seq_sent = layer(inputs, training=False)
+    assert (test_outputs.numpy() == expected_outputs_test[0]).all()
+    assert (test_mask_seq_sent.numpy() == expected_outputs_test[1]).all()
 
 
 @pytest.mark.parametrize(
-    "attribute_signature, inputs, expected_outputs",
+    "attribute_signature, inputs, expected_outputs_train",
     [
         # Both sequence- and sentence-level features
         (
@@ -716,7 +786,9 @@ def test_feature_combining_correct_output(
         ),
     ],
 )
-def test_sequence_layer_correct_output(attribute_signature, inputs, expected_outputs):
+def test_sequence_layer_correct_output(
+    attribute_signature, inputs, expected_outputs_train
+):
     layer = RasaSequenceLayer(
         attribute=attribute_name,
         config=dict(
@@ -725,24 +797,32 @@ def test_sequence_layer_correct_output(attribute_signature, inputs, expected_out
         attribute_signature=attribute_signature,
     )
 
+    # Training-time check
     (
         seq_sent_features_expected,
         mask_seq_sent_expected,
         token_ids_expected,
-    ) = expected_outputs
-
+    ) = expected_outputs_train
     _, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _ = layer(
         inputs, training=True
     )
     assert (seq_sent_features.numpy() == seq_sent_features_expected).all()
     assert (mask_seq_sent.numpy() == mask_seq_sent_expected).all()
     assert (token_ids.numpy() == token_ids_expected).all()
-
     assert mlm_boolean_mask.dtype == bool
     # no masking at the padded position found in the shorter sequence
     assert not mlm_boolean_mask[-1][-1][0]
-
     # when sentence-level features are present, also ensure that no masking is done at
     # sentence-level feature positions (determined by sequence lengths)
     if len(attribute_signature[SENTENCE]) > 0:
         assert not mlm_boolean_mask.numpy()[0][realistic_sequence_lengths.numpy()][0]
+
+    # Test-time check
+    (seq_sent_features_expected, mask_seq_sent_expected, _,) = expected_outputs_train
+    _, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _ = layer(
+        inputs, training=False
+    )
+    assert (seq_sent_features.numpy() == seq_sent_features_expected).all()
+    assert (mask_seq_sent.numpy() == mask_seq_sent_expected).all()
+    assert token_ids.numpy().size == 0
+    assert mlm_boolean_mask.numpy().size == 0
