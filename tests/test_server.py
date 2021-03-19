@@ -1175,6 +1175,7 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     serialized_event.pop("timestamp")
 
     time_before_adding_events = time.time()
+    time.sleep(0.01)
     _, response = await rasa_app.post(
         f"{conversation}/tracker/events",
         json=serialized_event,
