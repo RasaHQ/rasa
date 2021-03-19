@@ -1,0 +1,83 @@
+stories:
+- story: simple_story_with_multiple_turns
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: default
+  - action: utter_default
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: simple_story_with_form_happy
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: start_form
+  - action: some_form
+  - active_loop: some_form
+  - intent: "form: inform"
+  - action: "form: some_form"
+  - active_loop: null
+  - intent: default
+  - action: utter_default
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: simple_story_with_form_unhappy
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: start_form
+  - action: some_form
+  - active_loop: some_form
+  - intent: default
+  - action: utter_default
+  - action: some_form
+  - active_loop: null
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: simple_story_with_form_stop_continue
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: start_form
+  - action: some_form
+  - active_loop: some_form
+  - intent: stop
+  - action: utter_ask_continue
+  - intent: affirm
+  - action: some_form
+  - active_loop: null
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: simple_story_with_form_stop_inform
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: start_form
+  - action: some_form
+  - active_loop: some_form
+  - intent: stop
+  - action: utter_ask_continue
+  - action: action_listen
+  - intent: "form: inform"
+  - action: "form: some_form"
+  - active_loop: null
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: simple_story_with_form_stop_deactivate
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: start_form
+  - action: some_form
+  - active_loop: some_form
+  - intent: stop
+  - action: utter_ask_continue
+  - intent: deny
+  - action: action_deactivate_loop
+  - active_loop: null
+  - action: utter_goodbye

@@ -953,13 +953,14 @@ class SQLTrackerStore(TrackerStore):
             return
 
         self._create_database(self.engine, db)
+        self.engine.dispose()
         engine_url.database = db
         self.engine = create_engine(engine_url)
 
     @staticmethod
     def _create_database(engine: "Engine", database_name: Text) -> None:
         """Create database `db` on `engine` if it does not exist."""
-        import psycopg2
+        import sqlalchemy.exc
 
         conn = engine.connect()
 
@@ -978,7 +979,10 @@ class SQLTrackerStore(TrackerStore):
         if not matching_rows:
             try:
                 conn.execute(f"CREATE DATABASE {database_name}")
-            except psycopg2.IntegrityError as e:
+            except (
+                sqlalchemy.exc.ProgrammingError,
+                sqlalchemy.exc.IntegrityError,
+            ) as e:
                 logger.error(f"Could not create database '{database_name}': {e}")
 
         conn.close()

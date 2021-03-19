@@ -1,11 +1,12 @@
 import functools
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
 from rasa.shared.core.slots import TextSlot, ListSlot
-from rasa.shared.exceptions import YamlException
+from rasa.shared.exceptions import YamlException, FileNotFoundException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (
@@ -159,27 +160,9 @@ class YAMLStoryReader(StoryReader):
             YamlException: if the file seems to be a YAML file (extension) but
                 can not be read / parsed.
         """
-        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
-            file_path, KEY_STORIES, KEY_RULES
-        )
-
-    @classmethod
-    def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        """Check if all keys are contained in the parsed dictionary from a yaml file.
-
-        Arguments:
-            file_path: path to the yaml file
-            keys: keys to look for
-
-        Returns:
-              `True` if all the keys are contained in the file, `False` otherwise.
-
-        Raises:
-            YamlException: if the file seems to be a YAML file (extension) but
-                can not be read / parsed.
-        """
-        content = rasa.shared.utils.io.read_yaml_file(file_path)
-        return any(key in content for key in keys)
+        return rasa.shared.data.is_likely_yaml_file(
+            file_path
+        ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_STORIES, KEY_RULES)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:

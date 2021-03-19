@@ -1,0 +1,5 @@
+responses:
+  utter_chitchat/ask_weather:
+    - text: It's sunny where I live
+  utter_chitchat/ask_name:
+    - text: I am Mr. Bot

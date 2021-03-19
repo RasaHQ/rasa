@@ -80,24 +80,18 @@ def test_common_action_prefix_unequal():
     assert num_common == 0
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
-)
-async def test_graph_persistence(
-    stories_file: Text, default_domain: Domain, tmp_path: Path
-):
+async def test_graph_persistence(domain: Domain, tmp_path: Path):
     from os.path import isfile
     from networkx.drawing import nx_pydot
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        stories_file, default_domain
+        "data/test_yaml_stories/stories.yml", domain
     )
     out_file = str(tmp_path / "graph.html")
     generated_graph = await visualization.visualize_stories(
         story_steps,
-        default_domain,
+        domain,
         output_file=out_file,
         max_history=3,
         should_merge_nodes=False,
@@ -113,21 +107,17 @@ async def test_graph_persistence(
     assert "graph = `{}`".format(generated_graph.to_string()) in content
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
-)
-async def test_merge_nodes(stories_file: Text, default_domain: Domain, tmp_path: Path):
+async def test_merge_nodes(domain: Domain, tmp_path: Path):
     from os.path import isfile
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        stories_file, default_domain
+        "data/test_yaml_stories/stories.yml", domain
     )
     out_file = str(tmp_path / "graph.html")
     await visualization.visualize_stories(
         story_steps,
-        default_domain,
+        domain,
         output_file=out_file,
         max_history=3,
         should_merge_nodes=True,

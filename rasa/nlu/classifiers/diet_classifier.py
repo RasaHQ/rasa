@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
-import rasa.utils.tensorflow.numpy
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
@@ -101,6 +100,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
 )
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +239,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         TENSORBOARD_LOG_DIR: None,
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'minibatch'
+        # Valid values: 'epoch' and 'batch'
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
@@ -254,7 +254,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values -
-        # 'softmax', 'cosine', 'inner'.
+        # 'softmax' and 'linear_norm'.
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
@@ -342,6 +342,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._entity_tag_specs = entity_tag_specs
 
         self.model = model
+
+        self.tmp_checkpoint_dir = None
+        if self.component_config[CHECKPOINT_MODEL]:
+            self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
@@ -828,18 +832,39 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+            )
+
+        data_generator, validation_data_generator = train_utils.create_data_generators(
+            model_data,
+            self.component_config[BATCH_SIZES],
+            self.component_config[EPOCHS],
+            self.component_config[BATCH_STRATEGY],
+            self.component_config[EVAL_NUM_EXAMPLES],
+            self.component_config[RANDOM_SEED],
+        )
+        callbacks = train_utils.create_common_callbacks(
+            self.component_config[EPOCHS],
+            self.component_config[TENSORBOARD_LOG_DIR],
+            self.component_config[TENSORBOARD_LOG_LEVEL],
+            self.tmp_checkpoint_dir,
+        )
 
         self.model.fit(
-            model_data,
-            self.component_config[EPOCHS],
-            self.component_config[BATCH_SIZES],
-            self.component_config[EVAL_NUM_EXAMPLES],
-            self.component_config[EVAL_NUM_EPOCHS],
-            self.component_config[BATCH_STRATEGY],
+            data_generator,
+            epochs=self.component_config[EPOCHS],
+            validation_data=validation_data_generator,
+            validation_freq=self.component_config[EVAL_NUM_EPOCHS],
+            callbacks=callbacks,
+            verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
         )
 
     # process helpers
-    def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
+    def _predict(
+        self, message: Message
+    ) -> Optional[Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]]:
         if self.model is None:
             logger.debug(
                 f"There is no trained model for '{self.__class__.__name__}': The "
@@ -850,21 +875,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
-
-        return self.model.predict(model_data)
+        return self.model.rasa_predict(model_data)
 
     def _predict_label(
         self, predict_out: Optional[Dict[Text, tf.Tensor]]
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
-
-        label = {"name": None, "id": None, "confidence": 0.0}
+        label: Dict[Text, Any] = {"name": None, "id": None, "confidence": 0.0}
         label_ranking = []
 
         if predict_out is None:
             return label, label_ranking
 
-        message_sim = predict_out["i_scores"].numpy()
+        message_sim = predict_out["i_scores"]
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
@@ -879,7 +902,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message_sim = train_utils.normalize(
                 message_sim, self.component_config[RANKING_LENGTH]
             )
-
         message_sim[::-1].sort()
         message_sim = message_sim.tolist()
 
@@ -951,16 +973,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.set(ENTITIES, entities, add_to_output=True)
 
         if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(
-                self.unique_name,
-                rasa.utils.tensorflow.numpy.values_to_numpy(out.get(DIAGNOSTIC_DATA)),
-            )
+            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
         """
+        import shutil
+
         if self.model is None:
             return {"file": None}
 
@@ -969,10 +990,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-        if self.model.checkpoint_model:
-            self.model.copy_best(str(tf_model_file))
-        else:
-            self.model.save(str(tf_model_file))
+        if self.component_config[CHECKPOINT_MODEL]:
+            shutil.move(self.tmp_checkpoint_dir, model_dir / "checkpoints")
+        self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self._data_example
@@ -1116,20 +1136,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             finetune_mode=finetune_mode,
         )
 
-        if not finetune_mode:
-
-            # build the graph for prediction
-            predict_data_example = RasaModelData(
-                label_key=label_key,
-                data={
-                    feature_name: features
-                    for feature_name, features in model_data_example.items()
-                    if TEXT in feature_name
-                },
-            )
-
-            model.build_for_predict(predict_data_example)
-
         return model
 
     @classmethod
@@ -1143,9 +1149,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         finetune_mode: bool,
     ) -> "RasaModel":
 
+        predict_data_example = RasaModelData(
+            label_key=model_data_example.label_key,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if TEXT in feature_name
+            },
+        )
+
         return cls.model_class().load(
             tf_model_file,
             model_data_example,
+            predict_data_example,
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
@@ -1154,7 +1170,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
-
         return self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
@@ -1183,7 +1198,6 @@ class DIET(TransformerRasaModel):
         }
 
         # tf training
-        self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
         self._update_metrics_to_log()
 
@@ -1607,12 +1621,11 @@ class DIET(TransformerRasaModel):
             mask,
             self.text_name,
         )
-
-        predictions: Dict[Text, tf.Tensor] = {}
-
-        predictions[DIAGNOSTIC_DATA] = {
-            "attention_weights": attention_weights,
-            "text_transformed": text_transformed,
+        predictions = {
+            DIAGNOSTIC_DATA: {
+                "attention_weights": attention_weights,
+                "text_transformed": text_transformed,
+            }
         }
 
         if self.config[INTENT_CLASSIFICATION]:

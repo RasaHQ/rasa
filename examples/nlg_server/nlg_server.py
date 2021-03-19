@@ -48,14 +48,14 @@ async def generate_response(nlg_call, domain):
     Generates the responses from the bot's domain file.
     """
     kwargs = nlg_call.get("arguments", {})
-    template = nlg_call.get("template")
+    response = nlg_call.get("response")
     sender_id = nlg_call.get("tracker", {}).get("sender_id")
     events = nlg_call.get("tracker", {}).get("events")
     tracker = DialogueStateTracker.from_dict(sender_id, events, domain.slots)
     channel_name = nlg_call.get("channel")
 
-    return await TemplatedNaturalLanguageGenerator(domain.templates).generate(
-        template, tracker, channel_name, **kwargs
+    return await TemplatedNaturalLanguageGenerator(domain.responses).generate(
+        response, tracker, channel_name, **kwargs
     )
 
 

@@ -6,7 +6,7 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
+from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set
 
 
 from sanic import Sanic, response
@@ -34,7 +34,8 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.core import run, train, utils
+from rasa.core import run, utils
+import rasa.core.train
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
 from rasa.shared.core.domain import Domain
 import rasa.shared.core.events
@@ -89,7 +90,7 @@ OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
 NEW_ACTION = uuid.uuid4().hex
 
-NEW_TEMPLATES = {}
+NEW_RESPONSES = {}
 
 MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
 
@@ -202,10 +203,10 @@ async def send_action(
         return await endpoint.request(json=payload, method="post", subpath=subpath)
     except ClientError:
         if is_new_action:
-            if action_name in NEW_TEMPLATES:
+            if action_name in NEW_RESPONSES:
                 warning_questions = questionary.confirm(
                     f"WARNING: You have created a new action: '{action_name}', "
-                    f"with matching response: '{[*NEW_TEMPLATES[action_name]][0]}'. "
+                    f"with matching response: '{[*NEW_RESPONSES[action_name]][0]}'. "
                     f"This action will not return its message in this session, "
                     f"but the new response will be saved to your domain file "
                     f"when you exit and save this session. "
@@ -686,7 +687,7 @@ async def _request_action_from_user(
             utter_message = await _request_free_text_utterance(
                 conversation_id, endpoint, action_name
             )
-            NEW_TEMPLATES[action_name] = {utter_message: ""}
+            NEW_RESPONSES[action_name] = {utter_message: ""}
 
     elif action_name[:32] == OTHER_ACTION:
         # action was newly created in the session, but not this turn
@@ -919,7 +920,7 @@ def _write_domain_to_file(
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)
-    templates = NEW_TEMPLATES  # type: Dict[Text, List[Dict[Text, Any]]]
+    responses = NEW_RESPONSES  # type: Dict[Text, List[Dict[Text, Any]]]
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
@@ -935,7 +936,7 @@ def _write_domain_to_file(
         intents=_intents_from_messages(messages),
         entities=_entities_from_messages(messages),
         slots=[],
-        templates=templates,
+        responses=responses,
         action_names=collected_actions,
         forms={},
     )
@@ -1523,7 +1524,7 @@ async def record_messages(
 
 async def _get_tracker_events_to_plot(
     domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
-) -> List[Union[Text, List[Event]]]:
+) -> List[Union[Text, Deque[Event]]]:
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
@@ -1536,10 +1537,10 @@ async def _get_tracker_events_to_plot(
         )
         training_trackers = []
 
-    training_data_events = [t.events for t in training_trackers]
-    events_including_current_user_id = training_data_events + [conversation_id]
-
-    return events_including_current_user_id
+    training_data_events: List[Union[Text, Deque[Event]]] = [
+        t.events for t in training_trackers
+    ]
+    return training_data_events + [conversation_id]
 
 
 async def _get_training_trackers(
@@ -1628,7 +1629,7 @@ async def train_agent_on_start(
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
-    _agent = await train(
+    _agent = await rasa.core.train.train(
         args.get("domain"),
         args.get("stories"),
         model_directory,

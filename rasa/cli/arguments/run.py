@@ -113,7 +113,8 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         help="Public key for asymmetric JWT methods or shared secret"
         "for symmetric methods. Please also make sure to use "
         "--jwt-method to select the method of the signature, "
-        "otherwise this argument will be ignored.",
+        "otherwise this argument will be ignored."
+        "Note that this key is meant for securing the HTTP API.",
     )
     jwt_auth.add_argument(
         "--jwt-method",

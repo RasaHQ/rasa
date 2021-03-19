@@ -5,9 +5,6 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 
 
-DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
-
-
 @pytest.fixture(scope="session")
 def spacy_nlp_component(component_builder, blank_config):
     spacy_nlp_config = {"name": "SpacyNLP"}

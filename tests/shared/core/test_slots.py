@@ -96,6 +96,18 @@ class SlotTestCollection:
         assert isinstance(slot, slot_type)
         assert recreated.persistence_info() == persistence_info
 
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_has_been_set(
+        self, influence_conversation: bool, value_feature_pair: Tuple[Any, List[float]]
+    ):
+        slot = self.create_slot(influence_conversation)
+        assert not slot.has_been_set
+        value, _ = value_feature_pair
+        slot.value = value
+        assert slot.has_been_set
+        slot.reset()
+        assert not slot.has_been_set
+
 
 class TestTextSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
