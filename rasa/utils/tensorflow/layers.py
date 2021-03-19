@@ -254,7 +254,8 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             num_rows, num_cols, num_extra_connections, dtype=self.kernel.dtype
         )
 
-        # We might accidently have added a random connection on top of a fixed connection
+        # We might accidently have added a random connection on top of
+        # a fixed connection
         kernel_mask = tf.clip_by_value(kernel_mask, 0, 1)
 
         self.kernel_mask = tf.Variable(
@@ -291,7 +292,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         """Creates a matrix with a minimal number of 1s to connect everythinig.
 
         If num_rows == num_cols, this creates the identity matrix.
-        If num_rows > num_cols, this creates 
+        If num_rows > num_cols, this creates
             1 0 0 0
             0 1 0 0
             0 0 1 0
