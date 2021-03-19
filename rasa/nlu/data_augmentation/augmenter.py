@@ -8,6 +8,7 @@ import logging
 from rasa.model import get_model
 from rasa.shared.core.domain import Domain
 import rasa.shared.utils.io
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.train import train_nlu
@@ -126,11 +127,17 @@ def _create_tokenizer_from_config(config_path: Text) -> Component:
     """
     config = rasa.shared.utils.io.read_config_file(config_path)
     pipeline = config.get("pipeline", [])
-    tokenizer_config = {"name": "WhitespaceTokenizer"}
+    tokenizer_config = {}
     for component in pipeline:
         if component.get("name", "").lower().endswith("tokenizer"):
             tokenizer_config = component
             break
+
+    if len(tokenizer_config) <= 0:
+        raise InvalidConfigException(
+            "The pipeline configuration does not contain a tokenizer!"
+            "Please add a tokenizer to your configuration in order to use data augmentation."
+        )
 
     tokenizer = ComponentBuilder().create_component(
         tokenizer_config, RasaNLUModelConfig(config)
@@ -209,11 +216,11 @@ def _resolve_augmentation_factor(
         A dictionary specifying how many paraphrases may maximally be added per intent.
     """
     aug_factor = {}
-    for key, val in nlu_training_data.number_of_examples_per_intent.items():
-        augmentation_size = int(round(val * augmentation_factor))
+    for intent, num_examples in nlu_training_data.number_of_examples_per_intent.items():
+        augmentation_size = int(round(num_examples * augmentation_factor))
         # Use `None` if the user passes e.g. -1 (indicating that all paraphrases should be used), because `None` d
         # oesn't affect slicing, i.e. my_list == my_list[:] == my_list[:None]
-        aug_factor[key] = augmentation_size if augmentation_size > 0 else None
+        aug_factor[intent] = augmentation_size if augmentation_size > 0 else None
 
     return aug_factor
 
