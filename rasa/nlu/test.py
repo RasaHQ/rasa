@@ -171,7 +171,8 @@ def drop_intents_below_freq(
     intents_below_cutoff = {i for i, c in examples_per_intent if c < cutoff}
 
     return training_data.filter_training_examples(
-        lambda ex: ex.get(INTENT) not in intents_below_cutoff)
+        lambda ex: ex.get(INTENT) not in intents_below_cutoff
+    )
 
 
 def write_intent_successes(
