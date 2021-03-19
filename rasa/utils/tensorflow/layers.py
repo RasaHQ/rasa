@@ -235,66 +235,71 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
 
         # Construct mask with given density and guarantee that every output is
         # connected to at least one input
-        num_connected_per_output = max(
-            1, tf.cast(tf.math.ceil(self.density * num_rows), tf.int32)
-        )
-        kernel_mask = self._random_mask_with_no_empty_rows(
-            num_rows, num_cols, num_connected_per_output
+
+        num_connected_min = max(num_rows, num_cols)
+        num_connected_extra = max(
+            tf.cast(
+                tf.math.ceil(self.density * num_rows * num_cols) - num_connected_min,
+                tf.int32,
+            ),
+            0,
         )
 
-        # Guarantee that every input is also connected to at least one output
-        kernel_mask += self._missing_connections(num_rows, num_cols, kernel_mask)
+        kernel_mask = self._minimal_mask(
+            num_rows, num_cols, dtype=self.kernel.dtype
+        ) + self._random_mask(
+            num_rows, num_cols, num_connected_extra, dtype=self.kernel.dtype
+        )
+
+        # We might accidently have added a random connection on top of a fixed connection
+        kernel_mask = tf.clip_by_value(kernel_mask, 0, 1)
 
         self.kernel_mask = tf.Variable(
             initial_value=kernel_mask, trainable=False, name="kernel_mask"
         )
 
-    def _random_mask_with_no_empty_rows(
-        self, num_rows: int, num_cols: int, num_connected_per_output: int
+    def _random_mask(
+        self, num_rows: int, num_cols: int, num_ones: int, dtype: tf.dtypes.DType
     ) -> tf.Tensor:
-        """Creates a random mask with given number of connections per output.
+        """Creates a random matrix with `num_ones` 1s and 0s otherwise.
 
         Args:
             num_rows: Number of rows in the mask
             num_cols: Number of columns in the mask
-            num_connected_per_output: Number of ones in each column
+            num_ones: Number of ones in the matrix
 
         Returns:
             A random mask matrix
         """
-        num_disconnected_per_output = num_rows - num_connected_per_output
+        mask = tf.pad(
+            tf.ones([num_ones, 1], dtype=dtype),
+            [[0, num_rows * num_cols - num_ones], [0, 0]],
+        )
+        mask = tf.random.shuffle(mask)
+        mask = tf.reshape(mask, [num_rows, num_cols])
+        return mask
 
-        # We create each column separately
-        # as [1 1 1 ... 1 0 0 0 ... 0] and then shuffle it randomly
-        kernel_mask_cols = [
-            tf.random.shuffle(
-                tf.concat(
-                    [
-                        tf.ones(
-                            shape=num_connected_per_output, dtype=self.kernel.dtype
-                        ),
-                        tf.zeros(
-                            shape=num_disconnected_per_output, dtype=self.kernel.dtype
-                        ),
-                    ],
-                    axis=0,
-                )
-            )
-            for _ in range(num_cols)
-        ]
-        return tf.transpose(tf.stack(kernel_mask_cols, axis=0))
-
-    def _missing_connections(
-        self, num_rows: int, num_cols: int, kernel_mask: tf.Tensor
+    def _minimal_mask(
+        self, num_rows: int, num_cols: int, dtype: tf.dtypes.DType
     ) -> tf.Tensor:
-        """Creates a mask with random connections that are missing.
+        """Creates a matrix with a minimal number of 1s to connect everythinig.
 
-        The given `kernel_mask` is guaranteed to have at least one input connected to
-        each output, but not vice versa. Some inputs may not be connected to any
-        output, i.e. there may be empty columns in the mask. This function returns
-        another mask (to be added to the original) that contains exactly one 1 in each
-        of the columns that is empty in `kernel_mask`. The row in which each 1 appears
-        is chosen randomly.
+        If num_rows == num_cols, this creates the identity matrix.
+        If num_rows > num_cols, this creates 
+            1 0 0 0
+            0 1 0 0
+            0 0 1 0
+            0 0 0 1
+            1 0 0 0
+            1 0 0 0
+            1 0 0 0
+            . . . .
+            . . . .
+            . . . .
+        If num_rows < num_cols, this creates
+            1 0 0 1 1 1 1 ...
+            0 1 0 0 0 0 0 ...
+            0 0 1 0 0 0 0 ...
 
         Args:
             num_rows: Number of rows in the mask
@@ -305,19 +310,30 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         Returns:
             A mask with the missing connections.
         """
-        empty_columns = tf.squeeze(
-            tf.where(tf.equal(tf.reduce_sum(kernel_mask, axis=1), 0)), -1
-        ).numpy()
-        random_rows = np.random.randint(num_cols, size=len(empty_columns))
-        indices = np.transpose([empty_columns, random_rows])
-        extra_entries = tf.sparse.to_dense(
-            tf.SparseTensor(
-                indices,
-                np.ones(len(empty_columns), dtype=np.float),
-                (num_rows, num_cols),
+        mask = tf.eye(num_rows=num_rows, num_columns=num_cols, dtype=dtype)
+        if num_rows > num_cols:
+            # Adds the X (= 1) in
+            # 1 0 0 0
+            # 0 1 0 0
+            # 0 0 1 0
+            # 0 0 0 1
+            # X 0 0 0
+            # X 0 0 0
+            # X 0 0 0
+            mask += tf.pad(
+                tf.ones([num_rows - num_cols, 1], dtype=dtype),
+                [[num_cols, 0], [0, num_cols - 1]],
             )
-        )
-        return tf.cast(extra_entries, dtype=kernel_mask.dtype)
+        elif num_rows < num_cols:
+            # Adds the X (= 1) in
+            # 1 0 0 X X X X
+            # 0 1 0 0 0 0 0
+            # 0 0 1 0 0 0 0
+            mask += tf.pad(
+                tf.ones([1, num_cols - num_rows], dtype=dtype),
+                [[0, num_rows - 1], [num_rows, 0]],
+            )
+        return mask
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         """Processes the given inputs.
