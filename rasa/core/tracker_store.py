@@ -625,9 +625,12 @@ class MongoTrackerStore(TrackerStore):
 
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
         all_events = self._events_from_serialized_tracker(stored)
-        number_events_since_last_session = len(
-            self._events_since_last_session_start(all_events)
-        )
+        if self.retrieve_events_from_previous_conversation_sessions:
+            number_events_since_last_session = len(all_events)
+        else:
+            number_events_since_last_session = len(
+                self._events_since_last_session_start(all_events)
+            )
 
         return itertools.islice(
             tracker.events, number_events_since_last_session, len(tracker.events)
@@ -1128,8 +1131,11 @@ class SQLTrackerStore(TrackerStore):
         """Return events from the tracker which aren't currently stored."""
 
         number_of_events_since_last_session = self._event_query(
-            session, tracker.sender_id, fetch_events_from_all_sessions=False
+            session,
+            tracker.sender_id,
+            fetch_events_from_all_sessions=self.retrieve_events_from_previous_conversation_sessions,
         ).count()
+
         return itertools.islice(
             tracker.events, number_of_events_since_last_session, len(tracker.events)
         )
