@@ -641,16 +641,16 @@ pipeline:
 async def test_train_with_yaml_with_params(
     monkeypatch: MonkeyPatch,
     rasa_app: SanicASGITestClient,
-    tmpdir: pathlib.Path,
+    tmp_path: Path,
     params: Dict,
 ):
-    fake_model = Path(tmpdir) / "fake_model.tar.gz"
+    fake_model = Path(tmp_path) / "fake_model.tar.gz"
     fake_model.touch()
     fake_model_path = str(fake_model)
     future = asyncio.Future()
     future.set_result(TrainingResult(model=fake_model_path))
     mock_train = Mock(return_value=future)
-    monkeypatch.setattr(sys.modules["rasa.train"], "train_async", mock_train)
+    monkeypatch.setattr(rasa.model_training, "train_async", mock_train)
 
     training_data = """
 stories: []
@@ -731,39 +731,6 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     payload = rasa.server._training_payload_from_yaml(request, tmp_path)
     assert payload.get("output")
     assert payload.get("output") == expected
-
-
-@pytest.mark.parametrize(
-    "headers, expected",
-    [
-        ({}, {"augmentation_factor": 50}),
-        ({"augmentation": "25"}, {"augmentation_factor": 25}),
-    ],
-)
-def test_training_payload_from_yaml_core_arguments(
-    headers: Dict, expected: bool, tmp_path: Path
-):
-    request = Mock()
-    request.body = b""
-    request.args = headers
-
-    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
-    assert payload.get("core_additional_arguments") == expected
-
-
-@pytest.mark.parametrize(
-    "headers, expected",
-    [({}, {"num_threads": 1}), ({"num_threads": "2"}, {"num_threads": 2})],
-)
-def test_training_payload_from_yaml_nlu_arguments(
-    headers: Dict, expected: bool, tmp_path: Path
-):
-    request = Mock()
-    request.body = b""
-    request.args = headers
-
-    payload = rasa.server._training_payload_from_yaml(request, tmp_path)
-    assert payload.get("nlu_additional_arguments") == expected
 
 
 @pytest.mark.trains_model

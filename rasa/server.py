@@ -1445,9 +1445,7 @@ def _test_data_file_from_payload(
         )
 
 
-def _training_payload_from_json(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:
     logger.debug(
         "Extracting JSON payload with Markdown training data from request body."
     )
@@ -1534,9 +1532,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(request: Request, temp_dir: Path) -> Dict[Text, Any]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
@@ -1572,7 +1568,7 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
         )
 
 
-def _extract_core_additional_arguments(request: Request) -> Dict:
+def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
     return {
         "augmentation_factor": rasa.utils.endpoints.int_arg(
             request, "augmentation", 50
@@ -1580,7 +1576,7 @@ def _extract_core_additional_arguments(request: Request) -> Dict:
     }
 
 
-def _extract_nlu_additional_arguments(request: Request) -> Dict:
+def _extract_nlu_additional_arguments(request: Request) -> Dict[Text, Any]:
     return {
         "num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1),
     }

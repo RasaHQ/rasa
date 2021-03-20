@@ -200,7 +200,7 @@ class ClientResponseError(aiohttp.ClientError):
 
 
 def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
-    """Return a passed boolean argument of the request or a default.
+    """Returns a passed boolean argument of the request or a default.
 
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned.
@@ -219,7 +219,7 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
 def float_arg(
     request: Request, key: Text, default: Optional[float] = None
 ) -> Optional[float]:
-    """Return a passed argument cast as a float or None.
+    """Returns a passed argument cast as a float or None.
 
     Checks the `key` parameter of the request if it contains a valid
     float value. If not, `default` is returned.
@@ -247,7 +247,7 @@ def float_arg(
 def int_arg(
     request: Request, key: Text, default: Optional[int] = None
 ) -> Optional[int]:
-    """Return a passed argument cast as an int or None.
+    """Returns a passed argument cast as an int or None.
 
     Checks the `key` parameter of the request if it contains a valid
     int value. If not, `default` is returned.
