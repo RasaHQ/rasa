@@ -171,8 +171,10 @@ class FormAction(LoopAction):
     ) -> bool:
         """Check whether user intent matches intent conditions"""
 
-        mapping_intents = requested_slot_mapping.get("intent", [])
-        mapping_not_intents = requested_slot_mapping.get("not_intent", [])
+        mapping_intents = FormAction._to_list(requested_slot_mapping.get("intent", []))
+        mapping_not_intents = FormAction._to_list(
+            requested_slot_mapping.get("not_intent", [])
+        )
 
         intent = tracker.latest_message.intent.get("name")
 
