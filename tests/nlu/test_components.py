@@ -5,10 +5,11 @@ import pytest
 
 from rasa.nlu import registry
 import rasa.nlu.train
+import rasa.nlu.components
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.nlu.model import Interpreter, Metadata
+from rasa.nlu.model import Interpreter, Metadata, Trainer
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -220,3 +221,45 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]
+
+
+def test_warn_of_competing_extractors():
+    multi_extractor_config = RasaNLUModelConfig(
+        # config with a component that does not have a `confidence_threshold ` property
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "CRFEntityExtractor"},
+                {"name": "DIETClassifier"},
+            ]
+        }
+    )
+    multi_extractor_trainer = Trainer(multi_extractor_config)
+
+    with pytest.warns(None) as records:
+        rasa.nlu.components.warn_of_competing_extractors(
+            multi_extractor_trainer.pipeline
+        )
+
+    assert len(records) == 1
+
+    single_extractor_config = RasaNLUModelConfig(
+        # config with a component that does not have a `confidence_threshold ` property
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "DIETClassifier"},
+            ]
+        }
+    )
+
+    single_extractor_trainer = Trainer(single_extractor_config)
+
+    with pytest.warns(None) as records:
+        rasa.nlu.components.warn_of_competing_extractors(
+            single_extractor_trainer.pipeline
+        )
+
+    assert len(records) == 0

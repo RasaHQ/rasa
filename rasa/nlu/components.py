@@ -208,18 +208,36 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
     validate_required_components(pipeline)
 
 
-def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
+def any_components_in_pipeline(
+    components: Iterable[Text], pipeline: List["Component"]
+) -> bool:
     """Check if any of the provided components are listed in the pipeline.
 
     Args:
-        components: A list of :class:`rasa.nlu.components.Component`s to check.
+        components: A list of str of component class names to check
         pipeline: A list of :class:`rasa.nlu.components.Component`s.
 
     Returns:
         `True` if any of the `components` are in the `pipeline`, else `False`.
 
     """
-    return any(any(component.name == c for component in pipeline) for c in components)
+    return len(find_components_in_pipeline(components, pipeline)) > 0
+
+
+def find_components_in_pipeline(
+    components: Iterable[Text], pipeline: List["Component"]
+) -> List[str]:
+    """Finds those of the given components that are present in the pipeline.
+
+    Args:
+        components: A list of str of component class names to check.
+        pipeline: A list of :class:`rasa.nlu.components.Component`s.
+
+    Returns:
+        A list of str of component class names that are present in the pipeline.
+    """
+    pipeline_component_names = set([c.name for c in pipeline])
+    return list(pipeline_component_names.intersection(components))
 
 
 def validate_required_components_from_data(
@@ -319,6 +337,32 @@ def validate_required_components_from_data(
             "You have defined synonyms in your training data, but "
             "your NLU pipeline does not include an 'EntitySynonymMapper'. "
             "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
+        )
+
+
+# TODO: add doc link
+def warn_of_competing_extractors(pipeline: List["Component"]):
+    """Warns the user when using competing extractors.
+
+    Competing extractors e.g. are CRFEntityExtractor and DIETClassifier.
+    Both of these look for the same entities based on the same training data
+    leading to ambiguity in the results."""
+
+    general_purpose_entity_extractors = [
+        "DIETClassifier",
+        "CRFEntityExtractor",
+        "MitieEntityExtractor",
+    ]
+    extractors_in_pipeline = find_components_in_pipeline(
+        general_purpose_entity_extractors, pipeline
+    )
+    if len(extractors_in_pipeline) > 1:
+        rasa.shared.utils.io.raise_warning(
+            f"You have defined multiple entity extractors that do the same job"
+            f"in your pipeline: "
+            f"{', '.join(extractors_in_pipeline)}. This can lead to unintended "
+            f"behavior in some situations. Please read DOCS to make sure you "
+            f"understand the implications."
         )
 
 
