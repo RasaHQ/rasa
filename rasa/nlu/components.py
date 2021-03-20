@@ -340,8 +340,7 @@ def validate_required_components_from_data(
         )
 
 
-# TODO: add doc link
-def warn_of_competing_extractors(pipeline: List["Component"]):
+def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
     """Warns the user when using competing extractors.
 
     Competing extractors e.g. are CRFEntityExtractor and DIETClassifier.
@@ -360,9 +359,47 @@ def warn_of_competing_extractors(pipeline: List["Component"]):
         rasa.shared.utils.io.raise_warning(
             f"You have defined multiple entity extractors that do the same job"
             f"in your pipeline: "
-            f"{', '.join(extractors_in_pipeline)}. This can lead to unintended "
-            f"behavior in some situations. Please read DOCS to make sure you "
-            f"understand the implications."
+            f"{', '.join(extractors_in_pipeline)}. This can lead to multiple "
+            f"extraction of entities. Please read the documentation section"
+            f"on entity extractors to make sure you understand the implications."
+        )
+
+
+def warn_of_competing_regex_and_statistical_extractor(
+    pipeline: List["Component"], data: TrainingData
+) -> None:
+    """Warns when regex entity extractor is competing with a statistical one.
+
+    This might be the case when the following conditions are all met:
+    * You are using a statistical entity extractor and a the RegexEntityExtractor
+    * AND you have regex patterns for entity type A
+    * AND you have annotated text examples for entity type A"""
+
+    statistical_entity_extractors = [
+        "DIETClassifier",
+        "CRFEntityExtractor",
+        "MitieEntityExtractor",
+    ]
+    present_statistical_extractors = find_components_in_pipeline(
+        statistical_entity_extractors, pipeline
+    )
+    has_general_extractors = len(present_statistical_extractors) > 0
+    has_regex_extractor = any_components_in_pipeline(["RegexEntityExtractor"], pipeline)
+
+    regex_entity_types = {rf["name"] for rf in data.regex_features}
+    overlap_between_types = data.entities.intersection(regex_entity_types)
+    has_overlap = len(overlap_between_types) > 0
+
+    if has_general_extractors and has_regex_extractor and has_overlap:
+        rasa.shared.utils.io.raise_warning(
+            f"You have an overlap between the RegexEntityExtractor and the "
+            f"statistical entity extractors {', '.join(present_statistical_extractors)}"
+            f"in your pipeline. Specifically both types of extractors will "
+            f"attempt to extract entities of the types "
+            f"{', '.join(overlap_between_types)}. This can lead to multiple "
+            f"extraction of entities. Please read RegexEntityExtractor's "
+            f"documentation section to make sure you understand the "
+            f"implications."
         )
 
 

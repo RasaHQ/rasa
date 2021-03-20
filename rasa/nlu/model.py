@@ -202,6 +202,9 @@ class Trainer:
 
         # Warn if there is an obvious case of competing entity extractors
         components.warn_of_competing_extractors(self.pipeline)
+        components.warn_of_competing_regex_and_statistical_extractor(
+            self.pipeline, self.training_data
+        )
 
         # data gets modified internally during the training - hence the copy
         working_data: TrainingData = copy.deepcopy(data)
