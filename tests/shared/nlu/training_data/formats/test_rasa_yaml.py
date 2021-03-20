@@ -360,9 +360,9 @@ def test_minimal_valid_example():
     assert not len(record)
 
 
-def test_minimal_yaml_nlu_file(tmp_path):
+def test_minimal_yaml_nlu_file(tmp_path: pathlib.Path):
     target_file = tmp_path / "test_nlu_file.yaml"
-    rasa.shared.utils.io.write_yaml(MINIMAL_VALID_EXAMPLE, target_file, True)
+    rasa.shared.utils.io.write_text_file(MINIMAL_VALID_EXAMPLE, target_file)
     assert RasaYAMLReader.is_yaml_nlu_file(target_file)
 
 

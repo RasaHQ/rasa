@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Tuple
+from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 from tqdm import tqdm
 import numpy as np
@@ -582,9 +582,7 @@ class RulePolicy(MemoizationPolicy):
 
         # only consider original trackers (no augmented ones)
         training_trackers = [
-            t
-            for t in training_trackers
-            if not hasattr(t, "is_augmented") or not t.is_augmented
+            t for t in training_trackers if not getattr(t, "is_augmented", False)
         ]
         # only use trackers from rule-based training data
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
@@ -771,6 +769,8 @@ class RulePolicy(MemoizationPolicy):
                 f"Predicted '{ACTION_LISTEN_NAME}' after loop '{active_loop_name}'."
             )
             return ACTION_LISTEN_NAME
+
+        return None
 
     def _find_action_from_rules(
         self,

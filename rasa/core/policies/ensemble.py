@@ -64,7 +64,7 @@ class PolicyEnsemble:
         self.policies = policies
         self.date_trained = None
 
-        self.action_fingerprints = action_fingerprints or []
+        self.action_fingerprints = action_fingerprints or {}
 
         self._check_priorities()
         self._check_for_important_policies()

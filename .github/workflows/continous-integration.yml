@@ -28,9 +28,15 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
+
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: '3.7'
+
+  # for wait_for_xx jobs
+  WAIT_TIMEOUT_SECS: 3000
+  WAIT_INTERVAL_SECS: 60
+
 
 jobs:
   changes:
@@ -48,72 +54,28 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
-  documentation:
-    name: Test Documentation
+
+  wait_for_docs_tests:
+    # Looks for doc test workflows and waits for it to complete successfully
+    # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
+    name: Wait for docs tests
     runs-on: ubuntu-latest
-    needs: [changes]
+    needs: [ changes ]
 
     steps:
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/checkout@v2
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
 
-    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Wait for doc tests
+        uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
+        id: wait-for-doc-tests
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Test Documentation
+          ref: ${{ github.head_ref || github.sha }}
+          timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
+          intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
 
-    - name: Set up Node 12.x 🦙
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12.x'
-
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.docs == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
-
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.docs == 'true'
-      uses: Gr1N/setup-poetry@v4
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
-
-    - name: Load Poetry Cached Libraries ⬇
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
-
-    - name: Load Yarn Cached Packages ⬇
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v2
-      with:
-        path: docs/node_modules
-        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-        restore-keys: ${{ runner.os }}-yarn-12.x
-
-    - name: Install Dependencies 📦
-      if: needs.changes.outputs.docs == 'true'
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install-full install-docs
-
-    - name: Run Swagger 🕵️‍♀️
-      if: needs.changes.outputs.docs == 'true'
-      run: |
-        npm install -g swagger-cli
-        swagger-cli validate docs/static/spec/action-server.yml
-        swagger-cli validate docs/static/spec/rasa.yml
-
-    - name: Test Docs 🕸
-      if: needs.changes.outputs.docs == 'true'
-      run: make test-docs
 
   quality:
     name: Code Quality
@@ -191,6 +153,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
+      fail-fast: false
       matrix:
         test:
         - test-cli
@@ -682,7 +645,7 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, documentation, docker]  # only run after all other stages succeeded
+    needs: [quality, test, wait_for_docs_tests, docker]  # only run after all other stages succeeded
 
     steps:
     - name: Checkout git repository 🕝
