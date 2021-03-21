@@ -80,3 +80,15 @@ SLOTS = "slots"
 
 USE_TEXT_FOR_FEATURIZATION = "use_text_for_featurization"
 ENTITY_LABEL_SEPARATOR = "#"
+
+# if you add more policy/classifier names, make sure to add a test as well to ensure
+# that the name and the class stay in sync
+POLICY_NAME_TWO_STAGE_FALLBACK = "TwoStageFallbackPolicy"
+POLICY_NAME_MAPPING = "MappingPolicy"
+POLICY_NAME_FALLBACK = "FallbackPolicy"
+POLICY_NAME_FORM = "FormPolicy"
+POLICY_NAME_RULE = "RulePolicy"
+
+CLASSIFIER_NAME_FALLBACK = "FallbackClassifier"
+
+POLICIES_THAT_EXTRACT_ENTITIES = {"TEDPolicy"}

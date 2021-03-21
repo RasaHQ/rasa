@@ -310,8 +310,10 @@ def replace_environment_variables() -> None:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
         expanded_vars = os.path.expandvars(value)
-        if "$" in expanded_vars:
-            not_expanded = [w for w in expanded_vars.split() if "$" in w]
+        not_expanded = [
+            w for w in expanded_vars.split() if w.startswith("$") and w in value
+        ]
+        if not_expanded:
             raise ValueError(
                 "Error when trying to expand the environment variables"
                 " in '{}'. Please make sure to also set these environment"
@@ -410,6 +412,31 @@ def write_yaml(
 
 
 YAML_LINE_MAX_WIDTH = 4096
+
+
+def is_key_in_yaml(file_path: Union[Text, Path], *keys: Text) -> bool:
+    """Checks if any of the keys is contained in the root object of the yaml file.
+
+    Arguments:
+        file_path: path to the yaml file
+        keys: keys to look for
+
+    Returns:
+          `True` if at least one of the keys is found, `False` otherwise.
+
+    Raises:
+        FileNotFoundException: if the file cannot be found.
+    """
+    try:
+        with open(file_path) as file:
+            return any(
+                any(line.lstrip().startswith(f"{key}:") for key in keys)
+                for line in file
+            )
+    except FileNotFoundError:
+        raise FileNotFoundException(
+            f"Failed to read file, " f"'{os.path.abspath(file_path)}' does not exist."
+        )
 
 
 def convert_to_ordered_dict(obj: Any) -> Any:

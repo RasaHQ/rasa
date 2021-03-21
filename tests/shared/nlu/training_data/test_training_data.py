@@ -1,6 +1,8 @@
 import asyncio
 from pathlib import Path
-from typing import Text, List
+from typing import Text, List, Dict, Any
+from unittest.mock import Mock
+from _pytest.monkeypatch import MonkeyPatch
 
 import pytest
 
@@ -679,6 +681,45 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
     assert len(training_data.nlu_examples) == 0
 
 
+@pytest.mark.parametrize(
+    "source_lookup_table,expected_lookup_table",
+    [
+        (
+            {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
+            {
+                "name": "plates",
+                "elements": "tacos\nbeef\nmapo tofu\nburrito\nlettuce wrap",
+            },
+        ),
+        (
+            {"name": "plates", "elements": ["data/test/lookup_tables/plates.txt"]},
+            {
+                "name": "plates",
+                "elements": "tacos\nbeef\nmapo tofu\nburrito\nlettuce wrap",
+            },
+        ),
+        (
+            {
+                "name": "plates",
+                "elements": "data/test/lookup_tables/not-existing-file.txt",
+            },
+            {
+                "name": "plates",
+                "elements": "data/test/lookup_tables/not-existing-file.txt",
+            },
+        ),
+        (
+            {"name": "test", "some_key": "some_value", "elements": "everything else"},
+            {"name": "test", "some_key": "some_value", "elements": "everything else"},
+        ),
+    ],
+)
+def test_load_lookup_table(
+    source_lookup_table: Dict[Text, Any], expected_lookup_table: Dict[Text, Any]
+):
+    assert TrainingData._load_lookup_table(source_lookup_table) == expected_lookup_table
+
+
 def test_fingerprint_is_same_when_loading_data_again():
     from rasa.shared.importers.utils import training_data_from_paths
 
@@ -689,6 +730,29 @@ def test_fingerprint_is_same_when_loading_data_again():
     td1 = training_data_from_paths(files, language="en")
     td2 = training_data_from_paths(files, language="en")
     assert td1.fingerprint() == td2.fingerprint()
+
+
+def test_fingerprint_is_different_when_lookup_table_has_changed(
+    monkeypatch: MonkeyPatch,
+):
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    files = [
+        "data/test/lookup_tables/lookup_table.json",
+    ]
+
+    td1 = training_data_from_paths(files, language="en")
+    fingerprint1 = td1.fingerprint()
+
+    monkeypatch.setattr(
+        TrainingData,
+        "_load_lookup_table",
+        Mock(return_value={"name": "plates", "elements": "tacos\nbeef"}),
+    )
+    td2 = training_data_from_paths(files, language="en")
+    fingerprint2 = td2.fingerprint()
+
+    assert fingerprint1 != fingerprint2
 
 
 @pytest.mark.parametrize(

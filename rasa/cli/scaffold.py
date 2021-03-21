@@ -5,7 +5,6 @@ from typing import List, Text
 
 from rasa import telemetry
 from rasa.cli import SubParsersAction
-import rasa.train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path
 from rasa.cli.telemetry import inform_about_telemetry
@@ -49,7 +48,9 @@ def add_subparser(
 
 
 def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
+    """Train a model if the user wants to."""
     import questionary
+    import rasa
 
     print_success("Finished creating project structure.")
 
