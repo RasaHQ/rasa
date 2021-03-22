@@ -170,7 +170,7 @@ version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.spacy]
-version = ">=3.0"
+version = "^3.0"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
