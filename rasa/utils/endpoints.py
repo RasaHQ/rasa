@@ -200,22 +200,38 @@ class ClientResponseError(aiohttp.ClientError):
 
 
 def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
-    """Return a passed boolean argument of the request or a default.
+    """Returns a passed boolean argument of the request or a default.
 
     Checks the `name` parameter of the request if it contains a valid
-    boolean value. If not, `default` is returned."""
+    boolean value. If not, `default` is returned.
 
-    return request.args.get(name, str(default)).lower() == "true"
+    Args:
+        request: Sanic request.
+        name: Name of argument.
+        default: Default value for `name` argument.
+
+    Returns:
+        A bool value if `name` is a valid boolean, `default` otherwise.
+    """
+    return str(request.args.get(name, default)).lower() == "true"
 
 
 def float_arg(
     request: Request, key: Text, default: Optional[float] = None
 ) -> Optional[float]:
-    """Return a passed argument cast as a float or None.
+    """Returns a passed argument cast as a float or None.
 
-    Checks the `name` parameter of the request if it contains a valid
-    float value. If not, `None` is returned."""
+    Checks the `key` parameter of the request if it contains a valid
+    float value. If not, `default` is returned.
 
+    Args:
+        request: Sanic request.
+        key: Name of argument.
+        default: Default value for `key` argument.
+
+    Returns:
+        A float value if `key` is a valid float, `default` otherwise.
+    """
     arg = request.args.get(key, default)
 
     if arg is default:
@@ -225,4 +241,32 @@ def float_arg(
         return float(str(arg))
     except (ValueError, TypeError):
         logger.warning(f"Failed to convert '{arg}' to float.")
+        return default
+
+
+def int_arg(
+    request: Request, key: Text, default: Optional[int] = None
+) -> Optional[int]:
+    """Returns a passed argument cast as an int or None.
+
+    Checks the `key` parameter of the request if it contains a valid
+    int value. If not, `default` is returned.
+
+    Args:
+        request: Sanic request.
+        key: Name of argument.
+        default: Default value for `key` argument.
+
+    Returns:
+        An int value if `key` is a valid integer, `default` otherwise.
+    """
+    arg = request.args.get(key, default)
+
+    if arg is default:
+        return arg
+
+    try:
+        return int(str(arg))
+    except (ValueError, TypeError):
+        logger.warning(f"Failed to convert '{arg}' to int.")
         return default
