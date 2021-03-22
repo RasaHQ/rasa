@@ -135,17 +135,16 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
     # [0.21319729] [0.18872215] for 2.2.0
     @property
     def epochs(self) -> int:
-        return 1000
+        return 500
 
     @pytest.fixture()
     def function_to_profile(self, tmp_path: Path,) -> Callable[[], Any]:
         # from rasa.train import train_nlu  # 2.2.0
-
         from rasa.model_training import train_nlu
 
         training_examples = []
-        for intent in range(100):
-            for example_per_intent in range(1000):
+        for intent in range(30):
+            for example_per_intent in range(50):
                 intent_name = f"intent {intent}"
                 new_example = Message.build(
                     text=f"{intent_name} example {example_per_intent}",
@@ -222,7 +221,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
     # 2.2.0: [0.35051641]
     @property
     def epochs(self) -> int:
-        return 1000
+        return 500
 
     @pytest.fixture()
     def function_to_profile(
