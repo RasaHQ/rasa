@@ -119,18 +119,6 @@ class SpacyNLP(Component):
                 "ru": "ru_core_news_md",
                 "es": "es_core_news_md",
             }
-            if warn:
-                warnings.warn(
-                    UserWarning(
-                        "SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`."
-                        "More informaton can be found on https://rasa.com/docs/rasa/components#spacynlp"
-                    )
-                )
-                warnings.warn(
-                    UserWarning(
-                        f"Will try to recover a model based on language name: '{language_name}'."
-                    )
-                )
             if language_name not in fallback_mapping.keys():
                 raise InvalidModelError(
                     f"There is no fallback model for language '{language_name}'."
@@ -140,14 +128,11 @@ class SpacyNLP(Component):
             spacy_model_name = fallback_mapping[language_name]
             if warn:
                 warnings.warn(
-                    UserWarning(
+                    DeprecationWarning(
+                        f"SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`."
+                        f"More informaton can be found on https://rasa.com/docs/rasa/components#spacynlp"
                         f"Will use '{spacy_model_name}' as a fallback spaCy model."
-                    )
-                )
-                warnings.warn(
-                    UserWarning(
-                        "Please update the configuraton as soon as possible. "
-                        "This fallback will be deprecated in Rasa 3.0"
+                        f"This fallback will be deprecated in Rasa 3.0"
                     )
                 )
         return spacy_model_name
