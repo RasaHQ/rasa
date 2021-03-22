@@ -66,6 +66,7 @@ class MemoryLeakTest(abc.ABC):
     def function_to_profile(self) -> None:
         raise NotImplementedError
 
+    @pytest.mark.timeout(600)
     def test_for_memory_leak(
         self, name_for_dumped_files: Text, tmp_path: Path,
     ) -> None:
