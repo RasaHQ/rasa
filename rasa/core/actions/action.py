@@ -246,7 +246,10 @@ class Action:
             Event which should be logged onto the tracker.
         """
         return ActionExecuted(
-            self.name(), prediction.policy_name, prediction.max_confidence
+            self.name(),
+            prediction.policy_name,
+            prediction.max_confidence,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
@@ -332,6 +335,7 @@ class ActionEndToEndResponse(Action):
             policy=prediction.policy_name,
             confidence=prediction.max_confidence,
             action_text=self.action_text,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
