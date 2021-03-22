@@ -3,7 +3,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
-from typing import Text, Callable, Awaitable, List
+from typing import Text, Callable, Awaitable, List, Any, Dict
 
 from rasa.shared.core.events import BotUttered
 from rasa.core.channels.channel import (
@@ -54,14 +54,8 @@ class TwilioVoiceInput(InputChannel):
                     )
                 )
 
-                # Parse the text responses and build the Twilio VoiceResponse.
-                respond_segments = []
-                for message in collector.messages:
-                    respond_segments.append(message["text"])
-                    if "buttons" in message:
-                        for button in message["buttons"]:
-                            respond_segments.append(button["title"])
-                twilio_response = build_twilio_voice_response(respond_segments)
+                # Build the Twilio VoiceResponse.
+                twilio_response = build_twilio_voice_response(collector.messages)
                 return response.text(str(twilio_response), content_type="text/xml")
             # If the user doesn't respond to the previous message resend the last message.
             elif text is None:
@@ -78,7 +72,7 @@ class TwilioVoiceInput(InputChannel):
                 else:
                     last_response = last_response.text
 
-                twilio_response = build_twilio_voice_response([last_response])
+                twilio_response = build_twilio_voice_response([{"text": last_response}])
                 return response.text(str(twilio_response), content_type="text/xml")
 
         return twilio_voice_webhook
@@ -92,8 +86,29 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     def name(cls) -> Text:
         return "twilio_voice"
 
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any,
+    ) -> None:
+        await self._persist_message(self._message(recipient_id, text=text))
 
-def build_twilio_voice_response(messages: List[Text]) -> VoiceResponse:
+        for b in buttons:
+            await self._persist_message(
+                self._message(recipient_id, text=b["title"])
+            )
+
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
+        """For voice channel do not send images."""
+
+        pass
+
+
+def build_twilio_voice_response(messages: List[Dict[Text, Any]]) -> VoiceResponse:
     """Builds the Twilio Voice Response object."""
     vr = VoiceResponse()
     gather = Gather(
@@ -107,10 +122,10 @@ def build_twilio_voice_response(messages: List[Text]) -> VoiceResponse:
     # Add a listener to the last message to listen for user response.
     for i, message in enumerate(messages):
         if i + 1 == len(messages):
-            gather.say(message)
+            gather.say(message["text"])
             vr.append(gather)
         else:
-            vr.say(message)
+            vr.say(message["text"])
             vr.pause(length=1)
 
     return vr
