@@ -50,8 +50,9 @@ class SpacyNLP(Component):
         except OSError:
             raise InvalidModelError(
                 f"Please confirm that {spacy_model_name} is an available spaCy model. "
-                "You need to download one upfront. For example:\npython -m spacy download "
-                "en_core_web_md"
+                f"You need to download one upfront. For example:\npython -m spacy download "
+                f"en_core_web_md\n"
+                f"More informaton can be found on https://rasa.com/docs/rasa/components#spacynlp"
             )
 
     @classmethod
