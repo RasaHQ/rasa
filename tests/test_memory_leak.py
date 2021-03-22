@@ -90,6 +90,7 @@ class MemoryLeakTest(abc.ABC):
             include_children=True,
             timestamps=True,
         )
+        print(results)
 
         # `memory-profiler` sometimes adds `None` values at the end which we don't need
         results = [
