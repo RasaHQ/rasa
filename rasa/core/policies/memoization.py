@@ -195,8 +195,18 @@ class MemoizationPolicy(Policy):
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         return self._recall_states(states)
 
     def _prediction_result(
@@ -222,10 +232,20 @@ class MemoizationPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
+        """
         result = self._default_predictions(domain)
 
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
-        states = tracker_as_states[0]
+        states = self._prediction_states(tracker, domain)
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
         predicted_action_name = self.recall(states, tracker, domain)
         if predicted_action_name is not None:
@@ -301,18 +321,27 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_tracker
 
-    def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[Text]:
-        """Recursively go to the past to correctly forget slots,
-        and then back to the future to recall."""
+    def _recall_using_delorean(
+        self, old_states: List[State], tracker: DialogueStateTracker, domain: Domain,
+    ) -> Optional[Text]:
+        """Applies to the future idea to change the past and get the new future.
 
+        Recursively go to the past to correctly forget slots,
+        and then back to the future to recall.
+
+        Args:
+            old_states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         logger.debug("Launch DeLorean...")
 
         mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
-            tracker_as_states = self.featurizer.prediction_states(
-                [mcfly_tracker], domain
-            )
-            states = tracker_as_states[0]
+            states = self._prediction_states(mcfly_tracker, domain,)
 
             if old_states != states:
                 # check if we like new futures
@@ -330,12 +359,24 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return None
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
 
+        Uses back to the future idea to change the past and check whether the new future
+        can be used to recall the action.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain)
+            return self._recall_using_delorean(states, tracker, domain,)
         else:
             return predicted_action_name

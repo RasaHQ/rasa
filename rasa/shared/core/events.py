@@ -726,7 +726,10 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
 
     def __eq__(self, other: Any) -> bool:
         """Compares this event with another event."""
-        return isinstance(other, EntitiesAdded)
+        if not isinstance(other, EntitiesAdded):
+            return NotImplemented
+
+        return self.entities == other.entities
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> "EntitiesAdded":
@@ -1440,6 +1443,7 @@ class ActionExecuted(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
         action_text: Optional[Text] = None,
+        hide_rule_turn: bool = False,
     ) -> None:
         """Creates event for a successful event execution.
 
@@ -1452,12 +1456,15 @@ class ActionExecuted(Event):
             metadata: Additional event metadata.
             action_text: In case it's an end-to-end action prediction, the text which
                 was predicted.
+            hide_rule_turn: If `True`, this action should be hidden in the dialogue
+                history created for ML-based policies.
         """
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
         self.action_text = action_text
+        self.hide_rule_turn = hide_rule_turn
 
         super().__init__(timestamp, metadata)
 
@@ -1499,7 +1506,6 @@ class ActionExecuted(Event):
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
-
         return [
             ActionExecuted(
                 parameters.get("name"),
@@ -1508,25 +1514,20 @@ class ActionExecuted(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 parameters.get("action_text"),
+                parameters.get("hide_rule_turn"),
             )
         ]
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
         d = super().as_dict()
-        policy = None  # for backwards compatibility (persisted events)
-        if hasattr(self, "policy"):
-            policy = self.policy
-        confidence = None
-        if hasattr(self, "confidence"):
-            confidence = self.confidence
-
         d.update(
             {
                 "name": self.action_name,
-                "policy": policy,
-                "confidence": confidence,
+                "policy": self.policy,
+                "confidence": self.confidence,
                 "action_text": self.action_text,
+                "hide_rule_turn": self.hide_rule_turn,
             }
         )
         return d
