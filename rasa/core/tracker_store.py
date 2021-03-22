@@ -1129,7 +1129,6 @@ class SQLTrackerStore(TrackerStore):
         self, session: "Session", tracker: DialogueStateTracker
     ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-
         number_of_events_since_last_session = self._event_query(
             session,
             tracker.sender_id,
