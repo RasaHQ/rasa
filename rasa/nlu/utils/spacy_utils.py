@@ -148,7 +148,7 @@ class SpacyNLP(Component):
         return self.nlp(self.preprocess_text(text))
 
     def preprocess_text(self, text: Optional[Text]) -> Text:
-        """Process the text before it is handled by spaCy."""
+        """Processes the text before it is handled by spaCy."""
         if text is None:
             # converted to empty string so that it can still be passed to spacy.
             # Another option could be to neglect tokenization of the attribute of
