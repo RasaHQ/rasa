@@ -532,3 +532,23 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
 
     with pytest.raises(rasa.shared.utils.validation.YamlValidationException):
         rasa.shared.utils.io.read_model_configuration(config_file)
+
+
+@pytest.mark.parametrize(
+    "file,keys,expected_result",
+    [
+        ("data/test_yaml_stories/stories.yml", ["stories"], True),
+        ("data/test_yaml_stories/stories.yml", ["something_else"], False),
+        ("data/test_yaml_stories/stories.yml", ["stories", "something_else"], True),
+        (
+            "data/test_domains/default_retrieval_intents.yml",
+            ["intents", "responses"],
+            True,
+        ),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
+        ("data/test_stories/stories.md", ["something"], False),
+    ],
+)
+async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
+    assert rasa.shared.utils.io.is_key_in_yaml(file, *keys) == expected_result

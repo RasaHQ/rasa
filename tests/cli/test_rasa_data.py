@@ -137,7 +137,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "validate",
             "stories",
             "--data",
-            "examples/moodbot/data",
+            "data/test_moodbot/data",
             "--max-history",
             0,
         ]
@@ -468,7 +468,7 @@ def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
 
 
 def test_convert_config(
-    run: Callable[..., RunResult], tmp_path: Path, default_domain_path: Text
+    run: Callable[..., RunResult], tmp_path: Path, domain_path: Text
 ):
     deprecated_config = {
         "policies": [{"name": "MappingPolicy"}, {"name": "FallbackPolicy"}],

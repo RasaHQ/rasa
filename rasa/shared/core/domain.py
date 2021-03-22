@@ -4,20 +4,20 @@ import json
 import logging
 import os
 from enum import Enum
+from pathlib import Path
 from typing import (
     Any,
     Dict,
     List,
     NamedTuple,
+    NoReturn,
     Optional,
     Set,
     Text,
     Tuple,
     Union,
-    NoReturn,
     TYPE_CHECKING,
 )
-from pathlib import Path
 
 import rasa.shared.constants
 import rasa.shared.core.constants
@@ -853,7 +853,7 @@ class Domain:
             AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
         )
 
-    def index_for_action(self, action_name: Text) -> Optional[int]:
+    def index_for_action(self, action_name: Text) -> int:
         """Looks up which action index corresponds to this action name."""
         try:
             return self.action_names_or_texts.index(action_name)

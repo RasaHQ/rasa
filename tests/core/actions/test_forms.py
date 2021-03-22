@@ -724,7 +724,7 @@ def test_extract_requested_slot_default():
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, Domain.empty())
+    slot_values = form.extract_requested_slot(tracker, Domain.empty(), "some_slot")
     assert slot_values == {"some_slot": "some_value"}
 
 
@@ -767,7 +767,7 @@ def test_extract_requested_slot_when_mapping_applies(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was extracted for correct intent
     assert slot_values == {"some_slot": expected_value}
 
@@ -777,6 +777,7 @@ def test_extract_requested_slot_when_mapping_applies(
     [
         {"type": "from_entity", "entity": "some_slot", "intent": "some_intent"},
         {"type": "from_intent", "intent": "some_intent", "value": "some_value"},
+        {"type": "from_intent", "intent": "greeted", "value": "some_value"},
         {"type": "from_text", "intent": "other"},
         {"type": "from_text", "not_intent": "greet"},
         {"type": "from_trigger_intent", "intent": "greet", "value": "value"},
@@ -802,7 +803,7 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was not extracted for incorrect intent
     assert slot_values == {}
 
@@ -1055,7 +1056,7 @@ def test_extract_requested_slot_from_entity(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     assert slot_values == expected_slot_values
 
 
@@ -1252,7 +1253,7 @@ def test_extract_other_slots_with_entity(
 
 
 @pytest.mark.parametrize(
-    "domain, expected_action",
+    "domain_dict, expected_action",
     [
         (
             {
@@ -1285,7 +1286,7 @@ def test_extract_other_slots_with_entity(
     ],
 )
 async def test_ask_for_slot(
-    domain: Dict,
+    domain_dict: Dict,
     expected_action: Text,
     monkeypatch: MonkeyPatch,
     default_nlg: TemplatedNaturalLanguageGenerator,
@@ -1299,7 +1300,7 @@ async def test_ask_for_slot(
     )
 
     form = FormAction("my_form", endpoint_config)
-    domain = Domain.from_dict(domain)
+    domain = Domain.from_dict(domain_dict)
     await form._ask_for_slot(
         domain,
         default_nlg,

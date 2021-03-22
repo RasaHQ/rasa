@@ -37,36 +37,31 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
-def test_slots_states_before_user_utterance(default_domain: Domain):
+def test_slots_states_before_user_utterance(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer()
     tracker = DialogueStateTracker.from_events(
         "bla",
         evts=[
-            SlotSet(default_domain.slots[0].name, "some_value"),
+            SlotSet(domain.slots[0].name, "some_value"),
             ActionExecuted("utter_default"),
         ],
-        slots=default_domain.slots,
+        slots=domain.slots,
     )
-    trackers_as_states, _ = featurizer.training_states_and_actions(
-        [tracker], default_domain
-    )
+    trackers_as_states, _ = featurizer.training_states_and_actions([tracker], domain)
     expected_states = [[{"slots": {"name": (1.0,)}}]]
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(default_domain: Domain):
+async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
+        stories_path, domain, augmentation_factor=0
     )
 
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain
-    )
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -89,15 +84,13 @@ async def test_create_train_data_no_history(default_domain: Domain):
     ]
 
 
-async def test_create_train_data_with_history(default_domain: Domain):
+async def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
+        stories_path, domain, augmentation_factor=0
     )
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain
-    )
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -176,16 +169,13 @@ async def test_create_train_data_unfeaturized_entities():
     ]
 
 
-def test_domain_from_template():
-    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
-    domain = Domain.load(domain_file)
-
+def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
     assert len(domain.action_names_or_texts) == 16
 
 
-def test_avoid_action_repetition(default_domain: Domain):
+def test_avoid_action_repetition(domain: Domain):
     domain = Domain.from_yaml(
         """
 actions:
@@ -201,7 +191,7 @@ responses:
 
 
 def test_responses():
-    domain_file = "examples/moodbot/domain.yml"
+    domain_file = "data/test_moodbot/domain.yml"
     domain = Domain.load(domain_file)
     expected_response = {
         "text": "Hey! How are you?",
@@ -682,9 +672,7 @@ def test_load_domain_from_directory_tree(tmp_path: Path):
     assert set(actual.user_actions) == set(expected)
 
 
-def test_domain_warnings():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
+def test_domain_warnings(domain: Domain):
     warning_types = [
         "action_warnings",
         "intent_warnings",
@@ -1027,16 +1015,15 @@ def test_domain_from_dict_does_not_change_input():
 
 
 @pytest.mark.parametrize(
-    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+    "domain_dict", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
 )
-def test_add_default_intents(domain: Dict):
-    domain = Domain.from_dict(domain)
+def test_add_default_intents(domain_dict: Dict):
+    domain = Domain.from_dict(domain_dict)
 
     assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
 
 
-def test_domain_deepcopy():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+def test_domain_deepcopy(domain: Domain):
     new_domain = copy.deepcopy(domain)
 
     assert isinstance(new_domain, Domain)
@@ -1077,8 +1064,7 @@ def test_domain_deepcopy():
     "response_key, validation",
     [("utter_chitchat/faq", True), ("utter_chitchat", False)],
 )
-def test_is_retrieval_intent_response(response_key, validation):
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+def test_is_retrieval_intent_response(response_key, validation, domain: Domain):
     assert domain.is_retrieval_intent_response((response_key, [{}])) == validation
 
 

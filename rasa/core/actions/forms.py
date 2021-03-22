@@ -169,10 +169,11 @@ class FormAction(LoopAction):
     def intent_is_desired(
         requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
     ) -> bool:
-        """Check whether user intent matches intent conditions"""
-
-        mapping_intents = requested_slot_mapping.get("intent", [])
-        mapping_not_intents = requested_slot_mapping.get("not_intent", [])
+        """Check whether user intent matches intent conditions."""
+        mapping_intents = FormAction._to_list(requested_slot_mapping.get("intent", []))
+        mapping_not_intents = FormAction._to_list(
+            requested_slot_mapping.get("not_intent", [])
+        )
 
         intent = tracker.latest_message.intent.get("name")
 
@@ -333,10 +334,20 @@ class FormAction(LoopAction):
         )
 
     def extract_requested_slot(
-        self, tracker: "DialogueStateTracker", domain: Domain
+        self, tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text,
     ) -> Dict[Text, Any]:
-        """Extracts the value of requested slot from a user input else return `None`."""
-        slot_to_fill = self.get_slot_to_fill(tracker)
+        """Extract the value of requested slot from a user input else return `None`.
+
+        Args:
+            tracker: a DialogueStateTracker instance
+            domain: the current domain
+            slot_to_fill: the name of the slot to fill
+
+        Returns:
+            a dictionary with one key being the name of the slot to fill
+            and its value being the slot value, or an empty dictionary
+            if no slot value was found.
+        """
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
         # get mapping for requested slot
@@ -477,7 +488,9 @@ class FormAction(LoopAction):
         # extract requested slot
         slot_to_fill = self.get_slot_to_fill(tracker)
         if slot_to_fill:
-            slot_values.update(self.extract_requested_slot(tracker, domain))
+            slot_values.update(
+                self.extract_requested_slot(tracker, domain, slot_to_fill)
+            )
 
         validation_events = await self.validate_slots(
             slot_values, tracker, domain, output_channel, nlg

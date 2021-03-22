@@ -3,6 +3,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+from typing import Text
 
 import pytest
 import rasa.shared
@@ -10,8 +11,6 @@ import rasa.shared
 import rasa.shared.data
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.utils.io import write_text_file, json_to_string
-from tests.conftest import DEFAULT_NLU_DATA
-from tests.core.conftest import DEFAULT_STORIES_FILE
 
 
 @pytest.mark.parametrize(
@@ -213,17 +212,19 @@ def test_get_core_nlu_directories_with_none():
     assert all(not os.listdir(directory) for directory in directories)
 
 
-def test_same_file_names_get_resolved(tmp_path: Path):
+def test_same_file_names_get_resolved(
+    tmp_path: Path, stories_path: Text, nlu_data_path: Text
+):
     # makes sure the resolution properly handles if there are two files with
     # with the same name in different directories
 
     (tmp_path / "one").mkdir()
     (tmp_path / "two").mkdir()
-    shutil.copy2(DEFAULT_STORIES_FILE, tmp_path / "one" / "stories.yml")
-    shutil.copy2(DEFAULT_STORIES_FILE, tmp_path / "two" / "stories.yml")
+    shutil.copy2(stories_path, tmp_path / "one" / "stories.yml")
+    shutil.copy2(stories_path, tmp_path / "two" / "stories.yml")
 
-    shutil.copy2(DEFAULT_NLU_DATA, tmp_path / "one" / "nlu.yml")
-    shutil.copy2(DEFAULT_NLU_DATA, tmp_path / "two" / "nlu.yml")
+    shutil.copy2(nlu_data_path, tmp_path / "one" / "nlu.yml")
+    shutil.copy2(nlu_data_path, tmp_path / "two" / "nlu.yml")
 
     core_directory, nlu_directory = rasa.shared.data.get_core_nlu_directories(
         [str(tmp_path)]

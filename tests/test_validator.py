@@ -1,28 +1,26 @@
+from typing import Text
+
 import pytest
 
-import rasa.shared.utils.io
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.importers.autoconfig import TrainingType
-from tests.conftest import DEFAULT_NLU_DATA
-from tests.core.conftest import DEFAULT_STORIES_FILE
 from pathlib import Path
 
 
-async def test_verify_intents_does_not_fail_on_valid_data():
+async def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml",
-        training_data_paths=[DEFAULT_NLU_DATA],
+        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_intents()
 
 
-async def test_verify_intents_does_fail_on_invalid_data():
+async def test_verify_intents_does_fail_on_invalid_data(nlu_data_path: Text):
     # domain and nlu data are from different domain and should produce warnings
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=[DEFAULT_NLU_DATA],
+        training_data_paths=[nlu_data_path],
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_intents()
@@ -40,11 +38,11 @@ async def test_verify_valid_responses():
     assert validator.verify_utterances_in_stories()
 
 
-async def test_verify_valid_responses_in_rules():
+async def test_verify_valid_responses_in_rules(nlu_data_path: Text):
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
         training_data_paths=[
-            DEFAULT_NLU_DATA,
+            nlu_data_path,
             "data/test_yaml_stories/rules_without_stories_and_wrong_names.yml",
         ],
     )
@@ -52,10 +50,9 @@ async def test_verify_valid_responses_in_rules():
     assert not validator.verify_utterances_in_stories()
 
 
-async def test_verify_story_structure():
+async def test_verify_story_structure(stories_path: Text):
     importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=[DEFAULT_STORIES_FILE],
+        domain_path="data/test_domains/default.yml", training_data_paths=[stories_path],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
@@ -208,23 +205,23 @@ async def test_verify_bad_story_structure_ignore_warnings():
     assert validator.verify_story_structure(ignore_warnings=True)
 
 
-async def test_verify_there_is_example_repetition_in_intents():
+async def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml",
-        training_data_paths=[DEFAULT_NLU_DATA],
+        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_example_repetition_in_intents(False)
 
 
-async def test_verify_logging_message_for_repetition_in_intents(caplog):
+async def test_verify_logging_message_for_repetition_in_intents(
+    caplog, nlu_data_path: Text
+):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml",
-        training_data_paths=[DEFAULT_NLU_DATA],
+        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
     )
     validator = await Validator.from_importer(importer)
     caplog.clear()  # clear caplog to avoid counting earlier debug messages
@@ -255,7 +252,7 @@ async def test_early_exit_on_invalid_domain():
 
 async def test_verify_there_is_not_example_repetition_in_intents():
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml",
+        domain_path="data/test_moodbot/domain.yml",
         training_data_paths=["examples/knowledgebasebot/data/nlu.md"],
     )
     validator = await Validator.from_importer(importer)
