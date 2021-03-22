@@ -245,14 +245,16 @@ class RasaModel(TmpKerasModel):
         # the list
         return [element_spec]
 
-    def rasa_predict(self, model_data: RasaModelData) -> Dict[Text, tf.Tensor]:
+    def rasa_predict(
+        self, model_data: RasaModelData
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Custom prediction method that builds tf graph on the first call.
 
         Args:
             model_data: The model data to use for prediction.
 
         Return:
-            Prediction output.
+            Prediction output, including diagnostic data.
         """
         self._training = False
         if not self.prepared_for_prediction:
@@ -265,8 +267,9 @@ class RasaModel(TmpKerasModel):
 
         if self._run_eagerly:
             outputs = tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
-            if np.size(outputs[DIAGNOSTIC_DATA]["attention_weights"]) == 0:
-                outputs[DIAGNOSTIC_DATA]["attention_weights"] = None
+            outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
+                outputs[DIAGNOSTIC_DATA]
+            )
             return outputs
 
         if self._tf_predict_step is None:
@@ -275,9 +278,25 @@ class RasaModel(TmpKerasModel):
             )
 
         outputs = tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
-        if np.size(outputs[DIAGNOSTIC_DATA]["attention_weights"]) == 0:
-            outputs[DIAGNOSTIC_DATA]["attention_weights"] = None
+        outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
+            outputs[DIAGNOSTIC_DATA]
+        )
         return outputs
+
+    @staticmethod
+    def _empty_lists_to_none_in_dict(input_dict: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Recursively replaces empty list or np array with None in a dictionary."""
+
+        def _recurse(x):
+            if not isinstance(x, dict):
+                if (isinstance(x, list) or isinstance(x, np.ndarray)) and np.size(
+                    x
+                ) == 0:
+                    return None
+                return x
+            return {k: _recurse(v) for k, v in x.items()}
+
+        return _recurse(input_dict)
 
     def _get_metric_results(self, prefix: Optional[Text] = "") -> Dict[Text, float]:
         return {
