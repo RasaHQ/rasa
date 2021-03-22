@@ -685,7 +685,9 @@ def test_temporary_tracker():
     extra_slot = "some_slot"
     sender_id = "test"
     domain = Domain.from_yaml(
-        f"""        slots:
+        f"""
+        version: "2.0"
+        slots:
           {extra_slot}:
             type: unfeaturized
         """
