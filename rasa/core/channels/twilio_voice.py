@@ -41,7 +41,7 @@ class TwilioVoiceInput(InputChannel):
             collector = TwilioVoiceCollectingOutputChannel()
 
             # Provide an initial greeting to answer the user's call.
-            if (text is None) & (call_status == "ringing"):
+            if (text is None) and (call_status == "ringing"):
                 text = "hello"
 
             # determine the response.
