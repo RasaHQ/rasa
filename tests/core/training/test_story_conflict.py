@@ -9,7 +9,6 @@ from rasa.core.training.story_conflict import (
 from rasa.shared.core.generator import TrainingDataGenerator, TrackerWithCachedStates
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
-from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH_WITH_SLOTS
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
 
 
@@ -31,10 +30,8 @@ async def _setup_trackers_for_testing(
     return trackers, validator.domain
 
 
-async def test_find_no_conflicts():
-    trackers, domain = await _setup_trackers_for_testing(
-        DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
-    )
+async def test_find_no_conflicts(domain_path: Text, stories_path: Text):
+    trackers, domain = await _setup_trackers_for_testing(domain_path, stories_path)
 
     # Create a list of `StoryConflict` objects
     conflicts = find_story_conflicts(trackers, domain, 5)

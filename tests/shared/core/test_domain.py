@@ -37,36 +37,31 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
-def test_slots_states_before_user_utterance(default_domain: Domain):
+def test_slots_states_before_user_utterance(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer()
     tracker = DialogueStateTracker.from_events(
         "bla",
         evts=[
-            SlotSet(default_domain.slots[0].name, "some_value"),
+            SlotSet(domain.slots[0].name, "some_value"),
             ActionExecuted("utter_default"),
         ],
-        slots=default_domain.slots,
+        slots=domain.slots,
     )
-    trackers_as_states, _ = featurizer.training_states_and_actions(
-        [tracker], default_domain
-    )
+    trackers_as_states, _ = featurizer.training_states_and_actions([tracker], domain)
     expected_states = [[{"slots": {"name": (1.0,)}}]]
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(default_domain: Domain):
+async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
+        stories_path, domain, augmentation_factor=0
     )
 
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain
-    )
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -89,15 +84,13 @@ async def test_create_train_data_no_history(default_domain: Domain):
     ]
 
 
-async def test_create_train_data_with_history(default_domain: Domain):
+async def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
+        stories_path, domain, augmentation_factor=0
     )
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain
-    )
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -176,16 +169,13 @@ async def test_create_train_data_unfeaturized_entities():
     ]
 
 
-def test_domain_from_template():
-    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
-    domain = Domain.load(domain_file)
-
+def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
     assert len(domain.action_names_or_texts) == 16
 
 
-def test_avoid_action_repetition(default_domain: Domain):
+def test_avoid_action_repetition(domain: Domain):
     domain = Domain.from_yaml(
         """
 actions:
@@ -200,17 +190,17 @@ responses:
     assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
-def test_utter_templates():
-    domain_file = "examples/moodbot/domain.yml"
+def test_responses():
+    domain_file = "data/test_moodbot/domain.yml"
     domain = Domain.load(domain_file)
-    expected_template = {
+    expected_response = {
         "text": "Hey! How are you?",
         "buttons": [
             {"title": "great", "payload": "/mood_great"},
             {"title": "super sad", "payload": "/mood_unhappy"},
         ],
     }
-    assert domain.random_template_for("utter_greet") == expected_template
+    assert domain.random_template_for("utter_greet") == expected_response
 
 
 def test_custom_slot_type(tmpdir: Path):
@@ -379,7 +369,7 @@ responses:
     # single attribute should be taken from domain_1
     assert domain.store_entities_as_slots
     # conflicts should be taken from domain_1
-    assert domain.templates == {
+    assert domain.responses == {
         "utter_greet": [{"text": "hey there!"}],
         "utter_goodbye": [{"text": "bye!"}],
     }
@@ -395,7 +385,7 @@ responses:
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
-    assert domain.templates == {
+    assert domain.responses == {
         "utter_greet": [{"text": "hey you!"}],
         "utter_goodbye": [{"text": "bye!"}],
     }
@@ -682,9 +672,7 @@ def test_load_domain_from_directory_tree(tmp_path: Path):
     assert set(actual.user_actions) == set(expected)
 
 
-def test_domain_warnings():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
+def test_domain_warnings(domain: Domain):
     warning_types = [
         "action_warnings",
         "intent_warnings",
@@ -756,7 +744,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[],
-            templates={},
+            responses={},
             action_names=["random_name", "random_name"],
             forms={},
         )
@@ -766,7 +754,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[TextSlot("random_name"), TextSlot("random_name")],
-            templates={},
+            responses={},
             action_names=[],
             forms={},
         )
@@ -776,7 +764,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=["random_name", "random_name", "other_name", "other_name"],
             slots=[],
-            templates={},
+            responses={},
             action_names=[],
             forms={},
         )
@@ -786,7 +774,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[],
-            templates={},
+            responses={},
             action_names=[],
             forms=["random_name", "random_name"],
         )
@@ -802,9 +790,9 @@ def test_load_on_invalid_domain_duplicate_actions():
         Domain.load("data/test_domains/duplicate_actions.yml")
 
 
-def test_load_on_invalid_domain_duplicate_templates():
+def test_load_on_invalid_domain_duplicate_responses():
     with pytest.raises(YamlSyntaxException):
-        Domain.load("data/test_domains/duplicate_templates.yml")
+        Domain.load("data/test_domains/duplicate_responses.yml")
 
 
 def test_load_on_invalid_domain_duplicate_entities():
@@ -1027,16 +1015,15 @@ def test_domain_from_dict_does_not_change_input():
 
 
 @pytest.mark.parametrize(
-    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+    "domain_dict", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
 )
-def test_add_default_intents(domain: Dict):
-    domain = Domain.from_dict(domain)
+def test_add_default_intents(domain_dict: Dict):
+    domain = Domain.from_dict(domain_dict)
 
     assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
 
 
-def test_domain_deepcopy():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+def test_domain_deepcopy(domain: Domain):
     new_domain = copy.deepcopy(domain)
 
     assert isinstance(new_domain, Domain)
@@ -1047,7 +1034,7 @@ def test_domain_deepcopy():
     assert new_domain.entities == domain.entities
     assert new_domain.forms == domain.forms
     assert new_domain.form_names == domain.form_names
-    assert new_domain.templates == domain.templates
+    assert new_domain.responses == domain.responses
     assert new_domain.action_texts == domain.action_texts
     assert new_domain.session_config == domain.session_config
     assert new_domain._custom_actions == domain._custom_actions
@@ -1065,7 +1052,7 @@ def test_domain_deepcopy():
     assert new_domain.forms is not domain.forms
     assert new_domain.form_names is not domain.form_names
     assert new_domain.slots is not domain.slots
-    assert new_domain.templates is not domain.templates
+    assert new_domain.responses is not domain.responses
     assert new_domain.action_texts is not domain.action_texts
     assert new_domain.session_config is not domain.session_config
     assert new_domain._custom_actions is not domain._custom_actions
@@ -1074,19 +1061,18 @@ def test_domain_deepcopy():
 
 
 @pytest.mark.parametrize(
-    "template_key, validation",
+    "response_key, validation",
     [("utter_chitchat/faq", True), ("utter_chitchat", False)],
 )
-def test_is_retrieval_intent_template(template_key, validation):
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-    assert domain.is_retrieval_intent_template((template_key, [{}])) == validation
+def test_is_retrieval_intent_response(response_key, validation, domain: Domain):
+    assert domain.is_retrieval_intent_response((response_key, [{}])) == validation
 
 
-def test_retrieval_intent_template_seggregation():
+def test_retrieval_intent_response_seggregation():
     domain = Domain.load("data/test_domains/mixed_retrieval_intents.yml")
-    assert domain.templates != domain.retrieval_intent_templates
-    assert domain.templates and domain.retrieval_intent_templates
-    assert list(domain.retrieval_intent_templates.keys()) == [
+    assert domain.responses != domain.retrieval_intent_responses
+    assert domain.responses and domain.retrieval_intent_responses
+    assert list(domain.retrieval_intent_responses.keys()) == [
         "utter_chitchat/ask_weather",
         "utter_chitchat/ask_name",
     ]

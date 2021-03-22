@@ -18,11 +18,11 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 from rasa.shared.core.training_data.structures import Story
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
-domain = Domain.load("examples/moodbot/domain.yml")
+domain = Domain.load("data/test_moodbot/domain.yml")
 
 
-def test_session_start_is_not_serialised(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
+def test_session_start_is_not_serialised(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 

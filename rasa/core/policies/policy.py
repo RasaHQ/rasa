@@ -255,7 +255,7 @@ class Policy:
     def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.
 
-        Policies following the default `persist()` and `load()` templates must
+        Policies using the default `persist()` and `load()` implementations must
         implement the `_metadata()` method."
 
         Returns:
@@ -267,7 +267,7 @@ class Policy:
     def _metadata_filename(cls) -> Optional[Text]:
         """Returns the filename of the persisted policy metadata.
 
-        Policies following the default `persist()` and `load()` templates must
+        Policies using the default `persist()` and `load()` implementations must
         implement the `_metadata_filename()` method.
 
         Returns:
@@ -336,8 +336,7 @@ class Policy:
         )
         return cls()
 
-    @staticmethod
-    def _default_predictions(domain: Domain) -> List[float]:
+    def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.
 
         Args:

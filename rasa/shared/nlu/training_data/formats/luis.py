@@ -34,8 +34,9 @@ class LuisReader(JsonTrainingDataReader):
                     {"name": r.get("name"), "pattern": r.get("pattern")}
                 )
 
-        # LUIS removed `regex_features` and exports regular expressions in `regex_entities` now:
-        # https://stackoverflow.com/questions/48170631/what-happened-to-the-regex-features
+        # LUIS removed `regex_features` and exports regular expressions in `
+        # regex_entities` now:
+        # https://stackoverflow.com/questions/48170631/what-happened-to-the-regex-features # noqa: W505
         for r in js.get("regex_entities", []):
             regex_features.append(
                 {"name": r.get("name"), "pattern": r.get("regexPattern")}

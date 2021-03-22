@@ -160,35 +160,9 @@ class YAMLStoryReader(StoryReader):
             YamlException: if the file seems to be a YAML file (extension) but
                 can not be read / parsed.
         """
-        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
-            file_path, KEY_STORIES, KEY_RULES
-        )
-
-    @classmethod
-    def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        """Check if any of the keys is contained in the root object of the yaml file.
-
-        Arguments:
-            file_path: path to the yaml file
-            keys: keys to look for
-
-        Returns:
-              `True` if at least one of the keys is found, `False` otherwise.
-
-        Raises:
-            FileNotFoundException: if the file cannot be found.
-        """
-        try:
-            with open(file_path) as file:
-                return any(
-                    any(line.lstrip().startswith(f"{key}:") for key in keys)
-                    for line in file
-                )
-        except FileNotFoundError:
-            raise FileNotFoundException(
-                f"Failed to read file, "
-                f"'{os.path.abspath(file_path)}' does not exist."
-            )
+        return rasa.shared.data.is_likely_yaml_file(
+            file_path
+        ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_STORIES, KEY_RULES)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:

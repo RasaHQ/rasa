@@ -51,7 +51,7 @@ responses:
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -85,7 +85,7 @@ async def test_activate_with_prefilled_slot():
     domain = Domain.from_yaml(domain)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -96,7 +96,6 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
-@pytest.mark.trains_model
 async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
@@ -147,7 +146,7 @@ responses:
         domain,
         InMemoryTrackerStore(domain),
         InMemoryLockStore(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
     )
 
     # activate the first form
@@ -167,7 +166,7 @@ responses:
         action_1,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
 
@@ -180,7 +179,7 @@ responses:
         SlotSet(REQUESTED_SLOT, slot_a),
         BotUttered(
             text=utter_ask_form_1,
-            metadata={"template_name": f"utter_ask_{form_1}_{slot_a}"},
+            metadata={"utter_action": f"utter_ask_{form_1}_{slot_a}"},
         ),
     ]
     assert tracker.applied_events() == events_expected
@@ -201,7 +200,7 @@ responses:
         action_1,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
     events_expected.extend([ActionExecutionRejected(action_name=form_1)])
@@ -213,7 +212,7 @@ responses:
         action_2,
         tracker,
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         prediction,
     )
     events_expected.extend(
@@ -223,7 +222,7 @@ responses:
             SlotSet(REQUESTED_SLOT, slot_a),
             BotUttered(
                 text=utter_ask_form_2,
-                metadata={"template_name": f"utter_ask_{form_2}_{slot_a}"},
+                metadata={"utter_action": f"utter_ask_{form_2}_{slot_a}"},
             ),
         ]
     )
@@ -260,7 +259,7 @@ async def test_activate_and_immediate_deactivate():
     domain = Domain.from_yaml(domain)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -299,7 +298,7 @@ async def test_set_slot_and_deactivate():
     action = FormAction(form_name, None)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -339,7 +338,7 @@ async def test_action_rejection():
     with pytest.raises(ActionExecutionRejection):
         await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -484,7 +483,7 @@ async def test_validate_slots(
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -547,7 +546,7 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -599,7 +598,7 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
         with pytest.raises(ActionExecutionRejection):
             await action.run(
                 CollectingOutputChannel(),
-                TemplatedNaturalLanguageGenerator(domain.templates),
+                TemplatedNaturalLanguageGenerator(domain.responses),
                 tracker,
                 domain,
             )
@@ -646,7 +645,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -725,7 +724,7 @@ def test_extract_requested_slot_default():
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, Domain.empty())
+    slot_values = form.extract_requested_slot(tracker, Domain.empty(), "some_slot")
     assert slot_values == {"some_slot": "some_value"}
 
 
@@ -768,7 +767,7 @@ def test_extract_requested_slot_when_mapping_applies(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was extracted for correct intent
     assert slot_values == {"some_slot": expected_value}
 
@@ -778,6 +777,7 @@ def test_extract_requested_slot_when_mapping_applies(
     [
         {"type": "from_entity", "entity": "some_slot", "intent": "some_intent"},
         {"type": "from_intent", "intent": "some_intent", "value": "some_value"},
+        {"type": "from_intent", "intent": "greeted", "value": "some_value"},
         {"type": "from_text", "intent": "other"},
         {"type": "from_text", "not_intent": "greet"},
         {"type": "from_trigger_intent", "intent": "greet", "value": "value"},
@@ -803,7 +803,7 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was not extracted for incorrect intent
     assert slot_values == {}
 
@@ -1056,7 +1056,7 @@ def test_extract_requested_slot_from_entity(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     assert slot_values == expected_slot_values
 
 
@@ -1253,7 +1253,7 @@ def test_extract_other_slots_with_entity(
 
 
 @pytest.mark.parametrize(
-    "domain, expected_action",
+    "domain_dict, expected_action",
     [
         (
             {
@@ -1286,7 +1286,7 @@ def test_extract_other_slots_with_entity(
     ],
 )
 async def test_ask_for_slot(
-    domain: Dict,
+    domain_dict: Dict,
     expected_action: Text,
     monkeypatch: MonkeyPatch,
     default_nlg: TemplatedNaturalLanguageGenerator,
@@ -1300,7 +1300,7 @@ async def test_ask_for_slot(
     )
 
     form = FormAction("my_form", endpoint_config)
-    domain = Domain.from_dict(domain)
+    domain = Domain.from_dict(domain_dict)
     await form._ask_for_slot(
         domain,
         default_nlg,
