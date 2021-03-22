@@ -70,7 +70,7 @@ If None, map requested slot to an entity with the same name
  | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> bool
 ```
 
-Check whether user intent matches intent conditions
+Check whether user intent matches intent conditions.
 
 #### entity\_is\_desired
 
