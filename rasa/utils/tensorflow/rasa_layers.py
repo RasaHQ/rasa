@@ -230,8 +230,8 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             sequence_feature_lengths: Dense tensor of shape `(batch_size, )`.
 
     Output shape:
-        combined_features: A 3-D tensor with shape `(batch_size, sequence_length, units)`
-            where `units` is  completely  determined by the internally applied
+        combined_features: A 3-D tensor with shape `(batch_size, sequence_length,
+            units)` where `units` is  completely  determined by the internally applied
             `ConcatenateSparseDenseFeatures` layer and `sequence_length` is the combined
             length of sequence- and sentence-level features: `max_seq_length + 1` if
             both feature types are present, `max_seq_length` if only sequence-level
@@ -326,8 +326,9 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
             sequence_units = self._tf_layers[f"sparse_dense.{SEQUENCE}"].output_units
             sentence_units = self._tf_layers[f"sparse_dense.{SENTENCE}"].output_units
 
-            # Last dimension needs to be unified if sequence- and sentence-level features
-            # have different sizes, e.g. due to being produced by different featurizers.
+            # Last dimension needs to be unified if sequence- and sentence-level
+            # features have different sizes, e.g. due to being produced by different
+            # featurizers.
             if sequence_units != sentence_units:
                 for feature_type in [SEQUENCE, SENTENCE]:
                     self._tf_layers[

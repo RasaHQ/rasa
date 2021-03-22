@@ -158,14 +158,16 @@ attribute_features_basic = (
             },
             units_1,
         ),
-        # FeatureCombining layer with sequence- and sentence-level features, dimension unifying
+        # FeatureCombining layer with sequence- and sentence-level features, doing
+        # dimension unifying
         (
             RasaFeatureCombiningLayer,
             model_config_basic,
             {"attribute_signature": attribute_signature_basic},
             units_concat,
         ),
-        # FeatureCombining layer with sequence- and sentence-level features, no dimension unifying
+        # FeatureCombining layer with sequence- and sentence-level features, no
+        # dimension unifying
         (
             RasaFeatureCombiningLayer,
             model_config_basic,
@@ -232,7 +234,8 @@ def test_layer_gives_correct_output_units(
 
 
 @pytest.mark.parametrize(
-    "layer_class, model_config, layer_args, layer_inputs, expected_output_shapes_train, expected_output_shapes_test",
+    "layer_class, model_config, layer_args, layer_inputs, expected_output_shapes_train,"
+    "expected_output_shapes_test",
     [
         # ConcatenateSparseDense layer with mixed features
         (
@@ -286,7 +289,8 @@ def test_layer_gives_correct_output_units(
             (batch_size, 1, units_1),
             "same_as_train",
         ),
-        # FeatureCombining layer with sequence- and sentence-level features, dimension unifying
+        # FeatureCombining layer with sequence- and sentence-level features, dimension
+        # unifying
         (
             RasaFeatureCombiningLayer,
             model_config_basic,
@@ -298,7 +302,8 @@ def test_layer_gives_correct_output_units(
             ],
             "same_as_train",
         ),
-        # FeatureCombining layer with sequence- and sentence-level features, no dimension unifying
+        # FeatureCombining layer with sequence- and sentence-level features, no
+        # dimension unifying
         (
             RasaFeatureCombiningLayer,
             model_config_basic,
@@ -340,7 +345,7 @@ def test_layer_gives_correct_output_units(
                 },
             },
             ([feature_dense_seq_1], [], sequence_lengths),
-            [(batch_size, max_seq_length, units_1), (batch_size, max_seq_length, 1),],
+            [(batch_size, max_seq_length, units_1), (batch_size, max_seq_length, 1)],
             "same_as_train",
         ),
         # Sequence layer with mixed features, hidden layers and transformer, doing MLM
@@ -410,7 +415,8 @@ def test_layer_gives_correct_output_units(
             ],
             "same_as_train",
         ),
-        # Sequence layer with only sequence-level sparse features & MLM (to check token_ids shape)
+        # Sequence layer with only sequence-level sparse features & MLM (to check the
+        # shape of token_ids)
         (
             RasaSequenceLayer,
             model_config_transformer_mlm,
@@ -535,7 +541,7 @@ realistic_feature_signature_dense_2 = FeatureSignature(
     is_sparse=False, units=2, number_of_dimensions=3
 )
 realistic_feature_dense_seq_2 = tf.convert_to_tensor(
-    [[[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], [[1.5, 2.5], [3.5, 4.5], [0.0, 0.0]],],
+    [[[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], [[1.5, 2.5], [3.5, 4.5], [0.0, 0.0]]],
     dtype=tf.float32,
 )
 
@@ -626,7 +632,8 @@ def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
 @pytest.mark.parametrize(
     "attribute_signature, inputs, expected_outputs_train, expected_outputs_test",
     [
-        # Both sequence- and sentence-level features, not unifying dimensions before concat
+        # Both sequence- and sentence-level features, not unifying dimensions before
+        # concatenation
         (
             {
                 SEQUENCE: [

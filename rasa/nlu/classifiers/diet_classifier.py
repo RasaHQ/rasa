@@ -1333,7 +1333,8 @@ class DIET(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         # For user text, prepare layers that combine different feature types, embed
-        # everything using a transformer and optionally also do masked language modeling.
+        # everything using a transformer and optionally also do masked language
+        # modeling.
         self.text_name = TEXT
         self._tf_layers[
             f"sequence_layer.{self.text_name}"
@@ -1486,7 +1487,7 @@ class DIET(TransformerRasaModel):
             text_in,
             mask_combined_sequence_sentence,
             text_seq_ids,
-            mlm_mask_booleanean_text,
+            mlm_mask_boolean_text,
             _,
         ) = self._tf_layers[f"sequence_layer.{self.text_name}"](
             (
@@ -1511,7 +1512,7 @@ class DIET(TransformerRasaModel):
 
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
-                text_transformed, text_in, text_seq_ids, mlm_mask_booleanean_text, TEXT
+                text_transformed, text_in, text_seq_ids, mlm_mask_boolean_text, TEXT
             )
             self.mask_loss.update_state(loss)
             self.mask_acc.update_state(acc)
