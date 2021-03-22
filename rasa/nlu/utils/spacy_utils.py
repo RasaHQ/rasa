@@ -131,8 +131,8 @@ class SpacyNLP(Component):
             if warn:
                 warnings.warn(
                     DeprecationWarning(
-                        f"SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`."
-                        f"More informaton can be found on https://rasa.com/docs/rasa/components#spacynlp"
+                        f"SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`. "
+                        f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp . "
                         f"Will use '{spacy_model_name}' as a fallback spaCy model."
                         f"This fallback will be deprecated in Rasa 3.0"
                     )
