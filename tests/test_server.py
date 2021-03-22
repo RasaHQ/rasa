@@ -733,7 +733,6 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
-@pytest.mark.trains_model
 async def test_train_missing_config(rasa_app: SanicASGITestClient):
     payload = dict(domain="domain data", config=None)
 
