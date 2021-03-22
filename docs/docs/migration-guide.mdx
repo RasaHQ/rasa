@@ -1129,7 +1129,7 @@ model before trying to use it with this improved version.
 * The `--num_threads` parameter was removed from the `run` command. The
   server will always run single-threaded, but will now run asynchronously. If you want to
   make use of multiple processes, feel free to check out the [Sanic server
-  documentation](https://sanic.readthedocs.io/en/stable/sanic/deploying.html#running-via-gunicorn).
+  documentation](https://sanicframework.org/en/guide/deployment/running.html#gunicorn).
 
 * To avoid conflicts in script parameter names, connectors in the `run` command now need to be specified with
   `--connector`, as `-c` is no longer supported. The maximum history in the `rasa visualize` command needs to be
