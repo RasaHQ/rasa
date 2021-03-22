@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from operator import itemgetter
 from pathlib import Path
 
 import rasa.shared.nlu.training_data.util
@@ -85,9 +86,12 @@ class TrainingDataWriter:
         # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
         # entity annotation
         if not text.startswith(INTENT_MESSAGE_PREFIX):
-            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
-            for entity in entities:
+            entities = message.get("entities", [])
+            entities_with_start = [e for e in entities if "start" in e]
+            sorted_entities = sorted(entities_with_start, key=itemgetter("start"))
+
+            for entity in sorted_entities:
                 md += text[pos : entity["start"]]
                 md += TrainingDataWriter.generate_entity(text, entity)
                 pos = entity["end"]
