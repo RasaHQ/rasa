@@ -275,14 +275,8 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         Returns:
             A random mask matrix
         """
-        # Create [1 1 1 ... 0 0 ...]
-        mask = tf.pad(
-            tf.ones([num_ones, 1], dtype=dtype),
-            [[0, num_rows * num_cols - num_ones], [0, 0]],
-        )
-        # Shuffle randomly and turn it into a matrix
-        mask = tf.random.shuffle(mask)
-        mask = tf.reshape(mask, [num_rows, num_cols])
+        mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
+        mask = tf.cast(tf.less_equal(mask, self.density), self.kernel.dtype)
         return mask
 
     def _minimal_mask(
