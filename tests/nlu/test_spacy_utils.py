@@ -29,7 +29,7 @@ supported_langauges = [
 @pytest.mark.parametrize("lang", supported_langauges)
 def test_model_fallback_raises_warning(lang: str):
     """Make sure we raise a warning but we will perform a fallback."""
-    with pytest.warns(UserWarning):
+    with pytest.warns(DeprecationWarning):
         SpacyNLP._check_model_fallback(None, lang, warn=True)
 
 
