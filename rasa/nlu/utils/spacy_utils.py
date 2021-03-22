@@ -89,9 +89,9 @@ class SpacyNLP(Component):
 
         return cls.name + "-" + spacy_model_name
 
-    @classmethod
+    @staticmethod
     def _check_model_fallback(
-        cls, spacy_model_name: Union[str, None], language_name: str, warn: bool = False
+        spacy_model_name: Union[str, None], language_name: str, warn: bool = False
     ):
         """This method checks if the `spacy_model_name` is missing.
 
