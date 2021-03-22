@@ -43,11 +43,11 @@ class MemoryLeakTest(abc.ABC):
 
     @property
     def ramp_up_time_seconds(self) -> float:
-        return 15
+        return 25
 
     @property
     def cooldown_time_seconds(self) -> float:
-        return 10
+        return 5
 
     @property
     def trend_threshold(self) -> float:
@@ -156,7 +156,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 700
+        return 750
 
     @property
     def trend_threshold(self) -> float:
@@ -203,7 +203,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 800
+        return 950
 
     @property
     def trend_threshold(self) -> float:
