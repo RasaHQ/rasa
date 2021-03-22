@@ -314,7 +314,7 @@ class Domain:
         """Transforms the intent's parameters in a format suitable for internal use.
 
         When an intent is retrieved from the `domain.yml` file, it contains two
-        parameters, the `use_entities` and the `ignore_entities` parameter. With the
+        parameters, the `use_entities` and the `ignore_entities` parameter. With
         the values of these two parameters the Domain class is updated, a new
         parameter is added to the intent called `used_entities` and the two
         previous parameters are deleted. This happens because internally only the
@@ -329,7 +329,7 @@ class Domain:
             groups: All groups for entities as provided by a domain file.
 
         Returns:
-            The intent with new format thus having only one parameter called
+            The intent with the new format thus having only one parameter called
             `used_entities` since this is the expected format of the intent
             when used internally.
         """
@@ -341,9 +341,9 @@ class Domain:
             raise InvalidDomain(
                 f"In the `domain.yml` file, the intent '{name}' cannot have value of"
                 f" `{type(properties)}`. If you have placed a ':' character after the"
-                f" the intent's name without adding any additional parameters to this"
-                f" intent then you would need to remove the ':' character. Please see "
-                f"{rasa.shared.constants.DOCS_URL_DOMAINS} for more information on how"
+                f" intent's name without adding any additional parameters to this"
+                f" intent then you would need to remove the ':' character. Please see"
+                f" {rasa.shared.constants.DOCS_URL_DOMAINS} for more information on how"
                 f" to correctly add `intents` in the `domain` and"
                 f" {rasa.shared.constants.DOCS_URL_INTENTS} for examples on"
                 f" when to use the ':' character after an intent's name."
@@ -423,17 +423,30 @@ class Domain:
         entities: List[Text] = []
         roles: Dict[Text, List[Text]] = {}
         groups: Dict[Text, List[Text]] = {}
-
         for entity in domain_entities:
             if isinstance(entity, str):
                 entities.append(entity)
             elif isinstance(entity, dict):
                 for _entity, sub_labels in entity.items():
                     entities.append(_entity)
-                    if ENTITY_ROLES_KEY in sub_labels:
-                        roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
-                    if ENTITY_GROUPS_KEY in sub_labels:
-                        groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                    if sub_labels:
+                        if ENTITY_ROLES_KEY in sub_labels:
+                            roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
+                        if ENTITY_GROUPS_KEY in sub_labels:
+                            groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                    else:
+                        raise InvalidDomain(
+                            f"In the `domain.yml` file, the entity '{_entity}' cannot"
+                            f" have value of `{type(sub_labels)}`. If you have placed a"
+                            f" ':' character after the entity `{_entity}` without"
+                            f" adding any additional parameters to this entity then you"
+                            f" would need to remove the ':' character. Please see"
+                            f" {rasa.shared.constants.DOCS_URL_DOMAINS} for more"
+                            f" information on how to correctly add `entities` in the"
+                            f" `domain` and {rasa.shared.constants.DOCS_URL_ENTITIES}"
+                            f" for examples on when to use the ':' character after an"
+                            f" entity's name."
+                        )
             else:
                 raise InvalidDomain(
                     f"Invalid domain. Entity is invalid, type of entity '{entity}' "

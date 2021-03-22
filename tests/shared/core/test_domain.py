@@ -1316,3 +1316,13 @@ def test_domain_with_empty_intent_mapping():
 
     with pytest.raises(InvalidDomain):
         Domain.from_yaml(test_yaml).as_dict()
+
+
+def test_domain_with_empty_entity_mapping():
+    # domain.yml with entity (entity_name) that has a `:` character
+    # and nothing after it.
+    test_yaml = """entities:
+    - entity_name:"""
+
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(test_yaml).as_dict()
