@@ -123,6 +123,7 @@ class SpacyNLP(Component):
                 raise InvalidModelError(
                     f"There is no fallback model for language '{language_name}'."
                     f" Please add a `model` property to `SpacyNLP` manually to prevent this."
+                    f"More informaton can be found on https://rasa.com/docs/rasa/components#spacynlp"
                 )
 
             spacy_model_name = fallback_mapping[language_name]
