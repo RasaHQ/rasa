@@ -11,7 +11,6 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 from tests.core.utilities import tracker_from_dialogue_file
 
 
@@ -32,14 +31,13 @@ def test_persist_and_load_tracker_featurizer(tmp_path: Text, moodbot_domain: Dom
     assert loaded_tracker_featurizer.state_featurizer is not None
 
 
-def test_convert_labels_to_ids():
+def test_convert_labels_to_ids(domain: Domain):
     trackers_as_actions = [
         ["utter_greet", "utter_channel"],
         ["utter_greet", "utter_default", "utter_goodbye"],
     ]
 
     tracker_featurizer = TrackerFeaturizer()
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     actual_output = tracker_featurizer._convert_labels_to_ids(
         trackers_as_actions, domain
@@ -51,11 +49,11 @@ def test_convert_labels_to_ids():
         assert np.all(expected_array == actual_array)
 
 
-def test_featurize_trackers_raises_on_missing_state_featurizer(default_domain: Domain):
+def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
     tracker_featurizer = TrackerFeaturizer()
 
     with pytest.raises(ValueError):
-        tracker_featurizer.featurize_trackers([], default_domain, RegexInterpreter())
+        tracker_featurizer.featurize_trackers([], domain, RegexInterpreter())
 
 
 def test_featurize_trackers_with_full_dialogue_tracker_featurizer(

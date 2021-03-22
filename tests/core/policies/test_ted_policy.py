@@ -19,9 +19,10 @@ from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
 )
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.train import train_core
+from rasa.model_training import train_core
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
@@ -35,6 +36,8 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     COSINE,
     INNER,
+    AUTO,
+    LINEAR_NORM,
 )
 from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -73,7 +76,6 @@ def test_diagnostics():
 
 
 class TestTEDPolicy(PolicyTestCollection):
-    @pytest.mark.trains_model
     def test_train_model_checkpointing(self, tmp_path: Path):
         model_name = "core-checkpointed-model"
         best_model_file = tmp_path / (model_name + ".tar.gz")
@@ -81,7 +83,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
         train_core(
             domain="data/test_domains/default.yml",
-            stories="data/test_stories/stories_defaultdomain.md",
+            stories="data/test_yaml_stories/stories_defaultdomain.yaml",
             output=str(tmp_path),
             fixed_model_name=model_name,
             config="data/test_config/config_ted_policy_model_checkpointing.yml",
@@ -129,9 +131,11 @@ class TestTEDPolicy(PolicyTestCollection):
 
         mock.normalize.assert_called_once()
 
-    async def test_gen_batch(self, trained_policy: TEDPolicy, default_domain: Domain):
+    async def test_gen_batch(
+        self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
+    ):
         training_trackers = await tests.core.test_policies.train_trackers(
-            default_domain, augmentation_factor=0
+            default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
         training_data, label_ids, entity_tags = trained_policy.featurize_for_training(
@@ -144,28 +148,34 @@ class TestTEDPolicy(PolicyTestCollection):
             training_data, label_ids, entity_tags, all_labels
         )
         batch_size = 2
-
+        data_generator = RasaBatchDataGenerator(
+            model_data, batch_size=batch_size, shuffle=False, batch_strategy="sequence"
+        )
+        iterator = iter(data_generator)
         # model data keys were sorted, so the order is alphabetical
         (
-            batch_action_name_mask,
-            batch_action_name_sentence_indices,
-            batch_action_name_sentence_data,
-            batch_action_name_sentence_shape,
-            batch_dialogue_length,
-            batch_entities_mask,
-            batch_entities_sentence_indices,
-            batch_entities_sentence_data,
-            batch_entities_sentence_shape,
-            batch_intent_mask,
-            batch_intent_sentence_indices,
-            batch_intent_sentence_data,
-            batch_intent_sentence_shape,
-            batch_label_ids,
-            batch_slots_mask,
-            batch_slots_sentence_indices,
-            batch_slots_sentence_data,
-            batch_slots_sentence_shape,
-        ) = next(model_data._gen_batch(batch_size=batch_size))
+            (
+                batch_action_name_mask,
+                batch_action_name_sentence_indices,
+                batch_action_name_sentence_data,
+                batch_action_name_sentence_shape,
+                batch_dialogue_length,
+                batch_entities_mask,
+                batch_entities_sentence_indices,
+                batch_entities_sentence_data,
+                batch_entities_sentence_shape,
+                batch_intent_mask,
+                batch_intent_sentence_indices,
+                batch_intent_sentence_data,
+                batch_intent_sentence_shape,
+                batch_label_ids,
+                batch_slots_mask,
+                batch_slots_sentence_indices,
+                batch_slots_sentence_data,
+                batch_slots_sentence_shape,
+            ),
+            _,
+        ) = next(iterator)
 
         assert (
             batch_label_ids.shape[0] == batch_size
@@ -204,30 +214,34 @@ class TestTEDPolicy(PolicyTestCollection):
             or batch_slots_sentence_shape[1] == 0
         )
 
-        (
-            batch_action_name_mask,
-            batch_action_name_sentence_indices,
-            batch_action_name_sentence_data,
-            batch_action_name_sentence_shape,
-            batch_dialogue_length,
-            batch_entities_mask,
-            batch_entities_sentence_indices,
-            batch_entities_sentence_data,
-            batch_entities_sentence_shape,
-            batch_intent_mask,
-            batch_intent_sentence_indices,
-            batch_intent_sentence_data,
-            batch_intent_sentence_shape,
-            batch_label_ids,
-            batch_slots_mask,
-            batch_slots_sentence_indices,
-            batch_slots_sentence_data,
-            batch_slots_sentence_shape,
-        ) = next(
-            model_data._gen_batch(
-                batch_size=batch_size, batch_strategy="balanced", shuffle=True
-            )
+        data_generator = RasaBatchDataGenerator(
+            model_data, batch_size=batch_size, shuffle=True, batch_strategy="balanced"
         )
+        iterator = iter(data_generator)
+
+        (
+            (
+                batch_action_name_mask,
+                batch_action_name_sentence_indices,
+                batch_action_name_sentence_data,
+                batch_action_name_sentence_shape,
+                batch_dialogue_length,
+                batch_entities_mask,
+                batch_entities_sentence_indices,
+                batch_entities_sentence_data,
+                batch_entities_sentence_shape,
+                batch_intent_mask,
+                batch_intent_sentence_indices,
+                batch_intent_sentence_data,
+                batch_intent_sentence_shape,
+                batch_label_ids,
+                batch_slots_mask,
+                batch_slots_sentence_indices,
+                batch_slots_sentence_data,
+                batch_slots_sentence_shape,
+            ),
+            _,
+        ) = next(iterator)
 
         assert (
             batch_label_ids.shape[0] == batch_size
@@ -272,7 +286,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         assert trained_policy.config[SIMILARITY_TYPE] == COSINE
 
     def test_confidence_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[MODEL_CONFIDENCE] == COSINE
+        assert trained_policy.config[MODEL_CONFIDENCE] == AUTO
 
     def test_normalization(
         self,
@@ -350,16 +364,16 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         mock.normalize.assert_not_called()
 
 
-class TestTEDPolicyCosineConfidence(TestTEDPolicy):
+class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
         return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{MODEL_CONFIDENCE: COSINE}
+            featurizer=featurizer, priority=priority, **{MODEL_CONFIDENCE: LINEAR_NORM}
         )
 
     def test_confidence_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[MODEL_CONFIDENCE] == COSINE
+        assert trained_policy.config[MODEL_CONFIDENCE] == LINEAR_NORM
 
     def test_normalization(
         self,
@@ -372,11 +386,9 @@ class TestTEDPolicyCosineConfidence(TestTEDPolicy):
         predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
         ).probabilities
-        # there should be no normalization
-        confidence_in_range = [
-            -1 <= confidence <= 1 for confidence in predicted_probabilities
-        ]
-        assert all(confidence_in_range)
+
+        output_sums_to_1 = sum(predicted_probabilities) == pytest.approx(1)
+        assert output_sums_to_1
 
         # also check our function is not called
         mock = Mock()
@@ -397,57 +409,7 @@ class TestTEDPolicyCosineConfidence(TestTEDPolicy):
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
         assert max(prediction.probabilities) <= 1.0
-        assert min(prediction.probabilities) >= -1.0
-
-
-class TestTEDPolicyInnerConfidence(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{MODEL_CONFIDENCE: INNER}
-        )
-
-    def test_confidence_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[MODEL_CONFIDENCE] == INNER
-
-    def test_normalization(
-        self,
-        trained_policy: Policy,
-        tracker: DialogueStateTracker,
-        default_domain: Domain,
-        monkeypatch: MonkeyPatch,
-    ):
-        # first check the output is what we expect
-        predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        ).probabilities
-        # there should be no normalization
-        confidence_in_range = [
-            -1e9 <= confidence <= 1e9 for confidence in predicted_probabilities
-        ]
-        assert all(confidence_in_range)
-
-        # also check our function is not called
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-
-        mock.normalize.assert_not_called()
-
-    def test_prediction_on_empty_tracker(
-        self, trained_policy: Policy, default_domain: Domain
-    ):
-        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
-        prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-        assert not prediction.is_end_to_end_prediction
-        assert len(prediction.probabilities) == default_domain.num_actions
-        assert max(prediction.probabilities) <= 1e9
-        assert min(prediction.probabilities) >= -1e9
+        assert min(prediction.probabilities) >= 0.0
 
 
 class TestTEDPolicyLowRankingLength(TestTEDPolicy):
