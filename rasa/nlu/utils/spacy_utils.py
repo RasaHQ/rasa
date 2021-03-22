@@ -10,6 +10,8 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import InvalidModelError
 from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.shared.utils.io import raise_deprecation_warning
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 logger = logging.getLogger(__name__)
 
@@ -129,13 +131,13 @@ class SpacyNLP(Component):
 
             spacy_model_name = fallback_mapping[language_name]
             if warn:
-                warnings.warn(
-                    DeprecationWarning(
-                        f"SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`. "
-                        f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp . "
-                        f"Will use '{spacy_model_name}' as a fallback spaCy model."
-                        f"This fallback will be deprecated in Rasa 3.0"
-                    )
+                message = (
+                    f"SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`. "
+                    f"Will use '{spacy_model_name}' as a fallback spaCy model."
+                    f"This fallback will be deprecated in Rasa 3.0"
+                )
+                raise_deprecation_warning(
+                    message=message, docs=f"{DOCS_URL_COMPONENTS}#spacynlp"
                 )
         return spacy_model_name
 
