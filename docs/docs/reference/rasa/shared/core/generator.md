@@ -32,20 +32,24 @@ Generates and caches the past states of this tracker based on the history.
 #### past\_states
 
 ```python
- | past_states(domain: Domain, omit_unset_slots: bool = False) -> List[State]
+ | past_states(domain: Domain, omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
 Generates the past states of this tracker based on the history.
 
 **Arguments**:
 
-- `domain` - a :class:`rasa.shared.core.domain.Domain`
+- `domain` - The Domain.
 - `omit_unset_slots` - If `True` do not include the initial values of slots.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
 
-  A list of states
+  a list of states
 
 #### clear\_states
 

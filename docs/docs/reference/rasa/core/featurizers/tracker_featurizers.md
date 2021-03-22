@@ -103,17 +103,21 @@ Featurize the training trackers.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
 
 **Arguments**:
 
-- `trackers` - The trackers to transform
-- `domain` - The domain
+- `trackers` - The trackers to transform.
+- `domain` - The domain.
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
@@ -123,7 +127,7 @@ Transforms list of trackers to lists of states for prediction.
 #### create\_state\_features
 
 ```python
- | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, use_text_for_last_user_input: bool = False) -> List[List[Dict[Text, List["Features"]]]]
+ | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[Dict[Text, List["Features"]]]]
 ```
 
 Create state features for prediction.
@@ -135,11 +139,17 @@ Create state features for prediction.
 - `interpreter` - The interpreter
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
 
-  A dictionary of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+  A list (corresponds to the list of trackers)
+  of lists (corresponds to all dialogue turns)
+  of dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
   ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
   turns in all trackers.
 
@@ -206,17 +216,21 @@ Transforms list of trackers to lists of states, actions and entity data.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
 
 **Arguments**:
 
-- `trackers` - The trackers to transform
-- `domain` - The domain,
+- `trackers` - The trackers to transform.
+- `domain` - The domain.
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
@@ -278,17 +292,21 @@ Transforms list of trackers to lists of states, actions and entity data.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
 
 **Arguments**:
 
-- `trackers` - The trackers to transform
-- `domain` - The domain
+- `trackers` - The trackers to transform.
+- `domain` - The domain.
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:

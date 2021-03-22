@@ -47,6 +47,29 @@ rules:
 This example rule applies at the start of conversation as well as when the user decides
 to a send a message with an intent `greet` in the middle of an ongoing conversation.
 
+Dialogue turns that only appear as rules in the training data and do not appear in stories
+will be ignored by ML-only policies like `TEDPolicy` at prediction time.
+
+```yaml-rasa
+rules:
+- rule: Say `hello` whenever the user sends a message with intent `greet`
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+stories:
+- story: story to find a restaurant
+  steps:
+  - intent: find_restaurant
+  - action: restaurant_form
+  - action: utter_restaurant_found
+```
+
+For example if you define the greeting rule as above and don't add it to any of your stories,
+after `RulePolicy` predicts `utter_greet`, `TEDPolicy` will
+make predictions as if the `greet, utter_greet` turn did not occur.
+
+
 ### Rules for the Conversation Start
 
 To write a rule which only applies at the beginning of a conversation, add a

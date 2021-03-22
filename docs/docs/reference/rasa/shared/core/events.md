@@ -1106,7 +1106,7 @@ to the latest `Turn`` in `Tracker.turns`.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None) -> None
+ | __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None, hide_rule_turn: bool = False) -> None
 ```
 
 Creates event for a successful event execution.
@@ -1121,6 +1121,8 @@ Creates event for a successful event execution.
 - `metadata` - Additional event metadata.
 - `action_text` - In case it&#x27;s an end-to-end action prediction, the text which
   was predicted.
+- `hide_rule_turn` - If `True`, this action should be hidden in the dialogue
+  history created for ML-based policies.
 
 #### \_\_repr\_\_
 

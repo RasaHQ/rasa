@@ -44,6 +44,45 @@ Initialize the policy.
 - `lookup` - a dictionary that stores featurized tracker states and
   predicted actions for them
 
+#### recall
+
+```python
+ | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
+```
+
+Finds the action based on the given states.
+
+**Arguments**:
+
+- `states` - List of states.
+- `tracker` - The tracker.
+- `domain` - The Domain.
+  
+
+**Returns**:
+
+  The name of the action.
+
+#### predict\_action\_probabilities
+
+```python
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+```
+
+Predicts the next action the bot should take after seeing the tracker.
+
+**Arguments**:
+
+- `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
+- `interpreter` - Interpreter which may be used by the policies to create
+  additional features.
+  
+
+**Returns**:
+
+  The policy&#x27;s prediction (e.g. the probabilities for the actions).
+
 ## AugmentedMemoizationPolicy Objects
 
 ```python
@@ -64,4 +103,26 @@ to None, this policy has a capability to recall the turns
 up to `max_history` from training stories during prediction
 even if additional slots were filled in the past
 for current dialogue.
+
+#### recall
+
+```python
+ | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
+```
+
+Finds the action based on the given states.
+
+Uses back to the future idea to change the past and check whether the new future
+can be used to recall the action.
+
+**Arguments**:
+
+- `states` - List of states.
+- `tracker` - The tracker.
+- `domain` - The Domain.
+  
+
+**Returns**:
+
+  The name of the action.
 

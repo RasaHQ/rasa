@@ -414,17 +414,24 @@ Returns a bag of active states from the tracker state.
 #### states\_for\_tracker\_history
 
 ```python
- | states_for_tracker_history(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> List[State]
+ | states_for_tracker_history(tracker: "DialogueStateTracker", omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
 List of states for each state of the trackers history.
 
 **Arguments**:
 
-- `tracker` - dialog state tracker containing the dialog so far
+- `tracker` - Dialogue state tracker containing the dialogue so far.
 - `omit_unset_slots` - If `True` do not include the initial values of slots.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
-- `Returns` - A `State` for each prior tracker.
+
+**Returns**:
+
+  A list of states.
 
 #### slots\_for\_entities
 
@@ -432,7 +439,16 @@ List of states for each state of the trackers history.
  | slots_for_entities(entities: List[Dict[Text, Any]]) -> List[SlotSet]
 ```
 
-Returns `SlotSet` events for extracted entities.
+Creates slot events for entities if auto-filling is enabled.
+
+**Arguments**:
+
+- `entities` - The list of entities.
+  
+
+**Returns**:
+
+  A list of `SlotSet` events.
 
 #### persist\_specification
 
