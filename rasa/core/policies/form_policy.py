@@ -103,8 +103,18 @@ class FormPolicy(MemoizationPolicy):
         return lookup
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         # modify the states
         return self._recall_states(self._modified_states(states))
 
@@ -112,8 +122,7 @@ class FormPolicy(MemoizationPolicy):
         # since it is assumed that training stories contain
         # only unhappy paths, notify the form that
         # it should not be validated if predicted by other policy
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
-        states = tracker_as_states[0]
+        states = self._prediction_states(tracker, domain)
 
         memorized_form = self.recall(states, tracker, domain)
 

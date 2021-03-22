@@ -1203,6 +1203,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "confidence": 1,
             "timestamp": 1514764800,
             "action_text": None,
+            "hide_rule_turn": False,
         },
         {"event": "session_started", "timestamp": 1514764800},
         {
@@ -1212,6 +1213,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "confidence": None,
             "timestamp": 1514764800,
             "action_text": None,
+            "hide_rule_turn": False,
         },
     ]
     assert content["latest_message"] == {

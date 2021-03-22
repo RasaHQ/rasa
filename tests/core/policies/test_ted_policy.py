@@ -138,7 +138,7 @@ class TestTEDPolicy(PolicyTestCollection):
             default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
-        training_data, label_ids, entity_tags = trained_policy.featurize_for_training(
+        training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
             training_trackers, default_domain, interpreter
         )
         label_data, all_labels = trained_policy._create_label_data(
