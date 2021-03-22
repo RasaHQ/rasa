@@ -23,10 +23,8 @@ class TwilioVoiceInput(InputChannel):
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
 
-        twilio_voice_webhook = Blueprint(
-            "custom_webhook_{}".format(type(self).__name__),
-            inspect.getmodule(self).__name__,
-        )
+        twilio_voice_webhook = Blueprint("Twilio_voice_webhook", __name__)
+
 
         @twilio_voice_webhook.route("/", methods=["GET"])
         async def health(request: Request) -> HTTPResponse:
@@ -43,7 +41,7 @@ class TwilioVoiceInput(InputChannel):
             collector = TwilioVoiceCollectingOutputChannel()
 
             # Provide an initial greeting to answer the user's call.
-            if (text is None) & (call_status == "ringing"):
+            if (text is None) and (call_status == "ringing"):
                 text = "hello"
 
             # determine the response.
