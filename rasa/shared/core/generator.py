@@ -119,16 +119,24 @@ class TrackerWithCachedStates(DialogueStateTracker):
         ]
 
     def past_states(
-        self, domain: Domain, omit_unset_slots: bool = False,
+        self,
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """Generates the past states of this tracker based on the history.
 
         Args:
-            domain: a :class:`rasa.shared.core.domain.Domain`
+            domain: The Domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
-            A list of states
+            a list of states
         """
         states_for_hashing = self.past_states_for_hashing(
             domain, omit_unset_slots=omit_unset_slots

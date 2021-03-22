@@ -178,13 +178,13 @@ def test_domain_from_template(domain: Domain):
 def test_avoid_action_repetition(domain: Domain):
     domain = Domain.from_yaml(
         """
-actions:
-- utter_greet
-
-responses:
-    utter_greet:
-    - text: "hi"
-    """
+        version: "2.0"
+        actions:
+        - utter_greet
+        responses:
+            utter_greet:
+            - text: "hi"
+        """
     )
 
     assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
@@ -438,23 +438,26 @@ session_config:
 
 def test_merge_with_empty_domain():
     domain = Domain.from_yaml(
-        """config:
-  store_entities_as_slots: false
-session_config:
-    session_expiration_time: 20
-    carry_over_slots: true
-entities:
-- cuisine
-intents:
-- greet
-slots:
-  cuisine:
-    type: text
-responses:
-  utter_goodbye:
-  - text: bye!
-  utter_greet:
-  - text: hey you!"""
+        """
+        version: "2.0"
+        config:
+          store_entities_as_slots: false
+        session_config:
+            session_expiration_time: 20
+            carry_over_slots: true
+        entities:
+        - cuisine
+        intents:
+        - greet
+        slots:
+          cuisine:
+            type: text
+        responses:
+          utter_goodbye:
+          - text: bye!
+          utter_greet:
+          - text: hey you!
+        """
     )
 
     merged = Domain.empty().merge(domain)
@@ -465,23 +468,26 @@ responses:
 @pytest.mark.parametrize("other", [Domain.empty(), None])
 def test_merge_with_empty_other_domain(other: Optional[Domain]):
     domain = Domain.from_yaml(
-        """config:
-  store_entities_as_slots: false
-session_config:
-    session_expiration_time: 20
-    carry_over_slots: true
-entities:
-- cuisine
-intents:
-- greet
-slots:
-  cuisine:
-    type: text
-responses:
-  utter_goodbye:
-  - text: bye!
-  utter_greet:
-  - text: hey you!"""
+        """
+        version: "2.0"
+        config:
+          store_entities_as_slots: false
+        session_config:
+            session_expiration_time: 20
+            carry_over_slots: true
+        entities:
+        - cuisine
+        intents:
+        - greet
+        slots:
+          cuisine:
+            type: text
+        responses:
+          utter_goodbye:
+          - text: bye!
+          utter_greet:
+          - text: hey you!
+        """
     )
 
     merged = domain.merge(other, override=True)
@@ -913,9 +919,10 @@ def test_not_add_knowledge_base_slots():
 def test_add_knowledge_base_slots():
     test_domain = Domain.from_yaml(
         f"""
-actions:
-- {DEFAULT_KNOWLEDGE_BASE_ACTION}
-    """
+        version: "2.0"
+        actions:
+        - {DEFAULT_KNOWLEDGE_BASE_ACTION}
+        """
     )
 
     slot_names = [s.name for s in test_domain.slots]
