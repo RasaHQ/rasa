@@ -1,7 +1,8 @@
 import pytest
 import tensorflow as tf
-
 import numpy as np
+
+from typing import Text, Union, Any, Callable, Dict, List
 
 from rasa.shared.nlu.constants import TEXT
 from rasa.utils.tensorflow.rasa_layers import (
@@ -227,8 +228,11 @@ attribute_features_basic = (
     ],
 )
 def test_layer_gives_correct_output_units(
-    layer_class, model_config, layer_args, expected_output_units
-):
+    layer_class: Callable[..., Any],  # TODO change the callable signature? (also below)
+    model_config: Dict[Text, Any],
+    layer_args: Dict[Text, Any],
+    expected_output_units: int,
+) -> None:
     layer = layer_class(**layer_args, config=model_config, attribute=attribute_name)
     assert layer.output_units == expected_output_units
 
@@ -258,11 +262,13 @@ def test_layer_gives_correct_output_units(
                     feature_dense_seq_2,
                 ],
             ),
-            (
-                batch_size,
-                max_seq_length,
-                2 * units_sparse_to_dense + units_1 + units_2,
-            ),
+            [
+                [
+                    batch_size,
+                    max_seq_length,
+                    2 * units_sparse_to_dense + units_1 + units_2,
+                ]
+            ],
             "same_as_train",  # means that test-time shapes are same as train-time ones
         ),
         # ConcatenateSparseDense layer with only sparse features
@@ -274,7 +280,7 @@ def test_layer_gives_correct_output_units(
                 "feature_type_signature": [feature_signature_sparse_1],
             },
             ([feature_sparse_sent_1],),
-            (batch_size, 1, units_sparse_to_dense),
+            [[batch_size, 1, units_sparse_to_dense]],
             "same_as_train",
         ),
         # ConcatenateSparseDense layer with only dense features
@@ -286,7 +292,7 @@ def test_layer_gives_correct_output_units(
                 "feature_type_signature": [feature_signature_dense_1],
             },
             ([feature_dense_sent_1],),
-            (batch_size, 1, units_1),
+            [[batch_size, 1, units_1]],
             "same_as_train",
         ),
         # FeatureCombining layer with sequence- and sentence-level features, dimension
@@ -297,8 +303,8 @@ def test_layer_gives_correct_output_units(
             {"attribute_signature": attribute_signature_basic},
             attribute_features_basic,
             [
-                (batch_size, max_seq_length + 1, units_concat),
-                (batch_size, max_seq_length + 1, 1),
+                [batch_size, max_seq_length + 1, units_concat],
+                [batch_size, max_seq_length + 1, 1],
             ],
             "same_as_train",
         ),
@@ -315,8 +321,8 @@ def test_layer_gives_correct_output_units(
             },
             ([feature_dense_seq_1], [feature_dense_sent_1], sequence_lengths,),
             [
-                (batch_size, max_seq_length + 1, units_1),
-                (batch_size, max_seq_length + 1, 1),
+                [batch_size, max_seq_length + 1, units_1],
+                [batch_size, max_seq_length + 1, 1],
             ],
             "same_as_train",
         ),
@@ -331,7 +337,7 @@ def test_layer_gives_correct_output_units(
                 },
             },
             ([], [feature_dense_sent_1], sequence_lengths_empty),
-            [(batch_size, 1, units_1), (batch_size, 1, 1)],
+            [[batch_size, 1, units_1], [batch_size, 1, 1]],
             "same_as_train",
         ),
         # FeatureCombining layer with sequence-level features only
@@ -345,7 +351,7 @@ def test_layer_gives_correct_output_units(
                 },
             },
             ([feature_dense_seq_1], [], sequence_lengths),
-            [(batch_size, max_seq_length, units_1), (batch_size, max_seq_length, 1)],
+            [[batch_size, max_seq_length, units_1], [batch_size, max_seq_length, 1]],
             "same_as_train",
         ),
         # Sequence layer with mixed features, hidden layers and transformer, doing MLM
@@ -355,32 +361,32 @@ def test_layer_gives_correct_output_units(
             {"attribute_signature": attribute_signature_basic},
             attribute_features_basic,
             [
-                (batch_size, max_seq_length + 1, units_transformer),
-                (batch_size, max_seq_length + 1, units_hidden_layer),
-                (batch_size, max_seq_length + 1, 1),
-                (batch_size, max_seq_length + 1, units_1),
-                (batch_size, max_seq_length + 1, 1),
-                (
+                [batch_size, max_seq_length + 1, units_transformer],
+                [batch_size, max_seq_length + 1, units_hidden_layer],
+                [batch_size, max_seq_length + 1, 1],
+                [batch_size, max_seq_length + 1, units_1],
+                [batch_size, max_seq_length + 1, 1],
+                [
                     num_transformer_layers,
                     batch_size,
                     num_transformer_heads,
                     max_seq_length + 1,
                     max_seq_length + 1,
-                ),
+                ],
             ],
             [
-                (batch_size, max_seq_length + 1, units_transformer),
-                (batch_size, max_seq_length + 1, units_hidden_layer),
-                (batch_size, max_seq_length + 1, 1),
-                (0,),
-                (0,),
-                (
+                [batch_size, max_seq_length + 1, units_transformer],
+                [batch_size, max_seq_length + 1, units_hidden_layer],
+                [batch_size, max_seq_length + 1, 1],
+                [0,],
+                [0,],
+                [
                     num_transformer_layers,
                     batch_size,
                     num_transformer_heads,
                     max_seq_length + 1,
                     max_seq_length + 1,
-                ),
+                ],
             ],
         ),
         # Sequence layer with mixed features, hidden layers, no transformer, no MLM
@@ -390,12 +396,12 @@ def test_layer_gives_correct_output_units(
             {"attribute_signature": attribute_signature_basic},
             attribute_features_basic,
             [
-                (batch_size, max_seq_length + 1, units_hidden_layer),
-                (batch_size, max_seq_length + 1, units_hidden_layer),
-                (batch_size, max_seq_length + 1, 1),
-                (0,),
-                (0,),
-                (0,),
+                [batch_size, max_seq_length + 1, units_hidden_layer],
+                [batch_size, max_seq_length + 1, units_hidden_layer],
+                [batch_size, max_seq_length + 1, 1],
+                [0,],
+                [0,],
+                [0,],
             ],
             "same_as_train",
         ),
@@ -406,12 +412,12 @@ def test_layer_gives_correct_output_units(
             {"attribute_signature": attribute_signature_basic},
             attribute_features_basic,
             [
-                (batch_size, max_seq_length + 1, units_concat),
-                (batch_size, max_seq_length + 1, units_concat),
-                (batch_size, max_seq_length + 1, 1),
-                (0,),
-                (0,),
-                (0,),
+                [batch_size, max_seq_length + 1, units_concat],
+                [batch_size, max_seq_length + 1, units_concat],
+                [batch_size, max_seq_length + 1, 1],
+                [0,],
+                [0,],
+                [0,],
             ],
             "same_as_train",
         ),
@@ -428,61 +434,61 @@ def test_layer_gives_correct_output_units(
             },
             ([feature_sparse_seq_1], [], sequence_lengths,),
             [
-                (batch_size, max_seq_length, units_transformer),
-                (batch_size, max_seq_length, units_hidden_layer),
-                (batch_size, max_seq_length, 1),
-                (batch_size, max_seq_length, 2),
-                (batch_size, max_seq_length, 1),
-                (
+                [batch_size, max_seq_length, units_transformer],
+                [batch_size, max_seq_length, units_hidden_layer],
+                [batch_size, max_seq_length, 1],
+                [batch_size, max_seq_length, 2],
+                [batch_size, max_seq_length, 1],
+                [
                     num_transformer_layers,
                     batch_size,
                     num_transformer_heads,
                     max_seq_length,
                     max_seq_length,
-                ),
+                ],
             ],
             [
-                (batch_size, max_seq_length, units_transformer),
-                (batch_size, max_seq_length, units_hidden_layer),
-                (batch_size, max_seq_length, 1),
-                (0,),
-                (0,),
-                (
+                [batch_size, max_seq_length, units_transformer],
+                [batch_size, max_seq_length, units_hidden_layer],
+                [batch_size, max_seq_length, 1],
+                [0,],
+                [0,],
+                [
                     num_transformer_layers,
                     batch_size,
                     num_transformer_heads,
                     max_seq_length,
                     max_seq_length,
-                ),
+                ],
             ],
         ),
     ],
 )
 def test_correct_output_shape(
-    layer_class,
-    model_config,
-    layer_args,
-    layer_inputs,
-    expected_output_shapes_train,
-    expected_output_shapes_test,
-):
+    layer_class: Callable[..., Any],
+    model_config: Dict[Text, Any],
+    layer_args: Dict[Text, Any],
+    layer_inputs: List[  # TODO really use List? Should be Tuple of variable length...
+        List[Union[tf.SparseTensor, tf.Tensor]]
+    ],
+    expected_output_shapes_train: List[List[int]],
+    expected_output_shapes_test: Union[Text, List[Union[int, List[int]]]],
+) -> None:
     layer = layer_class(**layer_args, attribute=attribute_name, config=model_config,)
 
     train_outputs = layer(layer_inputs, training=True)
-    if isinstance(expected_output_shapes_train, list):
-        for i, expected_shape in enumerate(expected_output_shapes_train):
-            assert train_outputs[i].shape == expected_shape
-    else:
-        assert train_outputs.shape == expected_output_shapes_train
+    if not isinstance(train_outputs, tuple):
+        train_outputs = [train_outputs]
+    for i, expected_shape in enumerate(expected_output_shapes_train):
+        assert train_outputs[i].shape == expected_shape
 
     if expected_output_shapes_test == "same_as_train":
         expected_output_shapes_test = expected_output_shapes_train
     test_outputs = layer(layer_inputs, training=False)
-    if isinstance(expected_output_shapes_test, list):
-        for i, expected_shape in enumerate(expected_output_shapes_test):
-            assert test_outputs[i].shape == expected_shape
-    else:
-        assert test_outputs.shape == expected_output_shapes_test
+    if not isinstance(test_outputs, tuple):
+        test_outputs = [test_outputs]
+    for i, expected_shape in enumerate(expected_output_shapes_test):
+        assert test_outputs[i].shape == expected_shape
 
 
 @pytest.mark.parametrize(
@@ -510,12 +516,14 @@ def test_correct_output_shape(
         ),
     ],
 )
-def test_raises_exception_when_missing_features(layer_class, layer_args):
+def test_raises_exception_when_missing_features(
+    layer_class: Callable[..., Any], layer_args: Dict[Text, Any]
+) -> None:
     with pytest.raises(TFLayerConfigException):
         layer_class(**layer_args, attribute=attribute_name, config=model_config_basic)
 
 
-def test_concat_sparse_dense_raises_exception_when_inconsistent_sparse_features():
+def test_concat_sparse_dense_raises_exception_when_inconsistent_sparse_features() -> None:
     with pytest.raises(TFLayerConfigException):
         ConcatenateSparseDenseFeatures(
             attribute=attribute_name,
@@ -556,7 +564,7 @@ realistic_sequence_lengths = tf.convert_to_tensor([3, 2], dtype=tf.int32)
 realistic_sequence_lengths_empty = tf.convert_to_tensor([0, 0], dtype=tf.int32)
 
 
-def test_concat_sparse_dense_correct_output_for_dense_input():
+def test_concat_sparse_dense_correct_output_for_dense_input() -> None:
     layer = ConcatenateSparseDenseFeatures(
         attribute=attribute_name,
         feature_type=SEQUENCE,
@@ -581,7 +589,7 @@ def test_concat_sparse_dense_correct_output_for_dense_input():
     assert (test_outputs.numpy() == outputs_expected).all()
 
 
-def test_concat_sparse_dense_applies_dropout_to_sparse_input():
+def test_concat_sparse_dense_applies_dropout_to_sparse_input() -> None:
     layer_dropout_for_sparse = ConcatenateSparseDenseFeatures(
         attribute=attribute_name,
         feature_type=SEQUENCE,
@@ -604,7 +612,7 @@ def test_concat_sparse_dense_applies_dropout_to_sparse_input():
     assert not np.allclose(test_outputs.numpy(), expected_outputs_train.numpy())
 
 
-def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
+def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input() -> None:
     layer_dropout_for_sparse_densified = ConcatenateSparseDenseFeatures(
         attribute=attribute_name,
         feature_type=SEQUENCE,
@@ -665,7 +673,7 @@ def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
                     ],
                     dtype=np.float32,
                 ),
-                [[[1.0], [1.0], [1.0], [1.0]], [[1.0], [1.0], [1.0], [0.0]]],
+                np.array([[[1.0], [1.0], [1.0], [1.0]], [[1.0], [1.0], [1.0], [0.0]]]),
             ),
             "same_as_train",
         ),
@@ -691,7 +699,7 @@ def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
                     ],
                     dtype=np.float32,
                 ),
-                [[[1.0], [1.0], [1.0]], [[1.0], [1.0], [0.0]]],
+                np.array([[[1.0], [1.0], [1.0]], [[1.0], [1.0], [0.0]]]),
             ),
             "same_as_train",
         ),
@@ -705,8 +713,11 @@ def test_concat_sparse_dense_applies_dropout_to_sparse_densified_input():
     ],
 )
 def test_feature_combining_correct_output(
-    attribute_signature, inputs, expected_outputs_train, expected_outputs_test
-):
+    attribute_signature: Dict[Text, List[FeatureSignature]],
+    inputs: List[List[Union[tf.SparseTensor, tf.Tensor]]],
+    expected_outputs_train: List[np.ndarray],
+    expected_outputs_test: Union[Text, List[np.ndarray]],
+) -> None:
     layer = RasaFeatureCombiningLayer(
         attribute=attribute_name,
         config=model_config_basic,
@@ -759,7 +770,7 @@ def test_feature_combining_correct_output(
                     ],
                     dtype=np.float32,
                 ),
-                [[[1.0], [1.0], [1.0], [1.0]], [[1.0], [1.0], [1.0], [0.0]]],
+                np.array([[[1.0], [1.0], [1.0], [1.0]], [[1.0], [1.0], [1.0], [0.0]]]),
                 np.concatenate(
                     (realistic_feature_dense_seq_1, [[[0.0]], [[0.0]]]), axis=1
                 ),
@@ -787,15 +798,17 @@ def test_feature_combining_correct_output(
                     ],
                     dtype=np.float32,
                 ),
-                [[[1.0], [1.0], [1.0]], [[1.0], [1.0], [0.0]]],
+                np.array([[[1.0], [1.0], [1.0]], [[1.0], [1.0], [0.0]]]),
                 realistic_feature_dense_seq_1.numpy(),
             ),
         ),
     ],
 )
 def test_sequence_layer_correct_output(
-    attribute_signature, inputs, expected_outputs_train
-):
+    attribute_signature: Dict[Text, List[FeatureSignature]],
+    inputs: List[Union[tf.Tensor, List[Union[tf.SparseTensor, tf.Tensor]]]],
+    expected_outputs_train: List[np.ndarray],
+) -> None:
     layer = RasaSequenceLayer(
         attribute=attribute_name,
         # Use MLM but no transformer and no hidden layers.
