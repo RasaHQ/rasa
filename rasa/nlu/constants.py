@@ -54,15 +54,6 @@ SPACY_DOCS = {
     rasa.shared.nlu.constants.ACTION_TEXT: "action_text_spacy_doc",
 }
 
-TOKENS_NAMES = {
-    rasa.shared.nlu.constants.TEXT: "text_tokens",
-    rasa.shared.nlu.constants.INTENT: "intent_tokens",
-    rasa.shared.nlu.constants.RESPONSE: "response_tokens",
-    rasa.shared.nlu.constants.ACTION_NAME: "action_name_tokens",
-    rasa.shared.nlu.constants.ACTION_TEXT: "action_text_tokens",
-    rasa.shared.nlu.constants.INTENT_RESPONSE_KEY: "intent_response_key_tokens",
-}
-
 SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 

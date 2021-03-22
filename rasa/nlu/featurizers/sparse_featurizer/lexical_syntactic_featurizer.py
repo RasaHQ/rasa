@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Text, List, Type, Union
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
@@ -18,8 +18,8 @@ from rasa.shared.nlu.training_data.training_data import (
     TrainingDataChunk,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE, TOKENS_NAMES
 
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
@@ -105,17 +105,17 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self.number_of_features = self._calculate_number_of_features()
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
-        for example in training_data_chunk.training_examples:
+        for example in training_examples:
             self._create_sparse_features(example)
 
     def process(self, message: Message, **kwargs: Any) -> None:

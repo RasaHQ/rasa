@@ -13,12 +13,10 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
-    FullDialogueTrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -33,6 +31,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
     EXTRACTOR,
+    TOKENS_NAMES,
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )

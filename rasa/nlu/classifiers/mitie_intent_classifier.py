@@ -8,22 +8,22 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
-from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT
-from rasa.shared.nlu.training_data.training_data import (
-    TrainingDataFull,
-    TrainingDataChunk,
-)
+from rasa.shared.nlu.constants import TEXT, INTENT, TOKENS_NAMES
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaTrainChunkException
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 
 if typing.TYPE_CHECKING:
     import mitie
 
 
 class MitieIntentClassifier(IntentClassifier):
+    """Intent classifier that uses the library MITIE."""
+
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
+        """Specifies which components need to be present in the pipeline."""
         return [MitieNLP, Tokenizer]
 
     def __init__(
@@ -49,13 +49,13 @@ class MitieIntentClassifier(IntentClassifier):
         """
         return ["mitie"]
 
-    def train_chunk(
+    def train_on_chunks(
         self,
-        training_data_chunk: TrainingDataChunk,
+        data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Trains this component using the list of data chunk files.
 
         See parent class for more information.
         """

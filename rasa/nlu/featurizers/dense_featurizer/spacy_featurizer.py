@@ -47,17 +47,17 @@ class SpacyFeaturizer(DenseFeaturizer):
         """Feature vector for a single document / sentence / tokens."""
         return np.array([t.vector for t in doc if t.text and t.text.strip()])
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
-        for example in training_data_chunk.training_examples:
+        for example in training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)
 

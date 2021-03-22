@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Text
 
 import numpy as np
 import pytest
@@ -46,7 +45,6 @@ from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
-from rasa.core.agent import Agent
 
 
 def test_compute_default_label_features():
@@ -73,17 +71,17 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    data={TEXT: "test a"},
+                    data={INTENT: "test a"},
                     features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
                     ],
                 ),
                 Message(
-                    data={TEXT: "test b"},
+                    data={INTENT: "test b"},
                     features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
                     ],
                 ),
             ],
@@ -92,10 +90,10 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    data={TEXT: "test a"},
+                    data={INTENT: "test a"},
                     features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
                     ],
                 )
             ],
@@ -104,9 +102,9 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    data={TEXT: "test a"},
+                    data={INTENT: "test a"},
                     features=[
-                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
+                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, TEXT, "test")
                     ],
                 )
             ],
@@ -115,9 +113,8 @@ def test_compute_default_label_features():
     ],
 )
 def test_check_labels_features_exist(messages, expected):
-    attribute = TEXT
     classifier = DIETClassifier()
-    assert classifier._check_labels_features_exist(messages, attribute) == expected
+    assert classifier._check_labels_features_exist(messages) == expected
 
 
 @pytest.mark.parametrize(
@@ -165,7 +162,12 @@ def test_model_data_signature_with_entities(
     tokenizer = WhitespaceTokenizer()
     tokenizer.train(training_data)
 
-    model_data = classifier.preprocess_train_data(training_data)
+    classifier.prepare_partial_training(training_data)
+    classifier._label_data = classifier._create_label_data(
+        classifier._get_indexed_examples_for_labels(training_data)
+    )
+    model_data = classifier._preprocess_train_data(training_data)
+
     entity_exists = "entities" in model_data.get_signature().keys()
     assert entity_exists == entity_expected
 

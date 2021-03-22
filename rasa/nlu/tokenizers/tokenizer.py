@@ -4,71 +4,27 @@ import re
 from typing import Text, List, Optional, Dict, Any
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import (
-    TrainingDataFull,
-    TrainingDataChunk,
-)
+from rasa.shared.nlu.training_data.tokens import Token
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES
 from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_RESPONSE_KEY,
     RESPONSE_IDENTIFIER_DELIMITER,
     ACTION_NAME,
+    TOKENS_NAMES,
 )
-from rasa.shared.exceptions import RasaTrainChunkException
 
 logger = logging.getLogger(__name__)
 
 
-class Token:
-    def __init__(
-        self,
-        text: Text,
-        start: int,
-        end: Optional[int] = None,
-        data: Optional[Dict[Text, Any]] = None,
-        lemma: Optional[Text] = None,
-    ) -> None:
-        self.text = text
-        self.start = start
-        self.end = end if end else start + len(text)
-
-        self.data = data if data else {}
-        self.lemma = lemma or text
-
-    def set(self, prop: Text, info: Any) -> None:
-        self.data[prop] = info
-
-    def get(self, prop: Text, default: Optional[Any] = None) -> Any:
-        return self.data.get(prop, default)
-
-    def __eq__(self, other):
-        if not isinstance(other, Token):
-            return NotImplemented
-        return (self.start, self.end, self.text, self.lemma) == (
-            other.start,
-            other.end,
-            other.text,
-            other.lemma,
-        )
-
-    def __lt__(self, other):
-        if not isinstance(other, Token):
-            return NotImplemented
-        return (self.start, self.end, self.text, self.lemma) < (
-            other.start,
-            other.end,
-            other.text,
-            other.lemma,
-        )
-
-
 class Tokenizer(Component):
+    """Abstract tokenizer component."""
+
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
-
         super().__init__(component_config)
 
         # flag to check whether to split intents
@@ -87,20 +43,6 @@ class Tokenizer(Component):
         """Tokenizes the text of the provided attribute of the incoming message."""
 
         raise NotImplementedError
-
-    def train_chunk(
-        self,
-        training_data_chunk: TrainingDataChunk,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-        """Train this component on the given chunk.
-
-        See parent class for more information.
-        """
-        raise RasaTrainChunkException(
-            "This method should neither be called nor implemented in our code."
-        )
 
     def train(
         self,

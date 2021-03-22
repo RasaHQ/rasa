@@ -1,19 +1,23 @@
+import json
 import logging
 import os
 import numpy as np
-from pathlib import Path
 import random
-from collections import Counter, OrderedDict
 import copy
+
+from pathlib import Path
+from collections import Counter, OrderedDict
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable, Union
+
 import operator
 import tensorflow as tf
 import scipy.sparse
 
 import rasa.shared.data
-from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
+from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.common import lazy_property
 from rasa.shared.nlu.constants import (
     RESPONSE,
     INTENT_RESPONSE_KEY,
@@ -25,11 +29,14 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
+    ENTITY_ATTRIBUTE_START,
+    TOKENS_NAMES,
+    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.training_data.tokens import Token
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
@@ -92,6 +99,15 @@ class NLUPipelineTrainingData:
         ]
 
     @lazy_property
+    def core_examples(self) -> List[Message]:
+        """Return examples which have come from stories or rules or domain.
+
+        Returns:
+            List of core training examples.
+        """
+        return [ex for ex in self.training_examples if ex.is_core_or_domain_message()]
+
+    @lazy_property
     def intent_examples(self) -> List[Message]:
         """Returns the list of examples that have intent."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT)]
@@ -146,6 +162,24 @@ class NLUPipelineTrainingData:
         """Returns the set of entity types in the training data."""
         return {e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()}
 
+    def distinct_entity_tags(self, tag_name: Text) -> Set[Text]:
+        """Returns the set of entity tags for given tag name.
+
+        Args:
+            tag_name: The name of the tag.
+
+        Returns:
+            The set of entity tags for given tag name.
+        """
+        if tag_name == ENTITY_ATTRIBUTE_ROLE:
+            distinct_tags = self.entity_roles
+        elif tag_name == ENTITY_ATTRIBUTE_GROUP:
+            distinct_tags = self.entity_groups
+        else:
+            distinct_tags = self.entities
+
+        return distinct_tags - {NO_ENTITY_TAG} - {None}
+
     @lazy_property
     def entity_roles(self) -> Set[Text]:
         """Returns the set of entity roles in the training data."""
@@ -188,9 +222,9 @@ class NLUPipelineTrainingData:
         """
         entities = []
 
-        def _append_entity(entity: Dict[Text, Any], attribute: Text) -> None:
-            if attribute in entity:
-                _value = entity.get(attribute)
+        def _append_entity(_entity: Message, attribute: Text) -> None:
+            if attribute in _entity:
+                _value = _entity.get(attribute)
                 if _value is not None and _value != NO_ENTITY_TAG:
                     entities.append(f"{attribute} '{_value}'")
 
@@ -222,6 +256,34 @@ class NLUPipelineTrainingData:
             self.intent_examples,
             key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
         )
+
+    def fingerprint(self) -> Text:
+        """Fingerprint the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data.
+        """
+        relevant_attributes = {
+            "training_examples": list(
+                sorted(e.fingerprint() for e in self.training_examples)
+            )
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
+
+    def label_fingerprint(self) -> Text:
+        """Fingerprints the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        labels = {
+            "intents": sorted(self.intents),
+            "entities": sorted(self.entities),
+            "entity_groups": sorted(self.entity_groups),
+            "entity_roles": sorted(self.entity_roles),
+            "actions": sorted(self.action_names),
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(labels)
 
     def validate(self) -> None:
         """Ensures that the loaded training data is valid.
@@ -267,13 +329,14 @@ class NLUPipelineTrainingData:
                 )
 
     def split_nlu_examples(
-        self, train_frac: float, random_seed: Optional[int] = None
+        self, train_frac: float, random_seed: Optional[int] = None, silent: bool = False
     ) -> Tuple[list, list]:
         """Split the training data into a train and test set.
 
         Args:
             train_frac: percentage of examples to add to the training set.
             random_seed: random seed used to shuffle examples.
+            silent: if `True` suppress warnings.
 
         Returns:
             Test and training examples.
@@ -295,7 +358,7 @@ class NLUPipelineTrainingData:
         )
         num_examples = sum(self.number_of_examples_per_intent.values())
 
-        if int(smaller_split_frac * num_examples) + 1 < num_classes:
+        if not silent and int(smaller_split_frac * num_examples) + 1 < num_classes:
             rasa.shared.utils.io.raise_warning(
                 f"There aren't enough intent examples in your data to include "
                 f"an example of each class in both test and train splits and "
@@ -340,7 +403,7 @@ class NLUPipelineTrainingData:
                 _running_train_count + approx_train_count,
             )
 
-        training_examples = set(self.training_examples)
+        training_examples = set(self.nlu_examples)
         running_count = 0
         running_train_count = 0
 
@@ -465,21 +528,6 @@ class TrainingDataFull(NLUPipelineTrainingData):
         }
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
-    def label_fingerprint(self) -> Text:
-        """Fingerprints the labels in the training data.
-
-        Returns:
-            hex string as a fingerprint of the training data labels.
-        """
-        labels = {
-            "intents": sorted(self.intents),
-            "entities": sorted(self.entities),
-            "entity_groups": sorted(self.entity_groups),
-            "entity_roles": sorted(self.entity_roles),
-            "actions": sorted(self.action_names),
-        }
-        return rasa.shared.utils.io.deep_container_fingerprint(labels)
-
     def merge(self, *others: Optional["TrainingDataFull"]) -> "TrainingDataFull":
         """Return merged instance of this data with other training data.
 
@@ -552,7 +600,8 @@ class TrainingDataFull(NLUPipelineTrainingData):
     def _fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories."""
         for example in self.training_examples:
-            # if intent_response_key is None, that means the corresponding intent is not a
+            # if intent_response_key is None,
+            # that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
             # If intent_response_key is set, fetch the corresponding response text
             if example.get(INTENT_RESPONSE_KEY) is None:
@@ -837,6 +886,18 @@ class TrainingDataFull(NLUPipelineTrainingData):
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def _get_core_chunk_size(self, num_chunks: int) -> int:
+        return len(self.core_examples) // num_chunks + int(
+            len(self.core_examples) % num_chunks > 0
+        )
+
+    def _split_core_examples(
+        self, core_chunk_size: int, chunk_index: int
+    ) -> List[Message]:
+        start = chunk_index * core_chunk_size
+        end = start + core_chunk_size
+        return self.core_examples[start:end]
+
     def divide_into_chunks(self, num_chunks: int) -> List["TrainingDataChunk"]:
         """Divides the training data into smaller chunks.
 
@@ -845,7 +906,8 @@ class TrainingDataFull(NLUPipelineTrainingData):
         distribution of the complete dataset.
 
         Args:
-            num_chunks: The total number of chunks into which the training data should be broken.
+            num_chunks: The total number of chunks into which
+                the training data should be broken.
 
         Returns:
             A list of all training data chunks.
@@ -854,19 +916,28 @@ class TrainingDataFull(NLUPipelineTrainingData):
 
         data_to_chunk = self
 
+        core_chunk_size = self._get_core_chunk_size(num_chunks)
         for chunk_index in range(num_chunks - 1):
 
-            chunk_size_fraction = 1 / (num_chunks - chunk_index)
-            current_chunk, leftover_examples = data_to_chunk.split_nlu_examples(
-                1 - chunk_size_fraction
+            nlu_chunk_size_fraction = 1 / (num_chunks - chunk_index)
+            current_nlu_chunk, leftover_nlu_examples = data_to_chunk.split_nlu_examples(
+                1 - nlu_chunk_size_fraction, silent=True
             )
+            current_core_chunk = self._split_core_examples(core_chunk_size, chunk_index)
 
             # update the data to chunk in next iteration
-            data_to_chunk = TrainingDataFull(leftover_examples)
-            all_chunks.append(TrainingDataChunk(current_chunk))
+            data_to_chunk = TrainingDataFull(leftover_nlu_examples)
+            all_chunks.append(
+                TrainingDataChunk(copy.deepcopy(current_nlu_chunk + current_core_chunk))
+            )
 
         # The last chunk is composed of whatever is left
-        all_chunks.append(TrainingDataChunk(data_to_chunk.training_examples))
+        last_core_chunk = self._split_core_examples(core_chunk_size, num_chunks - 1)
+        all_chunks.append(
+            TrainingDataChunk(
+                copy.deepcopy(data_to_chunk.training_examples + last_core_chunk)
+            )
+        )
         return all_chunks
 
 
@@ -892,11 +963,27 @@ class TrainingDataChunk(NLUPipelineTrainingData):
     tables will result in an exception being raised.
     """
 
+    RELEVANT_MESSAGE_KEYS = [
+        TEXT,
+        INTENT,
+        RESPONSE,
+        INTENT_RESPONSE_KEY,
+        ENTITIES,
+        TOKENS_NAMES[TEXT],
+        ACTION_TEXT,
+        ACTION_NAME,
+    ]
+
     @staticmethod
-    def _bytes_feature(array: np.ndarray) -> tf.train.Feature:
-        value = tf.io.serialize_tensor(array)
+    def _bytes_feature(array: Union[np.ndarray, Text]) -> tf.train.Feature:
+        if isinstance(array, np.ndarray):
+            value = tf.io.serialize_tensor(array.astype(np.float64))
+        else:
+            value = bytes(array, encoding=DEFAULT_ENCODING)
+
         if isinstance(value, type(tf.constant(0))):
             value = value.numpy()
+
         return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
     @staticmethod
@@ -928,7 +1015,18 @@ class TrainingDataChunk(NLUPipelineTrainingData):
 
         return attribute, feature_type, origin, dense, extra_info
 
-    def _to_tf_features(self, features: List[Features]) -> Dict[Text, tf.train.Feature]:
+    def _to_tf_features(
+        self, features: List[Features], message_data: Dict[Text, Any]
+    ) -> Dict[Text, tf.train.Feature]:
+        # encode the actual message features
+        tf_features = self._encode_message_features(features)
+        # as well as some message data as those are used, for example, as labels
+        tf_features.update(self._encode_message_data(message_data))
+        return tf_features
+
+    def _encode_message_features(
+        self, features: List[Features]
+    ) -> Dict[Text, tf.train.Feature]:
         tf_features = {}
 
         for feature in features:
@@ -939,7 +1037,7 @@ class TrainingDataChunk(NLUPipelineTrainingData):
             if feature.is_dense():
                 tf_features[key] = self._bytes_feature(feature.features)
             else:
-                data = feature.features.data
+                data = feature.features.data.astype(np.int64)
                 shape = feature.features.shape
                 row = feature.features.row
                 column = feature.features.col
@@ -959,6 +1057,36 @@ class TrainingDataChunk(NLUPipelineTrainingData):
 
         return tf_features
 
+    def _encode_message_data(
+        self, data: Dict[Text, Any]
+    ) -> Dict[Text, tf.train.Feature]:
+        tf_message_data = {}
+
+        for data_key in self.RELEVANT_MESSAGE_KEYS:
+            if data_key not in data or not data[data_key]:
+                continue
+
+            value = data[data_key]
+
+            if data_key == ENTITIES:
+                # entities are a list of dicts
+                for idx, entity in enumerate(value):
+                    entity_str = json.dumps(entity)
+                    tf_message_data[
+                        f"{data_key}{TF_RECORD_KEY_SEPARATOR}{idx}"
+                    ] = self._bytes_feature(entity_str)
+            elif data_key == TOKENS_NAMES[TEXT]:
+                # tokens are a list of token objects
+                for idx, token in enumerate(value):
+                    tf_message_data[
+                        f"{data_key}{TF_RECORD_KEY_SEPARATOR}{idx}"
+                    ] = self._bytes_feature(json.dumps(token.__dict__))
+            else:
+                # all other values are simple strings
+                tf_message_data[data_key] = self._bytes_feature(value)
+
+        return tf_message_data
+
     def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
         """Stores the chunk as TFRecord file to disk.
 
@@ -976,7 +1104,7 @@ class TrainingDataChunk(NLUPipelineTrainingData):
             for message in self.training_examples:
                 example = tf.train.Example(
                     features=tf.train.Features(
-                        feature=self._to_tf_features(message.features)
+                        feature=self._to_tf_features(message.features, message.data)
                     )
                 )
                 # Append each example into tfrecord
@@ -985,7 +1113,7 @@ class TrainingDataChunk(NLUPipelineTrainingData):
         return file_path
 
     @classmethod
-    def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":
+    def load_chunk(cls, file_path: Union[Text, Path]) -> "TrainingDataChunk":
         """Loads a training data chunk from the given TFRecord file path.
 
         Args:
@@ -996,36 +1124,77 @@ class TrainingDataChunk(NLUPipelineTrainingData):
         """
         training_examples = []
 
+        if isinstance(file_path, Path):
+            file_path = str(file_path.absolute())
+
         raw_dataset = tf.data.TFRecordDataset([file_path])
         for raw_record in raw_dataset:
             example = tf.train.Example()
             example.ParseFromString(raw_record.numpy())
 
             features = []
+            message_data = {ENTITIES: [], TOKENS_NAMES[TEXT]: []}
+
             for key in example.features.feature.keys():
-                (
-                    attribute,
-                    feature_type,
-                    origin,
-                    is_dense,
-                    extra_info,
-                ) = TrainingDataChunk._deconstruct_tf_record_key(key)
+                if (
+                    key in cls.RELEVANT_MESSAGE_KEYS
+                    or key.startswith(ENTITIES)
+                    or key.startswith(TOKENS_NAMES[TEXT])
+                ):
+                    _data_key, _data_value = cls._decode_message_data(example, key)
+                    if _data_key in [ENTITIES, TOKENS_NAMES[TEXT]]:
+                        message_data[_data_key].append(_data_value)
+                    else:
+                        message_data[_data_key] = _data_value
+                else:
+                    _features = cls._decode_features(example, key)
+                    if _features:
+                        features.append(_features)
 
-                if is_dense:
-                    features.append(
-                        cls._convert_to_numpy(example, attribute, feature_type, origin)
-                    )
+            # make sure the token and entity order is correct
+            message_data[TOKENS_NAMES[TEXT]].sort(key=lambda t: t.start)
+            message_data[ENTITIES].sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
 
-                elif not is_dense and extra_info == "data":
-                    features.append(
-                        cls._convert_to_sparse_matrix(
-                            example, attribute, feature_type, origin
-                        )
-                    )
+            if not message_data[ENTITIES]:
+                del message_data[ENTITIES]
 
-            training_examples.append(Message(features=features))
+            training_examples.append(Message(features=features, data=message_data))
 
         return TrainingDataChunk(training_examples)
+
+    @classmethod
+    def _decode_message_data(cls, example: tf.train.Example, key: Text) -> Any:
+        bytes_list = example.features.feature[key].bytes_list.value[0]
+        text = bytes_list.decode(DEFAULT_ENCODING)
+
+        if key.startswith(ENTITIES):
+            entity = json.loads(text)
+            return ENTITIES, entity
+
+        if key.startswith(TOKENS_NAMES[TEXT]):
+            token = Token.from_dict(json.loads(text))
+            return TOKENS_NAMES[TEXT], token
+
+        return key, text
+
+    @classmethod
+    def _decode_features(
+        cls, example: tf.train.Example, key: Text
+    ) -> Optional[Features]:
+        (
+            attribute,
+            feature_type,
+            origin,
+            is_dense,
+            extra_info,
+        ) = TrainingDataChunk._deconstruct_tf_record_key(key)
+
+        if is_dense:
+            return cls._convert_to_numpy(example, attribute, feature_type, origin)
+        elif not is_dense and extra_info == "data":
+            return cls._convert_to_sparse_matrix(
+                example, attribute, feature_type, origin
+            )
 
     @classmethod
     def _convert_to_numpy(
@@ -1067,6 +1236,19 @@ class TrainingDataChunk(NLUPipelineTrainingData):
             attribute,
             origin,
         )
+
+    def filter_training_examples(
+        self, condition: Callable[[Message], bool]
+    ) -> "TrainingDataChunk":
+        """Filter training examples.
+
+        Args:
+            condition: A function that will be applied to filter training examples.
+
+        Returns:
+            TrainingDataChunk: A training data chunk with filtered training examples.
+        """
+        return TrainingDataChunk(list(filter(condition, self.training_examples)))
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

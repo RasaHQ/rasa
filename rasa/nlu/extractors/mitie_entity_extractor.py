@@ -3,21 +3,19 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, ENTITIES
+from rasa.shared.nlu.constants import TEXT, ENTITIES, TOKENS_NAMES
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import (
-    TrainingDataFull,
-    TrainingDataChunk,
-)
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaTrainChunkException
 import rasa.shared.utils.io
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +63,9 @@ class MitieEntityExtractor(EntityExtractor):
 
         return entities
 
-    def train_chunk(
+    def train_on_chunks(
         self,
-        training_data_chunk: TrainingDataChunk,
+        data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:

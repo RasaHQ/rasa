@@ -13,6 +13,16 @@ METADATA_EXAMPLE = "example"
 INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
 
+
+TOKENS_NAMES = {
+    TEXT: "text_tokens",
+    INTENT: "intent_tokens",
+    RESPONSE: "response_tokens",
+    ACTION_NAME: "action_name_tokens",
+    ACTION_TEXT: "action_text_tokens",
+    INTENT_RESPONSE_KEY: "intent_response_key_tokens",
+}
+
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 FEATURE_TYPE_SENTENCE = "sentence"

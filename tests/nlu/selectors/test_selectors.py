@@ -133,8 +133,11 @@ def test_preprocess_selector_multiple_retrieval_intents():
     )
 
     response_selector = ResponseSelector()
-
-    response_selector.preprocess_train_data(training_data)
+    response_selector.prepare_partial_training(training_data)
+    response_selector._label_data = response_selector._create_label_data(
+        response_selector._get_indexed_examples_for_labels(training_data)
+    )
+    response_selector._preprocess_train_data(training_data)
 
     assert sorted(response_selector.all_retrieval_intents) == ["chitchat", "faq"]
 
@@ -160,12 +163,14 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": use_text_as_label}
     )
-    response_selector.preprocess_train_data(training_data)
+    response_selector.prepare_partial_training(training_data)
+    response_selector._label_data = response_selector._create_label_data(
+        response_selector._get_indexed_examples_for_labels(training_data)
+    )
+    response_selector._preprocess_train_data(training_data)
 
     assert response_selector.responses == training_data.responses
-    assert (
-        sorted(list(response_selector.index_label_id_mapping.values())) == label_values
-    )
+    assert sorted(list(response_selector.index_label_mapping.values())) == label_values
 
 
 @pytest.mark.parametrize(
@@ -191,7 +196,11 @@ def test_resolve_intent_response_key_from_label(
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": train_on_text}
     )
-    response_selector.preprocess_train_data(training_data)
+    response_selector.prepare_partial_training(training_data)
+    response_selector._label_data = response_selector._create_label_data(
+        response_selector._get_indexed_examples_for_labels(training_data)
+    )
+    response_selector._preprocess_train_data(training_data)
 
     label_intent_response_key = response_selector._resolve_intent_response_key(
         {"id": hash(predicted_label), "name": predicted_label}

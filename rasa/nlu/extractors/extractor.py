@@ -1,13 +1,13 @@
 from typing import Any, Dict, List, Text, Tuple, Optional, NamedTuple
 
 import rasa.shared.utils.io
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
@@ -27,7 +27,9 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
+    TOKENS_NAMES,
 )
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 import rasa.utils.train_utils
 
 
@@ -46,6 +48,20 @@ class EntityExtractor(Component):
     They can be placed in the pipeline like other components, and can extract
     entities like a person's name, or a location.
     """
+
+    def train_on_chunks(
+        self,
+        data_chunk_files: List[DataChunkFile],
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Trains this component using the list of data chunk files.
+
+        Args:
+            data_chunk_files: List of data chunk files.
+            config: The model configuration parameters.
+        """
+        pass
 
     def add_extractor_name(
         self, entities: List[Dict[Text, Any]]
@@ -143,7 +159,6 @@ class EntityExtractor(Component):
         `extractor` set to something other than
         self.name (e.g. 'CRFEntityExtractor') are removed.
         """
-
         filtered = []
         for message in entity_examples:
             entities = []

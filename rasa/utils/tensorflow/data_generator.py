@@ -1,4 +1,6 @@
-from typing import List, Union, Text, Optional, Any, Tuple, Dict
+import random
+from pathlib import Path
+from typing import List, Union, Text, Optional, Any, Tuple, Dict, Callable, NamedTuple
 
 import logging
 import scipy.sparse
@@ -9,6 +11,7 @@ import rasa.shared.utils.io
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,23 +20,43 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
 
     def __init__(
         self,
-        model_data: RasaModelData,
         batch_size: Union[int, List[int]],
-        batch_strategy: Text = SEQUENCE,
+        epochs: int = 1,
         shuffle: bool = True,
+        random_seed: Optional[int] = None,
     ):
         """Initializes the data generator.
 
         Args:
-            model_data: The model data to use.
             batch_size: The batch size(s).
-            batch_strategy: The batch strategy.
+            epochs: The total number of epochs.
             shuffle: If 'True', data should be shuffled.
+            random_seed: Set the random seed to get reproducible results.
         """
-        self.model_data = model_data
+        if isinstance(batch_size, list):
+            logger.debug(
+                "The provided batch size is a list, this data generator will use a "
+                "linear increasing batch size."
+            )
+        self._set_random_seed(random_seed)
+
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.batch_strategy = batch_strategy
+
+        self._epochs = epochs
+        # we use `on_epoch_end` method to prepare data for the next epoch
+        # set current epoch to `-1`, so that `on_epoch_end` will increase it to `0`
+        self._current_epoch = -1
+        # actual batch size will be set inside `on_epoch_end`
+        self._current_batch_size = None
+
+        self.on_epoch_end()
+
+    @staticmethod
+    def _set_random_seed(random_seed: Optional[int]):
+        random.seed(random_seed)
+        tf.random.set_seed(random_seed)
+        np.random.seed(random_seed)
 
     def __len__(self) -> int:
         """Number of batches in the Sequence.
@@ -56,20 +79,29 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
 
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""
-        raise NotImplementedError
+        self._current_epoch += 1
+        self._current_batch_size = self._linearly_increasing_batch_size()
 
-    def _shuffle_and_balance(self, batch_size: int) -> Data:
-        data = self.model_data.data
+    def _linearly_increasing_batch_size(self) -> int:
+        """Linearly increase batch size with every epoch.
 
-        if self.shuffle:
-            data = self.model_data.shuffled_data(data)
+        The idea comes from https://arxiv.org/abs/1711.00489.
 
-        if self.batch_strategy == BALANCED:
-            data = self.model_data.balanced_data(data, batch_size, self.shuffle)
+        Returns:
+            The batch size to use in this epoch.
+        """
+        if not isinstance(self.batch_size, list):
+            return int(self.batch_size)
 
-        # do not override self.model_data.data, because we need original data for
-        # balancing on the next epoch
-        return data
+        if self._epochs > 1:
+            return int(
+                self.batch_size[0]
+                + self._current_epoch
+                * (self.batch_size[1] - self.batch_size[0])
+                / (self._epochs - 1)
+            )
+        else:
+            return int(self.batch_size[0])
 
     @staticmethod
     def prepare_batch(
@@ -343,6 +375,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         epochs: int = 1,
         batch_strategy: Text = SEQUENCE,
         shuffle: bool = True,
+        random_seed: Optional[int] = None,
     ):
         """Initializes the increasing batch size data generator.
 
@@ -352,24 +385,14 @@ class RasaBatchDataGenerator(RasaDataGenerator):
             epochs: The total number of epochs.
             batch_strategy: The batch strategy.
             shuffle: If 'True', data will be shuffled.
+            random_seed: Set the random seed to get reproducible results.
         """
-        super().__init__(model_data, batch_size, batch_strategy, shuffle)
-
-        if isinstance(batch_size, list):
-            logger.debug(
-                "The provided batch size is a list, this data generator will use a "
-                "linear increasing batch size."
-            )
-
-        self._epochs = epochs
-        # we use `on_epoch_end` method to prepare data for the next epoch
-        # set current epoch to `-1`, so that `on_epoch_end` will increase it to `0`
-        self._current_epoch = -1
-        # actual batch size will be set inside `on_epoch_end`
-        self._current_batch_size = None
+        self.batch_strategy = batch_strategy
+        self.model_data = model_data
         # create separate data variable that will store modified data for each batch
         self._data = None
-        self.on_epoch_end()
+
+        super().__init__(batch_size, epochs, shuffle, random_seed)
 
     def __len__(self) -> int:
         """Number of batches in the Sequence.
@@ -400,27 +423,140 @@ class RasaBatchDataGenerator(RasaDataGenerator):
 
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""
-        self._current_epoch += 1
-        self._current_batch_size = self._linearly_increasing_batch_size()
+        super().on_epoch_end()
         self._data = self._shuffle_and_balance(self._current_batch_size)
 
-    def _linearly_increasing_batch_size(self) -> int:
-        """Linearly increase batch size with every epoch.
+    def _shuffle_and_balance(self, batch_size: int) -> Data:
+        data = self.model_data.data
 
-        The idea comes from https://arxiv.org/abs/1711.00489.
+        if self.shuffle:
+            data = self.model_data.shuffled_data(data)
+
+        if self.batch_strategy == BALANCED:
+            data = self.model_data.balanced_data(data, batch_size, self.shuffle)
+
+        # do not override self.model_data.data, because we need original data for
+        # balancing on the next epoch
+        return data
+
+
+class DataChunkFile(NamedTuple):
+    """Representation of a data chunk file.
+
+    Stores the file path to the data chunk file as well as the number of examples
+    in that file.
+    """
+
+    file_path: Path
+    number_of_examples: int
+
+
+class RasaDataChunkFileGenerator(RasaDataGenerator):
+    """Data generator for data chunks with a fixed batch size."""
+
+    def __init__(
+        self,
+        data_chunks: List[DataChunkFile],
+        load_data_func: Callable[[Path], RasaModelData],
+        batch_size: Union[List[int], int],
+        epochs: int = 1,
+        shuffle: bool = True,
+        random_seed: Optional[int] = None,
+    ):
+        """Initializes the increasing batch size data generator.
+
+        Args:
+            data_chunks: List of data chunks. A data chunk has a file path and the
+                         number of examples in that file.
+            load_data_func: Function to load data from a file.
+            batch_size: The batch size.
+            epochs: The total number of epochs.
+            shuffle: If 'Ture', data will be shuffled.
+            random_seed: Set the random seed to get reproducible results.
+        """
+        self.data_chunks = data_chunks
+        self.load_data_func = load_data_func
+        self._number_of_chunks = len(self.data_chunks)
+        # we need to track which chunk was loaded
+        self._current_chunk_index = None
+        self._max_batch_number_per_chunk = None
+        # optimization to not load same data twice
+        self._data = None
+
+        super().__init__(batch_size, epochs, shuffle, random_seed)
+
+    def _get_max_batch_number_per_chunk(self):
+        def _len(number_of_examples: int, batch_size: int) -> int:
+            return number_of_examples // batch_size + int(
+                number_of_examples % batch_size > 0
+            )
+
+        return np.cumsum(
+            [
+                _len(data_chunk.number_of_examples, self._current_batch_size)
+                for data_chunk in self.data_chunks
+            ]
+        )
+
+    def on_epoch_end(self) -> None:
+        """Update the data after every epoch."""
+        super().on_epoch_end()
+
+        if self.shuffle:
+            random.shuffle(self.data_chunks)
+
+        self._current_chunk_index = None
+        self._max_batch_number_per_chunk = self._get_max_batch_number_per_chunk()
+
+    def __len__(self) -> int:
+        """Number of batches in the Sequence.
 
         Returns:
-            The batch size to use in this epoch.
+            The number of batches in the Sequence.
         """
-        if not isinstance(self.batch_size, list):
-            return int(self.batch_size)
+        return self._max_batch_number_per_chunk[-1]
 
-        if self._epochs > 1:
-            return int(
-                self.batch_size[0]
-                + self._current_epoch
-                * (self.batch_size[1] - self.batch_size[0])
-                / (self._epochs - 1)
-            )
-        else:
-            return int(self.batch_size[0])
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        """Gets batch at position `index`.
+
+        Arguments:
+            index: position of the batch in the Sequence.
+
+        Returns:
+            A batch (tuple of input data and target data).
+        """
+        # determine what file to load
+        chunk_index, start, end = self._get_chunk_index(index)
+        # load actual data only if we use different chunk
+        if chunk_index != self._current_chunk_index:
+            self._data = self.load_data_func(
+                self.data_chunks[chunk_index].file_path
+            ).data
+            # remember current chunk index to not load same data twice
+            self._current_chunk_index = chunk_index
+
+        return self.prepare_batch(self._data, start, end), None
+
+    def _get_chunk_index(self, batch_index: int) -> Tuple[int, int, int]:
+        # Find the data chunk that contains the examples for current batch index.
+        # Example: chunk 1 has examples 1 to 7 and chunk 2 has examples 7 to 10.
+        # If we want to build a batch with the examples 5 to 9 we take chunk 1, the
+        # batch will only contain examples 5 and 6. E.g. we make sure to load only one
+        # file at a time.
+        chunk_index = -1
+        for idx in range(self._number_of_chunks):
+            if batch_index < self._max_batch_number_per_chunk[idx]:
+                chunk_index = idx
+                break
+
+        # every chunk file starts counting at 0
+        # substitute the number of batches present in the chunks before
+        # from current batch index to get a valid range for the current chunk
+        batch_index -= (
+            self._max_batch_number_per_chunk[chunk_index - 1] if chunk_index else 0
+        )
+
+        start = batch_index * self._current_batch_size
+        end = start + self._current_batch_size
+
+        return chunk_index, start, end

@@ -71,11 +71,29 @@ class RasaModel(TmpKerasModel):
     Cannot be used as tf.keras.Model.
     """
 
+    def get_config(self):
+        """Returns the config of the layer.
+
+        A layer config is a Python dictionary (serializable)
+        containing the configuration of a layer.
+        The same layer can be reinstantiated later
+        (without its trained weights) from this configuration.
+
+        The config of a layer does not include connectivity
+        information, nor the layer class name. These are handled
+        by `Network` (one layer of abstraction above).
+
+        Returns:
+            Python dictionary.
+        """
+        # TODO: figure out whether it can/needs to be implemented
+        pass
+
     def __init__(self, random_seed: Optional[int] = None, **kwargs,) -> None:
         """Initialize the RasaModel.
 
         Args:
-            random_seed: set the random seed to get reproducible results
+            random_seed: Set the random seed to get reproducible results.
         """
         # make sure that keras releases resources from previously trained model
         tf.keras.backend.clear_session()
@@ -454,10 +472,13 @@ class TransformerRasaModel(RasaModel):
 
         self._check_data()
 
-        label_batch = RasaDataGenerator.prepare_batch(label_data.data)
-        self.tf_label_data = self.batch_to_model_data_format(
-            label_batch, self.label_signature
-        )
+        if not label_data.is_empty():
+            label_batch = RasaDataGenerator.prepare_batch(label_data.data)
+            self.tf_label_data = self.batch_to_model_data_format(
+                label_batch, self.label_signature
+            )
+        else:
+            self.tf_label_data = {}
 
         # set up tf layers
         self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}

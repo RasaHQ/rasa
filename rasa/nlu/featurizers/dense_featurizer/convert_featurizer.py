@@ -7,7 +7,8 @@ import os
 import rasa.shared.utils.io
 import rasa.core.utils
 from rasa.utils import common
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.nlu.model import Metadata
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
@@ -19,7 +20,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
-    TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
 from rasa.shared.nlu.constants import (
@@ -27,6 +27,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
+    TOKENS_NAMES,
 )
 from rasa.exceptions import RasaException
 import rasa.nlu.utils
@@ -295,18 +296,17 @@ class ConveRTFeaturizer(DenseFeaturizer):
             "sequence_encoding"
         ].numpy()
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Featurize all message attributes in the training data with the ConveRT model.
 
         Args:
-            training_data_chunk: Training data to be featurized
-            config: Pipeline configuration
-            **kwargs: Any other arguments.
+            training_examples: The training examples.
+            config: Pipeline configuration.
         """
         if config is not None and config.language != "en":
             rasa.shared.utils.io.raise_warning(
@@ -322,9 +322,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
-                filter(
-                    lambda x: x.get(attribute), training_data_chunk.training_examples
-                )
+                filter(lambda x: x.get(attribute), training_examples)
             )
 
             progress_bar = tqdm(

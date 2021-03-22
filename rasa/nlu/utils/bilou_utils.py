@@ -1,9 +1,8 @@
 import logging
 from collections import defaultdict, Counter
-from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Tuple, Text, Optional, Dict, Any, Union
 
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     BILOU_ENTITIES,
     BILOU_ENTITIES_GROUP,
     BILOU_ENTITIES_ROLE,
@@ -17,12 +16,14 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    TOKENS_NAMES,
 )
-
-if TYPE_CHECKING:
-    from rasa.nlu.tokenizers.tokenizer import Token
-    from rasa.shared.nlu.training_data.training_data import TrainingDataFull
-    from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.tokens import Token
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def tag_without_prefix(tag: Text) -> Text:
 
 
 def bilou_tags_to_ids(
-    message: "Message",
+    message: Message,
     tag_id_dict: Dict[Text, int],
     tag_name: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> List[int]:
@@ -117,7 +118,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
 
 
 def build_tag_id_dict(
-    training_data: "TrainingDataFull", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+    training_data: TrainingDataFull, tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
@@ -127,16 +128,7 @@ def build_tag_id_dict(
 
     Returns: a mapping of tags to ids
     """
-    bilou_key = get_bilou_key_for_tag(tag_name)
-
-    distinct_tags = set(
-        [
-            tag_without_prefix(e)
-            for example in training_data.nlu_examples
-            if example.get(bilou_key)
-            for e in example.get(bilou_key)
-        ]
-    ) - {NO_ENTITY_TAG}
+    distinct_tags = training_data.distinct_entity_tags(tag_name)
 
     if not distinct_tags:
         return None
@@ -153,7 +145,9 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: "TrainingDataFull") -> None:
+def apply_bilou_schema(
+    training_data: Union[TrainingDataFull, TrainingDataChunk]
+) -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:
@@ -163,7 +157,7 @@ def apply_bilou_schema(training_data: "TrainingDataFull") -> None:
         apply_bilou_schema_to_message(message)
 
 
-def apply_bilou_schema_to_message(message: "Message") -> None:
+def apply_bilou_schema_to_message(message: Message) -> None:
     """Get a list of BILOU entity tags and set them on the given message.
 
     Args:
@@ -187,7 +181,7 @@ def apply_bilou_schema_to_message(message: "Message") -> None:
 
 
 def map_message_entities(
-    message: "Message", attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
+    message: Message, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values.
 
@@ -214,15 +208,13 @@ def map_message_entities(
 
 
 def bilou_tags_from_offsets(
-    tokens: List["Token"], entities: List[Tuple[int, int, Text]]
+    tokens: List[Token], entities: List[Tuple[int, int, Text]]
 ) -> List[Text]:
     """Creates BILOU tags for the given tokens and entities.
 
     Args:
-        message: The message object.
         tokens: The list of tokens.
         entities: The list of start, end, and tag tuples.
-        missing: The tag for missing entities.
 
     Returns:
         BILOU tags.

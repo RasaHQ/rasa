@@ -53,7 +53,7 @@ from rasa.nlu.test import (
     determine_intersection,
     determine_token_labels,
 )
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (

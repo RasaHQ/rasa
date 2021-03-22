@@ -27,7 +27,6 @@ from rasa.utils.tensorflow.model_data import (
     FeatureSignature,
     FeatureArray,
 )
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
@@ -38,10 +37,14 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    TOKENS_NAMES,
 )
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.exceptions import InvalidConfigException, FileNotFoundException
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
 from rasa.utils.tensorflow.constants import (
@@ -100,7 +103,11 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
 )
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+from rasa.utils.tensorflow.data_generator import (
+    DataChunkFile,
+    RasaDataChunkFileGenerator,
+    RasaDataGenerator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -320,7 +327,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        index_label_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         finetune_mode: bool = False,
@@ -337,7 +344,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_config_parameters()
 
         # transform numbers to labels
-        self.index_label_id_mapping = index_label_id_mapping
+        self.index_label_mapping = index_label_mapping
+        self._label_index_mapping = None
 
         self._entity_tag_specs = entity_tag_specs
 
@@ -364,13 +372,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
 
     @property
+    def _label_attribute(self) -> Optional[Text]:
+        """Returns label attribute."""
+        return INTENT if self.component_config[INTENT_CLASSIFICATION] else None
+
+    @property
     def label_key(self) -> Optional[Text]:
-        """Return key if intent classification is activated."""
+        """Returns key if intent classification is activated."""
         return LABEL_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @property
     def label_sub_key(self) -> Optional[Text]:
-        """Return sub key if intent classification is activated."""
+        """Returns sub key if intent classification is activated."""
         return LABEL_SUB_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
@@ -379,24 +392,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     # training data helpers:
     @staticmethod
-    def _label_id_index_mapping(
-        training_data: TrainingDataFull, attribute: Text
-    ) -> Dict[Text, int]:
-        """Create label_id dictionary."""
-        distinct_label_ids = {
-            example.get(attribute) for example in training_data.intent_examples
-        } - {None}
-        return {
-            label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
-        }
-
-    @staticmethod
     def _invert_mapping(mapping: Dict) -> Dict:
         return {value: key for key, value in mapping.items()}
 
-    def _create_entity_tag_specs(
-        self, training_data: TrainingDataFull
-    ) -> List[EntityTagSpec]:
+    def _create_label_index_mappings(self, training_data: TrainingDataFull) -> None:
+        distinct_label_ids = {
+            example.get(self._label_attribute)
+            for example in training_data.intent_examples
+        } - {None}
+        self._label_index_mapping = {
+            label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
+        }
+        self.index_label_mapping = self._invert_mapping(self._label_index_mapping)
+
+    def _create_entity_tag_specs(self, training_data: TrainingDataFull) -> None:
         """Create entity tag specifications with their respective tag id mappings."""
         _tag_specs = []
 
@@ -420,21 +429,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     )
                 )
 
-        return _tag_specs
+        self._entity_tag_specs = _tag_specs
 
     @staticmethod
     def _tag_id_index_mapping_for(
         tag_name: Text, training_data: TrainingDataFull
     ) -> Optional[Dict[Text, int]]:
         """Create mapping from tag name to id."""
-        if tag_name == ENTITY_ATTRIBUTE_ROLE:
-            distinct_tags = training_data.entity_roles
-        elif tag_name == ENTITY_ATTRIBUTE_GROUP:
-            distinct_tags = training_data.entity_groups
-        else:
-            distinct_tags = training_data.entities
-
-        distinct_tags = distinct_tags - {NO_ENTITY_TAG} - {None}
+        distinct_tags = training_data.distinct_entity_tags(tag_name)
 
         if not distinct_tags:
             return None
@@ -455,16 +457,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         for ex in examples:
             if ex.get(attribute) == label:
                 return ex
-        return None
 
-    def _check_labels_features_exist(
-        self, labels_example: List[Message], attribute: Text
-    ) -> bool:
+    def _check_labels_features_exist(self, labels_example: List[Message]) -> bool:
         """Checks if all labels have features set."""
-
         return all(
             label_example.features_present(
-                attribute, self.component_config[FEATURIZERS]
+                self._label_attribute, self.component_config[FEATURIZERS]
             )
             for label_example in labels_example
         )
@@ -543,13 +541,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 )
 
     def _extract_labels_precomputed_features(
-        self, label_examples: List[Message], attribute: Text = INTENT
+        self, label_examples: List[Message]
     ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
         """Collects precomputed encodings."""
         features = defaultdict(list)
 
         for e in label_examples:
-            label_features = self._extract_features(e, attribute)
+            label_features = self._extract_features(e, self._label_attribute)
             for feature_key, feature_value in label_features.items():
                 features[feature_key].append(feature_value)
 
@@ -583,40 +581,64 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
         ]
 
-    def _create_label_data(
-        self,
-        training_data: TrainingDataFull,
-        label_id_dict: Dict[Text, int],
-        attribute: Text,
-    ) -> RasaModelData:
-        """Create matrix with label_ids encoded in rows as bag of words.
+    def _get_label_example_from_chunks(
+        self, label_name: Text, data_chunk_files: List[DataChunkFile]
+    ) -> Optional[Message]:
+        # find data chunk that contains label example
+        for data_chunk in data_chunk_files:
+            training_data_chunk = TrainingDataChunk.load_chunk(data_chunk.file_path)
+            label_example = self._find_example_for_label(
+                label_name, training_data_chunk.intent_examples, self._label_attribute,
+            )
+            if label_example is not None:
+                return label_example
 
-        Find a training example for each label and get the encoded features
-        from the corresponding Message object.
+    def _get_indexed_examples_for_labels(
+        self,
+        training_data: Union[TrainingDataFull, TrainingDataChunk],
+        data_chunk_files: Optional[List[DataChunkFile]] = None,
+    ) -> List[Tuple[int, Message]]:
+        # Collect one example for each label
+        indexed_examples_for_labels = []
+        for label_name, idx in self._label_index_mapping.items():
+            label_example = self._find_example_for_label(
+                label_name, training_data.intent_examples, self._label_attribute
+            )
+            if label_example is None and data_chunk_files:
+                label_example = self._get_label_example_from_chunks(
+                    label_name, data_chunk_files
+                )
+
+            indexed_examples_for_labels.append((idx, label_example))
+
+        # Sort the list of tuples based on label_idx
+        return sorted(indexed_examples_for_labels, key=lambda x: x[0])
+
+    def _create_label_data(
+        self, indexed_examples_for_labels: List[Tuple[int, Message]]
+    ) -> RasaModelData:
+        """Creates matrix with label_ids encoded in rows as bag of words.
+
+        Gets the encoded features from the corresponding Message object of
+        the training example.
         If the features are already computed, fetch them from the message object
         else compute a one hot encoding for the label as the feature vector.
         """
-        # Collect one example for each label
-        labels_idx_examples = []
-        for label_name, idx in label_id_dict.items():
-            label_example = self._find_example_for_label(
-                label_name, training_data.intent_examples, attribute
-            )
-            labels_idx_examples.append((idx, label_example))
+        # when DIET performs only entity classification there is no label data
+        if not self._label_attribute:
+            return RasaModelData()
 
-        # Sort the list of tuples based on label_idx
-        labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
-        labels_example = [example for (_, example) in labels_idx_examples]
+        label_examples = [example for (_, example) in indexed_examples_for_labels]
 
         # Collect features, precomputed if they exist, else compute on the fly
-        if self._check_labels_features_exist(labels_example, attribute):
+        if self._check_labels_features_exist(label_examples):
             (
                 sequence_features,
                 sentence_features,
-            ) = self._extract_labels_precomputed_features(labels_example, attribute)
+            ) = self._extract_labels_precomputed_features(label_examples)
         else:
             sequence_features = None
-            sentence_features = self._compute_default_label_features(labels_example)
+            sentence_features = self._compute_default_label_features(label_examples)
 
         label_data = RasaModelData()
         label_data.add_features(LABEL, SEQUENCE, sequence_features)
@@ -629,7 +651,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 "No label features are present. Please check your configuration file."
             )
 
-        label_ids = np.array([idx for (idx, _) in labels_idx_examples])
+        label_ids = np.array([idx for (idx, _) in indexed_examples_for_labels])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(
@@ -652,11 +674,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ]
 
     def _create_model_data(
-        self,
-        training_data: List[Message],
-        label_id_dict: Optional[Dict[Text, int]] = None,
-        label_attribute: Optional[Text] = None,
-        training: bool = True,
+        self, training_data: List[Message], training: bool = True,
     ) -> RasaModelData:
         """Prepare data for training and create a RasaModelData object."""
         from rasa.utils.tensorflow import model_data_utils
@@ -665,7 +683,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if training and self.component_config[INTENT_CLASSIFICATION]:
             # we don't have any intent labels during prediction, just add them during
             # training
-            attributes_to_consider.append(label_attribute)
+            attributes_to_consider.append(self._label_attribute)
         if (
             training
             and self.component_config[ENTITY_RECOGNITION]
@@ -675,11 +693,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # training data added for entities with DIET configured to predict entities.
             attributes_to_consider.append(ENTITIES)
 
-        if training and label_attribute is not None:
+        if training and self._label_attribute is not None:
             # only use those training examples that have the label_attribute set
             # during training
             training_data = [
-                example for example in training_data if label_attribute in example.data
+                example
+                for example in training_data
+                if self._label_attribute in example.data
             ]
 
         if not training_data:
@@ -703,30 +723,28 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_data(attribute_data)
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
 
-        self._add_label_features(
-            model_data, training_data, label_attribute, label_id_dict, training
-        )
+        if training:
+            self._add_label_features(model_data, training_data)
 
         # make sure all keys are in the same order during training and prediction
         # as we rely on the order of key and sub-key when constructing the actual
         # tensors from the model data
         model_data.sort()
 
+        self._check_input_dimension_consistency(model_data)
+
         return model_data
 
     def _add_label_features(
-        self,
-        model_data: RasaModelData,
-        training_data: List[Message],
-        label_attribute: Text,
-        label_id_dict: Dict[Text, int],
-        training: bool = True,
+        self, model_data: RasaModelData, training_data: List[Message],
     ):
         label_ids = []
-        if training and self.component_config[INTENT_CLASSIFICATION]:
+        if self._label_attribute:
             for example in training_data:
-                if example.get(label_attribute):
-                    label_ids.append(label_id_dict[example.get(label_attribute)])
+                if example.get(self._label_attribute):
+                    label_ids.append(
+                        self._label_index_mapping[example.get(self._label_attribute)]
+                    )
 
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
@@ -737,9 +755,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
 
         if (
-            label_attribute
-            and model_data.does_feature_not_exist(label_attribute, SENTENCE)
-            and model_data.does_feature_not_exist(label_attribute, SEQUENCE)
+            self._label_attribute
+            and model_data.does_feature_not_exist(self._label_attribute, SENTENCE)
+            and model_data.does_feature_not_exist(self._label_attribute, SEQUENCE)
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
@@ -749,14 +767,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # as label_attribute can have different values, e.g. INTENT or RESPONSE,
         # copy over the features to the LABEL key to make
         # it easier to access the label features inside the model itself
-        model_data.update_key(label_attribute, SENTENCE, LABEL, SENTENCE)
-        model_data.update_key(label_attribute, SEQUENCE, LABEL, SEQUENCE)
-        model_data.update_key(label_attribute, MASK, LABEL, MASK)
+        model_data.update_key(self._label_attribute, SENTENCE, LABEL, SENTENCE)
+        model_data.update_key(self._label_attribute, SEQUENCE, LABEL, SEQUENCE)
+        model_data.update_key(self._label_attribute, MASK, LABEL, MASK)
 
         model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
     # train helpers
-    def preprocess_train_data(self, training_data: TrainingDataFull) -> RasaModelData:
+    def _preprocess_train_data(
+        self, training_data: Union[TrainingDataFull, TrainingDataChunk]
+    ) -> RasaModelData:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
@@ -764,39 +784,113 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
-        label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=INTENT
-        )
-
-        if not label_id_index_mapping:
-            # no labels are present to train
-            return RasaModelData()
-
-        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
-
-        self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=INTENT
-        )
-
-        self._entity_tag_specs = self._create_entity_tag_specs(training_data)
-
-        label_attribute = (
-            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
-        )
-
-        model_data = self._create_model_data(
-            training_data.nlu_examples,
-            label_id_index_mapping,
-            label_attribute=label_attribute,
-        )
-
-        self._check_input_dimension_consistency(model_data)
-
-        return model_data
+        return self._create_model_data(training_data.nlu_examples)
 
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
         return len(np.unique(model_data.get(LABEL_KEY, LABEL_SUB_KEY))) >= 2
+
+    def prepare_partial_training(
+        self,
+        training_data: TrainingDataFull,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
+        self._create_label_index_mappings(training_data)
+
+        self._create_entity_tag_specs(training_data)
+
+        if self.component_config.get(ENTITY_RECOGNITION):
+            self.check_correct_entity_annotations(training_data)
+
+    def _load_data_func(self, file_path: Path) -> RasaModelData:
+        training_data_chunk = TrainingDataChunk.load_chunk(file_path)
+        return self._preprocess_train_data(training_data_chunk)
+
+    def _train_model(
+        self,
+        model_data: RasaModelData,
+        train_data_generator: RasaDataGenerator,
+        validation_data_generator: Optional[RasaDataGenerator] = None,
+    ) -> None:
+        if not self.finetune_mode:
+            # keep one example for persisting and loading
+            self._data_example = model_data.first_data_example()
+            # No pre-trained model to load from. Create a new instance of the model.
+            self.model = self._instantiate_model_class(model_data)
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+            )
+
+        callbacks = train_utils.create_common_callbacks(
+            self.component_config[EPOCHS],
+            self.component_config[TENSORBOARD_LOG_DIR],
+            self.component_config[TENSORBOARD_LOG_LEVEL],
+            self.tmp_checkpoint_dir,
+        )
+
+        self.model.fit(
+            train_data_generator,
+            epochs=self.component_config[EPOCHS],
+            validation_data=validation_data_generator,
+            validation_freq=self.component_config[EVAL_NUM_EPOCHS],
+            callbacks=callbacks,
+            verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
+        )
+
+    def _no_data_debug_log(self):
+        logger.debug(
+            f"Cannot train '{self.__class__.__name__}'. No data was provided. "
+            f"Skipping training of the classifier."
+        )
+
+    def train_on_chunks(
+        self,
+        data_chunk_files: List[DataChunkFile],
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Trains this component using the list of data chunk files.
+
+        Args:
+            data_chunk_files: List of data chunk files.
+            config: The model configuration parameters.
+        """
+        if not data_chunk_files or (
+            self._label_attribute and not self._label_index_mapping
+        ):
+            self._no_data_debug_log()
+            return
+
+        # load one chunk so that we can instantiate the model
+        sample_data_chunk = TrainingDataChunk.load_chunk(data_chunk_files[0].file_path)
+        # we do stratified split of nlu examples, if the first one doesn't contain
+        # nlu examples, then no chunk contains them
+        if not sample_data_chunk.nlu_examples:
+            self._no_data_debug_log()
+            return
+
+        self._label_data = self._create_label_data(
+            self._get_indexed_examples_for_labels(sample_data_chunk, data_chunk_files)
+        )
+
+        sample_model_data = self._preprocess_train_data(sample_data_chunk)
+
+        data_generator = RasaDataChunkFileGenerator(
+            data_chunk_files,
+            self._load_data_func,
+            batch_size=self.component_config[BATCH_SIZES],
+            epochs=self.component_config[EPOCHS],
+            shuffle=True,
+            random_seed=self.component_config[RANDOM_SEED],
+        )
+
+        self._train_model(sample_model_data, data_generator)
 
     def train(
         self,
@@ -805,34 +899,26 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
-        model_data = self.preprocess_train_data(training_data)
-        if model_data.is_empty():
-            logger.debug(
-                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the classifier."
-            )
+        if not training_data.nlu_examples:
+            self._no_data_debug_log()
             return
 
-        if self.component_config.get(INTENT_CLASSIFICATION):
-            if not self._check_enough_labels(model_data):
-                logger.error(
-                    f"Cannot train '{self.__class__.__name__}'. "
-                    f"Need at least 2 different intent classes. "
-                    f"Skipping training of classifier."
-                )
-                return
-        if self.component_config.get(ENTITY_RECOGNITION):
-            self.check_correct_entity_annotations(training_data)
+        self.prepare_partial_training(training_data, config, **kwargs)
 
-        # keep one example for persisting and loading
-        self._data_example = model_data.first_data_example()
+        if self._label_attribute and not self._label_index_mapping:
+            self._no_data_debug_log()
+            return
 
-        if not self.finetune_mode:
-            # No pre-trained model to load from. Create a new instance of the model.
-            self.model = self._instantiate_model_class(model_data)
-            self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
-            )
+        self._label_data = self._create_label_data(
+            self._get_indexed_examples_for_labels(training_data)
+        )
+        if self.component_config[BILOU_FLAG]:
+            bilou_utils.apply_bilou_schema(training_data)
+
+        model_data = self._preprocess_train_data(training_data)
+
+        if not self._can_train_model(model_data):
+            return
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
@@ -842,22 +928,24 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[RANDOM_SEED],
         )
-        callbacks = train_utils.create_common_callbacks(
-            self.component_config[EPOCHS],
-            self.component_config[TENSORBOARD_LOG_DIR],
-            self.component_config[TENSORBOARD_LOG_LEVEL],
-            self.tmp_checkpoint_dir,
-        )
 
-        self.model.fit(
-            data_generator,
-            epochs=self.component_config[EPOCHS],
-            validation_data=validation_data_generator,
-            validation_freq=self.component_config[EVAL_NUM_EPOCHS],
-            callbacks=callbacks,
-            verbose=False,
-            shuffle=False,  # we use custom shuffle inside data generator
-        )
+        self._train_model(model_data, data_generator, validation_data_generator)
+
+    def _can_train_model(self, model_data: RasaModelData) -> bool:
+        if model_data.is_empty():
+            self._no_data_debug_log()
+            return False
+
+        if self.component_config.get(INTENT_CLASSIFICATION):
+            if not self._check_enough_labels(model_data):
+                logger.error(
+                    f"Cannot train '{self.__class__.__name__}'. "
+                    f"Need at least 2 different intent classes. "
+                    f"Skipping training of classifier."
+                )
+                return False
+
+        return True
 
     # process helpers
     def _predict(
@@ -907,8 +995,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
             label = {
-                "id": hash(self.index_label_id_mapping[label_ids[0]]),
-                "name": self.index_label_id_mapping[label_ids[0]],
+                "id": hash(self.index_label_mapping[label_ids[0]]),
+                "name": self.index_label_mapping[label_ids[0]],
                 "confidence": message_sim[0],
             }
 
@@ -924,8 +1012,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ranking = ranking[:output_length]
             label_ranking = [
                 {
-                    "id": hash(self.index_label_id_mapping[label_idx]),
-                    "name": self.index_label_id_mapping[label_idx],
+                    "id": hash(self.index_label_mapping[label_idx]),
+                    "name": self.index_label_mapping[label_idx],
                     "confidence": score,
                 }
                 for label_idx, score in ranking
@@ -1000,8 +1088,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.label_data.pkl", dict(self._label_data.data)
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json",
-            self.index_label_id_mapping,
+            model_dir / f"{file_name}.index_label_mapping.json",
+            self.index_label_mapping,
         )
 
         entity_tag_specs = (
@@ -1035,7 +1123,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return cls(component_config=meta)
 
         (
-            index_label_id_mapping,
+            index_label_mapping,
             entity_tag_specs,
             label_data,
             meta,
@@ -1058,7 +1146,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return cls(
             component_config=meta,
-            index_label_id_mapping=index_label_id_mapping,
+            index_label_mapping=index_label_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
             finetune_mode=should_finetune,
@@ -1073,9 +1161,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         label_data = RasaModelData(data=label_data)
-        index_label_id_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json"
-        )
+        # TODO remove in the 3.0.0 version
+        try:
+            index_label_mapping = io_utils.json_unpickle(
+                model_dir / f"{file_name}.index_label_mapping.json"
+            )
+        except FileNotFoundException:
+            index_label_mapping = io_utils.json_unpickle(
+                model_dir / f"{file_name}.index_label_id_mapping.json"
+            )
+
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
         )
@@ -1094,12 +1189,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ]
 
         # jsonpickle converts dictionary keys to strings
-        index_label_id_mapping = {
-            int(key): value for key, value in index_label_id_mapping.items()
+        index_label_mapping = {
+            int(key): value for key, value in index_label_mapping.items()
         }
 
         return (
-            index_label_id_mapping,
+            index_label_mapping,
             entity_tag_specs,
             label_data,
             meta,

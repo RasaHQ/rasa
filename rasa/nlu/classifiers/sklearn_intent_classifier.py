@@ -16,12 +16,10 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
-from rasa.shared.nlu.training_data.training_data import (
-    TrainingDataFull,
-    TrainingDataChunk,
-)
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import RasaTrainChunkException
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +94,13 @@ class SklearnIntentClassifier(IntentClassifier):
         """
         return self.label_encoder.inverse_transform(y)
 
-    def train_chunk(
+    def train_on_chunks(
         self,
-        training_data_chunk: TrainingDataChunk,
+        data_chunk_files: List[DataChunkFile],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Trains this component using the list of data chunk files.
 
         See parent class for more information.
         """

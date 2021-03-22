@@ -12,7 +12,6 @@ from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     FEATURIZER_CLASS_ALIAS,
     MIN_ADDITIONAL_REGEX_PATTERNS,
 )
@@ -22,6 +21,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
+    TOKENS_NAMES,
 )
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
@@ -176,7 +176,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
         See parent class for more information.
         """
-        self.known_patterns = pattern_utils.extract_patterns(
+        new_patterns = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
@@ -184,21 +184,21 @@ class RegexFeaturizer(SparseFeaturizer):
         )
         if self.finetune_mode:
             # Merge patterns extracted from data with known patterns
-            self._merge_new_patterns(self.known_patterns)
+            self._merge_new_patterns(new_patterns)
         else:
-            self.known_patterns = self.known_patterns
+            self.known_patterns = new_patterns
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
-        for example in training_data_chunk.training_examples:
+        for example in training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
                 self._text_features_with_regex(example, attribute)
 

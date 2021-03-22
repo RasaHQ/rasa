@@ -20,7 +20,6 @@ from rasa.shared.nlu.training_data.training_data import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
@@ -35,6 +34,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
+    TOKENS_NAMES,
 )
 
 BUFFER_SLOTS_PREFIX = "buf_"
@@ -358,10 +358,16 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     @staticmethod
     def _get_starting_empty_index(vocabulary: Dict[Text, int]) -> int:
-        for key in vocabulary.keys():
-            if key.startswith(BUFFER_SLOTS_PREFIX):
-                return int(key.split(BUFFER_SLOTS_PREFIX)[1])
-        return len(vocabulary)
+        buffer_indices = [
+            index
+            for key, index in vocabulary.items()
+            if key.startswith(BUFFER_SLOTS_PREFIX)
+        ]
+
+        if not buffer_indices:
+            return len(vocabulary)
+
+        return min(buffer_indices)
 
     def _update_vectorizer_vocabulary(
         self, attribute: Text, new_vocabulary: Set[Text]
@@ -734,13 +740,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         else:
             self._train_with_independent_vocab(attribute_texts)
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Train this component on the given chunk.
+        """Train this component on the given examples.
 
         See parent class for more information.
         """
@@ -748,7 +754,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         for attribute in self._attributes:
             all_tokens = [
                 self._get_processed_message_tokens_by_attribute(example, attribute)
-                for example in training_data_chunk.training_examples
+                for example in training_examples
             ]
             sequence_features, sentence_features = self._get_featurized_attribute(
                 attribute, all_tokens
@@ -756,10 +762,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             if sequence_features and sentence_features:
                 self._set_attribute_features(
-                    attribute,
-                    sequence_features,
-                    sentence_features,
-                    training_data_chunk.training_examples,
+                    attribute, sequence_features, sentence_features, training_examples
                 )
 
     def process(self, message: Message, **kwargs: Any) -> None:

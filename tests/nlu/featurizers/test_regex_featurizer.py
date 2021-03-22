@@ -3,16 +3,14 @@ from typing import Text, List, Any, Tuple
 import numpy as np
 import pytest
 from pathlib import Path
-from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
+from rasa.nlu.constants import SPACY_DOCS
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
 
@@ -165,7 +163,7 @@ def test_lookup_tables_without_use_word_boundaries(
     labeled_tokens: List[float],
 ):
     from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.tokens import Token
 
     lookups = [
         {"name": "cites", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},

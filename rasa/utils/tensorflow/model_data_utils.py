@@ -5,7 +5,6 @@ import scipy.sparse
 from collections import defaultdict, OrderedDict
 from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
 from rasa.utils.tensorflow.constants import MASK, IDS
 from rasa.shared.nlu.training_data.message import Message
@@ -15,6 +14,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    TOKENS_NAMES,
 )
 
 if typing.TYPE_CHECKING:

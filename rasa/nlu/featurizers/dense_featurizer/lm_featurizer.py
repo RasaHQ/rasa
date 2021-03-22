@@ -7,11 +7,10 @@ import rasa.core.utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component, UnsupportedLanguageError
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.nlu.model import Metadata
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
-from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -20,7 +19,6 @@ from rasa.nlu.constants import (
     FEATURIZER_CLASS_ALIAS,
     NO_LENGTH_RESTRICTION,
     NUMBER_OF_SUB_TOKENS,
-    TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
 )
 from rasa.shared.nlu.constants import (
@@ -28,9 +26,12 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
+    TOKENS_NAMES,
 )
 from rasa.utils import train_utils
 from rasa.shared.core.domain import Domain
+from rasa.nlu.model import Metadata
+
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -96,6 +97,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         domain: Optional[Domain] = None,
     ) -> "DenseFeaturizer":
         """Creates this component (e.g. before a training is started)."""
+        from rasa.nlu.model import Metadata
+
         language = model_config.language
         if not cls.can_handle_language(language):
             # check failed
@@ -115,10 +118,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional["Component"] = None,
+        model_metadata: Optional[Metadata] = None,
+        cached_component: Optional[Component] = None,
         **kwargs: Any,
-    ) -> "Component":
+    ) -> Component:
         """Load this component from file.
 
         After a component has been trained, it will be persisted by
@@ -786,16 +789,16 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         return batch_docs
 
-    def train_chunk(
+    def _train_on_examples(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_examples: List[Message],
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Compute tokens and dense features for each message in training data.
 
         Args:
-            training_data_chunk: NLU training data to be tokenized and featurized
+            training_examples: The training examples.
             config: NLU pipeline config consisting of all components.
         """
         batch_size = 64
@@ -803,9 +806,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
-                filter(
-                    lambda x: x.get(attribute), training_data_chunk.training_examples
-                )
+                filter(lambda x: x.get(attribute), training_examples)
             )
 
             batch_start_index = 0

@@ -3,15 +3,20 @@ import numpy as np
 import pytest
 import scipy.sparse
 from pathlib import Path
-from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTION_NAME
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.constants import SPACY_DOCS
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    ACTION_TEXT,
+    ACTION_NAME,
+    TOKENS_NAMES,
+)
+from rasa.shared.nlu.training_data.tokens import Token
 from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (

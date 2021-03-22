@@ -6,11 +6,15 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingDataFull
+from rasa.shared.nlu.training_data.training_data import (
+    TrainingDataFull,
+    TrainingDataChunk,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -247,7 +251,7 @@ class ResponseSelector(DIETClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        index_label_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         all_retrieval_intents: Optional[List[Text]] = None,
@@ -258,7 +262,7 @@ class ResponseSelector(DIETClassifier):
 
         Args:
             component_config: Configuration for the component.
-            index_label_id_mapping: Mapping between label and index used for encoding.
+            index_label_mapping: Mapping between label and index used for encoding.
             entity_tag_specs: Format specification all entity tags.
             model: Model architecture.
             all_retrieval_intents: All retrieval intents defined in the data.
@@ -273,42 +277,48 @@ class ResponseSelector(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = False
         component_config[BILOU_FLAG] = None
 
-        # Initialize defaults
-        self.responses = responses or {}
-        self.all_retrieval_intents = all_retrieval_intents or []
-        self.retrieval_intent = None
-        self.use_text_as_label = False
-
         super().__init__(
             component_config,
-            index_label_id_mapping,
+            index_label_mapping,
             entity_tag_specs,
             model,
             finetune_mode=finetune_mode,
         )
 
+        self.responses = responses or {}
+        self.all_retrieval_intents = all_retrieval_intents or []
+        self.retrieval_intent = self.component_config[RETRIEVAL_INTENT]
+        self.use_text_as_label = self.component_config[USE_TEXT_AS_LABEL]
+
+    @property
+    def _label_attribute(self) -> Text:
+        """Returns label attribute."""
+        return RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
+
     @property
     def label_key(self) -> Text:
+        """Returns key if intent classification is activated."""
         return LABEL_KEY
 
     @property
     def label_sub_key(self) -> Text:
+        """Returns sub key if intent classification is activated."""
         return LABEL_SUB_KEY
 
     @staticmethod
-    def model_class(use_text_as_label: bool) -> Type[RasaModel]:
+    def model_class(use_text_as_label: bool = False) -> Type[RasaModel]:
+        """Returns the class of the model to use.
+
+        Args:
+            use_text_as_label: If `True`, use response text as labels.
+
+        Returns:
+            The class of the model to use.
+        """
         if use_text_as_label:
             return DIET2DIET
         else:
             return DIET2BOW
-
-    def _load_selector_params(self, config: Dict[Text, Any]) -> None:
-        self.retrieval_intent = config[RETRIEVAL_INTENT]
-        self.use_text_as_label = config[USE_TEXT_AS_LABEL]
-
-    def _check_config_parameters(self) -> None:
-        super()._check_config_parameters()
-        self._load_selector_params(self.component_config)
 
     def _set_message_property(
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
@@ -324,7 +334,9 @@ class ResponseSelector(DIETClassifier):
             add_to_output=True,
         )
 
-    def preprocess_train_data(self, training_data: TrainingDataFull) -> RasaModelData:
+    def _preprocess_train_data(
+        self, training_data: Union[TrainingDataFull, TrainingDataChunk]
+    ) -> RasaModelData:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
@@ -332,9 +344,6 @@ class ResponseSelector(DIETClassifier):
         Args:
             training_data: training data to preprocessed.
         """
-        # Collect all retrieval intents present in the data before filtering
-        self.all_retrieval_intents = list(training_data.retrieval_intents)
-
         if self.retrieval_intent:
             training_data = training_data.filter_training_examples(
                 lambda ex: self.retrieval_intent == ex.get(INTENT)
@@ -347,33 +356,7 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
-        label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
-
-        label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=label_attribute
-        )
-
-        self.responses = training_data.responses
-
-        if not label_id_index_mapping:
-            # no labels are present to train
-            return RasaModelData()
-
-        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
-
-        self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=label_attribute
-        )
-
-        model_data = self._create_model_data(
-            training_data.intent_examples,
-            label_id_index_mapping,
-            label_attribute=label_attribute,
-        )
-
-        self._check_input_dimension_consistency(model_data)
-
-        return model_data
+        return self._create_model_data(training_data.intent_examples)
 
     def _resolve_intent_response_key(
         self, label: Dict[Text, Optional[Text]]
@@ -388,9 +371,7 @@ class ResponseSelector(DIETClassifier):
             It is always guaranteed to have a match, otherwise that case should have
             been caught earlier and a warning should have been raised.
         """
-
         for key, responses in self.responses.items():
-
             # First check if the predicted label was the key itself
             search_key = util.template_key_to_intent_response_key(key)
             if hash(search_key) == label.get("id"):
@@ -400,7 +381,23 @@ class ResponseSelector(DIETClassifier):
             for response in responses:
                 if hash(response.get(TEXT, "")) == label.get("id"):
                     return search_key
-        return None
+
+    def prepare_partial_training(
+        self,
+        training_data: TrainingDataFull,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Prepare the component for training on just a part of the data.
+
+        See parent class for more information.
+        """
+        self._create_label_index_mappings(training_data)
+
+        # Collect all retrieval intents present in the data before filtering
+        self.all_retrieval_intents = list(training_data.retrieval_intents)
+
+        self.responses = training_data.responses
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Selects most like response for message.
@@ -520,7 +517,6 @@ class ResponseSelector(DIETClassifier):
         )
 
     def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
-
         return self.model_class(self.use_text_as_label)(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,

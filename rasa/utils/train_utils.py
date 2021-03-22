@@ -45,7 +45,7 @@ from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
-    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.tokens import Token
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -407,6 +407,7 @@ def create_data_generators(
             epochs=epochs,
             batch_strategy=batch_strategy,
             shuffle=True,
+            random_seed=random_seed,
         )
 
     data_generator = RasaBatchDataGenerator(
@@ -415,6 +416,7 @@ def create_data_generators(
         epochs=epochs,
         batch_strategy=batch_strategy,
         shuffle=True,
+        random_seed=random_seed,
     )
 
     return data_generator, validation_data_generator

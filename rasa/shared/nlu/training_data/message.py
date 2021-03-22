@@ -127,7 +127,9 @@ class Message:
         Returns:
             Fingerprint of the message.
         """
-        return rasa.shared.utils.io.deep_container_fingerprint(self.data)
+        # ensure the same order of keys inside data
+        data = dict(sorted(self.data.items()))
+        return rasa.shared.utils.io.deep_container_fingerprint(data)
 
     @classmethod
     def build(

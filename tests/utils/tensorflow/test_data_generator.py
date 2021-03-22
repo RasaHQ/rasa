@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Text
+
 import pytest
 
 import scipy.sparse
@@ -6,6 +9,8 @@ import numpy as np
 from rasa.utils.tensorflow.model_data import FeatureArray, RasaModelData
 from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
+    RasaDataChunkFileGenerator,
+    DataChunkFile,
     RasaBatchDataGenerator,
 )
 
@@ -58,6 +63,60 @@ def test_data_generator_with_fixed_batch_size(model_data: RasaModelData):
 
     with pytest.raises(StopIteration):
         next(iterator)
+
+
+def test_file_loading_data_generator(model_data: RasaModelData):
+    data_chunks = [
+        DataChunkFile(Path("chunk1.tfrecord"), 5),
+        DataChunkFile(Path("chunk2.tfrecord"), 2),
+        DataChunkFile(Path("chunk3.tfrecord"), 4),
+        DataChunkFile(Path("chunk4.tfrecord"), 3),
+        DataChunkFile(Path("chunk5.tfrecord"), 4),
+    ]
+
+    data_generator = RasaDataChunkFileGenerator(
+        data_chunks, lambda x: RasaModelData(), batch_size=2
+    )
+
+    iterator = iter(data_generator)
+
+    assert len(data_generator) == 10
+
+    for i in range(len(data_generator)):
+        batch, _ = next(iterator)
+
+    with pytest.raises(StopIteration):
+        next(iterator)
+
+
+@pytest.mark.parametrize(
+    "index, expected_start, expected_end, expected_file_path",
+    [
+        (0, 0, 2, "chunk1.tfrecord"),
+        (1, 2, 4, "chunk1.tfrecord"),
+        (2, 4, 6, "chunk1.tfrecord"),
+        (3, 0, 2, "chunk2.tfrecord"),
+    ],
+)
+def test_file_path_to_load(
+    index: int, expected_start: int, expected_end: int, expected_file_path: Text
+):
+    data_chunks = [
+        DataChunkFile(Path("chunk1.tfrecord"), 5),
+        DataChunkFile(Path("chunk2.tfrecord"), 2),
+    ]
+
+    data_generator = RasaDataChunkFileGenerator(
+        data_chunks, lambda x: RasaModelData(), batch_size=2, shuffle=False
+    )
+    assert len(data_generator) == 4
+
+    chunk_index, start, end = data_generator._get_chunk_index(index)
+    file_path = data_generator.data_chunks[chunk_index].file_path
+
+    assert str(file_path) == expected_file_path
+    assert start == expected_start
+    assert end == expected_end
 
 
 @pytest.mark.parametrize(

@@ -5,14 +5,15 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.utils.train_utils
-from rasa.nlu.model import Metadata
 from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     import mitie
+    from rasa.nlu.model import Metadata
 
 
 class MitieNLP(Component):
+    """Component that loads the MITIE language model."""
 
     defaults = {
         # name of the language model to load - this contains
@@ -96,10 +97,14 @@ class MitieNLP(Component):
         cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
-        model_metadata: Optional[Metadata] = None,
+        model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["MitieNLP"] = None,
         **kwargs: Any,
     ) -> "MitieNLP":
+        """Load this component from file.
+
+        See parent class for more information.
+        """
         import mitie
 
         if cached_component:
@@ -109,7 +114,10 @@ class MitieNLP(Component):
         return cls(meta, mitie.total_word_feature_extractor(mitie_file))
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this component to disk for future loading.
 
+        See parent class for more information.
+        """
         return {
             "mitie_feature_extractor_fingerprint": self.extractor.fingerprint,
             "model": self.component_config.get("model"),

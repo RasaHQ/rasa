@@ -1,16 +1,15 @@
 import logging
+import typing
 from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.core.utils
-from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingDataChunk
+from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.training_data.tokens import Token
 import rasa.shared.utils.io
 import rasa.utils.train_utils as train_utils
 import numpy as np
@@ -24,6 +23,10 @@ from rasa.nlu.constants import (
     NO_LENGTH_RESTRICTION,
 )
 from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.model import Metadata
+
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -59,6 +62,11 @@ class HFTransformersNLP(Component):
         skip_model_load: bool = False,
     ) -> None:
         """Initializes HFTransformsNLP with the models specified."""
+        # TODO remove in rasa 3.0.0
+        from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (
+            LanguageModelFeaturizer,
+        )
+
         super(HFTransformersNLP, self).__init__(component_config)
 
         self._load_model_metadata()
@@ -135,7 +143,7 @@ class HFTransformersNLP(Component):
 
     @classmethod
     def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
+        cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
         """Cache the component for future use.
 
@@ -693,16 +701,16 @@ class HFTransformersNLP(Component):
 
         return batch_docs
 
-    def train_chunk(
+    def train(
         self,
-        training_data_chunk: TrainingDataChunk,
+        training_data: TrainingDataFull,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Compute tokens and dense features for each message in training data.
 
         Args:
-            training_data_chunk: NLU training data to be tokenized and featurized
+            training_data: NLU training data to be tokenized and featurized
             config: NLU pipeline config consisting of all components.
         """
         batch_size = 64
@@ -710,9 +718,7 @@ class HFTransformersNLP(Component):
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
-                filter(
-                    lambda x: x.get(attribute), training_data_chunk.training_examples
-                )
+                filter(lambda x: x.get(attribute), training_data.training_examples)
             )
 
             batch_start_index = 0
