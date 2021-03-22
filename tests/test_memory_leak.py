@@ -17,6 +17,9 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 
 PROFILING_INTERVAL = 0.1
 
+# Enable this to plot the results locally
+WRITE_RESULTS_TO_DISK = False
+
 
 def _custom_default_config(
     tmp_path: Union[Path, Text], epochs: int, max_history: Optional[int] = -1
@@ -90,7 +93,6 @@ class MemoryLeakTest(abc.ABC):
             include_children=True,
             timestamps=True,
         )
-        print(results)
 
         # `memory-profiler` sometimes adds `None` values at the end which we don't need
         results = [
@@ -99,7 +101,8 @@ class MemoryLeakTest(abc.ABC):
             if memory_timestamp is not None
         ]
 
-        self._write_results(name_for_dumped_files, results)
+        if WRITE_RESULTS_TO_DISK:
+            self._write_results(name_for_dumped_files, results)
 
         coefficient = self._get_coefficient_for_results(results)
         print(f"Trend: {coefficient}")
