@@ -3,7 +3,7 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type, Union
+from typing import Any, Dict, Optional, Text, List, Type, Union, Callable
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -51,7 +51,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         ]
     }
 
-    function_dict = {
+    function_dict: Dict[Text, Callable[[Token], Union[bool, Text, None]]] = {
         "low": lambda token: token.text.islower(),
         "title": lambda token: token.text.istitle(),
         "prefix5": lambda token: token.text[:5],

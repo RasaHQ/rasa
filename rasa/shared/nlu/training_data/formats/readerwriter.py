@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 
 
 class TrainingDataReader:
-    def __init__(self):
+    def __init__(self) -> None:
         self.filename: Text = ""
 
     def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":

@@ -2,11 +2,13 @@ import logging
 import os
 import shutil
 import tarfile
-from typing import List, Optional, Text, Tuple
+from typing import List, Optional, Text, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
 import rasa.utils.common
 
+if TYPE_CHECKING:
+    from azure.storage.blob import ContainerClient
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +262,7 @@ class AzurePersistor(Persistor):
             # no need to create the container, it already exists
             pass
 
-    def _container_client(self):
+    def _container_client(self) -> "ContainerClient":
         return self.blob_service.get_container_client(self.container_name)
 
     def list_models(self) -> List[Text]:
