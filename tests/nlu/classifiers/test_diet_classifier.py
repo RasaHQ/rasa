@@ -506,7 +506,7 @@ async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text
 
 @pytest.mark.parametrize("log_level", ["epoch", "batch"])
 async def test_train_tensorboard_logging(
-    log_level: Text, component_builder: ComponentBuilder, tmpdir: Path
+    log_level: Text, component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text
 ):
     tensorboard_log_dir = Path(tmpdir / "tensorboard")
 
@@ -542,7 +542,7 @@ async def test_train_tensorboard_logging(
     await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/test_moodbot/data/nlu.yml",
+        data=nlu_data_path,
         component_builder=component_builder,
     )
 
@@ -553,7 +553,7 @@ async def test_train_tensorboard_logging(
 
 
 async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path
+    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
     best_model_file = Path(str(tmpdir), model_name)
@@ -586,7 +586,7 @@ async def test_train_model_checkpointing(
     await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="examples/moodbot/data/nlu.yml",
+        data=nlu_data_path,
         component_builder=component_builder,
         fixed_model_name=model_name,
     )

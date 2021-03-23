@@ -421,7 +421,7 @@ def test_run_cv_evaluation(
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "ResponseSelector", EPOCHS: 1}
+                {"name": "DIETClassifier", EPOCHS: 2}
             ],
         }
     )
