@@ -22,7 +22,6 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     DOCS_URL_MIGRATION_GUIDE,
     DEFAULT_CONFIG_PATH,
-    DOCS_URL_ACTIONS,
     DOCS_URL_DEFAULT_ACTIONS,
 )
 from rasa.shared.core.constants import (
@@ -68,6 +67,18 @@ class PolicyEnsemble:
 
         self._check_priorities()
         self._check_for_important_policies()
+
+        self._set_rule_only_data()
+
+    def _set_rule_only_data(self) -> None:
+        rule_only_data = {}
+        for policy in self.policies:
+            if isinstance(policy, RulePolicy):
+                rule_only_data = policy.get_rule_only_data()
+                break
+
+        for policy in self.policies:
+            policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy
@@ -204,6 +215,9 @@ class PolicyEnsemble:
             self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
                 training_trackers, domain
             )
+            # set rule only data after training in order to make ensemble usable
+            # without loading
+            self._set_rule_only_data()
         else:
             logger.info("Skipped training, because there are no training samples.")
 
@@ -633,6 +647,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
             is_no_user_prediction=best_prediction.is_no_user_prediction,
             diagnostic_data=best_prediction.diagnostic_data,
+            hide_rule_turn=best_prediction.hide_rule_turn,
         )
 
     def _best_policy_prediction(

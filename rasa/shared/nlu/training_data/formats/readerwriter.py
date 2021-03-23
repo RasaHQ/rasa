@@ -1,3 +1,4 @@
+import abc
 import json
 from collections import OrderedDict
 import operator
@@ -24,8 +25,11 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
-class TrainingDataReader:
-    def __init__(self):
+class TrainingDataReader(abc.ABC):
+    """Reader for NLU training data."""
+
+    def __init__(self) -> None:
+        """Creates reader instance."""
         self.filename: Text = ""
 
     def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
@@ -33,6 +37,7 @@ class TrainingDataReader:
         self.filename = filename
         return self.reads(rasa.shared.utils.io.read_file(filename), **kwargs)
 
+    @abc.abstractmethod
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a string."""
         raise NotImplementedError

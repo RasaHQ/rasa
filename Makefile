@@ -120,7 +120,8 @@ types:
 	--disable-error-code has-type \
 	--disable-error-code valid-type \
 	--disable-error-code no-redef \
-	--disable-error-code func-returns-value
+	--disable-error-code func-returns-value \
+	--disallow-untyped-calls
 
 static-checks: lint lint-security types
 

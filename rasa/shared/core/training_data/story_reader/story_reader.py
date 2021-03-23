@@ -82,7 +82,7 @@ class StoryReader:
         """
         raise NotImplementedError
 
-    def _add_current_stories_to_result(self):
+    def _add_current_stories_to_result(self) -> None:
         if self.current_step_builder:
             self.current_step_builder.flush()
             self.story_steps.extend(self.current_step_builder.story_steps)
