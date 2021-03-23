@@ -410,17 +410,28 @@ async def test_eval_data(
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_run_cv_evaluation(
-    monkeypatch: MonkeyPatch, pretrained_embeddings_spacy_config: RasaNLUModelConfig
+    pretrained_embeddings_spacy_config: RasaNLUModelConfig
 ):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
+    )
+
+    nlu_config = RasaNLUModelConfig(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "ResponseSelector", EPOCHS: 1}
+            ],
+        }
     )
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
         td,
         n_folds,
-        pretrained_embeddings_spacy_config,
+        nlu_config,
         successes=False,
         errors=False,
         disable_plotting=True,
@@ -439,14 +450,6 @@ def test_run_cv_evaluation(
         and intent_report.get("confused_with") is not None
         for intent_report in intent_results.evaluation["report"].values()
     )
-
-    assert len(entity_results.train["CRFEntityExtractor"]["Accuracy"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["Precision"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["F1-score"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
-
     for extractor_evaluation in entity_results.evaluation.values():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 

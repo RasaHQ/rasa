@@ -285,9 +285,8 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
-@pytest.mark.parametrize("should_finetune", [True, False])
 async def test_train_persist_load(
-    component_builder: ComponentBuilder, tmpdir: Path, should_finetune: bool
+    component_builder: ComponentBuilder, tmpdir: Path
 ):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -295,7 +294,10 @@ async def test_train_persist_load(
         {"name": "ResponseSelector", EPOCHS: 1},
     ]
     await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir, should_finetune
+        pipeline, component_builder, tmpdir, False
+    )
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir, True
     )
 
 
