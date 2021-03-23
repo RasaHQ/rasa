@@ -2,15 +2,15 @@ import typing
 import logging
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
+import rasa.shared.utils.io
 import rasa.utils.train_utils
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.components import Component
 from rasa.nlu.model import InvalidModelError
-from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
-from rasa.shared.utils.io import raise_deprecation_warning
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.constants import DOCS_URL_COMPONENTS
+from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class SpacyNLP(Component):
                     f"Will use '{spacy_model_name}' as a fallback spaCy model. "
                     f"This fallback will be deprecated in Rasa 3.0"
                 )
-                raise_deprecation_warning(
+                rasa.shared.utils.io.raise_deprecation_warning(
                     message=message, docs=f"{DOCS_URL_COMPONENTS}#spacynlp"
                 )
         return spacy_model_name
