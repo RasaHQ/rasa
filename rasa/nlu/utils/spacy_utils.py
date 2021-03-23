@@ -1,6 +1,5 @@
 import typing
 import logging
-import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 from rasa.nlu.components import Component
@@ -54,7 +53,7 @@ class SpacyNLP(Component):
                 f"Please confirm that {spacy_model_name} is an available spaCy model. "
                 f"You need to download one upfront. For example:\npython -m spacy download "
                 f"en_core_web_md\n"
-                f"More informaton can be found on https://rasa.com/docs/rasa/components#spacynlp"
+                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
     @classmethod
@@ -124,8 +123,8 @@ class SpacyNLP(Component):
             }
             if language_name not in fallback_mapping.keys():
                 raise InvalidModelError(
-                    f"There is no fallback model for language '{language_name}'."
-                    f" Please add a `model` property to `SpacyNLP` manually to prevent this."
+                    f"There is no fallback model for language '{language_name}'. "
+                    f"Please add a `model` property to `SpacyNLP` manually to prevent this. "
                     f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
                 )
 
@@ -133,7 +132,7 @@ class SpacyNLP(Component):
             if warn:
                 message = (
                     f"SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`. "
-                    f"Will use '{spacy_model_name}' as a fallback spaCy model."
+                    f"Will use '{spacy_model_name}' as a fallback spaCy model. "
                     f"This fallback will be deprecated in Rasa 3.0"
                 )
                 raise_deprecation_warning(
