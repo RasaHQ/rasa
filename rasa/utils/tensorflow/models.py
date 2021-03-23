@@ -92,7 +92,7 @@ class RasaModel(TmpKerasModel):
         self._tf_predict_step = None
         self.prepared_for_prediction = False
 
-    def _set_random_seed(self):
+    def _set_random_seed(self) -> None:
         random.seed(self.random_seed)
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
