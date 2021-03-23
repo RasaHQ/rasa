@@ -539,8 +539,14 @@ def _saved_tracker_with_multiple_session_starts(
     return tracker_store.retrieve(sender_id)
 
 
-def test_mongo_additional_events(default_domain: Domain):
-    tracker_store = MockedMongoTrackerStore(default_domain)
+@pytest.mark.parametrize(
+    "retrieve_events_from_previous_conversation_sessions", [True, False],
+)
+def test_mongo_additional_events(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
+    tracker_store = MockedMongoTrackerStore(
+        default_domain,
+        retrieve_events_from_previous_conversation_sessions=retrieve_events_from_previous_conversation_sessions,
+    )
     events, tracker = create_tracker_with_partially_saved_events(tracker_store)
 
     # make sure only new events are returned
@@ -548,9 +554,15 @@ def test_mongo_additional_events(default_domain: Domain):
     assert list(tracker_store._additional_events(tracker)) == events
 
 
-def test_mongo_additional_events_with_session_start(default_domain: Domain):
+@pytest.mark.parametrize(
+    "retrieve_events_from_previous_conversation_sessions", [True, False],
+)
+def test_mongo_additional_events_with_session_start(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
     sender = "test_mongo_additional_events_with_session_start"
-    tracker_store = MockedMongoTrackerStore(default_domain)
+    tracker_store = MockedMongoTrackerStore(
+        default_domain,
+        retrieve_events_from_previous_conversation_sessions=retrieve_events_from_previous_conversation_sessions,
+    )
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
     tracker.update(UserUttered("hi2"))
@@ -562,10 +574,16 @@ def test_mongo_additional_events_with_session_start(default_domain: Domain):
     assert isinstance(additional_events[0], UserUttered)
 
 
+@pytest.mark.parametrize(
+    "retrieve_events_from_previous_conversation_sessions", [True, False],
+)
 # we cannot parametrise over this and the previous test due to the different ways of
 # calling _additional_events()
-def test_sql_additional_events(default_domain: Domain):
-    tracker_store = SQLTrackerStore(default_domain)
+def test_sql_additional_events(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
+    tracker_store = SQLTrackerStore(
+        default_domain,
+        retrieve_events_from_previous_conversation_sessions=retrieve_events_from_previous_conversation_sessions,
+    )
     additional_events, tracker = create_tracker_with_partially_saved_events(
         tracker_store
     )
@@ -579,9 +597,15 @@ def test_sql_additional_events(default_domain: Domain):
         )
 
 
-def test_sql_additional_events_with_session_start(default_domain: Domain):
+@pytest.mark.parametrize(
+    "retrieve_events_from_previous_conversation_sessions", [True, False],
+)
+def test_sql_additional_events_with_session_start(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
     sender = "test_sql_additional_events_with_session_start"
-    tracker_store = SQLTrackerStore(default_domain)
+    tracker_store = SQLTrackerStore(
+        default_domain,
+        retrieve_events_from_previous_conversation_sessions=retrieve_events_from_previous_conversation_sessions,
+    )
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
     tracker.update(UserUttered("hi2"), default_domain)
