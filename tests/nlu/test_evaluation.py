@@ -408,9 +408,7 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(
-    pretrained_embeddings_spacy_config: RasaNLUModelConfig
-):
+def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
     )
@@ -421,7 +419,7 @@ def test_run_cv_evaluation(
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 2}
+                {"name": "DIETClassifier", EPOCHS: 2},
             ],
         }
     )
@@ -940,7 +938,9 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-async def test_nlu_comparison(tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text):
+async def test_nlu_comparison(
+    tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text
+):
     config = {
         "language": "en",
         "pipeline": [

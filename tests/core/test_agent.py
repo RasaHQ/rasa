@@ -81,9 +81,7 @@ async def test_agent_train(trained_rasa_model: Text):
     assert loaded.domain.intents == domain.intents
     assert loaded.domain.entities == domain.entities
     assert loaded.domain.templates == domain.templates
-    assert [s.name for s in loaded.domain.slots] == [
-        s.name for s in domain.slots
-    ]
+    assert [s.name for s in loaded.domain.slots] == [s.name for s in domain.slots]
 
     # test policies
     assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)

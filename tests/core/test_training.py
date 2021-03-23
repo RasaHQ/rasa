@@ -112,7 +112,9 @@ async def test_training_script_with_restart_stories(tmp_path: Path, domain_path:
     assert True
 
 
-async def test_random_seed(tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text):
+async def test_random_seed(
+    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
+):
     policies_config = {
         "policies": [
             {"name": TEDPolicy.__name__, "random_seed": 42},
@@ -120,8 +122,8 @@ async def test_random_seed(tmp_path: Path, monkeypatch: MonkeyPatch, domain_path
         ]
     }
 
-    #policy_train = Mock()
-    #monkeypatch.setattr(TED, "fit", policy_train)
+    # policy_train = Mock()
+    # monkeypatch.setattr(TED, "fit", policy_train)
 
     agent_1 = await train(
         domain_path,

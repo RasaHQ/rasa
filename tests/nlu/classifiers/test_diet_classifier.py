@@ -506,7 +506,10 @@ async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text
 
 @pytest.mark.parametrize("log_level", ["epoch", "batch"])
 async def test_train_tensorboard_logging(
-    log_level: Text, component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text
+    log_level: Text,
+    component_builder: ComponentBuilder,
+    tmpdir: Path,
+    nlu_data_path: Text,
 ):
     tensorboard_log_dir = Path(tmpdir / "tensorboard")
 
