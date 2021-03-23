@@ -9,7 +9,18 @@ import time
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterable, cast
+from typing import (
+    List,
+    Dict,
+    Text,
+    Any,
+    Type,
+    Optional,
+    TYPE_CHECKING,
+    Iterable,
+    cast,
+    Tuple,
+)
 
 import rasa.shared.utils.common
 from typing import Union
@@ -788,7 +799,7 @@ class BotUttered(SkipEventInMDStoryMixin):
         self.data = data or {}
         super().__init__(timestamp, metadata)
 
-    def __members(self):
+    def __members(self) -> Tuple[Optional[Text], Text, Text]:
         data_no_nones = {k: v for k, v in self.data.items() if v is not None}
         meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
         return (
@@ -801,7 +812,7 @@ class BotUttered(SkipEventInMDStoryMixin):
         """Returns unique hash for event."""
         return hash(self.__members())
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, BotUttered):
             return NotImplemented
