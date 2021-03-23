@@ -73,16 +73,16 @@ async def test_training_data_is_reproducible():
 
 
 async def test_agent_train(trained_rasa_model: Text):
-    moodbot_domain = Domain.load("data/test_domains/default_with_slots.yml")
+    domain = Domain.load("data/test_domains/default_with_slots.yml")
     loaded = Agent.load(trained_rasa_model)
 
     # test domain
-    assert loaded.domain.action_names_or_texts == moodbot_domain.action_names_or_texts
-    assert loaded.domain.intents == moodbot_domain.intents
-    assert loaded.domain.entities == moodbot_domain.entities
-    assert loaded.domain.templates == moodbot_domain.templates
+    assert loaded.domain.action_names_or_texts == domain.action_names_or_texts
+    assert loaded.domain.intents == domain.intents
+    assert loaded.domain.entities == domain.entities
+    assert loaded.domain.templates == domain.templates
     assert [s.name for s in loaded.domain.slots] == [
-        s.name for s in moodbot_domain.slots
+        s.name for s in domain.slots
     ]
 
     # test policies

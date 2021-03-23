@@ -534,7 +534,6 @@ async def test_train_tensorboard_logging(
                     EVAL_NUM_EXAMPLES: 15,
                     EVAL_NUM_EPOCHS: 1,
                 },
-                {"name": "EntitySynonymMapper"},
             ],
             "language": "en",
         }
