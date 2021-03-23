@@ -228,16 +228,9 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             self.kernel_mask = None
             return
 
-        kernel_shape = tf.shape(self.kernel)
-        num_rows = kernel_shape[0].numpy()
-        num_cols = kernel_shape[1].numpy()
-
         # Construct mask with given density and guarantee that every output is
         # connected to at least one input
-        kernel_mask = (
-            self._minimal_mask(num_rows, num_cols, dtype=self.kernel.dtype)
-            + self._random_mask()
-        )
+        kernel_mask = self._minimal_mask() + self._random_mask()
 
         # We might accidently have added a random connection on top of
         # a fixed connection
@@ -250,12 +243,6 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
     def _random_mask(self) -> tf.Tensor:
         """Creates a random matrix with `num_ones` 1s and 0s otherwise.
 
-        Args:
-            num_rows: Number of rows in the mask
-            num_cols: Number of columns in the mask
-            num_ones: Number of ones in the matrix
-            dtype: Type of the values
-
         Returns:
             A random mask matrix
         """
@@ -263,9 +250,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         mask = tf.cast(tf.math.less(mask, self.density), self.kernel.dtype)
         return mask
 
-    def _minimal_mask(
-        self, num_rows: int, num_cols: int, dtype: tf.dtypes.DType
-    ) -> tf.Tensor:
+    def _minimal_mask(self) -> tf.Tensor:
         """Creates a matrix with a minimal number of 1s to connect everythinig.
 
         If num_rows == num_cols, this creates the identity matrix.
@@ -285,17 +270,16 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             0 1 0 0 1 0 0 ...
             0 0 1 0 0 1 0 ...
 
-        Args:
-            num_rows: Number of rows in the mask
-            num_cols: Number of columns in the mask
-            dtype: Type of the values
-
         Returns:
             A tiled and croped identity matrix.
         """
-        short_dimension = min(num_rows, num_cols)
+        kernel_shape = tf.shape(self.kernel)
+        num_rows = kernel_shape[0]
+        num_cols = kernel_shape[1]
+        short_dimension = tf.minimum(num_rows, num_cols)
+
         mask = tf.tile(
-            tf.eye(short_dimension, dtype=dtype),
+            tf.eye(short_dimension, dtype=self.kernel.dtype),
             [
                 tf.math.ceil(num_rows / short_dimension),
                 tf.math.ceil(num_cols / short_dimension),
