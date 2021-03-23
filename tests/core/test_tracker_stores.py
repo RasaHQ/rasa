@@ -542,7 +542,9 @@ def _saved_tracker_with_multiple_session_starts(
 @pytest.mark.parametrize(
     "retrieve_events_from_previous_conversation_sessions", [True, False],
 )
-def test_mongo_additional_events(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
+def test_mongo_additional_events(
+    default_domain: Domain, retrieve_events_from_previous_conversation_sessions
+):
     tracker_store = MockedMongoTrackerStore(
         default_domain,
         retrieve_events_from_previous_conversation_sessions=retrieve_events_from_previous_conversation_sessions,
@@ -557,7 +559,9 @@ def test_mongo_additional_events(default_domain: Domain, retrieve_events_from_pr
 @pytest.mark.parametrize(
     "retrieve_events_from_previous_conversation_sessions", [True, False],
 )
-def test_mongo_additional_events_with_session_start(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
+def test_mongo_additional_events_with_session_start(
+    default_domain: Domain, retrieve_events_from_previous_conversation_sessions
+):
     sender = "test_mongo_additional_events_with_session_start"
     tracker_store = MockedMongoTrackerStore(
         default_domain,
@@ -579,7 +583,9 @@ def test_mongo_additional_events_with_session_start(default_domain: Domain, retr
 )
 # we cannot parametrise over this and the previous test due to the different ways of
 # calling _additional_events()
-def test_sql_additional_events(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
+def test_sql_additional_events(
+    default_domain: Domain, retrieve_events_from_previous_conversation_sessions
+):
     tracker_store = SQLTrackerStore(
         default_domain,
         retrieve_events_from_previous_conversation_sessions=retrieve_events_from_previous_conversation_sessions,
@@ -600,7 +606,9 @@ def test_sql_additional_events(default_domain: Domain, retrieve_events_from_prev
 @pytest.mark.parametrize(
     "retrieve_events_from_previous_conversation_sessions", [True, False],
 )
-def test_sql_additional_events_with_session_start(default_domain: Domain, retrieve_events_from_previous_conversation_sessions):
+def test_sql_additional_events_with_session_start(
+    default_domain: Domain, retrieve_events_from_previous_conversation_sessions
+):
     sender = "test_sql_additional_events_with_session_start"
     tracker_store = SQLTrackerStore(
         default_domain,
