@@ -408,7 +408,7 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
+def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig, monkeypatch: MonkeyPatch):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
     )
@@ -423,6 +423,12 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
             ],
         }
     )
+
+    # mock training
+    trainer = Trainer(nlu_config)
+    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
+    mock = Mock(return_value=Interpreter(trainer.pipeline, None))
+    monkeypatch.setattr(Trainer, "train", mock)
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
