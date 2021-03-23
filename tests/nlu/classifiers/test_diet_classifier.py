@@ -542,7 +542,7 @@ async def test_train_tensorboard_logging(
     await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="examples/moodbot/data/nlu.yml",
+        data="data/test_moodbot/data/nlu.yml",
         component_builder=component_builder,
     )
 
