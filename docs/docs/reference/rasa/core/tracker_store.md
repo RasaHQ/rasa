@@ -80,7 +80,7 @@ The tracker begins with a `SessionStarted` event and is initially listening.
 #### save
 
 ```python
- | save(tracker)
+ | save(tracker: DialogueStateTracker) -> None
 ```
 
 Save method that will be overridden by specific tracker.
@@ -333,7 +333,7 @@ Returns the current conversation.
 #### save
 
 ```python
- | save(tracker, timeout=None)
+ | save(tracker: DialogueStateTracker) -> None
 ```
 
 Saves the current conversation state.

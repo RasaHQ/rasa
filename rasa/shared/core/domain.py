@@ -17,6 +17,7 @@ from typing import (
     Tuple,
     Union,
     TYPE_CHECKING,
+    Iterable,
 )
 
 import rasa.shared.constants
@@ -1612,7 +1613,7 @@ class Domain:
         named or a response is missing.
         """
 
-        def get_duplicates(my_items):
+        def get_duplicates(my_items: Iterable[Any]) -> List[Any]:
             """Returns a list of duplicate items in my_items."""
             return [
                 item

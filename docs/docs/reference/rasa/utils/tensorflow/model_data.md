@@ -207,7 +207,7 @@ Return the keys of the data attribute.
 #### sort
 
 ```python
- | sort()
+ | sort() -> None
 ```
 
 Sorts data according to its keys.

@@ -351,7 +351,7 @@ Checks if any NLU training data was loaded.
 #### has\_e2e\_examples
 
 ```python
- | has_e2e_examples()
+ | has_e2e_examples() -> bool
 ```
 
 Checks if there are any training examples from e2e stories.

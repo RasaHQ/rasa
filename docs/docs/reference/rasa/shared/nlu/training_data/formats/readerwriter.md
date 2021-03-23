@@ -6,8 +6,18 @@ title: rasa.shared.nlu.training_data.formats.readerwriter
 ## TrainingDataReader Objects
 
 ```python
-class TrainingDataReader()
+class TrainingDataReader(abc.ABC)
 ```
+
+Reader for NLU training data.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Creates reader instance.
 
 #### read
 
@@ -20,6 +30,7 @@ Reads TrainingData from a file.
 #### reads
 
 ```python
+ | @abc.abstractmethod
  | reads(s: Text, **kwargs: Any) -> "TrainingData"
 ```
 

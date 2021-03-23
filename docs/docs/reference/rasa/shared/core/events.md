@@ -468,7 +468,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.

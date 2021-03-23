@@ -87,7 +87,7 @@ Handles iterating over epoch-level `tf.data.Iterator` objects.
 #### enumerate\_epochs
 
 ```python
- | enumerate_epochs()
+ | enumerate_epochs() -> Generator[Tuple[int, Iterator], None, None]
 ```
 
 Yields `(epoch, tf.data.Iterator)`.
