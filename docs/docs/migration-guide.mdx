@@ -10,6 +10,51 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.4 to 2.5
+
+### Machine Learning Components
+
+#### SpaCy 3.0
+
+Rasa now supports spaCy 3.0. This means that we can support more features for more
+languages but this also introduced a breaking change. SpaCy 3.0 deprecated the
+`spacy link <language model>` command. So from now on you need to use the
+[the full model name](https://spacy.io/models) in the `config.yml` file.
+
+**Before**
+
+Before you could run `spacy link en en_core_web_md` and then we would be able
+to pick up the correct model from the `language` parameter.
+
+```yaml
+language: en
+
+pipeline:
+   - name: SpacyNLP
+```
+
+**Now**
+
+This behavior will be deprecated and instead you'll want to be explicit in `config.yml`.
+
+```yaml
+language: en
+
+pipeline:
+   - name: SpacyNLP
+     model: en_core_web_md
+```
+
+**Fallback**
+
+To make the transition easier, Rasa will try to fall back to a medium spaCy model whenever
+a compatible language is configured for the entire pipeline in `config.yml`, even if you don't
+specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa Open Source 3.0.0.
+
+We've updated our docs to reflect these changes. All examples now show a direct link to the
+correct spaCy model. We've also added a warning to the [SpaCyNLP](components.mdx#spacynlp)
+docs that explains the fallback behavior.
+
 ## Rasa 2.3 to Rasa 2.4
 
 ### Deprecating `template` for `response`
@@ -32,7 +77,6 @@ NLG Server
 Response Selector
 - The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](./components.mdx#selectors) for more details.
 - The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](./components.mdx#selectors) for more details.
-
 
 ## Rasa 2.3.3 to Rasa 2.3.4
 
@@ -1085,7 +1129,7 @@ model before trying to use it with this improved version.
 * The `--num_threads` parameter was removed from the `run` command. The
   server will always run single-threaded, but will now run asynchronously. If you want to
   make use of multiple processes, feel free to check out the [Sanic server
-  documentation](https://sanic.readthedocs.io/en/stable/sanic/deploying.html#running-via-gunicorn).
+  documentation](https://sanicframework.org/en/guide/deployment/running.html#gunicorn).
 
 * To avoid conflicts in script parameter names, connectors in the `run` command now need to be specified with
   `--connector`, as `-c` is no longer supported. The maximum history in the `rasa visualize` command needs to be
