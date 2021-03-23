@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Pattern
 
 import regex
 import re
@@ -38,7 +38,8 @@ class WhitespaceTokenizer(Tokenizer):
             )
 
     @staticmethod
-    def get_emoji_regex():
+    def get_emoji_regex() -> Pattern:
+        """Gets regex to detect emojis in the training data."""
         return re.compile(
             "["
             "\U0001F600-\U0001F64F"  # emoticons
