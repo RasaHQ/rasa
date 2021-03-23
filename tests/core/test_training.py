@@ -11,7 +11,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.ted_policy import TEDPolicy, TED
 
 from rasa.shared.core.training_data.visualization import visualize_stories
 
@@ -121,15 +121,13 @@ async def test_random_seed(tmp_path: Path, monkeypatch: MonkeyPatch, domain_path
     }
 
     policy_train = Mock()
-    monkeypatch.setattr(TEDPolicy, "train", policy_train)
-
-    interpreter = Mock(spec=RasaNLUInterpreter)
+    monkeypatch.setattr(TED, "fit", policy_train)
 
     agent_1 = await train(
         domain_path,
         stories_path,
         str(tmp_path),
-        interpreter=interpreter,
+        interpreter=RegexInterpreter(),
         policy_config=policies_config,
         additional_arguments={},
     )
@@ -138,7 +136,7 @@ async def test_random_seed(tmp_path: Path, monkeypatch: MonkeyPatch, domain_path
         domain_path,
         stories_path,
         str(tmp_path),
-        interpreter=interpreter,
+        interpreter=RegexInterpreter(),
         policy_config=policies_config,
         additional_arguments={},
     )

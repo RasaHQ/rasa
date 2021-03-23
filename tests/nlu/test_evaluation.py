@@ -381,7 +381,7 @@ async def test_eval_data(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     project: Text,
-    trained_simple_rasa_model: Text,
+    unpacked_trained_rasa_model: Text,
 ):
     config_path = os.path.join(project, "config.yml")
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
@@ -392,11 +392,10 @@ async def test_eval_data(
         ],
     )
 
-    with rasa.model.unpack_model(trained_simple_rasa_model) as unpacked_model_directory:
-        _, nlu_model_directory = rasa.model.get_model_subdirectories(
-            unpacked_model_directory
-        )
-        interpreter = Interpreter.load(nlu_model_directory, component_builder)
+    _, nlu_model_directory = rasa.model.get_model_subdirectories(
+        unpacked_trained_rasa_model
+    )
+    interpreter = Interpreter.load(nlu_model_directory, component_builder)
 
     data = await data_importer.get_nlu_data()
     (intent_results, response_selection_results, entity_results) = get_eval_data(
