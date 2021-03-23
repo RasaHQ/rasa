@@ -169,7 +169,7 @@ def list_routes(app: Sanic):
 
     output = {}
 
-    def find_route(suffix, path):
+    def find_route(suffix: Text, path: Text) -> Optional[Text]:
         for name, (uri, _) in app.router.routes_names.items():
             if name.split(".")[-1] == suffix and uri == path:
                 return name
@@ -476,7 +476,7 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
     `InMemoryLockStore`.
     """
 
-    def _log_and_get_default_number_of_workers():
+    def _log_and_get_default_number_of_workers() -> int:
         logger.debug(
             f"Using the default number of Sanic workers ({DEFAULT_SANIC_WORKERS})."
         )

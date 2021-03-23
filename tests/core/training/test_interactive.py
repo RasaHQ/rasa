@@ -581,14 +581,15 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     form_name = "my_form"
     old_domain = Domain.from_yaml(
         f"""
-    actions:
-    - utter_greet
-    - utter_goodbye
-    forms:
-    - {form_name}
-    intents:
-    - greet
-    """
+        version: "2.0"
+        actions:
+        - utter_greet
+        - utter_goodbye
+        forms:
+          {form_name}:
+        intents:
+        - greet
+        """
     )
 
     events = [ActionExecuted(form_name), ActionExecuted(ACTION_LISTEN_NAME)]

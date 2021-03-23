@@ -315,7 +315,7 @@ class RasaModelData:
 
         return []
 
-    def sort(self):
+    def sort(self) -> None:
         """Sorts data according to its keys."""
         for key, attribute_data in self.data.items():
             self.data[key] = OrderedDict(sorted(attribute_data.items()))
