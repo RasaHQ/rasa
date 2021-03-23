@@ -42,6 +42,7 @@ from rasa.model import (
     can_finetune,
     create_package_rasa,
     get_latest_model,
+    verify_model_path,
     get_model,
     get_model_subdirectories,
     model_fingerprint,
@@ -76,6 +77,12 @@ def test_get_model_context_manager(trained_rasa_model: str):
         assert os.path.exists(unpacked)
 
     assert not os.path.exists(unpacked)
+
+
+@pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
+def test_verify_model_path_exception(model_path: Optional[Text]):
+    with pytest.raises(ModelNotFound):
+        verify_model_path(model_path)
 
 
 @pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
