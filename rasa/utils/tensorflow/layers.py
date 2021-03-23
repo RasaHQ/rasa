@@ -234,23 +234,9 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
 
         # Construct mask with given density and guarantee that every output is
         # connected to at least one input
-
-        min_num_connected = max(num_rows, num_cols)
-        num_extra_connections = max(
-            tf.cast(
-                tf.math.ceil(
-                    self.density * num_rows * num_cols
-                    - (1.0 - self.density) * min_num_connected
-                ),
-                tf.int32,
-            ),
-            0,
-        )
-
-        kernel_mask = self._minimal_mask(
-            num_rows, num_cols, dtype=self.kernel.dtype
-        ) + self._random_mask(
-            num_rows, num_cols, num_extra_connections, dtype=self.kernel.dtype
+        kernel_mask = (
+            self._minimal_mask(num_rows, num_cols, dtype=self.kernel.dtype)
+            + self._random_mask()
         )
 
         # We might accidently have added a random connection on top of
@@ -261,9 +247,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             initial_value=kernel_mask, trainable=False, name="kernel_mask"
         )
 
-    def _random_mask(
-        self, num_rows: int, num_cols: int, num_ones: int, dtype: tf.dtypes.DType
-    ) -> tf.Tensor:
+    def _random_mask(self) -> tf.Tensor:
         """Creates a random matrix with `num_ones` 1s and 0s otherwise.
 
         Args:
@@ -276,7 +260,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             A random mask matrix
         """
         mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
-        mask = tf.cast(tf.less_equal(mask, self.density), self.kernel.dtype)
+        mask = tf.cast(tf.math.less(mask, self.density), self.kernel.dtype)
         return mask
 
     def _minimal_mask(
