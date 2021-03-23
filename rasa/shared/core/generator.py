@@ -264,7 +264,7 @@ class TrainingDataGenerator:
         self.hashed_featurizations = set()
 
     @staticmethod
-    def _phase_name(everything_reachable_is_reached, phase):
+    def _phase_name(everything_reachable_is_reached: bool, phase: int) -> Text:
         if everything_reachable_is_reached:
             return f"augmentation round {phase}"
         else:
