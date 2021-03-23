@@ -266,7 +266,11 @@ class AzurePersistor(Persistor):
         return self.blob_service.get_container_client(self.container_name)
 
     def list_models(self) -> List[Text]:
+        """Lists models on remote storage.
 
+        Returns:
+            Paths to found models.
+        """
         try:
             blob_iterator = self._container_client().list_blobs()
             return [
