@@ -4,7 +4,18 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar, Union
+from typing import (
+    Any,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Type,
+    TypeVar,
+    Union,
+    NoReturn,
+)
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
@@ -212,7 +223,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
     """Read a value from the global Rasa configuration."""
 
-    def not_found():
+    def not_found() -> Union[None, NoReturn]:
         if unavailable_ok:
             return None
         else:

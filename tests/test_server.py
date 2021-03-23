@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import sys
 import time
 import urllib.parse
 import uuid
@@ -632,6 +633,52 @@ pipeline:
 
     assert response.status == HTTPStatus.OK
     assert_trained_model(response.body, tmp_path)
+
+
+@pytest.mark.parametrize(
+    "params", [{}, {"augmentation": 20, "num_threads": 2, "force_training": True}]
+)
+async def test_train_with_yaml_with_params(
+    monkeypatch: MonkeyPatch,
+    rasa_app: SanicASGITestClient,
+    tmp_path: Path,
+    params: Dict,
+):
+    fake_model = Path(tmp_path) / "fake_model.tar.gz"
+    fake_model.touch()
+    fake_model_path = str(fake_model)
+    future = asyncio.Future()
+    future.set_result(TrainingResult(model=fake_model_path))
+    mock_train = Mock(return_value=future)
+    monkeypatch.setattr(rasa.model_training, "train_async", mock_train)
+
+    training_data = """
+stories: []
+rules: []
+intents: []
+nlu: []
+responses: {}
+language: en
+policies: []
+pipeline: []
+"""
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=training_data,
+        params=params,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert mock_train.call_count == 1
+    args, kwargs = mock_train.call_args_list[0]
+    assert kwargs["core_additional_arguments"]["augmentation_factor"] == params.get(
+        "augmentation", 50
+    )
+    assert kwargs["nlu_additional_arguments"]["num_threads"] == params.get(
+        "num_threads", 1
+    )
+    assert kwargs["force_training"] == params.get("force_training", False)
 
 
 async def test_train_with_invalid_yaml(rasa_app: SanicASGITestClient):
