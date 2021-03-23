@@ -386,7 +386,7 @@ def test_md_format_message_using_long_entity_syntax_no_start_end():
             {"entity": "country", "value": "Germany", "role": "destination",},
         ],
     )
-    assert formatted == """I am from [Berlin](city)."""
+    assert formatted == "I am from [Berlin](city)."
 
 
 @pytest.mark.parametrize(

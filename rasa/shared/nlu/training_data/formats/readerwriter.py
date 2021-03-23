@@ -1,6 +1,6 @@
 import json
 from collections import OrderedDict
-from operator import itemgetter
+import operator
 from pathlib import Path
 
 import rasa.shared.nlu.training_data.util
@@ -88,8 +88,12 @@ class TrainingDataWriter:
         if not text.startswith(INTENT_MESSAGE_PREFIX):
 
             entities = message.get("entities", [])
-            entities_with_start = [e for e in entities if "start" in e]
-            sorted_entities = sorted(entities_with_start, key=itemgetter("start"))
+            entities_with_start_and_end = [
+                e for e in entities if "start" in e and "end" in e
+            ]
+            sorted_entities = sorted(
+                entities_with_start_and_end, key=operator.itemgetter("start")
+            )
 
             for entity in sorted_entities:
                 md += text[pos : entity["start"]]
