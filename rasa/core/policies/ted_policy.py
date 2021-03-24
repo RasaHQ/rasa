@@ -305,6 +305,15 @@ class TEDPolicy(Policy):
             SingleStateFeaturizer(), max_history=max_history
         )
 
+    @staticmethod
+    def _carring_max_history_to_featurizer(
+        state_featurizer: Optional[SingleStateFeaturizer] = None,
+        max_history: Optional[int] = None,
+    ) -> TrackerFeaturizer:
+        return MaxHistoryTrackerFeaturizer(
+            state_featurizer=state_featurizer, max_history=max_history
+        )
+
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
@@ -324,6 +333,11 @@ class TEDPolicy(Policy):
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
+        else:
+            if max_history:
+                featurizer = self._carring_max_history_to_featurizer(
+                    featurizer.state_featurizer, max_history
+                )
 
         super().__init__(
             featurizer, priority, should_finetune=should_finetune, **kwargs
