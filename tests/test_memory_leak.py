@@ -45,18 +45,6 @@ class MemoryLeakTest(abc.ABC):
     """Generic template for memory leak tests."""
 
     @property
-    def ramp_up_time_seconds(self) -> float:
-        return 25
-
-    @property
-    def cooldown_time_seconds(self) -> float:
-        return 5
-
-    @property
-    def trend_threshold(self) -> float:
-        return 0.3
-
-    @property
     def max_memory_threshold_mb(self) -> float:
         return 800
 
@@ -104,36 +92,8 @@ class MemoryLeakTest(abc.ABC):
         if WRITE_RESULTS_TO_DISK:
             self._write_results(name_for_dumped_files, results)
 
-        coefficient = self._get_coefficient_for_results(results)
-        print(f"Trend: {coefficient}")
-        # if this fails this indicates a memory leak!
-        # Suggested Next steps:
-        #   1. Run this test locally
-        #   2. Plot memory usage graph which was dumped in project, e.g.:
-        #      ```
-        #      mprof plot \
-        #        memory_usage_rasa_nlu_2.4.10_epochs1000_training_runs1_plot.txt
-        #      ```
-        assert coefficient < self.trend_threshold
-
         max_memory_usage = max(results, key=lambda memory_time: memory_time[0])[0]
         assert max_memory_usage < self.max_memory_threshold_mb
-
-    def _get_coefficient_for_results(self, results: List[Tuple[float]]) -> float:
-        import numpy as np
-        from numpy.polynomial import polynomial
-
-        # ignore the ramp up in the beginning and packaging at the end
-        results = results[
-            int(self.ramp_up_time_seconds / PROFILING_INTERVAL) : len(results)
-            - int(self.cooldown_time_seconds / PROFILING_INTERVAL)
-        ]
-
-        x = np.array([timestamp for (_, timestamp) in results])
-        y = np.array([memory for (memory, _) in results])
-
-        trend = polynomial.polyfit(x, y, deg=1)
-        return float(trend[1])
 
     @staticmethod
     def _write_results(base_name: Text, results: List[Tuple[float]]) -> None:
