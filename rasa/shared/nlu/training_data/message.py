@@ -398,3 +398,18 @@ class Message:
             (self.get(ACTION_TEXT) and not self.get(ACTION_NAME))
             or (self.get(TEXT) and not self.get(INTENT))
         )
+
+    def find_overlapping_entities(
+        self,
+    ) -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]:
+        """finds any overlapping entity annotations."""
+        entities = self.get("entities", [])[:]
+        entities.sort(key=lambda e: e["start"])
+        overlapping_pairs: List[Tuple[Dict[Text, Any], Dict[Text, Any]]] = []
+        for i, entity in enumerate(entities):
+            for other_entity in entities[i + 1 :]:
+                if other_entity["start"] < entity["end"]:
+                    overlapping_pairs.append((entity, other_entity))
+                else:
+                    break
+        return overlapping_pairs

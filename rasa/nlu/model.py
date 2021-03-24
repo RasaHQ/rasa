@@ -431,6 +431,7 @@ class Interpreter:
         self.pipeline = pipeline
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
+        self.has_already_warned_of_overlapping_entities = False
 
     def parse(
         self,
@@ -460,6 +461,9 @@ class Interpreter:
         for component in self.pipeline:
             component.process(message, **self.context)
 
+        if not self.has_already_warned_of_overlapping_entities:
+            self.warn_of_overlapping_entities(message)
+
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
@@ -478,3 +482,28 @@ class Interpreter:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
                 component.process(message, **self.context)
         return message
+
+    def warn_of_overlapping_entities(self, message: Message) -> None:
+        """Issues a warning when there are overlapping entity annotations.
+
+        This warning is only issued once per Interpreter life time."""
+
+        overlapping_entity_pairs = message.find_overlapping_entities()
+        if len(overlapping_entity_pairs) > 0:
+            message_text = message.get("text")
+            first_pair = overlapping_entity_pairs[0]
+            entity_1 = first_pair[0]
+            entity_2 = first_pair[1]
+            rasa.shared.utils.io.raise_warning(
+                f"Parsing of message: '{message_text}' lead to overlapping"
+                f"entity annotations: {entity_1['value']} of type "
+                f"{entity_1['entity']} by {entity_1['extractor']} overlaps with "
+                f"{entity_2['value']} of type {entity_2['entity']} by "
+                f"{entity_2['extractor']}. We are bringing this to your "
+                f"attention because it could lead to unintended filling of "
+                f"slots if you are not aware of it. Please refer to the "
+                f"documentation section on entity extractors and the note on "
+                f"multiple extractions therein. You will only see this kind of "
+                f"warning once per interpreter life time."
+            )
+            self.has_already_warned_of_overlapping_entities = True

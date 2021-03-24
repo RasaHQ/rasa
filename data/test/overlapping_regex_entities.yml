@@ -16,6 +16,14 @@ nlu:
     - I am looking a restaurant in [29432](zipcode)
     - I am looking for [mexican indian fusion](cuisine)
     - [central](location) [indian](cuisine) restaurant
+    - What [pizza](meal) places have been [buzzing](zz-words) lately?
 - regex: zipcode
   examples: |
     - [0-9]{5}
+- regex: zz-words
+  examples: |
+    - \w*zz\w*
+- lookup: meal
+  examples: |
+    - pizza
+    - pasta
