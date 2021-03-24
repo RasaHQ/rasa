@@ -252,8 +252,7 @@ jobs:
       # all errors will be duplicated for each python / os combination
       # therefore, we only enable for the one where most tests are run
       # (tests will still run in other envs, they will just not create annotations)
-      run: |
-        poetry run pip install pytest-github-actions-annotate-failures
+      run: pip install pytest-github-actions-annotate-failures
 
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
