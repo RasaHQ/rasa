@@ -23,9 +23,7 @@ RUN . /opt/venv/bin/activate && poetry build -f wheel -n && \
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# spacy link
-RUN python -m spacy download en_core_web_md && \
-    python -m spacy link en_core_web_md en
+RUN python -m spacy download en_core_web_md
 
 # start a new build stage
 FROM ${IMAGE_BASE_NAME}:base-${BASE_IMAGE_HASH} as runner

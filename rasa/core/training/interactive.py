@@ -509,10 +509,10 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
     def user_width(_table: AsciiTable) -> int:
         return _table.column_max_width(3)
 
-    def add_bot_cell(data, cell):
+    def add_bot_cell(data: List[List[Union[Text, Color]]], cell: Text) -> None:
         data.append([len(data), Color(cell), "", ""])
 
-    def add_user_cell(data, cell):
+    def add_user_cell(data: List[List[Union[Text, Color]]], cell: Text) -> None:
         data.append([len(data), "", "", Color(cell)])
 
     # prints the historical interactions between the bot and the user,

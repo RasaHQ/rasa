@@ -685,7 +685,9 @@ def test_temporary_tracker():
     extra_slot = "some_slot"
     sender_id = "test"
     domain = Domain.from_yaml(
-        f"""        slots:
+        f"""
+        version: "2.0"
+        slots:
           {extra_slot}:
             type: unfeaturized
         """
@@ -777,6 +779,7 @@ def test_extract_requested_slot_when_mapping_applies(
     [
         {"type": "from_entity", "entity": "some_slot", "intent": "some_intent"},
         {"type": "from_intent", "intent": "some_intent", "value": "some_value"},
+        {"type": "from_intent", "intent": "greeted", "value": "some_value"},
         {"type": "from_text", "intent": "other"},
         {"type": "from_text", "not_intent": "greet"},
         {"type": "from_trigger_intent", "intent": "greet", "value": "value"},

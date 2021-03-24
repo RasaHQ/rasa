@@ -887,6 +887,36 @@ def test_tracker_does_not_modify_slots(
                 ActiveLoop(None),
             ],
         ),
+        (
+            [
+                user_uttered("trigger form"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                ActiveLoop("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill requested slots"),
+                SlotSet("some slot", "value"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+            [
+                user_uttered("trigger form"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                ActiveLoop("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                SlotSet("some slot", "value"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
     ],
 )
 def test_applied_events_with_loop_happy_path(
@@ -1085,6 +1115,39 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted("handle_chitchat"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("affirm"),
+                ActionExecuted("loop"),
+            ],
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+                ActiveLoop("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+                ActiveLoop("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                DefinePrevUserUtteredFeaturization(False),
+                # Different action than form action indicates unhappy path
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                DefinePrevUserUtteredFeaturization(False),
                 ActionExecuted("loop"),
             ],
         ),
@@ -1312,16 +1375,16 @@ def test_autofill_slots_for_policy_entities():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    entities:
-    - {nlu_entity}
-    - {policy_entity}
-
-    slots:
-        {nlu_entity}:
-            type: text
-        {policy_entity}:
-            type: text
-    """
+            version: "2.0"
+            entities:
+            - {nlu_entity}
+            - {policy_entity}
+            slots:
+                {nlu_entity}:
+                    type: text
+                {policy_entity}:
+                    type: text
+            """
         )
     )
 
