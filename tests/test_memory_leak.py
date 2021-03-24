@@ -70,7 +70,9 @@ class MemoryLeakTest(abc.ABC):
                     f"t = {self.__class__.__name__}();"
                     f"t.function_to_profile()"
                 ),
-            ]
+            ],
+            # Force TensorFlow to use CPU so we can track the memory usage
+            env={"CUDA_VISIBLE_DEVICES": "-1"},
         )
         results = memory_profiler.memory_usage(
             process,
