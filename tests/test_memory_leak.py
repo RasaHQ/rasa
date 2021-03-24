@@ -43,7 +43,7 @@ class MemoryLeakTest(abc.ABC):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 1300
+        return 1000
 
     @pytest.fixture
     @abc.abstractmethod
@@ -118,7 +118,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 750
+        return 1400
 
     def function_to_profile(self) -> None:
         import rasa.model_training
