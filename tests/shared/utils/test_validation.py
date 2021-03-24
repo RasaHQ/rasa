@@ -22,7 +22,7 @@ from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 @pytest.mark.parametrize(
     "file, schema",
     [
-        ("examples/moodbot/domain.yml", DOMAIN_SCHEMA_FILE),
+        ("data/test_moodbot/domain.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_config/config_defaults.yml", CONFIG_SCHEMA_FILE),
         ("data/test_config/config_supervised_embeddings.yml", CONFIG_SCHEMA_FILE),
         ("data/test_config/config_crf_custom_features.yml", CONFIG_SCHEMA_FILE),

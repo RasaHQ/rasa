@@ -10,7 +10,7 @@ from pathlib import Path
 
 async def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml", training_data_paths=[nlu_data_path],
+        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_intents()
@@ -209,7 +209,7 @@ async def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml", training_data_paths=[nlu_data_path],
+        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_example_repetition_in_intents(False)
@@ -221,7 +221,7 @@ async def test_verify_logging_message_for_repetition_in_intents(
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml", training_data_paths=[nlu_data_path],
+        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
     )
     validator = await Validator.from_importer(importer)
     caplog.clear()  # clear caplog to avoid counting earlier debug messages
@@ -252,7 +252,7 @@ async def test_early_exit_on_invalid_domain():
 
 async def test_verify_there_is_not_example_repetition_in_intents():
     importer = RasaFileImporter(
-        domain_path="examples/moodbot/domain.yml",
+        domain_path="data/test_moodbot/domain.yml",
         training_data_paths=["examples/knowledgebasebot/data/nlu.md"],
     )
     validator = await Validator.from_importer(importer)

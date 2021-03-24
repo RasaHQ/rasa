@@ -18,7 +18,7 @@ from rasa.core.actions.action import (
     ActionExecutionRejection,
 )
 import rasa.core.policies.policy
-from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 import tests.utilities
 
@@ -48,11 +48,13 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.shared.core.slots import Slot, AnySlot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
@@ -63,6 +65,7 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
+    RULE_SNIPPET_ACTION_NAME,
 )
 
 import logging
@@ -1237,3 +1240,106 @@ async def test_logging_of_end_to_end_action():
     ]
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
+
+
+def test_predict_next_action_with_hidden_rules():
+    rule_intent = "rule_intent"
+    rule_action = "rule_action"
+    story_intent = "story_intent"
+    story_action = "story_action"
+    rule_slot = "rule_slot"
+    story_slot = "story_slot"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {rule_intent}
+        - {story_intent}
+        actions:
+        - {rule_action}
+        - {story_action}
+        slots:
+          {rule_slot}:
+            type: text
+          {story_slot}:
+            type: text
+        """
+    )
+
+    rule = TrackerWithCachedStates.from_events(
+        "rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": rule_intent}),
+            ActionExecuted(rule_action),
+            SlotSet(rule_slot, rule_slot),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "story",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": story_intent}),
+            ActionExecuted(story_action),
+            SlotSet(story_slot, story_slot),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    interpreter = RegexInterpreter()
+    ensemble = SimplePolicyEnsemble(policies=[RulePolicy(), MemoizationPolicy()])
+    ensemble.train([rule, story], domain, interpreter)
+
+    tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
+    processor = MessageProcessor(
+        interpreter,
+        ensemble,
+        domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(domain.templates),
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "casd",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": rule_intent}),
+        ],
+        slots=domain.slots,
+    )
+    action, prediction = processor.predict_next_action(tracker)
+    assert action._name == rule_action
+    assert prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(
+        tracker, action, [SlotSet(rule_slot, rule_slot)], prediction
+    )
+
+    action, prediction = processor.predict_next_action(tracker)
+    assert isinstance(action, ActionListen)
+    assert prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(tracker, action, None, prediction)
+
+    tracker.events.append(UserUttered(intent={"name": story_intent}))
+
+    # rules are hidden correctly if memo policy predicts next actions correctly
+    action, prediction = processor.predict_next_action(tracker)
+    assert action._name == story_action
+    assert not prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(
+        tracker, action, [SlotSet(story_slot, story_slot)], prediction
+    )
+
+    action, prediction = processor.predict_next_action(tracker)
+    assert isinstance(action, ActionListen)
+    assert not prediction.hide_rule_turn

@@ -26,8 +26,11 @@ def get_test_params_for_component(component: Text) -> Dict[Text, Union[Text, int
     )
 
 
-def as_pipeline(*components):
-    return [{**{"name": c}, **get_test_params_for_component(c)} for c in components]
+def as_pipeline(*components) -> List[Dict[Text, Dict]]:
+    return [
+        {"name": c, **get_test_params_for_component(c)} if isinstance(c, str) else c
+        for c in components
+    ]
 
 
 def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
@@ -60,7 +63,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
         (
             "en",
             as_pipeline(
-                "SpacyNLP",
+                {"name": "SpacyNLP", "model": "en_core_web_md"},
                 "SpacyTokenizer",
                 "SpacyFeaturizer",
                 "SpacyEntityExtractor",
@@ -91,7 +94,10 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
         (
             "en",
             as_pipeline(
-                "SpacyNLP", "SpacyTokenizer", "SpacyFeaturizer", "DIETClassifier"
+                {"name": "SpacyNLP", "model": "en_core_web_md"},
+                "SpacyTokenizer",
+                "SpacyFeaturizer",
+                "DIETClassifier",
             ),
         ),
         (

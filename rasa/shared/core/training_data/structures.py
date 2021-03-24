@@ -706,7 +706,7 @@ class StoryGraph:
 
         removed_edges = set()
 
-        def dfs(node):
+        def dfs(node: Text) -> None:
             visited_nodes[node] = GRAY
             for k in sorted(graph.get(node, set())):
                 sk = visited_nodes.get(k, None)
