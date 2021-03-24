@@ -169,10 +169,11 @@ class FormAction(LoopAction):
     def intent_is_desired(
         requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
     ) -> bool:
-        """Check whether user intent matches intent conditions"""
-
-        mapping_intents = requested_slot_mapping.get("intent", [])
-        mapping_not_intents = requested_slot_mapping.get("not_intent", [])
+        """Check whether user intent matches intent conditions."""
+        mapping_intents = FormAction._to_list(requested_slot_mapping.get("intent", []))
+        mapping_not_intents = FormAction._to_list(
+            requested_slot_mapping.get("not_intent", [])
+        )
 
         intent = tracker.latest_message.intent.get("name")
 

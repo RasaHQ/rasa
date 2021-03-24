@@ -917,7 +917,7 @@ def test_remove_pretrained_extractors(component_builder: ComponentBuilder):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
-                {"name": "SpacyNLP"},
+                {"name": "SpacyNLP", "model": "en_core_web_md"},
                 {"name": "SpacyEntityExtractor"},
                 {"name": "DucklingEntityExtractor"},
             ]
