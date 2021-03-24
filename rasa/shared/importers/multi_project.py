@@ -185,9 +185,6 @@ class MultiProjectImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
-        if use_e2e:
-            return await self.get_conversation_tests()
-
         return await utils.story_graph_from_paths(
             self._story_paths,
             await self.get_domain(),
