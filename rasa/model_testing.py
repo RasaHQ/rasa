@@ -304,7 +304,7 @@ def perform_nlu_cross_validation(
         data: The data which is used for the cross-validation.
         output: Output directory for the cross-validation results.
         additional_arguments: Additional arguments which are passed to the
-            cross-validation, like.
+            cross-validation, like number of `disable_plotting`.
     """
     import rasa.nlu.config
     from rasa.nlu.test import (
