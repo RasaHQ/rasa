@@ -11,9 +11,6 @@ import pytest
 
 import rasa
 import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
 
 PROFILING_INTERVAL = 0.1
 
@@ -46,7 +43,7 @@ class MemoryLeakTest(abc.ABC):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 800
+        return 1300
 
     @pytest.fixture
     @abc.abstractmethod
@@ -115,7 +112,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
 
     @property
     def epochs(self) -> int:
-        return 500
+        return 30
 
     @property
     def max_memory_threshold_mb(self) -> float:
@@ -125,23 +122,9 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
         import rasa.model_training
 
         with tempfile.TemporaryDirectory() as temp_dir:
-
-            training_examples = []
-            for intent in range(10):
-                for example_per_intent in range(50):
-                    intent_name = f"intent {intent}"
-                    new_example = Message.build(
-                        text=f"{intent_name} example {example_per_intent}",
-                        intent=intent_name,
-                    )
-                    training_examples.append(new_example)
-
-            training_data_path = Path(temp_dir) / "larger_nlu_dataset.yml"
-
-            RasaYAMLWriter().dump(training_data_path, TrainingData(training_examples))
             rasa.model_training.train_nlu(
                 _custom_default_config(temp_dir, epochs=self.epochs),
-                training_data_path,
+                Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
                 output=temp_dir,
             )
 
@@ -158,7 +141,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
 
     @property
     def epochs(self) -> int:
-        return 500
+        return 400
 
     @property
     def max_memory_threshold_mb(self) -> float:
