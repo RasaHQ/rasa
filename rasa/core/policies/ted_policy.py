@@ -1,10 +1,12 @@
 import logging
+import shutil
 from pathlib import Path
 from collections import defaultdict
 
 import numpy as np
 
 import rasa.shared.utils.io
+import rasa.utils.train_utils
 import tensorflow as tf
 import tensorflow_addons as tfa
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
@@ -50,7 +52,6 @@ from rasa.utils.tensorflow.model_data import (
     Data,
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
-import rasa.utils.tensorflow.numpy
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
@@ -61,6 +62,7 @@ from rasa.utils.tensorflow.constants import (
     BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
+    LEARNING_RATE,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -207,6 +209,8 @@ class TEDPolicy(Policy):
         EPOCHS: 1,
         # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
+        # Initial learning rate for the optimizer
+        LEARNING_RATE: 0.001,
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
@@ -270,7 +274,7 @@ class TEDPolicy(Policy):
         TENSORBOARD_LOG_DIR: None,
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'minibatch'
+        # Valid values: 'epoch' and 'batch'
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
@@ -286,7 +290,7 @@ class TEDPolicy(Policy):
         # approximately bounded. Used inside softmax loss only.
         CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values -
-        # 'softmax', 'cosine' and 'inner'.
+        # 'softmax' and 'linear_norm'.
         MODEL_CONFIDENCE: SOFTMAX,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
@@ -355,6 +359,10 @@ class TEDPolicy(Policy):
 
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+
+        self.tmp_checkpoint_dir = None
+        if self.config[CHECKPOINT_MODEL]:
+            self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
@@ -506,7 +514,7 @@ class TEDPolicy(Policy):
             return
 
         # dealing with training data
-        tracker_state_features, label_ids, entity_tags = self.featurize_for_training(
+        tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
             interpreter,
@@ -546,14 +554,36 @@ class TEDPolicy(Policy):
                 self._label_data,
                 self._entity_tag_specs,
             )
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+            )
+
+        (
+            data_generator,
+            validation_data_generator,
+        ) = rasa.utils.train_utils.create_data_generators(
+            model_data,
+            self.config[BATCH_SIZES],
+            self.config[EPOCHS],
+            self.config[BATCH_STRATEGY],
+            self.config[EVAL_NUM_EXAMPLES],
+            self.config[RANDOM_SEED],
+        )
+        callbacks = rasa.utils.train_utils.create_common_callbacks(
+            self.config[EPOCHS],
+            self.config[TENSORBOARD_LOG_DIR],
+            self.config[TENSORBOARD_LOG_LEVEL],
+            self.tmp_checkpoint_dir,
+        )
 
         self.model.fit(
-            model_data,
-            self.config[EPOCHS],
-            self.config[BATCH_SIZES],
-            self.config[EVAL_NUM_EXAMPLES],
-            self.config[EVAL_NUM_EPOCHS],
-            batch_strategy=self.config[BATCH_STRATEGY],
+            data_generator,
+            epochs=self.config[EPOCHS],
+            validation_data=validation_data_generator,
+            validation_freq=self.config[EVAL_NUM_EPOCHS],
+            callbacks=callbacks,
+            verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
         )
 
     def _featurize_tracker_for_e2e(
@@ -567,8 +597,8 @@ class TEDPolicy(Policy):
         # and second - an optional one (see conditions below),
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
-        tracker_state_features = self.featurizer.create_state_features(
-            [tracker], domain, interpreter, use_text_for_last_user_input=self.only_e2e
+        tracker_state_features = self._featurize_for_prediction(
+            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -576,13 +606,13 @@ class TEDPolicy(Policy):
             and TEXT in self.fake_features
             and not self.only_e2e
         ):
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=True
+            tracker_state_features += self._featurize_for_prediction(
+                tracker, domain, interpreter, use_text_for_last_user_input=True,
             )
         return tracker_state_features
 
     def _pick_confidence(
-        self, confidences: np.ndarray, similarities: np.ndarray
+        self, confidences: np.ndarray, similarities: np.ndarray, domain: Domain
     ) -> Tuple[np.ndarray, bool]:
         # the confidences and similarities have shape (batch-size x number of actions)
         # batch-size can only be 1 or 2;
@@ -597,16 +627,30 @@ class TEDPolicy(Policy):
             # we use similarities to pick appropriate input,
             # since it seems to be more accurate measure,
             # policy is trained to maximize the similarity not the confidence
+            non_e2e_action_name = domain.action_names_or_texts[
+                np.argmax(confidences[0])
+            ]
+            logger.debug(f"User intent lead to '{non_e2e_action_name}'.")
+            e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
+            logger.debug(f"User text lead to '{e2e_action_name}'.")
             if (
                 np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
                 # TODO maybe compare confidences is better
                 and np.max(similarities[1]) > np.max(similarities[0])
             ):
+                logger.debug(f"TED predicted '{e2e_action_name}' based on user text.")
                 return confidences[1], True
 
+            logger.debug(f"TED predicted '{non_e2e_action_name}' based on user intent.")
             return confidences[0], False
 
         # by default the first example in a batch is the one to use for prediction
+        predicted_action_name = domain.action_names_or_texts[np.argmax(confidences[0])]
+        basis_for_prediction = "text" if self.only_e2e else "intent"
+        logger.debug(
+            f"TED predicted '{predicted_action_name}' "
+            f"based on user {basis_for_prediction}."
+        )
         return confidences[0], self.only_e2e
 
     def predict_action_probabilities(
@@ -616,9 +660,16 @@ class TEDPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        """Predicts the next action the bot should take.
+        """Predicts the next action the bot should take after seeing the tracker.
 
-        See the docstring of the parent class `Policy` for more information.
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
         """
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
@@ -628,14 +679,15 @@ class TEDPolicy(Policy):
             tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
-
-        output = self.model.predict(model_data)
+        output = self.model.rasa_predict(model_data)
 
         # take the last prediction in the sequence
-        similarities = output["similarities"].numpy()[:, -1, :]
-        confidences = output["action_scores"].numpy()[:, -1, :]
+        similarities = output["similarities"][:, -1, :]
+        confidences = output["action_scores"][:, -1, :]
         # take correct prediction from batch
-        confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
+        confidence, is_e2e_prediction = self._pick_confidence(
+            confidences, similarities, domain
+        )
 
         if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
             # TODO: This should be removed in 3.0 when softmax as
@@ -652,9 +704,7 @@ class TEDPolicy(Policy):
             confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
             optional_events=optional_events,
-            diagnostic_data=rasa.utils.tensorflow.numpy.values_to_numpy(
-                output.get(DIAGNOSTIC_DATA)
-            ),
+            diagnostic_data=output.get(DIAGNOSTIC_DATA),
         )
 
     def _create_optional_event_for_entities(
@@ -728,10 +778,9 @@ class TEDPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        if self.model.checkpoint_model:
-            self.model.copy_best(str(tf_model_file))
-        else:
-            self.model.save(str(tf_model_file))
+        if self.config[CHECKPOINT_MODEL]:
+            shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+        self.model.save(str(tf_model_file))
 
         io_utils.json_pickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
@@ -830,9 +879,22 @@ class TEDPolicy(Policy):
 
         meta[EPOCHS] = epoch_override
 
+        predict_data_example = RasaModelData(
+            label_key=LABEL_KEY,
+            label_sub_key=LABEL_SUB_KEY,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if feature_name
+                # we need to remove label features for prediction if they are present
+                in PREDICTION_FEATURES
+            },
+        )
+
         model = TED.load(
             str(tf_model_file),
             model_data_example,
+            predict_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
             max_history_featurizer_is_used=isinstance(
@@ -842,21 +904,6 @@ class TEDPolicy(Policy):
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,
         )
-
-        if not should_finetune:
-            # build the graph for prediction
-            predict_data_example = RasaModelData(
-                label_key=LABEL_KEY,
-                label_sub_key=LABEL_SUB_KEY,
-                data={
-                    feature_name: features
-                    for feature_name, features in model_data_example.items()
-                    if feature_name
-                    # we need to remove label features for prediction if they are present
-                    in PREDICTION_FEATURES
-                },
-            )
-            model.build_for_predict(predict_data_example)
 
         return cls(
             featurizer=featurizer,
@@ -899,9 +946,6 @@ class TED(TransformerRasaModel):
         }
 
         self._entity_tag_specs = entity_tag_specs
-
-        # optimizer
-        self.optimizer = tf.keras.optimizers.Adam()
 
         # metrics
         self.action_loss = tf.keras.metrics.Mean(name="loss")
@@ -1357,7 +1401,7 @@ class TED(TransformerRasaModel):
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             attribute_features = self._tf_layers[f"encoding_layer.{attribute}"](
-                attribute_features
+                attribute_features, self._training
             )
 
         # attribute features have shape
@@ -1706,14 +1750,13 @@ class TED(TransformerRasaModel):
         return tf.math.add_n(losses)
 
     # ---PREDICTION---
-
     def prepare_for_predict(self) -> None:
         """Prepares the model for prediction."""
         _, self.all_labels_embed = self._create_all_labels_embed()
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
         Args:

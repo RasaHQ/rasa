@@ -9,7 +9,6 @@ from rasa.core.training.story_conflict import (
 from rasa.shared.core.generator import TrainingDataGenerator, TrackerWithCachedStates
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
-from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH_WITH_SLOTS
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
 
 
@@ -31,10 +30,8 @@ async def _setup_trackers_for_testing(
     return trackers, validator.domain
 
 
-async def test_find_no_conflicts():
-    trackers, domain = await _setup_trackers_for_testing(
-        DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
-    )
+async def test_find_no_conflicts(domain_path: Text, stories_path: Text):
+    trackers, domain = await _setup_trackers_for_testing(domain_path, stories_path)
 
     # Create a list of `StoryConflict` objects
     conflicts = find_story_conflicts(trackers, domain, 5)
@@ -44,7 +41,8 @@ async def test_find_no_conflicts():
 
 async def test_find_conflicts_in_short_history():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_1.md"
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_conflicting_1.yml",
     )
 
     # `max_history = 3` is too small, so a conflict must arise
@@ -58,7 +56,8 @@ async def test_find_conflicts_in_short_history():
 
 async def test_check_conflict_description():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_1.md"
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_conflicting_1.yml",
     )
 
     # `max_history = 3` is too small, so a conflict must arise
@@ -70,7 +69,8 @@ async def test_check_conflict_description():
 
 async def test_find_conflicts_checkpoints():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_2.md"
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_conflicting_2.yml",
     )
 
     # Create a list of `StoryConflict` objects
@@ -82,7 +82,8 @@ async def test_find_conflicts_checkpoints():
 
 async def test_find_conflicts_or():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_3.md"
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_conflicting_3.yml",
     )
 
     # Create a list of `StoryConflict` objects
@@ -94,7 +95,8 @@ async def test_find_conflicts_or():
 
 async def test_find_conflicts_slots_that_break():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_4.md"
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_conflicting_4.yml",
     )
 
     # Create a list of `StoryConflict` objects
@@ -106,7 +108,8 @@ async def test_find_conflicts_slots_that_break():
 
 async def test_find_conflicts_slots_that_dont_break():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_5.md"
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_conflicting_5.yml",
     )
 
     # Create a list of `StoryConflict` objects
@@ -117,7 +120,8 @@ async def test_find_conflicts_slots_that_dont_break():
 
 async def test_find_conflicts_multiple_stories():
     trackers, domain = await _setup_trackers_for_testing(
-        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_6.md"
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_conflicting_6.yml",
     )
 
     # Create a list of `StoryConflict` objects

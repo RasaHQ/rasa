@@ -5,7 +5,7 @@ from typing import Dict, Text, List, Any
 import pytest
 
 from rasa.nlu.components import ComponentBuilder
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
@@ -23,14 +23,14 @@ def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
 async def test_train_persist_load_with_composite_entities(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
-    pipeline = pipeline_from_components("WhitespaceTokenizer", "CRFEntityExtractor")
+    pipeline = [{"name": "WhitespaceTokenizer"}, {"name": "CRFEntityExtractor"}]
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
-        data="data/test/demo-rasa-composite-entities.md",
+        data="data/test/demo-rasa-composite-entities.yml",
         component_builder=component_builder,
     )
 
@@ -90,15 +90,16 @@ async def test_train_persist_load_with_composite_entities(
 async def test_train_persist_with_different_configurations(
     config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmp_path: Path
 ):
-    pipeline = pipeline_from_components(
-        "SpacyNLP", "SpacyTokenizer", "CRFEntityExtractor"
-    )
-    assert pipeline[2]["name"] == "CRFEntityExtractor"
+    pipeline = [
+        {"name": "SpacyNLP", "model": "en_core_web_md"},
+        {"name": "SpacyTokenizer"},
+        {"name": "CRFEntityExtractor"},
+    ]
     pipeline[2].update(config_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/examples/rasa",

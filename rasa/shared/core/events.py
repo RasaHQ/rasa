@@ -9,7 +9,18 @@ import time
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterable
+from typing import (
+    List,
+    Dict,
+    Text,
+    Any,
+    Type,
+    Optional,
+    TYPE_CHECKING,
+    Iterable,
+    cast,
+    Tuple,
+)
 
 import rasa.shared.utils.common
 from typing import Union
@@ -508,8 +519,11 @@ class UserUttered(Event):
         return _dict
 
     def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
-        """Turns a UserUttered event into a substate containing information about entities,
-        intent and text of the UserUttered
+        """Turns a UserUttered event into features.
+
+        The substate contains information about entities, intent and text of the
+        `UserUttered` event.
+
         Returns:
             a dictionary with intent name, text and entities
         """
@@ -723,7 +737,10 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
 
     def __eq__(self, other: Any) -> bool:
         """Compares this event with another event."""
-        return isinstance(other, EntitiesAdded)
+        if not isinstance(other, EntitiesAdded):
+            return NotImplemented
+
+        return self.entities == other.entities
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> "EntitiesAdded":
@@ -782,7 +799,7 @@ class BotUttered(SkipEventInMDStoryMixin):
         self.data = data or {}
         super().__init__(timestamp, metadata)
 
-    def __members(self):
+    def __members(self) -> Tuple[Optional[Text], Text, Text]:
         data_no_nones = {k: v for k, v in self.data.items() if v is not None}
         meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
         return (
@@ -795,7 +812,7 @@ class BotUttered(SkipEventInMDStoryMixin):
         """Returns unique hash for event."""
         return hash(self.__members())
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, BotUttered):
             return NotImplemented
@@ -1142,12 +1159,15 @@ class ReminderCancelled(Event):
         """Creates a ReminderCancelled event.
 
         If all arguments are `None`, this will cancel all reminders.
-        are to be cancelled. If no arguments are supplied, this will cancel all reminders.
+        are to be cancelled. If no arguments are supplied, this will cancel all
+        reminders.
 
         Args:
             name: Name of the reminder to be cancelled.
-            intent: Intent name that is to be used to identify the reminders to be cancelled.
-            entities: Entities that are to be used to identify the reminders to be cancelled.
+            intent: Intent name that is to be used to identify the reminders to be
+                cancelled.
+            entities: Entities that are to be used to identify the reminders to be
+                cancelled.
             timestamp: Optional timestamp.
             metadata: Optional event metadata.
         """
@@ -1169,23 +1189,26 @@ class ReminderCancelled(Event):
 
     def __str__(self) -> Text:
         """Returns text representation of event."""
-        return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
+        return (
+            f"ReminderCancelled(name: {self.name}, intent: {self.intent}, "
+            f"entities: {self.entities})"
+        )
 
     def cancels_job_with_name(self, job_name: Text, sender_id: Text) -> bool:
-        """Determines if this `ReminderCancelled` event should cancel the job with the given name.
+        """Determines if this event should cancel the job with the given name.
 
         Args:
             job_name: Name of the job to be tested.
             sender_id: The `sender_id` of the tracker.
 
         Returns:
-            `True`, if this `ReminderCancelled` event should cancel the job with the given name,
-            and `False` otherwise.
+            `True`, if this `ReminderCancelled` event should cancel the job with the
+            given name, and `False` otherwise.
         """
-
         match = re.match(
             rf"^\[([\d\-]*),([\d\-]*),([\d\-]*)\]"
-            rf"({re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)}{re.escape(sender_id)})",
+            rf"({re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)}"
+            rf"{re.escape(sender_id)})",
             job_name,
         )
         if not match:
@@ -1431,6 +1454,7 @@ class ActionExecuted(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
         action_text: Optional[Text] = None,
+        hide_rule_turn: bool = False,
     ) -> None:
         """Creates event for a successful event execution.
 
@@ -1443,12 +1467,15 @@ class ActionExecuted(Event):
             metadata: Additional event metadata.
             action_text: In case it's an end-to-end action prediction, the text which
                 was predicted.
+            hide_rule_turn: If `True`, this action should be hidden in the dialogue
+                history created for ML-based policies.
         """
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
         self.action_text = action_text
+        self.hide_rule_turn = hide_rule_turn
 
         super().__init__(timestamp, metadata)
 
@@ -1490,7 +1517,6 @@ class ActionExecuted(Event):
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
-
         return [
             ActionExecuted(
                 parameters.get("name"),
@@ -1499,25 +1525,20 @@ class ActionExecuted(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 parameters.get("action_text"),
+                parameters.get("hide_rule_turn"),
             )
         ]
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
         d = super().as_dict()
-        policy = None  # for backwards compatibility (persisted events)
-        if hasattr(self, "policy"):
-            policy = self.policy
-        confidence = None
-        if hasattr(self, "confidence"):
-            confidence = self.confidence
-
         d.update(
             {
                 "name": self.action_name,
-                "policy": policy,
-                "confidence": confidence,
+                "policy": self.policy,
+                "confidence": self.confidence,
                 "action_text": self.action_text,
+                "hide_rule_turn": self.hide_rule_turn,
             }
         )
         return d
@@ -1534,7 +1555,9 @@ class ActionExecuted(Event):
         if self.action_name:
             return {ACTION_NAME: self.action_name}
         else:
-            return {ACTION_TEXT: self.action_text}
+            # FIXME: we should define the type better here, and require either
+            #        `action_name` or `action_text`
+            return {ACTION_TEXT: cast(Text, self.action_text)}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
@@ -1603,7 +1626,7 @@ class AgentUttered(SkipEventInMDStoryMixin):
 
 
 class ActiveLoop(Event):
-    """If `name` is not None: activates a loop with `name` else deactivates active loop."""
+    """If `name` is given: activates a loop with `name` else deactivates active loop."""
 
     type_name = "active_loop"
 

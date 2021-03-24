@@ -18,7 +18,6 @@ from rasa.core.channels import CmdlineInput
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from tests.conftest import DEFAULT_CONFIG_PATH
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
@@ -35,7 +34,9 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
-async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
+async def test_events_schema(
+    monkeypatch: MonkeyPatch, default_agent: Agent, config_path: Text
+):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events
     monkeypatch.setenv("RASA_TELEMETRY_DEBUG", "true")
@@ -50,7 +51,7 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
     initial = asyncio.Task.all_tasks()
     # Generate all known backend telemetry events, and then use events.json to
     # validate their schema.
-    training_data = TrainingDataImporter.load_from_config(DEFAULT_CONFIG_PATH)
+    training_data = TrainingDataImporter.load_from_config(config_path)
     async with telemetry.track_model_training(training_data, "rasa"):
         await asyncio.sleep(1)
 
@@ -461,3 +462,13 @@ def test_sentry_strips_absolute_path_from_dist_packages():
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
     assert stack_frames[0]["filename"] == f"dist-packages{os.path.sep}rasa\\train.py"
+
+
+def test_context_contains_os():
+    context = telemetry._default_context_fields()
+
+    assert "os" in context
+
+    context.pop("os")
+
+    assert "os" in telemetry._default_context_fields()

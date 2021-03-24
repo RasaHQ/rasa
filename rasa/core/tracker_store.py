@@ -183,7 +183,7 @@ class TrackerStore:
 
         return tracker
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Save method that will be overridden by specific tracker."""
         raise NotImplementedError()
 
@@ -581,7 +581,7 @@ class MongoTrackerStore(TrackerStore):
         """Returns the current conversation."""
         return self.db[self.collection]
 
-    def _ensure_indices(self):
+    def _ensure_indices(self) -> None:
         """Create an index on the sender_id."""
         self.conversations.create_index("sender_id")
 
@@ -594,7 +594,7 @@ class MongoTrackerStore(TrackerStore):
 
         return state
 
-    def save(self, tracker, timeout=None):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
@@ -953,13 +953,14 @@ class SQLTrackerStore(TrackerStore):
             return
 
         self._create_database(self.engine, db)
+        self.engine.dispose()
         engine_url.database = db
         self.engine = create_engine(engine_url)
 
     @staticmethod
     def _create_database(engine: "Engine", database_name: Text) -> None:
         """Create database `db` on `engine` if it does not exist."""
-        import psycopg2
+        import sqlalchemy.exc
 
         conn = engine.connect()
 
@@ -978,7 +979,10 @@ class SQLTrackerStore(TrackerStore):
         if not matching_rows:
             try:
                 conn.execute(f"CREATE DATABASE {database_name}")
-            except psycopg2.IntegrityError as e:
+            except (
+                sqlalchemy.exc.ProgrammingError,
+                sqlalchemy.exc.IntegrityError,
+            ) as e:
                 logger.error(f"Could not create database '{database_name}': {e}")
 
         conn.close()

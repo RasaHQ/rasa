@@ -86,6 +86,8 @@ mapping:
                             type: "bool"
                       - type: "text"
                 - type: "str"
+                - type: "map"
+                  allowempty: True
           - type: "map"
             matching-rule: 'any'
             mapping:

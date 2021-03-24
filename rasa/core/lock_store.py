@@ -123,9 +123,13 @@ class LockStore:
                 logger.debug(f"Acquired lock for conversation '{conversation_id}'.")
                 return lock
 
+            items_before_this = ticket - (lock.now_serving or 0)
+
             logger.debug(
-                f"Failed to acquire lock for conversation ID '{conversation_id}'. "
-                f"Retrying..."
+                f"Failed to acquire lock for conversation ID '{conversation_id}' "
+                f"because {items_before_this} other item(s) for this "
+                f"conversation ID have to be finished processing first. "
+                f"Retrying in {wait_time_in_seconds} seconds ..."
             )
 
             # sleep and update lock

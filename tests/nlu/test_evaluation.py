@@ -12,7 +12,7 @@ import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.components import ComponentBuilder, Component
@@ -65,9 +65,8 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.test import compare_nlu_models
+from rasa.model_testing import compare_nlu_models
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
-from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -75,7 +74,7 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH
 from tests.nlu.utilities import write_file_config
 
 
-@pytest.yield_fixture(scope="session")
+@pytest.fixture(scope="session")
 def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -357,9 +356,12 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-async def test_run_evaluation(unpacked_trained_moodbot_path: Text):
+@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
+async def test_run_evaluation(
+    unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text
+):
     result = await run_evaluation(
-        DEFAULT_DATA_PATH,
+        nlu_as_json_path,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
         errors=False,
         successes=False,
@@ -388,12 +390,12 @@ async def test_eval_data(
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config_path,
         training_data_paths=[
-            "data/examples/rasa/demo-rasa.md",
-            "data/examples/rasa/demo-rasa-responses.md",
+            "data/examples/rasa/demo-rasa.yml",
+            "data/examples/rasa/demo-rasa-responses.yml",
         ],
     )
 
-    (_, _, persisted_path) = await train(
+    (_, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data=data_importer,
@@ -456,10 +458,10 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfi
 
 def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
 
@@ -915,7 +917,7 @@ def test_remove_pretrained_extractors(component_builder: ComponentBuilder):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
-                {"name": "SpacyNLP"},
+                {"name": "SpacyNLP", "model": "en_core_web_md"},
                 {"name": "SpacyEntityExtractor"},
                 {"name": "DucklingEntityExtractor"},
             ]
@@ -935,7 +937,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-async def test_nlu_comparison(tmp_path: Path):
+async def test_nlu_comparison(tmp_path: Path, nlu_as_json_path: Text):
     config = {
         "language": "en",
         "pipeline": [
@@ -950,7 +952,7 @@ async def test_nlu_comparison(tmp_path: Path):
 
     output = str(tmp_path)
     await compare_nlu_models(
-        configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
+        configs, nlu_as_json_path, output, runs=2, exclusion_percentages=[50, 80]
     )
 
     assert set(os.listdir(output)) == {

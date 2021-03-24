@@ -182,12 +182,12 @@ async def test_train_docker_and_docs_configs(
         ),
         (
             "data/test_config/config_spacy_entity_extractor.yml",
-            "data/test/duplicate_intents_markdown/demo-rasa-intents-2.md",
+            "data/test/duplicate_intents_yaml/demo-rasa-intents-2.yml",
             [f"add one of {TRAINABLE_EXTRACTORS}"],
         ),
         (
             "data/test_config/config_crf_no_regex.yml",
-            "data/test/duplicate_intents_markdown/demo-rasa-intents-2.md",
+            "data/test/duplicate_intents_yaml/demo-rasa-intents-2.yml",
             ["training data with regexes", "include a 'RegexFeaturizer'"],
         ),
         (
@@ -204,17 +204,17 @@ async def test_train_docker_and_docs_configs(
         ),
         (
             "data/test_config/config_crf_no_pattern_feature.yml",
-            "data/test/lookup_tables/lookup_table.md",
+            "data/test/lookup_tables/lookup_table.yml",
             "your NLU pipeline's 'CRFEntityExtractor' does not include the 'pattern' feature",
         ),
         (
             "data/test_config/config_crf_no_synonyms.yml",
-            "data/test/markdown_single_sections/synonyms_only.md",
+            "data/test/synonyms_only.yml",
             ["add an 'EntitySynonymMapper'"],
         ),
         (
             "data/test_config/config_embedding_intent_response_selector.yml",
-            "data/test/demo-rasa-composite-entities.md",
+            "data/test/demo-rasa-composite-entities.yml",
             ["include either 'DIETClassifier' or 'CRFEntityExtractor'"],
         ),
     ],
