@@ -224,6 +224,13 @@ async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: boo
     assert YAMLStoryReader.is_key_in_yaml(file, *keys) == expected_result
 
 
+async def test_is_key_in_yaml_with_unicode_files():
+    # This shouldn't raise
+    assert YAMLStoryReader.is_key_in_yaml(
+        "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
+    )
+
+
 async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 

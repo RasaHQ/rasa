@@ -179,7 +179,9 @@ class YAMLStoryReader(StoryReader):
             FileNotFoundException: if the file cannot be found.
         """
         try:
-            with open(file_path) as file:
+            with open(
+                file_path, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+            ) as file:
                 return any(
                     any(line.lstrip().startswith(f"{key}:") for key in keys)
                     for line in file
