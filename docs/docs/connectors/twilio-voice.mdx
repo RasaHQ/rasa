@@ -1,0 +1,45 @@
+---
+id: twilio-voice
+sidebar_label: Twilio Voice
+title: Twilio Voice
+description: Deploy a Rasa Open Source IVR assistant via the Twilio Voice connector
+---
+
+You can use the Twilio Voice connector to answer phone calls made to your Twilio phone number.
+
+## Running on Twilio
+
+To forward calls from Twilio to your Rasa bot the webhook for your phone number needs to be updated. Go to the [Phone
+Numbers](https://www.twilio.com/console/phone-numbers/incoming) section of your Twilio account and select the phone
+number you want to connect to Rasa. Find the `Voice & Fax` section on the screen. Under the `A CALL COMES IN` section
+add the webhook URL (e.g. `https://<host>:<port>/webhooks/twilio_voice/webhook`) for your Rasa bot replacing the host
+and port with the appropriate values for your deployment. Click `Save` at the bottom of the page.
+
+In your `credentials.yml` file make sure the `twilio_voice` channel is added.
+
+## Built-In Voice Behaviors
+
+### Assistant Voice
+
+You can add personality to your assistant by specifying the type of voice your assistant should speak with. In the
+`credentials.yml` file you can add an option for `assistant_voice` to specify the type of voice of your assistant. For a
+list of supported voices you can check the [Twilio documentation](https://www.twilio.com/docs/voice/twiml/say#voice). An
+example implementation looks like this where a woman's voice is used. If no voice is provided then a woman's voice will
+be used by default.
+
+```
+twilio_voice:
+  assistant_voice: "woman"
+```
+
+### Call Answering
+
+When a new call is received there is no user message provided. For voice calls a greeting `Hello` will be sent to Rasa
+when the call is answered. Rasa will then respond with the the model's predicted intent. Since how you greet a user
+on a voice channel may differ from a text channel you should consider creating channel specific responses where appropriate.
+
+### Handling Conversation Pauses
+
+Unlike text channels where users can review previous messages in the conversation and take their time to
+reply, with voice channels users can get confused when there is a pause in the conversation. When a long pause is
+detected during a conversation Rasa will repeat the last utterance from the bot to re-prompt the user for a response.
