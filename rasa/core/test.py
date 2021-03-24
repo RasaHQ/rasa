@@ -345,14 +345,14 @@ async def _create_data_generator(
     resource_name: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
-    use_e2e: bool = False,
+    use_conversation_test_files: bool = False,
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
 
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name]
     )
-    if use_e2e:
+    if use_conversation_test_files:
         story_graph = await test_data_importer.get_conversation_tests()
     else:
         story_graph = await test_data_importer.get_stories()
@@ -980,7 +980,10 @@ def _plot_story_evaluation(
 
 
 async def compare_models_in_dir(
-    model_dir: Text, stories_file: Text, output: Text, use_e2e: bool = False
+    model_dir: Text,
+    stories_file: Text,
+    output: Text,
+    use_conversation_test_files: bool = False,
 ) -> None:
     """Evaluates multiple trained models in a directory on a test set.
 
@@ -988,8 +991,8 @@ async def compare_models_in_dir(
         model_dir: path to directory that contains the models to evaluate
         stories_file: path to the story file
         output: output directory to store results to
-        use_e2e: `True` if markdown story files should be parsed as end-to-end
-            conversation tests.
+        use_conversation_test_files: `True` if conversation test files should be used
+            for testing instead of regular Core story files.
     """
     number_correct = defaultdict(list)
 
@@ -1004,7 +1007,9 @@ async def compare_models_in_dir(
             # Remove the percentage key and number from the name to get the config name
             config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
             number_of_correct_stories = await _evaluate_core_model(
-                model, stories_file, use_e2e=use_e2e
+                model,
+                stories_file,
+                use_conversation_test_files=use_conversation_test_files,
             )
             number_correct_in_run[config_name].append(number_of_correct_stories)
 
@@ -1017,7 +1022,10 @@ async def compare_models_in_dir(
 
 
 async def compare_models(
-    models: List[Text], stories_file: Text, output: Text, use_e2e: bool = False
+    models: List[Text],
+    stories_file: Text,
+    output: Text,
+    use_conversation_test_files: bool = False,
 ) -> None:
     """Evaluates multiple trained models on a test set.
 
@@ -1025,14 +1033,14 @@ async def compare_models(
         models: Paths to model files.
         stories_file: path to the story file
         output: output directory to store results to
-        use_e2e: `True` if markdown story files should be parsed as end-to-end
-            conversation tests.
+        use_conversation_test_files: `True` if conversation test files should be used
+            for testing instead of regular Core story files.
     """
     number_correct = defaultdict(list)
 
     for model in models:
         number_of_correct_stories = await _evaluate_core_model(
-            model, stories_file, use_e2e=use_e2e
+            model, stories_file, use_conversation_test_files=use_conversation_test_files
         )
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
@@ -1042,14 +1050,16 @@ async def compare_models(
 
 
 async def _evaluate_core_model(
-    model: Text, stories_file: Text, use_e2e: bool = False
+    model: Text, stories_file: Text, use_conversation_test_files: bool = False
 ) -> int:
     from rasa.core.agent import Agent
 
     logger.info(f"Evaluating model '{model}'")
 
     agent = Agent.load(model)
-    generator = await _create_data_generator(stories_file, agent, use_e2e=use_e2e)
+    generator = await _create_data_generator(
+        stories_file, agent, use_conversation_test_files=use_conversation_test_files
+    )
     completed_trackers = generator.generate_story_trackers()
 
     # Entities are ignored here as we only compare number of correct stories.

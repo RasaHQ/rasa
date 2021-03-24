@@ -100,18 +100,22 @@ def run_core_test(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(args.model, stories, output, use_e2e=args.e2e)
+            test_core_models_in_directory(
+                args.model, stories, output, use_conversation_test_files=args.e2e
+            )
         else:
             test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
                 additional_arguments=vars(args),
-                use_e2e=args.e2e,
+                use_conversation_test_files=args.e2e,
             )
 
     else:
-        test_core_models(args.model, stories, output, use_e2e=args.e2e)
+        test_core_models(
+            args.model, stories, output, use_conversation_test_files=args.e2e
+        )
 
     rasa.shared.utils.cli.print_info(
         f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
