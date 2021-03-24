@@ -88,7 +88,7 @@ class MockedMongoTrackerStore(MongoTrackerStore):
         self,
         _domain: Domain,
         retrieve_events_from_previous_conversation_sessions: bool = False,
-    ):
+    ) -> None:
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa
