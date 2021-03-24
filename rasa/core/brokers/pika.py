@@ -8,6 +8,7 @@ from collections import deque
 from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
 
 import aio_pika
+from aiormq.exceptions import ChannelNotFoundEntity
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
@@ -16,6 +17,7 @@ import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.utils.io import DEFAULT_ENCODING
 import rasa.shared.utils.common
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +225,11 @@ class PikaEventBroker(EventBroker):
     async def _bind_queue(
         queue_name: Text, channel: aio_pika.RobustChannel, exchange: aio_pika.Exchange
     ) -> None:
-        queue = await channel.declare_queue(queue_name, durable=True)
+        try:
+            queue = await channel.declare_queue(queue_name, durable=True)
+        except ChannelNotFoundEntity as e:
+            raise RasaException from e
+
         await queue.bind(exchange, "")
 
     async def close(self) -> None:
