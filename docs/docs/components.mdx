@@ -2172,11 +2172,19 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   the entity types for which you also have defined regexes. See the big info box at the start of the
   [entity extractor section](components#entity-extractors) for more info on multiple extraction.
 
-  In the case where you seem to need both this extractor and another of the aforementioned statistical extractors,
-  we advise you to instead add the [RegexFeaturizer](components#regexfeaturizer)
-  before the extractors in your pipeline and annotate all your entity examples in the training data.
+  In the case where you seem to need both this RegexEntityExtractor and another of the aforementioned
+  statistical extractors, we advise you to consider one of the following two options.
+
+  Option 1 is advisable when you have exclusive entity types for each type of extractor. To make the
+  sure the extractors don't interfere with one another annotate only one example sentence for each
+  regex/lookup entity type, but not more.
+
+  Option 2 is useful when you want to use regexes matches as additional signal for your statistical extractor,
+  but you don't have separate entity types. In this case you will want to 1) add the
+  [RegexFeaturizer](components#regexfeaturizer) before the extractors in your pipeline 2)
+  annotate all your entity examples in the training data and 3) remove the RegexEntityExtractor from your pipeline.
   This way, your statistical extractors will receive additional signal about the presence of regex matches
-  and will be able to determine when to rely on these matches and when not to.
+  and will be able to statistically determine when to rely on these matches and when not to.
   :::
 
 
