@@ -861,6 +861,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
+        writer = tf.summary.create_file_writer(
+            self.component_config[TENSORBOARD_LOG_DIR]
+        )
+        tf.summary.trace_on(graph=True, profiler=True)
+        self.model.make_train_function()(iter(data_generator))
+        with writer.as_default():
+            tf.summary.trace_export(
+                name="my_func_trace",
+                step=0,
+                profiler_outdir=self.component_config[TENSORBOARD_LOG_DIR],
+            )
+
     # process helpers
     def _predict(
         self, message: Message
