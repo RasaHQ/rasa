@@ -18,8 +18,7 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
+    CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
     MODEL_CONFIDENCE,
     RANDOM_SEED,
@@ -215,12 +214,19 @@ async def test_train_model_checkpointing(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "ResponseSelector",
                     EPOCHS: 5,
-                    EVAL_NUM_EXAMPLES: 10,
-                    EVAL_NUM_EPOCHS: 1,
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CONSTRAIN_SIMILARITIES: True,
                     CHECKPOINT_MODEL: True,
                 },
             ],

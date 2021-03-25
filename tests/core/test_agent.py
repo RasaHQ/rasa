@@ -22,8 +22,8 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy
+from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -70,6 +70,25 @@ async def test_training_data_is_reproducible():
     # test if both datasets are identical (including in the same order)
     for i, x in enumerate(training_data):
         assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
+
+
+async def test_agent_train(trained_rasa_model: Text):
+    domain = Domain.load("data/test_domains/default_with_slots.yml")
+    loaded = Agent.load(trained_rasa_model)
+
+    # test domain
+    assert loaded.domain.action_names_or_texts == domain.action_names_or_texts
+    assert loaded.domain.intents == domain.intents
+    assert loaded.domain.entities == domain.entities
+    assert loaded.domain.templates == domain.templates
+    assert [s.name for s in loaded.domain.slots] == [s.name for s in domain.slots]
+
+    # test policies
+    assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)
+    assert [type(p) for p in loaded.policy_ensemble.policies] == [
+        MemoizationPolicy,
+        RulePolicy,
+    ]
 
 
 @pytest.mark.parametrize(

@@ -202,7 +202,6 @@
             "reference/rasa/core/exporter",
             "reference/rasa/core/jobs",
             "reference/rasa/core/registry",
-            "reference/rasa/core/restore",
             "reference/rasa/core/interpreter",
             "reference/rasa/core/lock_store",
             "reference/rasa/core/agent",
