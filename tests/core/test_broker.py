@@ -4,7 +4,6 @@ import textwrap
 from asyncio.events import AbstractEventLoop
 from pathlib import Path
 from typing import Union, Text, List, Optional, Type, Dict, Any
-from unittest.mock import Mock
 
 import aio_pika.exceptions
 import kafka
@@ -25,7 +24,7 @@ from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
-from rasa.shared.exceptions import ConnectionException, RasaException
+from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 TEST_EVENTS = [
@@ -99,13 +98,13 @@ def test_pika_queues_from_args(
     assert pika_processor.queues == expected
 
 
-async def test_pika_raise_rasa_exception(monkeypatch: MonkeyPatch):
+async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
 
     monkeypatch.setattr(
         PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
     )
 
-    with pytest.raises(RasaException):
+    with pytest.raises(ConnectionException):
         await EventBroker.create(
             EndpointConfig(username="username", password="password", type="pika")
         )
