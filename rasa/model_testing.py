@@ -12,6 +12,7 @@ from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -20,14 +21,31 @@ logger = logging.getLogger(__name__)
 
 
 def test_core_models_in_directory(
-    model_directory: Text, stories: Text, output: Text
+    model_directory: Text,
+    stories: Text,
+    output: Text,
+    use_conversation_test_files: bool = False,
 ) -> None:
+    """Evaluates a directory with multiple Core models using test data.
+
+    Args:
+        model_directory: Directory containing multiple model files.
+        stories: Path to a conversation test file.
+        output: Output directory to store results to.
+        use_conversation_test_files: `True` if conversation test files should be used
+            for testing instead of regular Core story files.
+    """
     from rasa.core.test import compare_models_in_dir
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
     rasa.utils.common.run_in_loop(
-        compare_models_in_dir(model_directory, stories, output)
+        compare_models_in_dir(
+            model_directory,
+            stories,
+            output,
+            use_conversation_test_files=use_conversation_test_files,
+        )
     )
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
@@ -84,10 +102,31 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     return model_directory
 
 
-def test_core_models(models: List[Text], stories: Text, output: Text):
+def test_core_models(
+    models: List[Text],
+    stories: Text,
+    output: Text,
+    use_conversation_test_files: bool = False,
+) -> None:
+    """Compares multiple Core models based on test data.
+
+    Args:
+        models: A list of models files.
+        stories: Path to test data.
+        output: Path to output directory for test results.
+        use_conversation_test_files: `True` if conversation test files should be used
+            for testing instead of regular Core story files.
+    """
     from rasa.core.test import compare_models
 
-    rasa.utils.common.run_in_loop(compare_models(models, stories, output))
+    rasa.utils.common.run_in_loop(
+        compare_models(
+            models,
+            stories,
+            output,
+            use_conversation_test_files=use_conversation_test_files,
+        )
+    )
 
 
 # backwards compatibility
@@ -99,6 +138,7 @@ def test_core(
     stories: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
+    use_conversation_test_files: bool = False,
 ) -> None:
     """Tests a trained Core model against a set of test stories."""
     import rasa.model
@@ -139,11 +179,17 @@ def test_core(
     from rasa.core.test import test as core_test
 
     kwargs = rasa.shared.utils.common.minimal_kwargs(
-        additional_arguments, core_test, ["stories", "agent"]
+        additional_arguments, core_test, ["stories", "agent", "e2e"]
     )
 
     rasa.utils.common.run_in_loop(
-        core_test(stories, _agent, out_directory=output, **kwargs)
+        core_test(
+            stories,
+            _agent,
+            e2e=use_conversation_test_files,
+            out_directory=output,
+            **kwargs,
+        )
     )
 
 
@@ -186,7 +232,7 @@ async def test_nlu(
 
 async def compare_nlu_models(
     configs: List[Text],
-    nlu: Text,
+    test_data: TrainingData,
     output: Text,
     runs: int,
     exclusion_percentages: List[int],
@@ -198,8 +244,7 @@ async def compare_nlu_models(
     from rasa.utils.io import create_path
     from rasa.nlu.test import compare_nlu
 
-    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
-    data = drop_intents_below_freq(data, cutoff=5)
+    test_data = drop_intents_below_freq(test_data, cutoff=5)
 
     create_path(output)
 
@@ -212,7 +257,7 @@ async def compare_nlu_models(
 
     training_examples_per_run = await compare_nlu(
         configs,
-        data,
+        test_data,
         exclusion_percentages,
         f1_score_results,
         model_names,
@@ -248,10 +293,19 @@ def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> N
 
 def perform_nlu_cross_validation(
     config: Text,
-    nlu: Text,
+    data: TrainingData,
     output: Text,
     additional_arguments: Optional[Dict[Text, Any]],
-):
+) -> None:
+    """Runs cross-validation on test data.
+
+    Args:
+        config: The model configuration.
+        data: The data which is used for the cross-validation.
+        output: Output directory for the cross-validation results.
+        additional_arguments: Additional arguments which are passed to the
+            cross-validation, like number of `disable_plotting`.
+    """
     import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
@@ -263,7 +317,6 @@ def perform_nlu_cross_validation(
     additional_arguments = additional_arguments or {}
     folds = int(additional_arguments.get("folds", 3))
     nlu_config = rasa.nlu.config.load(config)
-    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = rasa.shared.utils.common.minimal_kwargs(
         additional_arguments, cross_validate
