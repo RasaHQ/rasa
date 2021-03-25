@@ -981,8 +981,12 @@ async def test_nlu_comparison(
     )
 
     output = str(tmp_path)
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[nlu_as_json_path]
+    )
+    test_data = await test_data_importer.get_nlu_data()
     await compare_nlu_models(
-        configs, nlu_as_json_path, output, runs=2, exclusion_percentages=[50, 80]
+        configs, test_data, output, runs=2, exclusion_percentages=[50, 80]
     )
 
     assert set(os.listdir(output)) == {

@@ -337,6 +337,25 @@ def test_md_format_message_using_short_entity_syntax():
     assert formatted == """I am from [Berlin](city)."""
 
 
+def test_md_format_message_using_short_entity_syntax_no_start_end():
+    formatted = format_message(
+        "hello", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+    )
+    assert formatted == "hello"
+
+
+def test_md_format_message_no_text():
+    formatted = format_message("", intent="location", entities=[],)
+    assert formatted == ""
+
+
+def test_md_format_message_using_short_entity_syntax_no_start_end_or_text():
+    formatted = format_message(
+        "", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+    )
+    assert formatted == ""
+
+
 def test_md_format_message_using_long_entity_syntax():
     formatted = format_message(
         "I am from Berlin in Germany.",
@@ -356,6 +375,18 @@ def test_md_format_message_using_long_entity_syntax():
         formatted
         == """I am from [Berlin](city) in [Germany]{"entity": "country", "role": "destination"}."""
     )
+
+
+def test_md_format_message_using_long_entity_syntax_no_start_end():
+    formatted = format_message(
+        "I am from Berlin.",
+        intent="location",
+        entities=[
+            {"start": 10, "end": 16, "entity": "city", "value": "Berlin"},
+            {"entity": "country", "value": "Germany", "role": "destination",},
+        ],
+    )
+    assert formatted == "I am from [Berlin](city)."
 
 
 @pytest.mark.parametrize(
