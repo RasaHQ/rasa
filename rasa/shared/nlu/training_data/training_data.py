@@ -162,6 +162,10 @@ class NLUPipelineTrainingData:
         """Returns the set of entity types in the training data."""
         return {e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()}
 
+    def has_e2e_examples(self) -> bool:
+        """Checks if there are any training examples from e2e stories."""
+        return any(message.is_e2e_message() for message in self.training_examples)
+
     def distinct_entity_tags(self, tag_name: Text) -> Set[Text]:
         """Returns the set of entity tags for given tag name.
 

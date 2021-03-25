@@ -886,7 +886,7 @@ class ComponentBuilder:
 
         try:
             component, cache_key = self.__get_cached_component(
-                component_config, Metadata(model_config.as_dict(), None)
+                component_config, Metadata(model_config.as_dict())
             )
             if component is None:
                 component = registry.create_component_by_config(

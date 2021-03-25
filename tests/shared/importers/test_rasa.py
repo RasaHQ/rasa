@@ -6,6 +6,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_CONVERSATION_TEST_PATH,
 )
 from rasa.shared.core.constants import DEFAULT_INTENTS, SESSION_START_METADATA_SLOT
 from rasa.shared.core.domain import Domain
@@ -26,14 +27,26 @@ async def test_rasa_file_importer(project: Text):
     assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT)]
     assert domain.entities == []
     assert len(domain.action_names_or_texts) == 17
-    assert len(domain.templates) == 6
+    assert len(domain.responses) == 6
 
     stories = await importer.get_stories()
     assert len(stories.story_steps) == 5
 
+    test_stories = await importer.get_conversation_tests()
+    assert len(test_stories.story_steps) == 0
+
     nlu_data = await importer.get_nlu_data("en")
     assert len(nlu_data.intents) == 7
     assert len(nlu_data.intent_examples) == 69
+
+
+async def test_read_conversation_tests(project: Text):
+    importer = RasaFileImporter(
+        training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]
+    )
+
+    test_stories = await importer.get_conversation_tests()
+    assert len(test_stories.story_steps) == 7
 
 
 async def test_rasa_file_importer_with_invalid_config():

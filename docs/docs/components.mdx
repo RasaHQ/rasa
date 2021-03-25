@@ -106,11 +106,8 @@ word vectors in your pipeline.
 
 * **Configuration**
 
-  You need to specify the language model to use.
-  By default the language configured in the pipeline will be used as the language model name.
-  If the spaCy model to be used has a name that is different from the language tag (`"en"`, `"de"`, etc.),
-  the model name can be specified using the configuration variable `model`.
-  The name will be passed to `spacy.load(name)`.
+  You need to specify the language model to use. The name will be passed to `spacy.load(name)`.
+  You can find more information on the available models on the [spaCy documentation](https://spacy.io/usage/models).
 
   ```yaml-rasa
   pipeline:
@@ -130,12 +127,12 @@ word vectors in your pipeline.
   [installing SpaCy](./installation.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
-  load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
-  If you want to incorporate a custom model you've found into spaCy, check out their page on
-  [adding languages](https://spacy.io/usage/adding-languages/). As described in the documentation, you need to
-  register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
-  by passing in your language identifier as the `language` option.
+  attach spaCy models that you've trained yourself.
 
+:::caution Fallback
+Rasa Open Source will try to fallback to a common model on your behalf if you don't pass a `model` setting. This is a
+temporary feature we've introduced as part of the spaCy 3.0 migration but the fallback will be removed in Rasa Open Source 3.0.0.
+:::
 
 ### HFTransformersNLP
 
@@ -2529,7 +2526,7 @@ Selectors predict a bot response from a set of candidate responses.
 * **Outputs**
 
   A dictionary with the key as the retrieval intent of the response selector
-   and value containing predicted response templates, confidence and the response key under the retrieval intent
+   and value containing predicted responses, confidence and the response key under the retrieval intent
 
 
 
@@ -2547,7 +2544,7 @@ Selectors predict a bot response from a set of candidate responses.
     and stores two properties:
 
     * `response`: The predicted response key under the corresponding retrieval intent,
-    prediction's confidence and the associated response templates.
+    prediction's confidence and the associated responses.
 
     * `ranking`: Ranking with confidences of top 10 candidate response keys.
 
@@ -2561,7 +2558,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2570,7 +2567,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2600,7 +2597,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2609,7 +2606,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2715,9 +2712,8 @@ Selectors predict a bot response from a set of candidate responses.
   Default is `None`, i.e. the model is trained for all retrieval intents.
 
   In its default configuration, the component uses the retrieval intent with the response key(e.g. `faq/ask_name`) as the label for training.
-  Alternatively, it can also be configured to use the text of the response templates as the training label
-  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response
-  template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
+  Alternatively, it can also be configured to use the text of the responses as the training label
+  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.
 
   :::note examples and tutorials

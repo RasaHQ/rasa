@@ -84,16 +84,27 @@ class TrackerWithCachedStates(DialogueStateTracker):
             tracker.update(e)
         return tracker
 
-    def past_states_for_hashing(self, domain: Domain) -> Deque[FrozenState]:
+    def past_states_for_hashing(
+        self, domain: Domain, omit_unset_slots: bool = False,
+    ) -> Deque[FrozenState]:
+        """Generates and caches the past states of this tracker based on the history.
+
+        Args:
+            domain: a :class:`rasa.shared.core.domain.Domain`
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            A list of states
+        """
         # we need to make sure this is the same domain, otherwise things will
-        # go south. but really, the same tracker shouldn't be used across
+        # go wrong. but really, the same tracker shouldn't be used across
         # domains
         assert domain == self.domain
 
         # if don't have it cached, we use the domain to calculate the states
         # from the events
         if self._states_for_hashing is None:
-            states = super().past_states(domain)
+            states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
             self._states_for_hashing = deque(
                 self.freeze_current_state(s) for s in states
             )
@@ -107,8 +118,29 @@ class TrackerWithCachedStates(DialogueStateTracker):
             for frozen_state in frozen_states
         ]
 
-    def past_states(self, domain: Domain) -> List[State]:
-        states_for_hashing = self.past_states_for_hashing(domain)
+    def past_states(
+        self,
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+    ) -> List[State]:
+        """Generates the past states of this tracker based on the history.
+
+        Args:
+            domain: The Domain.
+            omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
+
+        Returns:
+            a list of states
+        """
+        states_for_hashing = self.past_states_for_hashing(
+            domain, omit_unset_slots=omit_unset_slots
+        )
         return self._unfreeze_states(states_for_hashing)
 
     def clear_states(self) -> None:
@@ -232,7 +264,7 @@ class TrainingDataGenerator:
         self.hashed_featurizations = set()
 
     @staticmethod
-    def _phase_name(everything_reachable_is_reached, phase):
+    def _phase_name(everything_reachable_is_reached: bool, phase: int) -> Text:
         if everything_reachable_is_reached:
             return f"augmentation round {phase}"
         else:

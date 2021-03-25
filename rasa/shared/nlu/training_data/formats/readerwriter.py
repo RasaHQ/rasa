@@ -1,5 +1,7 @@
+import abc
 import json
 from collections import OrderedDict
+import operator
 from pathlib import Path
 
 import rasa.shared.nlu.training_data.util
@@ -23,11 +25,11 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingDataFull
 
 
-class TrainingDataReader:
-    """Reads training data from files."""
+class TrainingDataReader(abc.ABC):
+    """Reader for NLU training data."""
 
-    def __init__(self):
-        """Initializes the reader."""
+    def __init__(self) -> None:
+        """Creates reader instance."""
         self.filename: Text = ""
 
     def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingDataFull":
@@ -35,6 +37,7 @@ class TrainingDataReader:
         self.filename = filename
         return self.reads(rasa.shared.utils.io.read_file(filename), **kwargs)
 
+    @abc.abstractmethod
     def reads(self, s: Text, **kwargs: Any) -> "TrainingDataFull":
         """Reads TrainingData from a string."""
         raise NotImplementedError
@@ -92,12 +95,7 @@ class TrainingDataWriter:
     @staticmethod
     def generate_list_item(text: Text) -> Text:
         """Generates text for a list item."""
-        return f"- {TrainingDataWriter.generate_string_item(text)}"
-
-    @staticmethod
-    def generate_string_item(text: Text) -> Text:
-        """Generates text for a string item."""
-        return f"{rasa.shared.nlu.training_data.util.encode_string(text)}\n"
+        return f"- {rasa.shared.nlu.training_data.util.encode_string(text)}\n"
 
     @staticmethod
     def generate_message(message: Dict[Text, Any]) -> Text:
@@ -113,9 +111,16 @@ class TrainingDataWriter:
         # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
         # entity annotation
         if not text.startswith(INTENT_MESSAGE_PREFIX):
-            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
-            for entity in entities:
+            entities = message.get("entities", [])
+            entities_with_start_and_end = [
+                e for e in entities if "start" in e and "end" in e
+            ]
+            sorted_entities = sorted(
+                entities_with_start_and_end, key=operator.itemgetter("start")
+            )
+
+            for entity in sorted_entities:
                 md += text[pos : entity["start"]]
                 md += TrainingDataWriter.generate_entity(text, entity)
                 pos = entity["end"]

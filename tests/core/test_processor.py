@@ -13,12 +13,12 @@ from unittest.mock import patch, Mock
 
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.actions.action import (
-    ActionUtterTemplate,
+    ActionBotResponse,
     ActionListen,
     ActionExecutionRejection,
 )
 import rasa.core.policies.policy
-from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 import tests.utilities
 
@@ -48,11 +48,13 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.shared.core.slots import Slot, AnySlot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
@@ -63,6 +65,7 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
+    RULE_SNIPPET_ACTION_NAME,
 )
 
 import logging
@@ -70,7 +73,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.trains_model
 async def test_message_processor(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -83,7 +85,6 @@ async def test_message_processor(
     }
 
 
-@pytest.mark.trains_model
 async def test_message_id_logging(default_processor: MessageProcessor):
     message = UserMessage("If Meg was an egg would she still have a leg?")
     tracker = DialogueStateTracker("1", [])
@@ -94,7 +95,6 @@ async def test_message_id_logging(default_processor: MessageProcessor):
     assert logged_event.message_id is not None
 
 
-@pytest.mark.trains_model
 async def test_parsing(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "boy"}')
     parsed = await default_processor.parse_message(message)
@@ -102,7 +102,6 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["entities"][0]["entity"] == "name"
 
 
-@pytest.mark.trains_model
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/dislike{"test_entity": "RASA"}')
     parsed = await default_processor.parse_message(message)
@@ -121,7 +120,6 @@ async def test_check_for_unseen_feature(default_processor: MessageProcessor):
 
 
 @pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
-@pytest.mark.trains_model
 async def test_default_intent_recognized(
     default_processor: MessageProcessor, default_intent: Text
 ):
@@ -185,7 +183,6 @@ async def test_parsing_with_tracker():
             assert result["requested_language"] == "en"
 
 
-@pytest.mark.trains_model
 async def test_reminder_scheduled(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -214,7 +211,6 @@ async def test_reminder_scheduled(
     )
 
 
-@pytest.mark.trains_model
 async def test_reminder_lock(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -238,7 +234,6 @@ async def test_reminder_lock(
         assert f"Deleted lock for conversation '{sender_id}'." in caplog.text
 
 
-@pytest.mark.trains_model
 async def test_trigger_external_latest_input_channel(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -258,7 +253,6 @@ async def test_trigger_external_latest_input_channel(
     assert tracker.get_latest_input_channel() == input_channel
 
 
-@pytest.mark.trains_model
 async def test_reminder_aborted(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -295,7 +289,6 @@ async def wait_until_all_jobs_were_executed(
         raise TimeoutError
 
 
-@pytest.mark.trains_model
 async def test_reminder_cancelled_multi_user(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -353,7 +346,6 @@ async def test_reminder_cancelled_multi_user(
     )
 
 
-@pytest.mark.trains_model
 async def test_reminder_cancelled_cancels_job_with_name(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -369,7 +361,6 @@ async def test_reminder_cancelled_cancels_job_with_name(
     assert not reminder_cancelled.cancels_job_with_name(job_name.upper(), sender_id)
 
 
-@pytest.mark.trains_model
 async def test_reminder_cancelled_cancels_job_with_name_special_name(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -405,7 +396,6 @@ async def cancel_reminder_and_check(
     assert len((await jobs.scheduler()).get_jobs()) == num_jobs_after
 
 
-@pytest.mark.trains_model
 async def test_reminder_cancelled_by_name(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -422,7 +412,6 @@ async def test_reminder_cancelled_by_name(
     )
 
 
-@pytest.mark.trains_model
 async def test_reminder_cancelled_by_entities(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -443,7 +432,6 @@ async def test_reminder_cancelled_by_entities(
     )
 
 
-@pytest.mark.trains_model
 async def test_reminder_cancelled_by_intent(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -460,7 +448,6 @@ async def test_reminder_cancelled_by_intent(
     )
 
 
-@pytest.mark.trains_model
 async def test_reminder_cancelled_all(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -477,7 +464,6 @@ async def test_reminder_cancelled_all(
     )
 
 
-@pytest.mark.trains_model
 async def test_reminder_restart(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -515,7 +501,6 @@ async def test_reminder_restart(
         (None, 1, False),
     ],
 )
-@pytest.mark.trains_model
 async def test_has_session_expired(
     event_to_apply: Optional[Event],
     session_expiration_time_in_minutes: float,
@@ -540,7 +525,8 @@ async def test_has_session_expired(
 
 
 # noinspection PyProtectedMember
-@pytest.mark.trains_model
+
+
 async def test_update_tracker_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -569,7 +555,6 @@ async def test_update_tracker_session(
     ]
 
 
-@pytest.mark.trains_model
 async def test_update_tracker_session_with_metadata(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
 ):
@@ -598,7 +583,6 @@ async def test_update_tracker_session_with_metadata(
 
 
 @freezegun.freeze_time("2020-02-01")
-@pytest.mark.trains_model
 async def test_custom_action_session_start_with_metadata(
     default_processor: MessageProcessor,
 ):
@@ -636,7 +620,8 @@ async def test_custom_action_session_start_with_metadata(
 
 
 # noinspection PyProtectedMember
-@pytest.mark.trains_model
+
+
 async def test_update_tracker_session_with_slots(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -683,7 +668,6 @@ async def test_update_tracker_session_with_slots(
     assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
 
 
-@pytest.mark.trains_model
 async def test_fetch_tracker_and_update_session(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -719,7 +703,6 @@ async def test_fetch_tracker_and_update_session(
         ([], [ActionExecuted, SessionStarted, ActionExecuted]),
     ],
 )
-@pytest.mark.trains_model
 async def test_fetch_tracker_with_initial_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -747,7 +730,6 @@ async def test_fetch_tracker_with_initial_session(
     )
 
 
-@pytest.mark.trains_model
 async def test_fetch_tracker_with_initial_session_does_not_update_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -790,7 +772,6 @@ async def test_fetch_tracker_with_initial_session_does_not_update_session(
     ]
 
 
-@pytest.mark.trains_model
 async def test_handle_message_with_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -833,7 +814,7 @@ async def test_handle_message_with_session_start(
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
+        BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
@@ -857,7 +838,7 @@ async def test_handle_message_with_session_start(
         ActionExecuted("utter_greet"),
         BotUttered(
             "hey there post-session start hello!",
-            metadata={"template_name": "utter_greet"},
+            metadata={"utter_action": "utter_greet"},
         ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
@@ -874,7 +855,6 @@ async def test_handle_message_with_session_start(
         ("utter_greet", True),
     ],
 )
-@pytest.mark.trains_model
 async def test_should_predict_another_action(
     default_processor: MessageProcessor,
     action_name: Text,
@@ -958,7 +938,6 @@ def test_get_next_action_probabilities_pass_policy_predictions_without_interpret
         )
 
 
-@pytest.mark.trains_model
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -1006,7 +985,7 @@ async def test_restart_triggers_session_start(
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there name1!", metadata={"template_name": "utter_greet"}),
+        BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
@@ -1021,7 +1000,6 @@ async def test_restart_triggers_session_start(
         assert actual == expected
 
 
-@pytest.mark.trains_model
 async def test_handle_message_if_action_manually_rejects(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
@@ -1037,9 +1015,7 @@ async def test_handle_message_if_action_manually_rejects(
     async def mocked_run(self, *args: Any, **kwargs: Any) -> List[Event]:
         return rejection_events
 
-    monkeypatch.setattr(
-        ActionUtterTemplate, ActionUtterTemplate.run.__name__, mocked_run
-    )
+    monkeypatch.setattr(ActionBotResponse, ActionBotResponse.run.__name__, mocked_run)
     await default_processor.handle_message(message)
 
     tracker = default_processor.tracker_store.retrieve(conversation_id)
@@ -1050,7 +1026,6 @@ async def test_handle_message_if_action_manually_rejects(
     assert all(event in logged_events for event in rejection_events)
 
 
-@pytest.mark.trains_model
 def test_predict_next_action_with_deprecated_ensemble(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
@@ -1084,7 +1059,6 @@ def test_predict_next_action_with_deprecated_ensemble(
     assert prediction == PolicyPrediction(expected_probabilities, expected_policy_name)
 
 
-@pytest.mark.trains_model
 async def test_policy_events_are_applied_to_tracker(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
@@ -1156,7 +1130,6 @@ async def test_policy_events_are_applied_to_tracker(
         lambda: (_ for _ in ()).throw(ActionExecutionRejection(ACTION_LISTEN_NAME)),
     ],
 )
-@pytest.mark.trains_model
 async def test_policy_events_not_applied_if_rejected(
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
@@ -1211,7 +1184,7 @@ async def test_logging_of_end_to_end_action():
         intents=["greet"],
         entities=[],
         slots=[],
-        templates={},
+        responses={},
         action_names=[],
         forms={},
         action_texts=[end_to_end_action],
@@ -1267,3 +1240,106 @@ async def test_logging_of_end_to_end_action():
     ]
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
+
+
+def test_predict_next_action_with_hidden_rules():
+    rule_intent = "rule_intent"
+    rule_action = "rule_action"
+    story_intent = "story_intent"
+    story_action = "story_action"
+    rule_slot = "rule_slot"
+    story_slot = "story_slot"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {rule_intent}
+        - {story_intent}
+        actions:
+        - {rule_action}
+        - {story_action}
+        slots:
+          {rule_slot}:
+            type: text
+          {story_slot}:
+            type: text
+        """
+    )
+
+    rule = TrackerWithCachedStates.from_events(
+        "rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": rule_intent}),
+            ActionExecuted(rule_action),
+            SlotSet(rule_slot, rule_slot),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "story",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": story_intent}),
+            ActionExecuted(story_action),
+            SlotSet(story_slot, story_slot),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    interpreter = RegexInterpreter()
+    ensemble = SimplePolicyEnsemble(policies=[RulePolicy(), MemoizationPolicy()])
+    ensemble.train([rule, story], domain, interpreter)
+
+    tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
+    processor = MessageProcessor(
+        interpreter,
+        ensemble,
+        domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(domain.templates),
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "casd",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": rule_intent}),
+        ],
+        slots=domain.slots,
+    )
+    action, prediction = processor.predict_next_action(tracker)
+    assert action._name == rule_action
+    assert prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(
+        tracker, action, [SlotSet(rule_slot, rule_slot)], prediction
+    )
+
+    action, prediction = processor.predict_next_action(tracker)
+    assert isinstance(action, ActionListen)
+    assert prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(tracker, action, None, prediction)
+
+    tracker.events.append(UserUttered(intent={"name": story_intent}))
+
+    # rules are hidden correctly if memo policy predicts next actions correctly
+    action, prediction = processor.predict_next_action(tracker)
+    assert action._name == story_action
+    assert not prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(
+        tracker, action, [SlotSet(story_slot, story_slot)], prediction
+    )
+
+    action, prediction = processor.predict_next_action(tracker)
+    assert isinstance(action, ActionListen)
+    assert not prediction.hide_rule_turn

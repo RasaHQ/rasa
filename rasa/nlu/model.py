@@ -85,19 +85,19 @@ class Metadata:
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
             data = rasa.shared.utils.io.read_json_file(metadata_file)
-            return Metadata(data, model_dir)
+            return Metadata(data)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
             raise InvalidModelError(
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
-    def __init__(self, metadata: Dict[Text, Any], model_dir: Optional[Text]):
-
+    def __init__(self, metadata: Dict[Text, Any]):
+        """Set `metadata` attribute."""
         self.metadata = metadata
-        self.model_dir = model_dir
 
     def get(self, property_name: Text, default: Any = None) -> Any:
+        """Proxy function to get property on `metadata` attribute."""
         return self.metadata.get(property_name, default)
 
     @property
@@ -226,10 +226,8 @@ class Trainer:
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
-            updates = component.train(working_data, self.config, **context)
+            component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
-            if updates:
-                context.update(updates)
 
         return Interpreter(self.pipeline, context)
 
@@ -394,7 +392,7 @@ class Trainer:
         for i, component in enumerate(self.pipeline):
             metadata["pipeline"].append(self._persist_component(component, dir_name, i))
 
-        Metadata(metadata, dir_name).persist(dir_name)
+        Metadata(metadata).persist(dir_name)
 
         if persistor is not None:
             persistor.persist(dir_name, model_name)
@@ -489,6 +487,7 @@ class Interpreter:
 
         Interpreter.ensure_model_compatibility(model_metadata)
         return Interpreter.create(
+            model_dir,
             model_metadata,
             component_builder,
             skip_validation,
@@ -524,6 +523,7 @@ class Interpreter:
 
     @staticmethod
     def create(
+        model_dir: Text,
         model_metadata: Metadata,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
@@ -532,6 +532,7 @@ class Interpreter:
         """Create model and components defined by the provided metadata.
 
         Args:
+            model_dir: The directory containing the model.
             model_metadata: The metadata describing each component.
             component_builder: The
                 :class:`rasa.nlu.components.ComponentBuilder` to use.
@@ -543,7 +544,7 @@ class Interpreter:
         Returns:
             An interpreter that uses the created model.
         """
-        context = {"should_finetune": should_finetune}
+        context: Dict[Text, Any] = {"should_finetune": should_finetune}
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result
@@ -560,7 +561,7 @@ class Interpreter:
         for i in range(model_metadata.number_of_components):
             component_meta = model_metadata.for_component(i)
             component = component_builder.load_component(
-                component_meta, model_metadata.model_dir, model_metadata, **context
+                component_meta, model_dir, model_metadata, **context
             )
             try:
                 updates = component.provide_context()
@@ -605,10 +606,11 @@ class Interpreter:
             output["text"] = ""
             return output
 
+        timestamp = int(time.timestamp()) if time else None
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=time)
+        message = Message(data=data, time=timestamp)
 
         for component in self.pipeline:
             component.process(message, **self.context)

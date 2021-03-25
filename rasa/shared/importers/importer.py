@@ -48,7 +48,16 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
+        # TODO: Drop `use_e2e` in Rasa Open Source 3.0.0 when removing Markdown support
         raise NotImplementedError()
+
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves end-to-end conversation stories for testing.
+
+        Returns:
+            `StoryGraph` containing all loaded stories.
+        """
+        return await self.get_stories(use_e2e=True)
 
     async def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
@@ -65,7 +74,7 @@ class TrainingDataImporter:
             language: Can be used to only load training data for a certain language.
 
         Returns:
-            Loaded NLU `TrainingData`.
+            Loaded NLU `TrainingDataFull`.
         """
         raise NotImplementedError()
 
@@ -190,6 +199,7 @@ class NluDataImporter(TrainingDataImporter):
         self._importer = actual_importer
 
     async def get_domain(self) -> Domain:
+        """Retrieves model domain (see parent class for full docstring)."""
         return Domain.empty()
 
     async def get_stories(
@@ -198,25 +208,19 @@ class NluDataImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
+        """Retrieves training stories / rules (see parent class for full docstring)."""
+        return StoryGraph([])
+
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
         return StoryGraph([])
 
     async def get_config(self) -> Dict:
-        """Retrieves the configuration that should be used for the training.
-
-        Returns:
-            The configuration as dictionary.
-        """
+        """Retrieves model config (see parent class for full docstring)."""
         return await self._importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
-        """Retrieves the NLU training data that should be used for training.
-
-        Args:
-            language: Can be used to only load training data for a certain language.
-
-        Returns:
-            Loaded NLU `TrainingData`.
-        """
+        """Retrieves NLU training data (see parent class for full docstring)."""
         return await self._importer.get_nlu_data(language)
 
 
@@ -232,6 +236,7 @@ class CombinedDataImporter(TrainingDataImporter):
 
     @rasa.shared.utils.common.cached_method
     async def get_config(self) -> Dict:
+        """Retrieves model config (see parent class for full docstring)."""
         configs = [importer.get_config() for importer in self._importers]
         configs = await asyncio.gather(*configs)
 
@@ -239,6 +244,7 @@ class CombinedDataImporter(TrainingDataImporter):
 
     @rasa.shared.utils.common.cached_method
     async def get_domain(self) -> Domain:
+        """Retrieves model domain (see parent class for full docstring)."""
         domains = [importer.get_domain() for importer in self._importers]
         domains = await asyncio.gather(*domains)
 
@@ -253,17 +259,7 @@ class CombinedDataImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        """Retrieves the stories that should be used for training.
-
-        Args:
-            template_variables: Values of templates that should be replaced while
-                                reading the story files.
-            use_e2e: Specifies whether to parse end to end learning annotations.
-            exclusion_percentage: Amount of training data that should be excluded.
-
-        Returns:
-            `StoryGraph` containing all loaded stories.
-        """
+        """Retrieves training stories / rules (see parent class for full docstring)."""
         stories = [
             importer.get_stories(template_variables, use_e2e, exclusion_percentage)
             for importer in self._importers
@@ -275,15 +271,18 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
+        stories = [importer.get_conversation_tests() for importer in self._importers]
+        stories = await asyncio.gather(*stories)
+
+        return reduce(
+            lambda merged, other: merged.merge(other), stories, StoryGraph([])
+        )
+
+    @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
-        """Retrieves the NLU training data that should be used for training.
-
-        Args:
-            language: Can be used to only load training data for a certain language.
-
-        Returns:
-            Loaded NLU `TrainingData`.
-        """
+        """Retrieves NLU training data (see parent class for full docstring)."""
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
         nlu_data = await asyncio.gather(*nlu_data)
 
@@ -295,8 +294,8 @@ class CombinedDataImporter(TrainingDataImporter):
 class ResponsesSyncImporter(TrainingDataImporter):
     """Importer that syncs `responses` between Domain and NLU training data.
 
-    Synchronizes response templates between Domain and NLU
-    and adds retrieval intent properties from the NLU training data
+    Synchronizes responses between Domain and NLU and
+    adds retrieval intent properties from the NLU training data
     back to the Domain.
     """
 
@@ -304,11 +303,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
         self._importer = importer
 
     async def get_config(self) -> Dict:
-        """Retrieves the configuration that should be used for the training.
-
-        Returns:
-            The configuration as dictionary.
-        """
+        """Retrieves model config (see parent class for full docstring)."""
         return await self._importer.get_config()
 
     @rasa.shared.utils.common.cached_method
@@ -332,7 +327,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
         )
 
         existing_domain = existing_domain.merge(domain_with_retrieval_intents)
-        existing_domain.check_missing_templates()
+        existing_domain.check_missing_responses()
 
         return existing_domain
 
@@ -354,7 +349,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
     @staticmethod
     def _get_domain_with_retrieval_intents(
         retrieval_intents: Set[Text],
-        response_templates: Dict[Text, List[Dict[Text, Any]]],
+        responses: Dict[Text, List[Dict[Text, Any]]],
         existing_domain: Domain,
     ) -> Domain:
         """Construct a domain consisting of retrieval intents.
@@ -364,7 +359,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
         Args:
             retrieval_intents: Set of retrieval intents defined in NLU training data.
-            response_templates: Response templates defined in NLU training data.
+            responses: Responses defined in NLU training data.
             existing_domain: Domain which is already loaded from the domain file.
 
         Returns: Domain with retrieval actions added to action names and properties
@@ -387,7 +382,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
             retrieval_intent_properties,
             [],
             [],
-            response_templates,
+            responses,
             ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
             {},
         )
@@ -398,58 +393,45 @@ class ResponsesSyncImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        """Retrieves the stories that should be used for training.
-
-        Args:
-            template_variables: Values of templates that should be replaced while
-                                reading the story files.
-            use_e2e: Specifies whether to parse end to end learning annotations.
-            exclusion_percentage: Amount of training data that should be excluded.
-
-        Returns:
-            `StoryGraph` containing all loaded stories.
-        """
+        """Retrieves training stories / rules (see parent class for full docstring)."""
         return await self._importer.get_stories(
             template_variables, use_e2e, exclusion_percentage
         )
 
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
+        return await self._importer.get_conversation_tests()
+
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
-        """Updates NLU data with responses for retrieval intents from domain.
-
-        Args:
-            language: Can be used to only load training data for a certain language.
-
-        Returns:
-            Loaded NLU `TrainingData`.
-        """
+        """Updates NLU data with responses for retrieval intents from domain."""
         existing_nlu_data = await self._importer.get_nlu_data(language)
         existing_domain = await self._importer.get_domain()
 
         return existing_nlu_data.merge(
             self._get_nlu_data_with_responses(
-                existing_domain.retrieval_intent_templates
+                existing_domain.retrieval_intent_responses
             )
         )
 
     @staticmethod
     def _get_nlu_data_with_responses(
-        response_templates: Dict[Text, List[Dict[Text, Any]]]
+        responses: Dict[Text, List[Dict[Text, Any]]]
     ) -> TrainingDataFull:
-        """Construct training data object with only the response templates supplied.
+        """Construct training data object with only the responses supplied.
 
         Args:
-            response_templates: Response templates the NLU data should
+            responses: Responses the NLU data should
             be initialized with.
 
-        Returns:
-            TrainingData object with response templates.
+        Returns: TrainingDataFull object with responses.
         """
-        return TrainingDataFull(responses=response_templates)
+        return TrainingDataFull(responses=responses)
 
 
 class E2EImporter(TrainingDataImporter):
-    """Importer which
+    """Importer with the following functionality.
+
     - enhances the NLU training data with actions / user messages from the stories.
     - adds potential end-to-end bot messages from stories as actions to the domain
     """
@@ -459,6 +441,7 @@ class E2EImporter(TrainingDataImporter):
 
     @rasa.shared.utils.common.cached_method
     async def get_domain(self) -> Domain:
+        """Retrieves model domain (see parent class for full docstring)."""
         original, e2e_domain = await asyncio.gather(
             self.importer.get_domain(), self._get_domain_with_e2e_actions()
         )
@@ -499,37 +482,23 @@ class E2EImporter(TrainingDataImporter):
     ) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
-        Args:
-            template_variables: Values of templates that should be replaced while
-                                reading the story files.
-            use_e2e: Specifies whether to parse end to end learning annotations.
-            exclusion_percentage: Amount of training data that should be excluded.
-
-        Returns:
-            `StoryGraph` containing all loaded stories.
+        See parent class for details.
         """
         return await self.importer.get_stories(
             template_variables, use_e2e, exclusion_percentage
         )
 
-    async def get_config(self) -> Dict:
-        """Retrieves the configuration that should be used for the training.
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
+        return await self.importer.get_conversation_tests()
 
-        Returns:
-            The configuration as dictionary.
-        """
+    async def get_config(self) -> Dict:
+        """Retrieves model config (see parent class for full docstring)."""
         return await self.importer.get_config()
 
     @rasa.shared.utils.common.cached_method
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingDataFull:
-        """Retrieves the NLU training data that should be used for training.
-
-        Args:
-            language: Can be used to only load training data for a certain language.
-
-        Returns:
-            Loaded NLU `TrainingData`.
-        """
+        """Retrieves NLU training data (see parent class for full docstring)."""
         training_datasets = [_additional_training_data_from_default_actions()]
 
         training_datasets += await asyncio.gather(

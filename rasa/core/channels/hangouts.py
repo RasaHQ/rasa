@@ -133,7 +133,7 @@ class HangoutsOutput(OutputChannel):
             new_messages = self._combine_cards(text_card, message)
 
         elif msg_new == "text":
-            new_messages = {"text": message.get("text")}
+            new_messages = {"text": message["text"]}
         else:
             new_messages = message
 

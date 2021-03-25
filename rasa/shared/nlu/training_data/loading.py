@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import typing
-from typing import Optional, Text
+from typing import Optional, Text, Callable, Dict, Any
 
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.formats import MarkdownReader, NLGMarkdownReader
@@ -32,7 +32,7 @@ MARKDOWN_NLG = "nlg.md"
 JSON = "json"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
-_json_format_heuristics = {
+_json_format_heuristics: Dict[Text, Callable[[Any, Text], bool]] = {
     WIT: lambda js, fn: "utterances" in js and "luis_schema_version" not in js,
     LUIS: lambda js, fn: "luis_schema_version" in js,
     RASA: lambda js, fn: "rasa_nlu_data" in js,
