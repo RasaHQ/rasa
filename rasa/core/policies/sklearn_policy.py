@@ -234,7 +234,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        tracker_state_features, label_ids, _ = self.featurize_for_training(
+        tracker_state_features, label_ids, _ = self._featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         training_data, zero_state_features = model_data_utils.convert_to_data_format(
@@ -284,7 +284,18 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        X = self.featurizer.create_state_features([tracker], domain, interpreter)
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
+        """
+        X = self._featurize_for_prediction(tracker, domain, interpreter)
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )

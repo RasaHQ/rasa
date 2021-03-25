@@ -920,7 +920,7 @@ def test_remove_pretrained_extractors(component_builder: ComponentBuilder):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
-                {"name": "SpacyNLP"},
+                {"name": "SpacyNLP", "model": "en_core_web_md"},
                 {"name": "SpacyEntityExtractor"},
                 {"name": "DucklingEntityExtractor"},
             ]
@@ -954,8 +954,12 @@ async def test_nlu_comparison(tmp_path: Path, nlu_as_json_path: Text):
     configs = [write_file_config(config).name, write_file_config(config).name]
 
     output = str(tmp_path)
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[nlu_as_json_path]
+    )
+    test_data = await test_data_importer.get_nlu_data()
     await compare_nlu_models(
-        configs, nlu_as_json_path, output, runs=2, exclusion_percentages=[50, 80]
+        configs, test_data, output, runs=2, exclusion_percentages=[50, 80]
     )
 
     assert set(os.listdir(output)) == {
