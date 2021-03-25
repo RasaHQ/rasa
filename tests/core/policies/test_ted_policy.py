@@ -35,7 +35,6 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MODEL_CONFIDENCE,
     COSINE,
-    INNER,
     AUTO,
     LINEAR_NORM,
 )
@@ -93,7 +92,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
+    ) -> TEDPolicy:
         return TEDPolicy(featurizer=featurizer, priority=priority)
 
     def test_similarity_type(self, trained_policy: TEDPolicy):

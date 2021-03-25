@@ -428,7 +428,7 @@ def is_key_in_yaml(file_path: Union[Text, Path], *keys: Text) -> bool:
         FileNotFoundException: if the file cannot be found.
     """
     try:
-        with open(file_path) as file:
+        with open(file_path, encoding=DEFAULT_ENCODING) as file:
             return any(
                 any(line.lstrip().startswith(f"{key}:") for key in keys)
                 for line in file
