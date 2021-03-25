@@ -171,28 +171,32 @@ Run the evaluation of the stories, optionally plot the results.
 #### compare\_models\_in\_dir
 
 ```python
-async compare_models_in_dir(model_dir: Text, stories_file: Text, output: Text) -> None
+async compare_models_in_dir(model_dir: Text, stories_file: Text, output: Text, use_conversation_test_files: bool = False) -> None
 ```
 
-Evaluate multiple trained models in a directory on a test set.
+Evaluates multiple trained models in a directory on a test set.
 
 **Arguments**:
 
 - `model_dir` - path to directory that contains the models to evaluate
 - `stories_file` - path to the story file
 - `output` - output directory to store results to
+- `use_conversation_test_files` - `True` if conversation test files should be used
+  for testing instead of regular Core story files.
 
 #### compare\_models
 
 ```python
-async compare_models(models: List[Text], stories_file: Text, output: Text) -> None
+async compare_models(models: List[Text], stories_file: Text, output: Text, use_conversation_test_files: bool = False) -> None
 ```
 
-Evaluate provided trained models on a test set.
+Evaluates multiple trained models on a test set.
 
 **Arguments**:
 
-- `models` - list of trained model paths
+- `models` - Paths to model files.
 - `stories_file` - path to the story file
 - `output` - output directory to store results to
+- `use_conversation_test_files` - `True` if conversation test files should be used
+  for testing instead of regular Core story files.
 

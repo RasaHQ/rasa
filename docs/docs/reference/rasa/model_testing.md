@@ -3,6 +3,22 @@ sidebar_label: model_testing
 title: rasa.model_testing
 ---
 
+#### test\_core\_models\_in\_directory
+
+```python
+test_core_models_in_directory(model_directory: Text, stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
+```
+
+Evaluates a directory with multiple Core models using test data.
+
+**Arguments**:
+
+- `model_directory` - Directory containing multiple model files.
+- `stories` - Path to a conversation test file.
+- `output` - Output directory to store results to.
+- `use_conversation_test_files` - `True` if conversation test files should be used
+  for testing instead of regular Core story files.
+
 #### plot\_core\_results
 
 ```python
@@ -16,10 +32,26 @@ Plot core model comparison graph.
 - `output_directory` - path to the output directory
 - `number_of_examples` - number of examples per run
 
+#### test\_core\_models
+
+```python
+test_core_models(models: List[Text], stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
+```
+
+Compares multiple Core models based on test data.
+
+**Arguments**:
+
+- `models` - A list of models files.
+- `stories` - Path to test data.
+- `output` - Path to output directory for test results.
+- `use_conversation_test_files` - `True` if conversation test files should be used
+  for testing instead of regular Core story files.
+
 #### test\_core
 
 ```python
-test_core(model: Optional[Text] = None, stories: Optional[Text] = None, output: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None) -> None
+test_core(model: Optional[Text] = None, stories: Optional[Text] = None, output: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None, use_conversation_test_files: bool = False) -> None
 ```
 
 Tests a trained Core model against a set of test stories.
@@ -35,7 +67,7 @@ Tests the NLU Model.
 #### compare\_nlu\_models
 
 ```python
-async compare_nlu_models(configs: List[Text], nlu: Text, output: Text, runs: int, exclusion_percentages: List[int])
+async compare_nlu_models(configs: List[Text], test_data: TrainingData, output: Text, runs: int, exclusion_percentages: List[int])
 ```
 
 Trains multiple models, compares them and saves the results.
@@ -52,6 +84,22 @@ Plot NLU model comparison graph.
 
 - `output_directory` - path to the output directory
 - `number_of_examples` - number of examples per run
+
+#### perform\_nlu\_cross\_validation
+
+```python
+perform_nlu_cross_validation(config: Text, data: TrainingData, output: Text, additional_arguments: Optional[Dict[Text, Any]]) -> None
+```
+
+Runs cross-validation on test data.
+
+**Arguments**:
+
+- `config` - The model configuration.
+- `data` - The data which is used for the cross-validation.
+- `output` - Output directory for the cross-validation results.
+- `additional_arguments` - Additional arguments which are passed to the
+  cross-validation, like number of `disable_plotting`.
 
 #### get\_evaluation\_metrics
 
