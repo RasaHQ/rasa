@@ -22,8 +22,8 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy
+from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 
 
