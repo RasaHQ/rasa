@@ -2624,3 +2624,45 @@ def test_hide_rule_turn_with_loops_as_followup_action():
             ACTIVE_LOOP: {LOOP_NAME: form_name},
         },
     ]
+
+
+def test_remove_action_listen_prediction_if_contradicts_with_story():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "conditioned on action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+    )
+    policy = RulePolicy()
+    policy.train(
+        [rule, story], domain, RegexInterpreter(),
+    )

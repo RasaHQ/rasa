@@ -44,6 +44,7 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     RULE_ONLY_SLOTS,
     RULE_ONLY_LOOPS,
+    USER,
 )
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
@@ -519,6 +520,25 @@ class RulePolicy(MemoizationPolicy):
             )
         return loop_sources
 
+    def _remove_action_listen_contradiction(self, prediction_source: Text) -> None:
+        prev_action = json.loads(prediction_source)[-1][PREVIOUS_ACTION][ACTION_NAME]
+        rules_to_delete = []
+        for source in self._rules_sources.keys():
+            states = json.loads(source)
+            if len(states) > 1:
+                if (
+                    PREVIOUS_ACTION in states[-2]
+                    and states[-2][PREVIOUS_ACTION][ACTION_NAME] == prev_action
+                    and PREVIOUS_ACTION in states[-1]
+                    and states[-1][PREVIOUS_ACTION][ACTION_NAME] == ACTION_LISTEN_NAME
+                    and USER in states[-1]
+                ):
+                    # check that the rule pattern is: action, intent, prediction
+                    # delete the rule that predicts action_listen
+                    rules_to_delete.append(self._create_feature_key(states[:-1]))
+        for rule_to_delete in rules_to_delete:
+            self._rules_sources.pop(rule_to_delete)
+
     def _check_prediction(
         self,
         tracker: TrackerWithCachedStates,
@@ -530,11 +550,16 @@ class RulePolicy(MemoizationPolicy):
             return []
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
+        if tracker_type == "story" and predicted_action_name == ACTION_LISTEN_NAME:
+            self._remove_action_listen_contradiction(prediction_source)
         contradicting_rules = {
             rule_name
             for rule_name, action_name in self._rules_sources[prediction_source]
             if action_name != gold_action_name
         }
+
+        if len(contradicting_rules) == 0:
+            return []
 
         error_message = (
             f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
