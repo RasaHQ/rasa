@@ -183,7 +183,7 @@ class TrackerStore:
 
         return tracker
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Save method that will be overridden by specific tracker."""
         raise NotImplementedError()
 
@@ -581,7 +581,7 @@ class MongoTrackerStore(TrackerStore):
         """Returns the current conversation."""
         return self.db[self.collection]
 
-    def _ensure_indices(self):
+    def _ensure_indices(self) -> None:
         """Create an index on the sender_id."""
         self.conversations.create_index("sender_id")
 
@@ -594,7 +594,7 @@ class MongoTrackerStore(TrackerStore):
 
         return state
 
-    def save(self, tracker, timeout=None):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)

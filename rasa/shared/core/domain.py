@@ -4,20 +4,21 @@ import json
 import logging
 import os
 from enum import Enum
+from pathlib import Path
 from typing import (
     Any,
     Dict,
     List,
     NamedTuple,
+    NoReturn,
     Optional,
     Set,
     Text,
     Tuple,
     Union,
-    NoReturn,
     TYPE_CHECKING,
+    Iterable,
 )
-from pathlib import Path
 
 import rasa.shared.constants
 import rasa.shared.core.constants
@@ -853,7 +854,7 @@ class Domain:
             AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
         )
 
-    def index_for_action(self, action_name: Text) -> Optional[int]:
+    def index_for_action(self, action_name: Text) -> int:
         """Looks up which action index corresponds to this action name."""
         try:
             return self.action_names_or_texts.index(action_name)
@@ -1043,17 +1044,22 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker",
+        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
-        """Set all set slots with the featurization of the stored value
+        """Sets all set slots with the featurization of the stored value.
+
         Args:
             tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
         Returns:
             a dictionary mapping slot names to their featurization
         """
         slots = {}
         for slot_name, slot in tracker.slots.items():
             if slot is not None and slot.as_feature():
+                if omit_unset_slots and not slot.has_been_set:
+                    continue
                 if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
                     slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
                 elif any(slot.as_feature()):
@@ -1101,11 +1107,22 @@ class Domain:
             if sub_state
         }
 
-    def get_active_states(self, tracker: "DialogueStateTracker") -> State:
-        """Return a bag of active states from the tracker state."""
+    def get_active_states(
+        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+    ) -> State:
+        """Returns a bag of active states from the tracker state.
+
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns `State` containing all active states.
+        """
         state = {
             rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
-            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(tracker),
+            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(
+                tracker, omit_unset_slots=omit_unset_slots
+            ),
             rasa.shared.core.constants.PREVIOUS_ACTION: self._get_prev_action_sub_state(
                 tracker
             ),
@@ -1115,15 +1132,115 @@ class Domain:
         }
         return self._clean_state(state)
 
+    @staticmethod
+    def _remove_rule_only_features(
+        state: State, rule_only_data: Optional[Dict[Text, Any]],
+    ) -> None:
+        if not rule_only_data:
+            return
+
+        rule_only_slots = rule_only_data.get(
+            rasa.shared.core.constants.RULE_ONLY_SLOTS, []
+        )
+        rule_only_loops = rule_only_data.get(
+            rasa.shared.core.constants.RULE_ONLY_LOOPS, []
+        )
+
+        # remove slots which only occur in rules but not in stories
+        if rule_only_slots:
+            for slot in rule_only_slots:
+                state.get(rasa.shared.core.constants.SLOTS, {}).pop(slot, None)
+        # remove active loop which only occur in rules but not in stories
+        if (
+            rule_only_loops
+            and state.get(rasa.shared.core.constants.ACTIVE_LOOP, {}).get(
+                rasa.shared.core.constants.LOOP_NAME
+            )
+            in rule_only_loops
+        ):
+            del state[rasa.shared.core.constants.ACTIVE_LOOP]
+
+    @staticmethod
+    def _substitute_rule_only_user_input(state: State, last_ml_state: State) -> None:
+        if not rasa.shared.core.trackers.is_prev_action_listen_in_state(state):
+            if not last_ml_state.get(rasa.shared.core.constants.USER) and state.get(
+                rasa.shared.core.constants.USER
+            ):
+                del state[rasa.shared.core.constants.USER]
+            elif last_ml_state.get(rasa.shared.core.constants.USER):
+                state[rasa.shared.core.constants.USER] = last_ml_state[
+                    rasa.shared.core.constants.USER
+                ]
+
     def states_for_tracker_history(
-        self, tracker: "DialogueStateTracker"
+        self,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
-        """Array of states for each state of the trackers history."""
-        return [
-            self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
-        ]
+        """List of states for each state of the trackers history.
+
+        Args:
+            tracker: Dialogue state tracker containing the dialogue so far.
+            omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
+
+        Return:
+            A list of states.
+        """
+        states = []
+        last_ml_action_sub_state = None
+        turn_was_hidden = False
+        for tr, hide_rule_turn in tracker.generate_all_prior_trackers():
+            if ignore_rule_only_turns:
+                # remember previous ml action based on the last non hidden turn
+                # we need this to override previous action in the ml state
+                if not turn_was_hidden:
+                    last_ml_action_sub_state = self._get_prev_action_sub_state(tr)
+
+                # followup action or happy path loop prediction
+                # don't change the fact whether dialogue turn should be hidden
+                if (
+                    not tr.followup_action
+                    and not tr.latest_action_name == tr.active_loop_name
+                ):
+                    turn_was_hidden = hide_rule_turn
+
+                if turn_was_hidden:
+                    continue
+
+            state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+
+            if ignore_rule_only_turns:
+                # clean state from only rule features
+                self._remove_rule_only_features(state, rule_only_data)
+                # make sure user input is the same as for previous state
+                # for non action_listen turns
+                if states:
+                    self._substitute_rule_only_user_input(state, states[-1])
+                # substitute previous rule action with last_ml_action_sub_state
+                if last_ml_action_sub_state:
+                    state[
+                        rasa.shared.core.constants.PREVIOUS_ACTION
+                    ] = last_ml_action_sub_state
+
+            states.append(self._clean_state(state))
+
+        return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
+        """Creates slot events for entities if auto-filling is enabled.
+
+        Args:
+            entities: The list of entities.
+
+        Returns:
+            A list of `SlotSet` events.
+        """
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
@@ -1496,7 +1613,7 @@ class Domain:
         named or a response is missing.
         """
 
-        def get_duplicates(my_items):
+        def get_duplicates(my_items: Iterable[Any]) -> List[Any]:
             """Returns a list of duplicate items in my_items."""
             return [
                 item
