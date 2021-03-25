@@ -20,7 +20,8 @@ from rasa.core.actions.action import (
     ActionEndToEndResponse,
 )
 from rasa.core.actions.forms import FormAction
-from rasa.core.channels import CollectingOutputChannel
+from rasa.core.channels import CollectingOutputChannel, OutputChannel
+from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.domain import (
     ActionNotFoundException,
@@ -122,7 +123,10 @@ def test_domain_action_instantiation():
 
 
 async def test_remote_action_runs(
-    default_channel, default_nlg, default_tracker, domain: Domain
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
 ):
 
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
@@ -172,7 +176,10 @@ async def test_remote_action_runs(
 
 
 async def test_remote_action_logs_events(
-    default_channel, default_nlg, default_tracker, domain: Domain
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -239,7 +246,9 @@ async def test_remote_action_logs_events(
 
 
 async def test_remote_action_utterances_with_none_values(
-    default_channel, default_tracker, domain: Domain
+    default_channel: OutputChannel,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -274,6 +283,57 @@ async def test_remote_action_utterances_with_none_values(
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
         events = await remote_action.run(default_channel, nlg, default_tracker, domain)
+
+    assert events == [
+        BotUttered(
+            "what dou want to eat?", metadata={"utter_action": "utter_ask_cuisine"}
+        ),
+        ActiveLoop("restaurant_form"),
+        SlotSet("requested_slot", "cuisine"),
+    ]
+
+
+async def test_remote_action_with_template_param(
+    default_channel: OutputChannel,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    response = {
+        "events": [
+            {"event": "form", "name": "restaurant_form", "timestamp": None},
+            {
+                "event": "slot",
+                "timestamp": None,
+                "name": "requested_slot",
+                "value": "cuisine",
+            },
+        ],
+        "responses": [
+            {
+                "text": None,
+                "buttons": [],
+                "elements": [],
+                "custom": {},
+                "template": "utter_ask_cuisine",
+                "image": None,
+                "attachment": None,
+            }
+        ],
+    }
+
+    nlg = TemplatedNaturalLanguageGenerator(
+        {"utter_ask_cuisine": [{"text": "what dou want to eat?"}]}
+    )
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        with pytest.warns(FutureWarning):
+            events = await remote_action.run(
+                default_channel, nlg, default_tracker, domain
+            )
 
     assert events == [
         BotUttered(
