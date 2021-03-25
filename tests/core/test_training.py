@@ -1,9 +1,7 @@
 from pathlib import Path
-from typing import List, Text
 from unittest.mock import Mock
-
-import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from typing import Text
 
 from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
 from rasa.core.policies.rule_policy import RulePolicy
@@ -13,6 +11,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.ted_policy import TEDPolicy, TED
 
 from rasa.shared.core.training_data.visualization import visualize_stories
 
@@ -51,22 +50,11 @@ async def test_story_visualization_with_merging(domain: Domain):
     assert 20 < len(generated_graph.edges()) < 33
 
 
-async def test_training_script(tmp_path: Path, domain_path: Text, stories_path: Text):
-    await train(
-        domain_path,
-        stories_path,
-        str(tmp_path),
-        policy_config="data/test_config/max_hist_config.yml",
-        interpreter=RegexInterpreter(),
-        additional_arguments={},
-    )
-    assert True
-
-
 async def test_training_script_without_max_history_set(
     tmp_path: Path, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
+
     await train(
         domain_path,
         stories_path,
@@ -88,9 +76,12 @@ async def test_training_script_without_max_history_set(
 
 
 async def test_training_script_with_max_history_set(
-    tmp_path: Path, domain_path: Text, stories_path: Text
+    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
+
+    policy_train = Mock()
+    monkeypatch.setattr(TEDPolicy, "train", policy_train)
 
     await train(
         domain_path,
@@ -121,33 +112,34 @@ async def test_training_script_with_restart_stories(tmp_path: Path, domain_path:
     assert True
 
 
-def configs_for_random_seed_test() -> List[Text]:
-    # define the configs for the random_seed tests
-    return ["data/test_config/ted_random_seed.yaml"]
-
-
-@pytest.mark.parametrize("config_file", configs_for_random_seed_test())
 async def test_random_seed(
-    tmp_path: Path, config_file: Text, domain_path: Text, stories_path: Text
+    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
-    # set random seed in config file to
-    # generate a reproducible training result
+    policies_config = {
+        "policies": [
+            {"name": TEDPolicy.__name__, "random_seed": 42},
+            {"name": RulePolicy.__name__},
+        ]
+    }
+
+    # policy_train = Mock()
+    # monkeypatch.setattr(TED, "fit", policy_train)
 
     agent_1 = await train(
         domain_path,
         stories_path,
-        str(tmp_path / "1"),
+        str(tmp_path),
         interpreter=RegexInterpreter(),
-        policy_config=config_file,
+        policy_config=policies_config,
         additional_arguments={},
     )
 
     agent_2 = await train(
         domain_path,
         stories_path,
-        str(tmp_path / "2"),
+        str(tmp_path),
         interpreter=RegexInterpreter(),
-        policy_config=config_file,
+        policy_config=policies_config,
         additional_arguments={},
     )
 
@@ -162,8 +154,6 @@ async def test_random_seed(
 async def test_trained_interpreter_passed_to_policies(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
-    from rasa.core.policies.ted_policy import TEDPolicy
-
     policies_config = {
         "policies": [{"name": TEDPolicy.__name__}, {"name": RulePolicy.__name__}]
     }
