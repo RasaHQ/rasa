@@ -20,6 +20,7 @@ from rasa.shared.constants import (
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
 import rasa.utils.common
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +79,6 @@ def run_core_test(args: argparse.Namespace) -> None:
     stories = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH
     )
-    if args.e2e:
-        stories = rasa.shared.data.get_test_directory(stories)
-    else:
-        stories = rasa.shared.data.get_core_directory(stories)
 
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
@@ -103,17 +100,22 @@ def run_core_test(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(args.model, stories, output)
+            test_core_models_in_directory(
+                args.model, stories, output, use_conversation_test_files=args.e2e
+            )
         else:
             test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
                 additional_arguments=vars(args),
+                use_conversation_test_files=args.e2e,
             )
 
     else:
-        test_core_models(args.model, stories, output)
+        test_core_models(
+            args.model, stories, output, use_conversation_test_files=args.e2e
+        )
 
     rasa.shared.utils.cli.print_info(
         f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
@@ -154,8 +156,12 @@ async def run_nlu_test_async(
         test_nlu,
     )
 
-    nlu_data = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
-    nlu_data = rasa.shared.data.get_nlu_directory(nlu_data)
+    data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[data_path]
+    )
+    nlu_data = await test_data_importer.get_nlu_data()
+
     output = output_dir or DEFAULT_RESULTS_PATH
     all_args["errors"] = not no_errors
     rasa.shared.utils.io.create_directory(output)
@@ -184,7 +190,7 @@ async def run_nlu_test_async(
                 continue
         await compare_nlu_models(
             configs=config_files,
-            nlu=nlu_data,
+            test_data=nlu_data,
             output=output,
             runs=runs,
             exclusion_percentages=percentages,
@@ -200,7 +206,7 @@ async def run_nlu_test_async(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, nlu_data, output, all_args)
+        await test_nlu(model_path, data_path, output, all_args)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
