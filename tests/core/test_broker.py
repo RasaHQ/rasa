@@ -99,14 +99,12 @@ def test_pika_queues_from_args(
     assert pika_processor.queues == expected
 
 
-async def test_pika_raise_rasa_exception():
-    pika_broker = PikaEventBroker("host", "username", "password")
-    mock_channel = AsyncMock()
-    mock_channel.declare_queue = AsyncMock(side_effect=ChannelNotFoundEntity())
-    mock_exchange = AsyncMock()
+async def test_pika_raise_rasa_exception(monkeypatch: MonkeyPatch):
+
+    monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity()))
 
     with pytest.raises(RasaException):
-        await pika_broker._bind_queue("test_queue", mock_channel, mock_exchange)
+        await EventBroker.create(EndpointConfig(username="username", password="password", type="pika"))
 
 
 async def test_no_broker_in_config():

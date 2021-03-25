@@ -225,10 +225,7 @@ class PikaEventBroker(EventBroker):
     async def _bind_queue(
         queue_name: Text, channel: aio_pika.RobustChannel, exchange: aio_pika.Exchange
     ) -> None:
-        try:
-            queue = await channel.declare_queue(queue_name, durable=True)
-        except ChannelNotFoundEntity as e:
-            raise RasaException from e
+        queue = await channel.declare_queue(queue_name, durable=True)
 
         await queue.bind(exchange, "")
 
