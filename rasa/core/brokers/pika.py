@@ -16,7 +16,6 @@ import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.utils.io import DEFAULT_ENCODING
 import rasa.shared.utils.common
-from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
