@@ -8,7 +8,6 @@ from collections import deque
 from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
 
 import aio_pika
-from aiormq.exceptions import ChannelNotFoundEntity
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
