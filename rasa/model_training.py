@@ -620,7 +620,7 @@ async def _train_core_with_validated_data(
                 is_finetuning=model_to_finetune is not None,
             ):
                 try:
-                    await rasa.core.train(
+                    await rasa.core.train.train(
                         domain_file=domain,
                         training_resource=file_importer,
                         output_path=os.path.join(
