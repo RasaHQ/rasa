@@ -916,8 +916,6 @@ class RulePolicy(MemoizationPolicy):
 
         return None, None
 
-        return None
-
     def _find_action_from_rules(
         self,
         tracker: DialogueStateTracker,
