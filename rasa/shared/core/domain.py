@@ -571,7 +571,6 @@ class Domain:
         self._user_slots = copy.copy(slots)
         self.slots = slots
         self._add_default_slots()
-
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
@@ -609,43 +608,9 @@ class Domain:
         }
         return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
 
-    @classmethod
-    def _update_slots_with_global_not_intent_parameter(
-        cls, form_data: Union[Dict[Text, Any], List[Text]],
-    ) -> Union[Dict[Text, Any], List[Text]]:
-        if "global_not_intent" in form_data:
-            global_params = form_data.get("global_not_intent")
-            # accessing the form slots by using keyword `required_slots`
-            if "required_slots" in form_data:
-                form_data = form_data.get("required_slots")
-            # checking if the global parameter is a list or not and always
-            # making it a list.
-            if not isinstance(global_params, list):
-                global_params = [global_params]
-            # looping through the form's global params.
-            for global_val in global_params:
-                # Updating the `not_intent` parameter of each slot with
-                # `global_not_intent` value.
-                for slot_key, slot_val in form_data.items():
-                    for slot in slot_val:
-                        key = "not_intent"
-                        # check that `not_intent` param is present in the slot
-                        if key in slot.keys():
-                            # check that the value of `not_intent` is a list
-                            if isinstance(slot[key], list):
-                                # check that `global_not_intent` is in the list
-                                if global_val not in slot[key]:
-                                    slot[key].append(global_val)
-                            else:
-                                if global_val != slot[key]:
-                                    slot[key] = [slot[key], global_val]
-                        else:
-                            slot[key] = global_val
-        return form_data
-
-    @classmethod
+    @staticmethod
     def _initialize_forms(
-        cls, forms: Union[Dict[Text, Any], List[Text]]
+        forms: Union[Dict[Text, Any], List[Text]]
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
@@ -664,12 +629,6 @@ class Domain:
             `FormAction` which is implemented in the Rasa SDK.
         """
         if isinstance(forms, dict):
-            # looping through all the available forms
-            for form_name, form_data in forms.items():
-                if form_data is None:
-                    continue
-                else:
-                    cls._update_slots_with_global_not_intent_parameter(form_data)
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
@@ -1816,7 +1775,11 @@ class Domain:
         Returns:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
-        return self.forms.get(form_name, {})
+        if "required_slots" in self.forms.get(form_name, {}):
+            required_slots = self.forms.get(form_name, {})["required_slots"]
+        else:
+            required_slots = self.forms.get(form_name, {})
+        return required_slots
 
 
 class SlotMapping(Enum):
