@@ -9,7 +9,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.shared.nlu.training_data.formats import RasaReader, RasaYAMLReader
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 import rasa.utils.io
 from rasa import model
 from rasa.core import utils
@@ -256,7 +256,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path
 
     expected = StoryGraph(story_steps)
 
-    actual = await selector.get_stories(use_e2e=True)
+    actual = await selector.get_conversation_tests()
 
     assert expected.as_story_string() == actual.as_story_string()
 

@@ -50,6 +50,8 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
+    DEFAULT_CONVERSATION_TEST_PATH,
+    TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.core.agent import Agent
@@ -707,7 +709,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
-
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -1438,17 +1439,23 @@ def _test_data_file_from_payload(
 ) -> Text:
     if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
         return str(
-            _training_payload_from_yaml(request, temporary_directory)["training_files"]
+            _training_payload_from_yaml(
+                request,
+                temporary_directory,
+                # test stories have to prefixed with `test_`
+                file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
+            )["training_files"]
         )
     else:
-        return rasa.utils.io.create_temporary_file(
-            request.body, mode="w+b", suffix=suffix
-        )
+        # MD test stories have to be in the `tests` directory
+        test_dir = temporary_directory / DEFAULT_CONVERSATION_TEST_PATH
+        test_dir.mkdir()
+        test_file = test_dir / f"tests{suffix}"
+        test_file.write_bytes(request.body)
+        return str(test_file)
 
 
-def _training_payload_from_json(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:
     logger.debug(
         "Extracting JSON payload with Markdown training data from request body."
     )
@@ -1482,7 +1489,7 @@ def _training_payload_from_json(
     model_output_directory = str(temp_dir)
     if request_payload.get(
         "save_to_default_model_directory",
-        request.args.get("save_to_default_model_directory", True),
+        rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True),
     ):
         model_output_directory = DEFAULT_MODELS_PATH
 
@@ -1492,8 +1499,10 @@ def _training_payload_from_json(
         training_files=str(temp_dir),
         output=model_output_directory,
         force_training=request_payload.get(
-            "force", request.args.get("force_training", False)
+            "force", rasa.utils.endpoints.bool_arg(request, "force_training", False)
         ),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
@@ -1534,18 +1543,18 @@ def _validate_json_training_payload(rjs: Dict):
 
 
 def _training_payload_from_yaml(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+    request: Request, temp_dir: Path, file_name: Text = "data.yml"
+) -> Dict[Text, Any]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
     _validate_yaml_training_payload(decoded)
 
-    training_data = temp_dir / "data.yml"
+    training_data = temp_dir / file_name
     rasa.shared.utils.io.write_text_file(decoded, training_data)
 
     model_output_directory = str(temp_dir)
-    if request.args.get("save_to_default_model_directory", True):
+    if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
         model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
@@ -1553,7 +1562,9 @@ def _training_payload_from_yaml(
         config=str(training_data),
         training_files=str(temp_dir),
         output=model_output_directory,
-        force_training=request.args.get("force_training", False),
+        force_training=rasa.utils.endpoints.bool_arg(request, "force_training", False),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
@@ -1567,3 +1578,17 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
             f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA,
         )
+
+
+def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
+    return {
+        "augmentation_factor": rasa.utils.endpoints.int_arg(
+            request, "augmentation", 50
+        ),
+    }
+
+
+def _extract_nlu_additional_arguments(request: Request) -> Dict[Text, Any]:
+    return {
+        "num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1),
+    }

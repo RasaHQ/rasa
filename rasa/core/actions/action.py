@@ -246,7 +246,10 @@ class Action:
             Event which should be logged onto the tracker.
         """
         return ActionExecuted(
-            self.name(), prediction.policy_name, prediction.max_confidence
+            self.name(),
+            prediction.policy_name,
+            prediction.max_confidence,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
@@ -332,6 +335,7 @@ class ActionEndToEndResponse(Action):
             policy=prediction.policy_name,
             confidence=prediction.max_confidence,
             action_text=self.action_text,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
@@ -626,6 +630,16 @@ class RemoteAction(Action):
         bot_messages = []
         for response in responses:
             generated_response = response.pop("response", None)
+            generated_template = response.pop("template", None)
+            if generated_template and not generated_response:
+                generated_response = generated_template
+                rasa.shared.utils.io.raise_deprecation_warning(
+                    "The terminology 'template' is deprecated and replaced by "
+                    "'response', use the `response` parameter instead of "
+                    "`template` in `dispatcher.utter_message`. You can do that "
+                    "by upgrading to Rasa SDK 2.4.1 or adapting your custom SDK.",
+                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}/sdk-dispatcher",
+                )
             if generated_response:
                 draft = await nlg.generate(
                     generated_response, tracker, output_channel.name(), **response

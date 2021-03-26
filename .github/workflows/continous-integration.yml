@@ -129,6 +129,11 @@ jobs:
         # can calculate the proper diff between the branches
         git fetch --unshallow origin "${{ github.ref }}"
 
+    - name: Add github workflow problem matchers
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "::add-matcher::.github/matchers/flake8-error-matcher.json"
+
     - name: Lint Code 🎎
       if: needs.changes.outputs.backend == 'true'
       run: |
@@ -241,6 +246,14 @@ jobs:
         }
         make install-full
         make prepare-tests-windows
+
+    - name: Add github workflow problem matchers
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os == 'ubuntu-latest'
+      # only annotate based on test runs on ubuntu: otherwise
+      # all errors will be duplicated for each python / os combination
+      # therefore, we only enable for the one where most tests are run
+      # (tests will still run in other envs, they will just not create annotations)
+      run: pip install pytest-github-actions-annotate-failures
 
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')

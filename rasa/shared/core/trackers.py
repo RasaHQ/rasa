@@ -59,6 +59,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     EntitiesAdded,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
@@ -288,19 +289,30 @@ class DialogueStateTracker:
         )
 
     def past_states(
-        self, domain: Domain, omit_unset_slots: bool = False,
+        self,
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """Generates the past states of this tracker based on the history.
 
         Args:
-            domain: a :class:`rasa.shared.core.domain.Domain`
+            domain: The Domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
             A list of states
         """
         return domain.states_for_tracker_history(
-            self, omit_unset_slots=omit_unset_slots
+            self,
+            omit_unset_slots=omit_unset_slots,
+            ignore_rule_only_turns=ignore_rule_only_turns,
+            rule_only_data=rule_only_data,
         )
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
@@ -448,21 +460,24 @@ class DialogueStateTracker:
 
     def generate_all_prior_trackers(
         self,
-    ) -> Generator["DialogueStateTracker", None, None]:
+    ) -> Generator[Tuple["DialogueStateTracker", bool], None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing the trackers before each action."""
-
+        Returns:
+            The tuple with the tracker before each action,
+            and the boolean flag representing whether this action should be hidden
+            in the dialogue history created for ML-based policies.
+        """
         tracker = self.init_copy()
 
         for event in self.applied_events():
 
             if isinstance(event, ActionExecuted):
-                yield tracker
+                yield tracker, event.hide_rule_turn
 
             tracker.update(event)
 
-        yield tracker
+        yield tracker, False
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.
@@ -575,7 +590,9 @@ class DialogueStateTracker:
             if isinstance(e, ActionExecuted) and e.action_name == loop_action_name:
                 break
 
-            if isinstance(e, (ActionExecuted, UserUttered)):
+            if isinstance(
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization),
+            ):
                 del done_events[-1 - offset]
             else:
                 # Remember events which aren't unfeaturized to get the index right
