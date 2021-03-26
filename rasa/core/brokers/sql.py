@@ -22,6 +22,8 @@ class SQLEventBroker(EventBroker):
     Base: DeclarativeMeta = declarative_base()
 
     class SQLBrokerEvent(Base):
+        """ORM which represents a row in the `events` table."""
+
         from sqlalchemy import Column, Integer, String, Text
 
         __tablename__ = "events"

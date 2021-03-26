@@ -308,6 +308,7 @@ class CRFEntityExtractor(EntityExtractor):
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
+        """Loads trained component (see parent class for full docstring)."""
         import joblib
 
         file_names = meta.get("files")

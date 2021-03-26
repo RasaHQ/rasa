@@ -298,7 +298,7 @@ class SpacyNLP(Component):
         cached_component: Optional["SpacyNLP"] = None,
         **kwargs: Any,
     ) -> "SpacyNLP":
-
+        """Loads trained component (see parent class for full docstring)."""
         if cached_component:
             return cached_component
 

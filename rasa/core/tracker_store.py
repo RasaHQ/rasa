@@ -818,7 +818,7 @@ class SQLTrackerStore(TrackerStore):
     Base: DeclarativeMeta = declarative_base()
 
     class SQLEvent(Base):
-        """Represents an event in the SQL Tracker Store"""
+        """Represents an event in the SQL Tracker Store."""
 
         __tablename__ = "events"
 

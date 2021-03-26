@@ -71,7 +71,7 @@ class EntitySynonymMapper(EntityExtractor):
         cached_component: Optional["EntitySynonymMapper"] = None,
         **kwargs: Any,
     ) -> "EntitySynonymMapper":
-
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
         if not file_name:
             synonyms = None

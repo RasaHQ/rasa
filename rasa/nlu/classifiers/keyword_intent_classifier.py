@@ -142,7 +142,7 @@ class KeywordIntentClassifier(IntentClassifier):
         cached_component: Optional["KeywordIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "KeywordIntentClassifier":
-
+        """Loads trained component (see parent class for full docstring)."""
         if meta.get("file"):
             file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)

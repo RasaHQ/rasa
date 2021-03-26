@@ -248,6 +248,7 @@ class SklearnIntentClassifier(IntentClassifier):
         cached_component: Optional["SklearnIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "SklearnIntentClassifier":
+        """Loads trained component (see parent class for full docstring)."""
         from sklearn.preprocessing import LabelEncoder
 
         classifier_file = os.path.join(model_dir, meta.get("classifier"))

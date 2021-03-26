@@ -205,6 +205,6 @@ class DucklingEntityExtractor(EntityExtractor):
         cached_component: Optional["DucklingEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "DucklingEntityExtractor":
-
+        """Loads trained component (see parent class for full docstring)."""
         language = model_metadata.get("language") if model_metadata else None
         return cls(meta, language)

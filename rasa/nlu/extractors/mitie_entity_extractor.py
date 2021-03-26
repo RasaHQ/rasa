@@ -151,6 +151,7 @@ class MitieEntityExtractor(EntityExtractor):
         cached_component: Optional["MitieEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "MitieEntityExtractor":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         file_name = meta.get("file")

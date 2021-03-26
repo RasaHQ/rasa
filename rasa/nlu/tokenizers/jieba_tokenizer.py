@@ -81,7 +81,7 @@ class JiebaTokenizer(Tokenizer):
         cached_component: Optional[Component] = None,
         **kwargs: Any,
     ) -> "JiebaTokenizer":
-
+        """Loads trained component (see parent class for full docstring)."""
         relative_dictionary_path = meta.get("dictionary_path")
 
         # get real path of dictionary path, if any

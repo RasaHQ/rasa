@@ -881,6 +881,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 

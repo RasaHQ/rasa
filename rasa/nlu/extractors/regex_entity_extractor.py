@@ -118,7 +118,7 @@ class RegexEntityExtractor(EntityExtractor):
         cached_component: Optional["RegexEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "RegexEntityExtractor":
-
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
         regex_file = os.path.join(model_dir, file_name)
 

@@ -97,6 +97,7 @@ class MitieIntentClassifier(IntentClassifier):
         cached_component: Optional["MitieIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "MitieIntentClassifier":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         file_name = meta.get("file")

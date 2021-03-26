@@ -95,6 +95,7 @@ class MitieNLP(Component):
         cached_component: Optional["MitieNLP"] = None,
         **kwargs: Any,
     ) -> "MitieNLP":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         if cached_component:
