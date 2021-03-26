@@ -155,11 +155,11 @@ def test_augmenter_paraphrase_pool_intents(intents_to_augment: Set[Text]):
 @pytest.mark.parametrize(
     "augmentation_factor, intent, size_after_augmentation",
     [
-        (0., "check_recipients", 1),
-        (0., "inform", 1),
-        (0., "search_transactions", 1),
-        (0., "check_balance", 1),
-        (0., "transfer_money", 1),
+        (0.0, "check_recipients", 1),
+        (0.0, "inform", 1),
+        (0.0, "search_transactions", 1),
+        (0.0, "check_balance", 1),
+        (0.0, "transfer_money", 1),
         (0.1, "check_recipients", 1),
         (0.1, "inform", 1),
         (0.1, "search_transactions", 1),
