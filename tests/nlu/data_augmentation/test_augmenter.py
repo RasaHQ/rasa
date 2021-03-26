@@ -5,9 +5,10 @@ import pytest
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
+import rasa.nlu.config
 import rasa.shared.nlu.training_data.loading
+import rasa.shared.utils.components
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -17,11 +18,11 @@ from rasa.shared.nlu.constants import (
 
 
 def test_augmenter_create_tokenizer():
-    from rasa.nlu.data_augmentation.augmenter import _create_tokenizer_from_config
+    tokenizer_config = rasa.nlu.config.load("data/test_nlu_paraphrasing/config.yml")
 
-    config_path = "data/test_nlu_paraphrasing/config.yml"
-
-    tokenizer = _create_tokenizer_from_config(config_path=config_path)
+    tokenizer = rasa.shared.utils.components.get_tokenizer_from_nlu_config(
+        tokenizer_config
+    )
 
     assert isinstance(tokenizer, Tokenizer)
 
@@ -33,16 +34,6 @@ def test_augmenter_create_tokenizer():
     tokens = [token.text for token in message.get(TOKENS_NAMES[TEXT])]
 
     assert tokens == expected_tokens
-
-
-@pytest.mark.xfail(raises=InvalidConfigException)
-def test_augmenter_create_tokenizer_empty_config():
-    from rasa.nlu.data_augmentation.augmenter import _create_tokenizer_from_config
-
-    config_path = "data/test_nlu_paraphrasing/empty_config.yml"
-
-    # Should raise InvalidConfigException
-    _ = _create_tokenizer_from_config(config_path=config_path)
 
 
 @pytest.mark.parametrize(
@@ -98,7 +89,7 @@ def test_augmenter_intent_collection(
         ("check_recipients", 0.4, 0.5, 8),
     ],
 )
-def test_augmenter_paraphrase_pool_creation(
+def test_augmenter_paraphrase_pool_thresholds(
     intent_to_augment: Text,
     min_paraphrase_sim_score: float,
     max_paraphrase_sim_score: float,
@@ -143,7 +134,7 @@ def test_augmenter_paraphrase_pool_creation(
         },
     ],
 )
-def test_augmenter_paraphrase_pool_structure(intents_to_augment: Set[Text]):
+def test_augmenter_paraphrase_pool_intents(intents_to_augment: Set[Text]):
     from rasa.nlu.data_augmentation.augmenter import _create_paraphrase_pool
 
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(
