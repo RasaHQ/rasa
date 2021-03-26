@@ -54,6 +54,21 @@ if typing.TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
 
+    from typing_extension import TypedDict
+
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            "text": Text,
+            "start": Optional[float],
+            "end": Optional[float],
+            "value": Text,
+            "confidence": float,
+            "entity": Text,
+            "additional_info": Any,
+        },
+        total=False,
+    )
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
@@ -75,7 +90,6 @@ StoryEvaluation = namedtuple(
 )
 
 PredictionList = List[Optional[Text]]
-EntityPredictionList = List[Dict[Text, Any]]
 
 
 class WrongPredictionException(RasaException, ValueError):
@@ -91,16 +105,16 @@ class EvaluationStore:
         action_targets: Optional[PredictionList] = None,
         intent_predictions: Optional[PredictionList] = None,
         intent_targets: Optional[PredictionList] = None,
-        entity_predictions: Optional[EntityPredictionList] = None,
-        entity_targets: Optional[EntityPredictionList] = None,
+        entity_predictions: Optional[List["EntityPrediction"]] = None,
+        entity_targets: Optional[List["EntityPrediction"]] = None,
     ) -> None:
         """Initialize store attributes."""
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
         self.intent_predictions = intent_predictions or []
         self.intent_targets = intent_targets or []
-        self.entity_predictions = entity_predictions or []
-        self.entity_targets = entity_targets or []
+        self.entity_predictions: List["EntityPrediction"] = entity_predictions or []
+        self.entity_targets: List["EntityPrediction"] = entity_targets or []
 
     def add_to_store(
         self,
@@ -108,8 +122,8 @@ class EvaluationStore:
         action_targets: Optional[PredictionList] = None,
         intent_predictions: Optional[PredictionList] = None,
         intent_targets: Optional[PredictionList] = None,
-        entity_predictions: Optional[EntityPredictionList] = None,
-        entity_targets: Optional[EntityPredictionList] = None,
+        entity_predictions: Optional[List["EntityPrediction"]] = None,
+        entity_targets: Optional[List["EntityPrediction"]] = None,
     ) -> None:
         """Add items or lists of items to the store."""
         self.action_predictions.extend(action_predictions or [])
@@ -139,8 +153,8 @@ class EvaluationStore:
 
     @staticmethod
     def _compare_entities(
-        entity_predictions: EntityPredictionList,
-        entity_targets: EntityPredictionList,
+        entity_predictions: List["EntityPrediction"],
+        entity_targets: List["EntityPrediction"],
         i_pred: int,
         i_target: int,
     ) -> int:
@@ -183,8 +197,8 @@ class EvaluationStore:
         texts = sorted(
             list(
                 set(
-                    [e.get("text") for e in self.entity_targets]
-                    + [e.get("text") for e in self.entity_predictions]
+                    [e.get("text", "") for e in self.entity_targets]
+                    + [e.get("text", "") for e in self.entity_predictions]
                 )
             )
         )
@@ -368,7 +382,7 @@ async def _create_data_generator(
 
 def _clean_entity_results(
     text: Text, entity_results: List[Dict[Text, Any]]
-) -> EntityPredictionList:
+) -> List["EntityPrediction"]:
     """Extract only the token variables from an entity dict."""
     cleaned_entities = []
 
