@@ -7,12 +7,13 @@ import logging
 
 from rasa.model import get_model
 from rasa.shared.core.domain import Domain
-import rasa.shared.utils.io
+import rasa.shared.utils.components
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.train import train_nlu
 from rasa.nlu.components import Component, ComponentBuilder
+import rasa.nlu.config
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.model import Interpreter
@@ -134,40 +135,6 @@ def _collect_intents_for_data_augmentation(
     return pooled_intents
 
 
-def _create_tokenizer_from_config(config_path: Text) -> Component:
-    """
-    Loads the given config file and creates the tokenizer from the given pipeline.
-
-    The tokenizer is required for the augmentation strategy based on maximum vocabulary expansion where the paraphrases
-    as well as the originally supplied training data need to be tokenized.
-
-    Args:
-         config_path: Path to the config file.
-
-    Returns:
-        The tokenizer from the config file or the WhitespaceTokenizer if no tokenizer was found in the config file.
-    """
-    config = rasa.shared.utils.io.read_config_file(config_path)
-    pipeline = config.get("pipeline", [])
-    tokenizer_config = {}
-    for component in pipeline:
-        if component.get("name", "").lower().endswith("tokenizer"):
-            tokenizer_config = component
-            break
-
-    if len(tokenizer_config) <= 0:
-        raise InvalidConfigException(
-            "The pipeline configuration does not contain a tokenizer!"
-            "Please add a tokenizer to your configuration in order to use data augmentation."
-        )
-
-    tokenizer = ComponentBuilder().create_component(
-        tokenizer_config, RasaNLUModelConfig(config)
-    )
-
-    return tokenizer
-
-
 def _create_paraphrase_pool(
     paraphrases: TrainingData,
     intents_to_augment: Set[Text],
@@ -266,7 +233,8 @@ def _create_augmented_training_data_max_vocab_expansion(
     Returns:
         Augmented training data based on the maximum vocabulary expansion strategy
     """
-    tokenizer = _create_tokenizer_from_config(config_path=config)
+    tokenizer_config = rasa.nlu.config.load(config)
+    tokenizer = rasa.shared.utils.components.get_tokenizer_from_nlu_config(tokenizer_config)
     for intent in intents_to_augment:
         for message in paraphrase_pool[intent]:
             tokenizer.process(message)
