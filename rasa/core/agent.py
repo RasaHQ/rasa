@@ -38,6 +38,7 @@ from rasa.core.tracker_store import (
     TrackerStore,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.core.utils
 from rasa.exceptions import ModelNotFound
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -721,7 +722,7 @@ class Agent:
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List[TrackerWithCachedStates]:
         """Load training data from a resource."""
 
         max_history = self._max_history()
@@ -757,7 +758,7 @@ class Agent:
         )
 
     def train(
-        self, training_trackers: List[DialogueStateTracker], **kwargs: Any
+        self, training_trackers: List[TrackerWithCachedStates], **kwargs: Any
     ) -> None:
         """Train the policies / policy ensemble using dialogue data from file.
 
@@ -772,6 +773,26 @@ class Agent:
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train(
+            training_trackers, self.domain, interpreter=self.interpreter, **kwargs
+        )
+        self._set_fingerprint()
+
+    def train_in_chunks(
+        self, training_trackers: List[TrackerWithCachedStates], **kwargs: Any
+    ) -> None:
+        """Train the policies / policy ensemble using dialogue data from file.
+
+        Args:
+            training_trackers: trackers to train on
+            **kwargs: additional arguments passed to the underlying ML
+                           trainer (e.g. keras parameters)
+        """
+        if not self.is_core_ready():
+            raise AgentNotReady("Can't train without a policy ensemble.")
+
+        logger.debug(f"Agent trainer got kwargs: {kwargs}")
+
+        self.policy_ensemble.train_in_chunks(
             training_trackers, self.domain, interpreter=self.interpreter, **kwargs
         )
         self._set_fingerprint()

@@ -77,7 +77,7 @@ async def train(
 async def train_in_chunks(
     domain_file: Union[Domain, Text],
     training_resource: TrainingDataImporter,
-    output_path: Path,
+    output_path: Text,
     number_of_chunks: int,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: Optional["AvailableEndpoints"] = None,
@@ -100,8 +100,41 @@ async def train_in_chunks(
     Returns:
         The trained agent.
     """
-    # TODO
-    pass
+    from rasa.core import config, utils
+    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.agent import Agent
+
+    if not endpoints:
+        endpoints = AvailableEndpoints()
+
+    if not additional_arguments:
+        additional_arguments = {}
+
+    policies = config.load(policy_config)
+
+    agent = Agent(
+        domain_file,
+        generator=endpoints.nlg,
+        action_endpoint=endpoints.action,
+        interpreter=interpreter,
+        policies=policies,
+    )
+
+    data_load_args, additional_arguments = utils.extract_args(
+        additional_arguments,
+        {
+            "use_story_concatenation",
+            "unique_last_num_states",
+            "augmentation_factor",
+            "remove_duplicates",
+            "debug_plots",
+        },
+    )
+    training_data = await agent.load_data(training_resource, **data_load_args)
+    agent.train_in_chunks(training_data, **additional_arguments)
+    agent.persist(output_path)
+
+    return agent
 
 
 async def train_comparison_models(

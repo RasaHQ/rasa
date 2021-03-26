@@ -223,6 +223,35 @@ class PolicyEnsemble:
 
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
+    def train_in_chunks(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
+        if training_trackers:
+            self._emit_rule_policy_warning(training_trackers)
+
+            for policy in self.policies:
+                trackers_to_train = SupportedData.trackers_for_policy(
+                    policy, training_trackers
+                )
+                policy.train_in_chunks(
+                    trackers_to_train, domain, interpreter=interpreter, **kwargs
+                )
+
+            self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
+                training_trackers, domain
+            )
+            # set rule only data after training in order to make ensemble usable
+            # without loading
+            self._set_rule_only_data()
+        else:
+            logger.info("Skipped training, because there are no training samples.")
+
+        self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
+
     def probabilities_using_best_policy(
         self,
         tracker: DialogueStateTracker,

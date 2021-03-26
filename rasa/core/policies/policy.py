@@ -276,14 +276,13 @@ class Policy:
         """Trains the policy on given training trackers.
 
         Args:
-            training_trackers:
-                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
+            training_trackers: the list of training trackers
+            domain: the domain
             interpreter: Interpreter which can be used by the polices for featurization.
         """
         raise NotImplementedError("Policy must have the capacity to train.")
 
-    def train_chunk(
+    def train_in_chunks(
         self,
         training_trackers_chunk: List[TrackerWithCachedStates],
         domain: Domain,
@@ -293,12 +292,11 @@ class Policy:
         """Trains the policy on given training trackers chunk.
 
         Args:
-            training_trackers_chunk: the list of the
-                :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
+            training_trackers_chunk: the list of training trackers
+            domain: the domain
             interpreter: Interpreter which can be used by the polices for featurization.
         """
-        raise NotImplementedError("Policy must have the capacity to train.")
+        raise NotImplementedError("Policy must have the capacity to train in chunks.")
 
     def predict_action_probabilities(
         self,
