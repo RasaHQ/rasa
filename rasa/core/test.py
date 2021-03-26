@@ -22,6 +22,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     TOKENS_NAMES,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
 )
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -37,6 +38,8 @@ from rasa.shared.nlu.constants import (
     RESPONSE_SELECTOR,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     TEXT,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import (
@@ -59,12 +62,14 @@ if typing.TYPE_CHECKING:
     EntityPrediction = TypedDict(
         "EntityPrediction",
         {
-            "text": Text,
-            "start": Optional[float],
-            "end": Optional[float],
-            "value": Text,
-            "confidence": float,
-            "entity": Text,
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            ENTITY_ATTRIBUTE_START: Optional[float],
+            ENTITY_ATTRIBUTE_END: Optional[float],
+            ENTITY_ATTRIBUTE_VALUE: Text,
+            ENTITY_ATTRIBUTE_CONFIDENCE: float,
+            ENTITY_ATTRIBUTE_TYPE: Text,
+            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
+            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
             "additional_info": Any,
         },
         total=False,
@@ -172,16 +177,16 @@ class EvaluationStore:
             target = entity_targets[i_target]
         if target and pred:
             # Check which entity has the lower "start" value
-            if pred.get("start") < target.get("start"):
+            if pred.get(ENTITY_ATTRIBUTE_START) < target.get(ENTITY_ATTRIBUTE_START):
                 return -1
-            elif target.get("start") < pred.get("start"):
+            elif target.get(ENTITY_ATTRIBUTE_START) < pred.get(ENTITY_ATTRIBUTE_START):
                 return 1
             else:
                 # Since both have the same "start" values,
                 # check which one has the lower "end" value
-                if pred.get("end") < target.get("end"):
+                if pred.get(ENTITY_ATTRIBUTE_END) < target.get(ENTITY_ATTRIBUTE_END):
                     return -1
-                elif target.get("end") < pred.get("end"):
+                elif target.get(ENTITY_ATTRIBUTE_END) < pred.get(ENTITY_ATTRIBUTE_END):
                     return 1
                 else:
                     # The entities have the same "start" and "end" values
@@ -209,12 +214,17 @@ class EvaluationStore:
         for text in texts:
             # sort the entities of this sentence to compare them directly
             entity_targets = sorted(
-                filter(lambda x: x.get("text") == text, self.entity_targets),
-                key=lambda x: x.get("start"),
+                filter(
+                    lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
+                ),
+                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
             )
             entity_predictions = sorted(
-                filter(lambda x: x.get("text") == text, self.entity_predictions),
-                key=lambda x: x.get("start"),
+                filter(
+                    lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
+                    self.entity_predictions,
+                ),
+                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
             )
 
             i_pred, i_target = 0, 0
