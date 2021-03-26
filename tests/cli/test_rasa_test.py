@@ -150,6 +150,8 @@ def test_test_core_comparison(
 def test_test_core_comparison_after_train(
     run_in_simple_project: Callable[..., RunResult]
 ):
+    temp_dir = os.getcwd()
+
     write_yaml(
         {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_1.yml"
     )
@@ -175,9 +177,20 @@ def test_test_core_comparison_after_train(
         "comparison_models",
     )
 
-    assert os.path.exists("comparison_models")
-    assert os.path.exists("comparison_models/run_1")
-    assert os.path.exists("comparison_models/run_2")
+    import rasa.shared.utils.io
+
+    assert os.path.exists(os.path.join(temp_dir, "comparison_models"))
+    assert os.path.exists(os.path.join(temp_dir, "comparison_models", "run_1"))
+    assert os.path.exists(os.path.join(temp_dir, "comparison_models", "run_2"))
+    run_directories = rasa.shared.utils.io.list_subdirectories(
+        os.path.join(temp_dir, "comparison_models")
+    )
+    assert len(run_directories) == 2
+    model_files = rasa.shared.utils.io.list_files(
+        os.path.join(temp_dir, "comparison_models", run_directories[0])
+    )
+    assert len(model_files) == 4
+    assert model_files[0].endswith("tar.gz")
 
     run_in_simple_project(
         "test",
