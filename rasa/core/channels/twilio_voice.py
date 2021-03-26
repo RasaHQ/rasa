@@ -125,7 +125,6 @@ class TwilioVoiceInput(InputChannel):
             text = request.form.get("SpeechResult")
             input_channel = self.name()
             call_status = request.form.get("CallStatus")
-            call_sid = request.form.get("CallSid")  # Get the call identifier
 
             collector = TwilioVoiceCollectingOutputChannel()
 

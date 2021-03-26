@@ -33,7 +33,7 @@ async def test_twilio_voice_twiml_response_buttons():
     from rasa.core.channels.twilio_voice import TwilioVoiceInput
     from rasa.core.channels.twilio_voice import TwilioVoiceCollectingOutputChannel
 
-    tv = TwilioVoiceInput("woman", "en")
+    tv = TwilioVoiceInput("woman")
 
     output_channel = TwilioVoiceCollectingOutputChannel()
     await output_channel.send_text_with_buttons(
