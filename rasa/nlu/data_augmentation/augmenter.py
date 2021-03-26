@@ -206,7 +206,7 @@ def _resolve_augmentation_factor(
     """
     aug_factor = {}
     for intent, num_examples in nlu_training_data.number_of_examples_per_intent.items():
-        augmentation_size = int(round(num_examples * augmentation_factor))
+        augmentation_size = max(int(round(num_examples * augmentation_factor)), 1)
         aug_factor[intent] = augmentation_size
 
     return aug_factor
