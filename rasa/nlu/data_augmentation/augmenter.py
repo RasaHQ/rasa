@@ -237,6 +237,9 @@ def _create_augmented_training_data_max_vocab_expansion(
     tokenizer = rasa.shared.utils.components.get_tokenizer_from_nlu_config(
         tokenizer_config
     )
+    if not tokenizer:
+        raise InvalidConfigException(f"No tokenizer found in config {config}!")
+
     for intent in intents_to_augment:
         for message in paraphrase_pool[intent]:
             tokenizer.process(message)
