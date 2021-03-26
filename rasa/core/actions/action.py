@@ -246,7 +246,10 @@ class Action:
             Event which should be logged onto the tracker.
         """
         return ActionExecuted(
-            self.name(), prediction.policy_name, prediction.max_confidence
+            self.name(),
+            prediction.policy_name,
+            prediction.max_confidence,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
@@ -332,6 +335,7 @@ class ActionEndToEndResponse(Action):
             policy=prediction.policy_name,
             confidence=prediction.max_confidence,
             action_text=self.action_text,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
@@ -626,6 +630,16 @@ class RemoteAction(Action):
         bot_messages = []
         for response in responses:
             generated_response = response.pop("response", None)
+            generated_template = response.pop("template", None)
+            if generated_template and not generated_response:
+                generated_response = generated_template
+                rasa.shared.utils.io.raise_deprecation_warning(
+                    "The terminology 'template' is deprecated and replaced by "
+                    "'response', use the `response` parameter instead of "
+                    "`template` in `dispatcher.utter_message`. You can do that "
+                    "by upgrading to Rasa SDK 2.4.1 or adapting your custom SDK.",
+                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}/sdk-dispatcher",
+                )
             if generated_response:
                 draft = await nlg.generate(
                     generated_response, tracker, output_channel.name(), **response
@@ -778,16 +792,19 @@ def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
 def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
     revert_events = _revert_single_affirmation_events()
 
-    last_user_event = tracker.get_last_event_for(UserUttered)
-    last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0
-
     # User affirms the rephrased intent
     rephrased_intent = tracker.last_executed_action_has(
         name=ACTION_DEFAULT_ASK_REPHRASE_NAME, skip=1
     )
     if rephrased_intent:
         revert_events += _revert_rephrasing_events()
+
+    last_user_event = tracker.get_last_event_for(UserUttered)
+    if not last_user_event:
+        raise TypeError("Cannot find last event to revert to.")
+
+    last_user_event = copy.deepcopy(last_user_event)
+    last_user_event.parse_data["intent"]["confidence"] = 1.0
 
     return revert_events + [last_user_event]
 
@@ -804,6 +821,9 @@ def _revert_single_affirmation_events() -> List[Event]:
 
 def _revert_successful_rephrasing(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
+    if not last_user_event:
+        raise TypeError("Cannot find last event to revert to.")
+
     last_user_event = copy.deepcopy(last_user_event)
     return _revert_rephrasing_events() + [last_user_event]
 

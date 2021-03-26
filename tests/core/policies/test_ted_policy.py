@@ -22,7 +22,7 @@ from rasa.shared.core.events import (
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.train import train_core
+from rasa.model_training import train_core
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
@@ -35,7 +35,6 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MODEL_CONFIDENCE,
     COSINE,
-    INNER,
     AUTO,
     LINEAR_NORM,
 )
@@ -93,7 +92,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
+    ) -> TEDPolicy:
         return TEDPolicy(featurizer=featurizer, priority=priority)
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
@@ -131,12 +130,14 @@ class TestTEDPolicy(PolicyTestCollection):
 
         mock.normalize.assert_called_once()
 
-    async def test_gen_batch(self, trained_policy: TEDPolicy, default_domain: Domain):
+    async def test_gen_batch(
+        self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
+    ):
         training_trackers = await tests.core.test_policies.train_trackers(
-            default_domain, augmentation_factor=0
+            default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
-        training_data, label_ids, entity_tags = trained_policy.featurize_for_training(
+        training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
             training_trackers, default_domain, interpreter
         )
         label_data, all_labels = trained_policy._create_label_data(

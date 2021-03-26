@@ -7,7 +7,6 @@ import tempfile
 import traceback
 from collections import defaultdict
 from functools import reduce, wraps
-from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
 from http import HTTPStatus
@@ -51,6 +50,8 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
+    DEFAULT_CONVERSATION_TEST_PATH,
+    TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.core.agent import Agent
@@ -68,12 +69,17 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
-from rasa.nlu.test import run_evaluation, CVEvaluationResult
+import rasa.nlu.test
+from rasa.nlu.test import CVEvaluationResult
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
+    from mypy_extensions import VarArg, KwArg
+
+    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
+
 
 logger = logging.getLogger(__name__)
 
@@ -155,10 +161,10 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
     return decorator
 
 
-def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
+def ensure_conversation_exists() -> "SanicView":
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: Callable[..., HTTPResponse]) -> HTTPResponse:
+    def decorator(f: "SanicView") -> HTTPResponse:
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
@@ -174,10 +180,12 @@ def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
     return decorator
 
 
-def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
+def requires_auth(
+    app: Sanic, token: Optional[Text] = None
+) -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def decorator(f: "SanicView") -> "SanicView":
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = rasa.shared.utils.common.arguments_of(f)
 
@@ -213,7 +221,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 return False
 
         @wraps(f)
-        async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
+        async def decorated(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> response.BaseHTTPResponse:
 
             provided = request.args.get("token", None)
 
@@ -699,7 +709,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
-
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -890,7 +899,7 @@ def create_app(
 
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -946,7 +955,7 @@ def create_app(
 
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -1037,7 +1046,7 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            from rasa.train import train_async
+            from rasa.model_training import train_async
 
             # pass `None` to run in default executor
             training_result = await train_async(**training_payload)
@@ -1190,7 +1199,12 @@ def create_app(
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
-        return await run_evaluation(
+        if nlu_model is None:
+            raise ErrorResponse(
+                HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
+            )
+
+        return await rasa.nlu.test.run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
@@ -1202,7 +1216,7 @@ def create_app(
         config = await importer.get_config()
         nlu_data = await importer.get_nlu_data()
 
-        evaluations = rasa.nlu.cross_validate(
+        evaluations = rasa.nlu.test.cross_validate(
             data=nlu_data,
             n_folds=folds,
             nlu_config=config,
@@ -1425,17 +1439,23 @@ def _test_data_file_from_payload(
 ) -> Text:
     if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
         return str(
-            _training_payload_from_yaml(request, temporary_directory)["training_files"]
+            _training_payload_from_yaml(
+                request,
+                temporary_directory,
+                # test stories have to prefixed with `test_`
+                file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
+            )["training_files"]
         )
     else:
-        return rasa.utils.io.create_temporary_file(
-            request.body, mode="w+b", suffix=suffix
-        )
+        # MD test stories have to be in the `tests` directory
+        test_dir = temporary_directory / DEFAULT_CONVERSATION_TEST_PATH
+        test_dir.mkdir()
+        test_file = test_dir / f"tests{suffix}"
+        test_file.write_bytes(request.body)
+        return str(test_file)
 
 
-def _training_payload_from_json(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:
     logger.debug(
         "Extracting JSON payload with Markdown training data from request body."
     )
@@ -1469,7 +1489,7 @@ def _training_payload_from_json(
     model_output_directory = str(temp_dir)
     if request_payload.get(
         "save_to_default_model_directory",
-        request.args.get("save_to_default_model_directory", True),
+        rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True),
     ):
         model_output_directory = DEFAULT_MODELS_PATH
 
@@ -1479,8 +1499,10 @@ def _training_payload_from_json(
         training_files=str(temp_dir),
         output=model_output_directory,
         force_training=request_payload.get(
-            "force", request.args.get("force_training", False)
+            "force", rasa.utils.endpoints.bool_arg(request, "force_training", False)
         ),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
@@ -1521,18 +1543,18 @@ def _validate_json_training_payload(rjs: Dict):
 
 
 def _training_payload_from_yaml(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+    request: Request, temp_dir: Path, file_name: Text = "data.yml"
+) -> Dict[Text, Any]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
     _validate_yaml_training_payload(decoded)
 
-    training_data = temp_dir / "data.yml"
+    training_data = temp_dir / file_name
     rasa.shared.utils.io.write_text_file(decoded, training_data)
 
     model_output_directory = str(temp_dir)
-    if request.args.get("save_to_default_model_directory", True):
+    if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
         model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
@@ -1540,7 +1562,9 @@ def _training_payload_from_yaml(
         config=str(training_data),
         training_files=str(temp_dir),
         output=model_output_directory,
-        force_training=request.args.get("force_training", False),
+        force_training=rasa.utils.endpoints.bool_arg(request, "force_training", False),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
@@ -1554,3 +1578,17 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
             f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA,
         )
+
+
+def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
+    return {
+        "augmentation_factor": rasa.utils.endpoints.int_arg(
+            request, "augmentation", 50
+        ),
+    }
+
+
+def _extract_nlu_additional_arguments(request: Request) -> Dict[Text, Any]:
+    return {
+        "num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1),
+    }

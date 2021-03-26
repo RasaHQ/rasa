@@ -691,7 +691,7 @@ def _calculate_report(
     report_as_dict: Optional[bool] = None,
     exclude_label: Optional[Text] = None,
 ) -> Tuple[Union[Text, Dict], float, float, float, np.ndarray, List[Text]]:
-    from rasa.test import get_evaluation_metrics
+    from rasa.model_testing import get_evaluation_metrics
     import sklearn.metrics
     import sklearn.utils.multiclass
 
@@ -1889,7 +1889,7 @@ async def compare_nlu(
     Returns: training examples per run
     """
 
-    from rasa.train import train_nlu_async
+    from rasa.model_training import train_nlu_async
 
     training_examples_per_run = []
 
@@ -1976,7 +1976,7 @@ def _compute_metrics(
 
     Returns: metrics
     """
-    from rasa.test import get_evaluation_metrics
+    from rasa.model_testing import get_evaluation_metrics
 
     # compute fold metrics
     targets, predictions = _targets_predictions_from(
@@ -1998,7 +1998,7 @@ def _compute_entity_metrics(
 
     Returns: entity metrics
     """
-    from rasa.test import get_evaluation_metrics
+    from rasa.model_testing import get_evaluation_metrics
 
     entity_metric_results: EntityMetrics = defaultdict(lambda: defaultdict(list))
     extractors = get_entity_extractors(interpreter)

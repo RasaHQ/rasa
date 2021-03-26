@@ -92,7 +92,7 @@ class RasaModel(TmpKerasModel):
         self._tf_predict_step = None
         self.prepared_for_prediction = False
 
-    def _set_random_seed(self):
+    def _set_random_seed(self) -> None:
         random.seed(self.random_seed)
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
@@ -385,7 +385,8 @@ class RasaModel(TmpKerasModel):
             if number_of_dimensions > 1 and (
                 batch[idx].shape is None or batch[idx].shape[-1] is None
             ):
-                shape = [None] * (number_of_dimensions - 1) + [feature_dimension]
+                shape: List[Optional[int]] = [None] * (number_of_dimensions - 1)
+                shape.append(feature_dimension)
                 batch[idx].set_shape(shape)
 
             return batch[idx], idx + 1
