@@ -552,3 +552,10 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
 )
 async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
     assert rasa.shared.utils.io.is_key_in_yaml(file, *keys) == expected_result
+
+
+async def test_is_key_in_yaml_with_unicode_files():
+    # This shouldn't raise
+    assert rasa.shared.utils.io.is_key_in_yaml(
+        "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
+    )
