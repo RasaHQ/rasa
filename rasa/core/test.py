@@ -21,7 +21,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TEXT,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
-    TOKENS_NAMES,
 )
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -37,6 +36,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE_SELECTOR,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     TEXT,
+    TOKENS_NAMES,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import (

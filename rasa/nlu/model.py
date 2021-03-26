@@ -6,11 +6,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.utils.spacy_utils import SpacyNLP
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -250,6 +245,11 @@ class Trainer:
             The trained interpreter and the path to the persisted model.
         """
         import tempfile
+        from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
+        from rasa.nlu.utils.mitie_utils import MitieNLP
+        from rasa.nlu.utils.spacy_utils import SpacyNLP
+        from rasa.nlu.featurizers.featurizer import Featurizer
+        from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
         # TODO do we really need this copy? can we avoid it somehow?
         working_training_data = copy.deepcopy(training_data)
