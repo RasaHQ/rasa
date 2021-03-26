@@ -17,9 +17,9 @@ class SQLEventBroker(EventBroker):
 
     """
 
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
-    Base = declarative_base()
+    Base: DeclarativeMeta = declarative_base()
 
     class SQLBrokerEvent(Base):
         from sqlalchemy import Column, Integer, String, Text
@@ -37,7 +37,7 @@ class SQLEventBroker(EventBroker):
         db: Text = "events.db",
         username: Optional[Text] = None,
         password: Optional[Text] = None,
-    ):
+    ) -> None:
         from rasa.core.tracker_store import SQLTrackerStore
         import sqlalchemy.orm
 

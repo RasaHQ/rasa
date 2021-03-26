@@ -54,7 +54,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
 
-    from typing_extension import TypedDict
+    from typing_extensions import TypedDict
 
     EntityPrediction = TypedDict(
         "EntityPrediction",

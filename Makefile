@@ -117,7 +117,6 @@ types:
 	--disable-error-code misc \
 	--disable-error-code return \
 	--disable-error-code has-type \
-	--disable-error-code valid-type \
 	--disable-error-code func-returns-value \
 	--disallow-untyped-calls
 

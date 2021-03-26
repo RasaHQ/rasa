@@ -813,9 +813,9 @@ def ensure_schema_exists(session: "Session") -> None:
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
-    Base = declarative_base()
+    Base: DeclarativeMeta = declarative_base()
 
     class SQLEvent(Base):
         """Represents an event in the SQL Tracker Store"""
