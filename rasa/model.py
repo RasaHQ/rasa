@@ -128,10 +128,14 @@ class FingerprintComparisonResult:
         return self.force_training or self.nlu
 
 
-def verify_model_path(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
+def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
     """Verifies that a model path exists.
 
     Args:
+        model_path: Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+
+    Returns:
         model_path: Path to the zipped model. If it's a directory, the latest
                     trained model is returned.
 
@@ -170,7 +174,7 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
         ModelNotFound Exception: When no model could be found at the provided path.
 
     """
-    model_path = verify_model_path(model_path)
+    model_path = get_local_model(model_path)
 
     try:
         model_relative_path = os.path.relpath(model_path)
