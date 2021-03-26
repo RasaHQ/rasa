@@ -15,6 +15,7 @@ from rasa.core.channels.channel import (
 
 
 class TwilioVoiceInput(InputChannel):
+    """Input channel for Twilio Voice"""
 
     SUPPORTED_VOICES = [
         "man",
@@ -191,6 +192,7 @@ class TwilioVoiceInput(InputChannel):
 
 class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     """Output channel that collects send messages in a list
+
     (doesn't send them anywhere, just collects them)."""
 
     @classmethod
@@ -213,5 +215,4 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """For voice channel do not send images."""
-
         pass

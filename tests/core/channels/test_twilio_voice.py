@@ -23,7 +23,7 @@ async def test_twilio_voice_twiml_response_text():
     twiml = tv.build_twilio_voice_response(output_channel.messages)
     assert (
         str(twiml)
-        == '<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" input="speech" speechTimeout="auto"><Say language="en" voice="woman">Test:</Say></Gather></Response>'
+        == '<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" input="speech" speechTimeout="auto"><Say voice="woman">Test:</Say></Gather></Response>'
     )
 
 
@@ -51,5 +51,5 @@ async def test_twilio_voice_twiml_response_buttons():
     twiml = tv.build_twilio_voice_response(output_channel.messages)
     assert (
         str(twiml)
-        == '<?xml version="1.0" encoding="UTF-8"?><Response><Say language="en" voice="woman">Buttons:</Say><Pause length="1" /><Say language="en" voice="woman">Yes</Say><Pause length="1" /><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" input="speech" speechTimeout="auto"><Say language="en" voice="woman">No</Say></Gather></Response>'
+        == '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="woman">Buttons:</Say><Pause length="1" /><Say voice="woman">Yes</Say><Pause length="1" /><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" input="speech" speechTimeout="auto"><Say voice="woman">No</Say></Gather></Response>'
     )
