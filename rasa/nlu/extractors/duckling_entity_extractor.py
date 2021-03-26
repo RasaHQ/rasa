@@ -200,7 +200,7 @@ class DucklingEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["DucklingEntityExtractor"] = None,
         **kwargs: Any,

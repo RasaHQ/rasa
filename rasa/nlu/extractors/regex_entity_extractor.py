@@ -113,7 +113,7 @@ class RegexEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexEntityExtractor"] = None,
         **kwargs: Any,

@@ -137,13 +137,13 @@ class KeywordIntentClassifier(IntentClassifier):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["KeywordIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "KeywordIntentClassifier":
 
-        if model_dir and meta.get("file"):
+        if meta.get("file"):
             file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)
             if os.path.exists(keyword_file):
