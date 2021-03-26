@@ -185,16 +185,6 @@ def test_augmenter_paraphrase_pool_intents(intents_to_augment: Set[Text]):
         (5.0, "search_transactions", 5),
         (5.0, "check_balance", 5),
         (5.0, "transfer_money", 5),
-        (-1.0, "check_recipients", None),
-        (-1.0, "inform", None),
-        (-1.0, "search_transactions", None),
-        (-1.0, "check_balance", None),
-        (-1.0, "transfer_money", None),
-        (-666, "check_recipients", None),
-        (-666, "inform", None),
-        (-666, "search_transactions", None),
-        (-666, "check_balance", None),
-        (-666, "transfer_money", None),
     ],
 )
 def test_augmenter_augmentation_factor_resolution(

@@ -294,6 +294,9 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     )
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
+    if args.augmentation_factor <= 0.:
+        raise ValueError("The argument 'augmentation_factor' must be greater than 0!")
+
     # Run augmentation
     augmenter.augment_nlu_data(
         nlu_training_data=nlu_training_data,

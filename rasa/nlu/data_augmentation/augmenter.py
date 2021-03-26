@@ -207,9 +207,7 @@ def _resolve_augmentation_factor(
     aug_factor = {}
     for intent, num_examples in nlu_training_data.number_of_examples_per_intent.items():
         augmentation_size = int(round(num_examples * augmentation_factor))
-        # Use `None` if the user passes e.g. -1 (indicating that all paraphrases should be used), because `None`
-        # doesn't affect slicing, i.e. my_list == my_list[:] == my_list[:None]
-        aug_factor[intent] = augmentation_size if augmentation_size > 0 else None
+        aug_factor[intent] = augmentation_size
 
     return aug_factor
 
