@@ -371,6 +371,19 @@ def test_importer_with_invalid_model_config(tmp_path: Path):
         TrainingDataImporter.load_from_config(str(config_file))
 
 
+async def test_importer_with_unicode_files():
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]
+    )
+
+    # None of these should raise
+    nlu_data = await importer.get_nlu_data()
+    assert not nlu_data.is_empty()
+
+    await importer.get_stories()
+    await importer.get_domain()
+
+
 async def test_read_conversation_tests(project: Text):
     importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]

@@ -4,6 +4,8 @@ DOCS_URL_TRAINING_DATA = DOCS_BASE_URL + "/training-data-format"
 DOCS_URL_TRAINING_DATA_NLU = DOCS_URL_TRAINING_DATA + "#nlu-training-data"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/domain"
 DOCS_URL_SLOTS = DOCS_URL_DOMAINS + "#slots"
+DOCS_URL_INTENTS = DOCS_URL_DOMAINS + "#intents"
+DOCS_URL_ENTITIES = DOCS_URL_DOMAINS + "#entities"
 DOCS_URL_RESPONSES = DOCS_BASE_URL + "/responses"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/stories"
 DOCS_URL_RULES = DOCS_BASE_URL + "/rules"
@@ -25,6 +27,7 @@ DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
 )
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
+DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
 
 INTENT_MESSAGE_PREFIX = "/"
 
