@@ -461,6 +461,10 @@ The scores should represent the similarity between the paraphrase and the origin
 
 :::
 
+:::note
+Data augmentation does **not** affect entity recognition performance. We furthermore recommend to either remove entity annotations during NLU training or to disable the enitity recognition option in the `DIETClassifier` config.
+:::
+
 :::caution check results
 While data augmentation can substantially improve performance for some intents (and therefore also overall NLU performance), it can also degrade the performance of other intents. We therefore recommend you carefully check the generated reports.
 
