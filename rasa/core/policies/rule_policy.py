@@ -520,24 +520,25 @@ class RulePolicy(MemoizationPolicy):
             )
         return loop_sources
 
-    def _remove_action_listen_contradiction(self, prediction_source: Text) -> None:
-        prev_action = json.loads(prediction_source)[-1][PREVIOUS_ACTION][ACTION_NAME]
-        rules_to_delete = []
-        for source in self._rules_sources.keys():
-            states = json.loads(source)
-            if len(states) > 1:
-                if (
-                    PREVIOUS_ACTION in states[-2]
-                    and states[-2][PREVIOUS_ACTION][ACTION_NAME] == prev_action
-                    and PREVIOUS_ACTION in states[-1]
-                    and states[-1][PREVIOUS_ACTION][ACTION_NAME] == ACTION_LISTEN_NAME
-                    and USER in states[-1]
-                ):
-                    # check that the rule pattern is: action, intent, prediction
-                    # delete the rule that predicts action_listen
-                    rules_to_delete.append(self._create_feature_key(states[:-1]))
-        for rule_to_delete in rules_to_delete:
-            self._rules_sources.pop(rule_to_delete)
+    def _should_delete(
+        self, prediction_source: Text, tracker: TrackerWithCachedStates
+    ) -> bool:
+        """
+        Checks whether this contradiction is due to action, intent pair.
+
+        Args:
+            prediction_source: the states that result in the prediction
+            tracker: the tracker that raises the contradiction
+
+        Returns:
+            true if the contradiction is a result of an action, intent pair in the rule.
+
+        """
+        if tracker.is_rule_tracker or prediction_source.count(PREVIOUS_ACTION) > 1:
+            return False
+        for source in self.lookup[RULES]:
+            if prediction_source[:-2] in source and not prediction_source == source:
+                return True
 
     def _check_prediction(
         self,
@@ -550,15 +551,13 @@ class RulePolicy(MemoizationPolicy):
             return []
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
-        if tracker_type == "story" and predicted_action_name == ACTION_LISTEN_NAME:
-            self._remove_action_listen_contradiction(prediction_source)
         contradicting_rules = {
             rule_name
             for rule_name, action_name in self._rules_sources[prediction_source]
             if action_name != gold_action_name
         }
-
-        if len(contradicting_rules) == 0:
+        if self._should_delete(prediction_source, tracker):
+            self.lookup[RULES].pop(prediction_source)
             return []
 
         error_message = (
@@ -940,8 +939,6 @@ class RulePolicy(MemoizationPolicy):
             )
 
         return None, None
-
-        return None
 
     def _find_action_from_rules(
         self,

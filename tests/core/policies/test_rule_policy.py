@@ -2645,6 +2645,7 @@ def test_remove_action_listen_prediction_if_contradicts_with_story():
         domain=domain,
         slots=domain.slots,
         evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(utter_1),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(intent={"name": intent_1}),
