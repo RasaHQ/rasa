@@ -523,7 +523,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         prediction_source: Text,
         tracker: TrackerWithCachedStates,
-        gold_action_name: Text,
+        predicted_action_name: Text,
     ) -> bool:
         """Checks whether this contradiction is due to action, intent pair.
 
@@ -540,7 +540,7 @@ class RulePolicy(MemoizationPolicy):
             # only apply for prediction after unpredictable action
             or prediction_source.count(PREVIOUS_ACTION) > 1
             # only apply for prediction of action_listen
-            or gold_action_name != ACTION_LISTEN_NAME
+            or predicted_action_name != ACTION_LISTEN_NAME
         ):
             return False
         for source in self.lookup[RULES]:
@@ -562,7 +562,7 @@ class RulePolicy(MemoizationPolicy):
         if not predicted_action_name or predicted_action_name == gold_action_name:
             return []
 
-        if self._should_delete(prediction_source, tracker, gold_action_name):
+        if self._should_delete(prediction_source, tracker, predicted_action_name):
             self.lookup[RULES].pop(prediction_source)
             return []
 
