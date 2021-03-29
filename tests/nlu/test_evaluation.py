@@ -1227,8 +1227,7 @@ def test_replacing_fallback_intent():
 
 @pytest.mark.parametrize(
     "components, expected_result",
-    [([CRFEntityExtractor()], True),
-     ([WhitespaceTokenizer()], False)]
+    [([CRFEntityExtractor()], True), ([WhitespaceTokenizer()], False)],
 )
 def test_is_entity_extractor_present(components, expected_result):
     interpreter = Interpreter(components, context=None)
