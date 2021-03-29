@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.24] - 2021-03-29
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#8019 <https://github.com/rasahq/rasa/issues/8019>`_: Added ``group_id`` parameter back to ``KafkaEventBroker`` to fix error when instantiating event broker with a config containing the ``group_id`` parameter which is only relevant to the event consumer
+
+
 [1.10.23] - 2021-02-22
 ^^^^^^^^^^^^^^^^^^^^^^
 
