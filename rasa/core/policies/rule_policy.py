@@ -535,13 +535,13 @@ class RulePolicy(MemoizationPolicy):
             true if the contradiction is a result of an action, intent pair in the rule.
         """
         if (
-            tracker.is_rule_tracker
-            or prediction_source.count(PREVIOUS_ACTION) > 1
-            or gold_action_name != ACTION_LISTEN_NAME
+            tracker.is_rule_tracker  # only apply to contradicting story, not rule
+            or prediction_source.count(PREVIOUS_ACTION) > 1  # only apply for prediction after unpredictable action
+            or gold_action_name != ACTION_LISTEN_NAME  # only apply for prediction of action_listen
         ):
             return False
         for source in self.lookup[RULES]:
-            if prediction_source[:-2] in source and not prediction_source == source:
+            if source.startswith(prediction_source[:-2]) and not prediction_source == source:
                 return True
         return False
 
