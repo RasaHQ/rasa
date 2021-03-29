@@ -18,6 +18,7 @@ class KafkaEventBroker(EventBroker):
         url: Union[Text, List[Text], None],
         topic: Text = "rasa_core_events",
         client_id: Optional[Text] = None,
+        partition_key: Optional[Text] = None,
         sasl_username: Optional[Text] = None,
         sasl_password: Optional[Text] = None,
         ssl_cafile: Optional[Text] = None,
@@ -69,6 +70,9 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
+
+        if partition_key:
+            self.partition_key = bytes(partition_key, encoding='UTF-8')
 
         self.producer: Optional[kafka.KafkaConsumer] = None
 
@@ -173,7 +177,7 @@ class KafkaEventBroker(EventBroker):
 
     def _publish(self, event) -> None:
         logger.debug(f"Calling kafka send({self.topic}, {event})")
-        self.producer.send(self.topic, event)
+        self.producer.send(self.topic, value=event, key=self.partition_key)
 
     def _close(self) -> None:
         self.producer.close()
