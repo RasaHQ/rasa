@@ -509,7 +509,6 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Take a message and convert it to crfsuite format."""
-
         crf_format = []
         tokens = message.get(TOKENS_NAMES[TEXT])
 
