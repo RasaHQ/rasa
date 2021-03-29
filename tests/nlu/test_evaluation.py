@@ -7,8 +7,6 @@ import sys
 from pathlib import Path
 from typing import Text, Iterator, List, Dict, Any, Set, Optional
 
-from tensorflow_text import WhitespaceTokenizer
-
 from tests.conftest import AsyncMock
 
 import pytest
@@ -64,6 +62,7 @@ from rasa.nlu.test import (
     is_entity_extractor_present,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
