@@ -42,6 +42,8 @@ class KafkaEventBroker(EventBroker):
                 to servers and can be used to identify specific server-side log entries
                 that correspond to this client. Also submitted to `GroupCoordinator` for
                 logging with respect to producer group administration.
+            partition_key: A key to associate with the message. Can be used to determine
+                which partition to send the message to.
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
             ssl_cafile: Optional filename of ca file to use in certificate
@@ -72,7 +74,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_check_hostname = ssl_check_hostname
 
         if partition_key:
-            self.partition_key = bytes(partition_key, encoding='UTF-8')
+            self.partition_key = bytes(partition_key, encoding="utf-8")
 
         self.producer: Optional[kafka.KafkaConsumer] = None
 
@@ -176,7 +178,9 @@ class KafkaEventBroker(EventBroker):
             )
 
     def _publish(self, event) -> None:
-        logger.debug(f"Calling kafka send({self.topic}, {event})")
+        logger.debug(
+            f"Calling kafka send({self.topic}, value={event}, key={self.partition_key})"
+        )
         self.producer.send(self.topic, value=event, key=self.partition_key)
 
     def _close(self) -> None:

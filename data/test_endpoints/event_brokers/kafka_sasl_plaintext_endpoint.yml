@@ -3,5 +3,6 @@ event_broker:
   security_protocol: SASL_PLAINTEXT
   topic: topic
   url: localhost
+  partition_key: foo
   sasl_username: username
   sasl_password: password
