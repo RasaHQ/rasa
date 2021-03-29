@@ -402,7 +402,7 @@ class Message:
     def find_overlapping_entities(
         self,
     ) -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]:
-        """finds any overlapping entity annotations."""
+        """Finds any overlapping entity annotations."""
         entities = self.get("entities", [])[:]
         entities.sort(key=lambda e: e["start"])
         overlapping_pairs: List[Tuple[Dict[Text, Any], Dict[Text, Any]]] = []

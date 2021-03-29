@@ -345,8 +345,8 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
 
     Competing extractors e.g. are CRFEntityExtractor and DIETClassifier.
     Both of these look for the same entities based on the same training data
-    leading to ambiguity in the results."""
-
+    leading to ambiguity in the results.
+    """
     general_purpose_entity_extractors = [
         "DIETClassifier",
         "CRFEntityExtractor",
@@ -373,8 +373,8 @@ def warn_of_competing_regex_and_statistical_extractor(
     This might be the case when the following conditions are all met:
     * You are using a statistical entity extractor and a the RegexEntityExtractor
     * AND you have regex patterns for entity type A
-    * AND you have annotated text examples for entity type A"""
-
+    * AND you have annotated text examples for entity type A
+    """
     statistical_entity_extractors = [
         "DIETClassifier",
         "CRFEntityExtractor",

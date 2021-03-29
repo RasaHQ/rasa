@@ -486,8 +486,8 @@ class Interpreter:
     def warn_of_overlapping_entities(self, message: Message) -> None:
         """Issues a warning when there are overlapping entity annotations.
 
-        This warning is only issued once per Interpreter life time."""
-
+        This warning is only issued once per Interpreter life time.
+        """
         overlapping_entity_pairs = message.find_overlapping_entities()
         if len(overlapping_entity_pairs) > 0:
             message_text = message.get("text")
