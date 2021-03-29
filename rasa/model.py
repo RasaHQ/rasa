@@ -129,14 +129,14 @@ class FingerprintComparisonResult:
 
 
 def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
-    """Verifies that a model path exists.
+    """Returns verified path to local model archive.
 
     Args:
         model_path: Path to the zipped model. If it's a directory, the latest
                     trained model is returned.
 
     Returns:
-        model_path: Path to the zipped model. If it's a directory, the latest
+        Path to the zipped model. If it's a directory, the latest
                     trained model is returned.
 
     Raises:
@@ -161,7 +161,7 @@ def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Get a model and unpack it.
+    """Gets a model and unpacks it.
 
     Args:
         model_path: Path to the zipped model. If it's a directory, the latest
