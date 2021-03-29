@@ -2761,3 +2761,48 @@ def test_keep_action_listen_prediction_if_last_prediction():
         policy.train(
             [rule, story], domain, RegexInterpreter(),
         )
+
+
+def test_keep_action_listen_prediction_if_contradicts_with_rule():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "conditioned on action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    other_rule = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, other_rule], domain, RegexInterpreter(),
+        )
