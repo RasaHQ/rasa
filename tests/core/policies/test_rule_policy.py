@@ -2667,3 +2667,97 @@ def test_remove_action_listen_prediction_if_contradicts_with_story():
     policy.train(
         [rule, story], domain, RegexInterpreter(),
     )
+
+
+def test_keep_action_listen_prediction_after_predictable_action():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    utter_3 = "utter_3"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        - {utter_3}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "action_listen after predictable action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_2),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_3),
+        ],
+    )
+    policy = RulePolicy()
+    # prediction of action_listen should only be removed if it occurs after the first
+    # action (unpredictable)
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, story], domain, RegexInterpreter(),
+        )
+
+
+def test_keep_action_listen_prediction_if_last_prediction():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "last prediction is action_listen",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+    )
+    policy = RulePolicy()
+    # prediction of action_listen should only be removed if it's not the last prediction
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, story], domain, RegexInterpreter(),
+        )
