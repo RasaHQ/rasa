@@ -44,7 +44,6 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     RULE_ONLY_SLOTS,
     RULE_ONLY_LOOPS,
-    USER,
 )
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
@@ -523,8 +522,7 @@ class RulePolicy(MemoizationPolicy):
     def _should_delete(
         self, prediction_source: Text, tracker: TrackerWithCachedStates
     ) -> bool:
-        """
-        Checks whether this contradiction is due to action, intent pair.
+        """Checks whether this contradiction is due to action, intent pair.
 
         Args:
             prediction_source: the states that result in the prediction
@@ -532,14 +530,13 @@ class RulePolicy(MemoizationPolicy):
 
         Returns:
             true if the contradiction is a result of an action, intent pair in the rule.
-
         """
         if tracker.is_rule_tracker or prediction_source.count(PREVIOUS_ACTION) > 1:
             return False
         for source in self.lookup[RULES]:
             if prediction_source[:-2] in source and not prediction_source == source:
                 return True
-
+        return False
     def _check_prediction(
         self,
         tracker: TrackerWithCachedStates,
