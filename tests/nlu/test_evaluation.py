@@ -6,6 +6,9 @@ import sys
 
 from pathlib import Path
 from typing import Text, Iterator, List, Dict, Any, Set, Optional
+
+from tensorflow_text import WhitespaceTokenizer
+
 from tests.conftest import AsyncMock
 
 import pytest
@@ -58,6 +61,7 @@ from rasa.nlu.test import (
     align_entity_predictions,
     determine_intersection,
     determine_token_labels,
+    is_entity_extractor_present,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
@@ -1219,3 +1223,13 @@ def test_replacing_fallback_intent():
         and prediction.confidence == expected_confidence
         for prediction in intent_evaluations
     )
+
+
+@pytest.mark.parametrize(
+    "components, expected_result",
+    [([CRFEntityExtractor()], True),
+     ([WhitespaceTokenizer()], False)]
+)
+def test_is_entity_extractor_present(components, expected_result):
+    interpreter = Interpreter(components, context=None)
+    assert is_entity_extractor_present(interpreter) == expected_result

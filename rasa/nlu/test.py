@@ -1352,7 +1352,7 @@ def is_entity_extractor_present(interpreter: Interpreter) -> bool:
     """Checks whether entity extractor is present."""
 
     extractors = get_entity_extractors(interpreter)
-    return extractors != []
+    return len(extractors) > 0
 
 
 def is_intent_classifier_present(interpreter: Interpreter) -> bool:
