@@ -734,44 +734,59 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         else:
             self._train_with_independent_vocab(attribute_texts)
 
-        # transform for all attributes
-        for attribute in self._attributes:
-            sequence_features, sentence_features = self._get_featurized_attribute(
-                attribute, processed_attribute_tokens[attribute]
-            )
+        return self
+        # # transform for all attributes
+        # for attribute in self._attributes:
+        #     sequence_features, sentence_features = self._get_featurized_attribute(
+        #         attribute, processed_attribute_tokens[attribute]
+        #     )
+        #
+        #     if sequence_features and sentence_features:
+        #         self._set_attribute_features(
+        #             attribute,
+        #             sequence_features,
+        #             sentence_features,
+        #             training_data.training_examples,
+        #         )
 
-            if sequence_features and sentence_features:
-                self._set_attribute_features(
-                    attribute,
-                    sequence_features,
-                    sentence_features,
-                    training_data.training_examples,
-                )
-
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(
+        self,
+        featurize_model: "CountVectorsFeaturizer",
+        messages: List[Message],
+        **kwargs: Any,
+    ) -> None:
         """Process incoming message and compute and set features"""
 
-        if self.vectorizers is None:
+        if featurize_model.vectorizers is None:
             logger.error(
                 "There is no trained CountVectorizer: "
                 "component is either not trained or "
                 "didn't receive enough training data"
             )
             return
-        for attribute in self._attributes:
 
-            message_tokens = self._get_processed_message_tokens_by_attribute(
-                message, attribute
-            )
+        if isinstance(messages, TrainingData):
+            messages = messages.training_examples
 
-            # features shape (1, seq, dim)
-            sequence_features, sentence_features = self._create_features(
-                attribute, [message_tokens]
-            )
+        examples = []
+        for message in messages:
+            for attribute in featurize_model._attributes:
 
-            self._set_attribute_features(
-                attribute, sequence_features, sentence_features, [message]
-            )
+                message_tokens = featurize_model._get_processed_message_tokens_by_attribute(
+                    message, attribute
+                )
+
+                # features shape (1, seq, dim)
+                sequence_features, sentence_features = featurize_model._create_features(
+                    attribute, [message_tokens]
+                )
+
+                featurize_model._set_attribute_features(
+                    attribute, sequence_features, sentence_features, [message]
+                )
+            examples.append(message)
+
+        return TrainingData(training_examples=examples)
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

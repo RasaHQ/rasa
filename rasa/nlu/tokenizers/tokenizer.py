@@ -104,6 +104,8 @@ class Tokenizer(Component):
                         tokens = self.tokenize(example, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
+        return training_data
+
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
         for attribute in MESSAGE_ATTRIBUTES:
