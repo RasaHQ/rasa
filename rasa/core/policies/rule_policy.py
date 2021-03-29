@@ -536,12 +536,17 @@ class RulePolicy(MemoizationPolicy):
         """
         if (
             tracker.is_rule_tracker  # only apply to contradicting story, not rule
-            or prediction_source.count(PREVIOUS_ACTION) > 1  # only apply for prediction after unpredictable action
-            or gold_action_name != ACTION_LISTEN_NAME  # only apply for prediction of action_listen
+            or prediction_source.count(PREVIOUS_ACTION)
+            > 1  # only apply for prediction after unpredictable action
+            or gold_action_name
+            != ACTION_LISTEN_NAME  # only apply for prediction of action_listen
         ):
             return False
         for source in self.lookup[RULES]:
-            if source.startswith(prediction_source[:-2]) and not prediction_source == source:
+            if (
+                source.startswith(prediction_source[:-2])
+                and not prediction_source == source
+            ):
                 return True
         return False
 
