@@ -179,7 +179,7 @@ class KafkaEventBroker(EventBroker):
 
     def _publish(self, event) -> None:
         logger.debug(
-            f"Calling kafka send({self.topic}, value={event}, key={self.partition_key})"
+            f"Calling kafka send({self.topic}, value={event}, key={self.partition_key!s})"
         )
         self.producer.send(self.topic, value=event, key=self.partition_key)
 
