@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.23] - 2021-02-22
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#7895 <https://github.com/rasahq/rasa/issues/7895>`_: Fixed bug where the conversation does not lock before handling a reminder event.
+
+
 [1.10.22] - 2021-02-05
 ^^^^^^^^^^^^^^^^^^^^^^
 
