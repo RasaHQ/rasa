@@ -520,7 +520,10 @@ class RulePolicy(MemoizationPolicy):
         return loop_sources
 
     def _should_delete(
-        self, prediction_source: Text, tracker: TrackerWithCachedStates
+        self,
+        prediction_source: Text,
+        tracker: TrackerWithCachedStates,
+        gold_action_name: Text,
     ) -> bool:
         """Checks whether this contradiction is due to action, intent pair.
 
@@ -531,12 +534,17 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             true if the contradiction is a result of an action, intent pair in the rule.
         """
-        if tracker.is_rule_tracker or prediction_source.count(PREVIOUS_ACTION) > 1:
+        if (
+            tracker.is_rule_tracker
+            or prediction_source.count(PREVIOUS_ACTION) > 1
+            or gold_action_name != ACTION_LISTEN_NAME
+        ):
             return False
         for source in self.lookup[RULES]:
             if prediction_source[:-2] in source and not prediction_source == source:
                 return True
         return False
+
     def _check_prediction(
         self,
         tracker: TrackerWithCachedStates,
@@ -547,15 +555,16 @@ class RulePolicy(MemoizationPolicy):
         if not predicted_action_name or predicted_action_name == gold_action_name:
             return []
 
+        if self._should_delete(prediction_source, tracker, gold_action_name):
+            self.lookup[RULES].pop(prediction_source)
+            return []
+
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
         contradicting_rules = {
             rule_name
             for rule_name, action_name in self._rules_sources[prediction_source]
             if action_name != gold_action_name
         }
-        if self._should_delete(prediction_source, tracker):
-            self.lookup[RULES].pop(prediction_source)
-            return []
 
         error_message = (
             f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
