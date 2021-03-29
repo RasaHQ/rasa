@@ -393,6 +393,18 @@ class TEDPolicy(Policy):
 
         return label_data, encoded_all_labels
 
+    @staticmethod
+    def _should_extract_entities(
+        entity_tags: List[List[Dict[Text, List["Features"]]]]
+    ) -> bool:
+        for turns_tags in entity_tags:
+            for turn_tags in turns_tags:
+                # if turn_tags are empty or all entity tag indices are `0`
+                # it means that all the inputs only contain NO_ENTITY_TAG
+                if turn_tags and np.any(turn_tags[ENTITY_TAGS][0].features):
+                    return True
+        return False
+
     def _create_data_for_entities(
         self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
     ) -> Optional[Data]:
@@ -400,7 +412,7 @@ class TEDPolicy(Policy):
             return
 
         # check that there are real entity tags
-        if entity_tags and any([any(turn_tags) for turn_tags in entity_tags]):
+        if entity_tags and self._should_extract_entities(entity_tags):
             entity_tags_data, _ = convert_to_data_format(entity_tags)
             return entity_tags_data
 
@@ -500,7 +512,7 @@ class TEDPolicy(Policy):
             return
 
         # dealing with training data
-        tracker_state_features, label_ids, entity_tags = self.featurize_for_training(
+        tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
             interpreter,
@@ -583,8 +595,8 @@ class TEDPolicy(Policy):
         # and second - an optional one (see conditions below),
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
-        tracker_state_features = self.featurizer.create_state_features(
-            [tracker], domain, interpreter, use_text_for_last_user_input=self.only_e2e
+        tracker_state_features = self._featurize_for_prediction(
+            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -592,13 +604,13 @@ class TEDPolicy(Policy):
             and TEXT in self.fake_features
             and not self.only_e2e
         ):
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=True
+            tracker_state_features += self._featurize_for_prediction(
+                tracker, domain, interpreter, use_text_for_last_user_input=True,
             )
         return tracker_state_features
 
     def _pick_confidence(
-        self, confidences: np.ndarray, similarities: np.ndarray
+        self, confidences: np.ndarray, similarities: np.ndarray, domain: Domain
     ) -> Tuple[np.ndarray, bool]:
         # the confidences and similarities have shape (batch-size x number of actions)
         # batch-size can only be 1 or 2;
@@ -613,16 +625,30 @@ class TEDPolicy(Policy):
             # we use similarities to pick appropriate input,
             # since it seems to be more accurate measure,
             # policy is trained to maximize the similarity not the confidence
+            non_e2e_action_name = domain.action_names_or_texts[
+                np.argmax(confidences[0])
+            ]
+            logger.debug(f"User intent lead to '{non_e2e_action_name}'.")
+            e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
+            logger.debug(f"User text lead to '{e2e_action_name}'.")
             if (
                 np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
                 # TODO maybe compare confidences is better
                 and np.max(similarities[1]) > np.max(similarities[0])
             ):
+                logger.debug(f"TED predicted '{e2e_action_name}' based on user text.")
                 return confidences[1], True
 
+            logger.debug(f"TED predicted '{non_e2e_action_name}' based on user intent.")
             return confidences[0], False
 
         # by default the first example in a batch is the one to use for prediction
+        predicted_action_name = domain.action_names_or_texts[np.argmax(confidences[0])]
+        basis_for_prediction = "text" if self.only_e2e else "intent"
+        logger.debug(
+            f"TED predicted '{predicted_action_name}' "
+            f"based on user {basis_for_prediction}."
+        )
         return confidences[0], self.only_e2e
 
     def predict_action_probabilities(
@@ -632,9 +658,16 @@ class TEDPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        """Predicts the next action the bot should take.
+        """Predicts the next action the bot should take after seeing the tracker.
 
-        See the docstring of the parent class `Policy` for more information.
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
         """
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
@@ -650,7 +683,9 @@ class TEDPolicy(Policy):
         similarities = output["similarities"][:, -1, :]
         confidences = output["action_scores"][:, -1, :]
         # take correct prediction from batch
-        confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
+        confidence, is_e2e_prediction = self._pick_confidence(
+            confidences, similarities, domain
+        )
 
         if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
             # TODO: This should be removed in 3.0 when softmax as

@@ -17,6 +17,7 @@ from typing import (
     Tuple,
     Union,
     TYPE_CHECKING,
+    Iterable,
 )
 
 import rasa.shared.constants
@@ -311,23 +312,44 @@ class Domain:
         roles: Dict[Text, List[Text]],
         groups: Dict[Text, List[Text]],
     ) -> Dict[Text, Any]:
-        """Transform intent properties coming from a domain file for internal use.
+        """Transforms the intent's parameters in a format suitable for internal use.
 
-        In domain files, `use_entities` or `ignore_entities` is used. Internally, there
-        is a property `used_entities` instead that lists all entities to be used.
+        When an intent is retrieved from the `domain.yml` file, it contains two
+        parameters, the `use_entities` and the `ignore_entities` parameter. With
+        the values of these two parameters the Domain class is updated, a new
+        parameter is added to the intent called `used_entities` and the two
+        previous parameters are deleted. This happens because internally only the
+        parameter `used_entities` is needed to list all the entities that should be
+        used for this intent.
 
         Args:
-            intent: The intents as provided by a domain file.
+            intent: The intent as retrieved from the `domain.yml` file thus having two
+                parameters, the `use_entities` and the `ignore_entities` parameter.
             entities: All entities as provided by a domain file.
             roles: All roles for entities as provided by a domain file.
             groups: All groups for entities as provided by a domain file.
 
         Returns:
-            The intents as they should be used internally.
+            The intent with the new format thus having only one parameter called
+            `used_entities` since this is the expected format of the intent
+            when used internally.
         """
         name, properties = list(intent.items())[0]
 
-        properties.setdefault(USE_ENTITIES_KEY, True)
+        if properties:
+            properties.setdefault(USE_ENTITIES_KEY, True)
+        else:
+            raise InvalidDomain(
+                f"In the `domain.yml` file, the intent '{name}' cannot have value of"
+                f" `{type(properties)}`. If you have placed a ':' character after the"
+                f" intent's name without adding any additional parameters to this"
+                f" intent then you would need to remove the ':' character. Please see"
+                f" {rasa.shared.constants.DOCS_URL_DOMAINS} for more information on how"
+                f" to correctly add `intents` in the `domain` and"
+                f" {rasa.shared.constants.DOCS_URL_INTENTS} for examples on"
+                f" when to use the ':' character after an intent's name."
+            )
+
         properties.setdefault(IGNORE_ENTITIES_KEY, [])
         if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
             properties[USE_ENTITIES_KEY] = []
@@ -402,17 +424,30 @@ class Domain:
         entities: List[Text] = []
         roles: Dict[Text, List[Text]] = {}
         groups: Dict[Text, List[Text]] = {}
-
         for entity in domain_entities:
             if isinstance(entity, str):
                 entities.append(entity)
             elif isinstance(entity, dict):
                 for _entity, sub_labels in entity.items():
                     entities.append(_entity)
-                    if ENTITY_ROLES_KEY in sub_labels:
-                        roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
-                    if ENTITY_GROUPS_KEY in sub_labels:
-                        groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                    if sub_labels:
+                        if ENTITY_ROLES_KEY in sub_labels:
+                            roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
+                        if ENTITY_GROUPS_KEY in sub_labels:
+                            groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                    else:
+                        raise InvalidDomain(
+                            f"In the `domain.yml` file, the entity '{_entity}' cannot"
+                            f" have value of `{type(sub_labels)}`. If you have placed a"
+                            f" ':' character after the entity `{_entity}` without"
+                            f" adding any additional parameters to this entity then you"
+                            f" would need to remove the ':' character. Please see"
+                            f" {rasa.shared.constants.DOCS_URL_DOMAINS} for more"
+                            f" information on how to correctly add `entities` in the"
+                            f" `domain` and {rasa.shared.constants.DOCS_URL_ENTITIES}"
+                            f" for examples on when to use the ':' character after an"
+                            f" entity's name."
+                        )
             else:
                 raise InvalidDomain(
                     f"Invalid domain. Entity is invalid, type of entity '{entity}' "
@@ -1131,24 +1166,115 @@ class Domain:
         }
         return self._clean_state(state)
 
+    @staticmethod
+    def _remove_rule_only_features(
+        state: State, rule_only_data: Optional[Dict[Text, Any]],
+    ) -> None:
+        if not rule_only_data:
+            return
+
+        rule_only_slots = rule_only_data.get(
+            rasa.shared.core.constants.RULE_ONLY_SLOTS, []
+        )
+        rule_only_loops = rule_only_data.get(
+            rasa.shared.core.constants.RULE_ONLY_LOOPS, []
+        )
+
+        # remove slots which only occur in rules but not in stories
+        if rule_only_slots:
+            for slot in rule_only_slots:
+                state.get(rasa.shared.core.constants.SLOTS, {}).pop(slot, None)
+        # remove active loop which only occur in rules but not in stories
+        if (
+            rule_only_loops
+            and state.get(rasa.shared.core.constants.ACTIVE_LOOP, {}).get(
+                rasa.shared.core.constants.LOOP_NAME
+            )
+            in rule_only_loops
+        ):
+            del state[rasa.shared.core.constants.ACTIVE_LOOP]
+
+    @staticmethod
+    def _substitute_rule_only_user_input(state: State, last_ml_state: State) -> None:
+        if not rasa.shared.core.trackers.is_prev_action_listen_in_state(state):
+            if not last_ml_state.get(rasa.shared.core.constants.USER) and state.get(
+                rasa.shared.core.constants.USER
+            ):
+                del state[rasa.shared.core.constants.USER]
+            elif last_ml_state.get(rasa.shared.core.constants.USER):
+                state[rasa.shared.core.constants.USER] = last_ml_state[
+                    rasa.shared.core.constants.USER
+                ]
+
     def states_for_tracker_history(
-        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        self,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """List of states for each state of the trackers history.
 
         Args:
-            tracker: dialog state tracker containing the dialog so far
+            tracker: Dialogue state tracker containing the dialogue so far.
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
-        Returns: A `State` for each prior tracker.
+        Return:
+            A list of states.
         """
-        return [
-            self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
-            for tr in tracker.generate_all_prior_trackers()
-        ]
+        states = []
+        last_ml_action_sub_state = None
+        turn_was_hidden = False
+        for tr, hide_rule_turn in tracker.generate_all_prior_trackers():
+            if ignore_rule_only_turns:
+                # remember previous ml action based on the last non hidden turn
+                # we need this to override previous action in the ml state
+                if not turn_was_hidden:
+                    last_ml_action_sub_state = self._get_prev_action_sub_state(tr)
+
+                # followup action or happy path loop prediction
+                # don't change the fact whether dialogue turn should be hidden
+                if (
+                    not tr.followup_action
+                    and not tr.latest_action_name == tr.active_loop_name
+                ):
+                    turn_was_hidden = hide_rule_turn
+
+                if turn_was_hidden:
+                    continue
+
+            state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+
+            if ignore_rule_only_turns:
+                # clean state from only rule features
+                self._remove_rule_only_features(state, rule_only_data)
+                # make sure user input is the same as for previous state
+                # for non action_listen turns
+                if states:
+                    self._substitute_rule_only_user_input(state, states[-1])
+                # substitute previous rule action with last_ml_action_sub_state
+                if last_ml_action_sub_state:
+                    state[
+                        rasa.shared.core.constants.PREVIOUS_ACTION
+                    ] = last_ml_action_sub_state
+
+            states.append(self._clean_state(state))
+
+        return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
-        """Returns `SlotSet` events for extracted entities."""
+        """Creates slot events for entities if auto-filling is enabled.
+
+        Args:
+            entities: The list of entities.
+
+        Returns:
+            A list of `SlotSet` events.
+        """
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
@@ -1521,7 +1647,7 @@ class Domain:
         named or a response is missing.
         """
 
-        def get_duplicates(my_items):
+        def get_duplicates(my_items: Iterable[Any]) -> List[Any]:
             """Returns a list of duplicate items in my_items."""
             return [
                 item

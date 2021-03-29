@@ -739,7 +739,7 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def has_e2e_examples(self):
+    def has_e2e_examples(self) -> bool:
         """Checks if there are any training examples from e2e stories."""
         return any(message.is_e2e_message() for message in self.training_examples)
 

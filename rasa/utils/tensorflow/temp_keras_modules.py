@@ -5,6 +5,9 @@ from typing import (
     Union,
     Optional,
     Any,
+    Generator,
+    Tuple,
+    Iterator,
 )
 
 import numpy as np
@@ -241,7 +244,7 @@ class TmpKerasModel(tf.keras.models.Model):
 class CustomDataHandler(DataHandler):
     """Handles iterating over epoch-level `tf.data.Iterator` objects."""
 
-    def enumerate_epochs(self):
+    def enumerate_epochs(self) -> Generator[Tuple[int, Iterator], None, None]:
         """Yields `(epoch, tf.data.Iterator)`."""
         # TODO
         #  we don't need this anymore once
