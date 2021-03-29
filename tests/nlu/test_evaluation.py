@@ -6,7 +6,6 @@ import sys
 
 from pathlib import Path
 from typing import Text, Iterator, List, Dict, Any, Set, Optional
-
 from tests.conftest import AsyncMock
 
 import pytest
