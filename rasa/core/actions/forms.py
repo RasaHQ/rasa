@@ -55,7 +55,7 @@ class FormAction(LoopAction):
         Returns:
             A list of slot names.
         """
-        return list(domain.slot_mapping_for_form(self.name()))
+        return list(domain.slot_mapping_for_form(self.name()).keys())
 
     def from_entity(
         self,
@@ -141,9 +141,7 @@ class FormAction(LoopAction):
         """
         unique_entity_slot_mappings = set()
         duplicate_entity_slot_mappings = set()
-        required_slots = domain.slot_mapping_for_form(self.name()).values()
-
-        for slot_mappings in required_slots:
+        for slot_mappings in domain.slot_mapping_for_form(self.name()).values():
             for slot_mapping in slot_mappings:
                 if slot_mapping.get("type") == str(SlotMapping.FROM_ENTITY):
                     mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
@@ -183,6 +181,7 @@ class FormAction(LoopAction):
             global_not_intents = []
         if not isinstance(global_not_intents, list):
             global_not_intents = [global_not_intents]
+
         return global_not_intents
 
     def intent_is_desired(
