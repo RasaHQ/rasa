@@ -3,6 +3,7 @@
 language: en
 pipeline:
   - name: KeywordIntentClassifier
+  - name: RegexEntityExtractor
 
 # Configuration for Rasa Core.
 # https://rasa.com/docs/rasa/policies
