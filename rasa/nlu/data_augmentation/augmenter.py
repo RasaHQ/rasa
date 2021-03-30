@@ -42,13 +42,19 @@ def _collect_intents_for_data_augmentation(
     """Collects intents for which to perform data augmentation.
 
     It analyses the training datasets and extracts:
-        * The `num_intents_to_augment` intents with the least number of training examples.
-        * The `num_intents_to_augment` with lowest precision (according to `classification_report`)
-        * The `num_intents_to_augment` with lowest recall (according to `classification_report`)
-        * The `num_intents_to_augment` with lowest f1-score (according to `classification_report`)
-        * The `num_intents_to_augment` most frequently confused intents (according to `classification_report`)
+        * The `num_intents_to_augment` intents with the least number of training
+          examples.
+        * The `num_intents_to_augment` with lowest precision (according to
+          `classification_report`)
+        * The `num_intents_to_augment` with lowest recall (according to
+          `classification_report`)
+        * The `num_intents_to_augment` with lowest f1-score (according to
+          `classification_report`)
+        * The `num_intents_to_augment` most frequently confused intents (according to
+          `classification_report`)
 
-    For all of the intents matching the above criteria paraphrases will be used for data augmentation.
+    For all of the intents matching the above criteria paraphrases will be used for
+    data augmentation.
 
     Args:
         nlu_training_data: The existing NLU training data.
@@ -57,7 +63,8 @@ def _collect_intents_for_data_augmentation(
             considered for data augmentation is determined on the basis of several
             factors, such as their current performance statistics or the number of
             available training examples.
-        classification_report_no_augmentation: An existing classification report (without data augmentation).
+        classification_report_no_augmentation: An existing classification report
+            (without data augmentation).
 
     Returns:
         The set of intent names for which data augmentation will be performed.
@@ -145,8 +152,10 @@ def _create_paraphrase_pool(
     Args:
         paraphrases: The paraphrases for data augmentation.
         intents_to_augment: The intents for which to perform data augmentation.
-        min_paraphrase_sim_score: Accept/Reject minimum similarity threshold for individual paraphrases.
-        max_paraphrase_sim_score: Accept/Reject maximum similarity threshold for individual paraphrases.
+        min_paraphrase_sim_score: Accept/Reject minimum similarity threshold for
+            individual paraphrases.
+        max_paraphrase_sim_score: Accept/Reject maximum similarity threshold for
+            individual paraphrases.
 
     Returns:
         The pool of suitable paraphrases for data augmentation.
@@ -197,8 +206,9 @@ def _resolve_augmentation_factor(
 
     Args:
         nlu_training_data: The existing NLU training data.
-        augmentation_factor: Factor - as a multiple of the number of training data per intent - to determine the amount
-            of paraphrases used for data augmentation.
+        augmentation_factor: Factor - as a multiple of the number of training data
+            per intent - to determine the amount of paraphrases used for
+            data augmentation.
 
     Returns:
         A dictionary specifying how many paraphrases may maximally be added per intent.
@@ -218,8 +228,9 @@ def _create_augmented_training_data_max_vocab_expansion(
     augmentation_factor: Dict[Text, int],
     config: Text,
 ) -> TrainingData:
-    """Selects paraphrases for data augmentation on the basis of maximum vocabulary expansion between the existing
-        training data for a given intent and the generated paraphrases.
+    """Selects paraphrases for data augmentation on the basis of maximum vocabulary
+        expansion between the existing training data for a given intent and the
+        generated paraphrases.
 
     Args:
         nlu_training_data: NLU training data (without augmentation).
@@ -270,7 +281,8 @@ def _create_augmented_training_data_max_vocab_expansion(
 
             max_vocab_expansion.append((num_new_words, message))
 
-        # Creates `Message` objects from the list of all paraphrases, sorted by their vocabulary expansion
+        # Creates `Message` objects from the list of all paraphrases, sorted by their
+        # vocabulary expansion.
         new_training_data.extend(
             [
                 Message(data={TEXT: item[1].get(TEXT), INTENT: item[1].get(INTENT)})
@@ -292,7 +304,8 @@ def _create_augmented_training_data_random_sampling(
     augmentation_factor: Dict[Text, int],
     random_seed: int,
 ) -> TrainingData:
-    """Randomly selects paraphrases for data augmentation from the generated paraphrase pool.
+    """Randomly selects paraphrases for data augmentation from the generated
+       paraphrase pool.
 
     Args:
         nlu_training_data: NLU training data (without augmentation).
@@ -331,11 +344,13 @@ def _train_test_nlu_model(
 ) -> Dict[Text, Dict[Text, Any]]:
     """Runs the NLU train/test loop using the given augmented training data.
 
-    Performs training a new NLU model with the augmented training set and subsequently evaluates the model
-    on the test data. The trained model will be stored to the given output directory.
+    Performs training a new NLU model with the augmented training set and subsequently
+    evaluates the model on the test data. The trained model will be stored to the given
+    output directory.
 
     Args:
-         output_directory: Directory to store the evaluation reports and augmented training data in.
+         output_directory: Directory to store the evaluation reports and augmented
+             training data in.
          nlu_training_file: Augmented NLU training data file.
          config: NLU model config.
          nlu_evaluation_data: NLU evaluation data.
@@ -376,23 +391,27 @@ def _create_augmentation_summary(
 ) -> Tuple[
     Dict[Text, Dict[Text, float]], Dict[Text, Dict[Text, Any]],
 ]:
-    """Creates a summary report of the effect of data augmentation and modifies the original classification report
-    with that information.
+    """Creates a summary report of the effect of data augmentation and modifies the
+    original classification report with that information.
 
     Args:
         intents_to_augment: The intents that have been selected for data augmentation.
         changed_intents: The intents that have been affected by data augmentation.
-        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
-        intent_report_with_augmentation: Report of the model run *with* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run
+            *without* data augmentation.
+        intent_report_with_augmentation: Report of the model run
+            *with* data augmentation.
 
     Returns:
-        A tuple representing a summary of the changed intents as well as a modified version of the original
-            classification report with performance changes for all affected intents.
+        A tuple representing a summary of the changed intents as well as a modified
+        version of the original classification report with performance changes for all
+        affected intents.
     """
 
     intent_summary = collections.defaultdict(dict)
 
-    # accuracy is the only non-dict like thing in the classification report, so it receives extra treatment
+    # accuracy is the only non-dict like thing in the classification report,
+    # so it receives extra treatment.
     if "accuracy" in classification_report_no_augmentation:
         accuracy_change = intent_report_with_augmentation.get(
             "accuracy", 0.0
@@ -452,14 +471,17 @@ def _create_summary_report(
     """Creates a summary of the effect of data augmentation.
 
     Args:
-        intent_report_with_augmentation: Report of the model run *with* data augmentation.
-        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
+        intent_report_with_augmentation: Report of the model run
+            *with* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run
+            *without* data augmentation.
         training_intents: All intents in the training data (non-augmented).
         pooled_intents: The intents that have been selected for data augmentation.
         output_directory: Directory to store the output reports in.
 
     Returns:
-        Tuple representing the data augmentation summary as well as the set of changed intents.
+        Tuple representing the data augmentation summary as well as the set of
+        changed intents.
     """
 
     # Retrieve intents for which performance has changed
@@ -518,11 +540,13 @@ def _get_intents_with_performance_changes(
     Extracts the intents whose performance has changed.
 
     Args:
-        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
-        intent_report_with_augmentation: Report of the model run *with* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run
+            *without* data augmentation.
+        intent_report_with_augmentation: Report of the model run
+            *with* data augmentation.
         all_intents: List of all intents.
-        significant_figures: Significant figures to be taken into account when assessing whether the performance of an
-            intent has changed.
+        significant_figures: Significant figures to be taken into account when
+            assessing whether the performance of an intent has changed.
 
     Returns:
         Set of intents that have changed - i.e. that were affected by data augmentation.
@@ -558,7 +582,8 @@ def _run_data_augmentation(
     """
     Runs the NLU train/test cycle with data augmentation.
 
-    Also, generate reports and plots summarising the impact of data augmentation on model performance.
+    Also, generate reports and plots summarising the impact of data augmentation
+    on model performance.
 
     Args:
         nlu_training_data: The augmented NLU training data.
@@ -567,7 +592,8 @@ def _run_data_augmentation(
         output_directory: Directory to store the output files in.
         config: NLU model config.
         nlu_evaluation_data: NLU evaluation data.
-        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run
+            *without* data augmentation.
     """
 
     # Store augmented training data to file
@@ -616,18 +642,23 @@ def augment_nlu_data(
         nlu_evaluation_data: NLU evaluation data.
         paraphrases: The generated paraphrases with similarity scores obtained
             from https://github.com/RasaHQ/paraphraser.
-        classification_report_no_augmentation: Classification report of the model run *without* data augmentation.
+        classification_report_no_augmentation: Classification report of the model run
+            *without* data augmentation.
         config: NLU model config.
-        intent_proportion: The proportion of intents (out of all intents) considered for data augmentation.
-            The actual number of intents considered for data augmentation is determined on the basis of several factors,
-            such as their current performance statistics or the number of available training examples.
+        intent_proportion: The proportion of intents (out of all intents) considered
+            for data augmentation. The actual number of intents considered for data
+            augmentation is determined on the basis of several factors, such as their
+            current performance statistics or the number of available training
+            examples.
         random_seed: Random seed for sampling the paraphrases.
-        min_paraphrase_sim_score: Minimum required similarity for a generated paraphrase to be considered for data
-            augmentation.
-        max_paraphrase_sim_score: Maximum similarity for a generated paraphrase to be considered for data augmentation.
+        min_paraphrase_sim_score: Minimum required similarity for a generated
+            paraphrase to be considered for data augmentation.
+        max_paraphrase_sim_score: Maximum similarity for a generated paraphrase
+            to be considered for data augmentation.
         output_directory: Directory to store the output files in.
-        augmentation_factor: Factor - as a multiple of the number of training data per intent - to determine the amount
-            of paraphrases used for data augmentation.
+        augmentation_factor: Factor - as a multiple of the number of training data
+            per intent - to determine the amount of paraphrases used for data
+            augmentation.
     """
     # Determine intents for which to perform data augmentation
     intents_to_augment = _collect_intents_for_data_augmentation(

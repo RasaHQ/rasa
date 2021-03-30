@@ -261,12 +261,15 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 def augment_nlu_data(args: argparse.Namespace) -> None:
     """Performs data augmentation for NLU.
 
-    Data augmentation works by determining intents with low performance or little data from the existing training data
-    and the generated paraphrases are used as additional training data for these intents.
+    Data augmentation works by determining intents with low performance or little
+    data from the existing training data and the generated paraphrases are used as
+    additional training data for these intents.
 
-    Subsequently, two models with augmented data are trained and then evaluated on the supplied test data.
+    Subsequently, two models with augmented data are trained and then evaluated on
+    the supplied test data.
 
-    The module outputs a report highlighting how data augmentation has changed classification performance.
+    The module outputs a report highlighting how data augmentation has changed
+    classification performance.
     
     Args:
         args: Command-line arguments.

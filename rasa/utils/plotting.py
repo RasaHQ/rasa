@@ -320,8 +320,9 @@ def plot_intent_augmentation_summary(
             perf_bar[idx].set_color("#009292")
         if intents[idx] in totals_keys:
             perf_bar[idx].set_hatch("*")
-            # The colour of the hatch is determined by the edge colour property, so in order to make the hatch visible,
-            # we need ot set the edge colour explicitly
+            # The colour of the hatch is determined by the edge colour property,
+            # so in order to make the hatch visible, we need ot set the edge
+            # colour explicitly.
             perf_bar[idx].set_edgecolor("white")
 
     _autolabel(perf_bar)
