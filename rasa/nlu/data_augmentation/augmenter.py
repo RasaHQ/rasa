@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 def _collect_intents_for_data_augmentation(
     nlu_training_data: TrainingData,
     intent_proportion: float,
-    classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
+    classification_report_no_augmentation: Dict[Text, Any],
 ) -> Set[Text]:
     """Collects intents for which to perform data augmentation.
 
@@ -342,7 +342,7 @@ def _train_test_nlu_model(
     nlu_training_file: Text,
     config: Text,
     nlu_evaluation_data: TrainingData,
-) -> Dict[Text, Dict[Text, Any]]:
+) -> Dict[Text, Any]:
     """Runs the NLU train/test loop using the given augmented training data.
 
     Performs training a new NLU model with the augmented training set and subsequently
@@ -387,9 +387,9 @@ def _create_augmentation_summary(
     intents_to_augment: Set[Text],
     changed_intents: Set[Text],
     classification_report_no_augmentation: Dict[Text, Any],
-    intent_report_with_augmentation: Dict[Text, Dict[Text, Any]],
+    intent_report_with_augmentation: Dict[Text, Any],
 ) -> Tuple[
-    Dict[Text, Dict[Text, float]], Dict[Text, Dict[Text, Any]],
+    Dict[Text, Dict[Text, float]], Dict[Text, Any],
 ]:
     """Create data augmentation summary report.
 
@@ -463,8 +463,8 @@ def _create_augmentation_summary(
 
 
 def _create_summary_report(
-    intent_report_with_augmentation: Dict[Text, Dict[Text, Any]],
-    classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
+    intent_report_with_augmentation: Dict[Text, Any],
+    classification_report_no_augmentation: Dict[Text, Any],
     training_intents: List[Text],
     pooled_intents: Set[Text],
     output_directory: Text,
@@ -531,8 +531,8 @@ def _plot_summary_report(
 
 
 def _get_intents_with_performance_changes(
-    classification_report_no_augmentation: Dict[Text, Dict[Text, Any]],
-    intent_report_with_augmentation: Dict[Text, Dict[Text, Any]],
+    classification_report_no_augmentation: Dict[Text, Any],
+    intent_report_with_augmentation: Dict[Text, Any],
     all_intents: List[Text],
     significant_figures: int = 2,
 ) -> Set[Text]:
