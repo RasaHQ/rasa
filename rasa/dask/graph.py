@@ -1,5 +1,7 @@
 from typing import Text, Dict, Any, Type
 
+import dask
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -43,10 +45,60 @@ def create_graph():
         "classify": (classifier, "featurize"),
     }
 
-    import dask.multiprocessing
+    import dask.threaded
 
-    dask.multiprocessing.get(graph, "classify")
+    dask.threaded.get(graph, "classify")
     # dask.visualize(graph, filename="graph.png")
+
+
+class GraphTrainingData:
+    def train(self):
+        return RasaYAMLReader().read("examples/moodbot/data/nlu.yml")
+
+
+def create_graph(name: Text, graph: Dict, registry: Dict[Text, Any]):
+    # TODO: Catch cycles
+    node_description = graph[name]
+    params = []
+
+    if name in registry:
+        return registry[name]
+
+    component = RasaComponent(
+        node_description["uses"], {}, node_description.get("fn", "train")
+    )
+
+    # TODO: Do we need this?
+    registry[name] = component
+
+    for dep_name in node_description["needs"]:
+        param = create_graph(dep_name, graph, registry)
+        params.append(param)
+
+    registry[name] = dask.delayed(component)(*params)
+
+    return registry[name]
+
+
+def test_create_graph_with_rasa_syntax():
+    dsk = {
+        "load_data": {"uses": TrainingData, "needs": []},
+        "tokenize": {"uses": WhitespaceTokenizer, "needs": ["load_data"]},
+        "train_featurizer": {"uses": CountVectorsFeaturizer, "needs": ["tokenize"]},
+        "featurize": {
+            "uses": CountVectorsFeaturizer,
+            "fn": "process",
+            "needs": ["train_featurizer", "tokenize"],
+        },
+        "classify": {"uses": DIETClassifier, "needs": ["featurize"]},
+    }
+
+    registry = {}
+
+    graph = create_graph("classify", dsk, registry)
+
+    graph.visualize("graph.png")
+    graph.compute()
 
 
 def test_graph():
