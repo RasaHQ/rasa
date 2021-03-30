@@ -9,9 +9,25 @@ which contain paths to file/directory.
 {{- $mapping := (datasource "mapping") -}}
 {{- $dataset := (index $mapping.datasets (getenv "DATASET_NAME")) -}}
 {{- $config := $mapping.configurations -}}
-
+{{- if has $dataset "repository" }}
+export DATASET="{{ $dataset.repository }}"
+export IS_EXTERNAL=true
+echo "::add-mask::{{ $dataset.repository }}"
+{{- else if has $dataset "path" }}
 export DATASET="{{ $dataset.path }}"
+export IS_EXTERNAL=false
 echo "::add-mask::{{ $dataset.path }}"
+{{ end }}
+
+{{- if has $dataset "train" }}
+export TRAIN_DIR="{{ $dataset.train }}"
+{{ end }}
+{{- if has $dataset "test" }}
+export TEST_DIR="{{ $dataset.test }}"
+{{ end }}
+{{- if has $dataset "domain" }}
+export DOMAI_FILE="{{ $dataset.domain }}"
+{{ end }}
 
 {{- if (has $config.nlu (getenv "CONFIG_NAME")) }}
 export CONFIG="{{ $dataset.language }}/nlu/{{ index $config.nlu (getenv "CONFIG_NAME") }}"
