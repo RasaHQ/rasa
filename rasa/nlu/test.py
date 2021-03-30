@@ -230,6 +230,15 @@ def _write_errors(errors: List[Dict], errors_filename: Text, error_type: Text) -
 
 
 def get_intent_errors(intent_results: List[IntentEvaluationResult]) -> List[Dict]:
+    """Returns a list of intent prediction errors.
+
+    Args:
+        intent_results: Intent prediction results.
+
+    Returns:
+        Intent prediction errors.
+
+    """
     return [
         {
             "text": r.message,
