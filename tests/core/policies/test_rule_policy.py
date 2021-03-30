@@ -40,7 +40,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.policies.rule_policy import RulePolicy, InvalidRule
+from rasa.core.policies.rule_policy import RulePolicy, InvalidRule, RULES
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 
@@ -2667,6 +2667,10 @@ def test_remove_action_listen_prediction_if_contradicts_with_story():
     policy.train(
         [rule, story], domain, RegexInterpreter(),
     )
+    prediction_source = [{PREVIOUS_ACTION: {ACTION_NAME: utter_1}}]
+    key = policy._create_feature_key(prediction_source)
+    assert key not in policy.lookup[RULES]
+    assert len(policy.lookup[RULES]) == 1
 
 
 def test_keep_action_listen_prediction_after_predictable_action():
@@ -2805,4 +2809,47 @@ def test_keep_action_listen_prediction_if_contradicts_with_rule():
     with pytest.raises(InvalidRule):
         policy.train(
             [rule, other_rule], domain, RegexInterpreter(),
+        )
+
+
+def test_raise_contradiction_if_rule_contradicts_with_story():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "rule without action_listen",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "contradicts with rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+    )
+    policy = RulePolicy()
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, story], domain, RegexInterpreter(),
         )
