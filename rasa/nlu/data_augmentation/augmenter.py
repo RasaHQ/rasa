@@ -266,11 +266,10 @@ def _create_augmented_training_data_max_vocab_expansion(
         intent = message.get(INTENT)
 
         tokenizer.process(message)
-        message_tokens = [
+        message_tokens = {
             token.text.lower() for token in message.get(TOKENS_NAMES[TEXT])
-        ]
-
-        intent_vocab[intent] |= set(message_tokens)
+        }
+        intent_vocab[intent] |= message_tokens
 
     # Select paraphrases that maximise vocabulary expansion
     new_training_data = []
