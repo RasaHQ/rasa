@@ -270,7 +270,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
 
     The module outputs a report highlighting how data augmentation has changed
     classification performance.
-    
+
     Args:
         args: Command-line arguments.
     """
