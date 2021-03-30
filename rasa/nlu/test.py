@@ -237,7 +237,6 @@ def get_intent_errors(intent_results: List[IntentEvaluationResult]) -> List[Dict
 
     Returns:
         Intent prediction errors.
-
     """
     return [
         {
