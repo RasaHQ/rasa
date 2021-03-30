@@ -393,6 +393,18 @@ class TEDPolicy(Policy):
 
         return label_data, encoded_all_labels
 
+    @staticmethod
+    def _should_extract_entities(
+        entity_tags: List[List[Dict[Text, List["Features"]]]]
+    ) -> bool:
+        for turns_tags in entity_tags:
+            for turn_tags in turns_tags:
+                # if turn_tags are empty or all entity tag indices are `0`
+                # it means that all the inputs only contain NO_ENTITY_TAG
+                if turn_tags and np.any(turn_tags[ENTITY_TAGS][0].features):
+                    return True
+        return False
+
     def _create_data_for_entities(
         self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
     ) -> Optional[Data]:
@@ -400,7 +412,7 @@ class TEDPolicy(Policy):
             return
 
         # check that there are real entity tags
-        if entity_tags and any([any(turn_tags) for turn_tags in entity_tags]):
+        if entity_tags and self._should_extract_entities(entity_tags):
             entity_tags_data, _ = convert_to_data_format(entity_tags)
             return entity_tags_data
 
