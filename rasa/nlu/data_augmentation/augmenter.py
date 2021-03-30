@@ -160,7 +160,6 @@ def _create_paraphrase_pool(
     Returns:
         The pool of suitable paraphrases for data augmentation.
     """
-
     paraphrase_pool = collections.defaultdict(list)
     for paraphrase_msg in paraphrases.intent_examples:
 
@@ -228,7 +227,9 @@ def _create_augmented_training_data_max_vocab_expansion(
     augmentation_factor: Dict[Text, int],
     config: Text,
 ) -> TrainingData:
-    """Selects paraphrases for data augmentation on the basis of maximum vocabulary
+    """Create training data on the basis of maximum vocabulary expansion.
+
+        Selects paraphrases for data augmentation on the basis of maximum vocabulary
         expansion between the existing training data for a given intent and the
         generated paraphrases.
 
@@ -304,7 +305,9 @@ def _create_augmented_training_data_random_sampling(
     augmentation_factor: Dict[Text, int],
     random_seed: int,
 ) -> TrainingData:
-    """Randomly selects paraphrases for data augmentation from the generated
+    """Create randomly sampled augmentation set.
+
+       Randomly selects paraphrases for data augmentation from the generated
        paraphrase pool.
 
     Args:
@@ -317,7 +320,6 @@ def _create_augmented_training_data_random_sampling(
     Returns:
         Paraphrases for data augmentation.
     """
-
     random.seed(random_seed)
     new_training_data = []
     for intent in intents_to_augment:
@@ -358,7 +360,6 @@ def _train_test_nlu_model(
     Returns:
         Classification report of the NLU model trained on the augmented training data.
     """
-
     # Train NLU model
     model_path = train_nlu(
         config=config, nlu_data=nlu_training_file, output=output_directory
@@ -391,7 +392,9 @@ def _create_augmentation_summary(
 ) -> Tuple[
     Dict[Text, Dict[Text, float]], Dict[Text, Dict[Text, Any]],
 ]:
-    """Creates a summary report of the effect of data augmentation and modifies the
+    """Create data augmentation summary report.
+
+    Creates a summary report of the effect of data augmentation and modifies the
     original classification report with that information.
 
     Args:
@@ -407,7 +410,6 @@ def _create_augmentation_summary(
         version of the original classification report with performance changes for all
         affected intents.
     """
-
     intent_summary = collections.defaultdict(dict)
 
     # accuracy is the only non-dict like thing in the classification report,
@@ -483,7 +485,6 @@ def _create_summary_report(
         Tuple representing the data augmentation summary as well as the set of
         changed intents.
     """
-
     # Retrieve intents for which performance has changed
     changed_intents = (
         _get_intents_with_performance_changes(
@@ -536,8 +537,7 @@ def _get_intents_with_performance_changes(
     all_intents: List[Text],
     significant_figures: int = 2,
 ) -> Set[Text]:
-    """
-    Extracts the intents whose performance has changed.
+    """Extracts the intents whose performance has changed.
 
     Args:
         classification_report_no_augmentation: Classification report of the model run
@@ -579,8 +579,7 @@ def _run_data_augmentation(
     nlu_evaluation_data: TrainingData,
     classification_report_no_augmentation: Dict[Text, Dict[Text, float]],
 ) -> None:
-    """
-    Runs the NLU train/test cycle with data augmentation.
+    """Runs the NLU train/test cycle with data augmentation.
 
     Also, generate reports and plots summarising the impact of data augmentation
     on model performance.
@@ -595,7 +594,6 @@ def _run_data_augmentation(
         classification_report_no_augmentation: Classification report of the model run
             *without* data augmentation.
     """
-
     # Store augmented training data to file
     nlu_training_data.persist_nlu(filename=nlu_training_file)
 
