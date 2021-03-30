@@ -16,8 +16,8 @@ from rasa.shared.nlu.constants import INTENT_REPORT_FILE_NAME
 def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
     """Adds arguments for data conversion.
 
-        Args:
-            parser: Argument parser
+    Args:
+        parser: Argument parser
     """
     parser.add_argument(
         "-f",
@@ -44,8 +44,8 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
 def set_split_arguments(parser: argparse.ArgumentParser):
     """Adds arguments for data splitting.
 
-        Args:
-            parser: Argument parser
+    Args:
+        parser: Argument parser
     """
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
@@ -73,8 +73,8 @@ def set_split_arguments(parser: argparse.ArgumentParser):
 def set_validator_arguments(parser: argparse.ArgumentParser):
     """Adds arguments for data validation.
 
-        Args:
-            parser: Argument parser
+    Args:
+        parser: Argument parser
     """
     parser.add_argument(
         "--fail-on-warnings",
