@@ -635,10 +635,6 @@ class Domain:
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
-        if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
-            # list of form names
-            return forms, {form_name: {} for form_name in forms}, forms
-
         rasa.shared.utils.io.raise_warning(
             f"The `forms` section in the domain needs to contain a dictionary. "
             f"Instead found an object of type '{type(forms)}'.",
