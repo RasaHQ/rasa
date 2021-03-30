@@ -629,22 +629,14 @@ class Domain:
             `FormAction` which is implemented in the Rasa SDK.
         """
         if isinstance(forms, dict):
+            for form_name, form_data in forms.items():
+                if "required_slots" not in form_data:
+                    forms[form_name] = {"required_slots": form_data}
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
         if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
-            # list of form names (Rasa Open Source 1 format)
-            rasa.shared.utils.io.raise_warning(
-                "The `forms` section in the domain used the old Rasa Open Source 1 "
-                "list format to define forms. Rasa Open Source will be configured to "
-                "use the deprecated `FormAction` within the Rasa SDK. If you want to "
-                "use the new Rasa Open Source 2 `FormAction` adapt your `forms` "
-                "section as described in the documentation. Support for the "
-                "deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
-                "Source 3.0.",
-                docs=rasa.shared.constants.DOCS_URL_FORMS,
-                category=FutureWarning,
-            )
+            # list of form names
             return forms, {form_name: {} for form_name in forms}, forms
 
         rasa.shared.utils.io.raise_warning(
@@ -1775,11 +1767,7 @@ class Domain:
         Returns:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
-        if "required_slots" in self.forms.get(form_name, {}):
-            required_slots = self.forms.get(form_name, {})["required_slots"]
-        else:
-            required_slots = self.forms.get(form_name, {})
-        return required_slots
+        return self.forms.get(form_name, {})["required_slots"]
 
 
 class SlotMapping(Enum):

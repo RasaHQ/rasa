@@ -55,14 +55,7 @@ class FormAction(LoopAction):
         Returns:
             A list of slot names.
         """
-        form = domain.slot_mapping_for_form(self.name())
-        if "required_slots" in form:
-            required_slots = list(
-                domain.slot_mapping_for_form(self.name())["required_slots"]
-            )
-        else:
-            required_slots = list(domain.slot_mapping_for_form(self.name()).keys())
-        return required_slots
+        return list(domain.slot_mapping_for_form(self.name()))
 
     def from_entity(
         self,
@@ -94,41 +87,6 @@ class FormAction(LoopAction):
             "group": group,
         }
 
-    def _update_not_intent_key_with_global_param(
-        self, form_data: Union[Dict[Text, Any], List[Text]], slot_to_fill: Text
-    ) -> Union[Text, List[Text]]:
-        """Updates the value/s of the `not_intent` key of the slot_to_fill.
-
-        Args:
-            form_data: All the available data (parameters and their values) of the form.
-            slot_to_fill: The slot to be updated.
-
-        Returns:
-            The value/s for the `not_intent` key of the given slot (slot_to_fill)
-            updated with the `global_not_intent` parameter (defined in `domain.yml`).
-        """
-        global_not_intents = form_data.get("global_not_intent")
-        # Gets the form slots data with the use of `required_slots` keyword.
-        if "required_slots" in form_data:
-            form_data = form_data.get("required_slots")
-        # Checks if the global parameter is a list. If not, convert to list.
-        if not isinstance(global_not_intents, list):
-            global_not_intents = [global_not_intents]
-        # Checks that `not_intent` parameter is present in the slot keys.
-        if "not_intent" in form_data[slot_to_fill][0].keys():
-            slot_not_intent = form_data[slot_to_fill][0]["not_intent"]
-            # Checks that the value of `not_intent` is a list.
-            if isinstance(slot_not_intent, list):
-                slot_not_intent.extend(global_not_intents)
-                # Use of set() to remove duplicates.
-                slot_not_intent = list(set(slot_not_intent))
-            elif isinstance(slot_not_intent, str):
-                global_not_intents.append(slot_not_intent)
-                slot_not_intent = list(set(global_not_intents))
-        else:
-            slot_not_intent = global_not_intents
-        return slot_not_intent
-
     def get_mappings_for_slot(
         self, slot_to_fill: Text, domain: Domain
     ) -> List[Dict[Text, Any]]:
@@ -148,21 +106,6 @@ class FormAction(LoopAction):
                 or requested_slot_mapping.get("type") is None
             ):
                 raise TypeError("Provided incompatible slot mapping")
-
-        # updates the slot's `not_intent` parameter with the global_not_intent
-        forms = domain.__dict__["forms"]
-        if isinstance(forms, dict):
-            # looping through all the available forms
-            for form_name, form_data in forms.items():
-                if form_data is None:
-                    continue
-                else:
-                    if "global_not_intent" in form_data:
-                        requested_slot_mapping[
-                            "not_intent"
-                        ] = self._update_not_intent_key_with_global_param(
-                            form_data, slot_to_fill
-                        )
 
         return requested_slot_mappings
 
@@ -198,14 +141,7 @@ class FormAction(LoopAction):
         """
         unique_entity_slot_mappings = set()
         duplicate_entity_slot_mappings = set()
-
-        form = domain.slot_mapping_for_form(self.name())
-        if "required_slots" in form:
-            required_slots = domain.slot_mapping_for_form(self.name())[
-                "required_slots"
-            ].values()
-        else:
-            required_slots = domain.slot_mapping_for_form(self.name()).values()
+        required_slots = domain.slot_mapping_for_form(self.name()).values()
 
         for slot_mappings in required_slots:
             for slot_mapping in slot_mappings:
@@ -229,14 +165,40 @@ class FormAction(LoopAction):
         mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
 
-    @staticmethod
+    def get_global_not_intents(self, domain: Domain) -> List[Text]:
+        """Returns a list of ignored intents as retrieved from `global_not_intent`.
+
+        Args:
+            domain: The current model domain.
+
+        Returns:
+            The value/s found in `global_not_intent` parameter in the `domain.yml`
+            (under forms).
+        """
+        if "global_not_intent" in domain.__dict__["forms"][self.name()]:
+            global_not_intents = domain.__dict__["forms"][self.name()][
+                "global_not_intent"
+            ]
+        else:
+            global_not_intents = []
+        if not isinstance(global_not_intents, list):
+            global_not_intents = [global_not_intents]
+        return global_not_intents
+
     def intent_is_desired(
-        requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
+        self,
+        requested_slot_mapping: Dict[Text, Any],
+        tracker: "DialogueStateTracker",
+        domain: Domain,
     ) -> bool:
         """Check whether user intent matches intent conditions."""
         mapping_intents = FormAction._to_list(requested_slot_mapping.get("intent", []))
         mapping_not_intents = FormAction._to_list(
             requested_slot_mapping.get("not_intent", [])
+        )
+
+        mapping_not_intents = list(
+            set(mapping_not_intents + self.get_global_not_intents(domain))
         )
 
         intent = tracker.latest_message.intent.get("name")
@@ -345,7 +307,7 @@ class FormAction(LoopAction):
                     # check whether the slot should be filled by an entity in the input
                     should_fill_entity_slot = (
                         slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
-                        and self.intent_is_desired(slot_mapping, tracker)
+                        and self.intent_is_desired(slot_mapping, tracker, domain)
                         and self.entity_is_desired(
                             slot_mapping,
                             slot,
@@ -359,7 +321,7 @@ class FormAction(LoopAction):
                     should_fill_trigger_slot = (
                         tracker.active_loop_name != self.name()
                         and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
-                        and self.intent_is_desired(slot_mapping, tracker)
+                        and self.intent_is_desired(slot_mapping, tracker, domain)
                     )
                     if should_fill_entity_slot:
                         value = self.get_entity_value(
@@ -419,7 +381,7 @@ class FormAction(LoopAction):
         for requested_slot_mapping in requested_slot_mappings:
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
 
-            if self.intent_is_desired(requested_slot_mapping, tracker):
+            if self.intent_is_desired(requested_slot_mapping, tracker, domain):
                 mapping_type = requested_slot_mapping["type"]
 
                 if mapping_type == str(SlotMapping.FROM_ENTITY):
