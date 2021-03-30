@@ -20,6 +20,7 @@ from rasa.shared.constants import (
     DEFAULT_RESULTS_PATH,
     DOCS_URL_MIGRATION_GUIDE,
 )
+from rasa.shared.nlu.constants import INTENT_REPORT_FILE_NAME
 import rasa.shared.data
 from rasa.shared.core.constants import (
     POLICY_NAME_FALLBACK,
@@ -287,7 +288,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     )
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(args.paraphrases)
 
-    default_report_file_path = os.path.join(DEFAULT_RESULTS_PATH, "intent_report.json")
+    default_report_file_path = os.path.join(DEFAULT_RESULTS_PATH, INTENT_REPORT_FILE_NAME)
     report_file = rasa.cli.utils.get_validated_path(
         args.nlu_classification_report, "", default_report_file_path
     )

@@ -14,6 +14,8 @@ VOCABULARY = "vocabulary"
 INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
 
+INTENT_REPORT_FILE_NAME = "intent_report.json"
+
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 FEATURE_TYPE_SENTENCE = "sentence"

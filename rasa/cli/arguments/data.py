@@ -13,6 +13,8 @@ from rasa.shared.constants import (
     DEFAULT_RANDOM_SEED
 )
 
+from rasa.shared.nlu.constants import INTENT_REPORT_FILE_NAME
+
 
 def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
     parser.add_argument(
@@ -97,7 +99,7 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
 
     parser.add_argument(
         "--nlu-classification-report",
-        default="intent_report.json",
+        default=INTENT_REPORT_FILE_NAME,
         type=str,
         help="File containing your NLU classification report.",
     )

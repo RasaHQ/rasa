@@ -24,6 +24,7 @@ from rasa.nlu.test import (
 )
 from rasa.shared.nlu.constants import (
     INTENT,
+    INTENT_REPORT_FILE_NAME,
     METADATA,
     METADATA_EXAMPLE,
     TEXT,
@@ -507,7 +508,7 @@ def _create_summary_report(
 
     # Store report to file
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory, "intent_report.json"),
+        os.path.join(output_directory, INTENT_REPORT_FILE_NAME),
         intent_report_with_augmentation,
     )
 
