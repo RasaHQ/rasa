@@ -53,7 +53,9 @@ class MarkdownStoryReader(StoryReader):
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 
-    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(
+        self, filename: Union[Text, Path], skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
         try:
             with open(
