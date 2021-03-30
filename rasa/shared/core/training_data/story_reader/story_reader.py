@@ -55,7 +55,9 @@ class StoryReader:
         self._is_used_for_training = is_used_for_training
         self._is_parsing_conditions = False
 
-    def read_from_file(self, filename: Text, skip_validation: bool) -> List[StoryStep]:
+    def read_from_file(
+        self, filename: Text, skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Reads stories or rules from file.
 
         Args:
