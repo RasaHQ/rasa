@@ -1,8 +1,14 @@
+import json
 import logging
 import os
+import pickle
 import re
+import tempfile
+
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
+
+from ruamel.yaml import StringIO
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -812,20 +818,15 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return any(value is not None for value in attribute_vocabularies.values())
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this model into the passed directory.
+    def __hash__(self):
+        return hash(json.dumps(self._to_persist()))
 
-        Returns the metadata necessary to load the model again.
-        """
-
-        file_name = file_name + ".pkl"
-
+    def _to_persist(self):
+        vocab = None
         if self.vectorizers:
             # vectorizer instance was not None, some models could have been trained
             attribute_vocabularies = self._collect_vectorizer_vocabularies()
             if self._is_any_model_trained(attribute_vocabularies):
-                # Definitely need to persist some vocabularies
-                featurizer_file = os.path.join(model_dir, file_name)
 
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and
@@ -834,7 +835,26 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 else:
                     vocab = attribute_vocabularies
 
-                io_utils.json_pickle(featurizer_file, vocab)
+        return vocab
+
+    def serialize(self):
+        return pickle.dumps(self)
+
+    @classmethod
+    def deserialize(cls, serialized):
+        return pickle.loads(serialized)
+
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this model into the passed directory.
+
+        Returns the metadata necessary to load the model again.
+        """
+
+        file_name = file_name + ".pkl"
+        vocab = self._to_persist()
+        if vocab:
+            featurizer_file = os.path.join(model_dir, file_name)
+            io_utils.json_pickle(featurizer_file, vocab)
 
         return {"file": file_name}
 
@@ -904,7 +924,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
-        file_name = meta.pop("file") + '.pkl'
+        file_name = meta.pop("file") + ".pkl"
         featurizer_file = os.path.join(model_dir, file_name)
 
         if not os.path.exists(featurizer_file):

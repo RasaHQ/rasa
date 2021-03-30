@@ -1,5 +1,8 @@
 import copy
+import json
 import logging
+import pickle
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -978,6 +981,29 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.add_diagnostic_data(diet.unique_name, out.get(DIAGNOSTIC_DATA))
 
         return message
+
+    def serialize(self):
+        with tempfile.TemporaryDirectory() as dir:
+            filename = "some-file"
+            self.persist(filename, dir)
+
+            result = {}
+            for my_file in Path(dir).glob("*"):
+                result[str(my_file)] = my_file.read_bytes()
+
+        return pickle.dumps(result)
+
+    def __hash__(self):
+        return hash(self.serialize())
+
+    @classmethod
+    def deserialize(cls, serialized):
+        result = pickle.loads(serialized)
+        with tempfile.TemporaryDirectory() as dir:
+            for key, value in result.items():
+                Path(dir, key).write_bytes(value)
+
+            return cls.load({**cls.defaults, "file": "bla"}, dir)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.

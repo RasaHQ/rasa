@@ -1,5 +1,6 @@
 import logging
 import os
+import pickle
 from pathlib import Path
 import random
 from collections import Counter, OrderedDict
@@ -395,6 +396,13 @@ class TrainingData:
         no_responses_training_data.responses = {}
 
         return RasaYAMLWriter().dumps(no_responses_training_data)
+
+    def serialize(self):
+        return pickle.dumps(self)
+
+    @classmethod
+    def deserialize(cls, serialized):
+        return pickle.loads(serialized)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
         if rasa.shared.data.is_likely_json_file(filename):
