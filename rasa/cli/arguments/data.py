@@ -17,7 +17,8 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
     """Adds arguments for data conversion.
 
     Args:
-        parser: Argument parser
+        parser: Argument parser.
+        data_type: Type of the data (e.g. "Rasa").
     """
     parser.add_argument(
         "-f",
