@@ -15,7 +15,7 @@ from rasa.core.channels.channel import (
 
 
 class TwilioVoiceInput(InputChannel):
-    """Input channel for Twilio Voice"""
+    """Input channel for Twilio Voice."""
 
     SUPPORTED_VOICES = [
         "man",
@@ -93,18 +93,25 @@ class TwilioVoiceInput(InputChannel):
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
+        """Load custom configurations."""
         if not credentials:
             cls.raise_missing_credentials_exception()
 
         return cls(credentials.get("assistant_voice", "woman"),)
 
     def __init__(self, assistant_voice: Optional[Text],) -> None:
+        """Creates a connection to Twilio voice.
+
+        Args:
+            assistant_voice: name of the assistant voice to use.
+        """
         self.assistant_voice = assistant_voice
 
         if assistant_voice not in self.SUPPORTED_VOICES:
             self.raise_invalid_voice_exception()
 
     def raise_invalid_voice_exception(self) -> NoReturn:
+        """Raise an error if an invalid voice is provided."""
         raise RasaException(
             f"{self.assistant_voice} is an invalid as an assistant voice. Please refer to the documentation for a list "
             f"of valid voices you can use for your voice assistant."
@@ -113,6 +120,7 @@ class TwilioVoiceInput(InputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
+        """Define endpoints for Twilio voice channel."""
 
         twilio_voice_webhook = Blueprint("Twilio_voice_webhook", __name__)
 
@@ -191,12 +199,14 @@ class TwilioVoiceInput(InputChannel):
 
 
 class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
-    """Output channel that collects send messages in a list
+    """Output channel that collects send messages in a list.
 
-    (doesn't send them anywhere, just collects them)."""
+    (doesn't send them anywhere, just collects them).
+    """
 
     @classmethod
     def name(cls) -> Text:
+        """Name of the output channel."""
         return "twilio_voice"
 
     async def send_text_with_buttons(
@@ -206,6 +216,7 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         buttons: List[Dict[Text, Any]],
         **kwargs: Any,
     ) -> None:
+        """Convert buttons into a voice representation."""
         await self._persist_message(self._message(recipient_id, text=text))
 
         for b in buttons:
