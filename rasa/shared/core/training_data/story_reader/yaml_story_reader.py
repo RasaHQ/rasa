@@ -90,7 +90,8 @@ class YAMLStoryReader(StoryReader):
 
         Args:
             filename: Path to the story/rule file.
-            skip_validation: `True` if the file was already validated e.g. when it was stored in the database.
+            skip_validation: `True` if the file was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `filename`.
@@ -114,7 +115,8 @@ class YAMLStoryReader(StoryReader):
 
         Args:
             string: Unprocessed YAML file content.
-            skip_validation: `True` if the string was already validated e.g. when it was stored in the database.
+            skip_validation: `True` if the string was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `string`.
