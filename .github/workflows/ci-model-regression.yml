@@ -237,7 +237,7 @@ jobs:
         uses: actions/checkout@v2
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
         with:
-          repository: ${{ secrets.DATASET }}
+          repository: ${{ env.DATASET }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset_external'
           #ref: ${{ matrix.dataset_branch }}
