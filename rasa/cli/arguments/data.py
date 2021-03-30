@@ -8,10 +8,7 @@ from rasa.cli.arguments.default_arguments import (
     add_domain_param,
     add_config_param,
 )
-from rasa.shared.constants import (
-    DEFAULT_CONVERTED_DATA_PATH,
-    DEFAULT_RANDOM_SEED
-)
+from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH, DEFAULT_RANDOM_SEED
 
 from rasa.shared.nlu.constants import INTENT_REPORT_FILE_NAME
 

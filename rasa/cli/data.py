@@ -288,7 +288,9 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     )
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(args.paraphrases)
 
-    default_report_file_path = os.path.join(DEFAULT_RESULTS_PATH, INTENT_REPORT_FILE_NAME)
+    default_report_file_path = os.path.join(
+        DEFAULT_RESULTS_PATH, INTENT_REPORT_FILE_NAME
+    )
     report_file = rasa.cli.utils.get_validated_path(
         args.nlu_classification_report, "", default_report_file_path
     )
