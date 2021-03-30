@@ -40,9 +40,10 @@ async def test_activate():
     domain = f"""
 forms:
   {form_name}:
-    {slot_name}:
-    - type: from_entity
-      entity: number
+    required_slots:
+        {slot_name}:
+        - type: from_entity
+          entity: number
 responses:
     utter_ask_num_people:
     - text: "How many people?"
@@ -73,11 +74,12 @@ async def test_activate_with_prefilled_slot():
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_entity
-          entity: {slot_name}
-        {next_slot_to_request}:
-        - type: from_text
+        required_slots:
+            {slot_name}:
+            - type: from_entity
+              entity: {slot_name}
+            {next_slot_to_request}:
+            - type: from_text
     slots:
       {slot_name}:
         type: unfeaturized
@@ -123,13 +125,15 @@ nlu:
     - I don't want my shoes anymore
 forms:
   {form_1}:
-    {slot_a}:
-    - type: from_entity
-      entity: number
+    required_slots:
+        {slot_a}:
+        - type: from_entity
+          entity: number
   {form_2}:
-    {slot_a}:
-    - type: from_entity
-      entity: number
+    required_slots:
+        {slot_a}:
+        - type: from_entity
+          entity: number
 responses:
     utter_ask_{form_1}_{slot_a}:
     - text: {utter_ask_form_1}
@@ -249,9 +253,10 @@ async def test_activate_and_immediate_deactivate():
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_entity
-          entity: {slot_name}
+        required_slots:
+            {slot_name}:
+            - type: from_entity
+              entity: {slot_name}
     slots:
       {slot_name}:
         type: unfeaturized
@@ -286,8 +291,9 @@ async def test_set_slot_and_deactivate():
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
+        required_slots:
+            {slot_name}:
+            - type: from_text
     slots:
       {slot_name}:
         type: text
@@ -326,9 +332,10 @@ async def test_action_rejection():
     domain = f"""
     forms:
       {form_name}:
-        {slot_to_fill}:
-        - type: from_entity
-          entity: some_entity
+        required_slots:
+            {slot_to_fill}:
+            - type: from_entity
+              entity: some_entity
     slots:
       {slot_to_fill}:
         type: unfeaturized
@@ -464,11 +471,12 @@ async def test_validate_slots(
         type: any
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
-        num_tables:
-        - type: from_entity
-          entity: num_tables
+        required_slots:
+            {slot_name}:
+            - type: from_text
+            num_tables:
+            - type: from_entity
+              entity: num_tables
     actions:
     - validate_{form_name}
     """
@@ -503,14 +511,15 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
             type: any
         forms:
           {form_name}:
-            {slot_name_1}:
-            - type: from_intent
-              intent: some_intent
-              value: some_value
-            {slot_name_2}:
-            - type: from_intent
-              intent: some_intent
-              value: some_value
+            required_slots:
+                {slot_name_1}:
+                - type: from_intent
+                  intent: some_intent
+                  value: some_value
+                {slot_name_2}:
+                - type: from_intent
+                  intent: some_intent
+                  value: some_value
         actions:
         - validate_{form_name}
         """
@@ -580,9 +589,10 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
         type: any
     forms:
       {form_name}:
-        num_tables:
-        - type: from_entity
-          entity: num_tables
+        required_slots:
+            num_tables:
+            - type: from_entity
+              entity: num_tables
     actions:
     - validate_{form_name}
     """
@@ -621,8 +631,9 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
         type: unfeaturized
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
+        required_slots:
+            {slot_name}:
+            - type: from_text
     actions:
     - validate_{form_name}
     """
@@ -668,8 +679,9 @@ def test_name_of_utterance(utterance_name: Text):
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
+        required_slots:
+            {slot_name}:
+            - type: from_text
     responses:
         {utterance_name}:
         - text: "How many people?"
@@ -753,7 +765,9 @@ def test_extract_requested_slot_when_mapping_applies(
     entity_name = "some_slot"
     form = FormAction(form_name, None)
 
-    domain = Domain.from_dict({"forms": {form_name: {entity_name: [slot_mapping]}}})
+    domain = Domain.from_dict(
+        {"forms": {form_name: {"required_slots": {entity_name: [slot_mapping]}}}}
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -790,7 +804,9 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
     entity_name = "some_slot"
     form = FormAction(form_name, None)
 
-    domain = Domain.from_dict({"forms": {form_name: {entity_name: [slot_mapping]}}})
+    domain = Domain.from_dict(
+        {"forms": {form_name: {"required_slots": {entity_name: [slot_mapping]}}}}
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -836,14 +852,16 @@ async def test_trigger_slot_mapping_applies(
         {
             "forms": {
                 form_name: {
-                    entity_name: [
-                        {
-                            "type": "from_entity",
-                            "entity": entity_name,
-                            "intent": "some_intent",
-                        }
-                    ],
-                    slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    "required_slots": {
+                        entity_name: [
+                            {
+                                "type": "from_entity",
+                                "entity": entity_name,
+                                "intent": "some_intent",
+                            }
+                        ],
+                        slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    }
                 }
             }
         }
@@ -883,14 +901,16 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
         {
             "forms": {
                 form_name: {
-                    entity_name: [
-                        {
-                            "type": "from_entity",
-                            "entity": entity_name,
-                            "intent": "some_intent",
-                        }
-                    ],
-                    slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    "required_slots": {
+                        entity_name: [
+                            {
+                                "type": "from_entity",
+                                "entity": entity_name,
+                                "intent": "some_intent",
+                            }
+                        ],
+                        slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    }
                 }
             }
         }
@@ -1045,7 +1065,9 @@ def test_extract_requested_slot_from_entity(
         intent=mapping_intent,
         not_intent=mapping_not_intent,
     )
-    domain = Domain.from_dict({"forms": {form_name: {"some_slot": [mapping]}}})
+    domain = Domain.from_dict(
+        {"forms": {form_name: {"required_slots": {"some_slot": [mapping]}}}}
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -1231,8 +1253,10 @@ def test_extract_other_slots_with_entity(
         {
             "forms": {
                 form_name: {
-                    "some_other_slot": some_other_slot_mapping,
-                    "some_slot": some_slot_mapping,
+                    "required_slots": {
+                        "some_other_slot": some_other_slot_mapping,
+                        "some_slot": some_slot_mapping,
+                    }
                 }
             }
         }

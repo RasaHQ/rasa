@@ -89,7 +89,6 @@ actions:
 
 forms:
   restaurant_form:
-    global_not_intent: intent
     required_slots:
       cuisine:
       - type: from_entity
