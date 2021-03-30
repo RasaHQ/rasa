@@ -52,6 +52,21 @@ Your assistant will always make mistakes initially, but
 the process of training & evaluating on user data will set your model up to generalize
 much more effectively in real-world scenarios.
 
+### Data Augmentation
+
+Once you have obtained a first set of real user data, you can use data augmentation to
+generate more "realistic" data from that first set of real data. Data augmentation is
+different from static templates as it is able to introduce syntactic (e.g. word order)
+and semantic (e.g. word choice) variation in your training data and thereby help the
+model to generalise more effectively with only little amounts of real user data. It
+needs to be noted though, that data augmentation can also introduce noise and therefore
+requires a substantial amount of care and inspection before it is applied.
+
+However, it is important to note that data augmentation is not a replacement for real
+user data. It is intended as a way to rapidly bootstrap an NLU model in order for you to
+share your assistant with real users more quickly - and therefore enable you to collect
+conversations with real users more quickly.
+
 ### Share with Test Users Early
 
 In order to gather real data, you’re going to need real user messages. A bot developer
