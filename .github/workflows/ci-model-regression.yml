@@ -240,7 +240,8 @@ jobs:
           repository: ${{ secrets.DATASET }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset_external'
-          ref: ${{ matrix.dataset_branch }}
+          #ref: ${{ matrix.dataset_branch }}
+          ref: main
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
