@@ -4,7 +4,10 @@ from typing import Callable, Set, Text
 import pytest
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    DEFAULT_RANDOM_SEED,
+    LATEST_TRAINING_DATA_FORMAT_VERSION
+)
 from rasa.shared.nlu.training_data.message import Message
 import rasa.nlu.config
 import rasa.shared.nlu.training_data.loading
@@ -327,7 +330,7 @@ def test_augmenter_build_random_sampling_training_set():
         paraphrase_pool=paraphrase_pool,
         intents_to_augment=intents_to_augment,
         augmentation_factor=augmentation_factor,
-        random_seed=29306,
+        random_seed=DEFAULT_RANDOM_SEED,
     )
 
     num_examples = 0

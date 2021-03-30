@@ -8,7 +8,10 @@ from rasa.cli.arguments.default_arguments import (
     add_domain_param,
     add_config_param,
 )
-from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
+from rasa.shared.constants import (
+    DEFAULT_CONVERTED_DATA_PATH,
+    DEFAULT_RANDOM_SEED
+)
 
 
 def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
@@ -152,6 +155,6 @@ def set_augment_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--random-seed",
         type=int,
-        default=29306,
+        default=DEFAULT_RANDOM_SEED,
         help="Seed to generate a random sample of paraphrases.",
     )
