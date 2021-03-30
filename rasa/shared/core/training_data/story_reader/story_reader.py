@@ -56,6 +56,16 @@ class StoryReader:
         self._is_parsing_conditions = False
 
     def read_from_file(self, filename: Text, skip_validation: bool) -> List[StoryStep]:
+        """Reads stories or rules from file.
+
+        Args:
+            filename: Path to the story/rule file.
+            skip_validation: `True` if the file was already validated
+                e.g. when it was stored in the database.
+
+        Returns:
+            `StoryStep`s read from `filename`.
+        """
         raise NotImplementedError
 
     @staticmethod
