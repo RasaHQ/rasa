@@ -45,7 +45,7 @@ class Cache:
 
     def get(self, key: Text, inputs: List[Any]) -> Optional[Any]:
         cache_path = self._cache_path(key, inputs)
-        module_file = cache_path.with_suffix(".class")
+        module_file = cache_path.with_suffix(".module")
 
         if not module_file.exists():
             return None
