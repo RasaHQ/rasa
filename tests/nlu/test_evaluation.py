@@ -58,8 +58,10 @@ from rasa.nlu.test import (
     align_entity_predictions,
     determine_intersection,
     determine_token_labels,
+    is_entity_extractor_present,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
@@ -1219,3 +1221,12 @@ def test_replacing_fallback_intent():
         and prediction.confidence == expected_confidence
         for prediction in intent_evaluations
     )
+
+
+@pytest.mark.parametrize(
+    "components, expected_result",
+    [([CRFEntityExtractor()], True), ([WhitespaceTokenizer()], False)],
+)
+def test_is_entity_extractor_present(components, expected_result):
+    interpreter = Interpreter(components, context=None)
+    assert is_entity_extractor_present(interpreter) == expected_result
