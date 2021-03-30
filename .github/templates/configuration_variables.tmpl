@@ -8,9 +8,15 @@ which contain paths to file/directory.
  */ -}}
 {{- $mapping := (datasource "mapping") -}}
 {{- $dataset := (index $mapping.datasets (getenv "DATASET_NAME")) -}}
-{{- $config := (index $mapping.configurations (getenv "CONFIG_NAME")) -}}
+{{- $config := $mapping.configurations -}}
 
 export DATASET="{{ $dataset.path }}"
-export CONFIG="{{ $dataset.language }}/{{ $config }}"
 echo "::add-mask::{{ $dataset.path }}"
-echo "::add-mask::{{ $dataset.language }}/{{ $config }}"
+
+{{- if (has $config.nlu (getenv "CONFIG_NAME")) }}
+export CONFIG="{{ $dataset.language }}/nlu/{{ index $config.nlu (getenv "CONFIG_NAME") }}"
+echo "::add-mask::{{ $dataset.language }}/nlu/{{ index $config.nlu (getenv "CONFIG_NAME") }}"
+{{ else if (has $config.core (getenv "CONFIG_NAME")) }}
+export CONFIG="{{ $dataset.language }}/core/{{ index $config.core (getenv "CONFIG_NAME") }}"
+echo "::add-mask::{{ $dataset.language }}/core/{{ index $config.core (getenv "CONFIG_NAME") }}"
+{{ end -}}
