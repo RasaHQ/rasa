@@ -682,12 +682,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
-  # Flag to check whether to split intents
-  "intent_tokenization_flag": False
-  # Symbol on which intent should be split
-  "intent_split_symbol": "_"
-  # Regular expression to detect tokens
-  "token_pattern": None
   # Remote URL/Local directory of model files(Required)
   "model_url": None
   ```
