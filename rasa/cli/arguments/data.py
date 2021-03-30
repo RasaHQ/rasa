@@ -18,7 +18,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
 
         Args:
             parser: Argument parser
-        """
+    """
     parser.add_argument(
         "-f",
         "--format",
@@ -46,7 +46,7 @@ def set_split_arguments(parser: argparse.ArgumentParser):
 
         Args:
             parser: Argument parser
-        """
+    """
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
     parser.add_argument(
@@ -75,7 +75,7 @@ def set_validator_arguments(parser: argparse.ArgumentParser):
 
         Args:
             parser: Argument parser
-        """
+    """
     parser.add_argument(
         "--fail-on-warnings",
         default=False,
