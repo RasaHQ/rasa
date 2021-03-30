@@ -231,7 +231,11 @@ def run_nlu_test(args: argparse.Namespace) -> None:
 
 
 def test(args: argparse.Namespace):
-    """Run end-to-end tests."""
+    """Run end-to-end tests.
+
+    Args:
+        args: Command-line arguments.
+    """
     setattr(args, "e2e", True)
     run_core_test(args)
     run_nlu_test(args)

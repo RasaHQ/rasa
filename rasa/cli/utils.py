@@ -199,6 +199,12 @@ def payload_from_button_question(button_question: "Question") -> Text:
 
 
 def signal_handler(sig, frame) -> NoReturn:
+    """Signal Handler from Rasa X.
+
+    Args:
+        sig: The signal number.
+        frame: The interrupted stack frame.
+    """
     print("Goodbye 👋")
     sys.exit(0)
 
