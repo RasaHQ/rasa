@@ -252,10 +252,10 @@ def _create_augmented_training_data_max_vocab_expansion(
     for intent in intents_to_augment:
         for message in paraphrase_pool[intent]:
             tokenizer.process(message)
-            message_tokens = [
+            message_tokens = {
                 token.text.lower() for token in message.get(TOKENS_NAMES[TEXT])
-            ]
-            message.set(VOCABULARY, set(message_tokens))
+            }
+            message.set(VOCABULARY, message_tokens)
 
     # Extract intent-level vocabulary for all intents that should be augmented
     intent_vocab = collections.defaultdict(set)
