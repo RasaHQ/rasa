@@ -185,7 +185,7 @@ def _create_paraphrase_pool(
 
         for paraphrase, score in zip(paraphrases_for_example, paraphrase_scores):
             if (
-                paraphrase == ""
+                not paraphrase
                 or float(score) < min_paraphrase_sim_score
                 or float(score) > max_paraphrase_sim_score
             ):
