@@ -861,6 +861,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
+        return self
+
     # process helpers
     def _predict(
         self, message: Message
@@ -957,23 +959,25 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, diet, message: Message, **kwargs: Any) -> None:
         """Augments the message with intents, entities, and diagnostic data."""
-        out = self._predict(message)
+        out = diet._predict(message)
 
-        if self.component_config[INTENT_CLASSIFICATION]:
-            label, label_ranking = self._predict_label(out)
+        if diet.component_config[INTENT_CLASSIFICATION]:
+            label, label_ranking = diet._predict_label(out)
 
             message.set(INTENT, label, add_to_output=True)
             message.set("intent_ranking", label_ranking, add_to_output=True)
 
-        if self.component_config[ENTITY_RECOGNITION]:
-            entities = self._predict_entities(out, message)
+        if diet.component_config[ENTITY_RECOGNITION]:
+            entities = diet._predict_entities(out, message)
 
             message.set(ENTITIES, entities, add_to_output=True)
 
         if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
+            message.add_diagnostic_data(diet.unique_name, out.get(DIAGNOSTIC_DATA))
+
+        return message
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.

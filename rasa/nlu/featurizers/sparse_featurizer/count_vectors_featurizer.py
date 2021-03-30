@@ -212,10 +212,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
         finetune_mode: bool = False,
+        for_training: bool = False,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
         super().__init__(component_config)
 
+        self.for_training = for_training
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
 
@@ -768,6 +770,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         if isinstance(messages, TrainingData):
             messages = messages.training_examples
 
+        if not isinstance(messages, List):
+            messages = [messages]
+
         examples = []
         for message in messages:
             for attribute in featurize_model._attributes:
@@ -786,7 +791,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 )
             examples.append(message)
 
-        return TrainingData(training_examples=examples)
+        if self.for_training:
+            return TrainingData(training_examples=examples)
+        else:
+            return examples[0]
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""
@@ -896,7 +904,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
-        file_name = meta.get("file")
+        file_name = meta.pop("file") + '.pkl'
         featurizer_file = os.path.join(model_dir, file_name)
 
         if not os.path.exists(featurizer_file):
@@ -904,6 +912,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         vocabulary = io_utils.json_unpickle(featurizer_file)
 
+        if not meta:
+            meta = cls.defaults
         share_vocabulary = meta["use_shared_vocab"]
 
         if share_vocabulary:
