@@ -62,8 +62,7 @@ class StoryReader:
 
         Args:
             filename: Path to the story/rule file.
-            skip_validation: `True` if the file was already validated
-                e.g. when it was stored in the database.
+            skip_validation: `True` if file validation should be skipped.
 
         Returns:
             `StoryStep`s read from `filename`.
