@@ -35,7 +35,7 @@ class Cache:
             return
 
         cache_path = self._cache_path(key, inputs)
-        module = f"{inspect.getmodule(output)}.{output.__class__.__name__}"
+        module = f"{inspect.getmodule(output).__name__}.{output.__class__.__name__}"
 
         module_file = cache_path.with_suffix(".module")
         module_file.write_text(module)
@@ -80,6 +80,7 @@ class RasaComponent:
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         cached = self._cache.get(self._cache_key, args)
         if cached:
+
             return cached
 
         result = self._run(self._component, *args, **kwargs)

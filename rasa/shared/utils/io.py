@@ -217,6 +217,8 @@ def deep_container_fingerprint(
         return get_dictionary_fingerprint(obj, encoding)
     if isinstance(obj, list):
         return get_list_fingerprint(obj, encoding)
+    if hasattr(obj, "fingerprint"):
+        return obj.fingerprint()
     else:
         return get_text_hash(str(obj), encoding)
 

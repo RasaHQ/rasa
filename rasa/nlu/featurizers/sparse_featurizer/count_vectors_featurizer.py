@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -718,6 +719,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         Take parameters from config and
         construct a new count vectorizer using the sklearn framework.
         """
+        training_data = TrainingData().merge(training_data)
 
         spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
@@ -774,7 +776,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             return
 
         if isinstance(messages, TrainingData):
-            messages = messages.training_examples
+            messages = copy.deepcopy(messages.training_examples)
 
         if not isinstance(messages, List):
             messages = [messages]

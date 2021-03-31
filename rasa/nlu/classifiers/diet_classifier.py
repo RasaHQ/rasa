@@ -989,7 +989,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             result = {}
             for my_file in Path(dir).glob("*"):
-                result[str(my_file)] = my_file.read_bytes()
+                result[my_file.name] = my_file.read_bytes()
 
         return pickle.dumps(result)
 
@@ -1003,7 +1003,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             for key, value in result.items():
                 Path(dir, key).write_bytes(value)
 
-            return cls.load({**cls.defaults, "file": "bla"}, dir)
+            return cls.load({**cls.defaults, "file": "some-file"}, dir)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.

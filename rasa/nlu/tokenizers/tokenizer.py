@@ -1,9 +1,11 @@
+import hashlib
 import logging
 import re
 
 from typing import Text, List, Optional, Dict, Any
 
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
@@ -60,6 +62,9 @@ class Token:
             other.lemma,
         )
 
+    def fingerprint(self) -> Text:
+        return f"{self.text}{self.start}"
+
 
 class Tokenizer(Component):
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -92,6 +97,8 @@ class Tokenizer(Component):
     ) -> None:
         """Tokenize all training data."""
 
+        training_data = TrainingData().merge(training_data)
+        # training_data = RasaYAMLReader().read("examples/moodbot/data/nlu.yml")
         for example in training_data.training_examples:
             for attribute in MESSAGE_ATTRIBUTES:
                 if (
