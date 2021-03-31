@@ -58,6 +58,9 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_
 def test_get_latest_model():
     path = Path.cwd()
     Path("model_one.tar.gz").touch()
+
+    # create second model later to be registered as distinct in Windows
+    time.sleep(0.1)
     Path("model_two.tar.gz").touch()
 
     path_of_latest = os.path.join(Path.cwd(), "model_two.tar.gz")
