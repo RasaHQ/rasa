@@ -220,12 +220,12 @@ jobs:
             echo "DATASET_DIR=dataset_external" >> $GITHUB_ENV
           else
             echo "DATASET_DIR=dataset" >> $GITHUB_ENV
-          fi
 
-          test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
-            && echo "::set-output name=is_dataset_exists::false" && exit 0)
-          test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
-            && echo "::set-output name=is_config_exists::false" && exit 0)
+            test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
+              && echo "::set-output name=is_dataset_exists::false" && exit 0)
+            test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
+              && echo "::set-output name=is_config_exists::false" && exit 0)
+          fi
 
           echo "DATASET=${DATASET}" >> $GITHUB_ENV
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
