@@ -362,6 +362,13 @@ async def rasa_server(stack_agent: Agent) -> Sanic:
 
 
 @pytest.fixture
+async def rasa_non_trained_server(empty_agent: Agent) -> Sanic:
+    app = server.create_app(agent=empty_agent)
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
 async def rasa_core_server(core_agent: Agent) -> Sanic:
     app = server.create_app(agent=core_agent)
     channel.register([RestInput()], app, "/webhooks/")
@@ -378,6 +385,13 @@ async def rasa_nlu_server(nlu_agent: Agent) -> Sanic:
 @pytest.fixture
 async def rasa_server_secured(default_agent: Agent) -> Sanic:
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+async def rasa_non_trained_server_secured(empty_agent: Agent) -> Sanic:
+    app = server.create_app(agent=empty_agent, auth_token="rasa", jwt_secret="core")
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
