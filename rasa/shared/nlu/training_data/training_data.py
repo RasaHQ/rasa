@@ -255,7 +255,7 @@ class TrainingData:
     @lazy_property
     def number_of_examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
-        intents = [ex.get(INTENT) for ex in self.training_examples]
+        intents = [ex.get(INTENT) for ex in self.nlu_examples]
         return dict(Counter(intents))
 
     @lazy_property

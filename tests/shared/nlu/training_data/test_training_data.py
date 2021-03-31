@@ -295,6 +295,34 @@ def test_train_test_split(filepaths: List[Text]):
         )
 
 
+def test_number_of_examples_per_intent():
+    message_action = Message(data={"action_name": "utter_greet"})
+    message_intent_one = Message(
+        data={"text": "I would like the newsletter", "intent": "subscribe"}
+    )
+    message_intent_two = Message(data={"intent": "subscribe"})
+    message_intent_three = Message(
+        data={"text": "What is the weather like today?", "intent": "ask_weather"}
+    )
+    message_intent_four = Message(
+        data={"text": "Will it rain today?", "intent": "ask_weather"}
+    )
+    message_intent_five = Message(data={"intent": "ask_weather"})
+
+    training_examples = [
+        message_action,
+        message_intent_one,
+        message_intent_two,
+        message_intent_three,
+        message_intent_four,
+        message_intent_five,
+    ]
+    training_data = TrainingData(training_examples=training_examples)
+
+    assert training_data.number_of_examples_per_intent["subscribe"] == 1
+    assert training_data.number_of_examples_per_intent["ask_weather"] == 2
+
+
 @pytest.mark.parametrize(
     "filepaths",
     [
