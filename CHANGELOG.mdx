@@ -16,6 +16,21 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.4.3] - 2021-03-26
+                       
+
+### Bugfixes
+- [#8114](https://github.com/rasahq/rasa/issues/8114): Fixes bug where stories could not be retrieved if entities had no start or end.
+
+
+## [2.4.2] - 2021-03-25
+                       
+
+### Bugfixes
+- [#7835](https://github.com/rasahq/rasa/issues/7835): Fix `UnicodeException` in `is_key_in_yaml`.
+- [#8258](https://github.com/rasahq/rasa/issues/8258): Fixed the bug that events from previous conversation sessions would be re-saved in the [`SQLTrackerStore`](tracker-stores.mdx#sqltrackerstore) or [`MongoTrackerStore`](tracker-stores.mdx#mongotrackerstore) when `retrieve_events_from_previous_conversation_sessions` was true.
+
+
 ## [2.4.1] - 2021-03-23
                        
 
