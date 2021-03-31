@@ -55,13 +55,13 @@ from rasa.train import train_core, train_core_async
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 
-def test_get_latest_model(trained_rasa_model: str):
-    path_of_latest = os.path.join(os.path.dirname(trained_rasa_model), "latest.tar.gz")
-    shutil.copy(trained_rasa_model, path_of_latest)
+def test_get_latest_model():
+    path = Path.cwd()
+    Path("model_one.tar.gz").touch()
+    Path("model_two.tar.gz").touch()
 
-    model_directory = os.path.dirname(path_of_latest)
-
-    assert get_latest_model(model_directory) == path_of_latest
+    path_of_latest = os.path.join(Path.cwd(), "model_two.tar.gz")
+    assert get_latest_model(str(path)) == path_of_latest
 
 
 def test_get_model_from_directory(trained_rasa_model: str):
