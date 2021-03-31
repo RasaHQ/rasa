@@ -112,6 +112,14 @@ async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     return agent
 
 
+@pytest.fixture()
+async def empty_agent() -> Agent:
+    agent = Agent(
+        "data/test_domains/default_with_slots.yml",
+    )
+    return agent
+
+
 def reset_conversation_state(agent: Agent) -> Agent:
     # Clean tracker store after each test so tests don't affect each other
     agent.tracker_store = InMemoryTrackerStore(agent.domain)
