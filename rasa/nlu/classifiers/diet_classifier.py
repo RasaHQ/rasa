@@ -996,6 +996,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def __hash__(self):
         return hash(self.serialize())
 
+    def fingerprint(self) -> Text:
+        return str(self.model.get_weights())
+
     @classmethod
     def deserialize(cls, serialized):
         result = pickle.loads(serialized)

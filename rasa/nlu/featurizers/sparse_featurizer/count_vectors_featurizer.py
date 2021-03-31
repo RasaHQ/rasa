@@ -823,6 +823,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def __hash__(self):
         return hash(json.dumps(self._to_persist()))
 
+    def fingerprint(self) -> Text:
+        return json.dumps(self._to_persist())
+
     def _to_persist(self):
         vocab = None
         if self.vectorizers:
