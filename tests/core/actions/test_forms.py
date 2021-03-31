@@ -1,4 +1,4 @@
-from typing import Dict, Text, List, Optional, Any
+from typing import Dict, Text, List, Optional, Any, Union
 from unittest.mock import Mock
 
 import pytest
@@ -1358,3 +1358,73 @@ async def test_ask_for_slot_if_not_utter_ask(
 
     assert not events
     action_from_name.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "global_not_intent, slot_not_intent",
+    [
+        (
+            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+        ),
+        (
+            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["inform"],
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+        ),
+    ],
+)
+async def test_global_not_intent(
+    global_not_intent: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]]
+):
+    form_name = "some_form"
+    entity_name = "some_slot"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {
+            "forms": {
+                form_name: {
+                    "global_not_intent": global_not_intent,
+                    "required_slots": {
+                        entity_name: [
+                            {
+                                "type": "from_entity",
+                                "entity": entity_name,
+                                "not_intent": slot_not_intent,
+                            }
+                        ],
+                    },
+                }
+            }
+        }
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "hello",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    assert slot_values == {}

@@ -89,6 +89,7 @@ actions:
 
 forms:
   restaurant_form:
+    global_not_intent: [chitchat, inform]
     required_slots:
       cuisine:
       - type: from_entity

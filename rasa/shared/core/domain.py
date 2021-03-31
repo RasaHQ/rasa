@@ -1854,13 +1854,6 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                 )
             else:
                 slots = form_data
-        else:
-            raise InvalidDomain(
-                f"The data for form '{form_name}' were specified "
-                f"as '{type(form_data)}'. They need to be specified "
-                f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
-                f"for more information."
-            )
 
         if "required_slots" not in form_data:
             rasa.shared.utils.io.raise_deprecation_warning(
