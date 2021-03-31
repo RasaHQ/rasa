@@ -32,12 +32,16 @@ core
 {{- if eq $value_config "all" -}}
 {{- range $config_type := (coll.Keys (datasource "mapping").configurations) -}}
 {{- range $config_name, $config_file := (index (datasource "mapping").configurations $config_type ) -}}
-{{- if and (has (index (datasource "mapping").datasets $value_dataset) "domain") (eq "core" $config_type) -}}
-{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" $config_type | toJSON) $inc) -}}
-{{- else if eq "nlu" $config_type -}}
 {{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" $config_type | toJSON) $inc) -}}
 {{- end -}}
 {{- end -}}
+{{- else if eq $value_config "all-core" -}}
+{{- range $config_name, $config_file := (datasource "mapping").configurations.core -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" "core" | toJSON) $inc) -}}
+{{- end -}}
+{{- else if eq $value_config "all-nlu" -}}
+{{- range $config_name, $config_file := (datasource "mapping").configurations.nlu -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" "nlu" | toJSON) $inc) -}}
 {{- end -}}
 {{- else -}}
 {{- if has (datasource "mapping").configurations.nlu $value_config -}}
