@@ -114,9 +114,7 @@ async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
 
 @pytest.fixture()
 async def empty_agent() -> Agent:
-    agent = Agent(
-        "data/test_domains/default_with_slots.yml",
-    )
+    agent = Agent("data/test_domains/default_with_slots.yml",)
     return agent
 
 

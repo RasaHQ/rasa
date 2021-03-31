@@ -126,7 +126,9 @@ def rasa_secured_app(rasa_server_secured: Sanic) -> SanicASGITestClient:
 
 
 @pytest.fixture
-def rasa_non_trained_secured_app(rasa_non_trained_server_secured: Sanic) -> SanicASGITestClient:
+def rasa_non_trained_secured_app(
+    rasa_non_trained_server_secured: Sanic,
+) -> SanicASGITestClient:
     return rasa_non_trained_server_secured.asgi_client
 
 
@@ -431,7 +433,9 @@ async def test_parse_without_nlu_model(rasa_app_core: SanicASGITestClient):
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-async def test_parse_on_invalid_emulation_mode(rasa_non_trained_app: SanicASGITestClient):
+async def test_parse_on_invalid_emulation_mode(
+    rasa_non_trained_app: SanicASGITestClient,
+):
     _, response = await rasa_non_trained_app.post(
         "/model/parse?emulation_mode=ANYTHING", json={"text": "hello"}
     )
@@ -982,7 +986,9 @@ async def test_cross_validation_with_md(
 
 
 async def test_cross_validation_with_callback_success(
-    rasa_non_trained_app: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+    rasa_non_trained_app: SanicASGITestClient,
+    default_nlu_data: Text,
+    monkeypatch: MonkeyPatch,
 ):
     nlu_data = Path(default_nlu_data).read_text()
     config = Path(DEFAULT_STACK_CONFIG).read_text()
@@ -1036,7 +1042,9 @@ async def test_cross_validation_with_callback_success(
 
 
 async def test_cross_validation_with_callback_error(
-    rasa_non_trained_app: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+    rasa_non_trained_app: SanicASGITestClient,
+    default_nlu_data: Text,
+    monkeypatch: MonkeyPatch,
 ):
     nlu_data = Path(default_nlu_data).read_text()
     config = Path(DEFAULT_STACK_CONFIG).read_text()
@@ -1069,7 +1077,9 @@ async def test_cross_validation_with_callback_error(
 
 
 async def test_callback_unexpected_error(
-    rasa_non_trained_app: SanicASGITestClient, default_nlu_data: Text, monkeypatch: MonkeyPatch
+    rasa_non_trained_app: SanicASGITestClient,
+    default_nlu_data: Text,
+    monkeypatch: MonkeyPatch,
 ):
     nlu_data = Path(default_nlu_data).read_text()
     config = Path(DEFAULT_STACK_CONFIG).read_text()
@@ -1497,13 +1507,17 @@ async def test_load_model_from_model_server(
             assert old_fingerprint != response.json()["fingerprint"]
 
 
-async def test_load_model_invalid_request_body(rasa_non_trained_app: SanicASGITestClient):
+async def test_load_model_invalid_request_body(
+    rasa_non_trained_app: SanicASGITestClient,
+):
     _, response = await rasa_non_trained_app.put("/model")
 
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_load_model_invalid_configuration(rasa_non_trained_app: SanicASGITestClient):
+async def test_load_model_invalid_configuration(
+    rasa_non_trained_app: SanicASGITestClient,
+):
     data = {"model_file": "some-random-path"}
     _, response = await rasa_non_trained_app.put("/model", json=data)
 
