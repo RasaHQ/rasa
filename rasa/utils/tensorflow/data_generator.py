@@ -138,21 +138,38 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
         if array_of_dense.number_of_dimensions == 4:
             return RasaDataGenerator._pad_4d_dense_data(array_of_dense)
 
-        if array_of_dense[0].ndim < 2:
+        elif array_of_dense[0].ndim < 2:
             # data doesn't contain a sequence
             return array_of_dense.astype(np.float32)
+        #
+        # data_size = len(array_of_dense)
+        # max_seq_len = max([x.shape[0] for x in array_of_dense])
+        #
+        # data_padded = np.zeros(
+        #     [data_size, max_seq_len, array_of_dense[0].shape[-1]],
+        #     dtype=array_of_dense[0].dtype,
+        # )
+        # for i in range(data_size):
+        #     data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
+        #
+        # return data_padded.astype(np.float32)
+        else:
+            try:
+                samples = []
+                dense_dimension = array_of_dense[0].shape[-1]
+                max_seq_len = -1
+                for sample in array_of_dense:
+                    samples.append(sample.tolist())
+                    max_seq_len = max(max_seq_len, sample.shape[0])
 
-        data_size = len(array_of_dense)
-        max_seq_len = max([x.shape[0] for x in array_of_dense])
-
-        data_padded = np.zeros(
-            [data_size, max_seq_len, array_of_dense[0].shape[-1]],
-            dtype=array_of_dense[0].dtype,
-        )
-        for i in range(data_size):
-            data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
-
-        return data_padded.astype(np.float32)
+                shape = (len(samples), max_seq_len, dense_dimension)
+                return tf.ragged.constant(samples, dtype=tf.float32, inner_shape=shape)
+            except Exception as e:
+                raise e
+                for sample in array_of_dense:
+                    print(sample.shape)
+                print(array_of_dense)
+                exit(0)
 
     @staticmethod
     def _pad_4d_dense_data(array_of_array_of_dense: FeatureArray) -> np.ndarray:

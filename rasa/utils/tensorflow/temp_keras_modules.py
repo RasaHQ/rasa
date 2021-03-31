@@ -20,7 +20,7 @@ from tensorflow.python.keras.engine import data_adapter
 from tensorflow.python.keras.utils import version_utils
 from tensorflow.python.eager import context
 from tensorflow.python.keras.engine.data_adapter import DataHandler
-
+from tensorflow.python.distribute import distribution_strategy_context as ds_context
 
 # noinspection PyMethodOverriding
 class TmpKerasModel(tf.keras.models.Model):
@@ -241,8 +241,139 @@ class TmpKerasModel(tf.keras.models.Model):
             return self.history
 
 
+# class RasaSequenceDataAdapter(data_adapter.KerasSequenceAdapter):
+#     """Adapter that handles python generators and iterators."""
+#
+#     def __init__(self,
+#                x,
+#                y=None,
+#                sample_weights=None,
+#                workers=1,
+#                use_multiprocessing=False,
+#                max_queue_size=10,
+#                model=None,
+#                **kwargs):
+#         # Generators should never shuffle as exhausting the generator in order to
+#         # shuffle the batches is inefficient.
+#         kwargs.pop("shuffle", None)
+#
+#         if not data_adapter.is_none_or_empty(y):
+#           raise ValueError("`y` argument is not supported when using "
+#                            "python generator as input.")
+#         if not data_adapter.is_none_or_empty(sample_weights):
+#           raise ValueError("`sample_weight` argument is not supported when using "
+#                            "python generator as input.")
+#
+#         super(GeneratorDataAdapter, self).__init__(x, y, **kwargs)
+#
+#         # Since we have to know the dtype of the python generator when we build the
+#         # dataset, we have to look at a batch to infer the structure.
+#         peek, x = self._peek_and_restore(x)
+#         peek = self._standardize_batch(peek)
+#         peek = _process_tensorlike(peek)
+#
+#         # Need to build the Model on concrete input shapes.
+#         if model is not None and not model.built:
+#           concrete_x, _, _ = unpack_x_y_sample_weight(peek)
+#           model.distribute_strategy.run(
+#               lambda x: model(x, training=False), args=(concrete_x,))
+#
+#         # print(type(peek), len(peek), len(peek[0]))
+#         self._first_batch_size = int(nest.flatten(peek)[0].shape[0])
+#
+#         def _get_dynamic_shape(t):
+#           shape = t.shape
+#           # Unknown number of dimensions, `as_list` cannot be called.
+#           if shape.rank is None:
+#             return shape
+#           return tensor_shape.TensorShape([None for _ in shape.as_list()])
+#
+#         output_shapes = nest.map_structure(_get_dynamic_shape, peek)
+#         output_types = nest.map_structure(lambda t: t.dtype, peek)
+#
+#         # Note that dataset API takes a callable that creates a generator object,
+#         # rather than generator itself, which is why we define a function here.
+#         generator_fn = self._handle_multiprocessing(x, workers, use_multiprocessing,
+#                                                     max_queue_size)
+#
+#         def wrapped_generator():
+#           for data in generator_fn():
+#             yield self._standardize_batch(data)
+#
+#         dataset = dataset_ops.DatasetV2.from_generator(
+#             wrapped_generator, output_types, output_shapes=output_shapes)
+#
+#         if workers == 1 and not use_multiprocessing:
+#           dataset = dataset.prefetch(1)
+#
+#         self._dataset = dataset
+
+
 class CustomDataHandler(DataHandler):
     """Handles iterating over epoch-level `tf.data.Iterator` objects."""
+
+    # def __init__(self,
+    #              x,
+    #              y=None,
+    #              sample_weight=None,
+    #              batch_size=None,
+    #              steps_per_epoch=None,
+    #              initial_epoch=0,
+    #              epochs=1,
+    #              shuffle=False,
+    #              class_weight=None,
+    #              max_queue_size=10,
+    #              workers=1,
+    #              use_multiprocessing=False,
+    #              model=None,
+    #              steps_per_execution=None):
+    #
+    #     self._initial_epoch = initial_epoch
+    #     self._epochs = epochs
+    #     self._insufficient_data = False
+    #     self._model = model
+    #
+    #     # `steps_per_execution_value` is the cached initial value.
+    #     # `steps_per_execution` is mutable and may be changed by the DataAdapter
+    #     # to handle partial executions.
+    #     if steps_per_execution is None:
+    #         self._steps_per_execution = 1
+    #         self._steps_per_execution_value = 1
+    #     else:
+    #         self._steps_per_execution = steps_per_execution
+    #         self._steps_per_execution_value = steps_per_execution.numpy().item()
+    #
+    #     adapter_cls = select_data_adapter(x, y)
+    #     print(adapter_cls)
+    #     self._adapter = adapter_cls(
+    #         x,
+    #         y,
+    #         batch_size=batch_size,
+    #         steps=steps_per_epoch,
+    #         epochs=epochs - initial_epoch,
+    #         sample_weights=sample_weight,
+    #         shuffle=shuffle,
+    #         max_queue_size=max_queue_size,
+    #         workers=workers,
+    #         use_multiprocessing=use_multiprocessing,
+    #         distribution_strategy=ds_context.get_strategy(),
+    #         model=model)
+    #
+    #     strategy = ds_context.get_strategy()
+    #     dataset = self._adapter.get_dataset()
+    #     if class_weight:
+    #         dataset = dataset.map(data_adapter._make_class_weight_map_fn(class_weight))
+    #     self._inferred_steps = self._infer_steps(steps_per_epoch, dataset)
+    #
+    #     if not data_adapter._is_distributed_dataset(dataset):
+    #         dataset = strategy.experimental_distribute_dataset(dataset)
+    #     self._dataset = dataset
+    #
+    #     self._current_step = 0
+    #     self._step_increment = self._steps_per_execution_value - 1
+    #     self._insufficient_data = False
+    #
+    #     self._validate_data_handler()
 
     def enumerate_epochs(self) -> Generator[Tuple[int, Iterator], None, None]:
         """Yields `(epoch, tf.data.Iterator)`."""

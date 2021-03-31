@@ -408,16 +408,18 @@ class RasaModel(TmpKerasModel):
         idx: int,
         number_of_dimensions: int,
     ):
-        if isinstance(batch[idx], tf.Tensor):
+        shape: List[Optional[int]] = [None] * (number_of_dimensions - 1)
+        shape.append(feature_dimension)
+
+        if isinstance(batch[idx], tf.Tensor) or isinstance(batch[idx], tf.RaggedTensor):
             # explicitly substitute last dimension in shape with known
             # static value
-            if number_of_dimensions > 1 and (
-                batch[idx].shape is None or batch[idx].shape[-1] is None
-            ):
-                shape: List[Optional[int]] = [None] * (number_of_dimensions - 1)
-                shape.append(feature_dimension)
-                batch[idx].set_shape(shape)
-
+            # if number_of_dimensions > 1 and (
+            #     batch[idx].shape is None or batch[idx].shape[-1] is None
+            # ):
+            #     batch[idx].set_shape(shape)
+            #
+            # return batch[idx], idx + 1
             return batch[idx], idx + 1
 
         # convert to Tensor
