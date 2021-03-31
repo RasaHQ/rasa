@@ -6,12 +6,14 @@ import os
 SUMMARY_FILE = os.environ["SUMMARY_FILE"]
 CONFIG = os.environ["CONFIG"]
 DATASET = os.environ["DATASET_NAME"]
+TYPE = os.environ["TYPE"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 task_mapping = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
     "DIETClassifier_report.json": "entity_prediction",
     "response_selection_report.json": "response_selection",
+    "story_report.json": "story_prediction",
 }
 
 
@@ -27,6 +29,7 @@ def generate_json(file, task, data):
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
+        "type": TYPE,
         **data[DATASET][CONFIG],
     }
 
@@ -39,7 +42,7 @@ def read_results(file):
     with open(file) as json_file:
         data = json.load(json_file)
 
-        keys = ["accuracy", "weighted avg", "macro avg", "micro avg"]
+        keys = ["accuracy", "weighted avg", "macro avg", "micro avg", "conversation_accuracy"]
         result = {key: data[key] for key in keys if key in data}
 
     return result

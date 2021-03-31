@@ -12,6 +12,7 @@ task_mapping = {
     "CRFEntityExtractor_report.json": "Entity Prediction",
     "DIETClassifier_report.json": "Entity Prediction",
     "response_selection_report.json": "Response Selection",
+    "story_report.json": "Story Prediction",
 }
 
 
@@ -38,6 +39,7 @@ def send_to_segment(context):
             "github_run_id": os.environ["GITHUB_RUN_ID"],
             "github_sha": os.environ["GITHUB_SHA"],
             "github_event": os.environ["GITHUB_EVENT_NAME"],
+            "type": os.environ["TYPE"],
             **context,
         },
     )
@@ -47,7 +49,7 @@ def read_results(file):
     with open(file) as json_file:
         data = json.load(json_file)
 
-        keys = ["accuracy", "weighted avg", "macro avg", "micro avg"]
+        keys = ["accuracy", "weighted avg", "macro avg", "micro avg", "conversation_accuracy"]
         result = {key: data[key] for key in keys if key in data}
 
     return result
