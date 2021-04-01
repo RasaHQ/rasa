@@ -1174,37 +1174,6 @@ class TED(TransformerRasaModel):
         labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
         return labels_embed
 
-    def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
-        # labels cannot have all features "fake"
-        all_labels_encoded = {}
-        for key in self.tf_label_data.keys():
-            if key != LABEL_KEY:
-                attribute_features, _, _ = self._encode_real_features_per_attribute(
-                    self.tf_label_data, key
-                )
-                all_labels_encoded[key] = attribute_features
-
-        if (
-            all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
-            and all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
-        ):
-            x = all_labels_encoded.pop(
-                f"{LABEL_KEY}_{ACTION_TEXT}"
-            ) + all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-        elif all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
-        else:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-
-        # additional sequence axis is artifact of our RasaModelData creation
-        # TODO check whether this should be solved in data creation
-        x = tf.squeeze(x, axis=1)
-
-        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
-
-        return all_label_ids, all_labels_embed
-
     def _embed_dialogue(
         self,
         dialogue_in: tf.Tensor,
@@ -1842,7 +1811,25 @@ class TED(TransformerRasaModel):
     # ---PREDICTION---
     def prepare_for_predict(self) -> None:
         """Prepares the model for prediction."""
-        _, self.all_labels_embed = self._create_all_labels_embed()
+
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
+        if self.config[LABEL_BATCH_SIZE] == -1:
+            self.all_labels_embed = self._compute_embedding_for_label_ids(all_label_ids)
+        else:
+            # Compute in batches
+            all_label_embeds = []
+            index = 0
+            while index < len(all_label_ids):
+                batch_label_ids = all_label_ids[
+                    index : index + self.config[LABEL_BATCH_SIZE]
+                ]
+                batch_label_embeds = self._compute_embedding_for_label_ids(
+                    batch_label_ids
+                )
+                all_label_embeds.append(batch_label_embeds)
+                index += self.config[LABEL_BATCH_SIZE]
+
+            self.all_labels_embed = tf.concat(all_label_embeds, axis=0)
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
