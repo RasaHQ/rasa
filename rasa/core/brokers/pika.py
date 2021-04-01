@@ -224,6 +224,7 @@ class PikaEventBroker(EventBroker):
         queue_name: Text, channel: aio_pika.RobustChannel, exchange: aio_pika.Exchange
     ) -> None:
         queue = await channel.declare_queue(queue_name, durable=True)
+
         await queue.bind(exchange, "")
 
     async def close(self) -> None:
