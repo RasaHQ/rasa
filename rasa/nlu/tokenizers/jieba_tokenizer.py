@@ -76,12 +76,12 @@ class JiebaTokenizer(Tokenizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional[Component] = None,
         **kwargs: Any,
     ) -> "JiebaTokenizer":
-
+        """Loads trained component (see parent class for full docstring)."""
         relative_dictionary_path = meta.get("dictionary_path")
 
         # get real path of dictionary path, if any

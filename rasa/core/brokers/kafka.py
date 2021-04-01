@@ -61,7 +61,7 @@ class KafkaEventBroker(EventBroker):
         """
         import kafka
 
-        self.producer = None
+        self.producer: Optional[kafka.KafkaConsumer] = None
         self.url = url
         self.topic = topic
         self.client_id = client_id
@@ -74,9 +74,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_check_hostname = ssl_check_hostname
 
         if partition_key:
-            self.partition_key = bytes(partition_key, encoding="utf-8")
-
-        self.producer: Optional[kafka.KafkaConsumer] = None
+            self.partition_key = bytes(partition_key, encoding=DEFAULT_ENCODING)
 
         logging.getLogger("kafka").setLevel(loglevel)
 
