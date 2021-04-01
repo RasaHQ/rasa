@@ -18,6 +18,7 @@ BATCH_STRATEGY = "batch_strategy"
 EPOCHS = "epochs"
 RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"
+LABEL_BATCH_SIZE = "label_batch_size"
 
 DENSE_DIMENSION = "dense_dimension"
 CONCAT_DIMENSION = "concat_dimension"

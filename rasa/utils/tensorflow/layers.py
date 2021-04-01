@@ -637,14 +637,21 @@ class DotProductLoss(tf.keras.layers.Layer):
         """
 
         pos_labels = tf.expand_dims(target_labels, axis=-2)
-        neg_labels = self._sample_idxs(tf.shape(target_labels)[0], labels, idxs)
+        neg_labels = tf.cast(
+            self._sample_idxs(tf.shape(target_labels)[0], labels, idxs),
+            dtype=tf.float32,
+        )
 
         return tf.cast(
             tf.reduce_all(tf.equal(neg_labels, pos_labels), axis=-1), pos_labels.dtype
         )
 
     def _get_negs(
-        self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor
+        self,
+        embeds: tf.Tensor,
+        labels: tf.Tensor,
+        target_labels: tf.Tensor,
+        use_label_ids_for_sampling=False,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Get negative examples from given tensor."""
 
@@ -652,13 +659,18 @@ class DotProductLoss(tf.keras.layers.Layer):
         labels_flat = self._make_flat(labels)
         target_labels_flat = self._make_flat(target_labels)
 
-        total_candidates = tf.shape(embeds_flat)[0]
+        # Todo: We can just use labels_flat here I think
+        total_candidates = (
+            tf.shape(labels_flat)[0]
+            if use_label_ids_for_sampling
+            else tf.shape(embeds_flat)[0]
+        )
         target_size = tf.shape(target_labels_flat)[0]
 
         neg_ids = self._random_indices(target_size, total_candidates)
+        bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
 
         neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
-        bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
 
         # check if inputs have sequence dimension
         if len(target_labels.shape) == 3:
@@ -689,7 +701,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_inputs_embed, inputs_bad_negs = self._get_negs(inputs_embed, labels, labels)
         # sample negative labels
         neg_labels_embed, labels_bad_negs = self._get_negs(
-            all_labels_embed, all_labels, labels
+            all_labels_embed, all_labels, labels, use_label_ids_for_sampling=True
         )
         return (
             pos_inputs_embed,
