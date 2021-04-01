@@ -543,7 +543,7 @@ class RasaDataChunkFileGenerator(RasaDataGenerator):
         # If we want to build a batch with the examples 5 to 9 we take chunk 1, the
         # batch will only contain examples 5 and 6. E.g. we make sure to load only one
         # file at a time.
-        chunk_index = -1
+        chunk_index = None
         for idx in range(self._number_of_chunks):
             if batch_index < self._max_batch_number_per_chunk[idx]:
                 chunk_index = idx

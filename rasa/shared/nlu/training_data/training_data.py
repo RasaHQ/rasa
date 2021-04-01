@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import numpy as np
 import random
 import copy
 
@@ -12,7 +11,6 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable, Union
 
 import operator
 import tensorflow as tf
-import scipy.sparse
 
 import rasa.shared.data
 import rasa.shared.utils.io
@@ -37,12 +35,11 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.tokens import Token
+from rasa.shared.utils import chunk_utils
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
-
-TF_RECORD_KEY_SEPARATOR = "#"
 
 
 class NLUPipelineTrainingData:
@@ -444,10 +441,6 @@ class NLUPipelineTrainingData:
                 training_examples = training_examples - set(examples)
 
         return test, train
-
-    def has_e2e_examples(self):
-        """Checks if there are any training examples from e2e stories."""
-        return any(message.is_e2e_message() for message in self.training_examples)
 
 
 class TrainingDataFull(NLUPipelineTrainingData):
@@ -978,87 +971,13 @@ class TrainingDataChunk(NLUPipelineTrainingData):
         ACTION_NAME,
     ]
 
-    @staticmethod
-    def _bytes_feature(array: Union[np.ndarray, Text]) -> tf.train.Feature:
-        if isinstance(array, np.ndarray):
-            value = tf.io.serialize_tensor(array.astype(np.float64))
-        else:
-            value = bytes(array, encoding=DEFAULT_ENCODING)
-
-        if isinstance(value, type(tf.constant(0))):
-            value = value.numpy()
-
-        return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
-
-    @staticmethod
-    def _int_feature(array: Union[Tuple[int], np.ndarray]) -> tf.train.Feature:
-        return tf.train.Feature(int64_list=tf.train.Int64List(value=array))
-
-    @staticmethod
-    def _construct_tf_record_key(
-        attribute: Text, feature_type: Text, origin: Text, is_dense: bool
-    ) -> Text:
-        prefix = (
-            f"{attribute}{TF_RECORD_KEY_SEPARATOR}{feature_type}"
-            f"{TF_RECORD_KEY_SEPARATOR}{origin}{TF_RECORD_KEY_SEPARATOR}"
-        )
-
-        if is_dense:
-            return f"{prefix}dense"
-        return f"{prefix}sparse"
-
-    @staticmethod
-    def _deconstruct_tf_record_key(key: Text) -> Tuple[Text, Text, Text, bool, Text]:
-        parts = key.split(TF_RECORD_KEY_SEPARATOR)
-
-        attribute = parts[0]
-        feature_type = parts[1]
-        origin = parts[2]
-        dense = parts[3] == "dense"
-        extra_info = parts[4] if not dense else ""
-
-        return attribute, feature_type, origin, dense, extra_info
-
     def _to_tf_features(
         self, features: List[Features], message_data: Dict[Text, Any]
     ) -> Dict[Text, tf.train.Feature]:
         # encode the actual message features
-        tf_features = self._encode_message_features(features)
+        tf_features = chunk_utils.encode_features(features)
         # as well as some message data as those are used, for example, as labels
         tf_features.update(self._encode_message_data(message_data))
-        return tf_features
-
-    def _encode_message_features(
-        self, features: List[Features]
-    ) -> Dict[Text, tf.train.Feature]:
-        tf_features = {}
-
-        for feature in features:
-            key = self._construct_tf_record_key(
-                feature.attribute, feature.type, feature.origin, feature.is_dense()
-            )
-
-            if feature.is_dense():
-                tf_features[key] = self._bytes_feature(feature.features)
-            else:
-                data = feature.features.data.astype(np.int64)
-                shape = feature.features.shape
-                row = feature.features.row
-                column = feature.features.col
-
-                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}data"] = self._int_feature(
-                    data
-                )
-                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}shape"] = self._int_feature(
-                    shape
-                )
-                tf_features[f"{key}{TF_RECORD_KEY_SEPARATOR}row"] = self._int_feature(
-                    row
-                )
-                tf_features[
-                    f"{key}{TF_RECORD_KEY_SEPARATOR}column"
-                ] = self._int_feature(column)
-
         return tf_features
 
     def _encode_message_data(
@@ -1077,17 +996,17 @@ class TrainingDataChunk(NLUPipelineTrainingData):
                 for idx, entity in enumerate(value):
                     entity_str = json.dumps(entity)
                     tf_message_data[
-                        f"{data_key}{TF_RECORD_KEY_SEPARATOR}{idx}"
-                    ] = self._bytes_feature(entity_str)
+                        f"{data_key}{chunk_utils.TF_RECORD_KEY_SEPARATOR}{idx}"
+                    ] = chunk_utils.bytes_feature(entity_str)
             elif data_key == TOKENS_NAMES[TEXT]:
                 # tokens are a list of token objects
                 for idx, token in enumerate(value):
                     tf_message_data[
-                        f"{data_key}{TF_RECORD_KEY_SEPARATOR}{idx}"
-                    ] = self._bytes_feature(json.dumps(token.__dict__))
+                        f"{data_key}{chunk_utils.TF_RECORD_KEY_SEPARATOR}{idx}"
+                    ] = chunk_utils.bytes_feature(json.dumps(token.__dict__))
             else:
                 # all other values are simple strings
-                tf_message_data[data_key] = self._bytes_feature(value)
+                tf_message_data[data_key] = chunk_utils.bytes_feature(value)
 
         return tf_message_data
 
@@ -1151,14 +1070,18 @@ class TrainingDataChunk(NLUPipelineTrainingData):
                     else:
                         message_data[_data_key] = _data_value
                 else:
-                    _features = cls._decode_features(example, key)
+                    _features = chunk_utils.decode_features(example, key)
                     if _features:
                         features.append(_features)
 
             # make sure the token and entity order is correct
             message_data[TOKENS_NAMES[TEXT]].sort(key=lambda t: t.start)
-            message_data[ENTITIES].sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
+            if message_data[TOKENS_NAMES[TEXT]]:
+                message_data[ENTITIES].sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
 
+            # delete empty data
+            if not message_data[TOKENS_NAMES[TEXT]]:
+                del message_data[TOKENS_NAMES[TEXT]]
             if not message_data[ENTITIES]:
                 del message_data[ENTITIES]
 
@@ -1180,66 +1103,6 @@ class TrainingDataChunk(NLUPipelineTrainingData):
             return TOKENS_NAMES[TEXT], token
 
         return key, text
-
-    @classmethod
-    def _decode_features(
-        cls, example: tf.train.Example, key: Text
-    ) -> Optional[Features]:
-        (
-            attribute,
-            feature_type,
-            origin,
-            is_dense,
-            extra_info,
-        ) = TrainingDataChunk._deconstruct_tf_record_key(key)
-
-        if is_dense:
-            return cls._convert_to_numpy(example, attribute, feature_type, origin)
-        elif not is_dense and extra_info == "data":
-            return cls._convert_to_sparse_matrix(
-                example, attribute, feature_type, origin
-            )
-
-    @classmethod
-    def _convert_to_numpy(
-        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
-    ) -> Features:
-        key = TrainingDataChunk._construct_tf_record_key(
-            attribute, feature_type, origin, True
-        )
-
-        bytes_list = example.features.feature[key].bytes_list.value[0]
-        data = tf.io.parse_tensor(bytes_list, out_type=tf.float64).numpy()
-
-        return Features(data, feature_type, attribute, origin)
-
-    @classmethod
-    def _convert_to_sparse_matrix(
-        cls, example: Any, attribute: Text, feature_type: Text, origin: Text
-    ) -> Features:
-        prefix = TrainingDataChunk._construct_tf_record_key(
-            attribute, feature_type, origin, False
-        )
-
-        shape = example.features.feature[
-            f"{prefix}{TF_RECORD_KEY_SEPARATOR}shape"
-        ].int64_list.value
-        data = example.features.feature[
-            f"{prefix}{TF_RECORD_KEY_SEPARATOR}data"
-        ].int64_list.value
-        row = example.features.feature[
-            f"{prefix}{TF_RECORD_KEY_SEPARATOR}row"
-        ].int64_list.value
-        column = example.features.feature[
-            f"{prefix}{TF_RECORD_KEY_SEPARATOR}column"
-        ].int64_list.value
-
-        return Features(
-            scipy.sparse.coo_matrix((data, (row, column)), shape),
-            feature_type,
-            attribute,
-            origin,
-        )
 
     def filter_training_examples(
         self, condition: Callable[[Message], bool]

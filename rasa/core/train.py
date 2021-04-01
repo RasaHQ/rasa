@@ -131,7 +131,7 @@ async def train_in_chunks(
         },
     )
     training_data = await agent.load_data(training_resource, **data_load_args)
-    agent.train_in_chunks(training_data, **additional_arguments)
+    agent.train_in_chunks(training_data, number_of_chunks, **additional_arguments)
     agent.persist(output_path)
 
     return agent

@@ -39,10 +39,9 @@ from rasa.shared.core.constants import (
     SLOTS,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    RULE_ONLY_SLOTS,
-    RULE_ONLY_LOOPS,
 )
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.utils.tensorflow.data_generator import DataChunkFile
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -206,6 +205,34 @@ class Policy:
 
         return state_features, label_ids, entity_tags
 
+    def _featurize_for_training_in_chunks(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        number_of_chunks: int,
+        bilou_tagging: bool = False,
+    ) -> List[DataChunkFile]:
+        """Transform training trackers into a vector representation.
+
+        The trackers, consisting of multiple turns, will be transformed
+        into a float vector which can be used by a ML model.
+
+        Args:
+            training_trackers:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+            number_of_chunks: number of chunks to use
+            bilou_tagging: indicates whether BILOU tagging should be used or not
+
+        Returns:
+            data chunk files
+        """
+        return self.featurizer.featurize_trackers_in_chunks(
+            training_trackers, domain, interpreter, number_of_chunks, bilou_tagging
+        )
+
     def _prediction_states(
         self,
         tracker: DialogueStateTracker,
@@ -284,19 +311,22 @@ class Policy:
 
     def train_in_chunks(
         self,
-        training_trackers_chunk: List[TrackerWithCachedStates],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        number_of_chunks: int,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers chunk.
 
         Args:
-            training_trackers_chunk: the list of training trackers
+            training_trackers: the list of training trackers
             domain: the domain
             interpreter: Interpreter which can be used by the polices for featurization.
+            number_of_chunks: number of chunks to use
         """
-        raise NotImplementedError("Policy must have the capacity to train in chunks.")
+        # not all policies need to support training in chunks
+        self.train(training_trackers, domain, interpreter, **kwargs)
 
     def predict_action_probabilities(
         self,

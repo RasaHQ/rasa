@@ -228,6 +228,7 @@ class PolicyEnsemble:
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        number_of_chunks: int,
         **kwargs: Any,
     ) -> None:
         if training_trackers:
@@ -238,7 +239,11 @@ class PolicyEnsemble:
                     policy, training_trackers
                 )
                 policy.train_in_chunks(
-                    trackers_to_train, domain, interpreter=interpreter, **kwargs
+                    trackers_to_train,
+                    domain,
+                    interpreter=interpreter,
+                    number_of_chunks=number_of_chunks,
+                    **kwargs,
                 )
 
             self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(

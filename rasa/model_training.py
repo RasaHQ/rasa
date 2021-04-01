@@ -590,7 +590,9 @@ async def _train_core_with_validated_data(
                 await rasa.core.train.train_in_chunks(
                     domain_file=domain,
                     training_resource=file_importer,
-                    output_path=Path(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
+                    output_path=os.path.join(
+                        _train_path, DEFAULT_CORE_SUBDIRECTORY_NAME
+                    ),
                     policy_config=config,
                     additional_arguments=additional_arguments,
                     interpreter=interpreter,

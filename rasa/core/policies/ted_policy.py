@@ -110,6 +110,11 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
+from rasa.utils.tensorflow.data_generator import (
+    DataChunkFile,
+    RasaDataChunkFileGenerator,
+    RasaDataGenerator,
+)
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -343,6 +348,7 @@ class TEDPolicy(Policy):
         self.only_e2e = TEXT in self.fake_features and INTENT not in self.fake_features
 
         self._label_data: Optional[RasaModelData] = None
+        self._encoded_all_labels = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
         self.tmp_checkpoint_dir = None
@@ -494,6 +500,55 @@ class TEDPolicy(Policy):
 
         return model_data
 
+    def _prepare_partial_training(
+        self, domain: Domain, interpreter: NaturalLanguageInterpreter,
+    ) -> None:
+        self._label_data, self._encoded_all_labels = self._create_label_data(
+            domain, interpreter
+        )
+        if self.config[ENTITY_RECOGNITION]:
+            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
+
+    def _train_model(
+        self,
+        model_data: RasaModelData,
+        train_data_generator: RasaDataGenerator,
+        validation_data_generator: Optional[RasaDataGenerator] = None,
+    ) -> None:
+        if not self.finetune_mode:
+            # keep one example for persisting and loading
+            self.data_example = model_data.first_data_example()
+            # This means the model wasn't loaded from a
+            # previously trained model and hence needs
+            # to be instantiated.
+            self.model = TED(
+                model_data.get_signature(),
+                self.config,
+                isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
+                self._label_data,
+                self._entity_tag_specs,
+            )
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+            )
+
+        callbacks = rasa.utils.train_utils.create_common_callbacks(
+            self.config[EPOCHS],
+            self.config[TENSORBOARD_LOG_DIR],
+            self.config[TENSORBOARD_LOG_LEVEL],
+            self.tmp_checkpoint_dir,
+        )
+
+        self.model.fit(
+            train_data_generator,
+            epochs=self.config[EPOCHS],
+            validation_data=validation_data_generator,
+            validation_freq=self.config[EVAL_NUM_EPOCHS],
+            callbacks=callbacks,
+            verbose=False,
+            shuffle=False,  # we use custom shuffle inside data generator
+        )
+
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -519,13 +574,11 @@ class TEDPolicy(Policy):
             **kwargs,
         )
 
-        self._label_data, encoded_all_labels = self._create_label_data(
-            domain, interpreter
-        )
+        self._prepare_partial_training(domain, interpreter)
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
-            tracker_state_features, label_ids, entity_tags, encoded_all_labels
+            tracker_state_features, label_ids, entity_tags, self._encoded_all_labels
         )
         if model_data.is_empty():
             logger.error(
@@ -533,27 +586,6 @@ class TEDPolicy(Policy):
                 f"Skipping training of the policy."
             )
             return
-
-        if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
-
-        # keep one example for persisting and loading
-        self.data_example = model_data.first_data_example()
-
-        if not self.finetune_mode:
-            # This means the model wasn't loaded from a
-            # previously trained model and hence needs
-            # to be instantiated.
-            self.model = TED(
-                model_data.get_signature(),
-                self.config,
-                isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
-                self._label_data,
-                self._entity_tag_specs,
-            )
-            self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
-            )
 
         (
             data_generator,
@@ -566,22 +598,73 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[RANDOM_SEED],
         )
-        callbacks = rasa.utils.train_utils.create_common_callbacks(
-            self.config[EPOCHS],
-            self.config[TENSORBOARD_LOG_DIR],
-            self.config[TENSORBOARD_LOG_LEVEL],
-            self.tmp_checkpoint_dir,
+        self._train_model(model_data, data_generator, validation_data_generator)
+
+    def _load_data_func(self, file_path: Path) -> RasaModelData:
+        tracker_state_features, label_ids, entity_tags = self.featurizer.load_chunk(
+            file_path
+        )
+        return self._create_model_data(
+            tracker_state_features, label_ids, entity_tags, self._encoded_all_labels
         )
 
-        self.model.fit(
-            data_generator,
-            epochs=self.config[EPOCHS],
-            validation_data=validation_data_generator,
-            validation_freq=self.config[EVAL_NUM_EPOCHS],
-            callbacks=callbacks,
-            verbose=False,
-            shuffle=False,  # we use custom shuffle inside data generator
+    def train_in_chunks(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        number_of_chunks: int,
+        **kwargs: Any,
+    ) -> None:
+        """Trains the policy on given training trackers chunk.
+
+        Args:
+            training_trackers: the list of training trackers
+            domain: the domain
+            interpreter: Interpreter which can be used by the polices for featurization.
+            number_of_chunks: number of chunks to use
+        """
+        if not training_trackers:
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
+
+        # dealing with training data
+        data_chunk_files = self._featurize_for_training_in_chunks(
+            training_trackers,
+            domain,
+            interpreter,
+            number_of_chunks,
+            bilou_tagging=self.config[BILOU_FLAG],
         )
+
+        self._prepare_partial_training(domain, interpreter)
+
+        # load one chunk so that we can instantiate the model
+        (
+            sample_tracker_state_features,
+            sample_label_ids,
+            sample_entity_tags,
+        ) = self.featurizer.load_chunk(data_chunk_files[0].file_path)
+        sample_model_data = self._create_model_data(
+            sample_tracker_state_features,
+            sample_label_ids,
+            sample_entity_tags,
+            self._encoded_all_labels,
+        )
+
+        data_generator = RasaDataChunkFileGenerator(
+            data_chunk_files,
+            self._load_data_func,
+            batch_size=self.config[BATCH_SIZES],
+            epochs=self.config[EPOCHS],
+            shuffle=True,
+            random_seed=self.config[RANDOM_SEED],
+        )
+
+        self._train_model(sample_model_data, data_generator)
 
     def _featurize_tracker_for_e2e(
         self,

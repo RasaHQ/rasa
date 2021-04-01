@@ -308,7 +308,11 @@ class Trainer:
                 data_chunk_dir, f"{i}_chunk.tfrecord"
             )
             data_chunk_files.append(
-                DataChunkFile(Path(data_chunk_file), len(data_chunk.training_examples))
+                # TODO number of examples needs to be refactored, each chunk should know
+                #  number of relevant examples for each algorithm, e.g.
+                #  number of nlu examples for diet (also intent and or entity examples)
+                #  or number of response examples for response selector
+                DataChunkFile(Path(data_chunk_file), len(data_chunk.nlu_examples))
             )
             logger.info(
                 f"Chunk {i} contains {len(data_chunk.training_examples)} examples and was persisted to '{data_chunk_file}'."
@@ -333,7 +337,7 @@ class Trainer:
                 )
                 logger.info(f"Finished training of component {component.name}.")
 
-        Metadata(metadata, dir_name).persist(dir_name)
+        Metadata(metadata).persist(dir_name)
 
         logger.info(
             "Successfully saved model into '{}'.".format(os.path.abspath(dir_name))

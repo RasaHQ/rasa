@@ -2,10 +2,13 @@ from pathlib import Path
 
 import jsonpickle
 import logging
+import os
 
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any
 import numpy as np
+from collections import Counter, defaultdict
+import tensorflow as tf
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
@@ -16,10 +19,14 @@ from rasa.shared.core.trackers import (
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES, ENTITY_TAGS
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
+from rasa.utils.tensorflow.data_generator import DataChunkFile
+from rasa.utils.common import TempDirectoryPath
+from rasa.shared.utils import chunk_utils
+from rasa.utils.tensorflow.constants import LABEL
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -237,6 +244,269 @@ class TrackerFeaturizer:
         entity_tags = self._create_entity_tags(
             trackers_as_entities, interpreter, bilou_tagging
         )
+
+        return tracker_state_features, label_ids, entity_tags
+
+    def featurize_trackers_in_chunks(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        number_of_chunks: int,
+        bilou_tagging: bool = False,
+    ) -> List[DataChunkFile]:
+        """Featurize the training trackers.
+
+        Args:
+            trackers: list of training trackers
+            domain: the domain
+            interpreter: the interpreter
+            number_of_chunks: number of chunks to use
+            bilou_tagging: indicates whether BILOU tagging should be used or not
+
+        Returns:
+            - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+              turns in all training trackers
+            - the label ids (e.g. action ids) for every dialogue turn in all training
+              trackers
+            - A dictionary of entity type (ENTITY_TAGS) to a list of features
+              containing entity tag ids for text user inputs otherwise empty dict
+              for all dialogue turns in all training trackers
+        """
+        import tempfile
+
+        if self.state_featurizer is None:
+            raise ValueError(
+                f"Instance variable 'state_featurizer' is not set. "
+                f"During initialization set 'state_featurizer' to an instance of "
+                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"to get numerical features for trackers."
+            )
+
+        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
+
+        (
+            trackers_as_states,
+            trackers_as_actions,
+            trackers_as_entities,
+        ) = self.training_states_actions_and_entities(trackers, domain)
+
+        labels = np.array(
+            [" ".join(tracker_actions) for tracker_actions in trackers_as_actions]
+        )
+
+        trackers_as_states = np.array(trackers_as_states)
+        trackers_as_actions = np.array(trackers_as_actions)
+        trackers_as_entities = np.array(trackers_as_entities)
+
+        data = []
+        for label, num_label_examples in Counter(labels).items():
+            ids = np.random.permutation(num_label_examples)
+            trackers_as_states_for_label = trackers_as_states[labels == label][
+                ids
+            ].tolist()
+            trackers_as_actions_for_label = trackers_as_actions[labels == label][
+                ids
+            ].tolist()
+            trackers_as_entities_for_label = trackers_as_entities[labels == label][
+                ids
+            ].tolist()
+            examples_per_chunk = num_label_examples // number_of_chunks + int(
+                num_label_examples % number_of_chunks > 0
+            )
+            data.append(
+                (
+                    trackers_as_states_for_label,
+                    trackers_as_actions_for_label,
+                    trackers_as_entities_for_label,
+                    examples_per_chunk,
+                )
+            )
+
+        data_chunk_dir = TempDirectoryPath(tempfile.mkdtemp())
+        data_chunk_files = []
+        for chunk_index in range(number_of_chunks):
+            trackers_as_states_chunk = []
+            trackers_as_actions_chunk = []
+            trackers_as_entities_chunk = []
+            for (
+                trackers_as_states_for_label,
+                trackers_as_actions_for_label,
+                trackers_as_entities_for_label,
+                examples_per_chunk,
+            ) in data:
+                start = chunk_index * examples_per_chunk
+                end = start + examples_per_chunk
+                trackers_as_states_chunk.extend(trackers_as_states_for_label[start:end])
+                trackers_as_actions_chunk.extend(
+                    trackers_as_actions_for_label[start:end]
+                )
+                trackers_as_entities_chunk.extend(
+                    trackers_as_entities_for_label[start:end]
+                )
+
+            tracker_state_features_chunk = self._featurize_states(
+                trackers_as_states_chunk, interpreter
+            )
+            label_ids_chunk = self._convert_labels_to_ids(
+                trackers_as_actions_chunk, domain
+            )
+            entity_tags_chunk = self._create_entity_tags(
+                trackers_as_entities_chunk, interpreter, bilou_tagging
+            )
+            data_chunk_file = self._persist_chunk(
+                data_chunk_dir,
+                f"{chunk_index}_chunk.tfrecord",
+                tracker_state_features_chunk,
+                label_ids_chunk,
+                entity_tags_chunk,
+            )
+
+            data_chunk_files.append(
+                DataChunkFile(Path(data_chunk_file), len(tracker_state_features_chunk))
+            )
+
+        return data_chunk_files
+
+    @staticmethod
+    def _to_tf_features(
+        turn_state_features: List[Dict[Text, List["Features"]]],
+        turn_label_ids: np.array,
+        turn_entity_tags: List[Dict[Text, List["Features"]]],
+    ) -> Dict[Text, tf.train.Feature]:
+        tf_features = {}
+        for i, state_features in enumerate(turn_state_features):
+            for features in state_features.values():
+                tf_features.update(chunk_utils.encode_features(features, f"{i}"))
+
+        tf_features[LABEL] = chunk_utils.int_feature(turn_label_ids)
+
+        for i, entity_tag in enumerate(turn_entity_tags):
+            for features in entity_tag.values():
+                tf_features.update(chunk_utils.encode_features(features, f"{i}"))
+
+        return tf_features
+
+    def _persist_chunk(
+        self,
+        dir_path: Text,
+        filename: Text,
+        tracker_state_features_chunk: List[List[Dict[Text, List["Features"]]]],
+        label_ids_chunk: np.ndarray,
+        entity_tags_chunk: List[List[Dict[Text, List["Features"]]]],
+    ) -> Text:
+        """Stores the chunk as TFRecord file to disk.
+
+        Args:
+            dir_path: The path to the directory.
+            filename: The filename.
+
+        Returns:
+            The absolute file path the chunk is stored to.
+        """
+        file_path = os.path.join(dir_path, filename)
+
+        # Write to TFRecord
+        with tf.io.TFRecordWriter(file_path) as tfwriter:
+            for turn_state_features, turn_label_ids, turn_entity_tags in zip(
+                tracker_state_features_chunk, label_ids_chunk, entity_tags_chunk
+            ):
+                example = tf.train.Example(
+                    features=tf.train.Features(
+                        feature=self._to_tf_features(
+                            turn_state_features, turn_label_ids, turn_entity_tags
+                        )
+                    )
+                )
+                # Append each example into tfrecord
+                tfwriter.write(example.SerializeToString())
+
+        return file_path
+
+    def load_chunk(
+        self, file_path: Union[Text, Path]
+    ) -> Tuple[
+        List[List[Dict[Text, List["Features"]]]],
+        np.ndarray,
+        List[List[Dict[Text, List["Features"]]]],
+    ]:
+        """Loads a training data chunk from the given TFRecord file path.
+
+        Args:
+            file_path: The file path that contains the training data chunk to load.
+
+        Returns:
+            The loaded training data chunk.
+        """
+        if isinstance(file_path, Path):
+            file_path = str(file_path.absolute())
+
+        raw_dataset = tf.data.TFRecordDataset([file_path])
+        tracker_state_features = []
+        label_ids = []
+        entity_tags = []
+        for raw_record in raw_dataset:
+            example = tf.train.Example()
+            example.ParseFromString(raw_record.numpy())
+
+            turn_state_features = {}
+            turn_entity_tags = {}
+
+            for key in example.features.feature.keys():
+                if key == LABEL:
+                    label_ids.append(example.features.feature[key].int64_list.value)
+                    continue
+
+                parts = key.split(chunk_utils.TF_RECORD_KEY_SEPARATOR)
+                index = parts[0]
+                attribute = parts[1]
+
+                _features = chunk_utils.decode_features(
+                    example,
+                    key[len(f"{index}{chunk_utils.TF_RECORD_KEY_SEPARATOR}") :],
+                    index,
+                )
+                index = int(index)
+                if _features and attribute != ENTITY_TAGS:
+                    if not turn_state_features.get(index):
+                        turn_state_features[index] = defaultdict(list)
+
+                    turn_state_features[index][attribute].append(_features)
+
+                elif _features and attribute == ENTITY_TAGS:
+                    if not turn_entity_tags.get(index):
+                        turn_entity_tags[index] = defaultdict(list)
+
+                    turn_entity_tags[index][attribute].append(_features)
+
+            # the first turn might be empty, which was not persisted
+            if not turn_state_features.get(0):
+                turn_state_features[0] = {}
+            # non user turns might be empty, which were not persisted
+            dial_len = (
+                1
+                if isinstance(self, MaxHistoryTrackerFeaturizer)
+                else len(turn_state_features)
+            )
+            for i in range(dial_len):
+                if not turn_entity_tags.get(i):
+                    turn_entity_tags[i] = {}
+
+            # make sure that dialogue order is intact
+            turn_state_features = [
+                dict(turn_state_features[index])
+                for index in sorted(turn_state_features.keys())
+            ]
+            turn_entity_tags = [
+                dict(turn_entity_tags[index])
+                for index in sorted(turn_entity_tags.keys())
+            ]
+
+            tracker_state_features.append(turn_state_features)
+            entity_tags.append(turn_entity_tags)
+
+        label_ids = np.array(label_ids)
 
         return tracker_state_features, label_ids, entity_tags
 

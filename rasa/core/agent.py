@@ -778,12 +778,16 @@ class Agent:
         self._set_fingerprint()
 
     def train_in_chunks(
-        self, training_trackers: List[TrackerWithCachedStates], **kwargs: Any
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        number_of_chunks: int,
+        **kwargs: Any,
     ) -> None:
         """Train the policies / policy ensemble using dialogue data from file.
 
         Args:
             training_trackers: trackers to train on
+            number_of_chunks: number of chunks to use
             **kwargs: additional arguments passed to the underlying ML
                            trainer (e.g. keras parameters)
         """
@@ -793,7 +797,11 @@ class Agent:
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train_in_chunks(
-            training_trackers, self.domain, interpreter=self.interpreter, **kwargs
+            training_trackers,
+            self.domain,
+            interpreter=self.interpreter,
+            number_of_chunks=number_of_chunks,
+            **kwargs,
         )
         self._set_fingerprint()
 
