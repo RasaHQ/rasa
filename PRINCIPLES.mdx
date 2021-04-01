@@ -1,54 +1,62 @@
 ---
 id: principles
 sidebar_label: Conversational AI Principles
-title: Principles for Building Ethical Conversational Assistants
+title: Principles for Building Conversational Assistants
 abstract: You are responsible for the impact that your assistant has on the people that it talks to. We created this guide to help you make this impact benefitial for everyone.
 ---
 
-When you create a conversational assistant, you are responsible for its impact on the people that it talks to. 
-Therefore, you should consider how users might perceive the assistant’s statements, and how a conversation might affect their lives. 
-This is not always straightforward, as you typically have little to no knowledge about the background of your users. 
-Thus, we created this guide to help you avoid the worst outcomes. 
+When you create a conversational assistant, by extension you are responsible for its impact on the people it talks to. 
+You should consider how the conversation might affect the user's lives and how they might perceive the assistant’s statements. 
+At Rasa, we believe it’s important that we remain mindful of those potential impacts, and together as a community, 
+build upon a set of principles to help guide us in creating chatbots responsibly.
 
-It is in the best interest of all conversational assistant creators that the public perceives these assistants as helpful and friendly. 
-Beyond this, it is also in the best interest of all members of society (including creators) that conversational assistants are neither used for 
-harassment nor manipulation. 
-Aside from being unethical, such use cases would create a lasting reluctance of users to engage with conversational assistants.
+That conversational assistants are helpful and honest is in the best interest of all assistant creators. 
+So conversational assistants should neither be used for harassment nor for manipulation. 
+Aside from being unethical, this might create a lasting reluctance of users to engage with your assistants.
 
 The following four key points should help you use this technology wisely. Please note, however, that these guidelines are only a first step, 
-and you should use  your own judgement as well.
+and you should use your own judgement as well.
 
 
-## A conversational assistant should not cause users harm
+## Don't mislead: the conversational assistant should be accurate
 
-Even though a conversational assistant only exists in the digital world, it can still inflict harm on users. 
-For example, conversational assistants often serve as information sources or decision guides. If the information that the assistant provides is inaccurate or misleading, 
-users may end up making poor (or even dangerous) decisions based on their interaction with your assistant.
-So before you prepare your assistant for production, make sure that all its **responses** and all **information sources** that it may access via [custom actions](./custom-actions.mdx)
-are **accurate, well-researched, and not misleading the user in any way**.
+A conversational assistant often serves as information source or decision guide. 
+If the information that the assistant provides is inaccurate or misleading, 
+users may end up making poor (or potentially dangerous) decisions based on their interaction with your assistant. 
+So before you prepare your assistant for production, make sure that all its responses and all information sources that it may access 
+via [custom actions](https://rasa.com/docs/rasa/custom-actions) are accurate, well-researched, and not misleading the user in any way.
 
-## A conversational assistant should not encourage or normalize harmful behaviour from users
 
-Although users have complete freedom in what they can communicate to a conversational assistant, these assistants are designed to only follow pre-defined stories. 
-In doing so, a conversational assistant should not try to provoke the user into engaging in harmful behaviour. If for any reason the user decides to engage in this behaviour anyway, 
-**the assistant should politely refuse to participate**. Trying to argue with the user will rarely lead to useful results.
+## Be respectful: A conversational assistant should not amplify harassment and respect the user's privacy
 
-## A conversational assistant should always identify itself as one
+Although users have complete freedom in what they can communicate to a conversational assistant, you, as a developer, control the assistant's responses and actions. 
+So you should design your assistant in such a way that it does not amplify bad behaviour of users. If the user decides to harrass the assistant, 
+the assistant should politely refuse to participate. Remeber that somebody has to read many of these conversations during the CDD process, and you
+should care for that person's mental health as well.
 
-When asked questions such as “Are you a bot?” or “Are you a human?”, a conversational assistant should always **inform the user that it is a software program**, and not a human. 
-This does not mean that conversational assistants can’t be human-like, though.
-A good assistant helps users accomplish their goals without pretending to be a human.
-In contrast, impostor bots (algorithms that pose as humans) are used as tools for social media manipulation, and this creates a lot of mistrust. 
-So instead of misleading users, we should build assistants that make the users' lives better. 
+Another aspect of this is to respect the user's privacy. For example, it is a good idea to make your assistant [GDPR](https://gdpr-info.eu/) compliant.
 
-## A conversational assistant should provide users a way to prove its identity
 
-When you design an assistant to represent a company, political party, organization, etc., it is important to allow users to verify that this representation is authorized. 
-You can use already existing technologies to do this: For example, you can integrate a conversational assistant to a website served **using HTTPS**, the content of the site 
-(and therefore the assistant itself) will be verified as legitimate by a trusted certificate authority. Another example would be to have the conversational assistant use 
-a **verified social media account**.
+## Identify as a bot: A conversational assistant should always identify itself as one
+
+When asked questions such as “Are you a bot?” or “Are you a human?”, a conversational assistant should always 
+inform the user that it is a software program, and not a human. Ideally, this should also be clear from the way your assistant is
+integrated and named.
+This does not mean that conversational assistants can’t be human-like, but a good assistant helps users accomplish their goals without pretending to be a human. 
+In contrast, impostor bots (algorithms that pose as humans) are used as tools for social media manipulation, and this creates a lot of mistrust.
+
+
+## Identify the creators: A conversational assistant should provide users a way to verify its identity
+
+When you design an assistant to represent a company, political party, organization, etc., it is important to allow users to verify 
+that this representation is authorized. 
+You can use already existing technologies to do this: For example, if you integrate a conversational assistant to a website served using HTTPS, 
+the content of the site (including the assistant itself) will be verified as legitimate by a trusted certificate authority. 
+Another example would be to have the conversational assistant use a verified social media account.
+
 
 ## 
 
-Feel free to reach out to us on [the forum](https://forum.rasa.com/) to discuss your use case! 
+Feel free to reach out to us on [the forum](https://forum.rasa.com/t/principles-for-building-ethical-conversational-assistants-feedback-thread/39796) 
+to discuss your use case! 
 We also like to hear your thoughts on these guidelines. 
