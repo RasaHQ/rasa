@@ -64,14 +64,14 @@ The print_result_core template returns data depends on available fields.
 {{- if has $.dataset_main $config_name -}}
 {{- $intent_class_main = (index $.dataset_main $config_name).intent_classification -}}
 {{- end -}}
-{{- $intent_class := index $config_data.intent_classification -}}
+{{- $intent_class := $config_data.intent_classification -}}
 {{ template "print_result_nlu" (dict "branch" $intent_class "main" $intent_class_main) }}|
 {{- else -}}
 `no data`|
 {{- end -}}
 {{- if has $config_data "entity_prediction" -}}
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $entity_class_main := index $config_data.entity_prediction -}}
+{{- $entity_class_main := $config_data.entity_prediction -}}
 {{- if has $.dataset_main $config_name -}}
 {{- $entity_class_main = (index $.dataset_main $config_name).entity_prediction -}}
 {{- end -}}
@@ -82,7 +82,7 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 {{- if has $config_data "response_selection" -}}
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $response_class_main := index $config_data.response_selection -}}
+{{- $response_class_main := $config_data.response_selection -}}
 {{- if has $.dataset_main $config_name -}}
 {{- $response_class_main = (index $.dataset_main $config_name).response_selection -}}
 {{- end -}}
@@ -92,11 +92,10 @@ The print_result_core template returns data depends on available fields.
 `no data`|
 {{- end }}
 {{end}}
-{{end}}
+{{- end}}
 {{- end -}}
 
 {{- define "print_table_core" -}}
-
 | Dialog Policy Configuration | Action Level Micro Avg. F1 | Conversation Level Accuracy | Run Time Train | Run Time Test |
 |---------------|-----------------|-----------------|-------------------|-------------------|
 {{ range $config_name, $config_data := .config -}}
@@ -106,9 +105,9 @@ The print_result_core template returns data depends on available fields.
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
 {{- $story_prediction_main := $config_data.story_prediction -}}
 {{- if has $.dataset_main $config_name -}}
-{{- $story_prediction := (index $.dataset_main $config_name).story_prediction -}}
+{{- $story_prediction_main = (index $.dataset_main $config_name).story_prediction -}}
 {{- end -}}
-{{- $story_prediction := index $config_data.story_prediction -}}
+{{- $story_prediction := $config_data.story_prediction -}}
 {{ template "print_result_core_micro_avg" (dict "branch" $story_prediction "main" $story_prediction_main) }}|
 {{- else -}}
 `no data`|
@@ -117,7 +116,7 @@ The print_result_core template returns data depends on available fields.
 {{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
 {{- $story_prediction_main := $config_data.story_prediction -}}
 {{- if has $.dataset_main $config_name -}}
-{{- $story_prediction := (index $.dataset_main $config_name).story_prediction -}}
+{{- $story_prediction_main = (index $.dataset_main $config_name).story_prediction -}}
 {{- end -}}
 {{- $story_prediction := index $config_data.story_prediction -}}
 {{ template "print_result_core_conversation_accuracy" (dict "branch" $story_prediction "main" $story_prediction_main) }}|
@@ -126,7 +125,7 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 `{{ $config_data.train_run_time }}`| `{{ $config_data.test_run_time }}`|
 {{- end }}
-{{end}}
+{{- end}}
 {{- end -}}
 
 {{- $results_main := (datasource "results_main") -}}
@@ -136,4 +135,4 @@ Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (k
 
 {{ template "print_table_nlu" (dict "config" $config "dataset_main" $dataset_main) }}
 {{ template "print_table_core" (dict "config" $config "dataset_main" $dataset_main) }}
-{{- end -}}
+{{- end }}
