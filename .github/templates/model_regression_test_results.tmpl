@@ -53,6 +53,9 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 
 {{ define "print_table_nlu" }}
+{{- $available_types := (index .config | jsonpath `@..type`) -}}
+{{- if isKind "string" $available_types }}{{- $available_types = (index .config | jsonpath `@..type` | slice) -}}{{- end -}}
+{{- if has $available_types "nlu" -}}
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
 |---------------|-----------------|-----------------|-------------------|
 {{ range $config_name, $config_data := .config -}}
@@ -94,8 +97,12 @@ The print_result_core template returns data depends on available fields.
 {{end}}
 {{- end}}
 {{- end -}}
+{{- end -}}
 
 {{- define "print_table_core" -}}
+{{- $available_types := (index .config | jsonpath `@..type`) -}}
+{{- if isKind "string" $available_types }}{{- $available_types = (index .config | jsonpath `@..type` | slice) -}}{{- end -}}
+{{- if has $available_types "core" -}}
 | Dialog Policy Configuration | Action Level Micro Avg. F1 | Conversation Level Accuracy | Run Time Train | Run Time Test |
 |---------------|-----------------|-----------------|-------------------|-------------------|
 {{ range $config_name, $config_data := .config -}}
@@ -126,6 +133,7 @@ The print_result_core template returns data depends on available fields.
 `{{ $config_data.train_run_time }}`| `{{ $config_data.test_run_time }}`|
 {{ end }}
 {{- end}}
+{{- end -}}
 {{- end -}}
 
 {{- $results_main := (datasource "results_main") -}}
