@@ -303,11 +303,12 @@ class CRFEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
+        """Loads trained component (see parent class for full docstring)."""
         import joblib
 
         file_names = meta.get("files")
