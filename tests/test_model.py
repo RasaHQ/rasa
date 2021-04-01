@@ -55,8 +55,8 @@ from rasa.train import train_core, train_core_async
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 
-def test_get_latest_model(tmpdir: Path):
-    path = tmpdir / "test_get_latest_model"
+def test_get_latest_model(tmp_path: Path):
+    path = tmp_path / "test_get_latest_model"
     path.mkdir()
     Path(path / "model_one.tar.gz").touch()
 
