@@ -1125,6 +1125,16 @@ class TED(TransformerRasaModel):
 
         return sampled_label_ids, sampled_labels_embed
 
+    def _slice_tensor(
+        self, tensor: Union[tf.Tensor, tf.SparseTensor], indices: tf.Tensor
+    ) -> Union[tf.Tensor, tf.SparseTensor]:
+        if isinstance(tensor, tf.Tensor):
+            return tf.gather_nd(tensor, tf.cast(indices, dtype=tf.int32))
+        elif isinstance(tensor, tf.SparseTensor):
+            dense_tensor = tf.sparse.to_dense(tensor)
+            sliced_tensor = tf.gather_nd(dense_tensor, tf.cast(indices, dtype=tf.int32))
+            return tf.sparse.from_dense(sliced_tensor)
+
     def _compute_embedding_for_label_ids(self, label_ids):
 
         filtered_label_data = {}
@@ -1135,7 +1145,7 @@ class TED(TransformerRasaModel):
                 filtered_label_data[key] = {}
                 for sub_key in self.tf_label_data[key]:
                     filtered_attribute_data = [
-                        tf.gather_nd(data, tf.cast(label_ids, dtype=tf.int32))
+                        self._slice_tensor(data, label_ids)
                         for data in self.tf_label_data[key][sub_key]
                     ]
                     filtered_label_data[key][sub_key] = filtered_attribute_data
