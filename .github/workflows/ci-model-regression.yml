@@ -366,14 +366,6 @@ jobs:
           name: report.json
           path: ./report.json
 
-
-      - name: Upload results
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        uses: actions/upload-artifact@v2
-        with:
-          name: results-${{ matrix.dataset }}
-          path: ./results
-
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
     continue-on-error: true
@@ -558,6 +550,13 @@ jobs:
           poetry run python .github/scripts/mr_publish_results.py
           poetry run python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
+
+      - name: Upload an artifact with the report
+        uses: actions/upload-artifact@v2
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        with:
+          name: report.json
+          path: ./report.json
 
   add_comment_results_gpu:
     name: Add a comment with the results
