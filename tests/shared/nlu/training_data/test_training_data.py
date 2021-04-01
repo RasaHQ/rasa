@@ -8,6 +8,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.importers.utils import training_data_from_paths
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT_RESPONSE_KEY,
@@ -22,6 +23,7 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
@@ -297,30 +299,61 @@ def test_train_test_split(filepaths: List[Text]):
 
 def test_number_of_examples_per_intent():
     message_action = Message(data={"action_name": "utter_greet"})
-    message_intent_one = Message(
+    message_intent = Message(
         data={"text": "I would like the newsletter", "intent": "subscribe"}
     )
-    message_intent_two = Message(data={"intent": "subscribe"})
-    message_intent_three = Message(
+    message_non_nlu_intent = Message(data={"intent": "subscribe"})
+    message_other_intent_one = Message(
         data={"text": "What is the weather like today?", "intent": "ask_weather"}
     )
-    message_intent_four = Message(
+    message_other_intent_two = Message(
         data={"text": "Will it rain today?", "intent": "ask_weather"}
     )
-    message_intent_five = Message(data={"intent": "ask_weather"})
+    message_non_nlu_other_intent_three = Message(data={"intent": "ask_weather"})
 
     training_examples = [
         message_action,
-        message_intent_one,
-        message_intent_two,
-        message_intent_three,
-        message_intent_four,
-        message_intent_five,
+        message_intent,
+        message_non_nlu_intent,
+        message_other_intent_one,
+        message_other_intent_two,
+        message_non_nlu_other_intent_three,
     ]
     training_data = TrainingData(training_examples=training_examples)
 
     assert training_data.number_of_examples_per_intent["subscribe"] == 1
     assert training_data.number_of_examples_per_intent["ask_weather"] == 2
+
+
+def test_number_of_examples_per_intent_with_yaml():
+    stories = rasa.shared.utils.io.read_yaml_file(
+        "data/test_number_nlu_examples/stories.yml"
+    )
+    rules = rasa.shared.utils.io.read_yaml_file(
+        "data/test_number_nlu_examples/rules.yml"
+    )
+    stories.update(rules)
+
+    non_nlu_data = []
+    for v in stories.values():
+        for i in range(len(v)):
+            for d in v[i]["steps"]:
+                if d.get("intent") is not None:
+                    non_nlu_data.append(Message(data=d))
+
+    non_nlu_td = TrainingData(training_examples=non_nlu_data)
+    assert non_nlu_td.number_of_examples_per_intent.get("greet") is None
+    assert non_nlu_td.intents == {"greet", "ask_weather"}
+
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(
+        ["data/test_number_nlu_examples/nlu.yml"], language="en"
+    )
+    td.merge(non_nlu_td)
+
+    assert td.number_of_examples_per_intent["greet"] == 2
+    assert td.number_of_examples_per_intent["ask_weather"] == 3
 
 
 @pytest.mark.parametrize(
