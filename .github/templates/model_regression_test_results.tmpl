@@ -124,15 +124,14 @@ The print_result_core template returns data depends on available fields.
 `no data`|
 {{- end -}}
 `{{ $config_data.train_run_time }}`| `{{ $config_data.test_run_time }}`|
-{{- end }}
+{{ end }}
 {{- end}}
 {{- end -}}
 
 {{- $results_main := (datasource "results_main") -}}
 {{ range $dataset, $config := (datasource "data")}}
-{{- $dataset_main := (index $results_main $dataset) -}}
+{{ $dataset_main := (index $results_main $dataset) -}}
 Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}`
-
-{{ template "print_table_nlu" (dict "config" $config "dataset_main" $dataset_main) }}
+{{- template "print_table_nlu" (dict "config" $config "dataset_main" $dataset_main) }}
 {{ template "print_table_core" (dict "config" $config "dataset_main" $dataset_main) }}
 {{- end }}

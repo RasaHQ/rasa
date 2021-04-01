@@ -508,13 +508,6 @@ jobs:
           poetry run python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
 
-      - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v2
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        with:
-          name: report.json
-          path: ./report.json
-
   add_comment_results_gpu:
     name: Add a comment with the results
     runs-on: ubuntu-latest
