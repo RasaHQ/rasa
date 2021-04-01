@@ -181,7 +181,7 @@ class KafkaEventBroker(EventBroker):
             partition_key = None
 
         logger.debug(
-            f"Calling kafka send({self.topic}, value={event}, key={partition_key})"
+            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
         )
         self.producer.send(self.topic, value=event, key=partition_key)
 
