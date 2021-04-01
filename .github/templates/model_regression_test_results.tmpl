@@ -140,6 +140,6 @@ The print_result_core template returns data depends on available fields.
 {{ range $dataset, $config := (datasource "data")}}
 {{ $dataset_main := (index $results_main $dataset) -}}
 Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}`
-{{- template "print_table_nlu" (dict "config" $config "dataset_main" $dataset_main) }}
+{{ template "print_table_nlu" (dict "config" $config "dataset_main" $dataset_main) }}
 {{ template "print_table_core" (dict "config" $config "dataset_main" $dataset_main) }}
 {{- end }}
