@@ -107,6 +107,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     BILOU_FLAG,
+    LABEL_BATCH_SIZE,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -300,6 +301,8 @@ class TEDPolicy(Policy):
         # ingredients in a recipe, but it doesn't make sense for the parts of
         # an address
         SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+        # Number of labels to use as candidates for negative sampling
+        LABEL_BATCH_SIZE: -1,
     }
 
     @staticmethod
@@ -1092,6 +1095,75 @@ class TED(TransformerRasaModel):
             ).values
         ]
 
+    def _create_all_labels_embed_for_training(
+        self, number_of_random_labels: int
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
+
+        if number_of_random_labels != -1:
+
+            # First, sample a fixed number of random labels ids
+            total_num_label_ids = all_label_ids.shape[0]
+            sampled_label_ids, _, _ = tf.random.uniform_candidate_sampler(
+                tf.reshape(
+                    tf.cast(tf.range(0, total_num_label_ids), dtype=tf.int64),
+                    shape=(1, -1),
+                ),
+                total_num_label_ids,
+                number_of_random_labels,
+                True,
+                total_num_label_ids,
+            )
+            sampled_label_ids = tf.reshape(sampled_label_ids, (-1, 1))
+
+        else:
+            sampled_label_ids = all_label_ids
+
+        # Compute embeddings for sampled labels
+        sampled_labels_embed = self._compute_embedding_for_label_ids(sampled_label_ids)
+
+        return sampled_label_ids, sampled_labels_embed
+
+    def _compute_embedding_for_label_ids(self, label_ids):
+
+        filtered_label_data = {}
+
+        # Create a filtered version of self.tf_label_data which contains label data only for these sampled label ids
+        for key in self.tf_label_data.keys():
+            if key != LABEL_KEY:
+                filtered_label_data[key] = {}
+                for sub_key in self.tf_label_data[key]:
+                    filtered_attribute_data = [
+                        tf.gather_nd(data, tf.cast(label_ids, dtype=tf.int32))
+                        for data in self.tf_label_data[key][sub_key]
+                    ]
+                    filtered_label_data[key][sub_key] = filtered_attribute_data
+
+        labels_encoded = {}
+        for key in filtered_label_data:
+            if key != LABEL_KEY:
+                attribute_features, _, _ = self._encode_real_features_per_attribute(
+                    filtered_label_data, key
+                )
+                labels_encoded[key] = attribute_features
+        if (
+            labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
+            and labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
+        ):
+            x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}") + labels_encoded.pop(
+                f"{LABEL_KEY}_{ACTION_NAME}"
+            )
+        elif labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
+            x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
+        else:
+            x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+        # additional sequence axis is artifact of our RasaModelData creation
+        # TODO check whether this should be solved in data creation
+        x = tf.squeeze(x, axis=1)
+        labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
+        return labels_embed
+
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         # labels cannot have all features "fake"
@@ -1697,10 +1769,21 @@ class TED(TransformerRasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
         self._compute_dialogue_indices(tf_batch_data)
 
-        all_label_ids, all_labels_embed = self._create_all_labels_embed()
+        batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
-        labels_embed = self._get_labels_embed(label_ids, all_labels_embed)
+        (
+            sampled_label_ids,
+            sampled_labels_embed,
+        ) = self._create_all_labels_embed_for_training(
+            number_of_random_labels=self.config[LABEL_BATCH_SIZE]
+        )
+
+        batch_labels_embed = self._compute_embedding_for_label_ids(
+            tf.squeeze(batch_label_ids, axis=-2)
+        )
+
+        # Add back the sequence dimension
+        batch_labels_embed = tf.expand_dims(batch_labels_embed, axis=1)
 
         (
             dialogue_in,
@@ -1719,10 +1802,10 @@ class TED(TransformerRasaModel):
 
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
             dialogue_embed,
-            labels_embed,
-            label_ids,
-            all_labels_embed,
-            all_label_ids,
+            batch_labels_embed,
+            batch_label_ids,
+            sampled_labels_embed,
+            sampled_label_ids,
             dialogue_mask,
         )
         losses.append(loss)
