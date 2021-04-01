@@ -48,7 +48,7 @@ jobs:
 
     - name: Download gomplate
       run: |-
-        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
         sudo chmod +x /usr/local/bin/gomplate
 
     - name: Find a comment with configuration
@@ -147,7 +147,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Render deployment template
@@ -401,7 +401,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Set DATASET and CONFIG variables
@@ -419,14 +419,47 @@ jobs:
 
           echo "::set-output name=is_dataset_exists::true"
           echo "::set-output name=is_config_exists::true"
+          echo "::set-output name=is_external::${IS_EXTERNAL}"
+
+          if [[ "${IS_EXTERNAL}" == "true" ]]; then
+            echo "DATASET_DIR=dataset_external" >> $GITHUB_ENV
+          else
+            echo "DATASET_DIR=dataset" >> $GITHUB_ENV
+            test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
+              && echo "::set-output name=is_config_exists::false" && exit 0)
+          fi
 
           test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
-            && echo "::set-output name=is_dataset_exists::false" && exit 0)
-          test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
-            && echo "::set-output name=is_config_exists::false" && exit 0)
+              && echo "::set-output name=is_dataset_exists::false" && exit 0)
 
           echo "DATASET=${DATASET}" >> $GITHUB_ENV
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
+          echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
+          echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
+          echo "TRAIN_DIR=${TEST_DIR}" >> $GITHUB_ENV
+
+          if [[ -z "${TRAIN_DIR}" ]]; then
+            echo "TRAIN_DIR=train" >> $GITHUB_ENV
+          else
+            echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
+          fi
+
+
+          if [[ -z "${TEST_DIR}" ]]; then
+            echo "TEST_DIR=test" >> $GITHUB_ENV
+          else
+            echo "TEST_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout dataset - external
+        uses: actions/checkout@v2
+        if: steps.set_dataset_config_vars.outputs.is_external == 'true'
+        with:
+          repository: ${{ env.DATASET }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
+          path: 'dataset_external'
+          #ref: ${{ matrix.dataset_branch }}
+          ref: main
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
@@ -470,15 +503,32 @@ jobs:
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-          cd ${{ github.workspace }}/dataset
-          poetry run rasa train nlu --quiet -u $DATASET/train -c configs/$CONFIG --out models/$DATASET/$CONFIG
-          echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          cd ${{ github.workspace }}
 
-          export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-          poetry run rasa test nlu --quiet -u $DATASET/test -m models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+          if [[ "${{ steps.set_dataset_config_vars.outputs.is_external }}" == "true" ]]; then
+            export DATASET=.
+          fi
 
-          echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-          echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          if [[ "${{ matrix.type }}" == "nlu" ]]; then
+            poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
+            echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+
+            export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+            poetry run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+
+            echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+            echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+
+          elif [[ "${{ matrix.type }}" == "core" ]]; then
+            poetry run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR/stories -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
+            echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+
+            export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+            poetry run rasa test core -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR/stories --out ${{ github.workspace }}/results/${{ matrix.dataset }}/$CONFIG
+
+            echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+            echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          fi
 
       # Download the results of the previous runs
       # The report file is extended with new results every next job run
@@ -501,6 +551,7 @@ jobs:
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          TYPE: ${{ matrix.type }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -544,7 +595,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Render a comment to add
@@ -620,7 +671,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Render a comment to add
