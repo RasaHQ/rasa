@@ -5,10 +5,9 @@ title: Rasa as open source alternative to IBM Watson - Migration Tips
 description: Open source alternative to IBM Watson for conversational bots and NLP
 ---
 
-## Step 1
+## Step 1 Export your data from Watson
 
-To use <a className="reference external" href="https://developer.ibm.com/tutorials/learn-how-to-export-import-a-watson-assistant-workspace/" target="_blank">exported IBM Watson workspaces</a>
-in Rasa. 
+Follow the <a className="reference external" href="https://developer.ibm.com/tutorials/learn-how-to-export-import-a-watson-assistant-workspace/" target="_blank">instructions</a> and export your bot's data.
 
 ## Step 2: Create a Rasa Project
 
@@ -20,7 +19,7 @@ rasa init
 
 This will create a directory called `data`.
 Remove the files in this directory, and
-move your json file into this directory.
+move your json file with Watson data into this directory.
 
 ```bash
 rm -r data/*

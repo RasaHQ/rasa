@@ -18,22 +18,24 @@ logger = logging.getLogger(__name__)
 
 
 class WatsonReader(JsonTrainingDataReader):
-    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any):
+    """Reads Watson training data and train a Rasa NLU model."""
+
+    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> TrainingData:
         """Loads training data stored in the IBM Watson data format."""
         training_examples = []
         entity_synonyms = self._entity_synonyms(js)
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
         all_entities = self._list_all_entities(js)
 
-        for s in js["intents"]:
-            examples = s["examples"]
+        for intent in js["intents"]:
+            examples = intent.get("examples")
             if examples == []:
                 continue
             for text in examples:
                 example_with_entities = self._unpack_entity_examples(
                     js=js,
                     text=text["text"],
-                    intent=s["intent"],
+                    intent=intent["intent"],
                     training_examples=training_examples,
                     all_entities=all_entities,
                 )
@@ -41,14 +43,15 @@ class WatsonReader(JsonTrainingDataReader):
                     continue
                 else:
                     self._add_training_examples_without_entities(
-                        training_examples, s["intent"], text["text"]
+                        training_examples, intent["intent"], text["text"]
                     )
 
         return TrainingData(training_examples, entity_synonyms)
 
+    @staticmethod
     def _add_training_examples_without_entities(
-        self, training_examples: List, intent: str, text: str
-    ):
+        training_examples: List, intent: str, text: str
+    ) -> None:
         data = {}
         data[INTENT] = intent
         data[TEXT] = text
@@ -61,7 +64,7 @@ class WatsonReader(JsonTrainingDataReader):
         intent: str,
         training_examples,
         all_entities,
-    ):
+    ) -> List:
         examples_with_entities = []
         all_entity_names = set().union(*(d.keys() for d in all_entities))
         for entity_name in all_entity_names:
@@ -96,13 +99,13 @@ class WatsonReader(JsonTrainingDataReader):
         return examples_with_entities
 
     @staticmethod
-    def _list_all_entities(js: Dict[Text, Any]):
+    def _list_all_entities(js: Dict[Text, Any]) -> List:
         entities = []
         for entity in js["entities"]:
             entities.append({entity["entity"]: entity["values"]})
         return entities
 
-    def _entity_synonyms(self, js: Dict[Text, Any]):
+    def _entity_synonyms(self, js: Dict[Text, Any]) -> List:
         entity_synonyms = []
 
         for entity in js["entities"]:

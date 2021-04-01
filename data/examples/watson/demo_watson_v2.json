@@ -1,7 +1,15 @@
 {
-	"intents": [{
+	"metadata": {
+		"api_version": {
+			"major_version": "v2",
+			"minor_version": "2018-11-08"
+		}
+	},
+	"intents": [
+		{
 			"intent": "General_Goodbye",
-			"examples": [{
+			"examples": [
+				{
 					"text": "Bye"
 				},
 				{
@@ -86,7 +94,8 @@
 		},
 		{
 			"intent": "General_Greeting",
-			"examples": [{
+			"examples": [
+				{
 					"text": "G'day"
 				},
 				{
@@ -147,7 +156,8 @@
 		},
 		{
 			"intent": "General_LookingAround",
-			"examples": [{
+			"examples": [
+				{
 					"text": "I'm just looking around."
 				},
 				{
@@ -166,7 +176,8 @@
 		},
 		{
 			"intent": "General_Negative_Feedback",
-			"examples": [{
+			"examples": [
+				{
 					"text": "Bad"
 				},
 				{
@@ -227,7 +238,8 @@
 		},
 		{
 			"intent": "General_NoPreference",
-			"examples": [{
+			"examples": [
+				{
 					"text": "A regular one."
 				},
 				{
@@ -270,7 +282,8 @@
 		},
 		{
 			"intent": "General_Nothing",
-			"examples": [{
+			"examples": [
+				{
 					"text": "Just that."
 				},
 				{
@@ -301,7 +314,8 @@
 		},
 		{
 			"intent": "General_NotSharing",
-			"examples": [{
+			"examples": [
+				{
 					"text": "I don't want to."
 				},
 				{
@@ -332,7 +346,8 @@
 		},
 		{
 			"intent": "General_Positive_Feedback",
-			"examples": [{
+			"examples": [
+				{
 					"text": "Amazing"
 				},
 				{
@@ -468,7 +483,8 @@
 		},
 		{
 			"intent": "General_Quit",
-			"examples": [{
+			"examples": [
+				{
 					"text": "I don't want to continue."
 				},
 				{
@@ -487,7 +503,8 @@
 		},
 		{
 			"intent": "General_Thanking",
-			"examples": [{
+			"examples": [
+				{
 					"text": "Appreciate it."
 				},
 				{
@@ -542,7 +559,8 @@
 		},
 		{
 			"intent": "General_WhatCanYouDo",
-			"examples": [{
+			"examples": [
+				{
 					"text": "Can I ask you a question?"
 				},
 				{
@@ -573,13 +591,16 @@
 		},
 		{
 			"intent": "Interaction_LaptopSelection",
-			"examples": [{
-				"text": "Customer selected laptop himself"
-			}]
+			"examples": [
+				{
+					"text": "Customer selected laptop himself"
+				}
+			]
 		},
 		{
 			"intent": "Specific_AddToBasket",
-			"examples": [{
+			"examples": [
+				{
 					"text": "Add the laptop to my shopping cart."
 				},
 				{
@@ -599,10 +620,10 @@
 				}
 			]
 		},
-
 		{
 			"intent": "Specific_BestLaptop",
-			"examples": [{
+			"examples": [
+				{
 					"text": "@bestLaptopAnnotation"
 				},
 				{
@@ -658,16 +679,18 @@
 		},
 		{
 			"intent": "TEST",
-			"examples": [{
-				"text": "schniebel schniebel"
-			}]
+			"examples": [
+				{
+					"text": "schniebel schniebel"
+				}
+			]
 		}
 	],
 	"entities": [
-
 		{
 			"entity": "bestLaptopAnnotation",
-			"values": [{
+			"values": [
+				{
 					"type": "synonyms",
 					"value": "best laptop",
 					"synonyms": []
@@ -698,7 +721,8 @@
 		},
 		{
 			"entity": "brands",
-			"values": [{
+			"values": [
+				{
 					"type": "synonyms",
 					"value": "Acer",
 					"synonyms": []
@@ -779,12 +803,6 @@
 			"fuzzy_match": false
 		}
 	],
-	"metadata": {
-		"api_version": {
-			"major_version": "v2",
-			"minor_version": "2018-11-08"
-		}
-	},
 	"learning_opt_out": false,
 	"name": "demo",
 	"language": "en",
