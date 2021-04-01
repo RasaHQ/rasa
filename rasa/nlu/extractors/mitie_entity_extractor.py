@@ -146,11 +146,12 @@ class MitieEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["MitieEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "MitieEntityExtractor":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         file_name = meta.get("file")
