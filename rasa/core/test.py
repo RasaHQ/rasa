@@ -22,6 +22,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     TOKENS_NAMES,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
 )
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -37,6 +38,8 @@ from rasa.shared.nlu.constants import (
     RESPONSE_SELECTOR,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     TEXT,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import (
@@ -54,6 +57,23 @@ if typing.TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
 
+    from typing_extensions import TypedDict
+
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            ENTITY_ATTRIBUTE_START: Optional[float],
+            ENTITY_ATTRIBUTE_END: Optional[float],
+            ENTITY_ATTRIBUTE_VALUE: Text,
+            ENTITY_ATTRIBUTE_CONFIDENCE: float,
+            ENTITY_ATTRIBUTE_TYPE: Text,
+            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
+            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
+            "additional_info": Any,
+        },
+        total=False,
+    )
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
@@ -75,7 +95,6 @@ StoryEvaluation = namedtuple(
 )
 
 PredictionList = List[Optional[Text]]
-EntityPredictionList = List[Dict[Text, Any]]
 
 
 class WrongPredictionException(RasaException, ValueError):
@@ -91,16 +110,16 @@ class EvaluationStore:
         action_targets: Optional[PredictionList] = None,
         intent_predictions: Optional[PredictionList] = None,
         intent_targets: Optional[PredictionList] = None,
-        entity_predictions: Optional[EntityPredictionList] = None,
-        entity_targets: Optional[EntityPredictionList] = None,
+        entity_predictions: Optional[List["EntityPrediction"]] = None,
+        entity_targets: Optional[List["EntityPrediction"]] = None,
     ) -> None:
         """Initialize store attributes."""
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
         self.intent_predictions = intent_predictions or []
         self.intent_targets = intent_targets or []
-        self.entity_predictions = entity_predictions or []
-        self.entity_targets = entity_targets or []
+        self.entity_predictions: List["EntityPrediction"] = entity_predictions or []
+        self.entity_targets: List["EntityPrediction"] = entity_targets or []
 
     def add_to_store(
         self,
@@ -108,8 +127,8 @@ class EvaluationStore:
         action_targets: Optional[PredictionList] = None,
         intent_predictions: Optional[PredictionList] = None,
         intent_targets: Optional[PredictionList] = None,
-        entity_predictions: Optional[EntityPredictionList] = None,
-        entity_targets: Optional[EntityPredictionList] = None,
+        entity_predictions: Optional[List["EntityPrediction"]] = None,
+        entity_targets: Optional[List["EntityPrediction"]] = None,
     ) -> None:
         """Add items or lists of items to the store."""
         self.action_predictions.extend(action_predictions or [])
@@ -139,8 +158,8 @@ class EvaluationStore:
 
     @staticmethod
     def _compare_entities(
-        entity_predictions: EntityPredictionList,
-        entity_targets: EntityPredictionList,
+        entity_predictions: List["EntityPrediction"],
+        entity_targets: List["EntityPrediction"],
         i_pred: int,
         i_target: int,
     ) -> int:
@@ -158,16 +177,16 @@ class EvaluationStore:
             target = entity_targets[i_target]
         if target and pred:
             # Check which entity has the lower "start" value
-            if pred.get("start") < target.get("start"):
+            if pred.get(ENTITY_ATTRIBUTE_START) < target.get(ENTITY_ATTRIBUTE_START):
                 return -1
-            elif target.get("start") < pred.get("start"):
+            elif target.get(ENTITY_ATTRIBUTE_START) < pred.get(ENTITY_ATTRIBUTE_START):
                 return 1
             else:
                 # Since both have the same "start" values,
                 # check which one has the lower "end" value
-                if pred.get("end") < target.get("end"):
+                if pred.get(ENTITY_ATTRIBUTE_END) < target.get(ENTITY_ATTRIBUTE_END):
                     return -1
-                elif target.get("end") < pred.get("end"):
+                elif target.get(ENTITY_ATTRIBUTE_END) < pred.get(ENTITY_ATTRIBUTE_END):
                     return 1
                 else:
                     # The entities have the same "start" and "end" values
@@ -183,8 +202,8 @@ class EvaluationStore:
         texts = sorted(
             list(
                 set(
-                    [e.get("text") for e in self.entity_targets]
-                    + [e.get("text") for e in self.entity_predictions]
+                    [e.get("text", "") for e in self.entity_targets]
+                    + [e.get("text", "") for e in self.entity_predictions]
                 )
             )
         )
@@ -195,12 +214,17 @@ class EvaluationStore:
         for text in texts:
             # sort the entities of this sentence to compare them directly
             entity_targets = sorted(
-                filter(lambda x: x.get("text") == text, self.entity_targets),
-                key=lambda x: x.get("start"),
+                filter(
+                    lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
+                ),
+                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
             )
             entity_predictions = sorted(
-                filter(lambda x: x.get("text") == text, self.entity_predictions),
-                key=lambda x: x.get("start"),
+                filter(
+                    lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
+                    self.entity_predictions,
+                ),
+                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
             )
 
             i_pred, i_target = 0, 0
@@ -368,7 +392,7 @@ async def _create_data_generator(
 
 def _clean_entity_results(
     text: Text, entity_results: List[Dict[Text, Any]]
-) -> EntityPredictionList:
+) -> List["EntityPrediction"]:
     """Extract only the token variables from an entity dict."""
     cleaned_entities = []
 

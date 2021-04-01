@@ -78,6 +78,15 @@ Sends content bearing training samples to spaCy&#x27;s pipe.
 
 Creates empty Doc-objects from zero-lengthed training samples strings.
 
+#### load
+
+```python
+ | @classmethod
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: "Metadata" = None, cached_component: Optional["SpacyNLP"] = None, **kwargs: Any, ,) -> "SpacyNLP"
+```
+
+Loads trained component (see parent class for full docstring).
+
 #### ensure\_proper\_language\_model
 
 ```python

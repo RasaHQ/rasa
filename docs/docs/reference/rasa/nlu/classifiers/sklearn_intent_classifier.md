@@ -104,3 +104,12 @@ its probability.
 
 Persist this model into the passed directory.
 
+#### load
+
+```python
+ | @classmethod
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["SklearnIntentClassifier"] = None, **kwargs: Any, ,) -> "SklearnIntentClassifier"
+```
+
+Loads trained component (see parent class for full docstring).
+

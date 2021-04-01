@@ -58,7 +58,7 @@ class KafkaEventBroker(EventBroker):
         """
         import kafka
 
-        self.producer = None
+        self.producer: Optional[kafka.KafkaConsumer] = None
         self.url = url
         self.topic = topic
         self.client_id = client_id
@@ -69,8 +69,6 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
-
-        self.producer: Optional[kafka.KafkaConsumer] = None
 
         logging.getLogger("kafka").setLevel(loglevel)
 

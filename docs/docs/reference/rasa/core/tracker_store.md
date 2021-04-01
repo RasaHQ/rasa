@@ -411,7 +411,7 @@ Store which can save and retrieve trackers from an SQL database.
 class SQLEvent(Base)
 ```
 
-Represents an event in the SQL Tracker Store
+Represents an event in the SQL Tracker Store.
 
 #### get\_db\_url
 

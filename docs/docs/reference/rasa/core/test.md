@@ -22,7 +22,7 @@ Class storing action, intent and entity predictions and targets.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[EntityPredictionList] = None, entity_targets: Optional[EntityPredictionList] = None) -> None
+ | __init__(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[List["EntityPrediction"]] = None, entity_targets: Optional[List["EntityPrediction"]] = None) -> None
 ```
 
 Initialize store attributes.
@@ -30,7 +30,7 @@ Initialize store attributes.
 #### add\_to\_store
 
 ```python
- | add_to_store(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[EntityPredictionList] = None, entity_targets: Optional[EntityPredictionList] = None) -> None
+ | add_to_store(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[List["EntityPrediction"]] = None, entity_targets: Optional[List["EntityPrediction"]] = None) -> None
 ```
 
 Add items or lists of items to the store.

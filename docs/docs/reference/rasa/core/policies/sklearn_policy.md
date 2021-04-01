@@ -14,7 +14,7 @@ Use an sklearn classifier to train a policy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[MaxHistoryTrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: int = DEFAULT_MAX_HISTORY, model: Optional["sklearn.base.BaseEstimator"] = None, param_grid: Optional[Dict[Text, List] or List[Dict]] = None, cv: Optional[int] = None, scoring: Optional[Text or List or Dict or Callable] = "accuracy", label_encoder: LabelEncoder = LabelEncoder(), shuffle: bool = True, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, **kwargs: Any, ,) -> None
+ | __init__(featurizer: Optional[MaxHistoryTrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: int = DEFAULT_MAX_HISTORY, model: Optional["sklearn.base.BaseEstimator"] = None, param_grid: Optional[Union[Dict[Text, List], List[Dict]]] = None, cv: Optional[int] = None, scoring: Optional[Union[Text, List, Dict, Callable]] = "accuracy", label_encoder: LabelEncoder = LabelEncoder(), shuffle: bool = True, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, **kwargs: Any, ,) -> None
 ```
 
 Create a new sklearn policy.

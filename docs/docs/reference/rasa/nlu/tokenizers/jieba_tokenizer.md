@@ -32,6 +32,15 @@ More information about the dictionaries file format can
 be found in the documentation of jieba.
 https://github.com/fxsjy/jieba#load-dictionary
 
+#### load
+
+```python
+ | @classmethod
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional[Component] = None, **kwargs: Any, ,) -> "JiebaTokenizer"
+```
+
+Loads trained component (see parent class for full docstring).
+
 #### persist
 
 ```python
