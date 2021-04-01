@@ -293,12 +293,12 @@ class SpacyNLP(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: "Metadata" = None,
         cached_component: Optional["SpacyNLP"] = None,
         **kwargs: Any,
     ) -> "SpacyNLP":
-
+        """Loads trained component (see parent class for full docstring)."""
         if cached_component:
             return cached_component
 
