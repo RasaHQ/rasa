@@ -55,15 +55,16 @@ from rasa.train import train_core, train_core_async
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 
-def test_get_latest_model():
-    path = Path.cwd()
-    Path("model_one.tar.gz").touch()
+def test_get_latest_model(tmpdir: Path):
+    path = tmpdir / "test_get_latest_model"
+    path.mkdir()
+    Path(path / "model_one.tar.gz").touch()
 
     # create second model later to be registered as distinct in Windows
     time.sleep(0.1)
-    Path("model_two.tar.gz").touch()
+    Path(path / "model_two.tar.gz").touch()
 
-    path_of_latest = os.path.join(Path.cwd(), "model_two.tar.gz")
+    path_of_latest = os.path.join(path, "model_two.tar.gz")
     assert get_latest_model(str(path)) == path_of_latest
 
 
