@@ -90,6 +90,8 @@ def print_bot_output(
             json.dumps(message.get("custom"), indent=2), color=color
         )
 
+    print(message)
+
 
 def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
     button_response = None

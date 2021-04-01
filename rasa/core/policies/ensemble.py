@@ -48,6 +48,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
 from rasa.utils.tensorflow.constants import EPOCHS
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -523,6 +524,22 @@ class PolicyEnsemble:
             )
 
 
+def _attention_weight_print_string(attention_weights) -> Text:
+    num_layers, _, num_heads, num_steps, _ = attention_weights.shape
+    string = ""
+    for layer in range(num_layers):
+        string += f"Layer {layer + 1}:\n"
+        for head in range(num_heads):
+            string += f"  Head {head + 1}:\n"
+            for a in range(num_steps):
+                string += "    "
+                for b in range(num_steps):
+                    # string += f"{round(np.log2(attention_weights[layer, 0, head, a, b])):3} "
+                    string += f"{attention_weights[layer, 0, head, a, b]:6} "
+                string += "\n"
+    return string
+
+
 class SimplePolicyEnsemble(PolicyEnsemble):
     """Default implementation of a `Policy` ensemble."""
 
@@ -639,6 +656,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         policy_events += best_prediction.optional_events
 
+        logger.debug(
+            _attention_weight_print_string(
+                best_prediction.diagnostic_data.get("attention_weights")
+            )
+        )
+
         return PolicyPrediction(
             best_prediction.probabilities,
             best_policy_name,
@@ -701,7 +724,22 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     domain.index_for_action(rejected_action_name)
                 ] = 0.0
 
-        return self._pick_best_policy(predictions)
+        best_policy_prediction = self._pick_best_policy(predictions)
+        with open("attention-log.txt", "a", encoding="utf-8") as file:
+            file.write(f"{tracker.current_state()}\n")
+            file.write(
+                _attention_weight_print_string(
+                    best_policy_prediction.diagnostic_data.get("attention_weights")
+                )
+            )
+            file.write(
+                domain.action_names_or_texts[
+                    best_policy_prediction.max_confidence_index
+                ]
+                + "\n"
+            )
+
+        return best_policy_prediction
 
     @staticmethod
     def _get_prediction(
