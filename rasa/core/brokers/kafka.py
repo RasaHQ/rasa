@@ -176,7 +176,7 @@ class KafkaEventBroker(EventBroker):
     def _publish(self, event) -> None:
 
         if self.partition_by_sender:
-            partition_key = bytes(event.get('sender_id'), encoding=DEFAULT_ENCODING)
+            partition_key = bytes(event.get("sender_id"), encoding=DEFAULT_ENCODING)
         else:
             partition_key = None
 
