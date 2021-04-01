@@ -71,7 +71,7 @@ def raise_warning(
         filename: Text,
         lineno: Optional[int],
         line: Optional[Text] = None,
-    ):
+    ) -> Text:
         """Function to format a warning the standard way."""
 
         if not should_show_source_line():

@@ -10,7 +10,7 @@ from rasa.cli.arguments.default_arguments import (
 from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
 
 
-def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
+def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> None:
     parser.add_argument(
         "-f",
         "--format",
@@ -33,7 +33,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
     parser.add_argument("-l", "--language", default="en", help="Language of data.")
 
 
-def set_split_arguments(parser: argparse.ArgumentParser):
+def set_split_arguments(parser: argparse.ArgumentParser) -> None:
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
     parser.add_argument(
@@ -57,7 +57,7 @@ def set_split_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def set_validator_arguments(parser: argparse.ArgumentParser):
+def set_validator_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--fail-on-warnings",
         default=False,

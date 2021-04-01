@@ -118,7 +118,8 @@ types:
 	--disable-error-code return \
 	--disable-error-code has-type \
 	--disable-error-code func-returns-value \
-	--disallow-untyped-calls
+	--disallow-untyped-calls \
+	--disallow-incomplete-defs
 
 static-checks: lint lint-security types
 

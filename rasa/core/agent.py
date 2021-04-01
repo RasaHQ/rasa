@@ -259,7 +259,7 @@ async def _run_model_pulling_worker(
 
 async def schedule_model_pulling(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
-):
+) -> None:
     (await jobs.scheduler()).add_job(
         _run_model_pulling_worker,
         "interval",
@@ -564,7 +564,7 @@ class Agent:
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
         if not self.is_ready():

@@ -196,6 +196,6 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def signal_handler(sig, frame) -> NoReturn:
+def signal_handler(sig: int, frame: Any) -> NoReturn:
     print("Goodbye 👋")
     sys.exit(0)
