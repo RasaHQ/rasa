@@ -253,7 +253,6 @@ jobs:
           poetry install --extras full
           make install
           poetry run python -m spacy download de_core_news_md
-          poetry run python -m spacy link --force de_core_news_md de
 
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -400,7 +399,6 @@ jobs:
           poetry install --extras full
           make install
           poetry run python -m spacy download de_core_news_md
-          poetry run python -m spacy link --force de_core_news_md de
 
       - name: Run test
         id: run_test
