@@ -88,9 +88,10 @@ def test_flexible_nlu_pipeline():
     )
     sentence_feature_dim = message.features[0].features.shape[1]
 
-    classifier = DIETClassifier(
-        component_config={FEATURIZERS: ["cvf_word", "LexicalSyntacticFeaturizer"]}
-    )
+    with pytest.warns(UserWarning):
+        classifier = DIETClassifier(
+            component_config={FEATURIZERS: ["cvf_word", "LexicalSyntacticFeaturizer"]}
+        )
     model_data = classifier.preprocess_train_data(training_data)
 
     assert len(model_data.get(TEXT).get(SENTENCE)) == 1

@@ -1,3 +1,5 @@
+import pytest
+
 from pathlib import Path
 from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
@@ -83,14 +85,15 @@ async def test_training_script_with_max_history_set(
     policy_train = Mock()
     monkeypatch.setattr(TEDPolicy, "train", policy_train)
 
-    await train(
-        domain_path,
-        stories_path,
-        tmpdir,
-        interpreter=RegexInterpreter(),
-        policy_config="data/test_config/max_hist_config.yml",
-        additional_arguments={},
-    )
+    with pytest.warns(UserWarning):
+        await train(
+            domain_path,
+            stories_path,
+            tmpdir,
+            interpreter=RegexInterpreter(),
+            policy_config="data/test_config/max_hist_config.yml",
+            additional_arguments={},
+        )
     agent = Agent.load(tmpdir)
 
     expected_max_history = {FormPolicy: 2, RulePolicy: None}

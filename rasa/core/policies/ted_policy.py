@@ -106,7 +106,6 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
-    LINEAR_NORM,
     SOFTMAX,
     BILOU_FLAG,
 )
@@ -292,7 +291,7 @@ class TEDPolicy(Policy):
         CONSTRAIN_SIMILARITIES: False,
         # Model confidence to be returned during inference. Possible values -
         # 'softmax' and 'linear_norm'.
-        MODEL_CONFIDENCE: LINEAR_NORM,
+        MODEL_CONFIDENCE: SOFTMAX,
         # 'BILOU_flag' determines whether to use BILOU tagging or not.
         # If set to 'True' labelling is more rigorous, however more
         # examples per entity are required.
