@@ -8,14 +8,15 @@ from rasa.nlu.utils import write_to_file
 
 
 def convert_training_data(
-    data_file: Text, out_file: Text, output_format: Text, language: Text
+    data_files: list, out_file: Text, output_format: Text, language: Text
 ):
-    if not os.path.exists(data_file):
-        print_error(
-            "Data file '{}' does not exist. Provide a valid NLU data file using "
-            "the '--data' argument.".format(data_file)
-        )
-        return
+    for data_file in data_files:
+        if not os.path.exists(data_file):
+            print_error(
+                "Data file '{}' does not exist. Provide a valid NLU data file using "
+                "the '--data' argument.".format(data_file)
+            )
+            return
 
     if output_format == "json":
         td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
