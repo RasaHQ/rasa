@@ -443,7 +443,7 @@ def move_model(source: Text, target: Text) -> bool:
 
 def should_retrain(
     new_fingerprint: Fingerprint,
-    old_model: Text,
+    old_model: Optional[Text],
     train_path: Text,
     has_e2e_examples: bool = False,
     force_training: bool = False,
