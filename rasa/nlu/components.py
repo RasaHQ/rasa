@@ -371,7 +371,7 @@ def warn_of_competing_regex_and_statistical_extractor(
     """Warns when regex entity extractor is competing with a statistical one.
 
     This might be the case when the following conditions are all met:
-    * You are using a statistical entity extractor and a the RegexEntityExtractor
+    * You are using a statistical entity extractor and the `RegexEntityExtractor`
     * AND you have regex patterns for entity type A
     * AND you have annotated text examples for entity type A
     """
