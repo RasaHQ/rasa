@@ -10,6 +10,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import components, utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component, ComponentBuilder
@@ -500,6 +501,8 @@ class Interpreter:
                 f"{entity_1['entity']} extracted by {entity_1['extractor']} overlaps with "
                 f"{entity_2['value']} of type {entity_2['entity']} extracted by "
                 f"{entity_2['extractor']}. This can lead to unintended filling of "
-                f"slots. Please refer to the documentation section on entity extractors and entities getting extracted multiple times."
+                f"slots. Please refer to the documentation section on entity "
+                f"extractors and entities getting extracted multiple times:"
+                f"{DOCS_URL_COMPONENTS}#entity-extractors"
             )
             self.has_already_warned_of_overlapping_entities = True

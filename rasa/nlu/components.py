@@ -8,6 +8,7 @@ import rasa.utils.train_utils
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -361,7 +362,8 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
             f"in your pipeline: "
             f"{', '.join(extractors_in_pipeline)}. This can lead to the same entity getting"
             f"extracted multiple times. Please read the documentation section"
-            f"on entity extractors to make sure you understand the implications."
+            f"on entity extractors to make sure you understand the implications:"
+            f"{DOCS_URL_COMPONENTS}#entity-extractors"
         )
 
 
@@ -399,7 +401,7 @@ def warn_of_competition_with_regex_extractor(
             f"{', '.join(overlap_between_types)}. This can lead to multiple "
             f"extraction of entities. Please read RegexEntityExtractor's "
             f"documentation section to make sure you understand the "
-            f"implications."
+            f"implications: {DOCS_URL_COMPONENTS}#regexentityextractor"
         )
 
 
