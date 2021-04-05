@@ -343,7 +343,7 @@ def validate_required_components_from_data(
 def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
     """Warns the user when using competing extractors.
 
-    Competing extractors e.g. are CRFEntityExtractor and DIETClassifier.
+    Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
     Both of these look for the same entities based on the same training data
     leading to ambiguity in the results.
     """
