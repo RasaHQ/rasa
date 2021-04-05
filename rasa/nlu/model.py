@@ -496,14 +496,10 @@ class Interpreter:
             entity_2 = first_pair[1]
             rasa.shared.utils.io.raise_warning(
                 f"Parsing of message: '{message_text}' lead to overlapping"
-                f"entity annotations: {entity_1['value']} of type "
-                f"{entity_1['entity']} by {entity_1['extractor']} overlaps with "
-                f"{entity_2['value']} of type {entity_2['entity']} by "
-                f"{entity_2['extractor']}. We are bringing this to your "
-                f"attention because it could lead to unintended filling of "
-                f"slots if you are not aware of it. Please refer to the "
-                f"documentation section on entity extractors and the note on "
-                f"multiple extractions therein. You will only see this kind of "
-                f"warning once per interpreter life time."
+                f"entities: {entity_1['value']} of type "
+                f"{entity_1['entity']} extracted by {entity_1['extractor']} overlaps with "
+                f"{entity_2['value']} of type {entity_2['entity']} extracted by "
+                f"{entity_2['extractor']}. This can lead to unintended filling of "
+                f"slots. Please refer to the documentation section on entity extractors and entities getting extracted multiple times."
             )
             self.has_already_warned_of_overlapping_entities = True
