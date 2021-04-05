@@ -359,8 +359,8 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
         rasa.shared.utils.io.raise_warning(
             f"You have defined multiple entity extractors that do the same job"
             f"in your pipeline: "
-            f"{', '.join(extractors_in_pipeline)}. This can lead to multiple "
-            f"extraction of entities. Please read the documentation section"
+            f"{', '.join(extractors_in_pipeline)}. This can lead to the same entity getting"
+            f"extracted multiple times. Please read the documentation section"
             f"on entity extractors to make sure you understand the implications."
         )
 
