@@ -343,7 +343,7 @@ def validate_required_components_from_data(
 def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
     """Warns the user when using competing extractors.
 
-    Competing extractors e.g. are CRFEntityExtractor and DIETClassifier.
+    Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
     Both of these look for the same entities based on the same training data
     leading to ambiguity in the results.
     """
@@ -359,8 +359,8 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
         rasa.shared.utils.io.raise_warning(
             f"You have defined multiple entity extractors that do the same job"
             f"in your pipeline: "
-            f"{', '.join(extractors_in_pipeline)}. This can lead to multiple "
-            f"extraction of entities. Please read the documentation section"
+            f"{', '.join(extractors_in_pipeline)}. This can lead to the same entity getting"
+            f"extracted multiple times. Please read the documentation section"
             f"on entity extractors to make sure you understand the implications."
         )
 
@@ -371,7 +371,7 @@ def warn_of_competing_regex_and_statistical_extractor(
     """Warns when regex entity extractor is competing with a statistical one.
 
     This might be the case when the following conditions are all met:
-    * You are using a statistical entity extractor and a the RegexEntityExtractor
+    * You are using a statistical entity extractor and the `RegexEntityExtractor`
     * AND you have regex patterns for entity type A
     * AND you have annotated text examples for entity type A
     """
