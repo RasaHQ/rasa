@@ -303,7 +303,7 @@ def test_warn_of_competing_extractors(pipeline_template, should_warn):
         ),
     ],
 )
-def test_warn_of_competing_regex_and_statistical_extractor(
+def test_warn_of_competition_with_regex_extractor(
     pipeline_template, data_path, should_warn
 ):
     training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
@@ -313,12 +313,12 @@ def test_warn_of_competing_regex_and_statistical_extractor(
 
     if should_warn:
         with pytest.warns(UserWarning):
-            rasa.nlu.components.warn_of_competing_regex_and_statistical_extractor(
+            rasa.nlu.components.warn_of_competition_with_regex_extractor(
                 trainer.pipeline, training_data
             )
     else:
         with pytest.warns(None) as records:
-            rasa.nlu.components.warn_of_competing_regex_and_statistical_extractor(
+            rasa.nlu.components.warn_of_competition_with_regex_extractor(
                 trainer.pipeline, training_data
             )
 

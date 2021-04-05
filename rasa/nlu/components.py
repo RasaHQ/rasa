@@ -365,25 +365,25 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
         )
 
 
-def warn_of_competing_regex_and_statistical_extractor(
+def warn_of_competition_with_regex_extractor(
     pipeline: List["Component"], data: TrainingData
 ) -> None:
-    """Warns when regex entity extractor is competing with a statistical one.
+    """Warns when regex entity extractor is competing with a general one.
 
     This might be the case when the following conditions are all met:
-    * You are using a statistical entity extractor and the `RegexEntityExtractor`
+    * You are using a general entity extractor and the `RegexEntityExtractor`
     * AND you have regex patterns for entity type A
     * AND you have annotated text examples for entity type A
     """
-    statistical_entity_extractors = [
+    general_entity_extractors = [
         "DIETClassifier",
         "CRFEntityExtractor",
         "MitieEntityExtractor",
     ]
-    present_statistical_extractors = find_components_in_pipeline(
-        statistical_entity_extractors, pipeline
+    present_general_extractors = find_components_in_pipeline(
+        general_entity_extractors, pipeline
     )
-    has_general_extractors = len(present_statistical_extractors) > 0
+    has_general_extractors = len(present_general_extractors) > 0
     has_regex_extractor = any_components_in_pipeline(["RegexEntityExtractor"], pipeline)
 
     regex_entity_types = {rf["name"] for rf in data.regex_features}
@@ -393,7 +393,7 @@ def warn_of_competing_regex_and_statistical_extractor(
     if has_general_extractors and has_regex_extractor and has_overlap:
         rasa.shared.utils.io.raise_warning(
             f"You have an overlap between the RegexEntityExtractor and the "
-            f"statistical entity extractors {', '.join(present_statistical_extractors)}"
+            f"statistical entity extractors {', '.join(present_general_extractors)}"
             f"in your pipeline. Specifically both types of extractors will "
             f"attempt to extract entities of the types "
             f"{', '.join(overlap_between_types)}. This can lead to multiple "

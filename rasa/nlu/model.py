@@ -202,7 +202,7 @@ class Trainer:
 
         # Warn if there is an obvious case of competing entity extractors
         components.warn_of_competing_extractors(self.pipeline)
-        components.warn_of_competing_regex_and_statistical_extractor(
+        components.warn_of_competition_with_regex_extractor(
             self.pipeline, self.training_data
         )
 
