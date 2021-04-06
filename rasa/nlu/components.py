@@ -395,7 +395,7 @@ def warn_of_competition_with_regex_extractor(
     if has_general_extractors and has_regex_extractor and has_overlap:
         rasa.shared.utils.io.raise_warning(
             f"You have an overlap between the RegexEntityExtractor and the "
-            f"statistical entity extractors {', '.join(present_general_extractors)}"
+            f"statistical entity extractors {', '.join(present_general_extractors)} "
             f"in your pipeline. Specifically both types of extractors will "
             f"attempt to extract entities of the types "
             f"{', '.join(overlap_between_types)}. This can lead to multiple "
