@@ -220,12 +220,12 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     if asyncio.iscoroutinefunction(f):
 
         @wraps(f)
-        async def decorated(*args, **kwargs):
+        async def decorated_coroutine(*args, **kwargs):
             if is_telemetry_enabled():
                 return await f(*args, **kwargs)
             return None
 
-        return decorated
+        return decorated_coroutine
 
     @wraps(f)
     def decorated(*args, **kwargs):

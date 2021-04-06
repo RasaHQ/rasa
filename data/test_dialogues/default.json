@@ -9,7 +9,8 @@
       "confidence": null,
       "policy": null,
       "timestamp": 1551952977.4850519,
-      "unpredictable": false
+      "unpredictable": false,
+      "hide_rule_turn": false
     },
     {
       "py/object": "rasa.shared.core.events.UserUttered",
@@ -61,7 +62,8 @@
       "confidence": null,
       "policy": null,
       "timestamp": 1551953040.607782,
-      "unpredictable": false
+      "unpredictable": false,
+      "hide_rule_turn": false
     },
     {
       "py/object": "rasa.shared.core.events.BotUttered",

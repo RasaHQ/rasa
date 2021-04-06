@@ -433,9 +433,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
         tracker.recreate_from_dialogue(dialogue)
-        states = trained_policy.featurizer.prediction_states([tracker], default_domain)[
-            0
-        ]
+        states = trained_policy._prediction_states(tracker, default_domain)
 
         recalled = trained_policy.recall(states, tracker, default_domain)
         assert recalled is not None

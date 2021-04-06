@@ -39,7 +39,8 @@
       "name": "action_listen",
       "action_text": null,
       "policy": null,
-      "confidence": null
+      "confidence": null,
+      "hide_rule_turn": false
     },
     {
       "timestamp": 1517821726.200036,
@@ -78,7 +79,8 @@
       "name": "utter_greet",
       "action_text": null,
       "policy": null,
-      "confidence": null
+      "confidence": null,
+      "hide_rule_turn": false
     },
     {
       "timestamp": 1517821726.211038,
@@ -86,7 +88,8 @@
       "name": "action_listen",
       "action_text": null,
       "policy": null,
-      "confidence": null
+      "confidence": null,
+      "hide_rule_turn": false
     },
     {
       "timestamp": 1517821726.209836,
@@ -125,7 +128,8 @@
       "name": "utter_happy",
       "action_text": null,
       "policy": "policy_1_TEDPolicy",
-      "confidence": 0.8
+      "confidence": 0.8,
+      "hide_rule_turn": false
     },
     {
       "timestamp": 1517821726.211042,
@@ -133,7 +137,8 @@
       "name": "action_listen",
       "action_text": null,
       "policy": "policy_2_MemoizationPolicy",
-      "confidence": 1.0
+      "confidence": 1.0,
+      "hide_rule_turn": false
     }
   ]
 }

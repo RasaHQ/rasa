@@ -106,11 +106,8 @@ word vectors in your pipeline.
 
 * **Configuration**
 
-  You need to specify the language model to use.
-  By default the language configured in the pipeline will be used as the language model name.
-  If the spaCy model to be used has a name that is different from the language tag (`"en"`, `"de"`, etc.),
-  the model name can be specified using the configuration variable `model`.
-  The name will be passed to `spacy.load(name)`.
+  You need to specify the language model to use. The name will be passed to `spacy.load(name)`.
+  You can find more information on the available models on the [spaCy documentation](https://spacy.io/usage/models).
 
   ```yaml-rasa
   pipeline:
@@ -130,12 +127,12 @@ word vectors in your pipeline.
   [installing SpaCy](./installation.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
-  load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
-  If you want to incorporate a custom model you've found into spaCy, check out their page on
-  [adding languages](https://spacy.io/usage/adding-languages/). As described in the documentation, you need to
-  register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
-  by passing in your language identifier as the `language` option.
+  attach spaCy models that you've trained yourself.
 
+:::caution Fallback
+Rasa Open Source will try to fallback to a common model on your behalf if you don't pass a `model` setting. This is a
+temporary feature we've introduced as part of the spaCy 3.0 migration but the fallback will be removed in Rasa Open Source 3.0.0.
+:::
 
 ### HFTransformersNLP
 
