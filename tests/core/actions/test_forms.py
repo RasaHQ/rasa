@@ -1362,7 +1362,7 @@ async def test_ask_for_slot_if_not_utter_ask(
 
 
 @pytest.mark.parametrize(
-    "global_not_intent, slot_not_intent, entity_type",
+    "global_not_intent, slot_not_intent, type",
     [
         # for entity_type -> from_entity
         (
@@ -1477,13 +1477,13 @@ async def test_ask_for_slot_if_not_utter_ask(
 def test_global_not_intent(
     global_not_intent: Union[Text, List[Text]],
     slot_not_intent: Union[Text, List[Text]],
-    entity_type: Text,
+    type: Text,
 ):
     form_name = "some_form"
     entity_name = "some_slot"
     form = FormAction(form_name, None)
 
-    if entity_type == "from_entity":
+    if type == "from_entity":
         domain = Domain.from_dict(
             {
                 "forms": {
@@ -1492,7 +1492,7 @@ def test_global_not_intent(
                         REQUIRED_SLOTS_KEY: {
                             entity_name: [
                                 {
-                                    "type": entity_type,
+                                    "type": type,
                                     "entity": entity_name,
                                     "not_intent": slot_not_intent,
                                 }
@@ -1502,7 +1502,7 @@ def test_global_not_intent(
                 }
             }
         )
-    elif entity_type == "from_text":
+    elif type == "from_text":
         domain = Domain.from_dict(
             {
                 "forms": {
@@ -1511,7 +1511,7 @@ def test_global_not_intent(
                         REQUIRED_SLOTS_KEY: {
                             entity_name: [
                                 {
-                                    "type": entity_type,
+                                    "type": type,
                                     "intent": "some_intent",
                                     "not_intent": slot_not_intent,
                                 }
@@ -1530,7 +1530,7 @@ def test_global_not_intent(
                         REQUIRED_SLOTS_KEY: {
                             entity_name: [
                                 {
-                                    "type": entity_type,
+                                    "type": type,
                                     "value": "affirm",
                                     "intent": "true",
                                     "not_intent": slot_not_intent,
@@ -1557,3 +1557,20 @@ def test_global_not_intent(
 
     slot_values = form.extract_other_slots(tracker, domain)
     assert slot_values == {}
+
+
+def test_form_with_no_required_slots_keyword():
+    domain = Domain.from_dict(
+        {
+            "forms": {
+                "some_form": {
+                    "some_slot": [{"type": "from_text", "intent": "some_intent",}],
+                }
+            }
+        }
+    )
+
+    assert (
+        domain.__dict__["forms"]["some_form"]["required_slots"]["some_slot"][0]["type"]
+        == "from_text"
+    )
