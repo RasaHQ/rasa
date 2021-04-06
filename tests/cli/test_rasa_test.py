@@ -157,16 +157,13 @@ def test_test_core_comparison_after_train(
 
     path = Path(tmp_path / "comparison_models")
     path.mkdir()
-    assert path.exists()
 
     run_one = Path(path / "run_1")
     run_one.mkdir()
-    assert run_one.exists()
     shutil.copy(trained_rasa_model, run_one)
 
     run_two = Path(path / "run_2")
     run_two.mkdir()
-    assert run_two.exists()
     shutil.copy(trained_rasa_model, run_two)
 
     write_text_file("[1]", path / "num_stories.json")
