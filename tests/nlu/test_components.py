@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Text, Type
+from typing import List, Optional, Text, Type, Dict
 
 import pytest
 
@@ -246,7 +246,9 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(
         ),
     ],
 )
-def test_warn_of_competing_extractors(pipeline_template, should_warn):
+def test_warn_of_competing_extractors(
+    pipeline_template: List[Dict[Text, Text]], should_warn: bool
+):
     config = RasaNLUModelConfig({"pipeline": pipeline_template})
     trainer = Trainer(config)
 
@@ -304,7 +306,7 @@ def test_warn_of_competing_extractors(pipeline_template, should_warn):
     ],
 )
 def test_warn_of_competition_with_regex_extractor(
-    pipeline_template, data_path, should_warn
+    pipeline_template: List[Dict[Text, Text]], data_path: Text, should_warn: bool
 ):
     training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
 
