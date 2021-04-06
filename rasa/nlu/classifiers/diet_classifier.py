@@ -1020,14 +1020,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
-        if not model_dir or not meta.get("file"):
+        if not meta.get("file"):
             logger.debug(
                 f"Failed to load model for '{cls.__name__}'. "
                 f"Maybe you did not provide enough training data and no model was "
