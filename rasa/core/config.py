@@ -37,15 +37,9 @@ if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import StoryStep
 
 
-def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
+def load(config_file: Union[Text, Dict]) -> List["Policy"]:
     """Load policy data stored in the specified file."""
     from rasa.core.policies.ensemble import PolicyEnsemble
-
-    if not config_file:
-        raise FileNotFoundException(
-            f"The provided configuration file path does not seem to be valid. "
-            f"The file '{os.path.abspath(config_file)}' could not be found."
-        )
 
     config_data = {}
     if isinstance(config_file, str) and os.path.isfile(config_file):
