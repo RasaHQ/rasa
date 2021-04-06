@@ -373,8 +373,8 @@ def test_validate_number_of_examples_per_intent():
 
     assert len(w) == 1
     assert (
-        w[0].message.args[0] == f"Intent 'subscribe' has only 1 training examples! "
-        f"Minimum is 2, training may fail."
+        w[0].message.args[0] == "Intent 'subscribe' has only 1 training examples! "
+        "Minimum is 2, training may fail."
     )
 
 
