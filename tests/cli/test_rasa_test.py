@@ -175,7 +175,7 @@ def test_test_core_comparison_after_train(
         "test",
         "core",
         "-m",
-        tmp_path / "comparison_models",
+        str(path),
         "--stories",
         "data/stories",
         "--evaluate-model-directory",
