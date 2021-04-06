@@ -299,6 +299,16 @@ class TrackerFeaturizer:
         trackers_as_states = np.array(trackers_as_states)
         trackers_as_actions = np.array(trackers_as_actions)
         trackers_as_entities = np.array(trackers_as_entities)
+        # we need to make sure that each chunk contains entities
+        example_with_entities = []
+        for i, turns_as_entities in enumerate(trackers_as_entities):
+            if any(turn_entities for turn_entities in turns_as_entities):
+                example_with_entities = [
+                    trackers_as_states[i],
+                    trackers_as_actions[i],
+                    trackers_as_entities[i],
+                ]
+                break
 
         data = []
         for label, num_label_examples in Counter(labels).items():
@@ -346,6 +356,16 @@ class TrackerFeaturizer:
                     trackers_as_entities_for_label[start:end]
                 )
 
+            # we need to make sure that each chunk contains entities
+            entities_present = any(
+                any(turn_entities for turn_entities in turns_as_entities)
+                for turns_as_entities in trackers_as_entities_chunk
+            )
+            if not entities_present and example_with_entities:
+                trackers_as_states_chunk.append(example_with_entities[0])
+                trackers_as_actions_chunk.append(example_with_entities[1])
+                trackers_as_entities_chunk.append(example_with_entities[2])
+
             tracker_state_features_chunk = self._featurize_states(
                 trackers_as_states_chunk, interpreter
             )
@@ -383,8 +403,12 @@ class TrackerFeaturizer:
         tf_features[LABEL] = chunk_utils.int_feature(turn_label_ids)
 
         for i, entity_tag in enumerate(turn_entity_tags):
-            for features in entity_tag.values():
-                tf_features.update(chunk_utils.encode_features(features, f"{i}"))
+            for attribute, features in entity_tag.items():
+                tf_features.update(
+                    chunk_utils.encode_features(
+                        features, f"{i}{chunk_utils.TF_RECORD_KEY_SEPARATOR}{attribute}"
+                    )
+                )
 
         return tf_features
 
@@ -461,24 +485,30 @@ class TrackerFeaturizer:
                 parts = key.split(chunk_utils.TF_RECORD_KEY_SEPARATOR)
                 index = parts[0]
                 attribute = parts[1]
+                turn_index = int(index)
+
+                if attribute == ENTITY_TAGS:
+                    index = f"{index}{chunk_utils.TF_RECORD_KEY_SEPARATOR}{attribute}"
 
                 _features = chunk_utils.decode_features(
                     example,
                     key[len(f"{index}{chunk_utils.TF_RECORD_KEY_SEPARATOR}") :],
                     index,
                 )
-                index = int(index)
-                if _features and attribute != ENTITY_TAGS:
-                    if not turn_state_features.get(index):
-                        turn_state_features[index] = defaultdict(list)
 
-                    turn_state_features[index][attribute].append(_features)
+                if not _features:
+                    continue
 
-                elif _features and attribute == ENTITY_TAGS:
-                    if not turn_entity_tags.get(index):
-                        turn_entity_tags[index] = defaultdict(list)
+                if attribute == ENTITY_TAGS:
+                    if not turn_entity_tags.get(turn_index):
+                        turn_entity_tags[turn_index] = defaultdict(list)
 
-                    turn_entity_tags[index][attribute].append(_features)
+                    turn_entity_tags[turn_index][attribute].append(_features)
+                else:
+                    if not turn_state_features.get(turn_index):
+                        turn_state_features[turn_index] = defaultdict(list)
+
+                    turn_state_features[turn_index][attribute].append(_features)
 
             # the first turn might be empty, which was not persisted
             if not turn_state_features.get(0):

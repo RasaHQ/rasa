@@ -648,6 +648,10 @@ class TEDPolicy(Policy):
             sample_label_ids,
             sample_entity_tags,
         ) = self.featurizer.load_chunk(data_chunk_files[0].file_path)
+        # TODO technically, it is wrong. There is a possibility that the first chunk
+        #  doesn't have the signature that covers all possible cases.
+        #  we need to either collect the signature separately or make sure that each
+        #  chunk has exactly the same signature
         sample_model_data = self._create_model_data(
             sample_tracker_state_features,
             sample_label_ids,
