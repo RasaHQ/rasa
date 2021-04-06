@@ -94,7 +94,7 @@ def run(args: argparse.Namespace):
     # make sure either a model server, a remote storage, or a local model is
     # configured
 
-    from rasa.model import get_model
+    import rasa.model
     from rasa.core.utils import AvailableEndpoints
 
     # start server if remote storage is configured
@@ -113,7 +113,7 @@ def run(args: argparse.Namespace):
     args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
     local_model_set = True
     try:
-        get_model(args.model)
+        rasa.model.get_local_model(args.model)
     except ModelNotFound:
         local_model_set = False
 

@@ -82,6 +82,16 @@ def test_get_model_context_manager(trained_rasa_model: str):
     assert not os.path.exists(unpacked)
 
 
+def test_get_local_model(trained_rasa_model: str):
+    assert rasa.model.get_local_model(trained_rasa_model) == trained_rasa_model
+
+
+@pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
+def test_get_local_model_exception(model_path: Optional[Text]):
+    with pytest.raises(ModelNotFound):
+        rasa.model.get_local_model(model_path)
+
+
 @pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
 def test_get_model_exception(model_path: Optional[Text]):
     with pytest.raises(ModelNotFound):

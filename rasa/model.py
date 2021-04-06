@@ -128,16 +128,19 @@ class FingerprintComparisonResult:
         return self.force_training or self.nlu
 
 
-def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Get a model and unpack it. Raises a `ModelNotFound` exception if
-    no model could be found at the provided path.
+def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
+    """Returns verified path to local model archive.
 
     Args:
         model_path: Path to the zipped model. If it's a directory, the latest
                     trained model is returned.
 
     Returns:
-        Path to the unpacked model.
+        Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+
+    Raises:
+        ModelNotFound Exception: When no model could be found at the provided path.
 
     """
     if not model_path:
@@ -154,10 +157,30 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
+    return model_path
+
+
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
+    """Gets a model and unpacks it.
+
+    Args:
+        model_path: Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+
+    Returns:
+        Path to the unpacked model.
+
+    Raises:
+        ModelNotFound Exception: When no model could be found at the provided path.
+
+    """
+    model_path = get_local_model(model_path)
+
     try:
         model_relative_path = os.path.relpath(model_path)
     except ValueError:
         model_relative_path = model_path
+
     logger.info(f"Loading model {model_relative_path}...")
 
     return unpack_model(model_path)
