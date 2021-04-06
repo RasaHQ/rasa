@@ -66,7 +66,7 @@ class MemoryLeakTest(abc.ABC):
                 sys.executable,
                 "-c",
                 (
-                    f"from tests.test_memory_leak import {self.__class__.__name__}; "
+                    f"from {__name__} import {self.__class__.__name__}; "
                     f"t = {self.__class__.__name__}();"
                     f"t.function_to_profile()"
                 ),
@@ -100,7 +100,7 @@ class MemoryLeakTest(abc.ABC):
         mprof_results = Path(f"{base_name}_raw.json")
 
         # plot this via `mprof plot mprof_result.txt`
-        with open(mprof_plot, "w+") as f:
+        with open(mprof_plot, "w") as f:
             for memory, timestamp in results:
                 f.write(f"MEM {memory:.6f} {timestamp:.4f}\n")
 
