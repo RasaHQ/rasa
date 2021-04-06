@@ -67,7 +67,7 @@ async def test_load_agent_on_start_with_good_model_file(
 
 
 async def test_load_agent_on_start_with_bad_model_file(
-    tmp_path: Path, rasa_server: Sanic, loop: AbstractEventLoop
+    tmp_path: Path, rasa_non_trained_server: Sanic, loop: AbstractEventLoop
 ):
     fake_model = tmp_path / "fake_model.tar.gz"
     fake_model.touch()
@@ -75,7 +75,7 @@ async def test_load_agent_on_start_with_bad_model_file(
 
     with pytest.warns(UserWarning) as warnings:
         agent = await run.load_agent_on_start(
-            fake_model_path, AvailableEndpoints(), None, rasa_server, loop
+            fake_model_path, AvailableEndpoints(), None, rasa_non_trained_server, loop
         )
         assert any(
             "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
