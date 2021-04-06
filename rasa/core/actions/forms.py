@@ -13,7 +13,10 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.constants import (
+    UTTER_PREFIX,
+    GLOBAL_NOT_INTENT,
+)
 from rasa.shared.core.events import (
     Event,
     SlotSet,
@@ -173,16 +176,19 @@ class FormAction(LoopAction):
             The value/s found in `global_not_intent` parameter in the `domain.yml`
             (under forms).
         """
-        if "global_not_intent" in domain.__dict__["forms"][self.name()]:
-            global_not_intents = domain.__dict__["forms"][self.name()][
-                "global_not_intent"
-            ]
-        else:
-            global_not_intents = []
-        if not isinstance(global_not_intents, list):
-            global_not_intents = [global_not_intents]
+        if domain.__dict__["forms"]:
+            if GLOBAL_NOT_INTENT in domain.__dict__["forms"][self.name()]:
+                global_not_intents = domain.__dict__["forms"][self.name()][
+                    GLOBAL_NOT_INTENT
+                ]
+            else:
+                global_not_intents = []
+            if not isinstance(global_not_intents, list):
+                global_not_intents = [global_not_intents]
 
-        return global_not_intents
+            return global_not_intents
+        else:
+            return []
 
     def intent_is_desired(
         self,

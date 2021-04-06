@@ -10,6 +10,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    GLOBAL_NOT_INTENT,
 )
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -1319,7 +1320,7 @@ def test_global_not_intent_slot_mappings_invalid_domain():
     domain_as_dict = {
         KEY_FORMS: {
             "my_form": {
-                "global_not_intent": "some_not_intent",
+                GLOBAL_NOT_INTENT: "some_not_intent",
                 "slot_x": [
                     {
                         "type": "from_entity",

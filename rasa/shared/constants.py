@@ -65,6 +65,10 @@ CONFIG_MANDATORY_KEYS_CORE = []
 CONFIG_MANDATORY_KEYS_NLU = ["language"]
 CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
 
+# Keys related to Forms (in the Domain)
+REQUIRED_SLOTS_KEY = "required_slots"
+GLOBAL_NOT_INTENT = "global_not_intent"
+
 # Constants for default Rasa Open Source project layout
 DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
 DEFAULT_CREDENTIALS_PATH = "credentials.yml"

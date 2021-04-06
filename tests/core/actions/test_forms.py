@@ -12,6 +12,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, GLOBAL_NOT_INTENT
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
@@ -40,7 +41,7 @@ async def test_activate():
     domain = f"""
 forms:
   {form_name}:
-    required_slots:
+    {REQUIRED_SLOTS_KEY}:
         {slot_name}:
         - type: from_entity
           entity: number
@@ -74,7 +75,7 @@ async def test_activate_with_prefilled_slot():
     domain = f"""
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             {slot_name}:
             - type: from_entity
               entity: {slot_name}
@@ -125,12 +126,12 @@ nlu:
     - I don't want my shoes anymore
 forms:
   {form_1}:
-    required_slots:
+    {REQUIRED_SLOTS_KEY}:
         {slot_a}:
         - type: from_entity
           entity: number
   {form_2}:
-    required_slots:
+    {REQUIRED_SLOTS_KEY}:
         {slot_a}:
         - type: from_entity
           entity: number
@@ -253,7 +254,7 @@ async def test_activate_and_immediate_deactivate():
     domain = f"""
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             {slot_name}:
             - type: from_entity
               entity: {slot_name}
@@ -291,7 +292,7 @@ async def test_set_slot_and_deactivate():
     domain = f"""
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             {slot_name}:
             - type: from_text
     slots:
@@ -332,7 +333,7 @@ async def test_action_rejection():
     domain = f"""
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             {slot_to_fill}:
             - type: from_entity
               entity: some_entity
@@ -471,7 +472,7 @@ async def test_validate_slots(
         type: any
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             {slot_name}:
             - type: from_text
             num_tables:
@@ -511,7 +512,7 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
             type: any
         forms:
           {form_name}:
-            required_slots:
+            {REQUIRED_SLOTS_KEY}:
                 {slot_name_1}:
                 - type: from_intent
                   intent: some_intent
@@ -589,7 +590,7 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
         type: any
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             num_tables:
             - type: from_entity
               entity: num_tables
@@ -631,7 +632,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
         type: unfeaturized
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             {slot_name}:
             - type: from_text
     actions:
@@ -679,7 +680,7 @@ def test_name_of_utterance(utterance_name: Text):
     domain = f"""
     forms:
       {form_name}:
-        required_slots:
+        {REQUIRED_SLOTS_KEY}:
             {slot_name}:
             - type: from_text
     responses:
@@ -766,7 +767,7 @@ def test_extract_requested_slot_when_mapping_applies(
     form = FormAction(form_name, None)
 
     domain = Domain.from_dict(
-        {"forms": {form_name: {"required_slots": {entity_name: [slot_mapping]}}}}
+        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {entity_name: [slot_mapping]}}}}
     )
 
     tracker = DialogueStateTracker.from_events(
@@ -805,7 +806,7 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
     form = FormAction(form_name, None)
 
     domain = Domain.from_dict(
-        {"forms": {form_name: {"required_slots": {entity_name: [slot_mapping]}}}}
+        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {entity_name: [slot_mapping]}}}}
     )
 
     tracker = DialogueStateTracker.from_events(
@@ -852,7 +853,7 @@ async def test_trigger_slot_mapping_applies(
         {
             "forms": {
                 form_name: {
-                    "required_slots": {
+                    REQUIRED_SLOTS_KEY: {
                         entity_name: [
                             {
                                 "type": "from_entity",
@@ -901,7 +902,7 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
         {
             "forms": {
                 form_name: {
-                    "required_slots": {
+                    REQUIRED_SLOTS_KEY: {
                         entity_name: [
                             {
                                 "type": "from_entity",
@@ -1066,7 +1067,7 @@ def test_extract_requested_slot_from_entity(
         not_intent=mapping_not_intent,
     )
     domain = Domain.from_dict(
-        {"forms": {form_name: {"required_slots": {"some_slot": [mapping]}}}}
+        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {"some_slot": [mapping]}}}}
     )
 
     tracker = DialogueStateTracker.from_events(
@@ -1253,7 +1254,7 @@ def test_extract_other_slots_with_entity(
         {
             "forms": {
                 form_name: {
-                    "required_slots": {
+                    REQUIRED_SLOTS_KEY: {
                         "some_other_slot": some_other_slot_mapping,
                         "some_slot": some_slot_mapping,
                     }
@@ -1361,57 +1362,185 @@ async def test_ask_for_slot_if_not_utter_ask(
 
 
 @pytest.mark.parametrize(
-    "global_not_intent, slot_not_intent",
+    "global_not_intent, slot_not_intent, entity_type",
     [
+        # for entity_type -> from_entity
         (
             # `global_not_intent` as a string and slot's not_intent as an empty list.
             "greet",
             [],
+            "from_entity",
         ),
         (
             # `global_not_intent` as an empty list and slot's not_intent has a value.
             [],
             ["greet"],
+            "from_entity",
         ),
         (
             # `global_not_intent` as a list of 2 values and slot's not_intent has one
             # value different than the ones in `global_not_intent`.
             ["chitchat", "greet"],
             ["inform"],
+            "from_entity",
         ),
         (
             # `global_not_intent` as a list of 2 values and slot's not_intent has one
             # value that is included also in `global_not_intent`.
             ["chitchat", "greet"],
             ["chitchat"],
+            "from_entity",
+        ),
+        # same examples for entity_type -> from_text
+        (
+            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+            "from_text",
+        ),
+        (
+            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+            "from_text",
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["inform"],
+            "from_text",
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+            "from_text",
+        ),
+        # same examples for entity_type -> from_intent
+        (
+            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+            "from_intent",
+        ),
+        (
+            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+            "from_intent",
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["inform"],
+            "from_intent",
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+            "from_intent",
+        ),
+        # same examples for entity_type -> from_trigger_intent
+        (
+            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+            "from_trigger_intent",
+        ),
+        (
+            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+            "from_trigger_intent",
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["inform"],
+            "from_trigger_intent",
+        ),
+        (
+            # `global_not_intent` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `global_not_intent`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+            "from_trigger_intent",
         ),
     ],
 )
-async def test_global_not_intent(
-    global_not_intent: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]]
+def test_global_not_intent(
+    global_not_intent: Union[Text, List[Text]],
+    slot_not_intent: Union[Text, List[Text]],
+    entity_type: Text,
 ):
     form_name = "some_form"
     entity_name = "some_slot"
     form = FormAction(form_name, None)
 
-    domain = Domain.from_dict(
-        {
-            "forms": {
-                form_name: {
-                    "global_not_intent": global_not_intent,
-                    "required_slots": {
-                        entity_name: [
-                            {
-                                "type": "from_entity",
-                                "entity": entity_name,
-                                "not_intent": slot_not_intent,
-                            }
-                        ],
-                    },
+    if entity_type == "from_entity":
+        domain = Domain.from_dict(
+            {
+                "forms": {
+                    form_name: {
+                        GLOBAL_NOT_INTENT: global_not_intent,
+                        REQUIRED_SLOTS_KEY: {
+                            entity_name: [
+                                {
+                                    "type": entity_type,
+                                    "entity": entity_name,
+                                    "not_intent": slot_not_intent,
+                                }
+                            ],
+                        },
+                    }
                 }
             }
-        }
-    )
+        )
+    elif entity_type == "from_text":
+        domain = Domain.from_dict(
+            {
+                "forms": {
+                    form_name: {
+                        GLOBAL_NOT_INTENT: global_not_intent,
+                        REQUIRED_SLOTS_KEY: {
+                            entity_name: [
+                                {
+                                    "type": entity_type,
+                                    "intent": "some_intent",
+                                    "not_intent": slot_not_intent,
+                                }
+                            ],
+                        },
+                    }
+                }
+            }
+        )
+    else:
+        domain = Domain.from_dict(
+            {
+                "forms": {
+                    form_name: {
+                        GLOBAL_NOT_INTENT: global_not_intent,
+                        REQUIRED_SLOTS_KEY: {
+                            entity_name: [
+                                {
+                                    "type": entity_type,
+                                    "value": "affirm",
+                                    "intent": "true",
+                                    "not_intent": slot_not_intent,
+                                }
+                            ],
+                        },
+                    }
+                }
+            }
+        )
 
     tracker = DialogueStateTracker.from_events(
         "default",
