@@ -70,7 +70,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
           ref: ${{ github.head_ref || github.sha }}
-          reoo: ${{ github.event.pull_request.head.repo.full_name }}
+          owner: ${{ github.event.pull_request.head.repo.full_name }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
 
