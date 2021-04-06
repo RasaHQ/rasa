@@ -223,7 +223,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
     """Read a value from the global Rasa configuration."""
 
-    def not_found() -> Union[None, NoReturn]:
+    def not_found() -> None:
         if unavailable_ok:
             return None
         else:

@@ -1316,6 +1316,26 @@ def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
     assert not Domain.is_domain_file(potential_domain_path)
 
 
+def test_domain_with_empty_intent_mapping():
+    # domain.yml with intent (intent_name) that has a `:` character
+    # and nothing after it.
+    test_yaml = """intents:
+    - intent_name:"""
+
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(test_yaml).as_dict()
+
+
+def test_domain_with_empty_entity_mapping():
+    # domain.yml with entity (entity_name) that has a `:` character
+    # and nothing after it.
+    test_yaml = """entities:
+    - entity_name:"""
+
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(test_yaml).as_dict()
+
+
 def test_global_not_intent_slot_mappings_invalid_domain():
     domain_as_dict = {
         KEY_FORMS: {
@@ -1332,4 +1352,4 @@ def test_global_not_intent_slot_mappings_invalid_domain():
         },
     }
     with pytest.raises(InvalidDomain):
-        Domain.from_dict(domain_as_dict)
+        Domain.from_dict(domain_as_dict)        
