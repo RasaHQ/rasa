@@ -1749,7 +1749,7 @@ Entity extractors extract entities, such as person names or locations, from the 
   For example, if you use two or more general purpose extractors like [MitieEntityExtractor](components.mdx#mitieentityextractor),
   [DIETClassifier](components.mdx#dietclassifier-1), or [CRFEntityExtractor](components.mdx#crfentityextractor),
   the entity types in your training data will be found and
-  extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type text,
+  extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
   then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
   will be added to the list, including duplicates.
 
