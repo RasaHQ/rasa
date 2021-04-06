@@ -1,4 +1,5 @@
 import logging
+import operator
 from collections import defaultdict, Counter
 from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
 
@@ -364,8 +365,7 @@ def _tag_to_use(
         )
 
     # Take the tag with the highest score as the tag for the entity
-    tag = max(score_per_tag, key=score_per_tag.get)
-    score = score_per_tag[tag]
+    tag, score = max(score_per_tag.items(), key=operator.itemgetter(1))
 
     return tag, score
 
