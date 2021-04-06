@@ -63,6 +63,16 @@ jobs:
     needs: [ changes ]
 
     steps:
+      - name: Checkout git repository 🕝
+        # if the trigger is a pull_request, and the pull_request is from a fokred repo,
+        # we checkout the fokred repo
+        if: |
+          ${{ github.event_name == 'pull_request' }}
+          ${{ github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name }}
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+        
       - name: Wait for doc tests
         uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
         id: wait-for-doc-tests
