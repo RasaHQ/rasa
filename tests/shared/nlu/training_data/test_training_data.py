@@ -356,6 +356,28 @@ def test_number_of_examples_per_intent_with_yaml():
     assert td.number_of_examples_per_intent["ask_weather"] == 3
 
 
+def test_validate_number_of_examples_per_intent():
+    message_intent = Message(
+        data={"text": "I would like the newsletter", "intent": "subscribe"}
+    )
+    message_non_nlu_intent = Message(data={"intent": "subscribe"})
+
+    training_examples = [
+        message_intent,
+        message_non_nlu_intent,
+    ]
+    training_data = TrainingData(training_examples=training_examples)
+
+    with pytest.warns(Warning) as w:
+        training_data.validate()
+
+    assert len(w) == 1
+    assert (
+        w[0].message.args[0] == f"Intent 'subscribe' has only 1 training examples! "
+        f"Minimum is 2, training may fail."
+    )
+
+
 @pytest.mark.parametrize(
     "filepaths",
     [
