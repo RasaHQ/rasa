@@ -1850,26 +1850,24 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
         if form_data is None:
             continue
 
-        if isinstance(form_data, Dict):
-            if REQUIRED_SLOTS_KEY in form_data:
-                slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
-            elif GLOBAL_NOT_INTENT in form_data and REQUIRED_SLOTS_KEY not in form_data:
-                raise InvalidDomain(
-                    f"If you use the {GLOBAL_NOT_INTENT} parameter in your form, then"
-                    f" the keyword {REQUIRED_SLOTS_KEY} should precede the definition"
-                    f" of your slot mappings. Please see"
-                    f" {DOCS_URL_FORMS} for more information."
-                )
-            else:
-                slots = form_data
-
-        if REQUIRED_SLOTS_KEY not in form_data:
+        if REQUIRED_SLOTS_KEY in form_data:
+            slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
+        else:
             rasa.shared.utils.io.raise_deprecation_warning(
                 f"The definition of slot mappings in your form"
                 f" should always be preceded by the keyword {REQUIRED_SLOTS_KEY}."
                 f" The lack of this keyword will be deprecated in"
                 f" Rasa Open Source 3.0.0. Please see "
                 f"{DOCS_URL_FORMS} for more information.",
+            )
+            slots = form_data
+
+        if GLOBAL_NOT_INTENT in form_data and REQUIRED_SLOTS_KEY not in form_data:
+            raise InvalidDomain(
+                f"If you use the {GLOBAL_NOT_INTENT} parameter in your form, then"
+                f" the keyword {REQUIRED_SLOTS_KEY} should precede the definition"
+                f" of your slot mappings. Please see"
+                f" {DOCS_URL_FORMS} for more information."
             )
 
         if not isinstance(slots, Dict):

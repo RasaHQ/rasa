@@ -55,6 +55,15 @@ We've updated our docs to reflect these changes. All examples now show a direct 
 correct spaCy model. We've also added a warning to the [SpaCyNLP](components.mdx#spacynlp)
 docs that explains the fallback behavior.
 
+### Forms
+
+#### New `global_not_intent` parameter in Forms
+
+We added a new parameter under Forms with the name `global_not_intent`. This parameter
+can be used in case the user never wants to fill any slots of a form with the specified
+intent, eg. chitchat. Please see https://rasa.com/docs/rasa/forms for examples and more
+information on how to use it in your `domain.yml` file.
+
 ## Rasa 2.3 to Rasa 2.4
 
 ### Deprecating `template` for `response`

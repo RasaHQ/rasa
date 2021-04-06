@@ -202,8 +202,8 @@ class FormAction(LoopAction):
             requested_slot_mapping.get("not_intent", [])
         )
 
-        mapping_not_intents = list(
-            set(mapping_not_intents + self.get_global_not_intents(domain))
+        mapping_not_intents = set(
+            mapping_not_intents + self.get_global_not_intents(domain)
         )
 
         intent = tracker.latest_message.intent.get("name")
