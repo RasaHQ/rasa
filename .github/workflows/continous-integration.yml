@@ -166,6 +166,7 @@ jobs:
         - test-nlu-predictors
         - test-full-model-training
         - test-other-unit-tests
+        - test-performance
         os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.6, 3.7, 3.8 ]
 
