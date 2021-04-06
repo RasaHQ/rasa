@@ -61,7 +61,7 @@ jobs:
     name: Wait for docs tests
     runs-on: ubuntu-latest
     needs: [ changes ]
-    # if: needs.changes.outputs.docs == 'true'
+    if: needs.changes.outputs.docs == 'true' || github.event_name == 'push' && (startsWith(github.event.ref, 'refs/tags') || github.ref == 'refs/heads/main')
 
     steps:
       - name: Wait for doc tests
@@ -71,7 +71,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          # owner: ${{ github.event.pull_request.head.repo.owner.login || github.repository_owner }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
   
