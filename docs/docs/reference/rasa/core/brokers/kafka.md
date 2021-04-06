@@ -12,7 +12,7 @@ class KafkaEventBroker(EventBroker)
 #### \_\_init\_\_
 
 ```python
- | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, **kwargs: Any, ,) -> None
+ | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, **kwargs: Any, ,) -> None
 ```
 
 Kafka event broker.
@@ -29,6 +29,8 @@ Kafka event broker.
   to servers and can be used to identify specific server-side log entries
   that correspond to this client. Also submitted to `GroupCoordinator` for
   logging with respect to producer group administration.
+- `partition_by_sender` - Flag to configure whether messages are partitioned by
+  sender_id or not
 - `sasl_username` - Username for plain authentication.
 - `sasl_password` - Password for plain authentication.
 - `ssl_cafile` - Optional filename of ca file to use in certificate
