@@ -61,7 +61,7 @@ jobs:
     name: Wait for docs tests
     runs-on: ubuntu-latest
     needs: [ changes ]
-    if: needs.changes.outputs.docs == 'true'
+    # if: needs.changes.outputs.docs == 'true'
 
     steps:
       - name: Wait for doc tests
@@ -74,7 +74,7 @@ jobs:
           owner: ${{ github.event.pull_request.head.repo.owner.login || github.repository_owner }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
-
+  
 
   quality:
     name: Code Quality
