@@ -215,7 +215,7 @@ def any_components_in_pipeline(
     """Check if any of the provided components are listed in the pipeline.
 
     Args:
-        components: A list of str of component class names to check
+        components: Component class names to check.
         pipeline: A list of :class:`rasa.nlu.components.Component`s.
 
     Returns:
