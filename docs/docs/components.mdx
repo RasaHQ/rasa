@@ -1753,7 +1753,7 @@ Entity extractors extract entities, such as person names or locations, from the 
   [DIETClassifier](components.mdx#dietclassifier-1), or [CRFEntityExtractor](components.mdx#crfentityextractor),
   the entity types in your training data will be found and
   extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type text,
-  then the last extractor in your pipeline will win. If the slot is of type list, then all results
+  then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
   will be added to the list, including duplicates.
 
   Another, less obvious case of duplicate/overlapping extraction can happen even if extractors focus on different
