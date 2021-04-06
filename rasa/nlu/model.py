@@ -496,7 +496,7 @@ class Interpreter:
             entity_1 = first_pair[0]
             entity_2 = first_pair[1]
             rasa.shared.utils.io.raise_warning(
-                f"Parsing of message: '{message_text}' lead to overlapping"
+                f"Parsing of message: '{message_text}' lead to overlapping "
                 f"entities: {entity_1['value']} of type "
                 f"{entity_1['entity']} extracted by {entity_1['extractor']} overlaps with "
                 f"{entity_2['value']} of type {entity_2['entity']} extracted by "
