@@ -185,7 +185,7 @@ test-performance: test-marker
 
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)
+	OMP_NUM_THREADS=1 poetry run pytest tests --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"

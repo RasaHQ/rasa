@@ -1,12 +1,15 @@
 import asyncio
 import copy
+import json
 import os
 import random
 import pytest
 import sys
 import uuid
 
+from _pytest.config import ExitCode, Config
 from _pytest.python import Function
+from _pytest.terminal import TerminalReporter
 from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
@@ -563,6 +566,18 @@ def pytest_runtest_setup(item: Function) -> None:
     ):
         pytest.skip("cannot run on Windows")
 
+    interesting_fixtures_parts = {"unpacked", "trained", "agent"}
+    for fixture_name in item.fixturenames:
+        if not any(
+            interesting_part in fixture_name
+            for interesting_part in interesting_fixtures_parts
+        ):
+            continue
+        if fixture_name in fixture_counts:
+            fixture_counts[fixture_name] = [*fixture_counts[fixture_name], item.name]
+        else:
+            fixture_counts[fixture_name] = [item.name]
+
 
 class MockExporter(Exporter):
     """Mocked `Exporter` class."""
@@ -625,3 +640,18 @@ def pytest_collection_modifyitems(items: List[Function]) -> None:
     for item in items:
         marker = _get_marker_for_ci_matrix(item)
         item.add_marker(marker)
+
+
+import multiprocessing
+
+fixture_counts = multiprocessing.Manager().dict()
+
+
+def pytest_terminal_summary(
+    terminalreporter: TerminalReporter, exitstatus: ExitCode, config: Config
+):
+    result = dict(fixture_counts)
+    result = {k: v for k, v in result.items() if len(v) < 5}
+    terminalreporter.write(json.dumps(result))
+
+    # raise ValueError()
