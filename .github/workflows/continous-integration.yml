@@ -61,6 +61,7 @@ jobs:
     name: Wait for docs tests
     runs-on: ubuntu-latest
     needs: [ changes ]
+    if: needs.changes.outputs.docs == 'true'
 
     steps:
       - name: Wait for doc tests
