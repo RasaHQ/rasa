@@ -325,35 +325,28 @@ def test_number_of_examples_per_intent():
     assert training_data.number_of_examples_per_intent["ask_weather"] == 2
 
 
-def test_number_of_examples_per_intent_with_yaml():
-    stories = rasa.shared.utils.io.read_yaml_file(
-        "data/test_number_nlu_examples/stories.yml"
+async def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
+    domain_path = tmp_path / "domain.yml"
+    domain_path.write_text(Domain.empty().as_yaml())
+
+    config_path = tmp_path / "config.yml"
+    config_path.touch()
+
+    importer = TrainingDataImporter.load_from_dict(
+        {},
+        str(config_path),
+        str(domain_path),
+        [
+            "data/test_number_nlu_examples/nlu.yml",
+            "data/test_number_nlu_examples/stories.yml",
+            "data/test_number_nlu_examples/rules.yml",
+        ],
     )
-    rules = rasa.shared.utils.io.read_yaml_file(
-        "data/test_number_nlu_examples/rules.yml"
-    )
-    stories.update(rules)
 
-    non_nlu_data = []
-    for v in stories.values():
-        for i in range(len(v)):
-            for d in v[i]["steps"]:
-                if d.get("intent") is not None:
-                    non_nlu_data.append(Message(data=d))
-
-    non_nlu_td = TrainingData(training_examples=non_nlu_data)
-    assert non_nlu_td.number_of_examples_per_intent.get("greet") is None
-    assert non_nlu_td.intents == {"greet", "ask_weather"}
-
-    from rasa.shared.importers.utils import training_data_from_paths
-
-    td = training_data_from_paths(
-        ["data/test_number_nlu_examples/nlu.yml"], language="en"
-    )
-    td.merge(non_nlu_td)
-
-    assert td.number_of_examples_per_intent["greet"] == 2
-    assert td.number_of_examples_per_intent["ask_weather"] == 3
+    training_data = await importer.get_nlu_data()
+    assert training_data.intents == {"greet", "ask_weather"}
+    assert training_data.number_of_examples_per_intent["greet"] == 2
+    assert training_data.number_of_examples_per_intent["ask_weather"] == 3
 
 
 def test_validate_number_of_examples_per_intent():
