@@ -55,13 +55,17 @@ from rasa.train import train_core, train_core_async
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING, DEFAULT_STACK_CONFIG
 
 
-def test_get_latest_model(trained_rasa_model: str):
-    path_of_latest = os.path.join(os.path.dirname(trained_rasa_model), "latest.tar.gz")
-    shutil.copy(trained_rasa_model, path_of_latest)
+def test_get_latest_model(tmp_path: Path):
+    path = tmp_path / "test_get_latest_model"
+    path.mkdir()
+    Path(path / "model_one.tar.gz").touch()
 
-    model_directory = os.path.dirname(path_of_latest)
+    # create second model later to be registered as distinct in Windows
+    time.sleep(0.1)
+    Path(path / "model_two.tar.gz").touch()
 
-    assert get_latest_model(model_directory) == path_of_latest
+    path_of_latest = os.path.join(path, "model_two.tar.gz")
+    assert get_latest_model(str(path)) == path_of_latest
 
 
 def test_get_model_from_directory(trained_rasa_model: str):
@@ -76,6 +80,16 @@ def test_get_model_context_manager(trained_rasa_model: str):
         assert os.path.exists(unpacked)
 
     assert not os.path.exists(unpacked)
+
+
+def test_get_local_model(trained_rasa_model: str):
+    assert rasa.model.get_local_model(trained_rasa_model) == trained_rasa_model
+
+
+@pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
+def test_get_local_model_exception(model_path: Optional[Text]):
+    with pytest.raises(ModelNotFound):
+        rasa.model.get_local_model(model_path)
 
 
 @pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
