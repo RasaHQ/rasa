@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from types import FrameType
 from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
 
 from rasa.shared.constants import DEFAULT_MODELS_PATH
@@ -196,6 +197,6 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def signal_handler(sig: int, frame: Any) -> NoReturn:
+def signal_handler(sig: int, frame: FrameType) -> NoReturn:
     print("Goodbye 👋")
     sys.exit(0)

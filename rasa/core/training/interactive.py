@@ -4,7 +4,6 @@ import os
 import tempfile
 import textwrap
 import uuid
-from asyncio import AbstractEventLoop
 from functools import partial
 from multiprocessing import Process
 from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set
@@ -1632,7 +1631,7 @@ async def train_agent_on_start(
     endpoints: AvailableEndpoints,
     additional_arguments: Optional[Dict],
     app: Sanic,
-    loop: AbstractEventLoop,
+    loop: asyncio.AbstractEventLoop,
 ) -> None:
     _interpreter = rasa.core.interpreter.create_interpreter(
         endpoints.nlu or args.get("nlu")

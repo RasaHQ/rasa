@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union, Callable
 
 import rasa.core
 import rasa.core.training.training
@@ -479,7 +479,7 @@ class PolicyEnsemble:
     @classmethod
     def get_state_featurizer_from_dict(
         cls, featurizer_config: Dict[Text, Any]
-    ) -> Tuple[Any, Any]:
+    ) -> Tuple[Callable, Dict[Text, Any]]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
             raise InvalidPolicyConfig(
