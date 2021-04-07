@@ -8,7 +8,6 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.shared.importers.utils import training_data_from_paths
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT_RESPONSE_KEY,
@@ -23,7 +22,6 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
