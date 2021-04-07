@@ -69,6 +69,7 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "core", "test_training.py").absolute(),
         Path("tests", "core", "test_examples.py").absolute(),
     ],
+    "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
 }
 
 
@@ -138,7 +139,7 @@ def incorrect_nlu_data_path() -> Text:
 
 @pytest.fixture(scope="session")
 def end_to_end_story_path() -> Text:
-    return "data/test_evaluations/end_to_end_story.yml"
+    return "data/test_evaluations/test_end_to_end_story.yml"
 
 
 @pytest.fixture(scope="session")
@@ -148,7 +149,7 @@ def end_to_end_story_md_path() -> Text:
 
 @pytest.fixture(scope="session")
 def e2e_story_file_unknown_entity_path() -> Text:
-    return "data/test_evaluations/story_unknown_entity.yml"
+    return "data/test_evaluations/test_story_unknown_entity.yml"
 
 
 @pytest.fixture(scope="session")
@@ -158,12 +159,12 @@ def domain_path() -> Text:
 
 @pytest.fixture(scope="session")
 def story_file_trips_circuit_breaker_path() -> Text:
-    return "data/test_evaluations/stories_trip_circuit_breaker.yml"
+    return "data/test_evaluations/test_stories_trip_circuit_breaker.yml"
 
 
 @pytest.fixture(scope="session")
 def e2e_story_file_trips_circuit_breaker_path() -> Text:
-    return "data/test_evaluations/end_to_end_trips_circuit_breaker.yml"
+    return "data/test_evaluations/test_end_to_end_trips_circuit_breaker.yml"
 
 
 @pytest.fixture(scope="session")
