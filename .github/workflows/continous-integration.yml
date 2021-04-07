@@ -77,6 +77,12 @@ jobs:
           # owner: ${{ github.event.pull_request.head.repo.owner.login || github.repository_owner }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
+          
+      - name: fail the step if the doc tests run could not be found
+        if: steps.wait-for-build.outputs.conclusion != 'success'
+        run: |
+          echo "Could not find the doc tests run."
+          exit 1
 
 
   quality:
