@@ -61,9 +61,12 @@ jobs:
     name: Wait for docs tests
     runs-on: ubuntu-latest
     needs: [ changes ]
-    if: needs.changes.outputs.docs == 'true' || github.event_name == 'push' && (startsWith(github.event.ref, 'refs/tags') || github.ref == 'refs/heads/main')
+    # if: needs.changes.outputs.docs == 'true' || github.event_name == 'push' && (startsWith(github.event.ref, 'refs/tags') || github.ref == 'refs/heads/main')
 
     steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+        
       - name: Wait for doc tests
         uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
         id: wait-for-doc-tests
@@ -71,6 +74,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          owner: ${{ github.event.pull_request.head.repo.owner.login || github.repository_owner }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
 
