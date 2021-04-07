@@ -30,8 +30,8 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import (
     TrainingDataFull,
     TrainingDataChunk,
-    TF_RECORD_KEY_SEPARATOR,
 )
+from rasa.shared.utils import chunk_utils
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
@@ -39,7 +39,6 @@ from rasa.shared.nlu.training_data.util import (
     intent_response_key_to_template_key,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
@@ -798,17 +797,19 @@ def test_persist_load_training_data_chunk(tmp_path: Path):
     "tf_record_key, attribute, feature_type, origin, is_dense",
     [
         (
-            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
-            f"{TF_RECORD_KEY_SEPARATOR}spacy{TF_RECORD_KEY_SEPARATOR}dense",
+            f"{TEXT}{chunk_utils.TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{chunk_utils.TF_RECORD_KEY_SEPARATOR}spacy"
+            f"{chunk_utils.TF_RECORD_KEY_SEPARATOR}dense",
             TEXT,
             FEATURE_TYPE_SEQUENCE,
             "spacy",
             True,
         ),
         (
-            f"{TEXT}{TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
-            f"{TF_RECORD_KEY_SEPARATOR}regex{TF_RECORD_KEY_SEPARATOR}sparse"
-            f"{TF_RECORD_KEY_SEPARATOR}data",
+            f"{TEXT}{chunk_utils.TF_RECORD_KEY_SEPARATOR}{FEATURE_TYPE_SEQUENCE}"
+            f"{chunk_utils.TF_RECORD_KEY_SEPARATOR}regex"
+            f"{chunk_utils.TF_RECORD_KEY_SEPARATOR}sparse"
+            f"{chunk_utils.TF_RECORD_KEY_SEPARATOR}data",
             TEXT,
             FEATURE_TYPE_SEQUENCE,
             "regex",
@@ -829,7 +830,7 @@ def test_tf_record_key(
         actual_origin,
         actual_is_dense,
         actual_extra_info,
-    ) = TrainingDataChunk._deconstruct_tf_record_key(tf_record_key)
+    ) = chunk_utils._deconstruct_tf_record_key(tf_record_key)
 
     assert attribute == actual_attribute
     assert feature_type == actual_feature_type
@@ -840,11 +841,11 @@ def test_tf_record_key(
         assert not actual_is_dense
         assert actual_extra_info in ["data", "row", "shape", "column"]
         # remove the extra info from the key
-        tf_record_key = TF_RECORD_KEY_SEPARATOR.join(
-            tf_record_key.split(TF_RECORD_KEY_SEPARATOR)[:-1]
+        tf_record_key = chunk_utils.TF_RECORD_KEY_SEPARATOR.join(
+            tf_record_key.split(chunk_utils.TF_RECORD_KEY_SEPARATOR)[:-1]
         )
 
-    actual_key = TrainingDataChunk._construct_tf_record_key(
+    actual_key = chunk_utils._construct_tf_record_key(
         attribute, feature_type, origin, is_dense
     )
 
