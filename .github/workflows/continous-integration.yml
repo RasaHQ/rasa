@@ -79,7 +79,7 @@ jobs:
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
           
       - name: fail the step if the doc tests run could not be found
-        if: steps.wait-for-build.outputs.conclusion != 'success'
+        if: steps.wait-for-doc-tests.outputs.conclusion != 'success'
         run: |
           echo "Could not find the doc tests run."
           exit 1
