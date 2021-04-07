@@ -25,6 +25,7 @@ from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     YamlSyntaxException,
+    RasaException,
 )
 import rasa.shared.utils.validation
 
@@ -314,7 +315,7 @@ def replace_environment_variables() -> None:
             w for w in expanded_vars.split() if w.startswith("$") and w in value
         ]
         if not_expanded:
-            raise ValueError(
+            raise RasaException(
                 "Error when trying to expand the environment variables"
                 " in '{}'. Please make sure to also set these environment"
                 " variables: '{}'.".format(value, not_expanded)
