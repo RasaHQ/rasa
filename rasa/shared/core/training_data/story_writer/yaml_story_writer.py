@@ -233,6 +233,11 @@ class YAMLStoryWriter(StoryWriter):
                     entities.append(entity["entity"])
             result[KEY_ENTITIES] = entities
 
+        if hasattr(user_utterance, "inline_comment"):
+            result.yaml_add_eol_comment(
+                user_utterance.inline_comment(KEY_ENTITIES), KEY_ENTITIES
+            )
+
         return result
 
     @staticmethod
