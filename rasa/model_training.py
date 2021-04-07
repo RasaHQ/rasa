@@ -280,7 +280,7 @@ async def _train_async_internal(
     else:
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
-    if fingerprint_comparison.is_training_required():
+    if not old_model or fingerprint_comparison.is_training_required():
         async with telemetry.track_model_training(
             file_importer, model_type="rasa",
         ):

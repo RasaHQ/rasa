@@ -166,17 +166,10 @@ def drop_intents_below_freq(
     logger.debug(
         "Raw data intent examples: {}".format(len(training_data.intent_examples))
     )
-    keep_examples = [
-        ex
-        for ex in training_data.intent_examples
-        if training_data.number_of_examples_per_intent[ex.get(INTENT)] >= cutoff
-    ]
 
-    return TrainingData(
-        keep_examples,
-        training_data.entity_synonyms,
-        training_data.regex_features,
-        responses=training_data.responses,
+    examples_per_intent = training_data.number_of_examples_per_intent
+    return training_data.filter_training_examples(
+        lambda ex: examples_per_intent[ex.get(INTENT)] >= cutoff
     )
 
 
@@ -1350,14 +1343,12 @@ def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
 
 def is_entity_extractor_present(interpreter: Interpreter) -> bool:
     """Checks whether entity extractor is present."""
-
     extractors = get_entity_extractors(interpreter)
-    return extractors != []
+    return len(extractors) > 0
 
 
 def is_intent_classifier_present(interpreter: Interpreter) -> bool:
     """Checks whether intent classifier is present."""
-
     from rasa.nlu.classifiers.classifier import IntentClassifier
 
     intent_classifiers = [

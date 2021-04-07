@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
+    CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
     BILOU_FLAG,
     ENTITY_RECOGNITION,
@@ -505,9 +506,12 @@ async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text
     assert result_a == result_b
 
 
-@pytest.mark.parametrize("log_level", ["epoch", "batch", "minibatch"])
+@pytest.mark.parametrize("log_level", ["epoch", "batch"])
 async def test_train_tensorboard_logging(
-    log_level: Text, component_builder: ComponentBuilder, tmpdir: Path
+    log_level: Text,
+    component_builder: ComponentBuilder,
+    tmpdir: Path,
+    nlu_data_path: Text,
 ):
     tensorboard_log_dir = Path(tmpdir / "tensorboard")
 
@@ -517,12 +521,21 @@ async def test_train_tensorboard_logging(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 1,
                     TENSORBOARD_LOG_LEVEL: log_level,
                     TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CONSTRAIN_SIMILARITIES: True,
                     EVAL_NUM_EXAMPLES: 15,
                     EVAL_NUM_EPOCHS: 1,
                 },
@@ -534,7 +547,7 @@ async def test_train_tensorboard_logging(
     await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/examples/rasa/demo-rasa-multi-intent.yml",
+        data=nlu_data_path,
         component_builder=component_builder,
     )
 
@@ -545,7 +558,7 @@ async def test_train_tensorboard_logging(
 
 
 async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path
+    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
     best_model_file = Path(str(tmpdir), model_name)
@@ -555,12 +568,19 @@ async def test_train_model_checkpointing(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 5,
-                    EVAL_NUM_EXAMPLES: 10,
-                    EVAL_NUM_EPOCHS: 1,
+                    CONSTRAIN_SIMILARITIES: True,
+                    MODEL_CONFIDENCE: "linear_norm",
                     CHECKPOINT_MODEL: True,
                 },
             ],
@@ -571,7 +591,7 @@ async def test_train_model_checkpointing(
     await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/examples/rasa/demo-rasa.yml",
+        data=nlu_data_path,
         component_builder=component_builder,
         fixed_model_name=model_name,
     )

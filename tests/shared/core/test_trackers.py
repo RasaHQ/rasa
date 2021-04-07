@@ -13,7 +13,7 @@ import pytest
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core import training, restore
+from rasa.core import training
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -21,6 +21,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
+from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -503,6 +504,16 @@ def test_tracker_init_copy(domain: Domain):
     assert tracker.sender_id == tracker_copy.sender_id
 
 
+def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueStateTracker:
+    """Read the json dump from the file and instantiate a tracker it."""
+
+    tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
+    sender_id = tracker_json.get("sender_id", DEFAULT_SENDER_ID)
+    return DialogueStateTracker.from_dict(
+        sender_id, tracker_json.get("events", []), domain.slots
+    )
+
+
 async def test_dump_and_restore_as_json(
     default_agent: Agent, tmp_path: Path, stories_path: Text
 ):
@@ -514,9 +525,7 @@ async def test_dump_and_restore_as_json(
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
         rasa.shared.utils.io.dump_obj_as_json_to_file(str(out_path), dumped)
 
-        restored_tracker = restore.load_tracker_from_json(
-            str(out_path), default_agent.domain
-        )
+        restored_tracker = _load_tracker_from_json(str(out_path), default_agent.domain)
 
         assert restored_tracker == tracker
 
@@ -525,9 +534,7 @@ def test_read_json_dump(default_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
-    restored_tracker = restore.load_tracker_from_json(
-        tracker_dump, default_agent.domain
-    )
+    restored_tracker = _load_tracker_from_json(tracker_dump, default_agent.domain)
 
     assert len(restored_tracker.events) == 7
     assert restored_tracker.latest_action.get(ACTION_NAME) == "action_listen"
@@ -887,6 +894,36 @@ def test_tracker_does_not_modify_slots(
                 ActiveLoop(None),
             ],
         ),
+        (
+            [
+                user_uttered("trigger form"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                ActiveLoop("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill requested slots"),
+                SlotSet("some slot", "value"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+            [
+                user_uttered("trigger form"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                ActiveLoop("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                SlotSet("some slot", "value"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
     ],
 )
 def test_applied_events_with_loop_happy_path(
@@ -1085,6 +1122,39 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted("handle_chitchat"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("affirm"),
+                ActionExecuted("loop"),
+            ],
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+                ActiveLoop("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+                ActiveLoop("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                DefinePrevUserUtteredFeaturization(False),
+                # Different action than form action indicates unhappy path
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                DefinePrevUserUtteredFeaturization(False),
                 ActionExecuted("loop"),
             ],
         ),
@@ -1312,16 +1382,16 @@ def test_autofill_slots_for_policy_entities():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    entities:
-    - {nlu_entity}
-    - {policy_entity}
-
-    slots:
-        {nlu_entity}:
-            type: text
-        {policy_entity}:
-            type: text
-    """
+            version: "2.0"
+            entities:
+            - {nlu_entity}
+            - {policy_entity}
+            slots:
+                {nlu_entity}:
+                    type: text
+                {policy_entity}:
+                    type: text
+            """
         )
     )
 
