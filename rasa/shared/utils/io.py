@@ -316,9 +316,8 @@ def replace_environment_variables() -> None:
         ]
         if not_expanded:
             raise RasaException(
-                "Error when trying to expand the environment variables"
-                " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(value, not_expanded)
+                f"Error when trying to expand the environment variables in '{value}'. "
+                f"Please make sure to also set these environment variables: '{not_expanded}'."
             )
         return expanded_vars
 

@@ -1789,7 +1789,7 @@ class Domain:
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
-        except (ValueError, YamlSyntaxException):
+        except (RasaException, YamlSyntaxException):
             return False
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
