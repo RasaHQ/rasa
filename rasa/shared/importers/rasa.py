@@ -70,11 +70,13 @@ class RasaFileImporter(TrainingDataImporter):
 
     async def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
+        from rasa.shared.constants import DEFAULT_DOMAIN_PATH
+
         domain = Domain.empty()
 
-        # If domain path is None, return an empty domain
+        # If domain path is None, attempt to load the default domain
         if not self._domain_path:
-            return domain
+            self._domain_path = DEFAULT_DOMAIN_PATH
         try:
             domain = Domain.load(self._domain_path)
         except InvalidDomain as e:

@@ -372,9 +372,18 @@ async def _create_data_generator(
     use_conversation_test_files: bool = False,
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
+    from rasa.shared.constants import DEFAULT_DOMAIN_PATH
+    from rasa.model import get_model_subdirectories
+
+    core_model, _ = get_model_subdirectories(agent.model_directory)
+
+    if core_model:
+        domain_path = os.path.join(core_model, DEFAULT_DOMAIN_PATH)
+    else:
+        domain_path = None
 
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[resource_name]
+        training_data_paths=[resource_name], domain_path=domain_path
     )
     if use_conversation_test_files:
         story_graph = await test_data_importer.get_conversation_tests()
