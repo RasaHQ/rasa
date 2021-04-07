@@ -491,8 +491,7 @@ def create_directory_for_file(file_path: Union[Text, Path]) -> None:
 
 def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     """Dump an object as a json string to a file."""
-
-    write_text_file(json.dumps(obj, indent=2), filename)
+    write_text_file(json.dumps(obj, ensure_ascii=False, indent=2), filename)
 
 
 def dump_obj_as_yaml_to_string(
