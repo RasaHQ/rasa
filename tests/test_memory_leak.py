@@ -118,7 +118,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 1400
+        return 1500
 
     def function_to_profile(self) -> None:
         import rasa.model_training
