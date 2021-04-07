@@ -150,6 +150,7 @@ pytest-timeout = "^1.4.2"
 mypy = "^0.812"
 bandit = "^1.6.3"
 typing-extensions = "^3.7.4"
+memory-profiler = "^0.58.0"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
