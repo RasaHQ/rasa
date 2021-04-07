@@ -180,6 +180,9 @@ test-full-model-training: test-marker
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
 test-other-unit-tests: test-marker
 
+test-performance: PYTEST_MARKER=category_performance
+test-performance: test-marker
+
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)

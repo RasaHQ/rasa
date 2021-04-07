@@ -17,6 +17,7 @@ class KafkaEventBroker(EventBroker):
         url: Union[Text, List[Text], None],
         topic: Text = "rasa_core_events",
         client_id: Optional[Text] = None,
+        partition_by_sender: bool = False,
         sasl_username: Optional[Text] = None,
         sasl_password: Optional[Text] = None,
         ssl_cafile: Optional[Text] = None,
@@ -40,6 +41,8 @@ class KafkaEventBroker(EventBroker):
                 to servers and can be used to identify specific server-side log entries
                 that correspond to this client. Also submitted to `GroupCoordinator` for
                 logging with respect to producer group administration.
+            partition_by_sender: Flag to configure whether messages are partitioned by
+                sender_id or not
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
             ssl_cafile: Optional filename of ca file to use in certificate
@@ -61,6 +64,7 @@ class KafkaEventBroker(EventBroker):
         self.url = url
         self.topic = topic
         self.client_id = client_id
+        self.partition_by_sender = partition_by_sender
         self.security_protocol = security_protocol.upper()
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
@@ -174,8 +178,15 @@ class KafkaEventBroker(EventBroker):
             )
 
     def _publish(self, event: Dict[Text, Any]) -> None:
-        logger.debug(f"Calling kafka send({self.topic}, {event})")
-        self.producer.send(self.topic, event)
+        if self.partition_by_sender:
+            partition_key = bytes(event.get("sender_id"), encoding=DEFAULT_ENCODING)
+        else:
+            partition_key = None
+
+        logger.debug(
+            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
+        )
+        self.producer.send(self.topic, value=event, key=partition_key)
 
     def _close(self) -> None:
         self.producer.close()
